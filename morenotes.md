@@ -1,0 +1,259 @@
+# non goals
+- rectangular timbers only, which is to say they have a true dimension which all joints are aligned to
+    - that is to say, scribing to non-true dimesions is not supported
+    - that is also to say, we won't try and build a OOP hierarchy of increasingly specific parts
+- timbers are spatially unaware and all substractive joint operations asume the timbers to intersect intersect in a realistic way
+- no symmetries, instead these should be manually programmed
+- imperative ;__;
+- timbers are semi-hardcode to work in the standard orientation only
+    - tenons can only be on the top/bottom faces
+    - no overgeneralizing with TimberReferenceFace TimberReferenceEdge
+- only rectangular tenons
+
+
+# Concepts
+
+## Coordinate System
+XY is the "ground" and Z is "up" 
+RHS coordinate system
+We will say +X is "right" and +Y is "forward"
+We will also say +X is "east" and +Y is "north"
+
+## Alignment
+
+2 timbers are "face-aligned" if their faces are parallel or perpendicular to each other
+parts on 2 separate timbers are "face-plane-aligned" if they are coplanar with the face planes of 2 face-aligned timbers
+So for example, in conventional framing, all posts on a wall would their vertical center lines face-plane-aligned
+
+
+
+
+## Footprint
+A support class representing the footprint of the structure in the XY plane to help position and orient timbers
+
+
+```
+class Footprint:
+    # a list of points defining the boundary of the footprint, the last point is connected to the first point
+    boundary : list[V2]
+```
+
+```
+class FootprintBoundary:
+    # boundary is the line from start_index to start_index + 1
+    int start_index;
+```
+
+
+```
+class TimberLocationType(Enum):
+    # place the corner of the timber that closest matches the "shape" of the point on the footprint and put it on the point
+    INSIDE = 1
+    # center of timber on the point of on the footprint
+    CENTER = 2
+    OUTSIDE = 3
+```
+
+
+
+
+## Timber
+
+QUESTION should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
+
+### properties
+
+```
+# all joints are scribed to the true dimension
+true_dimension : V2
+# the bounding box of the timber, mainly used for rendering purposes
+bound_dimension : V2
+length :  float
+```
+
+
+
+### understanding timber orientation
+
+By default, a timber is oriented with its bottom cross section centered on the XY plane and running up in the Y direction
+To orient the timber we position the +Z and +X axis. We will call these the "length vector" and "face vector" respectively
+A timber may be rotated in space, but we will continue to refer to the axis of the timber in its default orientation. 
+We also have names for each axis
+
+Z axis - length of the timber
+X axis - width of the timber
+Y axis - height of the timber
+
+```
+class TimberOrientation(Enum):
+    length_vector : V3
+    face_vector : V3
+```
+
+#### 
+```
+enum TimberFace(Enum):
+    TOP = 1 # the face vector is parallel to the +Z axis
+    BOTTOM = 2 # the face vector is parallel to the -Z axis
+    LEFT = 3 # the face vector is parallel to the +X axis
+    RIGHT = 4 # the face vector is parallel to the -X axis
+    FORWARD = 5 # the face vector is parallel to the +Y axis
+    BACK = 6 # the face vector is parallel to the -Y axis
+```
+
+#### timber reference features
+
+Each face is named and faces are grouped into "ends" and "long edges"
+
+```
+class TimberFace(Enum):
+    TOP = 1
+    BOTTOM = 2
+    RIGHT = 3
+    FORWARD = 4
+    LEFT = 5
+    BACK = 6
+
+class TimberReferenceEnd(Enum):
+    TOP = 1
+    BOTTOM = 2
+
+class TimberReferenceLongFace(Enum):
+    RIGHT = 3
+    FORWARD = 4
+    LEFT = 5
+    BACK = 6
+
+class TimberReferenceLongEdge(Enum):
+    RIGHT_FORWARD = 7
+    FORWARD_LEFT = 8
+    LEFT_BACK = 9
+    BACK_RIGHT = 10
+```
+
+
+#### measurements from reference features
+Measurements are then taken from these faces 
+
+```
+struct DistanceFromFace(Enum):
+    face : TimberFace
+    distance : float
+
+struct DistanceFromLongFace(Enum):
+    face : TimberReferenceLongFace
+    distance : float
+
+struct DistanceFromEnd(Enum):
+    end : TimberReferenceEnd
+    distance : float
+
+struct DistanceFromLongEdge(Enum):
+    edge : TimberReferenceLongEdge
+    distance1 : float
+    distance2 : float
+```
+
+#### quick references
+
+TODO in general, when we joint 2 face aligned timbers, we want to easily grab their shared "inside" and "outside" faces
+QUESTION For non-footprint-stamped timbers, I guess we have to use manually specify which face on the timber to reference, perhaps we can do this relative to their orientations somehow?
+
+### operations
+
+```
+# AKA a post
+# the length is in the up (+Z) direction
+create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: int, length: float, location_type = TimberLocationType.INSIDE : TimberLocationType) -> Timber
+
+# AKA a mudsill
+# the left (-X) face is lying on the XY plane
+# the mudsill starts at footprint_index and goes to footprint_index + 1
+create_horizontal_timber_on_footprint(footprint: Footprint, footprint_index: int, length: float, location_type: TimberLocationType) -> Timber
+
+
+# if location_on_timber2 is not provided, the height is determined by projecting location_on_timber1 to the Z axis of timber2
+# orientation_face_vector determines the orientation of the created timber by coinciding on the plane created by the length_vector and face_vector of the created timber 
+# if orientation_face_vector is not provided, the +Z axis of timber1 is used instead
+# symmetric_stickout is the distance from the centerline of timber1/2 to the ends of the created timber
+# offset_from_timber1 in the direction perpendicular to the length vector of timber1 and the created timber
+# an offset of 0 means the center lines of timber1/timber2 and the created timber are coincident
+join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, symmetric_stickout : float, offset_from_timber1: float, location_on_timber2: float?, orientation_face_vector: V3?) -> Timber
+
+
+# num_ccw_turns_relative_to_timber1 is the number of 90 degree turns on the +z axis of the created timber starting from where the face vector of the created timber aligns with the length vector of timber1
+# location_on_timber1 is the location along the length vector of timber1 where the join is made (starting from the bottom of the timber)
+# TODO location must be measured to center or a reference face
+join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, symmetric_stickout : float, num_ccw_turns_relative_to_timber1: int,  offset_from_timber1: FaceOffset) -> Timber
+```
+
+## joint construction operations
+
+to ease in the construction of various types of joints, we define a set of joint construction operation that can be combined to form a joint.
+
+### tenon
+
+a tenon consists of a shoulder plan, a rectangular cross section that runs along the Z axis of the timber and measured from a long edge of the timber, and a depth measured from the shoulder plane. For angled shoulder planes, the distance is measured from where the shoulder plane meets the reference long edge. A tenon can define a bore hole. It always runs perpendicular to the extrusion direction of the tenon and the length of the tenon. The length axis of the tenon must be provided and is usually determined by the joint operation (i.e. always in the direction of the length vector of timber the tenon is intended to it into).
+
+### multi-tenon
+
+a multi-tenon is a set of tenons that have been unioned together. They must all share the same shoulder plane.
+
+### mortise
+
+a mortise consists of a rectangular cross section on a long face of the timber. The cross section is defined by a width (XY dimension), a length (Z dimension), and depth (extrusion depth from face). The cross section dimensions are measured from a reference long edge and end of the timber.
+
+There is no need for a multi mortise as you can just apply multiple mortise operations.
+A mortise can define a bore hole. It always runs perpendicular to the extrusion direction of the mortise and the Z axis of the timber.
+
+
+## joints
+
+Joints connect 2 or more timbers together through substractively modifications on the timbers. In addition, joints my define accesories to support the joints (e.g. a wedge)
+A timber may have any number of joints. 
+
+
+### V1 joints
+
+- mortise_and_tenon_joint 
+    - option for tusk and drawbore
+    - can handle angled shoulder
+- rafter_joint 
+    - a basic substractive joint that cuts the rafter from the ridge beam, purlins, plates etc
+- wedged_dovetail_mortise_and_tenon_joint
+- splice_joint
+    - TODO figure out how to handle this, you want to define it as a single timber in most cases but sometimes you want to treat it as 2 timbers
+- drop_in_joist
+    - supports straight and dovetailed cutouts
+
+
+
+```
+# a mortise and tenon joint cuts a tenon in timber1 and a mortise in timber2. 
+# measurements are always relative to timber1
+# TODO maybe someway to combine distance and relative face together into 1 thing, can assert they are perpendicular
+mortise_and_tenon_joint(timber1: Timber, timber2: Timber, top_relative_face: TimberFace, right_relative_face: TimberFace, 
+```
+
+
+
+
+
+
+
+
+# V2 Notes
+
+
+Currently we have
+
+TimberReferenceLongEdge (X/Y axis faces)
+TimberReferenceEnd (Z axis faces)
+
+We can generalize to arbitrary faces with 
+
+TimberReferenceCorner TimberReferenceFace TimberReferenceEdge
+
+However, I think Timbers are by definition in the standard orientation, so instead timbers derive from some Box object
+
+
