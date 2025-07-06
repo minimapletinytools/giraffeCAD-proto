@@ -1,3 +1,13 @@
+# TODO
+
+renamed timber1/2 to timberA/B
+
+rename created timber to timberX
+
+
+
+
+
 # non goals
 - rectangular timbers only, which is to say they have a true dimension which all joints are aligned to
     - that is to say, scribing to non-true dimesions is not supported
@@ -24,9 +34,6 @@ We will also say +X is "east" and +Y is "north"
 2 timbers are "face-aligned" if their faces are parallel or perpendicular to each other
 parts on 2 separate timbers are "face-plane-aligned" if they are coplanar with the face planes of 2 face-aligned timbers
 So for example, in conventional framing, all posts on a wall would their vertical center lines face-plane-aligned
-
-
-
 
 ## Footprint
 A support class representing the footprint of the structure in the XY plane to help position and orient timbers
@@ -73,7 +80,13 @@ length :  float
 
 
 
-### understanding timber orientation
+### understanding timber position and orientation
+
+Timbers are referenced in their own local coordinate system
+
+The *bottom point* of a timber is on the bottom face of the timber and in the center of its cross section. The bottom point is located at the origin of the timber's local coordinate system.
+
+The *centerline* of the timber is the line that runs from bottom to top.
 
 By default, a timber is oriented with its bottom cross section centered on the XY plane and running up in the Y direction
 To orient the timber we position the +Z and +X axis. We will call these the "length vector" and "face vector" respectively
@@ -83,6 +96,7 @@ We also have names for each axis
 Z axis - length of the timber
 X axis - width of the timber
 Y axis - height of the timber
+
 
 ```
 class TimberOrientation(Enum):
@@ -171,20 +185,33 @@ create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: int, 
 # the mudsill starts at footprint_index and goes to footprint_index + 1
 create_horizontal_timber_on_footprint(footprint: Footprint, footprint_index: int, length: float, location_type: TimberLocationType) -> Timber
 
+# extend the timber by a given length, the end is the end of the timber to extend
+# overlap_length is the length of the timber to overlap with the existing timber
+# extend_length is the length of the timber to extend
+extend_timber(timber: Timber, end: TimberEnd, overlap_length: float, extend_length: float) -> Timber
 
+# the bottom face of the created timber is on the side of timber1
+# orientation_face_vector determines the orientation of the created timber by. The orientation_face_vector will lie on the plane created by the length_vector and face_vector of the created timber. In practice, just set this to the face_vector you want for the created timber. 
 # if location_on_timber2 is not provided, the height is determined by projecting location_on_timber1 to the Z axis of timber2
-# orientation_face_vector determines the orientation of the created timber by coinciding on the plane created by the length_vector and face_vector of the created timber 
-# if orientation_face_vector is not provided, the +Z axis of timber1 is used instead
 # symmetric_stickout is the distance from the centerline of timber1/2 to the ends of the created timber
-# offset_from_timber1 in the direction perpendicular to the length vector of timber1 and the created timber
+# offset_from_timber1 is in the direction of the cross product of the length vectors of timber1 and the created timber. If this is 0, then the centerline axis of the created timber is coincident with the centerline axis of timber1/2
 # an offset of 0 means the center lines of timber1/timber2 and the created timber are coincident
 join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, symmetric_stickout : float, offset_from_timber1: float, location_on_timber2: float?, orientation_face_vector: V3?) -> Timber
 
 
-# num_ccw_turns_relative_to_timber1 is the number of 90 degree turns on the +z axis of the created timber starting from where the face vector of the created timber aligns with the length vector of timber1
+
+# determines the offset of timberX from timberA
+# if centerline_offset is provided, the offset is between the centerlines of timberA and timberX and in the direction of the reference_face
+# if face_offset is provided, the offset is between the reference_face of timberA and the matching aligned face of timberX in the direction of the reference_face
+class FaceAlignedJoinedTimberOffset:
+    reference_face : TimberFace
+    centerline_offset : float?
+    face_offset : float?
+
+# the bottom face of the created timber is on the side of timber1
+# orientation_face_on_timber1 is a face on timber1. The face_vector of the created timber will match orientation_face_on_timber1. If no such orientation is possible the function will warn and the TOP face will be used instead.
 # location_on_timber1 is the location along the length vector of timber1 where the join is made (starting from the bottom of the timber)
-# TODO location must be measured to center or a reference face
-join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, symmetric_stickout : float, num_ccw_turns_relative_to_timber1: int,  offset_from_timber1: FaceOffset) -> Timber
+join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, symmetric_stickout : float, offset_from_timber1: FaceAlignedJoinedTimberOffset, orientation_face_on_timber1 = TimberFace.TOP : TimberFace) -> Timber
 ```
 
 ## joint construction operations
@@ -193,19 +220,23 @@ to ease in the construction of various types of joints, we define a set of joint
 
 ### tenon
 
-a tenon consists of a shoulder plan, a rectangular cross section that runs along the Z axis of the timber and measured from a long edge of the timber, and a depth measured from the shoulder plane. For angled shoulder planes, the distance is measured from where the shoulder plane meets the reference long edge. A tenon can define a bore hole. It always runs perpendicular to the extrusion direction of the tenon and the length of the tenon. The length axis of the tenon must be provided and is usually determined by the joint operation (i.e. always in the direction of the length vector of timber the tenon is intended to it into).
+A tenon consists of a shoulder plan, a tenon direction (bottom to top), and additive geometry built in the volume of the timber in the tenon direction past the shoulder plane. Depth can be measured from the the shoulder plane. For angled shoulder planes, the distance is measured from where the shoulder plane meets the reference long edge. The tenon direction must be provided is usually determined by the joint operation (i.e. always in the direction of the length vector of timber the tenon is intended to it into).
+
+### standard tenon
+
+A standard tenon is a rectangular cross section that extrudes from the shoulder plane and along the Z axis of the timber. The cross section position is measured from a long edge of the timber. A standard tenon may define a bore hole always runs perpendicular to the extrusion direction of the tenon and the length of the tenon. 
 
 ### multi-tenon
 
-a multi-tenon is a set of tenons that have been unioned together. They must all share the same shoulder plane.
+a multi-tenon is a set of tenons that have been unioned together. They must all share the same shoulder plane. this is useful for more complex joints
 
 ### mortise
 
-a mortise consists of a rectangular cross section on a long face of the timber. The cross section is defined by a width (XY dimension), a length (Z dimension), and depth (extrusion depth from face). The cross section dimensions are measured from a reference long edge and end of the timber.
+A mortise is substractive geometry from the a timber. There is no need for a multi mortise as you can just apply multiple mortise operations.
 
-There is no need for a multi mortise as you can just apply multiple mortise operations.
-A mortise can define a bore hole. It always runs perpendicular to the extrusion direction of the mortise and the Z axis of the timber.
+### standard mortise
 
+a standard mortise consists of a rectangular cross section on a long face of the timber. The cross section is defined by a width (XY dimension), a length (Z dimension), and depth (extrusion depth from face). The cross section dimensions are measured from a reference long edge and end of the timber. A standard mortise can define a bore hole. It always runs perpendicular to the extrusion direction of the mortise and the Z axis of the timber.
 
 ## joints
 
