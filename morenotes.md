@@ -68,14 +68,13 @@ class TimberLocationType(Enum):
 
 QUESTION should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
 
-### properties
-
 ```
-# all joints are scribed to the true dimension
-true_dimension : V2
-# the bounding box of the timber, mainly used for rendering purposes
-bound_dimension : V2
-length :  float
+class Timber:
+    length : float
+    size : V2
+    bottom_position : V3
+    length_direction : TimberFace
+    face_direction : TimberFace
 ```
 
 
@@ -171,11 +170,15 @@ struct DistanceFromLongEdge(Enum):
 #### quick references
 
 TODO in general, when we joint 2 face aligned timbers, we want to easily grab their shared "inside" and "outside" faces
-QUESTION For non-footprint-stamped timbers, I guess we have to use manually specify which face on the timber to reference, perhaps we can do this relative to their orientations somehow?
 
 ### operations
 
 ```
+create_timber(bottom_position : V3,  length : float, size : V2, length_direction : V3, face_direction : V3) -> Timber
+
+# creates a timber at bottom_position with given dimensions and rotates it to the length_direction and face_direction (using TimberFace to reference directions in the world coordinate system)
+create_axis_aligned_timber(bottom_position : V3, length : float, size : V2, length_direction : TimberFace, face_direction : TimberFace) -> Timber
+
 # AKA a post
 # the length is in the up (+Z) direction
 create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: int, length: float, location_type = TimberLocationType.INSIDE : TimberLocationType) -> Timber
@@ -190,6 +193,8 @@ create_horizontal_timber_on_footprint(footprint: Footprint, footprint_index: int
 # extend_length is the length of the timber to extend
 extend_timber(timber: Timber, end: TimberEnd, overlap_length: float, extend_length: float) -> Timber
 
+# TODO instead of symmetric_stickout, you should do stickout : V2 since you might be joining beams of different sizes
+
 # the bottom face of the created timber is on the side of timber1
 # orientation_face_vector determines the orientation of the created timber by. The orientation_face_vector will lie on the plane created by the length_vector and face_vector of the created timber. In practice, just set this to the face_vector you want for the created timber. 
 # if location_on_timber2 is not provided, the height is determined by projecting location_on_timber1 to the Z axis of timber2
@@ -197,8 +202,6 @@ extend_timber(timber: Timber, end: TimberEnd, overlap_length: float, extend_leng
 # offset_from_timber1 is in the direction of the cross product of the length vectors of timber1 and the created timber. If this is 0, then the centerline axis of the created timber is coincident with the centerline axis of timber1/2
 # an offset of 0 means the center lines of timber1/timber2 and the created timber are coincident
 join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, symmetric_stickout : float, offset_from_timber1: float, location_on_timber2: float?, orientation_face_vector: V3?) -> Timber
-
-
 
 # determines the offset of timberX from timberA
 # if centerline_offset is provided, the offset is between the centerlines of timberA and timberX and in the direction of the reference_face
@@ -222,29 +225,70 @@ to ease in the construction of various types of joints, we define a set of joint
 
 A tenon consists of a shoulder plan, a tenon direction (bottom to top), and additive geometry built in the volume of the timber in the tenon direction past the shoulder plane. Depth can be measured from the the shoulder plane. For angled shoulder planes, the distance is measured from where the shoulder plane meets the reference long edge. The tenon direction must be provided is usually determined by the joint operation (i.e. always in the direction of the length vector of timber the tenon is intended to it into).
 
-### standard tenon
+```
+class OrientedShoulderPlane:
+    direction : TimberEnd
+    # distance is measured from the TimberEnd face
+    distance : float
+    orientation : EulerAngles
+```
 
-A standard tenon is a rectangular cross section that extrudes from the shoulder plane and along the Z axis of the timber. The cross section position is measured from a long edge of the timber. A standard tenon may define a bore hole always runs perpendicular to the extrusion direction of the tenon and the length of the tenon. 
+#### standard tenon
 
-### multi-tenon
+A standard tenon is a rectangular cross section that extrudes from the shoulder plane and along the Z axis of the timber. The cross section position is measured from a long edge of the timber or the centerline of the timber. A standard tenon may define a bore hole always runs perpendicular to the extrusion direction of the tenon and the length of the tenon. 
+
+```
+class StandardTenon:
+    timber : Timber
+    shoulder_plane : OrientedShoulderPlane
+    # if not provided, the cross section is centered on the centerline of the timber
+    pos_rel_to_long_edge : (TimberReferenceLongEdge, V2)?
+    # in the X axis
+    width : float 
+    # in the Y axis
+    height : float
+    # in the Z axis
+    depth : float
+```
+
+#### multi-tenon
 
 a multi-tenon is a set of tenons that have been unioned together. They must all share the same shoulder plane. this is useful for more complex joints
+
+```
+class MultiTenon:
+    tenons : list[StandardTenon]
+```
 
 ### mortise
 
 A mortise is substractive geometry from the a timber. There is no need for a multi mortise as you can just apply multiple mortise operations.
 
-### standard mortise
+#### standard mortise
 
-a standard mortise consists of a rectangular cross section on a long face of the timber. The cross section is defined by a width (XY dimension), a length (Z dimension), and depth (extrusion depth from face). The cross section dimensions are measured from a reference long edge and end of the timber. A standard mortise can define a bore hole. It always runs perpendicular to the extrusion direction of the mortise and the Z axis of the timber.
+a standard mortise consists of a rectangular cross section on a long face of the timber. The cross section is defined by a width (XY dimension), a length (Z dimension), and depth (extrusion depth from face). The cross section dimensions are measured from a reference long edge or centerline of the timber and the end of the timber. A standard mortise can define a bore hole. It always runs perpendicular to the extrusion direction of the mortise and the Z axis of the timber.
+
+```
+class StandardMortise:
+    timber : Timber
+    mortise_face : TimberFace
+    pos_rel_to_end : (TimberReferenceEnd, float)
+    # if TimberReferenceLongFace is not provided, then the mortise is centered on the centerline of the timber
+    pos_rel_to_long_face : (TimberReferenceLongFace, float)?
+    # in the reference_long_face axis
+    width : float 
+    # in the reference_end axis
+    height : float
+    # in the mortise_face axis
+    depth : float
+```
 
 ## joints
 
 Joints connect 2 or more timbers together through substractively modifications on the timbers. In addition, joints my define accesories to support the joints (e.g. a wedge)
 A timber may have any number of joints. 
 
-
-### V1 joints
+TODO how to store timber with joints
 
 - mortise_and_tenon_joint 
     - option for tusk and drawbore
