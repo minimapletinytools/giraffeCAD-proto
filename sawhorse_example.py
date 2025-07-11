@@ -1,10 +1,14 @@
 from giraffe import *
 
-# Define timber dimensions
+# Define timber dimensions (inches)
 feet_size = V2(4,6)
 beam_size = V2(4,4)
 post_size = V2(4,4)
 stretcher_size = V2(4,4)
+
+tenon_thickness = 1
+tenon_length = 2
+tenon_depth = 3
 
 # Define constants for the sawhorse
 bottom_width = 24  
@@ -51,24 +55,13 @@ def main():
 
     # connect the 2 feet to the beam with posts. The posts are centered on the feet
     
-    # Create offset for centering posts on feet
-    left_offset = FaceAlignedJoinedTimberOffset(
-        reference_face=TimberFace.RIGHT,
-        centerline_offset=0  # Centered on the foot
-    )
-    
-    right_offset = FaceAlignedJoinedTimberOffset(
-        reference_face=TimberFace.LEFT,
-        centerline_offset=0  # Centered on the foot
-    )
-    
     # Connect left foot to beam
     left_post = join_perpendicular_on_face_aligned_timbers(
         timber1=left_mudsill,
         timber2=beam,
         location_on_timber1=left_mudsill.length,  # Top of the mudsill
         symmetric_stickout=post_size.x / 2,  # Half the post width
-        offset_from_timber1=left_offset,
+        offset_from_timber1=0,
         orientation_face_on_timber1=TimberFace.TOP
     )
     
@@ -78,7 +71,7 @@ def main():
         timber2=beam,
         location_on_timber1=right_mudsill.length,  # Top of the mudsill
         symmetric_stickout=post_size.x / 2,  # Half the post width
-        offset_from_timber1=right_offset,
+        offset_from_timber1=0,
         orientation_face_on_timber1=TimberFace.TOP
     )
 
@@ -88,12 +81,62 @@ def main():
         timber2=right_post,
         location_on_timber1=left_post.length / 2,  # Middle of the post
         symmetric_stickout=stretcher_size.x / 2,  # Half the post width
-        offset_from_timber1=FaceAlignedJoinedTimberOffset(
-            reference_face=TimberFace.RIGHT,
-            centerline_offset=0  # Centered on the post
-        ),
+        offset_from_timber1=0,
         orientation_face_on_timber1=TimberFace.TOP
     )
+
+    # next create mortise and tenon joints between the posts and the mudsills
+    mudsill_left_joint = simple_mortise_and_tenon_joint(
+        mortise_timber=left_mudsill,
+        tenon_timber=left_post,
+        tenon_thickness=tenon_thickness,
+        tenon_length=tenon_length,
+        tenon_depth=tenon_depth
+    )
+
+    mudsill_right_joint = simple_mortise_and_tenon_joint(
+        mortise_timber=right_mudsill,
+        tenon_timber=right_post,
+        tenon_thickness=tenon_thickness,
+        tenon_length=tenon_length,
+        tenon_depth=tenon_depth
+    )
+
+    # next create mortise and tenon joints between the posts and the stretcher
+    stretcher_left_joint = simple_mortise_and_tenon_joint(
+        mortise_timber=left_post,
+        tenon_timber=stretcher,
+        tenon_thickness=tenon_thickness,
+        tenon_length=tenon_length,
+        tenon_depth=tenon_depth
+    )
+
+    stretcher_right_joint = simple_mortise_and_tenon_joint(
+        mortise_timber=right_post,
+        tenon_timber=stretcher,
+        tenon_thickness=tenon_thickness,
+        tenon_length=tenon_length,
+        tenon_depth=tenon_depth
+    )
+
+    # now create mortise and tenon joints between the posts and the beam
+    beam_left_joint = simple_mortise_and_tenon_joint(
+        mortise_timber=left_post,
+        tenon_timber=beam,
+        tenon_thickness=tenon_thickness,
+        tenon_length=tenon_length,
+        tenon_depth=tenon_depth
+    )
+
+    beam_right_joint = simple_mortise_and_tenon_joint(
+        mortise_timber=right_post,
+        tenon_timber=beam,
+        tenon_thickness=tenon_thickness,
+        tenon_length=tenon_length,
+        tenon_depth=tenon_depth
+    )
+
+
 
 
 if __name__ == "__main__":

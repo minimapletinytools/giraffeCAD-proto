@@ -12,6 +12,7 @@ rename created timber to timberX
 - rectangular timbers only, which is to say they have a true dimension which all joints are aligned to
     - that is to say, scribing to non-true dimesions is not supported
     - that is also to say, we won't try and build a OOP hierarchy of increasingly specific parts
+        - part > box (adds dimension) > timber (fixed orientation) > cut timber (adds joints)
 - timbers are spatially unaware and all substractive joint operations asume the timbers to intersect intersect in a realistic way
 - no symmetries, instead these should be manually programmed
 - imperative ;__;
@@ -75,6 +76,7 @@ class Timber:
     bottom_position : V3
     length_direction : TimberFace
     face_direction : TimberFace
+    # nominal_size : V2
 ```
 
 
@@ -221,6 +223,13 @@ join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber, loc
 
 to ease in the construction of various types of joints, we define a set of joint construction operation that can be combined to form a joint.
 
+```
+class TimberCutOperation:
+    # the timber that the operation is applied to
+    timber : Timber
+    # TODO some cut function
+```
+
 ### tenon
 
 A tenon consists of a shoulder plan, a tenon direction (bottom to top), and additive geometry built in the volume of the timber in the tenon direction past the shoulder plane. Depth can be measured from the the shoulder plane. For angled shoulder planes, the distance is measured from where the shoulder plane meets the reference long edge. The tenon direction must be provided is usually determined by the joint operation (i.e. always in the direction of the length vector of timber the tenon is intended to it into).
@@ -235,11 +244,10 @@ class OrientedShoulderPlane:
 
 #### standard tenon
 
-A standard tenon is a rectangular cross section that extrudes from the shoulder plane and along the Z axis of the timber. The cross section position is measured from a long edge of the timber or the centerline of the timber. A standard tenon may define a bore hole always runs perpendicular to the extrusion direction of the tenon and the length of the tenon. 
+A standard tenon is a rectangular cross section that extrudes from the shoulder plane and along the Z axis of the timber. The cross section position is measured from a long edge of the timber or the centerline of the timber. 
 
 ```
 class StandardTenon:
-    timber : Timber
     shoulder_plane : OrientedShoulderPlane
     # if not provided, the cross section is centered on the centerline of the timber
     pos_rel_to_long_edge : (TimberReferenceLongEdge, V2)?
@@ -250,6 +258,8 @@ class StandardTenon:
     # in the Z axis
     depth : float
 ```
+
+TODO drawbore tenon may define a bore hole always runs perpendicular to the extrusion direction of the tenon and the length of the tenon. 
 
 #### multi-tenon
 
@@ -266,11 +276,10 @@ A mortise is substractive geometry from the a timber. There is no need for a mul
 
 #### standard mortise
 
-a standard mortise consists of a rectangular cross section on a long face of the timber. The cross section is defined by a width (XY dimension), a length (Z dimension), and depth (extrusion depth from face). The cross section dimensions are measured from a reference long edge or centerline of the timber and the end of the timber. A standard mortise can define a bore hole. It always runs perpendicular to the extrusion direction of the mortise and the Z axis of the timber.
+a standard mortise consists of a rectangular cross section on a long face of the timber. The cross section is defined by a width (XY dimension), a length (Z dimension), and depth (extrusion depth from face). The cross section dimensions are measured from a reference long edge or centerline of the timber and the end of the timber. 
 
 ```
 class StandardMortise:
-    timber : Timber
     mortise_face : TimberFace
     pos_rel_to_end : (TimberReferenceEnd, float)
     # if TimberReferenceLongFace is not provided, then the mortise is centered on the centerline of the timber
@@ -283,16 +292,49 @@ class StandardMortise:
     depth : float
 ```
 
+TODO drawbore mortise a standard mortise with a bore hole. It always runs perpendicular to the extrusion direction of the mortise and the Z axis of the timber.
+
 ## joints
 
-Joints connect 2 or more timbers together through substractively modifications on the timbers. In addition, joints my define accesories to support the joints (e.g. a wedge)
+Joints connect 1 or more timbers together through substractively modifications on the timbers. In addition, joints my define accesories to support the joints (e.g. a wedge)
 A timber may have any number of joints. 
 
-TODO how to store timber with joints
 
+```
+# for stuff like wedges, drawbores, etc
+class JointAccessory:
+    # TODO
+
+class Joint:
+    timber_cuts : list[(Timber,[TimberCutOperation, JointAccessory])]    
+```
+
+
+
+```
+# creates a mortise and tenon joint. the tenon is centered on the tenon_timber and the mortise is cut out of the mortise_timber based on the tenon position
+# tenon_length is in the length direction of the mortise_timber
+# tenon_depth is the depth is how deep the tenon extends into the mortise_timber
+# TODO provide optional drawbore arguments
+simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber, tenon_thickness: float, tenon_length: float, tenon_depth: float)
+```
+
+To store joints on the timber, we have:
+```
+class CutTimber:
+    timber : Timber
+    joints : list[TimberCutOperation]
+```
+
+# V1.5 NOTES
+
+
+#### more configurable or complicated joints 
 - mortise_and_tenon_joint 
     - option for tusk and drawbore
     - can handle angled shoulder
+    - position tenon needs: top_relative_face: TimberFace, side_relative_face: TimberFace, 
+    - position mortise needs: side_relative_face: TimberFace, 
 - rafter_joint 
     - a basic substractive joint that cuts the rafter from the ridge beam, purlins, plates etc
 - wedged_dovetail_mortise_and_tenon_joint
@@ -300,21 +342,6 @@ TODO how to store timber with joints
     - TODO figure out how to handle this, you want to define it as a single timber in most cases but sometimes you want to treat it as 2 timbers
 - drop_in_joist
     - supports straight and dovetailed cutouts
-
-
-
-```
-# a mortise and tenon joint cuts a tenon in timber1 and a mortise in timber2. 
-# measurements are always relative to timber1
-# TODO maybe someway to combine distance and relative face together into 1 thing, can assert they are perpendicular
-mortise_and_tenon_joint(timber1: Timber, timber2: Timber, top_relative_face: TimberFace, right_relative_face: TimberFace, 
-```
-
-
-
-
-
-
 
 
 # V2 Notes
