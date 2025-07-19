@@ -1,0 +1,11 @@
+-fix create_axis_aligned_horizontal_timber_on_footprint
+    lets update the create_axis_aligned_horizontal_timber_on_footprint function
+
+    for the # Position based on location type, you need to do the following:
+
+    - first determine the "corner shape" by comparing the neighboring footprint points
+    - determine whether it is an inside corner  or an outside corner
+    - if the footprint locatino type is INSIDE .... 
+
+-support for non axis/face aligned/ non orthogonal timbers? (so you can do things like 60 degree joints for delta printer lol)
+    -support center axis offsets only yay
