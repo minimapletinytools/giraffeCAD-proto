@@ -3,28 +3,23 @@ GiraffeCAD - Timber framing CAD system
 Based on the API specification in morenotes.md
 """
 
-import math
+import numpy as np
+from spatialmath import SE3, SO3, SE2, UnitQuaternion
+from spatialmath.base import *
 from enum import Enum
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from dataclasses import dataclass
 
-# Vector classes
-class V2:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-    
-    def __repr__(self):
-        return f"V2({self.x}, {self.y})"
+# Type aliases for vectors using spatial math
+V2 = SE2  # 2D vector/transformation
+V3 = SE3  # 3D vector/transformation
+Direction3D = SE3  # 3D direction
+EulerAngles = SE3  # 3D rotation
 
-class V3:
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-    
-    def __repr__(self):
-        return f"V3({self.x}, {self.y}, {self.z})"
+# ============================================================================
+# Enums and Basic Types
+# ============================================================================
 
-# Enums
 class TimberLocationType(Enum):
     INSIDE = 1
     CENTER = 2
@@ -38,218 +33,433 @@ class TimberFace(Enum):
     LEFT = 5
     BACK = 6
 
-# Footprint class
+class TimberReferenceEnd(Enum):
+    TOP = 1
+    BOTTOM = 2
+
+class TimberReferenceLongFace(Enum):
+    RIGHT = 3
+    FORWARD = 4
+    LEFT = 5
+    BACK = 6
+
+class TimberReferenceLongEdge(Enum):
+    RIGHT_FORWARD = 7
+    FORWARD_LEFT = 8
+    LEFT_BACK = 9
+    BACK_RIGHT = 10
+
+# ============================================================================
+# Data Structures
+# ============================================================================
+
+@dataclass
+class OrientedShoulderPlane:
+    direction: TimberReferenceEnd
+    distance: float
+    orientation: EulerAngles
+
+@dataclass
+class StandardTenon:
+    shoulder_plane: OrientedShoulderPlane
+    pos_rel_to_long_edge: Optional[Tuple[TimberReferenceLongEdge, V2]]
+    width: float
+    height: float
+    depth: float
+
+@dataclass
+class MultiTenon:
+    tenons: List[StandardTenon]
+
+@dataclass
+class StandardMortise:
+    mortise_face: TimberFace
+    pos_rel_to_end: Tuple[TimberReferenceEnd, float]
+    pos_rel_to_long_face: Optional[Tuple[TimberReferenceLongFace, float]]
+    width: float
+    height: float
+    depth: float
+
+@dataclass
+class FaceAlignedJoinedTimberOffset:
+    reference_face: TimberFace
+    centerline_offset: Optional[float]
+    face_offset: Optional[float]
+
+@dataclass
+class DistanceFromFace:
+    face: TimberFace
+    distance: float
+
+@dataclass
+class DistanceFromLongFace:
+    face: TimberReferenceLongFace
+    distance: float
+
+@dataclass
+class DistanceFromEnd:
+    end: TimberReferenceEnd
+    distance: float
+
+@dataclass
+class DistanceFromLongEdge:
+    edge: TimberReferenceLongEdge
+    distance1: float
+    distance2: float
+
+# ============================================================================
+# Core Classes
+# ============================================================================
+
 class Footprint:
-    def __init__(self, boundary):
+    """A support class representing the footprint of the structure in the XY plane"""
+    
+    def __init__(self, boundary: List[V2]):
         """
-        Initialize footprint with boundary points.
-        
         Args:
-            boundary: List of V2 points defining the boundary
+            boundary: List of points defining the boundary, last point connects to first
         """
-        self.boundary = boundary
-    
-    def get_boundary_segment(self, index):
-        """Get the boundary segment from index to index+1"""
-        start = self.boundary[index]
-        end = self.boundary[(index + 1) % len(self.boundary)]
-        return start, end
-    
-    def get_segment_length(self, index):
-        """Get the length of a boundary segment"""
-        start, end = self.get_boundary_segment(index)
-        dx = end.x - start.x
-        dy = end.y - start.y
-        return math.sqrt(dx*dx + dy*dy)
+        self.boundary: List[V2] = boundary
 
-# Timber class
+class FootprintBoundary:
+    """Represents a boundary line from start_index to start_index + 1"""
+    
+    def __init__(self, start_index: int):
+        self.start_index: int = start_index
+
 class Timber:
-    def __init__(self, name, length, width, height, position=V3(0, 0, 0), orientation=None):
+    """Represents a timber in the timber framing system"""
+    
+    def __init__(self, length: float, size: V2, bottom_position: V3, 
+                 length_direction: Direction3D, face_direction: Direction3D):
         """
-        Initialize a timber.
-        
         Args:
-            name: Name of the timber
-            length: Length in Z direction
-            width: Width in X direction  
-            height: Height in Y direction
-            position: Position in 3D space
-            orientation: Timber orientation (optional)
+            length: Length of the timber
+            size: Cross-sectional size (width, height) as SE2
+            bottom_position: Position of the bottom point (center of cross-section) as SE3
+            length_direction: Direction vector for the length axis as Direction3D
+            face_direction: Direction vector for the face axis as Direction3D
         """
-        self.name = name
-        self.length = length
-        self.width = width
-        self.height = height
-        self.position = position
-        self.orientation = orientation
-        self.true_dimension = V2(width, height)
-        self.bound_dimension = V2(width, height)
+        self.length: float = length
+        self.size: V2 = size
+        self.bottom_position: V3 = bottom_position
+        self.length_direction: Direction3D = length_direction
+        self.face_direction: Direction3D = face_direction
+        self.orientation: SO3
+        
+        # Calculate orientation matrix
+        self._compute_orientation()
     
-    def __repr__(self):
-        return f"Timber('{self.name}', length={self.length}, width={self.width}, height={self.height})"
+    def _compute_orientation(self):
+        """Compute the orientation matrix from length and face directions"""
+        # Get direction vectors from SE3
+        length_vec = self.length_direction.t
+        face_vec = self.face_direction.t
+        
+        # Normalize direction vectors
+        length_norm = length_vec / np.linalg.norm(length_vec)
+        face_norm = face_vec / np.linalg.norm(face_vec)
+        
+        # Cross product to get the third axis
+        height_norm = np.cross(length_norm, face_norm)
+        
+        # Create rotation matrix
+        rotation_matrix = np.column_stack([face_norm, height_norm, length_norm])
+        
+        # Convert to SO3
+        self.orientation = SO3(rotation_matrix)
+    
+    def get_transform(self) -> SE3:
+        """Get the SE3 transform for this timber"""
+        return SE3(self.bottom_position.t) * SE3(self.orientation)
 
-# Timber creation functions
-def create_vertical_timber_on_footprint(footprint, footprint_index, length, location_type=TimberLocationType.INSIDE):
-    """
-    Create a vertical timber (post) on the footprint.
+class TimberCutOperation:
+    """Base class for timber cut operations"""
     
-    Args:
-        footprint: Footprint object
-        footprint_index: Index of the boundary point
-        length: Length of the timber in Z direction
-        location_type: Where to place the timber relative to the boundary
+    def __init__(self, timber: Timber):
+        self.timber: Timber = timber
+
+
+class JointAccessory:
+    """Base class for joint accessories like wedges, drawbores, etc."""
+    pass
+
+class Joint:
+    """Represents a joint connecting timbers"""
     
-    Returns:
-        Timber object
+    def __init__(self):
+        self.timber_cuts: List[Tuple[Timber, List[Union[TimberCutOperation, JointAccessory]]]] = []
+
+class CutTimber:
+    """A timber with applied cuts/joints"""
+    
+    def __init__(self, timber: Timber):
+        self.timber: Timber = timber
+        self.joints: List[TimberCutOperation] = []
+
+# ============================================================================
+# Timber Creation Functions
+# ============================================================================
+
+def create_timber(bottom_position: V3, length: float, size: V2, 
+                  length_direction: Direction3D, face_direction: Direction3D) -> Timber:
     """
+    Creates a timber at bottom_position with given dimensions and rotates it 
+    to the length_direction and face_direction
+    """
+    return Timber(length, size, bottom_position, length_direction, face_direction)
+
+def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
+                              length_direction: TimberFace, face_direction: TimberFace) -> Timber:
+    """
+    Creates an axis-aligned timber using TimberFace to reference directions
+    in the world coordinate system
+    """
+    # Convert TimberFace to direction vectors
+    length_vec = _timber_face_to_vector(length_direction)
+    face_vec = _timber_face_to_vector(face_direction)
+    
+    return create_timber(bottom_position, length, size, length_vec, face_vec)
+
+def create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: int, 
+                                       length: float, location_type: TimberLocationType = TimberLocationType.INSIDE) -> Timber:
+    """
+    Creates a vertical timber (post) on the footprint
+    The length is in the up (+Z) direction
+    The face is in the right (+X) direction
+    """
+    # Get the footprint point
     point = footprint.boundary[footprint_index]
     
-    # For now, use default dimensions
-    width = 3  # inches
-    height = 3  # inches
+    # Convert to 3D position using SE3
+    bottom_position = SE3([point.t[0], point.t[1], 0.0])
     
-    position = V3(point.x, point.y, 0)
+    # Default size for posts using SE2
+    size = SE2([0.09, 0.09])  # 9cm x 9cm
     
-    timber = Timber(f"post_{footprint_index}", length, width, height, position)
-    print(f"Created vertical timber: {timber}")
-    return timber
+    # Vertical direction
+    length_direction = SE3([0.0, 0.0, 1.0])
+    face_direction = SE3([1.0, 0.0, 0.0])
+    
+    return create_timber(bottom_position, length, size, length_direction, face_direction)
 
-def create_horizontal_timber_on_footprint(footprint, footprint_index, length, location_type=TimberLocationType.INSIDE):
+def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, footprint_index: int,
+                                        length: float, location_type: TimberLocationType) -> Timber:
     """
-    Create a horizontal timber (mudsill) on the footprint.
+    Creates an axis aligned horizontal timber (mudsill) on the footprint
+    The left (-X) face is lying on the XY plane
+    The mudsill starts at footprint_index and goes to footprint_index + 1
+    """
+    # Get the footprint points
+    start_point = footprint.boundary[footprint_index]
+    end_point = footprint.boundary[(footprint_index + 1) % len(footprint.boundary)]
     
+    # Calculate direction vector
+    direction = end_point.t - start_point.t
+    direction_3d = np.array([direction[0], direction[1], 0.0])
+    
+    # Normalize
+    direction_3d = direction_3d / np.linalg.norm(direction_3d)
+    
+    # Position based on location type
+    if location_type == TimberLocationType.INSIDE:
+        # Place inside the footprint
+        bottom_position = SE3([start_point.t[0], start_point.t[1], 0.0])
+    elif location_type == TimberLocationType.CENTER:
+        # Center on the footprint line
+        mid_point = (start_point.t + end_point.t) / 2
+        bottom_position = SE3([mid_point[0], mid_point[1], 0.0])
+    else:  # OUTSIDE
+        # Place outside the footprint
+        bottom_position = SE3([start_point.t[0], start_point.t[1], 0.0])
+    
+    # Default size for horizontal timbers using SE2
+    size = SE2([0.3, 0.3])  # 30cm x 30cm
+    
+    # Horizontal direction
+    length_direction = SE3(direction_3d)
+    face_direction = SE3([0.0, 0.0, 1.0])  # Up direction
+    
+    return create_timber(bottom_position, length, size, length_direction, face_direction)
+
+def extend_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: float, 
+                 extend_length: float) -> Timber:
+    """
+    Extends the timber by a given length
     Args:
-        footprint: Footprint object
-        footprint_index: Index of the boundary segment (0-3 for a rectangle)
-        length: Length of the mudsill
-        location_type: Where to place the mudsill relative to the boundary
-    
-    Returns:
-        Timber object
+        end: The end of the timber to extend
+        overlap_length: Length of timber to overlap with existing timber
+        extend_length: Length of timber to extend
     """
-    # Get the boundary segment
-    start_point, end_point = footprint.get_boundary_segment(footprint_index)
+    # Calculate new position based on end
+    if end == TimberReferenceEnd.TOP:
+        # Extend from top
+        new_bottom_position = SE3(timber.bottom_position.t + timber.length_direction * (timber.length - overlap_length))
+    else:  # BOTTOM
+        # Extend from bottom
+        new_bottom_position = SE3(timber.bottom_position.t - timber.length_direction * extend_length)
     
-    # Calculate the actual length of the boundary segment
-    segment_length = footprint.get_segment_length(footprint_index)
+    # Create new timber with extended length
+    new_length = timber.length + extend_length - overlap_length
     
-    # For mudsills, we use the segment length as the timber length
-    # and standard dimensions for width and height
-    width = 3  # inches
-    height = 3  # inches
-    
-    # Position the mudsill at the start point
-    position = V3(start_point.x, start_point.y, 0)
-    
-    # Create the mudsill
-    mudsill_name = f"mudsill_{footprint_index}"
-    mudsill = Timber(mudsill_name, segment_length, width, height, position)
-    
-    print(f"Created horizontal timber: {mudsill}")
-    print(f"  From ({start_point.x}, {start_point.y}) to ({end_point.x}, {end_point.y})")
-    print(f"  Location type: {location_type.name}")
-    
-    return mudsill
+    return Timber(new_length, timber.size, new_bottom_position, 
+                 timber.length_direction, timber.face_direction)
 
-def create_axis_aligned_timber(bottom_position, length, size, length_direction, face_direction):
+def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
+                symmetric_stickout: float, offset_from_timber1: float,
+                location_on_timber2: Optional[float] = None,
+                orientation_face_vector: Optional[Direction3D] = None) -> Timber:
     """
-    Create a timber aligned to the coordinate axes.
-    
-    Args:
-        bottom_position: V3 position of the bottom center of the timber
-        length: Length of the timber in the length_direction
-        size: V2 size (width, height) of the timber cross section
-        length_direction: TimberFace indicating the length direction
-        face_direction: TimberFace indicating the face direction
-    
-    Returns:
-        Timber object
+    Joins two timbers by creating a connecting timber
     """
-    # Create the timber with the given dimensions
-    timber = Timber(
-        name=f"timber_{length_direction.name}_{face_direction.name}",
-        length=length,
-        width=size.x,
-        height=size.y,
-        position=bottom_position
-    )
+    # Calculate position on timber1
+    pos1 = timber1.bottom_position.t + timber1.length_direction * location_on_timber1
     
-    print(f"Created axis-aligned timber: {timber}")
-    print(f"  Position: {bottom_position}")
-    print(f"  Length direction: {length_direction.name}")
-    print(f"  Face direction: {face_direction.name}")
-    
-    return timber 
-
-# FaceAlignedJoinedTimberOffset class
-class FaceAlignedJoinedTimberOffset:
-    def __init__(self, reference_face, centerline_offset=None, face_offset=None):
-        """
-        Determines the offset of timberX from timberA.
-        
-        Args:
-            reference_face: TimberFace - the reference face for the offset
-            centerline_offset: float - offset between centerlines (optional)
-            face_offset: float - offset between faces (optional)
-        """
-        self.reference_face = reference_face
-        self.centerline_offset = centerline_offset
-        self.face_offset = face_offset
-
-def join_perpendicular_on_face_aligned_timbers(timber1, timber2, location_on_timber1, symmetric_stickout, offset_from_timber1, orientation_face_on_timber1=TimberFace.TOP):
-    """
-    Join two face-aligned timbers with a perpendicular timber.
-    
-    Args:
-        timber1: First timber
-        timber2: Second timber  
-        location_on_timber1: Location along timber1's length vector where join is made
-        symmetric_stickout: Distance from centerline to ends of created timber
-        offset_from_timber1: FaceAlignedJoinedTimberOffset object
-        orientation_face_on_timber1: Face on timber1 for orientation (default TOP)
-    
-    Returns:
-        Timber object representing the connecting timber
-    """
-    # Calculate the height needed for the connecting timber
-    # It should span from timber1 to timber2
-    timber1_top = timber1.position.z + timber1.length
-    timber2_bottom = timber2.position.z
-    
-    connecting_length = timber1_top - timber2_bottom
-    
-    # Calculate position based on offset
-    if offset_from_timber1.centerline_offset is not None:
-        # Use centerline offset
-        if offset_from_timber1.reference_face == TimberFace.RIGHT:
-            x_offset = offset_from_timber1.centerline_offset
-        elif offset_from_timber1.reference_face == TimberFace.LEFT:
-            x_offset = -offset_from_timber1.centerline_offset
-        else:
-            x_offset = 0
+    # Calculate position on timber2
+    if location_on_timber2 is not None:
+        pos2 = timber2.bottom_position.t + timber2.length_direction * location_on_timber2
     else:
-        x_offset = 0
+        # Project location_on_timber1 to timber2's Z axis
+        pos2 = pos1.copy()
+        pos2[2] = timber2.bottom_position.t[2] + location_on_timber1
     
-    # Position the connecting timber
-    connecting_position = V3(
-        timber1.position.x + x_offset,
-        timber1.position.y,
-        timber2_bottom
+    # Calculate center position
+    center_pos = (pos1 + pos2) / 2
+    
+    # Calculate length direction (from timber1 to timber2)
+    length_direction = pos2 - pos1
+    length_direction = length_direction / np.linalg.norm(length_direction)
+    length_direction = SE3(length_direction)
+    
+    # Calculate face direction
+    if orientation_face_vector is not None:
+        face_direction = orientation_face_vector
+    else:
+        # Default to up direction
+        face_direction = SE3([0.0, 0.0, 1.0])
+    
+    # Calculate timber length
+    timber_length = float(np.linalg.norm(pos2 - pos1) + 2 * symmetric_stickout)
+    
+    # Default size using SE2
+    size = SE2([0.3, 0.3])
+    
+    # Apply offset
+    if offset_from_timber1 != 0:
+        # Calculate offset direction (cross product of length vectors)
+        offset_dir = np.cross(timber1.length_direction.t, length_direction.t)
+        offset_dir = offset_dir / np.linalg.norm(offset_dir)
+        center_pos += offset_dir * offset_from_timber1
+    
+    return create_timber(SE3(center_pos), timber_length, size, SE3(length_direction), face_direction)
+
+def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
+                                             location_on_timber1: float,
+                                             symmetric_stickout: float,
+                                             offset_from_timber1: FaceAlignedJoinedTimberOffset,
+                                             orientation_face_on_timber1: TimberFace = TimberFace.TOP) -> Timber:
+    """
+    Joins two face-aligned timbers with a perpendicular timber
+    """
+    # Calculate position on timber1
+    pos1 = timber1.bottom_position.t + timber1.length_direction * location_on_timber1
+    
+    # Determine orientation face vector
+    if orientation_face_on_timber1 == TimberFace.TOP:
+        face_vector = SE3([0.0, 0.0, 1.0])
+    elif orientation_face_on_timber1 == TimberFace.BOTTOM:
+        face_vector = SE3([0.0, 0.0, -1.0])
+    elif orientation_face_on_timber1 == TimberFace.RIGHT:
+        face_vector = SE3([1.0, 0.0, 0.0])
+    elif orientation_face_on_timber1 == TimberFace.LEFT:
+        face_vector = SE3([-1.0, 0.0, 0.0])
+    elif orientation_face_on_timber1 == TimberFace.FORWARD:
+        face_vector = SE3([0.0, 1.0, 0.0])
+    else:  # BACK
+        face_vector = SE3([0.0, -1.0, 0.0])
+    
+    # Calculate length direction (perpendicular to timber1)
+    length_direction = np.cross(timber1.length_direction.t, face_vector.t)
+    length_direction = length_direction / np.linalg.norm(length_direction)
+    length_direction = SE3(length_direction)
+    
+    # Calculate timber length based on stickout
+    timber_length = 2 * symmetric_stickout
+    
+    # Default size using SE2
+    size = SE2([0.3, 0.3])
+    
+    # Apply offset
+    if offset_from_timber1.centerline_offset is not None:
+        # Apply centerline offset
+        offset_dir = np.cross(timber1.length_direction.t, length_direction.t)
+        offset_dir = offset_dir / np.linalg.norm(offset_dir)
+        pos1 += offset_dir * offset_from_timber1.centerline_offset
+    
+    return create_timber(SE3(pos1), timber_length, size, length_direction, face_vector)
+
+# ============================================================================
+# Joint Construction Functions
+# ============================================================================
+
+def simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
+                                  tenon_thickness: float, tenon_length: float,
+                                  tenon_depth: float):
+    """
+    Creates a mortise and tenon joint
+    The tenon is centered on the tenon_timber and the mortise is cut out of the mortise_timber
+    """
+    # Create the joint
+    joint = Joint()
+    
+    # Create tenon specification
+    tenon_spec = StandardTenon(
+        shoulder_plane=OrientedShoulderPlane(
+            direction=TimberReferenceEnd.BOTTOM,
+            distance=0.0,
+            orientation=SE3([0.0, 0.0, 0.0])
+        ),
+        pos_rel_to_long_edge=None,  # Centered
+        width=tenon_thickness,
+        height=tenon_thickness,
+        depth=tenon_length
     )
     
-    # Create the connecting timber
-    connecting_timber = Timber(
-        name=f"connecting_{timber1.name}_{timber2.name}",
-        length=connecting_length,
-        width=3,  # Default width
-        height=3,  # Default height
-        position=connecting_position
+    # Create mortise specification
+    mortise_spec = StandardMortise(
+        mortise_face=TimberFace.TOP,
+        pos_rel_to_end=(TimberReferenceEnd.BOTTOM, 0.0),
+        pos_rel_to_long_face=None,  # Centered
+        width=tenon_thickness,
+        height=tenon_length,
+        depth=tenon_depth
     )
     
-    print(f"Created connecting timber: {connecting_timber}")
-    print(f"  Connecting {timber1.name} to {timber2.name}")
-    print(f"  Location on timber1: {location_on_timber1}")
-    print(f"  Symmetric stickout: {symmetric_stickout}")
-    print(f"  Orientation face: {orientation_face_on_timber1.name}")
+    # Create cut operations
+    tenon_cut = TenonCutOperation(tenon_timber, tenon_spec)
+    mortise_cut = MortiseCutOperation(mortise_timber, mortise_spec)
     
-    return connecting_timber 
+    # Add cuts to joint
+    joint.timber_cuts.append((tenon_timber, [tenon_cut]))
+    joint.timber_cuts.append((mortise_timber, [mortise_cut]))
+    
+    return joint
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+def _timber_face_to_vector(face: TimberFace) -> Direction3D:
+    """Convert TimberFace enum to direction vector"""
+    if face == TimberFace.TOP:
+        return SE3([0.0, 0.0, 1.0])
+    elif face == TimberFace.BOTTOM:
+        return SE3([0.0, 0.0, -1.0])
+    elif face == TimberFace.RIGHT:
+        return SE3([1.0, 0.0, 0.0])
+    elif face == TimberFace.LEFT:
+        return SE3([-1.0, 0.0, 0.0])
+    elif face == TimberFace.FORWARD:
+        return SE3([0.0, 1.0, 0.0])
+    else:  # BACK
+        return SE3([0.0, -1.0, 0.0])

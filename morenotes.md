@@ -105,6 +105,14 @@ class TimberOrientation(Enum):
     face_vector : V3
 ```
 
+we say a timber is "axis aligned" if its length vector is parallel to the +Z axis and its face vectors are parallel to either the X or Y axis
+
+
+
+
+
+
+
 #### 
 ```
 enum TimberFace(Enum):
