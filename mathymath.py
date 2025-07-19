@@ -32,7 +32,7 @@ from spatialmath import SE3, SO3, UnitQuaternion
 
 class Rational_Orientation:
     """
-    Represents a 3D orientation in ZYX euler angles with only rational components
+    Represents a 3D orientation in ZYX euler angles with only rational components (stored as radians/pi i.e. just the rational pi multiplier)
     All components are assumed to have no floating point roundoff error
     """
     def __init__(self, rot_Q: Union[Tuple[float, float, float], List[float], np.ndarray]):
@@ -60,6 +60,9 @@ class Rational_Orientation:
         r2y_id = is_zero(r2y)
         r2z_id = is_zero(r2z)
 
+        # TODO if there is floating point roundoff error, just convert to Orientation
+        # TODO handle special case of 90 degree rotations where we can preserve rational components in more cases
+
         # Case 1: r1y and r1x are identity
         if r1y_id and r1x_id:
             new_rz = r1z + r2z
@@ -77,6 +80,12 @@ class Rational_Orientation:
 
         # Fallback: use quaternion composition
         return Orientation(self.rot_Q, SO3.RzRyRx(r2z, r2y, r2x))
+
+    def to_orientation(self) -> 'Orientation':
+        """
+        Convert a Rational_Orientation to an Orientation
+        """
+        return Orientation(self.rot_Q, UnitQuaternion())
 
 
 
@@ -127,7 +136,7 @@ class Orientation:
             
         if is_identity:
             # r1.rot_R is identity
-            new_rot_Q = self.rot_Q + other.rot_Q
+            new_rot_Q = self.rot_Q * other.rot_Q
             new_rot_R = other.rot_R
         else:
             # r1.rot_R is not identity
@@ -149,7 +158,7 @@ class Orientation:
         """Detailed string representation."""
         return f"Orientation(rot_Q={self.rot_Q.tolist()}, rot_R={self.rot_R})"
     
-    def get_quaternion(self) -> UnitQuaternion:
+    def to_quaternion(self) -> UnitQuaternion:
         """
         Get the resulting rotation rot_Q * rot_R as a quaternion.
         
@@ -169,7 +178,7 @@ class Orientation:
         Returns:
             Euler angles [roll, pitch, yaw] in radians
         """
-        combined_quat = self.get_quaternion()
+        combined_quat = self.to_quaternion()
         return combined_quat.eul()
     
     def exact_eq(self, other: 'Orientation') -> bool:
@@ -232,7 +241,7 @@ class Orientation:
         Returns:
             Rotated point
         """
-        combined_quat = self.get_quaternion()
+        combined_quat = self.to_quaternion()
         # Convert to SO3 for point rotation
         so3_rotation = SO3(combined_quat)
         return so3_rotation * point
