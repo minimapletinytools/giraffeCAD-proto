@@ -333,10 +333,10 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, foo
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)
 
-def extend_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: float, 
-                 extend_length: float) -> Timber:
+def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_length: float, 
+                           extend_length: float) -> Timber:
     """
-    Extends the timber by a given length
+    Creates a new timber extending the original timber by a given length
     Args:
         end: The end of the timber to extend
         overlap_length: Length of timber to overlap with existing timber

@@ -220,8 +220,8 @@ class TestTimberCreation:
         assert abs(float(timber.length_direction[0]) - 1.0) < 1e-10
         assert abs(float(timber.length_direction[2])) < 1e-10
     
-    def test_extend_timber(self):
-        """Test timber extension."""
+    def test_create_timber_extension(self):
+        """Test timber extension creation."""
         original_timber = Timber(
             length=2.0,
             size=create_vector2d(0.1, 0.1),
@@ -231,7 +231,7 @@ class TestTimberCreation:
         )
         
         # Extend from top
-        extended = extend_timber(original_timber, TimberReferenceEnd.TOP, 0.5, 1.0)
+        extended = create_timber_extension(original_timber, TimberReferenceEnd.TOP, 0.5, 1.0)
         
         assert extended.length == 2.5  # 2.0 + 1.0 - 0.5
         # Bottom position should have moved up
