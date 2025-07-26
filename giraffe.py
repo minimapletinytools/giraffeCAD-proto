@@ -13,7 +13,6 @@ from dataclasses import dataclass
 V2 = Matrix  # 2D vector - 2x1 Matrix
 V3 = Matrix  # 3D vector - 3x1 Matrix  
 Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
-EulerAngles = Orientation  # 3D rotation using our Orientation class
 
 # ============================================================================
 # Enums and Basic Types
@@ -56,7 +55,7 @@ class TimberReferenceLongEdge(Enum):
 class OrientedShoulderPlane:
     direction: TimberReferenceEnd
     distance: float
-    orientation: EulerAngles
+    orientation: Orientation
 
 @dataclass
 class StandardTenon:
@@ -175,6 +174,7 @@ class Timber:
         self.bottom_position: V3 = bottom_position
         self.length_direction: Direction3D = normalize_vector(length_direction)
         self.face_direction: Direction3D = normalize_vector(face_direction)
+        self.name: Optional[str] = None
         self.orientation: Orientation
         
         # Calculate orientation matrix
@@ -238,6 +238,7 @@ class Joint:
     """Represents a joint connecting timbers"""
     
     def __init__(self):
+        self.name: Optional[str] = None
         self.timber_cuts: List[Tuple[Timber, List[Union[TimberCutOperation, JointAccessory]]]] = []
 
 class CutTimber:
@@ -245,6 +246,7 @@ class CutTimber:
     
     def __init__(self, timber: Timber):
         self.timber: Timber = timber
+        self.name: Optional[str] = timber.name
         self.joints: List[TimberCutOperation] = []
 
 # ============================================================================

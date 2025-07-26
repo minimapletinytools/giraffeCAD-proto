@@ -1,139 +1,194 @@
-IGNORE THIS AI GEN GARBAGE NOT ACCURATE
+# GiraffeCAD
 
-# GiraffeCAD - Timber Framing CAD System
+A Python library for programmatic timber frame design with Fusion 360 integration.
 
-A Python-based CAD system for timber framing design and analysis, based on the API specification in `morenotes.md`.
+## Overview
 
-## Features
+GiraffeCAD is a timber framing design library that allows you to:
+- Create timber structures programmatically using Python
+- Define complex joints (mortise and tenon, etc.)
+- Visualize designs in Autodesk Fusion 360
+- Generate precise cutting instructions
 
-- **Timber Creation**: Create timbers with custom dimensions, positions, and orientations
-- **Footprint Support**: Define building footprints and place timbers relative to them
-- **Joint System**: Create various types of joints including mortise and tenon
-- **Spatial Math Integration**: Uses SE2 for 2D transformations and SE3 for 3D transformations
-- **Type Safety**: Full type annotations for better development experience
+The library uses SymPy for mathematical operations and includes a custom `Orientation` class for 3D rotations.
 
-## Installation
+## Development Setup
 
-1. Install the required dependencies:
+### 1. Clone the Repository
+
+```bash
+git clone <repository-url>
+cd giraffeCAD-proto
+```
+
+### 2. Create and Activate Virtual Environment
+
+```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+
+# On Windows:
+# venv\Scripts\activate
+```
+
+### 3. Install Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-2. The system requires:
-   - `numpy` >= 1.21.0
-   - `spatialmath-python` >= 1.1.0
+### 4. Install Development Dependencies
 
-## Quick Start
+```bash
+pip install pytest
+```
 
-```python
-import numpy as np
-from giraffe import *
+## Running Tests
 
-# Create a footprint
-footprint_points = [
-    SE2([0.0, 0.0]),
-    SE2([5.0, 0.0]),
-    SE2([5.0, 3.0]),
-    SE2([0.0, 3.0])
-]
-footprint = Footprint(footprint_points)
+To run the test suite:
 
-# Create a vertical post
-post = create_vertical_timber_on_footprint(
-    footprint=footprint,
-    footprint_index=0,
-    length=2.5
-)
+```bash
+# Make sure your virtual environment is activated
+source venv/bin/activate
 
-# Create a horizontal beam
-beam = create_horizontal_timber_on_footprint(
-    footprint=footprint,
-    footprint_index=0,
-    length=5.0,
-    location_type=TimberLocationType.CENTER
-)
+# Run all tests
+./venv/bin/python -m pytest tests/ -v
 
-# Create a joint
-joint = simple_mortise_and_tenon_joint(
-    mortise_timber=post,
-    tenon_timber=beam,
-    tenon_thickness=0.1,
-    tenon_length=0.2,
-    tenon_depth=0.15
-)
+# Or run specific test files
+./venv/bin/python -m pytest tests/test_giraffe.py -v
+./venv/bin/python -m pytest tests/test_moothymoth.py -v
+```
+
+The test suite includes:
+- **Vector and matrix operations** - Testing SymPy-based vector math
+- **Orientation class** - Testing 3D rotation matrices and Euler angles
+- **Timber creation** - Testing timber geometry and positioning
+- **Joint construction** - Testing mortise and tenon joint generation
+- **Random testing** - Using randomly generated orientations to verify mathematical properties
+
+## Running the Sawhorse Example
+
+### Basic Python Example
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Run the sawhorse example
+python sawhorse_example.py
+```
+
+This will create a sawhorse structure with all timbers and joints, printing a summary of the generated components.
+
+### Fusion 360 Integration
+
+To render the sawhorse example in Autodesk Fusion 360:
+
+#### 1. Setup Fusion 360 Script Environment
+
+1. Navigate to the `giraffetest/` directory in the project
+2. Install local dependencies for Fusion 360's isolated Python environment:
+
+```bash
+cd giraffetest
+pip install --target libs sympy
+```
+
+#### 2. Add Script to Fusion 360
+
+1. Open Autodesk Fusion 360
+2. Go to **Design** workspace
+3. Click **Utilities** → **ADD-INS** → **Scripts and Add-Ins** (or just `s` and type in "scripts and add-ins")
+4. Click the **+** button next to "My Scripts"
+5. Navigate to the `giraffetest/` folder and select it
+6. You should now see "giraffetest" in your scripts list
+
+#### 3. Run the Script
+
+1. Select "giraffetest" from the scripts list
+2. Click **Run**
+3. The script will:
+   - Clear any existing design
+   - Generate the sawhorse geometry using `sawhorse_example.py`
+   - Render all timbers as 3D components in Fusion 360
+   - Apply proper transformations and positioning
+
+#### 4. What You'll See
+
+The script creates a complete sawhorse with:
+- **Left Mudsill** - Bottom support beam (left side)
+- **Right Mudsill** - Bottom support beam (right side) 
+- **Top Beam** - Horizontal work surface
+- **Left Post** - Vertical support connecting mudsill to beam
+- **Right Post** - Vertical support connecting mudsill to beam
+- **Stretcher** - Horizontal cross-brace between posts
+
+Each timber is rendered as a separate component with:
+- Correct dimensions and cross-sections
+- Proper 3D positioning and orientation
+- Material assignment (wood)
+- Named components for easy identification
+
+#### 5. Troubleshooting Fusion 360
+
+If you encounter issues:
+
+1. **Import errors**: Ensure `sympy` is installed in the `libs/` directory
+2. **Path issues**: The script uses dynamic path importing to load GiraffeCAD modules
+3. **Permission errors**: Make sure Fusion 360 has access to the script directory
+4. **Python version**: Fusion 360 uses its own Python environment
+
+Check the Fusion 360 console for detailed error messages.
+
+## Project Structure
+
+```
+giraffeCAD-proto/
+├── giraffe.py              # Core timber framing library
+├── moothymoth.py           # 3D orientation/rotation class
+├── sawhorse_example.py     # Complete sawhorse example
+├── requirements.txt        # Python dependencies
+├── tests/                  # Test suite
+│   ├── test_giraffe.py
+│   └── test_moothymoth.py
+└── giraffetest/           # Fusion 360 integration
+    ├── giraffetest.py     # Main Fusion 360 script
+    ├── giraffe_render_fusion360.py  # Fusion 360 rendering
+    ├── test_local.py      # Local testing script
+    ├── libs/              # Local dependencies for Fusion 360
+    └── README.md          # Fusion 360 specific documentation
 ```
 
 ## Core Concepts
 
+### Timbers
+- Defined by length, cross-sectional size, position, and orientation
+- Support naming for easy identification
+- Can be extended, joined, and cut with joints
+
+### Orientations
+- 3D rotations using SymPy matrices
+- Support for Euler angles (ZYX sequence)
+- Cardinal direction constants (north, south, east, west, up, down)
+
+### Joints
+- Mortise and tenon joints with customizable dimensions
+- Support for multiple timber connections
+- Automatic cut operation generation
+
 ### Coordinate System
-- XY is the "ground" plane
-- Z is "up"
 - Right-hand coordinate system
-- +X is "right/east", +Y is "forward/north"
+- Z-up (vertical), Y-north, X-east
+- All measurements in meters
 
-### Timber Orientation
-Timbers are oriented using:
-- **Length Direction**: The primary axis of the timber
-- **Face Direction**: The secondary axis defining the face orientation
-- **Bottom Position**: The center point of the bottom cross-section as SE3
-- **Size**: Cross-sectional dimensions as SE2
+## Dependencies
 
-### Footprint System
-The footprint defines the boundary of the structure in the XY plane:
-- List of SE2 transformations defining the boundary
-- Last point connects to the first point
-- Used for positioning timbers relative to the structure
-
-### Joint System
-Joints are created through cut operations:
-- **TenonCutOperation**: Creates tenons (protruding parts)
-- **MortiseCutOperation**: Creates mortises (recessed parts)
-- **Joint**: Groups related cut operations
-
-## API Reference
-
-### Core Classes
-
-- `Timber`: Represents a timber with position, orientation, and dimensions
-- `Footprint`: Defines the building boundary
-- `Joint`: Groups cut operations for connecting timbers
-- `CutTimber`: A timber with applied cuts/joints
-
-### Timber Creation Functions
-
-- `create_timber()`: Create a timber with custom orientation
-- `create_axis_aligned_timber()`: Create axis-aligned timbers
-- `create_vertical_timber_on_footprint()`: Create vertical posts
-- `create_horizontal_timber_on_footprint()`: Create horizontal beams
-- `extend_timber()`: Extend existing timbers
-- `join_timbers()`: Connect two timbers with a new timber
-- `join_perpendicular_on_face_aligned_timbers()`: Join face-aligned timbers
-
-### Joint Functions
-
-- `simple_mortise_and_tenon_joint()`: Create basic mortise and tenon joints
-
-## Example
-
-Run the example script to see a complete timber frame structure:
-
-```bash
-python example.py
-```
-
-This creates a rectangular timber frame with:
-- 4 vertical posts at the corners
-- 4 horizontal beams connecting the posts
-- A mortise and tenon joint
-- A connecting timber between posts
-
-## Development
-
-The system is designed to be extensible. Key areas for extension:
-- Additional joint types (dovetail, splice, etc.)
-- More complex cut operations
-- Visualization and export capabilities
-- Analysis tools for structural integrity
+- **SymPy** (≥1.12.0) - Symbolic mathematics and matrix operations
+- **Pytest** - Testing framework (development only)
 
 ## License
 
