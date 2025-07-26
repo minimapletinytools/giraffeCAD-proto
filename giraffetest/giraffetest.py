@@ -17,10 +17,17 @@ if libs_dir not in sys.path:
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-# Import our GiraffeCAD modules
+# Import our GiraffeCAD modules from parent directory
 try:
+    # Import from parent directory - these files are NOT copied locally
     from sawhorse_example import create_sawhorse
     from giraffe_render_fusion360 import render_multiple_timbers, clear_design
+    
+    # Test that core dependencies are available
+    import sympy
+    from moothymoth import Orientation
+    from giraffe import CutTimber
+    
     import_success = True
     import_error = None
 except ImportError as e:
@@ -42,7 +49,9 @@ def run(_context: str):
     try:
         # Check if imports were successful
         if not import_success:
-            ui.messageBox(f'Failed to import required modules: {import_error}\n\nMake sure the GiraffeCAD modules and dependencies are available.')
+            ui.messageBox(f'Failed to import required modules: {import_error}\n\n'
+                         f'Make sure the GiraffeCAD modules are in the parent directory and '
+                         f'sympy is installed in the libs/ folder.')
             return
 
         # Clear the current design first
