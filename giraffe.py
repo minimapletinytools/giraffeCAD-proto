@@ -172,19 +172,17 @@ class Timber:
         self.length: float = length
         self.size: V2 = size
         self.bottom_position: V3 = bottom_position
-        self.length_direction: Direction3D = normalize_vector(length_direction)
-        self.face_direction: Direction3D = normalize_vector(face_direction)
         self.name: Optional[str] = None
         self.orientation: Orientation
         
-        # Calculate orientation matrix
-        self._compute_orientation()
+        # Calculate orientation matrix from input directions
+        self._compute_orientation(length_direction, face_direction)
     
-    def _compute_orientation(self):
+    def _compute_orientation(self, length_direction: Direction3D, face_direction: Direction3D):
         """Compute the orientation matrix from length and face directions"""
         # Normalize direction vectors
-        length_norm = self.length_direction
-        face_norm = self.face_direction
+        length_norm = normalize_vector(length_direction)
+        face_norm = normalize_vector(face_direction)
         
         # Cross product to get the third axis
         height_norm = normalize_vector(cross_product(length_norm, face_norm))
@@ -198,6 +196,36 @@ class Timber:
         
         # Convert to Orientation
         self.orientation = Orientation(rotation_matrix)
+    
+    @property
+    def length_direction(self) -> Direction3D:
+        """Get the length direction vector from the orientation matrix"""
+        # Length direction is the 3rd column (index 2) of the rotation matrix
+        return Matrix([
+            self.orientation.matrix[0, 2],
+            self.orientation.matrix[1, 2],
+            self.orientation.matrix[2, 2]
+        ])
+    
+    @property
+    def face_direction(self) -> Direction3D:
+        """Get the face direction vector from the orientation matrix"""
+        # Face direction is the 1st column (index 0) of the rotation matrix
+        return Matrix([
+            self.orientation.matrix[0, 0],
+            self.orientation.matrix[1, 0],
+            self.orientation.matrix[2, 0]
+        ])
+    
+    @property
+    def height_direction(self) -> Direction3D:
+        """Get the height direction vector from the orientation matrix"""
+        # Height direction is the 2nd column (index 1) of the rotation matrix
+        return Matrix([
+            self.orientation.matrix[0, 1],
+            self.orientation.matrix[1, 1],
+            self.orientation.matrix[2, 1]
+        ])
     
     def get_transform_matrix(self) -> Matrix:
         """Get the 4x4 transformation matrix for this timber"""

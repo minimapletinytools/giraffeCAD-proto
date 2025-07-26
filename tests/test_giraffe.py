@@ -145,6 +145,131 @@ class TestTimber:
         assert float(transform[1, 3]) == 2.0
         assert float(transform[2, 3]) == 3.0
         assert float(transform[3, 3]) == 1.0
+    
+    def test_orientation_computed_from_directions(self):
+        """Test that orientation is correctly computed from input face and length directions."""
+        # Test with standard vertical timber facing east
+        input_length_dir = create_vector3d(0.0, 0.0, 1.0)  # Up
+        input_face_dir = create_vector3d(1.0, 0.0, 0.0)    # East
+        
+        timber = Timber(
+            length=2.0,
+            size=create_vector2d(0.1, 0.1),
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length_direction=input_length_dir,
+            face_direction=input_face_dir
+        )
+        
+        # Verify that the property getters return the correct normalized directions
+        length_dir = timber.length_direction
+        face_dir = timber.face_direction
+        height_dir = timber.height_direction
+        
+        # Check that returned directions match input (within tolerance)
+        assert abs(float(length_dir[0]) - 0.0) < 1e-10
+        assert abs(float(length_dir[1]) - 0.0) < 1e-10
+        assert abs(float(length_dir[2]) - 1.0) < 1e-10
+        
+        assert abs(float(face_dir[0]) - 1.0) < 1e-10
+        assert abs(float(face_dir[1]) - 0.0) < 1e-10
+        assert abs(float(face_dir[2]) - 0.0) < 1e-10
+        
+        # Height direction should be cross product of length x face = Z x X = Y
+        assert abs(float(height_dir[0]) - 0.0) < 1e-10
+        assert abs(float(height_dir[1]) - 1.0) < 1e-10
+        assert abs(float(height_dir[2]) - 0.0) < 1e-10
+    
+    def test_orientation_with_horizontal_timber(self):
+        """Test orientation computation with a horizontal timber."""
+        # Horizontal timber running north, facing up
+        input_length_dir = create_vector3d(0.0, 1.0, 0.0)  # North
+        input_face_dir = create_vector3d(0.0, 0.0, 1.0)    # Up
+        
+        timber = Timber(
+            length=3.0,
+            size=create_vector2d(0.1, 0.1),
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length_direction=input_length_dir,
+            face_direction=input_face_dir
+        )
+        
+        length_dir = timber.length_direction
+        face_dir = timber.face_direction
+        height_dir = timber.height_direction
+        
+        # Check length direction (north)
+        assert abs(float(length_dir[0]) - 0.0) < 1e-10
+        assert abs(float(length_dir[1]) - 1.0) < 1e-10
+        assert abs(float(length_dir[2]) - 0.0) < 1e-10
+        
+        # Check face direction (up)
+        assert abs(float(face_dir[0]) - 0.0) < 1e-10
+        assert abs(float(face_dir[1]) - 0.0) < 1e-10
+        assert abs(float(face_dir[2]) - 1.0) < 1e-10
+        
+        # Height direction should be Y x Z = +X (east)
+        assert abs(float(height_dir[0]) - 1.0) < 1e-10
+        assert abs(float(height_dir[1]) - 0.0) < 1e-10
+        assert abs(float(height_dir[2]) - 0.0) < 1e-10
+    
+    def test_orientation_directions_are_orthonormal(self):
+        """Test that the computed direction vectors form an orthonormal basis."""
+        timber = Timber(
+            length=1.0,
+            size=create_vector2d(0.1, 0.1),
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length_direction=create_vector3d(1.0, 1.0, 0.0),  # Non-axis-aligned
+            face_direction=create_vector3d(0.0, 0.0, 1.0)     # Up
+        )
+        
+        length_dir = timber.length_direction
+        face_dir = timber.face_direction
+        height_dir = timber.height_direction
+        
+        # Check that each vector has unit length
+        length_mag = float(sqrt(sum(x**2 for x in length_dir)))
+        face_mag = float(sqrt(sum(x**2 for x in face_dir)))
+        height_mag = float(sqrt(sum(x**2 for x in height_dir)))
+        
+        assert abs(length_mag - 1.0) < 1e-10
+        assert abs(face_mag - 1.0) < 1e-10
+        assert abs(height_mag - 1.0) < 1e-10
+        
+        # Check that vectors are orthogonal (dot products = 0)
+        length_face_dot = float(sum(length_dir[i] * face_dir[i] for i in range(3)))
+        length_height_dot = float(sum(length_dir[i] * height_dir[i] for i in range(3)))
+        face_height_dot = float(sum(face_dir[i] * height_dir[i] for i in range(3)))
+        
+        assert abs(length_face_dot) < 1e-10
+        assert abs(length_height_dot) < 1e-10
+        assert abs(face_height_dot) < 1e-10
+    
+    def test_orientation_handles_non_normalized_inputs(self):
+        """Test that orientation computation works with non-normalized input vectors."""
+        # Use vectors that aren't unit length
+        input_length_dir = create_vector3d(0.0, 0.0, 5.0)  # Up, but length 5
+        input_face_dir = create_vector3d(3.0, 0.0, 0.0)    # East, but length 3
+        
+        timber = Timber(
+            length=1.0,
+            size=create_vector2d(0.1, 0.1),
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length_direction=input_length_dir,
+            face_direction=input_face_dir
+        )
+        
+        # Despite non-normalized inputs, the output should be normalized
+        length_dir = timber.length_direction
+        face_dir = timber.face_direction
+        
+        # Check that directions are normalized
+        assert abs(float(length_dir[0]) - 0.0) < 1e-10
+        assert abs(float(length_dir[1]) - 0.0) < 1e-10
+        assert abs(float(length_dir[2]) - 1.0) < 1e-10
+        
+        assert abs(float(face_dir[0]) - 1.0) < 1e-10
+        assert abs(float(face_dir[1]) - 0.0) < 1e-10
+        assert abs(float(face_dir[2]) - 0.0) < 1e-10
 
 
 class TestTimberCreation:
