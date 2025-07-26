@@ -1,3 +1,5 @@
+IGNORE THIS AI GEN GARBAGE NOT ACCURATE
+
 # GiraffeCAD - Timber Framing CAD System
 
 A Python-based CAD system for timber framing design and analysis, based on the API specification in `morenotes.md`.
