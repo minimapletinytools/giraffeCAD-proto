@@ -3,7 +3,6 @@ GiraffeCAD - Timber framing CAD system
 Based on the API specification in morenotes.md
 """
 
-import numpy as np
 from sympy import Matrix, sqrt, simplify, Float
 from moothymoth import Orientation
 from enum import Enum

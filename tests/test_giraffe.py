@@ -5,7 +5,6 @@ This module contains tests for the GiraffeCAD timber framing CAD system.
 """
 
 import pytest
-import numpy as np
 from sympy import Matrix, sqrt, simplify, Abs
 from moothymoth import Orientation
 from giraffe import *
