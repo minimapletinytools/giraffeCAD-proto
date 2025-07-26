@@ -56,32 +56,42 @@ def create_matrix3d_from_orientation(position: Matrix, orientation: Orientation)
         raise RuntimeError("Cannot access Fusion 360 application")
     
     # Create Fusion 360 Matrix3D
-    # Matrix3D constructor takes 16 values for a 4x4 transformation matrix
-    # arranged in row-major order
     matrix3d = adsk.core.Matrix3D.create()
     
     # Extract rotation matrix values (convert sympy expressions to floats)
-    r00 = float(orientation.matrix[0, 0])
-    r01 = float(orientation.matrix[0, 1]) 
-    r02 = float(orientation.matrix[0, 2])
-    r10 = float(orientation.matrix[1, 0])
-    r11 = float(orientation.matrix[1, 1])
-    r12 = float(orientation.matrix[1, 2])
-    r20 = float(orientation.matrix[2, 0])
-    r21 = float(orientation.matrix[2, 1])
-    r22 = float(orientation.matrix[2, 2])
+    # The orientation matrix columns are [face_direction, height_direction, length_direction]
+    # For Fusion 360, we want to create a coordinate system where:
+    # - X-axis (col 0) = face_direction (width of timber)
+    # - Y-axis (col 1) = height_direction (height of timber)  
+    # - Z-axis (col 2) = length_direction (length of timber for extrusion)
+    r00 = float(orientation.matrix[0, 0])  # face_direction.x
+    r01 = float(orientation.matrix[0, 1])  # height_direction.x
+    r02 = float(orientation.matrix[0, 2])  # length_direction.x
+    r10 = float(orientation.matrix[1, 0])  # face_direction.y
+    r11 = float(orientation.matrix[1, 1])  # height_direction.y
+    r12 = float(orientation.matrix[1, 2])  # length_direction.y
+    r20 = float(orientation.matrix[2, 0])  # face_direction.z
+    r21 = float(orientation.matrix[2, 1])  # height_direction.z
+    r22 = float(orientation.matrix[2, 2])  # length_direction.z
     
     # Extract translation values
     tx = float(position[0])
     ty = float(position[1])
     tz = float(position[2])
     
-    # Set the matrix values (4x4 transformation matrix)
+    # Debug output
+    print(f"Creating transformation matrix:")
+    print(f"  Position: ({tx:.3f}, {ty:.3f}, {tz:.3f})")
+    print(f"  Face dir:   ({r00:.3f}, {r10:.3f}, {r20:.3f})")
+    print(f"  Height dir: ({r01:.3f}, {r11:.3f}, {r21:.3f})")
+    print(f"  Length dir: ({r02:.3f}, {r12:.3f}, {r22:.3f})")
+    
+    # Set the matrix values (4x4 transformation matrix in row-major order)
     matrix3d.setWithArray([
-        r00, r01, r02, tx,   # First row
-        r10, r11, r12, ty,   # Second row  
-        r20, r21, r22, tz,   # Third row
-        0.0, 0.0, 0.0, 1.0   # Fourth row
+        r00, r01, r02, tx,   # First row:  [face.x, height.x, length.x, pos.x]
+        r10, r11, r12, ty,   # Second row: [face.y, height.y, length.y, pos.y]
+        r20, r21, r22, tz,   # Third row:  [face.z, height.z, length.z, pos.z]
+        0.0, 0.0, 0.0, 1.0   # Fourth row: [0, 0, 0, 1]
     ])
     
     return matrix3d
@@ -110,11 +120,11 @@ def render_CutTimber(cut_timber: CutTimber, component_name: Optional[str] = None
         
         # Create a new component for this timber
         if component_name is None:
-            component_name = "Timber"
-        
-        occurrence = root_comp.occurrences.addNewComponent(adsk.core.Matrix3D.create())
-        timber_component = occurrence.component
-        timber_component.name = component_name
+            # Use the timber's name if it has one, otherwise default to "Timber"
+            if cut_timber.name and cut_timber.name.strip():
+                component_name = cut_timber.name
+            else:
+                component_name = "Timber"
         
         # Get timber properties
         timber = cut_timber.timber
@@ -127,10 +137,35 @@ def render_CutTimber(cut_timber: CutTimber, component_name: Optional[str] = None
         width_cm = width * 100
         height_cm = height * 100
         
-        # Create the transformation matrix for the timber
+        # Create a new component first (at identity)
+        occurrence = root_comp.occurrences.addNewComponent(adsk.core.Matrix3D.create())
+        timber_component = occurrence.component
+        timber_component.name = component_name
+        
+        print(f"Created component: {component_name}")
+        print(f"  Timber position: ({float(timber.bottom_position[0]):.3f}, {float(timber.bottom_position[1]):.3f}, {float(timber.bottom_position[2]):.3f})")
+        print(f"  Timber size: {float(timber.size[0]):.3f} x {float(timber.size[1]):.3f} x {length:.3f}")
+        print(f"  Timber name: {timber.name}")
+        
+        # Create the transformation matrix for the timber (including unit conversion)
         transform = create_matrix3d_from_orientation(timber.bottom_position, timber.orientation)
         
-        # Create a sketch on the XY plane of the component
+        # Scale the transformation from meters to centimeters
+        transform_cm = adsk.core.Matrix3D.create()
+        
+        # Copy the rotation part
+        for i in range(3):
+            for j in range(3):
+                transform_cm.setCell(i, j, transform.getCell(i, j))
+        
+        # Scale and copy the translation part (convert from meters to cm)
+        transform_cm.setCell(0, 3, transform.getCell(0, 3) * 100)
+        transform_cm.setCell(1, 3, transform.getCell(1, 3) * 100) 
+        transform_cm.setCell(2, 3, transform.getCell(2, 3) * 100)
+        transform_cm.setCell(3, 3, 1.0)
+        
+        # Create a sketch on the XY plane of the component (timber cross-section)
+        # The timber will be oriented so length is along Z, width along X, height along Y
         sketches = timber_component.sketches
         xy_plane = timber_component.xYConstructionPlane
         sketch = sketches.add(xy_plane)
@@ -167,7 +202,7 @@ def render_CutTimber(cut_timber: CutTimber, component_name: Optional[str] = None
             print("Error: Could not create profile for extrusion")
             return False
         
-        # Create an extrusion
+        # Create an extrusion along the Z-axis (length direction in local coordinates)
         extrudes = timber_component.features.extrudeFeatures
         extrude_input = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         
@@ -182,23 +217,14 @@ def render_CutTimber(cut_timber: CutTimber, component_name: Optional[str] = None
             print("Error: Could not create extrusion")
             return False
         
-        # Apply the transformation to position the timber correctly
-        # Scale the transformation from meters to centimeters
-        transform_cm = adsk.core.Matrix3D.create()
-        
-        # Copy the rotation part
-        for i in range(3):
-            for j in range(3):
-                transform_cm.setCell(i, j, transform.getCell(i, j))
-        
-        # Scale and copy the translation part (convert from meters to cm)
-        transform_cm.setCell(0, 3, transform.getCell(0, 3) * 100)
-        transform_cm.setCell(1, 3, transform.getCell(1, 3) * 100) 
-        transform_cm.setCell(2, 3, transform.getCell(2, 3) * 100)
-        transform_cm.setCell(3, 3, 1.0)
+        # Apply the transformation to the component AFTER creating the geometry
+        print(f"Applying transformation to {component_name}:")
+        print(f"  Translation (cm): ({transform_cm.getCell(0,3):.3f}, {transform_cm.getCell(1,3):.3f}, {transform_cm.getCell(2,3):.3f})")
         
         # Set the occurrence transform
         occurrence.transform = transform_cm
+        
+        print(f"  Transform applied successfully")
         
         # Set the timber material/appearance (optional)
         timber_body = extrude.bodies.item(0)
@@ -245,13 +271,19 @@ def render_multiple_timbers(cut_timbers: list[CutTimber], base_name: str = "Timb
     """
     success_count = 0
     
-    for i, cut_timber in enumerate(cut_timbers):
-        component_name = f"{base_name}_{i+1:03d}"
-        if render_CutTimber(cut_timber, component_name):
+    print(f"Starting to render {len(cut_timbers)} timbers...")
+    
+    for i, cut_timber in enumerate(cut_timbers):            
+        print(f"\n--- Rendering timber {i+1}/{len(cut_timbers)} ---")
+        
+        # Let render_CutTimber use the timber's name automatically
+        if render_CutTimber(cut_timber, None):
             success_count += 1
         else:
-            print(f"Failed to render timber {i+1}")
+            timber_name = cut_timber.name if cut_timber.name else f"{base_name}_{i+1:03d}"
+            print(f"✗ Failed to render timber {timber_name}")
     
+    print(f"\n=== SUMMARY ===")
     print(f"Successfully rendered {success_count} out of {len(cut_timbers)} timbers")
     return success_count
 
