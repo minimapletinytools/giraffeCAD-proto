@@ -6,7 +6,7 @@ This module contains tests for the Orientation class which represents
 """
 
 import pytest
-import numpy as np
+import math
 from sympy import Matrix, pi, simplify, Abs, eye, det
 from moothymoth import Orientation
 import random
@@ -26,10 +26,10 @@ def generate_random_orientation() -> Orientation:
     u1, u2, u3 = [random.random() for _ in range(3)]
     
     # Convert to unit quaternion components
-    q0 = np.sqrt(1 - u1) * np.sin(2 * np.pi * u2)
-    q1 = np.sqrt(1 - u1) * np.cos(2 * np.pi * u2)
-    q2 = np.sqrt(u1) * np.sin(2 * np.pi * u3)
-    q3 = np.sqrt(u1) * np.cos(2 * np.pi * u3)
+    q0 = math.sqrt(1 - u1) * math.sin(2 * math.pi * u2)
+    q1 = math.sqrt(1 - u1) * math.cos(2 * math.pi * u2)
+    q2 = math.sqrt(u1) * math.sin(2 * math.pi * u3)
+    q3 = math.sqrt(u1) * math.cos(2 * math.pi * u3)
     
     # Convert quaternion to rotation matrix
     matrix = [
