@@ -198,10 +198,10 @@ create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: int, 
 # the mudsill starts at footprint_index and goes to footprint_index + 1
 create_horizontal_timber_on_footprint(footprint: Footprint, footprint_index: int, length: float, location_type: TimberLocationType) -> Timber
 
-# extend the timber by a given length, the end is the end of the timber to extend
+# create a timber extension by extending the given timber, the end is the end of the timber to extend
 # overlap_length is the length of the timber to overlap with the existing timber
 # extend_length is the length of the timber to extend
-extend_timber(timber: Timber, end: TimberEnd, overlap_length: float, extend_length: float) -> Timber
+create_timber_extension(timber: Timber, end: TimberEnd, overlap_length: float, extend_length: float) -> Timber
 
 # TODO instead of symmetric_stickout, you should do stickout : V2 since you might be joining beams of different sizes
 
