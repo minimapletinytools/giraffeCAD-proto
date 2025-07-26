@@ -6,10 +6,10 @@ This directory contains a complete, self-contained Fusion 360 script for renderi
 
 ### Core Files
 - **`giraffetest.py`** - Main Fusion 360 script (run this in Fusion 360)
-- **`giraffe.py`** - Core GiraffeCAD timber framing library
-- **`moothymoth.py`** - 3D orientation and rotation math using sympy
-- **`giraffe_render_fusion360.py`** - Fusion 360 rendering engine
-- **`sawhorse_example.py`** - Complete sawhorse example with joints
+- **`../giraffe.py`** - Core GiraffeCAD timber framing library (imported from parent)
+- **`../moothymoth.py`** - 3D orientation and rotation math using sympy (imported from parent)
+- **`../giraffe_render_fusion360.py`** - Fusion 360 rendering engine (imported from parent)
+- **`../sawhorse_example.py`** - Complete sawhorse example with joints (imported from parent)
 
 ### Local Dependencies
 - **`libs/`** - Contains locally installed Python packages:
@@ -79,14 +79,22 @@ pip install --target ./libs sympy
 
 This ensures Fusion 360's isolated Python environment can access them.
 
+### Path Import Benefits
+- **No file duplication** - GiraffeCAD modules are imported from the parent directory
+- **Always up-to-date** - Changes to the main modules are immediately available
+- **Cleaner structure** - Only dependencies and the main script are in the giraffetest folder
+- **Easier maintenance** - Single source of truth for all GiraffeCAD code
+
 ### Architecture
 ```
-giraffetest.py
-├── sawhorse_example.py (creates timber structure)
-│   ├── giraffe.py (timber framing library)
-│   └── moothymoth.py (3D math with sympy)
-└── giraffe_render_fusion360.py (renders in Fusion 360)
-    └── libs/ (local dependencies)
+giraffetest/
+├── giraffetest.py (main script)
+├── libs/ (local dependencies: sympy, mpmath)
+└── imports from parent directory:
+    ├── ../sawhorse_example.py (creates timber structure)
+    ├── ../giraffe.py (timber framing library)
+    ├── ../moothymoth.py (3D math with sympy)
+    └── ../giraffe_render_fusion360.py (renders in Fusion 360)
 ```
 
 ## 🔧 Troubleshooting
