@@ -4,17 +4,17 @@ Based on the API specification in morenotes.md
 """
 
 import numpy as np
-from spatialmath import SE3, SO3, SE2, UnitQuaternion
-from spatialmath.base import *
+from sympy import Matrix, sqrt, simplify, Float
+from moothymoth import Orientation
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 from dataclasses import dataclass
 
-# Type aliases for vectors using spatial math
-V2 = SE2  # 2D vector/transformation
-V3 = SE3  # 3D vector/transformation
-Direction3D = SE3  # 3D direction
-EulerAngles = SE3  # 3D rotation
+# Type aliases for vectors using sympy
+V2 = Matrix  # 2D vector - 2x1 Matrix
+V3 = Matrix  # 3D vector - 3x1 Matrix  
+Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
+EulerAngles = Orientation  # 3D rotation using our Orientation class
 
 # ============================================================================
 # Enums and Basic Types
@@ -108,6 +108,37 @@ class DistanceFromLongEdge:
     distance2: float
 
 # ============================================================================
+# Helper Functions for Vector Operations
+# ============================================================================
+
+def create_vector2d(x: float, y: float) -> V2:
+    """Create a 2D vector"""
+    return Matrix([x, y])
+
+def create_vector3d(x: float, y: float, z: float) -> V3:
+    """Create a 3D vector"""
+    return Matrix([x, y, z])
+
+def normalize_vector(vec: Matrix) -> Matrix:
+    """Normalize a vector"""
+    norm = float(sqrt(sum(x**2 for x in vec)))
+    if norm == 0:
+        return vec
+    return vec / norm
+
+def cross_product(v1: V3, v2: V3) -> V3:
+    """Calculate cross product of two 3D vectors"""
+    return Matrix([
+        v1[1]*v2[2] - v1[2]*v2[1],
+        v1[2]*v2[0] - v1[0]*v2[2], 
+        v1[0]*v2[1] - v1[1]*v2[0]
+    ])
+
+def vector_magnitude(vec: Matrix) -> float:
+    """Calculate magnitude of a vector"""
+    return float(sqrt(sum(x**2 for x in vec)))
+
+# ============================================================================
 # Core Classes
 # ============================================================================
 
@@ -135,43 +166,50 @@ class Timber:
         """
         Args:
             length: Length of the timber
-            size: Cross-sectional size (width, height) as SE2
-            bottom_position: Position of the bottom point (center of cross-section) as SE3
-            length_direction: Direction vector for the length axis as Direction3D
-            face_direction: Direction vector for the face axis as Direction3D
+            size: Cross-sectional size (width, height) as 2D vector
+            bottom_position: Position of the bottom point (center of cross-section) as 3D vector
+            length_direction: Direction vector for the length axis as 3D vector
+            face_direction: Direction vector for the face axis as 3D vector
         """
         self.length: float = length
         self.size: V2 = size
         self.bottom_position: V3 = bottom_position
-        self.length_direction: Direction3D = length_direction
-        self.face_direction: Direction3D = face_direction
-        self.orientation: SO3
+        self.length_direction: Direction3D = normalize_vector(length_direction)
+        self.face_direction: Direction3D = normalize_vector(face_direction)
+        self.orientation: Orientation
         
         # Calculate orientation matrix
         self._compute_orientation()
     
     def _compute_orientation(self):
         """Compute the orientation matrix from length and face directions"""
-        # Get direction vectors from SE3
-        length_vec = self.length_direction.t
-        face_vec = self.face_direction.t
-        
         # Normalize direction vectors
-        length_norm = length_vec / np.linalg.norm(length_vec)
-        face_norm = face_vec / np.linalg.norm(face_vec)
+        length_norm = self.length_direction
+        face_norm = self.face_direction
         
         # Cross product to get the third axis
-        height_norm = np.cross(length_norm, face_norm)
+        height_norm = normalize_vector(cross_product(length_norm, face_norm))
         
-        # Create rotation matrix
-        rotation_matrix = np.column_stack([face_norm, height_norm, length_norm])
+        # Create rotation matrix [face_norm, height_norm, length_norm]
+        rotation_matrix = Matrix([
+            [face_norm[0], height_norm[0], length_norm[0]],
+            [face_norm[1], height_norm[1], length_norm[1]],
+            [face_norm[2], height_norm[2], length_norm[2]]
+        ])
         
-        # Convert to SO3
-        self.orientation = SO3(rotation_matrix)
+        # Convert to Orientation
+        self.orientation = Orientation(rotation_matrix)
     
-    def get_transform(self) -> SE3:
-        """Get the SE3 transform for this timber"""
-        return SE3(self.bottom_position.t) * SE3(self.orientation)
+    def get_transform_matrix(self) -> Matrix:
+        """Get the 4x4 transformation matrix for this timber"""
+        # Create 4x4 transformation matrix
+        transform = Matrix([
+            [self.orientation.matrix[0,0], self.orientation.matrix[0,1], self.orientation.matrix[0,2], self.bottom_position[0]],
+            [self.orientation.matrix[1,0], self.orientation.matrix[1,1], self.orientation.matrix[1,2], self.bottom_position[1]],
+            [self.orientation.matrix[2,0], self.orientation.matrix[2,1], self.orientation.matrix[2,2], self.bottom_position[2]],
+            [0, 0, 0, 1]
+        ])
+        return transform
 
 class TimberCutOperation:
     """Base class for timber cut operations"""
@@ -179,6 +217,19 @@ class TimberCutOperation:
     def __init__(self, timber: Timber):
         self.timber: Timber = timber
 
+class TenonCutOperation(TimberCutOperation):
+    """Tenon cut operation"""
+    
+    def __init__(self, timber: Timber, tenon_spec: StandardTenon):
+        super().__init__(timber)
+        self.tenon_spec = tenon_spec
+
+class MortiseCutOperation(TimberCutOperation):
+    """Mortise cut operation"""
+    
+    def __init__(self, timber: Timber, mortise_spec: StandardMortise):
+        super().__init__(timber)
+        self.mortise_spec = mortise_spec
 
 class JointAccessory:
     """Base class for joint accessories like wedges, drawbores, etc."""
@@ -231,15 +282,15 @@ def create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: i
     # Get the footprint point
     point = footprint.boundary[footprint_index]
     
-    # Convert to 3D position using SE3
-    bottom_position = SE3([point.t[0], point.t[1], 0.0])
+    # Convert to 3D position
+    bottom_position = create_vector3d(float(point[0]), float(point[1]), 0.0)
     
-    # Default size for posts using SE2
-    size = SE2([0.09, 0.09])  # 9cm x 9cm
+    # Default size for posts
+    size = create_vector2d(0.09, 0.09)  # 9cm x 9cm
     
     # Vertical direction
-    length_direction = SE3([0.0, 0.0, 1.0])
-    face_direction = SE3([1.0, 0.0, 0.0])
+    length_direction = create_vector3d(0.0, 0.0, 1.0)
+    face_direction = create_vector3d(1.0, 0.0, 0.0)
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)
 
@@ -255,30 +306,30 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, foo
     end_point = footprint.boundary[(footprint_index + 1) % len(footprint.boundary)]
     
     # Calculate direction vector
-    direction = end_point.t - start_point.t
-    direction_3d = np.array([direction[0], direction[1], 0.0])
+    direction = Matrix([float(end_point[0] - start_point[0]), float(end_point[1] - start_point[1]), 0.0])
     
     # Normalize
-    direction_3d = direction_3d / np.linalg.norm(direction_3d)
+    direction_3d = normalize_vector(direction)
     
     # Position based on location type
     if location_type == TimberLocationType.INSIDE:
         # Place inside the footprint
-        bottom_position = SE3([start_point.t[0], start_point.t[1], 0.0])
+        bottom_position = create_vector3d(float(start_point[0]), float(start_point[1]), 0.0)
     elif location_type == TimberLocationType.CENTER:
         # Center on the footprint line
-        mid_point = (start_point.t + end_point.t) / 2
-        bottom_position = SE3([mid_point[0], mid_point[1], 0.0])
+        mid_x = float((start_point[0] + end_point[0]) / 2)
+        mid_y = float((start_point[1] + end_point[1]) / 2)
+        bottom_position = create_vector3d(mid_x, mid_y, 0.0)
     else:  # OUTSIDE
         # Place outside the footprint
-        bottom_position = SE3([start_point.t[0], start_point.t[1], 0.0])
+        bottom_position = create_vector3d(float(start_point[0]), float(start_point[1]), 0.0)
     
-    # Default size for horizontal timbers using SE2
-    size = SE2([0.3, 0.3])  # 30cm x 30cm
+    # Default size for horizontal timbers
+    size = create_vector2d(0.3, 0.3)  # 30cm x 30cm
     
     # Horizontal direction
-    length_direction = SE3(direction_3d)
-    face_direction = SE3([0.0, 0.0, 1.0])  # Up direction
+    length_direction = direction_3d
+    face_direction = create_vector3d(0.0, 0.0, 1.0)  # Up direction
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)
 
@@ -294,10 +345,12 @@ def extend_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: float
     # Calculate new position based on end
     if end == TimberReferenceEnd.TOP:
         # Extend from top
-        new_bottom_position = SE3(timber.bottom_position.t + timber.length_direction * (timber.length - overlap_length))
+        extension_vector = timber.length_direction * (timber.length - overlap_length)
+        new_bottom_position = timber.bottom_position + extension_vector
     else:  # BOTTOM
         # Extend from bottom
-        new_bottom_position = SE3(timber.bottom_position.t - timber.length_direction * extend_length)
+        extension_vector = timber.length_direction * extend_length
+        new_bottom_position = timber.bottom_position - extension_vector
     
     # Create new timber with extended length
     new_length = timber.length + extend_length - overlap_length
@@ -313,45 +366,42 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     Joins two timbers by creating a connecting timber
     """
     # Calculate position on timber1
-    pos1 = timber1.bottom_position.t + timber1.length_direction * location_on_timber1
+    pos1 = timber1.bottom_position + timber1.length_direction * location_on_timber1
     
     # Calculate position on timber2
     if location_on_timber2 is not None:
-        pos2 = timber2.bottom_position.t + timber2.length_direction * location_on_timber2
+        pos2 = timber2.bottom_position + timber2.length_direction * location_on_timber2
     else:
         # Project location_on_timber1 to timber2's Z axis
-        pos2 = pos1.copy()
-        pos2[2] = timber2.bottom_position.t[2] + location_on_timber1
+        pos2 = Matrix([pos1[0], pos1[1], float(timber2.bottom_position[2]) + location_on_timber1])
     
     # Calculate center position
     center_pos = (pos1 + pos2) / 2
     
     # Calculate length direction (from timber1 to timber2)
     length_direction = pos2 - pos1
-    length_direction = length_direction / np.linalg.norm(length_direction)
-    length_direction = SE3(length_direction)
+    length_direction = normalize_vector(length_direction)
     
     # Calculate face direction
     if orientation_face_vector is not None:
         face_direction = orientation_face_vector
     else:
         # Default to up direction
-        face_direction = SE3([0.0, 0.0, 1.0])
+        face_direction = create_vector3d(0.0, 0.0, 1.0)
     
     # Calculate timber length
-    timber_length = float(np.linalg.norm(pos2 - pos1) + 2 * symmetric_stickout)
+    timber_length = float(vector_magnitude(pos2 - pos1) + 2 * symmetric_stickout)
     
-    # Default size using SE2
-    size = SE2([0.3, 0.3])
+    # Default size
+    size = create_vector2d(0.3, 0.3)
     
     # Apply offset
     if offset_from_timber1 != 0:
         # Calculate offset direction (cross product of length vectors)
-        offset_dir = np.cross(timber1.length_direction.t, length_direction.t)
-        offset_dir = offset_dir / np.linalg.norm(offset_dir)
+        offset_dir = normalize_vector(cross_product(timber1.length_direction, length_direction))
         center_pos += offset_dir * offset_from_timber1
     
-    return create_timber(SE3(center_pos), timber_length, size, SE3(length_direction), face_direction)
+    return create_timber(center_pos, timber_length, size, length_direction, face_direction)
 
 def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
                                              location_on_timber1: float,
@@ -362,41 +412,27 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
     Joins two face-aligned timbers with a perpendicular timber
     """
     # Calculate position on timber1
-    pos1 = timber1.bottom_position.t + timber1.length_direction * location_on_timber1
+    pos1 = timber1.bottom_position + timber1.length_direction * location_on_timber1
     
     # Determine orientation face vector
-    if orientation_face_on_timber1 == TimberFace.TOP:
-        face_vector = SE3([0.0, 0.0, 1.0])
-    elif orientation_face_on_timber1 == TimberFace.BOTTOM:
-        face_vector = SE3([0.0, 0.0, -1.0])
-    elif orientation_face_on_timber1 == TimberFace.RIGHT:
-        face_vector = SE3([1.0, 0.0, 0.0])
-    elif orientation_face_on_timber1 == TimberFace.LEFT:
-        face_vector = SE3([-1.0, 0.0, 0.0])
-    elif orientation_face_on_timber1 == TimberFace.FORWARD:
-        face_vector = SE3([0.0, 1.0, 0.0])
-    else:  # BACK
-        face_vector = SE3([0.0, -1.0, 0.0])
+    face_vector = _timber_face_to_vector(orientation_face_on_timber1)
     
     # Calculate length direction (perpendicular to timber1)
-    length_direction = np.cross(timber1.length_direction.t, face_vector.t)
-    length_direction = length_direction / np.linalg.norm(length_direction)
-    length_direction = SE3(length_direction)
+    length_direction = normalize_vector(cross_product(timber1.length_direction, face_vector))
     
     # Calculate timber length based on stickout
     timber_length = 2 * symmetric_stickout
     
-    # Default size using SE2
-    size = SE2([0.3, 0.3])
+    # Default size
+    size = create_vector2d(0.3, 0.3)
     
     # Apply offset
     if offset_from_timber1.centerline_offset is not None:
         # Apply centerline offset
-        offset_dir = np.cross(timber1.length_direction.t, length_direction.t)
-        offset_dir = offset_dir / np.linalg.norm(offset_dir)
+        offset_dir = normalize_vector(cross_product(timber1.length_direction, length_direction))
         pos1 += offset_dir * offset_from_timber1.centerline_offset
     
-    return create_timber(SE3(pos1), timber_length, size, length_direction, face_vector)
+    return create_timber(pos1, timber_length, size, length_direction, face_vector)
 
 # ============================================================================
 # Joint Construction Functions
@@ -417,7 +453,7 @@ def simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
         shoulder_plane=OrientedShoulderPlane(
             direction=TimberReferenceEnd.BOTTOM,
             distance=0.0,
-            orientation=SE3([0.0, 0.0, 0.0])
+            orientation=Orientation.identity()
         ),
         pos_rel_to_long_edge=None,  # Centered
         width=tenon_thickness,
@@ -452,14 +488,14 @@ def simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
 def _timber_face_to_vector(face: TimberFace) -> Direction3D:
     """Convert TimberFace enum to direction vector"""
     if face == TimberFace.TOP:
-        return SE3([0.0, 0.0, 1.0])
+        return create_vector3d(0.0, 0.0, 1.0)
     elif face == TimberFace.BOTTOM:
-        return SE3([0.0, 0.0, -1.0])
+        return create_vector3d(0.0, 0.0, -1.0)
     elif face == TimberFace.RIGHT:
-        return SE3([1.0, 0.0, 0.0])
+        return create_vector3d(1.0, 0.0, 0.0)
     elif face == TimberFace.LEFT:
-        return SE3([-1.0, 0.0, 0.0])
+        return create_vector3d(-1.0, 0.0, 0.0)
     elif face == TimberFace.FORWARD:
-        return SE3([0.0, 1.0, 0.0])
+        return create_vector3d(0.0, 1.0, 0.0)
     else:  # BACK
-        return SE3([0.0, -1.0, 0.0])
+        return create_vector3d(0.0, -1.0, 0.0)
