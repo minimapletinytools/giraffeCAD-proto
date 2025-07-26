@@ -1,3 +1,5 @@
+# ABANDONED see moothymoth.py
+
 """
 Mathymath is a math library intended for dealing with general rigid bodies in 3D space 
 and additionally specialized to deal with fractional rotations.
@@ -80,6 +82,15 @@ class Rational_Orientation:
 
         # Fallback: use quaternion composition
         return Orientation(self.rot_Q, SO3.RzRyRx(r2z, r2y, r2x))
+    
+    def to_eulerZYX(self) -> Tuple[float, float, float]:
+        """
+        Convert the rational orientation to euler angles in ZYX order.
+        
+        Returns:
+            Tuple of euler angles (roll, pitch, yaw) in radians
+        """
+        return tuple(self.rot_Q)
 
     def to_orientation(self) -> 'Orientation':
         """
@@ -171,15 +182,16 @@ class Orientation:
         # Combine with rot_R
         return q_quat * self.rot_R
     
-    def get_rational_euler_angles(self) -> np.ndarray:
+    def maybe_get_rational_orientation(self) -> Optional[Rational_Orientation]:
         """
-        Get the resulting rotation rot_Q * rot_R in euler angles.
+        Attempt to get a Rational_Orientation if the irrational component is identity.
         
         Returns:
-            Euler angles [roll, pitch, yaw] in radians
+            Rational_Orientation if rot_R is identity, otherwise None
         """
-        combined_quat = self.to_quaternion()
-        return combined_quat.eul()
+        if self.rot_R == UnitQuaternion():
+            return Rational_Orientation(self.rot_Q)
+        return None
     
     def exact_eq(self, other: 'Orientation') -> bool:
         """

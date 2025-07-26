@@ -1,3 +1,13 @@
+:: MATHY MATH TODO
+
+:: TODO
+    -write a few clear tests __mul__
+        -do thet hing where you confirm each case that you end up with maybe_get_rational_orientation is rational
+    -test rotatepoint  (also tests toquaternion)
+        -using known rational rotations
+        -do rotate in 1 direction and then in the other direction sorta tests
+
+
 -fix create_axis_aligned_horizontal_timber_on_footprint
     lets update the create_axis_aligned_horizontal_timber_on_footprint function
 
@@ -9,3 +19,4 @@
 
 -support for non axis/face aligned/ non orthogonal timbers? (so you can do things like 60 degree joints for delta printer lol)
     -support center axis offsets only yay
+

@@ -1,3 +1,4 @@
+# ABANDONED see moothymoth.py
 """
 Tests for mathymath.py module.
 
