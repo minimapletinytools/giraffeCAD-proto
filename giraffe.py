@@ -427,8 +427,23 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     if orientation_face_vector is not None:
         face_direction = orientation_face_vector
     else:
-        # Default to up direction
-        face_direction = create_vector3d(0.0, 0.0, 1.0)
+        # Generate an orthogonal face direction
+        # Choose a reference vector that's not parallel to length_direction
+        up_vector = create_vector3d(0.0, 0.0, 1.0)
+        right_vector = create_vector3d(1.0, 0.0, 0.0)
+        
+        # Check which reference vector is more orthogonal to length_direction
+        up_dot = abs(float(sum(length_direction[i] * up_vector[i] for i in range(3))))
+        right_dot = abs(float(sum(length_direction[i] * right_vector[i] for i in range(3))))
+        
+        # Use the more orthogonal reference vector
+        if up_dot < right_dot:
+            reference_vector = up_vector
+        else:
+            reference_vector = right_vector
+        
+        # Generate orthogonal face direction using cross product
+        face_direction = normalize_vector(cross_product(reference_vector, length_direction))
     
     # Calculate timber length
     timber_length = float(vector_magnitude(pos2 - pos1) + 2 * symmetric_stickout)

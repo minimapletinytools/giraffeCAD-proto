@@ -178,18 +178,13 @@ def render_multiple_timbers(cut_timbers: list[CutTimber], base_name: str = "Timb
             extrude = extrudes.add(extrude_input)
             
             if extrude:
-                # Store reference for transform pass
-                transform = create_matrix3d_from_orientation(timber.bottom_position, timber.orientation)
-                transform_cm = adsk.core.Matrix3D.create()
-                
-                # Scale translation to cm
-                for row in range(3):
-                    for col in range(3):
-                        transform_cm.setCell(row, col, transform.getCell(row, col))
-                transform_cm.setCell(0, 3, transform.getCell(0, 3) * 100)
-                transform_cm.setCell(1, 3, transform.getCell(1, 3) * 100)
-                transform_cm.setCell(2, 3, transform.getCell(2, 3) * 100)
-                transform_cm.setCell(3, 3, 1.0)
+                # Create transform matrix with unit conversion to cm
+                position_cm = Matrix([
+                    timber.bottom_position[0] * 100,
+                    timber.bottom_position[1] * 100,
+                    timber.bottom_position[2] * 100
+                ])
+                transform_cm = create_matrix3d_from_orientation(position_cm, timber.orientation)
                 
                 created_components.append((occurrence, transform_cm, component_name))
                 print(f"✓ Created geometry for {component_name}")
@@ -202,22 +197,62 @@ def render_multiple_timbers(cut_timbers: list[CutTimber], base_name: str = "Timb
         # PASS 2: Apply all transforms
         print(f"\n=== PASS 2: Applying transforms ===")
         
-        for occurrence, transform_cm, component_name in created_components:
+        import time
+        
+        for i, (occurrence, transform_cm, component_name) in enumerate(created_components):
             print(f"Applying transform to: {component_name}")
             
+            # Apply the transform
             occurrence.transform = transform_cm
             
-            # Verify
+            # For non-axis-aligned timbers, add extra processing time
+            time.sleep(0.1)
+            adsk.doEvents()
+            
+            # Verify transform was applied correctly
             applied_transform = occurrence.transform
             expected_tx = transform_cm.getCell(0, 3)
+            expected_ty = transform_cm.getCell(1, 3)
+            expected_tz = transform_cm.getCell(2, 3)
             applied_tx = applied_transform.getCell(0, 3)
+            applied_ty = applied_transform.getCell(1, 3)
+            applied_tz = applied_transform.getCell(2, 3)
             
-            if abs(applied_tx - expected_tx) < 0.001:
+            # Check all translation components
+            translation_ok = (abs(applied_tx - expected_tx) < 0.001 and 
+                            abs(applied_ty - expected_ty) < 0.001 and 
+                            abs(applied_tz - expected_tz) < 0.001)
+            
+            if translation_ok:
                 print(f"✓ Transform applied successfully")
             else:
                 print(f"✗ Transform verification failed for {component_name}")
+                print(f"  Expected translation: ({expected_tx:.3f}, {expected_ty:.3f}, {expected_tz:.3f})")
+                print(f"  Applied translation:  ({applied_tx:.3f}, {applied_ty:.3f}, {applied_tz:.3f})")
+                
+                # Try re-applying the transform as a fix
+                print(f"  Attempting to re-apply transform...")
+                occurrence.transform = transform_cm
+                time.sleep(0.1)
+                adsk.doEvents()
+                
+                # Verify again
+                reapplied_transform = occurrence.transform
+                reapplied_tx = reapplied_transform.getCell(0, 3)
+                reapplied_ty = reapplied_transform.getCell(1, 3)
+                reapplied_tz = reapplied_transform.getCell(2, 3)
+                
+                translation_fixed = (abs(reapplied_tx - expected_tx) < 0.001 and 
+                                   abs(reapplied_ty - expected_ty) < 0.001 and 
+                                   abs(reapplied_tz - expected_tz) < 0.001)
+                
+                if translation_fixed:
+                    print(f"  ✓ Re-application successful")
+                else:
+                    print(f"  ✗ Re-application also failed")
         
-        # Final refresh
+        # Final refresh with extra time for non-axis-aligned timbers to settle
+        time.sleep(0.2)
         adsk.doEvents()
         
         success_count = len(created_components)
