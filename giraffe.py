@@ -3,7 +3,7 @@ GiraffeCAD - Timber framing CAD system
 Based on the API specification in morenotes.md
 """
 
-from sympy import Matrix, sqrt, simplify, Float, Abs
+from sympy import Matrix, sqrt, simplify, Float, Abs, Rational, Expr
 from moothymoth import Orientation
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
@@ -159,7 +159,7 @@ class FootprintBoundary:
 class Timber:
     """Represents a timber in the timber framing system"""
     
-    def __init__(self, length: float, size: V2, bottom_position: V3, 
+    def __init__(self, length: Union[float, int, Expr], size: V2, bottom_position: V3, 
                  length_direction: Direction3D, face_direction: Direction3D):
         """
         Args:
@@ -191,13 +191,13 @@ class Timber:
         face_orthogonal = face_input - projection
         
         # Check if face_orthogonal is too small (vectors were nearly parallel)
-        if face_orthogonal.norm() < 1e-10:
+        if face_orthogonal.norm() < Rational(1, 10**10):  # 1e-10 as exact rational
             # Choose an arbitrary orthogonal direction
             # Find a vector that's not parallel to length_norm
-            if abs(float(length_norm[0])) < 0.9:
-                temp_vector = create_vector3d(1.0, 0.0, 0.0)
+            if Abs(length_norm[0]) < Rational(9, 10):  # 0.9 as exact rational
+                temp_vector = create_vector3d(1, 0, 0)
             else:
-                temp_vector = create_vector3d(0.0, 1.0, 0.0)
+                temp_vector = create_vector3d(0, 1, 0)
             
             # Project and orthogonalize
             projection = length_norm * (temp_vector.dot(length_norm))
@@ -346,14 +346,14 @@ def create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: i
     point = footprint.boundary[footprint_index]
     
     # Convert to 3D position
-    bottom_position = create_vector3d(float(point[0]), float(point[1]), 0.0)
+    bottom_position = create_vector3d(float(point[0]), float(point[1]), 0)
     
     # Default size for posts
-    size = create_vector2d(0.09, 0.09)  # 9cm x 9cm
+    size = create_vector2d(Rational(9, 100), Rational(9, 100))  # 9cm x 9cm as exact rationals
     
     # Vertical direction
-    length_direction = create_vector3d(0.0, 0.0, 1.0)
-    face_direction = create_vector3d(1.0, 0.0, 0.0)
+    length_direction = create_vector3d(0, 0, 1)
+    face_direction = create_vector3d(1, 0, 0)
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)
 
@@ -369,7 +369,7 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, foo
     end_point = footprint.boundary[(footprint_index + 1) % len(footprint.boundary)]
     
     # Calculate direction vector
-    direction = Matrix([float(end_point[0] - start_point[0]), float(end_point[1] - start_point[1]), 0.0])
+    direction = Matrix([float(end_point[0] - start_point[0]), float(end_point[1] - start_point[1]), 0])
     
     # Normalize
     direction_3d = normalize_vector(direction)
@@ -377,22 +377,22 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, foo
     # Position based on location type
     if location_type == TimberLocationType.INSIDE:
         # Place inside the footprint
-        bottom_position = create_vector3d(float(start_point[0]), float(start_point[1]), 0.0)
+        bottom_position = create_vector3d(float(start_point[0]), float(start_point[1]), 0)
     elif location_type == TimberLocationType.CENTER:
         # Center on the footprint line
         mid_x = float((start_point[0] + end_point[0]) / 2)
         mid_y = float((start_point[1] + end_point[1]) / 2)
-        bottom_position = create_vector3d(mid_x, mid_y, 0.0)
+        bottom_position = create_vector3d(mid_x, mid_y, 0)
     else:  # OUTSIDE
         # Place outside the footprint
-        bottom_position = create_vector3d(float(start_point[0]), float(start_point[1]), 0.0)
+        bottom_position = create_vector3d(float(start_point[0]), float(start_point[1]), 0)
     
     # Default size for horizontal timbers
-    size = create_vector2d(0.3, 0.3)  # 30cm x 30cm
+    size = create_vector2d(Rational(3, 10), Rational(3, 10))  # 30cm x 30cm as exact rationals
     
     # Horizontal direction
     length_direction = direction_3d
-    face_direction = create_vector3d(0.0, 0.0, 1.0)  # Up direction
+    face_direction = create_vector3d(0, 0, 1)  # Up direction
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)
 
@@ -436,7 +436,7 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         pos2 = timber2.get_position_on_timber(location_on_timber2)
     else:
         # Project location_on_timber1 to timber2's Z axis
-        pos2 = Matrix([pos1[0], pos1[1], float(timber2.bottom_position[2]) + location_on_timber1])
+        pos2 = Matrix([pos1[0], pos1[1], timber2.bottom_position[2] + location_on_timber1])
     
     # Calculate center position
     center_pos = (pos1 + pos2) / 2
@@ -467,11 +467,11 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         # Generate orthogonal face direction using cross product
         face_direction = normalize_vector(cross_product(reference_vector, length_direction))
     
-    # Calculate timber length
-    timber_length = float(vector_magnitude(pos2 - pos1) + 2 * symmetric_stickout)
+    # Calculate timber length (keep as exact SymPy expression)
+    timber_length = vector_magnitude(pos2 - pos1) + 2 * symmetric_stickout
     
     # Default size
-    size = create_vector2d(0.3, 0.3)
+    size = create_vector2d(Rational(3, 10), Rational(3, 10))  # 30cm x 30cm as exact rationals
     
     # Apply offset
     if offset_from_timber1 != 0:
@@ -553,7 +553,7 @@ def simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
     tenon_spec = StandardTenon(
         shoulder_plane=OrientedShoulderPlane(
             direction=TimberReferenceEnd.BOTTOM,
-            distance=0.0,
+            distance=0,  # Use integer instead of 0.0
             orientation=Orientation.identity()
         ),
         pos_rel_to_long_edge=None,  # Centered
@@ -565,7 +565,7 @@ def simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
     # Create mortise specification
     mortise_spec = StandardMortise(
         mortise_face=TimberFace.TOP,
-        pos_rel_to_end=(TimberReferenceEnd.BOTTOM, 0.0),
+        pos_rel_to_end=(TimberReferenceEnd.BOTTOM, 0),  # Use integer instead of 0.0
         pos_rel_to_long_face=None,  # Centered
         width=tenon_thickness,
         height=tenon_length,
@@ -589,14 +589,14 @@ def simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
 def _timber_face_to_vector(face: TimberFace) -> Direction3D:
     """Convert TimberFace enum to direction vector"""
     if face == TimberFace.TOP:
-        return create_vector3d(0.0, 0.0, 1.0)
+        return create_vector3d(0, 0, 1)
     elif face == TimberFace.BOTTOM:
-        return create_vector3d(0.0, 0.0, -1.0)
+        return create_vector3d(0, 0, -1)
     elif face == TimberFace.RIGHT:
-        return create_vector3d(1.0, 0.0, 0.0)
+        return create_vector3d(1, 0, 0)
     elif face == TimberFace.LEFT:
-        return create_vector3d(-1.0, 0.0, 0.0)
+        return create_vector3d(-1, 0, 0)
     elif face == TimberFace.FORWARD:
-        return create_vector3d(0.0, 1.0, 0.0)
+        return create_vector3d(0, 1, 0)
     else:  # BACK
-        return create_vector3d(0.0, -1.0, 0.0)
+        return create_vector3d(0, -1, 0)

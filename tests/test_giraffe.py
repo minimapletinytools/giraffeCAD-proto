@@ -336,8 +336,8 @@ class TestTimberCreation:
         
         assert timber.length == 3.0
         # Check that directions are correct
-        assert timber.length_direction[2] == Float('1.0')  # Up
-        assert timber.face_direction[0] == Float('1.0')    # East
+        assert timber.length_direction[2] == 1  # Up (exact integer)
+        assert timber.face_direction[0] == 1    # East (exact integer)
     
     def test_create_vertical_timber_on_footprint(self):
         """Test vertical timber creation on footprint."""
@@ -355,9 +355,9 @@ class TestTimberCreation:
         # Should be at footprint point 0
         assert timber.bottom_position[0] == Float('0.0')
         assert timber.bottom_position[1] == Float('0.0')
-        assert timber.bottom_position[2] == Float('0.0')
+        assert timber.bottom_position[2] == 0  # Exact integer instead of Float('0.0')
         # Should be vertical
-        assert timber.length_direction[2] == Float('1.0')
+        assert timber.length_direction[2] == 1  # Exact integer
     
     def test_create_horizontal_timber_on_footprint(self):
         """Test horizontal timber creation on footprint."""
