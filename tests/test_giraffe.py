@@ -494,8 +494,12 @@ class TestJoinTimbers:
         assert abs(float(length_dir[1])) < 0.1          # Y component ~0
         assert abs(float(length_dir[2]) + 0.243) < 0.1  # Z component ~-0.24
         
-        # Face direction should be up (Z axis)
-        assert abs(float(joining_timber.face_direction[2]) - 1.0) < 0.1
+        # Face direction should be orthogonal to length direction
+        # With improved orthogonalization, this should be Y axis [0, 1, 0]
+        face_dir = joining_timber.face_direction
+        assert abs(float(face_dir[0])) < 0.1        # X component should be ~0
+        assert abs(float(face_dir[1]) - 1.0) < 0.1  # Y component should be ~1
+        assert abs(float(face_dir[2])) < 0.1        # Z component should be ~0
         
         # Verify the joining timber is positioned correctly
         # pos1 = [0, 0, 1.5] (location 1.5 on timber1), pos2 = [2, 0, 1.0] (location 1.0 on timber2)
@@ -575,6 +579,146 @@ class TestJoinTimbers:
         # Length should be centerline distance (2.0) + 2 * symmetric_stickout (2 * 1.2 = 2.4) = 4.4
         assert abs(joining_timber2.length - 4.4) < 1e-10
 
+    def test_join_timbers_creates_orthogonal_matrix(self):
+        """Test that join_timbers creates valid orthogonal orientation matrices."""
+        # Create two non-parallel timbers to ensure non-trivial orientation
+        timber1 = Timber(
+            length=1.0,
+            size=create_vector2d(0.1, 0.1),
+            bottom_position=create_vector3d(-0.5, 0.0, 0.0),
+            length_direction=create_vector3d(0.0, 0.0, 1.0),  # Vertical
+            face_direction=create_vector3d(1.0, 0.0, 0.0)
+        )
+        
+        timber2 = Timber(
+            length=1.0,
+            size=create_vector2d(0.1, 0.1), 
+            bottom_position=create_vector3d(0.5, 0.0, 0.0),
+            length_direction=create_vector3d(0.0, 1.0, 0.0),  # Horizontal (north)
+            face_direction=create_vector3d(0.0, 0.0, 1.0)
+        )
+        
+        joining_timber = join_timbers(
+            timber1, timber2,
+            location_on_timber1=0.5,
+            symmetric_stickout=0.1,
+            offset_from_timber1=0.0,
+            location_on_timber2=0.5
+        )
+        
+        # Get the orientation matrix
+        orientation_matrix = joining_timber.orientation.matrix
+        
+        # Check that it's orthogonal: M * M^T = I
+        product = orientation_matrix * orientation_matrix.T
+        
+        # Check diagonal elements are 1 (with tolerance for floating-point precision)
+        for i in range(3):
+            diagonal_val = float(product[i, i])
+            assert abs(diagonal_val - 1.0) < 1e-12, f"Diagonal element [{i},{i}] should be 1, got {diagonal_val}"
+        
+        # Check off-diagonal elements are 0 (with tolerance for floating-point precision)
+        for i in range(3):
+            for j in range(3):
+                if i != j:
+                    off_diag_val = float(product[i, j])
+                    assert abs(off_diag_val) < 1e-12, f"Off-diagonal element [{i},{j}] should be 0, got {off_diag_val}"
+        
+        # Check determinant is 1 (proper rotation, not reflection)
+        det = float(orientation_matrix.det())
+        assert abs(det - 1.0) < 1e-12, f"Determinant should be 1, got {det}"
+        
+        # Verify direction vectors are unit length
+        length_dir = joining_timber.length_direction
+        face_dir = joining_timber.face_direction  
+        height_dir = joining_timber.height_direction
+        
+        length_norm = float(length_dir.norm())
+        face_norm = float(face_dir.norm())
+        height_norm = float(height_dir.norm())
+        
+        assert abs(length_norm - 1.0) < 1e-12, f"Length direction should be unit vector, got norm {length_norm}"
+        assert abs(face_norm - 1.0) < 1e-12, f"Face direction should be unit vector, got norm {face_norm}"
+        assert abs(height_norm - 1.0) < 1e-12, f"Height direction should be unit vector, got norm {height_norm}"
+        
+        # Verify directions are orthogonal to each other
+        dot_lf = float(length_dir.dot(face_dir))
+        dot_lh = float(length_dir.dot(height_dir))
+        dot_fh = float(face_dir.dot(height_dir))
+        
+        assert abs(dot_lf) < 1e-12, f"Length and face directions should be orthogonal, got dot product {dot_lf}"
+        assert abs(dot_lh) < 1e-12, f"Length and height directions should be orthogonal, got dot product {dot_lh}"
+        assert abs(dot_fh) < 1e-12, f"Face and height directions should be orthogonal, got dot product {dot_fh}"
+
+    def test_create_timber_creates_orthogonal_matrix(self):
+        """Test that create_timber creates valid orthogonal orientation matrices."""
+        # Test with arbitrary (but orthogonal) input directions
+        length_dir = create_vector3d(1.0, 1.0, 0.0)  # Will be normalized
+        face_dir = create_vector3d(0.0, 0.0, 1.0)    # Up direction
+        
+        timber = create_timber(
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length=1.0,
+            size=create_vector2d(0.1, 0.1),
+            length_direction=length_dir,
+            face_direction=face_dir
+        )
+        
+        # Get the orientation matrix
+        orientation_matrix = timber.orientation.matrix
+        
+        # Check that it's orthogonal: M * M^T = I
+        product = orientation_matrix * orientation_matrix.T
+        
+        # Check diagonal elements are 1 (with tolerance for floating-point precision)
+        for i in range(3):
+            diagonal_val = float(product[i, i])
+            assert abs(diagonal_val - 1.0) < 1e-12, f"Diagonal element [{i},{i}] should be 1, got {diagonal_val}"
+        
+        # Check off-diagonal elements are 0 (with tolerance for floating-point precision)
+        for i in range(3):
+            for j in range(3):
+                if i != j:
+                    off_diag_val = float(product[i, j])
+                    assert abs(off_diag_val) < 1e-12, f"Off-diagonal element [{i},{j}] should be 0, got {off_diag_val}"
+        
+        # Check determinant is 1
+        det = float(orientation_matrix.det())
+        assert abs(det - 1.0) < 1e-12, f"Determinant should be 1, got {det}"
+
+    def test_orthogonal_matrix_with_non_orthogonal_input(self):
+        """Test that orthogonal matrix is created even with non-orthogonal input directions."""
+        # Use non-orthogonal input directions to test the orthogonalization process
+        length_dir = create_vector3d(1.0, 0.0, 0.5)   # Not orthogonal to face_dir
+        face_dir = create_vector3d(0.0, 0.5, 1.0)     # Not orthogonal to length_dir
+        
+        timber = create_timber(
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length=1.0,
+            size=create_vector2d(0.1, 0.1),
+            length_direction=length_dir,
+            face_direction=face_dir
+        )
+        
+        # The resulting orientation should still be orthogonal
+        orientation_matrix = timber.orientation.matrix
+        
+        # Check orthogonality
+        product = orientation_matrix * orientation_matrix.T
+        
+        for i in range(3):
+            diagonal_val = float(product[i, i])
+            assert abs(diagonal_val - 1.0) < 1e-12, f"Diagonal element [{i},{i}] should be 1, got {diagonal_val}"
+        
+        for i in range(3):
+            for j in range(3):
+                if i != j:
+                    off_diag_val = float(product[i, j])
+                    assert abs(off_diag_val) < 1e-12, f"Off-diagonal element [{i},{j}] should be 0, got {off_diag_val}"
+        
+        # Check determinant is 1
+        det = float(orientation_matrix.det())
+        assert abs(det - 1.0) < 1e-12, f"Determinant should be 1, got {det}"
 
 
 class TestTimberCutOperations:

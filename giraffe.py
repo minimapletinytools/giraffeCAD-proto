@@ -180,11 +180,33 @@ class Timber:
     
     def _compute_orientation(self, length_direction: Direction3D, face_direction: Direction3D):
         """Compute the orientation matrix from length and face directions"""
-        # Normalize direction vectors
+        # Normalize the length direction first (this will be our primary axis)
         length_norm = normalize_vector(length_direction)
-        face_norm = normalize_vector(face_direction)
         
-        # Cross product to get the third axis
+        # Orthogonalize face direction relative to length direction using Gram-Schmidt
+        face_input = normalize_vector(face_direction)
+        
+        # Project face_input onto length_norm and subtract to get orthogonal component
+        projection = length_norm * (face_input.dot(length_norm))
+        face_orthogonal = face_input - projection
+        
+        # Check if face_orthogonal is too small (vectors were nearly parallel)
+        if face_orthogonal.norm() < 1e-10:
+            # Choose an arbitrary orthogonal direction
+            # Find a vector that's not parallel to length_norm
+            if abs(float(length_norm[0])) < 0.9:
+                temp_vector = create_vector3d(1.0, 0.0, 0.0)
+            else:
+                temp_vector = create_vector3d(0.0, 1.0, 0.0)
+            
+            # Project and orthogonalize
+            projection = length_norm * (temp_vector.dot(length_norm))
+            face_orthogonal = temp_vector - projection
+        
+        # Normalize the orthogonalized face direction
+        face_norm = normalize_vector(face_orthogonal)
+        
+        # Cross product to get the third axis (guaranteed to be orthogonal)
         height_norm = normalize_vector(cross_product(length_norm, face_norm))
         
         # Create rotation matrix [face_norm, height_norm, length_norm]
