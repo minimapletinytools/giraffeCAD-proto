@@ -509,14 +509,38 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
     # Calculate position on timber1
     pos1 = timber1.get_position_on_timber(location_on_timber1)
     
-    # Calculate corresponding position on timber2
-    pos2 = timber2.get_position_on_timber(location_on_timber1)
+    # For face-aligned timbers, find the point on timber2 that is in the perpendicular 
+    # direction from pos1. We project pos1 onto timber2's centerline.
+    
+    # Get the direction from timber1 to timber2 (perpendicular direction)
+    face_vector = _timber_face_to_vector(orientation_face_on_timber1)
+    
+    # Start from pos1 and move in the face direction to find intersection with timber2's centerline
+    # We need to find where the line from pos1 in the face_vector direction intersects timber2
+    
+    # Timber2's centerline can be parameterized as: timber2.bottom_position + t * timber2.length_direction
+    # The line from pos1 in face_vector direction is: pos1 + s * face_vector
+    # We want to find s and t such that these are equal
+    
+    # This is a line-line intersection problem in 3D
+    # For simplicity in the face-aligned case, we can project pos1 onto timber2's centerline
+    
+    # Vector from timber2's bottom to pos1
+    to_pos1 = pos1 - timber2.bottom_position
+    
+    # Project this onto timber2's length direction to find the parameter t
+    t = to_pos1.dot(timber2.length_direction) / timber2.length_direction.dot(timber2.length_direction)
+    
+    # Clamp t to be within the timber's length
+    t = max(0, min(float(timber2.length), float(t)))
+    
+    # Calculate the corresponding position on timber2's centerline
+    pos2 = timber2.bottom_position + timber2.length_direction * t
     
     # Calculate length direction: from timber1 toward timber2
     length_direction = normalize_vector(pos2 - pos1)
     
-    # Determine orientation face vector
-    face_vector = _timber_face_to_vector(orientation_face_on_timber1)
+    # face_vector already calculated above
     
     # Calculate the distance between the centerlines of timber1 and timber2
     centerline_distance = float(vector_magnitude(pos2 - pos1))
