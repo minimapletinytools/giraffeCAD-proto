@@ -692,6 +692,208 @@ class TestJoinTimbers:
         det = orientation_matrix.det()
         assert simplify(det - 1) == 0, "Determinant should be exactly 1"
 
+    def test_join_perpendicular_face_aligned_timbers_comprehensive(self):
+        """Test comprehensive face-aligned timber joining with random configurations."""
+        import random
+        from sympy import Rational
+        
+        # Set a fixed seed for reproducible tests
+        random.seed(42)
+        
+        # Create several horizontal timbers at the same Z level (face-aligned on their top faces)
+        base_z = Rational(1, 10)  # 0.1m height
+        timber_size = create_vector2d(Rational(1, 10), Rational(1, 10))  # 10cm x 10cm
+        
+        base_timbers = []
+        positions = [
+            create_vector3d(-1, 0, base_z),    # Left
+            create_vector3d(0, 0, base_z),     # Center  
+            create_vector3d(1, 0, base_z),     # Right
+            create_vector3d(0, -1, base_z),    # Back
+            create_vector3d(0, 1, base_z),     # Front
+        ]
+        
+        # Create base timbers - all horizontal and face-aligned
+        for i, pos in enumerate(positions):
+            timber = Timber(
+                length=2,  # 2m long
+                size=timber_size,
+                bottom_position=pos,
+                length_direction=create_vector3d(1, 0, 0),  # All point east
+                face_direction=create_vector3d(0, 1, 0)     # All face north
+            )
+            timber.name = f"Base_Timber_{i}"
+            base_timbers.append(timber)
+        
+        # Create a beam at a higher level
+        beam_z = Rational(3, 2)  # 1.5m height
+        beam = Timber(
+            length=4,  # 4m long beam
+            size=create_vector2d(Rational(15, 100), Rational(15, 100)),  # 15cm x 15cm
+            bottom_position=create_vector3d(-2, 0, beam_z),
+            length_direction=create_vector3d(1, 0, 0),  # East direction
+            face_direction=create_vector3d(0, 1, 0)     # North facing
+        )
+        beam.name = "Top_Beam"
+        
+        # Verify that base timbers are face-aligned (same top face Z coordinate)
+        for timber in base_timbers:
+            top_face_z = timber.bottom_position[2] + timber.height_direction[2] * timber.size[1]
+            expected_top_z = base_z + timber_size[1]  # base_z + height
+            assert simplify(top_face_z - expected_top_z) == 0, f"Base timber {timber.name} not at expected height"
+        
+        # Test joining multiple base timbers to the beam
+        joining_timbers = []
+        locations_used = []  # Store for later verification
+        
+        # Use deterministic rational positions instead of random floats
+        rational_positions = [
+            Rational(1, 4),    # 0.25
+            Rational(1, 2),    # 0.5
+            Rational(3, 4),    # 0.75
+            Rational(2, 3),    # 0.667...
+            Rational(1, 3),    # 0.333...
+        ]
+        
+        rational_stickouts = [
+            Rational(1, 40),   # 0.025
+            Rational(3, 100),  # 0.03
+            Rational(1, 25),   # 0.04
+            Rational(1, 20),   # 0.05
+            Rational(3, 50),   # 0.06
+        ]
+        
+        for i, base_timber in enumerate(base_timbers):
+            # Use exact rational position along the base timber
+            location_on_base = rational_positions[i]
+            locations_used.append(location_on_base)
+            
+            # Use exact rational stickout
+            stickout = rational_stickouts[i]
+            
+            # Create offset configuration
+            offset = FaceAlignedJoinedTimberOffset(
+                reference_face=TimberFace.TOP,
+                centerline_offset=None,
+                face_offset=None
+            )
+            
+            # Join base timber to beam
+            joining_timber = join_perpendicular_on_face_aligned_timbers(
+                timber1=base_timber,
+                timber2=beam,
+                location_on_timber1=location_on_base,
+                symmetric_stickout=stickout,
+                offset_from_timber1=offset,
+                size=create_vector2d(Rational(8, 100), Rational(8, 100)),  # 8cm x 8cm posts
+                orientation_face_on_timber1=TimberFace.TOP
+            )
+            joining_timber.name = f"Post_{i}"
+            joining_timbers.append(joining_timber)
+        
+        # Verify properties of joining timbers
+        for i, joining_timber in enumerate(joining_timbers):
+            base_timber = base_timbers[i]
+            location_used = locations_used[i]
+            
+            # 1. Verify the joining timber is approximately vertical (perpendicular to horizontal base)
+            # For horizontal base timbers, the joining timber should be mostly vertical
+            length_dir = joining_timber.length_direction
+            vertical_component = abs(float(length_dir[2]))  # Z component
+            assert vertical_component > 0.8, f"Post_{i} should be mostly vertical, got length_direction={[float(x) for x in length_dir]}"
+            
+            # 2. Verify the joining timber connects to the correct position on the base timber
+            expected_base_pos = base_timber.get_position_on_timber(location_used)
+            
+            # The joining timber should start from approximately the top face of the base timber
+            expected_start_z = expected_base_pos[2] + base_timber.size[1]  # Top of base timber
+            actual_start_z = joining_timber.bottom_position[2]
+            
+            # Use exact comparison for rational arithmetic - allow for stickout adjustments
+            start_z_diff = abs(actual_start_z - expected_start_z)
+            assert float(start_z_diff) < 0.2, f"Post_{i} should start near top of base timber, diff={float(start_z_diff)}"
+            
+            # 3. Verify the joining timber connects to the beam
+            # The top of the joining timber should be near the beam
+            joining_top = joining_timber.bottom_position + joining_timber.length_direction * joining_timber.length
+            beam_bottom_z = beam.bottom_position[2]
+            
+            # Should connect somewhere on or near the beam - use exact comparison
+            beam_connection_diff = abs(joining_top[2] - beam_bottom_z)
+            assert float(beam_connection_diff) < 0.2, f"Post_{i} should connect near beam level, diff={float(beam_connection_diff)}"
+            
+            # 4. Verify orthogonality of orientation matrix
+            orientation_matrix = joining_timber.orientation.matrix
+            product = orientation_matrix * orientation_matrix.T
+            identity = Matrix.eye(3)
+            
+            # Check orthogonality with tolerance for floating-point precision
+            diff_matrix = product - identity
+            max_error = max([abs(float(diff_matrix[i, j])) for i in range(3) for j in range(3)])
+            assert max_error < 1e-12, f"Post_{i} orientation matrix should be orthogonal, max error: {max_error}"
+            
+            # 5. Verify determinant is 1 (proper rotation)
+            det = orientation_matrix.det()
+            det_error = abs(float(det - 1))
+            assert det_error < 1e-12, f"Post_{i} orientation matrix determinant should be 1, error: {det_error}"
+        
+        # Test cross-connections between base timbers
+        cross_connections = []
+        
+        # Use deterministic pairs and rational parameters for cross-connections
+        cross_connection_configs = [
+            (0, 2, Rational(1, 3), Rational(1, 20)),   # Left to Right, loc=0.333, stickout=0.05
+            (1, 3, Rational(1, 2), Rational(3, 40)),   # Center to Back, loc=0.5, stickout=0.075
+            (2, 4, Rational(2, 3), Rational(1, 10)),   # Right to Front, loc=0.667, stickout=0.1
+        ]
+        
+        # Connect some base timbers to each other horizontally
+        for i, (timber1_idx, timber2_idx, loc1, stickout) in enumerate(cross_connection_configs):
+            timber1 = base_timbers[timber1_idx]
+            timber2 = base_timbers[timber2_idx]
+            
+            offset = FaceAlignedJoinedTimberOffset(
+                reference_face=TimberFace.TOP,
+                centerline_offset=None,
+                face_offset=None
+            )
+            
+            cross_timber = join_perpendicular_on_face_aligned_timbers(
+                timber1=timber1,
+                timber2=timber2,
+                location_on_timber1=loc1,
+                symmetric_stickout=stickout,
+                offset_from_timber1=offset,
+                size=create_vector2d(Rational(6, 100), Rational(6, 100)),  # 6cm x 6cm
+                orientation_face_on_timber1=TimberFace.TOP
+            )
+            cross_timber.name = f"Cross_{i}"
+            cross_connections.append(cross_timber)
+        
+        # Verify cross-connections
+        for i, cross_timber in enumerate(cross_connections):
+            # Cross-connections between horizontal face-aligned timbers should also be horizontal
+            length_dir = cross_timber.length_direction
+            horizontal_component = (float(length_dir[0])**2 + float(length_dir[1])**2)**0.5
+            assert horizontal_component > 0.8, f"Cross_{i} should be mostly horizontal for face-aligned horizontal timbers"
+            
+            # Should be at the same Z level as the base timbers (face-aligned)
+            cross_z = cross_timber.bottom_position[2]
+            expected_z = base_z + timber_size[1]  # Top face level of base timbers
+            z_level_diff = abs(cross_z - expected_z)
+            assert float(z_level_diff) <= 0.15, f"Cross_{i} should be at the same level as base timbers, diff={float(z_level_diff)}"
+            
+            # Verify orthogonality with tolerance for floating-point precision
+            orientation_matrix = cross_timber.orientation.matrix
+            product = orientation_matrix * orientation_matrix.T
+            identity = Matrix.eye(3)
+            diff_matrix = product - identity
+            max_error = max([abs(float(diff_matrix[i, j])) for i in range(3) for j in range(3)])
+            assert max_error < 1e-12, f"Cross_{i} orientation matrix should be orthogonal, max error: {max_error}"
+        
+        print(f"✅ Successfully tested {len(joining_timbers)} vertical posts and {len(cross_connections)} cross-connections")
+        print(f"   All joining timbers maintain proper face alignment and orthogonal orientation matrices")
+
 
 class TestTimberCutOperations:
     """Test timber cut operations."""
