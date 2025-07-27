@@ -482,13 +482,30 @@ class TestJoinTimbers:
             timber1, timber2,
             location_on_timber1=1.5,  # Midpoint of timber1
             symmetric_stickout=0.1,
-            offset_from_timber1=0.0
+            offset_from_timber1=0.0,
+            location_on_timber2=1.0   # Explicit position on timber2
         )
         
         assert isinstance(joining_timber, Timber)
-        # Should be approximately horizontal
-        assert abs(float(joining_timber.length_direction[2])) < 0.1
+        # Length direction should be from pos1=[0,0,1.5] to pos2=[2,0,1.0], so direction=[2,0,-0.5]
+        # Normalized: [0.970, 0, -0.243] approximately
+        length_dir = joining_timber.length_direction
+        assert abs(float(length_dir[0]) - 0.970) < 0.1  # X component ~0.97
+        assert abs(float(length_dir[1])) < 0.1          # Y component ~0
+        assert abs(float(length_dir[2]) + 0.243) < 0.1  # Z component ~-0.24
+        
+        # Face direction should be up (Z axis)
+        assert abs(float(joining_timber.face_direction[2]) - 1.0) < 0.1
+        
+        # Verify the joining timber connects the two timbers properly
+        # pos1 = [0, 0, 1.5] (location 1.5 on timber1), pos2 = [2, 0, 1.0] (location 1.0 on timber2)
+        # center should be [1, 0, 1.25]
+        expected_center_x = (0.0 + 2.0) / 2  # Midpoint x coordinate = 1.0
+        expected_center_z = (1.5 + 1.0) / 2  # Midpoint z coordinate = 1.25
+        assert abs(float(joining_timber.bottom_position[0]) - expected_center_x) < 0.1
+        assert abs(float(joining_timber.bottom_position[2]) - expected_center_z) < 0.1
 
+    # helper function to create 2 parallel timbers 
     def make_parallel_timbers(self):
         timber1 = Timber(
             length=3.0,
@@ -525,9 +542,10 @@ class TestJoinTimbers:
             size=create_vector2d(0.15, 0.15),
             orientation_face_on_timber1=TimberFace.TOP
         )
-
-        
+   
         assert joining_timber2.bottom_position == timber1.get_position_on_timber(1.5)
+        print(joining_timber2.orientation)
+        
         
     def test_join_perpendicular_on_face_aligned_timbers_length_is_correct(self):
         """Test perpendicular joining of face-aligned timbers."""
