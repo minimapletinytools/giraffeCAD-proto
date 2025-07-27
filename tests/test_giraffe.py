@@ -484,11 +484,13 @@ class TestJoinTimbers:
             location_on_timber1=1.5,
             symmetric_stickout=1.2,
             offset_from_timber1=offset,
+            size=create_vector2d(0.15, 0.15),
             orientation_face_on_timber1=TimberFace.TOP
         )
         
         assert isinstance(joining_timber, Timber)
-        assert joining_timber.length == 2.4  # 2 * 1.2
+        # Length should be centerline distance (2.0) + 2 * symmetric_stickout (2 * 1.2 = 2.4) = 4.4
+        assert abs(joining_timber.length - 4.4) < 1e-10
 
 
 class TestTimberCutOperations:
