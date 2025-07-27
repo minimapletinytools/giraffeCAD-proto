@@ -227,6 +227,18 @@ class Timber:
             self.orientation.matrix[2, 1]
         ])
     
+    def get_position_on_timber(self, position: float) -> V3:
+        """
+        Get the 3D position at a specific point along the timber's length.
+        
+        Args:
+            position: Distance along the timber's length direction from the bottom position
+            
+        Returns:
+            3D position vector at the specified position along the timber
+        """
+        return self.bottom_position + self.length_direction * position
+    
     def get_transform_matrix(self) -> Matrix:
         """Get the 4x4 transformation matrix for this timber"""
         # Create 4x4 transformation matrix
@@ -395,11 +407,11 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     Joins two timbers by creating a connecting timber
     """
     # Calculate position on timber1
-    pos1 = timber1.bottom_position + timber1.length_direction * location_on_timber1
+    pos1 = timber1.get_position_on_timber(location_on_timber1)
     
     # Calculate position on timber2
     if location_on_timber2 is not None:
-        pos2 = timber2.bottom_position + timber2.length_direction * location_on_timber2
+        pos2 = timber2.get_position_on_timber(location_on_timber2)
     else:
         # Project location_on_timber1 to timber2's Z axis
         pos2 = Matrix([pos1[0], pos1[1], float(timber2.bottom_position[2]) + location_on_timber1])
@@ -454,10 +466,10 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
         New timber that joins timber1 and timber2
     """
     # Calculate position on timber1
-    pos1 = timber1.bottom_position + timber1.length_direction * location_on_timber1
+    pos1 = timber1.get_position_on_timber(location_on_timber1)
     
     # Calculate corresponding position on timber2
-    pos2 = timber2.bottom_position + timber2.length_direction * location_on_timber1
+    pos2 = timber2.get_position_on_timber(location_on_timber1)
     
     # Calculate length direction: from timber1 toward timber2
     length_direction = normalize_vector(pos2 - pos1)
