@@ -224,7 +224,9 @@ class FaceAlignedJoinedTimberOffset:
 # the bottom face of the created timber is on the side of timber1
 # orientation_face_on_timber1 is a face on timber1. The face_vector of the created timber will match orientation_face_on_timber1. If no such orientation is possible the function will warn and the TOP face will be used instead.
 # location_on_timber1 is the location along the length vector of timber1 where the join is made (starting from the bottom of the timber)
-join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, symmetric_stickout : float, offset_from_timber1: FaceAlignedJoinedTimberOffset, orientation_face_on_timber1 = TimberFace.TOP : TimberFace) -> Timber
+# size is the cross-sectional dimensions (width, height) of the joining timber
+# the timber length is calculated as: distance between timber1 and timber2 centerlines + 2 * symmetric_stickout
+join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, symmetric_stickout : float, offset_from_timber1: FaceAlignedJoinedTimberOffset, size: V2, orientation_face_on_timber1 = TimberFace.TOP : TimberFace) -> Timber
 ```
 
 ## joint construction operations

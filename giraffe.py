@@ -436,24 +436,43 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
                                              location_on_timber1: float,
                                              symmetric_stickout: float,
                                              offset_from_timber1: FaceAlignedJoinedTimberOffset,
+                                             size: V2,
                                              orientation_face_on_timber1: TimberFace = TimberFace.TOP) -> Timber:
     """
-    Joins two face-aligned timbers with a perpendicular timber
+    Joins two face-aligned timbers with a perpendicular timber.
+    
+    Args:
+        timber1: First timber to join
+        timber2: Second timber to join (face-aligned with timber1)
+        location_on_timber1: Position along timber1's length where the joining timber attaches
+        symmetric_stickout: How much the joining timber extends beyond each side
+        offset_from_timber1: Offset configuration from timber1
+        size: Cross-sectional size (width, height) of the joining timber
+        orientation_face_on_timber1: Which face of timber1 to orient against (default: TOP)
+        
+    Returns:
+        New timber that joins timber1 and timber2
     """
     # Calculate position on timber1
     pos1 = timber1.bottom_position + timber1.length_direction * location_on_timber1
     
+    # Calculate corresponding position on timber2
+    pos2 = timber2.bottom_position + timber2.length_direction * location_on_timber1
+    
+    # Calculate length direction: from timber1 toward timber2
+    length_direction = normalize_vector(pos2 - pos1)
+    
     # Determine orientation face vector
     face_vector = _timber_face_to_vector(orientation_face_on_timber1)
     
-    # Calculate length direction (perpendicular to timber1)
-    length_direction = normalize_vector(cross_product(timber1.length_direction, face_vector))
+    # Calculate the distance between the centerlines of timber1 and timber2
+    centerline_distance = vector_magnitude(pos2 - pos1)
     
-    # Calculate timber length based on stickout
-    timber_length = 2 * symmetric_stickout
+    # Calculate timber length: distance between centerlines + symmetric stickout on both sides
+    timber_length = centerline_distance + 2 * symmetric_stickout
     
-    # Default size
-    size = create_vector2d(0.3, 0.3)
+    # Adjust starting position to account for stickout on the timber1 side
+    pos1 = pos1 - length_direction * symmetric_stickout
     
     # Apply offset
     if offset_from_timber1.centerline_offset is not None:

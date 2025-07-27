@@ -79,6 +79,7 @@ def create_sawhorse() -> list[CutTimber]:
         location_on_timber1=left_mudsill.length / 2,  # Center of the mudsill
         symmetric_stickout=float(post_size[0]) / 2,  # Half the post width
         offset_from_timber1=offset_left,
+        size=post_size,
         orientation_face_on_timber1=TimberFace.TOP
     )
     left_post.name = "Left Post"
@@ -96,6 +97,7 @@ def create_sawhorse() -> list[CutTimber]:
         location_on_timber1=right_mudsill.length / 2,  # Center of the mudsill
         symmetric_stickout=float(post_size[0]) / 2,  # Half the post width
         offset_from_timber1=offset_right,
+        size=post_size,
         orientation_face_on_timber1=TimberFace.TOP
     )
     right_post.name = "Right Post"
@@ -113,6 +115,7 @@ def create_sawhorse() -> list[CutTimber]:
         location_on_timber1=left_post.length / 2,  # Middle of the post
         symmetric_stickout=float(stretcher_size[0]) / 2,  # Half the stretcher width
         offset_from_timber1=offset_stretcher,
+        size=stretcher_size,
         orientation_face_on_timber1=TimberFace.TOP
     )
     stretcher.name = "Stretcher"
