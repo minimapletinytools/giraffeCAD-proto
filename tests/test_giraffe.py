@@ -270,6 +270,40 @@ class TestTimber:
         assert abs(float(face_dir[0]) - 1.0) < 1e-10
         assert abs(float(face_dir[1]) - 0.0) < 1e-10
         assert abs(float(face_dir[2]) - 0.0) < 1e-10
+    
+    def test_get_position_on_timber(self):
+        """Test the get_position_on_timber method."""
+        timber = Timber(
+            length=5.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(1.0, 2.0, 3.0),
+            length_direction=create_vector3d(0.0, 1.0, 0.0),  # North
+            face_direction=create_vector3d(0.0, 0.0, 1.0)     # Up
+        )
+        
+        # Test at bottom position (position = 0)
+        pos_at_bottom = timber.get_position_on_timber(0.0)
+        assert abs(float(pos_at_bottom[0]) - 1.0) < 1e-10
+        assert abs(float(pos_at_bottom[1]) - 2.0) < 1e-10
+        assert abs(float(pos_at_bottom[2]) - 3.0) < 1e-10
+        
+        # Test at midpoint (position = 2.5)
+        pos_at_middle = timber.get_position_on_timber(2.5)
+        assert abs(float(pos_at_middle[0]) - 1.0) < 1e-10
+        assert abs(float(pos_at_middle[1]) - 4.5) < 1e-10  # 2.0 + 2.5 * 1.0
+        assert abs(float(pos_at_middle[2]) - 3.0) < 1e-10
+        
+        # Test at top (position = 5.0)
+        pos_at_top = timber.get_position_on_timber(5.0)
+        assert abs(float(pos_at_top[0]) - 1.0) < 1e-10
+        assert abs(float(pos_at_top[1]) - 7.0) < 1e-10  # 2.0 + 5.0 * 1.0
+        assert abs(float(pos_at_top[2]) - 3.0) < 1e-10
+        
+        # Test with negative position (beyond bottom)
+        pos_neg = timber.get_position_on_timber(-1.0)
+        assert abs(float(pos_neg[0]) - 1.0) < 1e-10
+        assert abs(float(pos_neg[1]) - 1.0) < 1e-10  # 2.0 + (-1.0) * 1.0
+        assert abs(float(pos_neg[2]) - 3.0) < 1e-10
 
 
 class TestTimberCreation:
@@ -454,9 +488,8 @@ class TestJoinTimbers:
         assert isinstance(joining_timber, Timber)
         # Should be approximately horizontal
         assert abs(float(joining_timber.length_direction[2])) < 0.1
-    
-    def test_join_perpendicular_on_face_aligned_timbers(self):
-        """Test perpendicular joining of face-aligned timbers."""
+
+    def make_parallel_timbers(self):
         timber1 = Timber(
             length=3.0,
             size=create_vector2d(0.2, 0.2),
@@ -472,6 +505,33 @@ class TestJoinTimbers:
             length_direction=create_vector3d(1.0, 0.0, 0.0),  # Parallel to timber1
             face_direction=create_vector3d(0.0, 0.0, 1.0)
         )
+
+        return timber1, timber2
+    
+    def test_join_perpendicular_on_face_aligned_timbers_position_is_correct(self):
+        """Test perpendicular joining of face-aligned timbers."""
+        timber1, timber2 = self.make_parallel_timbers()
+        offset = FaceAlignedJoinedTimberOffset(
+            reference_face=TimberFace.TOP,
+            centerline_offset=None,
+            face_offset=None
+        )
+
+        joining_timber2 = join_perpendicular_on_face_aligned_timbers(
+            timber1, timber2,
+            location_on_timber1=1.5,
+            symmetric_stickout=0,
+            offset_from_timber1=offset,
+            size=create_vector2d(0.15, 0.15),
+            orientation_face_on_timber1=TimberFace.TOP
+        )
+
+        
+        assert joining_timber2.bottom_position == timber1.get_position_on_timber(1.5)
+        
+    def test_join_perpendicular_on_face_aligned_timbers_length_is_correct(self):
+        """Test perpendicular joining of face-aligned timbers."""
+        timber1, timber2 = self.make_parallel_timbers()
         
         offset = FaceAlignedJoinedTimberOffset(
             reference_face=TimberFace.TOP,
@@ -479,7 +539,7 @@ class TestJoinTimbers:
             face_offset=None
         )
         
-        joining_timber = join_perpendicular_on_face_aligned_timbers(
+        joining_timber2 = join_perpendicular_on_face_aligned_timbers(
             timber1, timber2,
             location_on_timber1=1.5,
             symmetric_stickout=1.2,
@@ -488,9 +548,10 @@ class TestJoinTimbers:
             orientation_face_on_timber1=TimberFace.TOP
         )
         
-        assert isinstance(joining_timber, Timber)
+        assert isinstance(joining_timber2, Timber)
         # Length should be centerline distance (2.0) + 2 * symmetric_stickout (2 * 1.2 = 2.4) = 4.4
-        assert abs(joining_timber.length - 4.4) < 1e-10
+        assert abs(joining_timber2.length - 4.4) < 1e-10
+
 
 
 class TestTimberCutOperations:
