@@ -16,18 +16,18 @@ class TestVectorHelpers:
     
     def test_create_vector2d(self):
         """Test 2D vector creation."""
-        v = create_vector2d(1.5, 2.5)
+        v = create_vector2d(Rational(3, 2), Rational(5, 2))  # 1.5, 2.5 as exact rationals
         assert v.shape == (2, 1)
-        assert float(v[0]) == 1.5
-        assert float(v[1]) == 2.5
+        assert v[0] == Rational(3, 2)
+        assert v[1] == Rational(5, 2)
     
     def test_create_vector3d(self):
         """Test 3D vector creation."""
-        v = create_vector3d(1.0, 2.0, 3.0)
+        v = create_vector3d(1, 2, 3)  # Use exact integers
         assert v.shape == (3, 1)
-        assert float(v[0]) == 1.0
-        assert float(v[1]) == 2.0
-        assert float(v[2]) == 3.0
+        assert v[0] == 1
+        assert v[1] == 2
+        assert v[2] == 3
     
     def test_normalize_vector(self):
         """Test vector normalization."""
@@ -45,20 +45,20 @@ class TestVectorHelpers:
     
     def test_normalize_zero_vector(self):
         """Test normalization of zero vector."""
-        v = create_vector3d(0.0, 0.0, 0.0)
+        v = create_vector3d(0, 0, 0)  # Use exact integers
         normalized = normalize_vector(v)
         assert normalized == v  # Should return original zero vector
     
     def test_cross_product(self):
         """Test cross product calculation."""
-        v1 = create_vector3d(1.0, 0.0, 0.0)
-        v2 = create_vector3d(0.0, 1.0, 0.0)
+        v1 = create_vector3d(1, 0, 0)  # Use exact integers
+        v2 = create_vector3d(0, 1, 0)  # Use exact integers
         cross = cross_product(v1, v2)
         
-        expected = create_vector3d(0.0, 0.0, 1.0)
-        assert float(cross[0]) == 0.0
-        assert float(cross[1]) == 0.0
-        assert float(cross[2]) == 1.0
+        expected = create_vector3d(0, 0, 1)  # Use exact integers
+        assert cross[0] == 0
+        assert cross[1] == 0
+        assert cross[2] == 1
     
     def test_vector_magnitude(self):
         """Test vector magnitude calculation."""
@@ -73,16 +73,16 @@ class TestFootprint:
     def test_footprint_creation(self):
         """Test basic footprint creation."""
         boundary = [
-            create_vector2d(0.0, 0.0),
-            create_vector2d(1.0, 0.0),
-            create_vector2d(1.0, 1.0),
-            create_vector2d(0.0, 1.0)
+            create_vector2d(0, 0),  # Use exact integers
+            create_vector2d(1, 0),  # Use exact integers
+            create_vector2d(1, 1),  # Use exact integers
+            create_vector2d(0, 1)   # Use exact integers
         ]
         footprint = Footprint(boundary)
         
         assert len(footprint.boundary) == 4
-        assert footprint.boundary[0][0] == 0.0
-        assert footprint.boundary[0][1] == 0.0
+        assert footprint.boundary[0][0] == 0
+        assert footprint.boundary[0][1] == 0
     
     def test_footprint_boundary(self):
         """Test FootprintBoundary creation."""
@@ -95,15 +95,15 @@ class TestTimber:
     
     def test_timber_creation(self):
         """Test basic timber creation."""
-        length = 3.0
-        size = create_vector2d(0.1, 0.1)
-        position = create_vector3d(0.0, 0.0, 0.0)
-        length_dir = create_vector3d(0.0, 0.0, 1.0)
-        face_dir = create_vector3d(1.0, 0.0, 0.0)
+        length = 3  # Use exact integer
+        size = create_vector2d(Rational(1, 10), Rational(1, 10))  # 0.1 as exact rational
+        position = create_vector3d(0, 0, 0)  # Use exact integers
+        length_dir = create_vector3d(0, 0, 1)  # Use exact integers
+        face_dir = create_vector3d(1, 0, 0)   # Use exact integers
         
         timber = Timber(length, size, position, length_dir, face_dir)
         
-        assert timber.length == 3.0
+        assert timber.length == 3
         assert timber.size.shape == (2, 1)
         assert timber.bottom_position.shape == (3, 1)
         assert isinstance(timber.orientation, Orientation)
@@ -112,50 +112,50 @@ class TestTimber:
         """Test that timber orientation is computed correctly."""
         # Create vertical timber facing east
         timber = Timber(
-            length=2.0,
-            size=create_vector2d(0.1, 0.1),
-            bottom_position=create_vector3d(0.0, 0.0, 0.0),
-            length_direction=create_vector3d(0.0, 0.0, 1.0),  # Up
-            face_direction=create_vector3d(1.0, 0.0, 0.0)     # East
+            length=2,  # Use exact integer
+            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
+            bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
+            length_direction=create_vector3d(0, 0, 1),  # Up - exact integers
+            face_direction=create_vector3d(1, 0, 0)     # East - exact integers
         )
         
         # Check that orientation matrix is reasonable
         matrix = timber.orientation.matrix
         assert matrix.shape == (3, 3)
         
-        # Check that it's a valid rotation matrix (determinant = 1)
+        # Check that it's a valid rotation matrix (determinant = 1) - keep epsilon as float
         det_val = float(simplify(matrix.det()))
         assert abs(det_val - 1.0) < 1e-10
     
     def test_get_transform_matrix(self):
         """Test 4x4 transformation matrix generation."""
         timber = Timber(
-            length=1.0,
-            size=create_vector2d(0.1, 0.1),
-            bottom_position=create_vector3d(1.0, 2.0, 3.0),
-            length_direction=create_vector3d(0.0, 0.0, 1.0),
-            face_direction=create_vector3d(1.0, 0.0, 0.0)
+            length=1,  # Use exact integer
+            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
+            bottom_position=create_vector3d(1, 2, 3),  # Use exact integers
+            length_direction=create_vector3d(0, 0, 1), # Use exact integers
+            face_direction=create_vector3d(1, 0, 0)    # Use exact integers
         )
         
         transform = timber.get_transform_matrix()
         assert transform.shape == (4, 4)
         
-        # Check translation part
-        assert float(transform[0, 3]) == 1.0
-        assert float(transform[1, 3]) == 2.0
-        assert float(transform[2, 3]) == 3.0
-        assert float(transform[3, 3]) == 1.0
+        # Check translation part (exact comparison since we used integers)
+        assert transform[0, 3] == 1
+        assert transform[1, 3] == 2
+        assert transform[2, 3] == 3
+        assert transform[3, 3] == 1
     
     def test_orientation_computed_from_directions(self):
         """Test that orientation is correctly computed from input face and length directions."""
         # Test with standard vertical timber facing east
-        input_length_dir = create_vector3d(0.0, 0.0, 1.0)  # Up
-        input_face_dir = create_vector3d(1.0, 0.0, 0.0)    # East
+        input_length_dir = create_vector3d(0, 0, 1)  # Up - exact integers
+        input_face_dir = create_vector3d(1, 0, 0)    # East - exact integers
         
         timber = Timber(
-            length=2.0,
-            size=create_vector2d(0.1, 0.1),
-            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length=2,  # Use exact integer
+            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
+            bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
             length_direction=input_length_dir,
             face_direction=input_face_dir
         )
@@ -165,30 +165,30 @@ class TestTimber:
         face_dir = timber.face_direction
         height_dir = timber.height_direction
         
-        # Check that returned directions match input exactly
+        # Check that returned directions match input exactly (exact integers now)
         assert length_dir[0] == 0
         assert length_dir[1] == 0
-        assert length_dir[2] == Float('1.0')  # SymPy Float from input 1.0
+        assert length_dir[2] == 1  # Exact integer from input
         
-        assert face_dir[0] == Float('1.0')    # SymPy Float from input 1.0
+        assert face_dir[0] == 1    # Exact integer from input
         assert face_dir[1] == 0
         assert face_dir[2] == 0
         
         # Height direction should be cross product of length x face = Z x X = Y
         assert height_dir[0] == 0
-        assert height_dir[1] == Float('1.0')  # SymPy Float from calculation
+        assert height_dir[1] == 1  # Exact integer from calculation
         assert height_dir[2] == 0
     
     def test_orientation_with_horizontal_timber(self):
         """Test orientation computation with a horizontal timber."""
         # Horizontal timber running north, facing up
-        input_length_dir = create_vector3d(0.0, 1.0, 0.0)  # North
-        input_face_dir = create_vector3d(0.0, 0.0, 1.0)    # Up
+        input_length_dir = create_vector3d(0, 1, 0)  # North - exact integers
+        input_face_dir = create_vector3d(0, 0, 1)    # Up - exact integers
         
         timber = Timber(
-            length=3.0,
-            size=create_vector2d(0.1, 0.1),
-            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length=3,  # Use exact integer
+            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
+            bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
             length_direction=input_length_dir,
             face_direction=input_face_dir
         )
@@ -197,18 +197,18 @@ class TestTimber:
         face_dir = timber.face_direction
         height_dir = timber.height_direction
         
-        # Check length direction (north)
+        # Check length direction (north) - exact integers now
         assert length_dir[0] == 0
-        assert length_dir[1] == Float('1.0')
+        assert length_dir[1] == 1
         assert length_dir[2] == 0
         
-        # Check face direction (up)
+        # Check face direction (up) - exact integers now
         assert face_dir[0] == 0
         assert face_dir[1] == 0
-        assert face_dir[2] == Float('1.0')
+        assert face_dir[2] == 1
         
-        # Height direction should be Y x Z = +X (east)
-        assert height_dir[0] == Float('1.0')
+        # Height direction should be Y x Z = +X (east) - exact integers now
+        assert height_dir[0] == 1
         assert height_dir[1] == 0
         assert height_dir[2] == 0
     
@@ -325,16 +325,16 @@ class TestTimberCreation:
     
     def test_create_axis_aligned_timber(self):
         """Test axis-aligned timber creation."""
-        position = create_vector3d(0.0, 0.0, 0.0)
-        size = create_vector2d(0.1, 0.1)
+        position = create_vector3d(0, 0, 0)  # Use exact integers
+        size = create_vector2d(Rational(1, 10), Rational(1, 10))  # 0.1 as exact rational
         
         timber = create_axis_aligned_timber(
-            position, 3.0, size, 
+            position, 3, size,  # Use exact integer for length
             TimberFace.TOP,    # Length direction (up)
             TimberFace.RIGHT   # Face direction (east)
         )
         
-        assert timber.length == 3.0
+        assert timber.length == 3  # Exact integer
         # Check that directions are correct
         assert timber.length_direction[2] == 1  # Up (exact integer)
         assert timber.face_direction[0] == 1    # East (exact integer)
@@ -342,20 +342,20 @@ class TestTimberCreation:
     def test_create_vertical_timber_on_footprint(self):
         """Test vertical timber creation on footprint."""
         boundary = [
-            create_vector2d(0.0, 0.0),
-            create_vector2d(3.0, 0.0),
-            create_vector2d(3.0, 4.0),
-            create_vector2d(0.0, 4.0)
+            create_vector2d(0, 0),  # Use exact integers
+            create_vector2d(3, 0),  # Use exact integers
+            create_vector2d(3, 4),  # Use exact integers
+            create_vector2d(0, 4)   # Use exact integers
         ]
         footprint = Footprint(boundary)
         
-        timber = create_vertical_timber_on_footprint(footprint, 0, 2.5)
+        timber = create_vertical_timber_on_footprint(footprint, 0, Rational(5, 2))  # 2.5 as exact rational
         
-        assert timber.length == 2.5
+        assert timber.length == Rational(5, 2)  # Exact rational
         # Should be at footprint point 0
-        assert timber.bottom_position[0] == Float('0.0')
-        assert timber.bottom_position[1] == Float('0.0')
-        assert timber.bottom_position[2] == 0  # Exact integer instead of Float('0.0')
+        assert timber.bottom_position[0] == Float('0.0')  # Keep as Float since footprint uses floats internally
+        assert timber.bottom_position[1] == Float('0.0')  # Keep as Float since footprint uses floats internally
+        assert timber.bottom_position[2] == 0  # Exact integer
         # Should be vertical
         assert timber.length_direction[2] == 1  # Exact integer
     
