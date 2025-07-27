@@ -68,7 +68,9 @@ def run(_context: str):
                 'giraffe_render_fusion360',
                 'sawhorse_example',
                 'supersimple_example',
-                'supersimple_example2'
+                'supersimple_example2',
+                'supersimple_example3',
+                'supersimple_example4'
             ]
             
             for module_name in modules_to_reload:
@@ -82,6 +84,8 @@ def run(_context: str):
             from sawhorse_example import create_sawhorse
             from supersimple_example import create_supersimple_structure
             from supersimple_example2 import create_supersimple_structure2
+            from supersimple_example3 import create_supersimple_structure3
+            from supersimple_example4 import create_supersimple_structure4
             from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
             
             print("✓ Module reload complete")
@@ -104,12 +108,12 @@ def run(_context: str):
         # Create the sawhorse timbers
         try:
             #cut_timbers = create_sawhorse()
-            cut_timbers = create_supersimple_structure2()
-            print(f'Created sawhorse with {len(cut_timbers)} timbers')
-            app.log(f'Created sawhorse with {len(cut_timbers)} timbers')
+            cut_timbers = create_supersimple_structure4()
+            print(f'Created structure with {len(cut_timbers)} timbers')
+            app.log(f'Created structure with {len(cut_timbers)} timbers')
         except Exception as e:
-            ui.messageBox(f'Error creating sawhorse: {str(e)}')
-            app.log(f'Sawhorse creation failed:\n{traceback.format_exc()}')
+            ui.messageBox(f'Error creating structure: {str(e)}')
+            app.log(f'Structure creation failed:\n{traceback.format_exc()}')
             return
 
         # Render the timbers in Fusion 360 using two-pass rendering approach
