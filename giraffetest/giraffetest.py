@@ -107,8 +107,8 @@ def run(_context: str):
 
         # Create the sawhorse timbers
         try:
-            #cut_timbers = create_sawhorse()
-            cut_timbers = create_supersimple_structure2()
+            cut_timbers = create_sawhorse()
+            #cut_timbers = create_supersimple_structure2()
             print(f'Created structure with {len(cut_timbers)} timbers')
             app.log(f'Created structure with {len(cut_timbers)} timbers')
         except Exception as e:
