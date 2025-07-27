@@ -17,9 +17,15 @@ if libs_dir not in sys.path:
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-# Test that core dependencies are available at startup
+# Import our GiraffeCAD modules from parent directory
 try:
-    # Test basic imports to ensure path setup is working
+    # Import from parent directory - these files are NOT copied locally
+    from sawhorse_example import create_sawhorse
+    from supersimple_example import create_supersimple_structure
+    from supersimpleexample2 import create_supersimple_structure2
+    from giraffe_render_fusion360 import render_CutTimber, get_active_design, clear_design, render_multiple_timbers_two_pass
+    
+    # Test that core dependencies are available
     import sympy
     from moothymoth import Orientation
     from giraffe import CutTimber
@@ -60,7 +66,9 @@ def run(_context: str):
                 'moothymoth',
                 'giraffe', 
                 'giraffe_render_fusion360',
-                'sawhorse_example'
+                'sawhorse_example',
+                'supersimple_example',
+                'supersimple_example2'
             ]
             
             for module_name in modules_to_reload:
@@ -70,9 +78,10 @@ def run(_context: str):
                 else:
                     print(f"  {module_name} not in cache, will import fresh")
             
-            # Re-import the functions we need after reload
+            # Re-import the functions we need after reload to get fresh versions
             from sawhorse_example import create_sawhorse
             from supersimple_example import create_supersimple_structure
+            from supersimple_example2 import create_supersimple_structure2
             from giraffe_render_fusion360 import render_CutTimber, get_active_design, clear_design, render_multiple_timbers_two_pass
             
             print("✓ Module reload complete")
@@ -95,7 +104,7 @@ def run(_context: str):
         # Create the sawhorse timbers
         try:
             #cut_timbers = create_sawhorse()
-            cut_timbers = create_supersimple_structure()
+            cut_timbers = create_supersimple_structure2()
             print(f'Created sawhorse with {len(cut_timbers)} timbers')
             app.log(f'Created sawhorse with {len(cut_timbers)} timbers')
         except Exception as e:
