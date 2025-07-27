@@ -169,18 +169,18 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_timber=beam,
         tenon_thickness=tenon_thickness,
         tenon_length=tenon_length,
-        tenon_depth=tenon_depth,
-        name="Left Post to Beam Joint"
+        tenon_depth=tenon_depth
     )
+    beam_left_joint.name = "Left Post to Beam Joint"
 
     beam_right_joint = simple_mortise_and_tenon_joint(
         mortise_timber=right_post,
         tenon_timber=beam,
         tenon_thickness=tenon_thickness,
         tenon_length=tenon_length,
-        tenon_depth=tenon_depth,
-        name="Right Post to Beam Joint"
+        tenon_depth=tenon_depth
     )
+    beam_right_joint.name = "Right Post to Beam Joint"
 
     # Apply joints to the cut timbers
     # Each joint affects multiple timbers, so we need to add the cut operations to the appropriate timbers
