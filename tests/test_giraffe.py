@@ -579,87 +579,72 @@ class TestJoinTimbers:
         # Length should be centerline distance (2.0) + 2 * symmetric_stickout (2 * 1.2 = 2.4) = 4.4
         assert abs(joining_timber2.length - 4.4) < 1e-10
 
-    def test_join_timbers_creates_orthogonal_matrix(self):
+    def test_join_timbers_creates_orthogonal_rotation_matrix(self):
         """Test that join_timbers creates valid orthogonal orientation matrices."""
         # Create two non-parallel timbers to ensure non-trivial orientation
+        # Use exact integer/rational inputs for exact SymPy results
         timber1 = Timber(
-            length=1.0,
-            size=create_vector2d(0.1, 0.1),
-            bottom_position=create_vector3d(-0.5, 0.0, 0.0),
-            length_direction=create_vector3d(0.0, 0.0, 1.0),  # Vertical
-            face_direction=create_vector3d(1.0, 0.0, 0.0)
+            length=1,  # Integer
+            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # Exact rationals
+            bottom_position=create_vector3d(Rational(-1, 2), 0, 0),  # Exact rationals
+            length_direction=create_vector3d(0, 0, 1),  # Integers (vertical)
+            face_direction=create_vector3d(1, 0, 0)     # Integers
         )
         
         timber2 = Timber(
-            length=1.0,
-            size=create_vector2d(0.1, 0.1), 
-            bottom_position=create_vector3d(0.5, 0.0, 0.0),
-            length_direction=create_vector3d(0.0, 1.0, 0.0),  # Horizontal (north)
-            face_direction=create_vector3d(0.0, 0.0, 1.0)
+            length=1,  # Integer
+            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # Exact rationals
+            bottom_position=create_vector3d(Rational(1, 2), 0, 0),   # Exact rationals
+            length_direction=create_vector3d(0, 1, 0),  # Integers (horizontal north)
+            face_direction=create_vector3d(0, 0, 1)     # Integers
         )
         
         joining_timber = join_timbers(
             timber1, timber2,
-            location_on_timber1=0.5,
-            symmetric_stickout=0.1,
-            offset_from_timber1=0.0,
-            location_on_timber2=0.5
+            location_on_timber1=Rational(1, 2),     # Exact rational
+            symmetric_stickout=Rational(1, 10),     # Exact rational
+            offset_from_timber1=0,                  # Integer
+            location_on_timber2=Rational(1, 2)     # Exact rational
         )
         
         # Get the orientation matrix
         orientation_matrix = joining_timber.orientation.matrix
         
-        # Check that it's orthogonal: M * M^T = I
+        # Check that it's orthogonal: M * M^T = I (exact SymPy comparison)
         product = orientation_matrix * orientation_matrix.T
+        identity = Matrix.eye(3)
         
-        # Check diagonal elements are 1 (with tolerance for floating-point precision)
-        for i in range(3):
-            diagonal_val = float(product[i, i])
-            assert abs(diagonal_val - 1.0) < 1e-12, f"Diagonal element [{i},{i}] should be 1, got {diagonal_val}"
+        # Check that M * M^T = I exactly
+        assert simplify(product - identity) == Matrix.zeros(3, 3), "M * M^T should equal identity matrix"
         
-        # Check off-diagonal elements are 0 (with tolerance for floating-point precision)
-        for i in range(3):
-            for j in range(3):
-                if i != j:
-                    off_diag_val = float(product[i, j])
-                    assert abs(off_diag_val) < 1e-12, f"Off-diagonal element [{i},{j}] should be 0, got {off_diag_val}"
+        # Check determinant is exactly 1 (proper rotation, not reflection)
+        det = orientation_matrix.det()
+        assert simplify(det - 1) == 0, "Determinant should be exactly 1"
         
-        # Check determinant is 1 (proper rotation, not reflection)
-        det = float(orientation_matrix.det())
-        assert abs(det - 1.0) < 1e-12, f"Determinant should be 1, got {det}"
-        
-        # Verify direction vectors are unit length
+        # Verify direction vectors are unit length (exact SymPy comparison)
         length_dir = joining_timber.length_direction
         face_dir = joining_timber.face_direction  
         height_dir = joining_timber.height_direction
         
-        length_norm = float(length_dir.norm())
-        face_norm = float(face_dir.norm())
-        height_norm = float(height_dir.norm())
+        assert simplify(length_dir.norm() - 1) == 0, "Length direction should be unit vector"
+        assert simplify(face_dir.norm() - 1) == 0, "Face direction should be unit vector"
+        assert simplify(height_dir.norm() - 1) == 0, "Height direction should be unit vector"
         
-        assert abs(length_norm - 1.0) < 1e-12, f"Length direction should be unit vector, got norm {length_norm}"
-        assert abs(face_norm - 1.0) < 1e-12, f"Face direction should be unit vector, got norm {face_norm}"
-        assert abs(height_norm - 1.0) < 1e-12, f"Height direction should be unit vector, got norm {height_norm}"
-        
-        # Verify directions are orthogonal to each other
-        dot_lf = float(length_dir.dot(face_dir))
-        dot_lh = float(length_dir.dot(height_dir))
-        dot_fh = float(face_dir.dot(height_dir))
-        
-        assert abs(dot_lf) < 1e-12, f"Length and face directions should be orthogonal, got dot product {dot_lf}"
-        assert abs(dot_lh) < 1e-12, f"Length and height directions should be orthogonal, got dot product {dot_lh}"
-        assert abs(dot_fh) < 1e-12, f"Face and height directions should be orthogonal, got dot product {dot_fh}"
+        # Verify directions are orthogonal to each other (exact SymPy comparison)
+        assert simplify(length_dir.dot(face_dir)) == 0, "Length and face directions should be orthogonal"
+        assert simplify(length_dir.dot(height_dir)) == 0, "Length and height directions should be orthogonal"
+        assert simplify(face_dir.dot(height_dir)) == 0, "Face and height directions should be orthogonal"
 
     def test_create_timber_creates_orthogonal_matrix(self):
         """Test that create_timber creates valid orthogonal orientation matrices."""
-        # Test with arbitrary (but orthogonal) input directions
-        length_dir = create_vector3d(1.0, 1.0, 0.0)  # Will be normalized
-        face_dir = create_vector3d(0.0, 0.0, 1.0)    # Up direction
+        # Test with arbitrary (but orthogonal) input directions using exact inputs
+        length_dir = create_vector3d(1, 1, 0)  # Will be normalized (integers)
+        face_dir = create_vector3d(0, 0, 1)    # Up direction (integers)
         
         timber = create_timber(
-            bottom_position=create_vector3d(0.0, 0.0, 0.0),
-            length=1.0,
-            size=create_vector2d(0.1, 0.1),
+            bottom_position=create_vector3d(0, 0, 0),  # Integers
+            length=1,  # Integer
+            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # Exact rationals
             length_direction=length_dir,
             face_direction=face_dir
         )
@@ -667,35 +652,28 @@ class TestJoinTimbers:
         # Get the orientation matrix
         orientation_matrix = timber.orientation.matrix
         
-        # Check that it's orthogonal: M * M^T = I
+        # Check that it's orthogonal: M * M^T = I (exact SymPy comparison)
         product = orientation_matrix * orientation_matrix.T
+        identity = Matrix.eye(3)
         
-        # Check diagonal elements are 1 (with tolerance for floating-point precision)
-        for i in range(3):
-            diagonal_val = float(product[i, i])
-            assert abs(diagonal_val - 1.0) < 1e-12, f"Diagonal element [{i},{i}] should be 1, got {diagonal_val}"
+        # Check that M * M^T = I exactly
+        assert simplify(product - identity) == Matrix.zeros(3, 3), "M * M^T should equal identity matrix"
         
-        # Check off-diagonal elements are 0 (with tolerance for floating-point precision)
-        for i in range(3):
-            for j in range(3):
-                if i != j:
-                    off_diag_val = float(product[i, j])
-                    assert abs(off_diag_val) < 1e-12, f"Off-diagonal element [{i},{j}] should be 0, got {off_diag_val}"
-        
-        # Check determinant is 1
-        det = float(orientation_matrix.det())
-        assert abs(det - 1.0) < 1e-12, f"Determinant should be 1, got {det}"
+        # Check determinant is exactly 1
+        det = orientation_matrix.det()
+        assert simplify(det - 1) == 0, "Determinant should be exactly 1"
 
     def test_orthogonal_matrix_with_non_orthogonal_input(self):
         """Test that orthogonal matrix is created even with non-orthogonal input directions."""
         # Use non-orthogonal input directions to test the orthogonalization process
-        length_dir = create_vector3d(1.0, 0.0, 0.5)   # Not orthogonal to face_dir
-        face_dir = create_vector3d(0.0, 0.5, 1.0)     # Not orthogonal to length_dir
+        # Using exact rational numbers for exact results
+        length_dir = create_vector3d(2, 0, 1)         # Not orthogonal to face_dir (integers)
+        face_dir = create_vector3d(0, 1, 2)           # Not orthogonal to length_dir (integers)
         
         timber = create_timber(
-            bottom_position=create_vector3d(0.0, 0.0, 0.0),
-            length=1.0,
-            size=create_vector2d(0.1, 0.1),
+            bottom_position=create_vector3d(0, 0, 0),  # Integers
+            length=1,  # Integer
+            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # Exact rationals
             length_direction=length_dir,
             face_direction=face_dir
         )
@@ -703,22 +681,16 @@ class TestJoinTimbers:
         # The resulting orientation should still be orthogonal
         orientation_matrix = timber.orientation.matrix
         
-        # Check orthogonality
+        # Check orthogonality using exact SymPy comparison
         product = orientation_matrix * orientation_matrix.T
+        identity = Matrix.eye(3)
         
-        for i in range(3):
-            diagonal_val = float(product[i, i])
-            assert abs(diagonal_val - 1.0) < 1e-12, f"Diagonal element [{i},{i}] should be 1, got {diagonal_val}"
+        # Check that M * M^T = I exactly
+        assert simplify(product - identity) == Matrix.zeros(3, 3), "M * M^T should equal identity matrix"
         
-        for i in range(3):
-            for j in range(3):
-                if i != j:
-                    off_diag_val = float(product[i, j])
-                    assert abs(off_diag_val) < 1e-12, f"Off-diagonal element [{i},{j}] should be 0, got {off_diag_val}"
-        
-        # Check determinant is 1
-        det = float(orientation_matrix.det())
-        assert abs(det - 1.0) < 1e-12, f"Determinant should be 1, got {det}"
+        # Check determinant is exactly 1
+        det = orientation_matrix.det()
+        assert simplify(det - 1) == 0, "Determinant should be exactly 1"
 
 
 class TestTimberCutOperations:
