@@ -191,10 +191,10 @@ class Timber:
         face_orthogonal = face_input - projection
         
         # Check if face_orthogonal is too small (vectors were nearly parallel)
-        if face_orthogonal.norm() < Rational(1, 10**10):  # 1e-10 as exact rational
+        if face_orthogonal.norm() < 1e-10:  # Epsilon comparison - use float
             # Choose an arbitrary orthogonal direction
             # Find a vector that's not parallel to length_norm
-            if Abs(length_norm[0]) < Rational(9, 10):  # 0.9 as exact rational
+            if Abs(length_norm[0]) < 0.9:  # Threshold comparison - use float
                 temp_vector = create_vector3d(1, 0, 0)
             else:
                 temp_vector = create_vector3d(0, 1, 0)
