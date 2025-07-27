@@ -244,9 +244,11 @@ def main():
     print(f"Created sawhorse with {len(cut_timbers)} timbers:")
     for i, cut_timber in enumerate(cut_timbers):
         timber = cut_timber.timber
-        print(f"  {i+1}. Timber: length={timber.length:.3f}m, "
+        print(f"  {i+1}. Timber: {timber.name} "
+              f"length={timber.length:.3f}m, "
               f"size=({float(timber.size[0]):.3f}m x {float(timber.size[1]):.3f}m), "
-              f"joints={len(cut_timber.joints)}")
+              f"joints={len(cut_timber.joints)}, "
+              f"position={timber.bottom_position}")
     
     return cut_timbers
 

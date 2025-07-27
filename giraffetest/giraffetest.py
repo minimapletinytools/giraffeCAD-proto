@@ -17,13 +17,9 @@ if libs_dir not in sys.path:
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-# Import our GiraffeCAD modules from parent directory
+# Test that core dependencies are available at startup
 try:
-    # Import from parent directory - these files are NOT copied locally
-    from sawhorse_example import create_sawhorse
-    from giraffe_render_fusion360 import render_multiple_timbers, clear_design
-    
-    # Test that core dependencies are available
+    # Test basic imports to ensure path setup is working
     import sympy
     from moothymoth import Orientation
     from giraffe import CutTimber
@@ -32,9 +28,6 @@ try:
     import_error = None
 except ImportError as e:
     # Handle import error gracefully for when running in Fusion 360
-    create_sawhorse = None
-    render_multiple_timbers = None
-    clear_design = None
     import_success = False
     import_error = str(e)
 
@@ -79,6 +72,7 @@ def run(_context: str):
             
             # Re-import the functions we need after reload
             from sawhorse_example import create_sawhorse
+            from supersimple_example import create_supersimple_structure
             from giraffe_render_fusion360 import render_CutTimber, get_active_design, clear_design, render_multiple_timbers_two_pass
             
             print("✓ Module reload complete")
@@ -100,7 +94,8 @@ def run(_context: str):
 
         # Create the sawhorse timbers
         try:
-            cut_timbers = create_sawhorse()
+            #cut_timbers = create_sawhorse()
+            cut_timbers = create_supersimple_structure()
             print(f'Created sawhorse with {len(cut_timbers)} timbers')
             app.log(f'Created sawhorse with {len(cut_timbers)} timbers')
         except Exception as e:
