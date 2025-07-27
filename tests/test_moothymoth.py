@@ -197,12 +197,12 @@ class TestEulerAngles:
         # Verify it's a valid rotation matrix
         matrix = orientation.matrix
         # Check determinant is 1
-        assert abs(float(simplify(det(matrix))) - 1.0) < 1e-10
+        assert simplify(det(matrix)) == 1
         
         # Check orthogonality: R * R^T = I
         should_be_identity = simplify(matrix * matrix.T)
         identity = Matrix.eye(3)
-        assert float((should_be_identity - identity).norm()) < 1e-10
+        assert should_be_identity == identity
     
     def test_from_euleryZYX_roll_only(self):
         """Test from_euleryZYX with only roll rotation."""
@@ -210,7 +210,7 @@ class TestEulerAngles:
         
         # Verify it's a valid rotation matrix
         matrix = orientation.matrix
-        assert abs(float(simplify(det(matrix))) - 1.0) < 1e-10
+        assert simplify(det(matrix)) == 1
 
 
 class TestRotationMatrixProperties:

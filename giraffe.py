@@ -118,8 +118,8 @@ def create_vector3d(x: float, y: float, z: float) -> V3:
     return Matrix([x, y, z])
 
 def normalize_vector(vec: Matrix) -> Matrix:
-    """Normalize a vector"""
-    norm = float(sqrt(sum(x**2 for x in vec)))
+    """Normalize a vector using SymPy's exact computation"""
+    norm = vec.norm()
     if norm == 0:
         return vec
     return vec / norm
@@ -132,9 +132,9 @@ def cross_product(v1: V3, v2: V3) -> V3:
         v1[0]*v2[1] - v1[1]*v2[0]
     ])
 
-def vector_magnitude(vec: Matrix) -> float:
-    """Calculate magnitude of a vector"""
-    return float(sqrt(sum(x**2 for x in vec)))
+def vector_magnitude(vec: Matrix):
+    """Calculate magnitude of a vector using SymPy's exact computation"""
+    return vec.norm()
 
 # ============================================================================
 # Core Classes
@@ -478,7 +478,7 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
     face_vector = _timber_face_to_vector(orientation_face_on_timber1)
     
     # Calculate the distance between the centerlines of timber1 and timber2
-    centerline_distance = vector_magnitude(pos2 - pos1)
+    centerline_distance = float(vector_magnitude(pos2 - pos1))
     
     # Calculate timber length: distance between centerlines + symmetric stickout on both sides
     timber_length = centerline_distance + 2 * symmetric_stickout

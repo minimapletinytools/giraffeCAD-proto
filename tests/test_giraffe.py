@@ -5,7 +5,7 @@ This module contains tests for the GiraffeCAD timber framing CAD system.
 """
 
 import pytest
-from sympy import Matrix, sqrt, simplify, Abs
+from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
 from moothymoth import Orientation
 from giraffe import *
 from giraffe import _timber_face_to_vector
@@ -31,17 +31,17 @@ class TestVectorHelpers:
     
     def test_normalize_vector(self):
         """Test vector normalization."""
-        v = create_vector3d(3.0, 4.0, 0.0)
+        v = create_vector3d(3, 4, 0)  # Use integers for exact computation
         normalized = normalize_vector(v)
         
         # Should have magnitude 1
         magnitude = vector_magnitude(normalized)
-        assert abs(magnitude - 1.0) < 1e-10
+        assert magnitude == 1
         
-        # Should preserve direction ratios
-        assert abs(float(normalized[0]) - 0.6) < 1e-10  # 3/5
-        assert abs(float(normalized[1]) - 0.8) < 1e-10  # 4/5
-        assert abs(float(normalized[2])) < 1e-10
+        # Should preserve direction ratios exactly
+        assert normalized[0] == Rational(3, 5)  # 3/5
+        assert normalized[1] == Rational(4, 5)  # 4/5
+        assert normalized[2] == 0
     
     def test_normalize_zero_vector(self):
         """Test normalization of zero vector."""
@@ -62,9 +62,9 @@ class TestVectorHelpers:
     
     def test_vector_magnitude(self):
         """Test vector magnitude calculation."""
-        v = create_vector3d(3.0, 4.0, 0.0)
+        v = create_vector3d(3, 4, 0)  # Use integers for exact computation
         magnitude = vector_magnitude(v)
-        assert abs(magnitude - 5.0) < 1e-10
+        assert magnitude == 5
 
 
 class TestFootprint:
@@ -165,19 +165,19 @@ class TestTimber:
         face_dir = timber.face_direction
         height_dir = timber.height_direction
         
-        # Check that returned directions match input (within tolerance)
-        assert abs(float(length_dir[0]) - 0.0) < 1e-10
-        assert abs(float(length_dir[1]) - 0.0) < 1e-10
-        assert abs(float(length_dir[2]) - 1.0) < 1e-10
+        # Check that returned directions match input exactly
+        assert length_dir[0] == 0
+        assert length_dir[1] == 0
+        assert length_dir[2] == Float('1.0')  # SymPy Float from input 1.0
         
-        assert abs(float(face_dir[0]) - 1.0) < 1e-10
-        assert abs(float(face_dir[1]) - 0.0) < 1e-10
-        assert abs(float(face_dir[2]) - 0.0) < 1e-10
+        assert face_dir[0] == Float('1.0')    # SymPy Float from input 1.0
+        assert face_dir[1] == 0
+        assert face_dir[2] == 0
         
         # Height direction should be cross product of length x face = Z x X = Y
-        assert abs(float(height_dir[0]) - 0.0) < 1e-10
-        assert abs(float(height_dir[1]) - 1.0) < 1e-10
-        assert abs(float(height_dir[2]) - 0.0) < 1e-10
+        assert height_dir[0] == 0
+        assert height_dir[1] == Float('1.0')  # SymPy Float from calculation
+        assert height_dir[2] == 0
     
     def test_orientation_with_horizontal_timber(self):
         """Test orientation computation with a horizontal timber."""
@@ -198,19 +198,19 @@ class TestTimber:
         height_dir = timber.height_direction
         
         # Check length direction (north)
-        assert abs(float(length_dir[0]) - 0.0) < 1e-10
-        assert abs(float(length_dir[1]) - 1.0) < 1e-10
-        assert abs(float(length_dir[2]) - 0.0) < 1e-10
+        assert length_dir[0] == 0
+        assert length_dir[1] == Float('1.0')
+        assert length_dir[2] == 0
         
         # Check face direction (up)
-        assert abs(float(face_dir[0]) - 0.0) < 1e-10
-        assert abs(float(face_dir[1]) - 0.0) < 1e-10
-        assert abs(float(face_dir[2]) - 1.0) < 1e-10
+        assert face_dir[0] == 0
+        assert face_dir[1] == 0
+        assert face_dir[2] == Float('1.0')
         
         # Height direction should be Y x Z = +X (east)
-        assert abs(float(height_dir[0]) - 1.0) < 1e-10
-        assert abs(float(height_dir[1]) - 0.0) < 1e-10
-        assert abs(float(height_dir[2]) - 0.0) < 1e-10
+        assert height_dir[0] == Float('1.0')
+        assert height_dir[1] == 0
+        assert height_dir[2] == 0
     
     def test_orientation_directions_are_orthonormal(self):
         """Test that the computed direction vectors form an orthonormal basis."""
@@ -263,13 +263,13 @@ class TestTimber:
         face_dir = timber.face_direction
         
         # Check that directions are normalized
-        assert abs(float(length_dir[0]) - 0.0) < 1e-10
-        assert abs(float(length_dir[1]) - 0.0) < 1e-10
-        assert abs(float(length_dir[2]) - 1.0) < 1e-10
+        assert length_dir[0] == 0
+        assert length_dir[1] == 0
+        assert length_dir[2] == Float('1.0')
         
-        assert abs(float(face_dir[0]) - 1.0) < 1e-10
-        assert abs(float(face_dir[1]) - 0.0) < 1e-10
-        assert abs(float(face_dir[2]) - 0.0) < 1e-10
+        assert face_dir[0] == Float('1.0')
+        assert face_dir[1] == 0
+        assert face_dir[2] == 0
     
     def test_get_position_on_timber(self):
         """Test the get_position_on_timber method."""
@@ -283,27 +283,27 @@ class TestTimber:
         
         # Test at bottom position (position = 0)
         pos_at_bottom = timber.get_position_on_timber(0.0)
-        assert abs(float(pos_at_bottom[0]) - 1.0) < 1e-10
-        assert abs(float(pos_at_bottom[1]) - 2.0) < 1e-10
-        assert abs(float(pos_at_bottom[2]) - 3.0) < 1e-10
+        assert pos_at_bottom[0] == Float('1.0')
+        assert pos_at_bottom[1] == Float('2.0')
+        assert pos_at_bottom[2] == Float('3.0')
         
         # Test at midpoint (position = 2.5)
         pos_at_middle = timber.get_position_on_timber(2.5)
-        assert abs(float(pos_at_middle[0]) - 1.0) < 1e-10
-        assert abs(float(pos_at_middle[1]) - 4.5) < 1e-10  # 2.0 + 2.5 * 1.0
-        assert abs(float(pos_at_middle[2]) - 3.0) < 1e-10
+        assert pos_at_middle[0] == Float('1.0')
+        assert pos_at_middle[1] == Float('4.5')  # 2.0 + 2.5 * 1.0
+        assert pos_at_middle[2] == Float('3.0')
         
         # Test at top (position = 5.0)
         pos_at_top = timber.get_position_on_timber(5.0)
-        assert abs(float(pos_at_top[0]) - 1.0) < 1e-10
-        assert abs(float(pos_at_top[1]) - 7.0) < 1e-10  # 2.0 + 5.0 * 1.0
-        assert abs(float(pos_at_top[2]) - 3.0) < 1e-10
+        assert pos_at_top[0] == Float('1.0')
+        assert pos_at_top[1] == Float('7.0')  # 2.0 + 5.0 * 1.0
+        assert pos_at_top[2] == Float('3.0')
         
         # Test with negative position (beyond bottom)
         pos_neg = timber.get_position_on_timber(-1.0)
-        assert abs(float(pos_neg[0]) - 1.0) < 1e-10
-        assert abs(float(pos_neg[1]) - 1.0) < 1e-10  # 2.0 + (-1.0) * 1.0
-        assert abs(float(pos_neg[2]) - 3.0) < 1e-10
+        assert pos_neg[0] == Float('1.0')
+        assert pos_neg[1] == Float('1.0')  # 2.0 + (-1.0) * 1.0
+        assert pos_neg[2] == Float('3.0')
 
 
 class TestTimberCreation:
@@ -336,8 +336,8 @@ class TestTimberCreation:
         
         assert timber.length == 3.0
         # Check that directions are correct
-        assert abs(float(timber.length_direction[2]) - 1.0) < 1e-10  # Up
-        assert abs(float(timber.face_direction[0]) - 1.0) < 1e-10    # East
+        assert timber.length_direction[2] == Float('1.0')  # Up
+        assert timber.face_direction[0] == Float('1.0')    # East
     
     def test_create_vertical_timber_on_footprint(self):
         """Test vertical timber creation on footprint."""
@@ -353,11 +353,11 @@ class TestTimberCreation:
         
         assert timber.length == 2.5
         # Should be at footprint point 0
-        assert float(timber.bottom_position[0]) == 0.0
-        assert float(timber.bottom_position[1]) == 0.0
-        assert float(timber.bottom_position[2]) == 0.0
+        assert timber.bottom_position[0] == Float('0.0')
+        assert timber.bottom_position[1] == Float('0.0')
+        assert timber.bottom_position[2] == Float('0.0')
         # Should be vertical
-        assert abs(float(timber.length_direction[2]) - 1.0) < 1e-10
+        assert timber.length_direction[2] == Float('1.0')
     
     def test_create_horizontal_timber_on_footprint(self):
         """Test horizontal timber creation on footprint."""
@@ -375,8 +375,8 @@ class TestTimberCreation:
         
         assert timber.length == 3.0
         # Should be horizontal in X direction
-        assert abs(float(timber.length_direction[0]) - 1.0) < 1e-10
-        assert abs(float(timber.length_direction[2])) < 1e-10
+        assert timber.length_direction[0] == Float('1.0')
+        assert timber.length_direction[2] == 0
     
     def test_create_timber_extension(self):
         """Test timber extension creation."""
