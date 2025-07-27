@@ -442,7 +442,11 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         offset_dir = normalize_vector(cross_product(timber1.length_direction, length_direction))
         center_pos += offset_dir * offset_from_timber1
     
-    return create_timber(center_pos, timber_length, size, length_direction, face_direction)
+    # Calculate the bottom position (start of timber) from center position
+    # Move backward from center by half the timber length
+    bottom_pos = center_pos - length_direction * (timber_length / 2)
+    
+    return create_timber(bottom_pos, timber_length, size, length_direction, face_direction)
 
 def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
                                              location_on_timber1: float,
