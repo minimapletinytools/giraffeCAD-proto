@@ -3,7 +3,7 @@ GiraffeCAD - Timber framing CAD system
 Based on the API specification in morenotes.md
 """
 
-from sympy import Matrix, sqrt, simplify, Float
+from sympy import Matrix, sqrt, simplify, Float, Abs
 from moothymoth import Orientation
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
@@ -451,14 +451,14 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     else:
         # Generate an orthogonal face direction
         # Choose a reference vector that's not parallel to length_direction
-        up_vector = create_vector3d(0.0, 0.0, 1.0)
-        right_vector = create_vector3d(1.0, 0.0, 0.0)
+        up_vector = create_vector3d(0, 0, 1)    # Use integers for exact computation
+        right_vector = create_vector3d(1, 0, 0)  # Use integers for exact computation
         
-        # Check which reference vector is more orthogonal to length_direction
-        up_dot = abs(float(sum(length_direction[i] * up_vector[i] for i in range(3))))
-        right_dot = abs(float(sum(length_direction[i] * right_vector[i] for i in range(3))))
+        # Check which reference vector is more orthogonal to length_direction using exact SymPy comparison
+        up_dot = Abs(length_direction.dot(up_vector))     # Exact SymPy absolute value and dot product
+        right_dot = Abs(length_direction.dot(right_vector))  # Exact SymPy absolute value and dot product
         
-        # Use the more orthogonal reference vector
+        # Use the more orthogonal reference vector (exact SymPy comparison)
         if up_dot < right_dot:
             reference_vector = up_vector
         else:
