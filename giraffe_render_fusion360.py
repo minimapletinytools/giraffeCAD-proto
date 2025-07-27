@@ -224,7 +224,35 @@ def render_CutTimber(cut_timber: CutTimber, component_name: Optional[str] = None
         # Set the occurrence transform
         occurrence.transform = transform_cm
         
-        print(f"  Transform applied successfully")
+        # Force Fusion 360 to update/refresh the design to commit the transformation
+        design = get_active_design()
+        if design:
+            # Force a refresh of the design to commit the transformation
+            adsk.doEvents()  # Process any pending events
+            design.designType = design.designType  # Force a refresh
+        
+        # Verify the transform was applied by reading it back
+        applied_transform = occurrence.transform
+        applied_tx = applied_transform.getCell(0, 3)
+        applied_ty = applied_transform.getCell(1, 3)
+        applied_tz = applied_transform.getCell(2, 3)
+        
+        print(f"  Transform applied and verified:")
+        print(f"  Actual translation (cm): ({applied_tx:.3f}, {applied_ty:.3f}, {applied_tz:.3f})")
+        
+        # Check if the transform was actually applied correctly
+        expected_tx = transform_cm.getCell(0, 3)
+        expected_ty = transform_cm.getCell(1, 3)
+        expected_tz = transform_cm.getCell(2, 3)
+        
+        if (abs(applied_tx - expected_tx) > 0.001 or 
+            abs(applied_ty - expected_ty) > 0.001 or 
+            abs(applied_tz - expected_tz) > 0.001):
+            print(f"  WARNING: Transform verification failed!")
+            print(f"  Expected: ({expected_tx:.3f}, {expected_ty:.3f}, {expected_tz:.3f})")
+            print(f"  Actual:   ({applied_tx:.3f}, {applied_ty:.3f}, {applied_tz:.3f})")
+        else:
+            print(f"  Transform verification successful")
         
         # Set the timber material/appearance (optional)
         timber_body = extrude.bodies.item(0)
@@ -258,6 +286,7 @@ def render_CutTimber(cut_timber: CutTimber, component_name: Optional[str] = None
         return False
 
 
+# broken due to occurrence transform issue or something. Only properly sets transform on the first timber...
 def render_multiple_timbers(cut_timbers: list[CutTimber], base_name: str = "Timber") -> int:
     """
     Render multiple CutTimber objects in Fusion 360.
@@ -279,6 +308,13 @@ def render_multiple_timbers(cut_timbers: list[CutTimber], base_name: str = "Timb
         # Let render_CutTimber use the timber's name automatically
         if render_CutTimber(cut_timber, None):
             success_count += 1
+            
+            # Add a small delay and force events processing between components
+            # This helps prevent Fusion 360 from interfering with transforms
+            import time
+            time.sleep(0.1)  # 100ms delay
+            adsk.doEvents()  # Process any pending events
+            
         else:
             timber_name = cut_timber.name if cut_timber.name else f"{base_name}_{i+1:03d}"
             print(f"✗ Failed to render timber {timber_name}")
@@ -286,6 +322,137 @@ def render_multiple_timbers(cut_timbers: list[CutTimber], base_name: str = "Timb
     print(f"\n=== SUMMARY ===")
     print(f"Successfully rendered {success_count} out of {len(cut_timbers)} timbers")
     return success_count
+
+
+def render_multiple_timbers_two_pass(cut_timbers: list[CutTimber], base_name: str = "Timber") -> int:
+    """
+    Alternative approach: Create all geometry first, then apply transforms.
+    This can be more reliable with Fusion 360's occurrence system.
+    
+    Args:
+        cut_timbers: List of CutTimber objects to render
+        base_name: Base name for components (will be numbered)
+        
+    Returns:
+        int: Number of timbers successfully rendered
+    """
+    try:
+        print(f"Starting two-pass rendering of {len(cut_timbers)} timbers...")
+        
+        # Get the active design
+        design = get_active_design()
+        if not design:
+            print("Error: No active design found in Fusion 360")
+            return 0
+        
+        root_comp = design.rootComponent
+        created_components = []
+        
+        # PASS 1: Create all geometry without transforms
+        print(f"\n=== PASS 1: Creating geometry ===")
+        
+        for i, cut_timber in enumerate(cut_timbers):
+            component_name = cut_timber.name if cut_timber.name else f"{base_name}_{i+1:03d}"
+            print(f"Creating geometry for: {component_name}")
+            
+            timber = cut_timber.timber
+            length = timber.length
+            width = float(timber.size[0])
+            height = float(timber.size[1])
+            
+            # Convert to cm
+            length_cm = length * 100
+            width_cm = width * 100
+            height_cm = height * 100
+            
+            # Create component at origin
+            occurrence = root_comp.occurrences.addNewComponent(adsk.core.Matrix3D.create())
+            timber_component = occurrence.component
+            timber_component.name = component_name
+            
+            # Create sketch and extrusion (same as before)
+            sketches = timber_component.sketches
+            xy_plane = timber_component.xYConstructionPlane
+            sketch = sketches.add(xy_plane)
+            
+            rect_lines = sketch.sketchCurves.sketchLines
+            x1, y1 = -width_cm / 2, -height_cm / 2
+            x2, y2 = width_cm / 2, height_cm / 2
+            
+            point1 = adsk.core.Point3D.create(x1, y1, 0)
+            point2 = adsk.core.Point3D.create(x2, y1, 0)
+            point3 = adsk.core.Point3D.create(x2, y2, 0)
+            point4 = adsk.core.Point3D.create(x1, y2, 0)
+            
+            rect_lines.addByTwoPoints(point1, point2)
+            rect_lines.addByTwoPoints(point2, point3)
+            rect_lines.addByTwoPoints(point3, point4)
+            rect_lines.addByTwoPoints(point4, point1)
+            
+            profile = sketch.profiles.item(0) if sketch.profiles.count > 0 else None
+            if not profile:
+                print(f"Failed to create profile for {component_name}")
+                continue
+            
+            extrudes = timber_component.features.extrudeFeatures
+            extrude_input = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            distance = adsk.core.ValueInput.createByReal(length_cm)
+            extrude_input.setDistanceExtent(False, distance)
+            extrude = extrudes.add(extrude_input)
+            
+            if extrude:
+                # Store reference for transform pass
+                transform = create_matrix3d_from_orientation(timber.bottom_position, timber.orientation)
+                transform_cm = adsk.core.Matrix3D.create()
+                
+                # Scale translation to cm
+                for row in range(3):
+                    for col in range(3):
+                        transform_cm.setCell(row, col, transform.getCell(row, col))
+                transform_cm.setCell(0, 3, transform.getCell(0, 3) * 100)
+                transform_cm.setCell(1, 3, transform.getCell(1, 3) * 100)
+                transform_cm.setCell(2, 3, transform.getCell(2, 3) * 100)
+                transform_cm.setCell(3, 3, 1.0)
+                
+                created_components.append((occurrence, transform_cm, component_name))
+                print(f"✓ Created geometry for {component_name}")
+            else:
+                print(f"✗ Failed to create extrusion for {component_name}")
+        
+        # Force refresh after all geometry creation
+        adsk.doEvents()
+        
+        # PASS 2: Apply all transforms
+        print(f"\n=== PASS 2: Applying transforms ===")
+        
+        for occurrence, transform_cm, component_name in created_components:
+            print(f"Applying transform to: {component_name}")
+            
+            occurrence.transform = transform_cm
+            
+            # Verify
+            applied_transform = occurrence.transform
+            expected_tx = transform_cm.getCell(0, 3)
+            applied_tx = applied_transform.getCell(0, 3)
+            
+            if abs(applied_tx - expected_tx) < 0.001:
+                print(f"✓ Transform applied successfully")
+            else:
+                print(f"✗ Transform verification failed for {component_name}")
+        
+        # Final refresh
+        adsk.doEvents()
+        
+        success_count = len(created_components)
+        print(f"\n=== SUMMARY ===")
+        print(f"Successfully rendered {success_count} out of {len(cut_timbers)} timbers")
+        return success_count
+        
+    except Exception as e:
+        print(f"Error in two-pass rendering: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        return 0
 
 
 def clear_design() -> bool:
