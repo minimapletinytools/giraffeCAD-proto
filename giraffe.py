@@ -58,6 +58,29 @@ class ShoulderPlane:
     reference_end: TimberReferenceEnd
     distance: float
     normal: V3
+    
+    @classmethod
+    def create(cls, reference_end: TimberReferenceEnd, distance: float, normal: Optional[V3] = None) -> 'ShoulderPlane':
+        """
+        Create a ShoulderPlane with automatic normal determination.
+        
+        Args:
+            reference_end: Which end of the timber the plane references
+            distance: Distance from the reference end
+            normal: Optional normal vector. If not provided, determined from reference_end
+            
+        Returns:
+            ShoulderPlane instance
+        """
+        if normal is None:
+            if reference_end == TimberReferenceEnd.TOP:
+                # Normal points toward TOP (upward)
+                normal = create_vector3d(0, 0, 1)
+            else:  # TimberReferenceEnd.BOTTOM
+                # Normal points toward BOTTOM (downward)
+                normal = create_vector3d(0, 0, -1)
+        
+        return cls(reference_end=reference_end, distance=distance, normal=normal)
 
 @dataclass
 class StandardTenon:
@@ -565,22 +588,34 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
 # Joint Construction Functions
 # ============================================================================
 
-def simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
-                                  tenon_thickness: float, tenon_length: float,
-                                  tenon_depth: float):
+def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
+                                                          tenon_end: TimberReferenceEnd,
+                                                          tenon_thickness: float, tenon_length: float,
+                                                          tenon_depth: float):
     """
-    Creates a mortise and tenon joint
-    The tenon is centered on the tenon_timber and the mortise is cut out of the mortise_timber
+    Creates a mortise and tenon joint for face-aligned timbers.
+    
+    Args:
+        mortise_timber: Timber that will receive the mortise cut
+        tenon_timber: Timber that will receive the tenon cut
+        tenon_end: Which end of the tenon timber the tenon will be cut from
+        tenon_thickness: Width and height of the tenon
+        tenon_length: Length (depth) of the tenon extending from the timber
+        tenon_depth: How deep the mortise goes into the mortise timber
     """
     # Create the joint
     joint = Joint()
     
+    # Compute the mortise face by finding which face of the mortise timber 
+    # aligns with the tenon end face
+    tenon_end_direction = _get_tenon_end_direction(tenon_timber, tenon_end)
+    mortise_face = _find_aligned_face(mortise_timber, tenon_end_direction)
+    
     # Create tenon specification
     tenon_spec = StandardTenon(
-        shoulder_plane=ShoulderPlane(
-            reference_end=TimberReferenceEnd.BOTTOM,
-            distance=0,  # Use integer instead of 0.0
-            normal=create_vector3d(0, 0, 1)
+        shoulder_plane=ShoulderPlane.create(
+            reference_end=tenon_end,
+            distance=0
         ),
         pos_rel_to_long_edge=None,  # Centered
         width=tenon_thickness,
@@ -590,7 +625,7 @@ def simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
     
     # Create mortise specification
     mortise_spec = StandardMortise(
-        mortise_face=TimberFace.TOP,
+        mortise_face=mortise_face,
         pos_rel_to_end=(TimberReferenceEnd.BOTTOM, 0),  # Use integer instead of 0.0
         pos_rel_to_long_face=None,  # Centered
         width=tenon_thickness,
@@ -626,3 +661,44 @@ def _timber_face_to_vector(face: TimberFace) -> Direction3D:
         return create_vector3d(0, 1, 0)
     else:  # BACK
         return create_vector3d(0, -1, 0)
+
+def _get_timber_face_direction(timber: Timber, face: TimberFace) -> Direction3D:
+    """Get the world direction vector for a specific face of a timber"""
+    if face == TimberFace.TOP:
+        return timber.height_direction
+    elif face == TimberFace.BOTTOM:
+        return -timber.height_direction
+    elif face == TimberFace.RIGHT:
+        return timber.face_direction
+    elif face == TimberFace.LEFT:
+        return -timber.face_direction
+    elif face == TimberFace.FORWARD:
+        # Forward is perpendicular to both face and height directions
+        return normalize_vector(cross_product(timber.face_direction, timber.height_direction))
+    else:  # BACK
+        return -normalize_vector(cross_product(timber.face_direction, timber.height_direction))
+
+def _get_tenon_end_direction(timber: Timber, end: TimberReferenceEnd) -> Direction3D:
+    """Get the world direction vector for a specific end of a timber"""
+    if end == TimberReferenceEnd.TOP:
+        return timber.length_direction
+    else:  # BOTTOM
+        return -timber.length_direction
+
+def _find_aligned_face(mortise_timber: Timber, target_direction: Direction3D) -> TimberFace:
+    """Find which face of the mortise timber best aligns with the target direction"""
+    faces = [TimberFace.TOP, TimberFace.BOTTOM, TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FORWARD, TimberFace.BACK]
+    
+    best_face = faces[0]
+    face_direction = _get_timber_face_direction(mortise_timber, faces[0])
+    best_alignment = float(target_direction.dot(face_direction))
+    
+    for face in faces[1:]:
+        face_direction = _get_timber_face_direction(mortise_timber, face)
+        # Use dot product to find best alignment - prefer faces pointing in same direction
+        alignment = float(target_direction.dot(face_direction))
+        if alignment > best_alignment:
+            best_alignment = alignment
+            best_face = face
+    
+    return best_face
