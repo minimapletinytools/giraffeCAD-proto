@@ -99,7 +99,9 @@ class StandardMortise:
     mortise_face: TimberFace
     pos_rel_to_end: Tuple[TimberReferenceEnd, float]
     pos_rel_to_long_face: Optional[Tuple[TimberReferenceLongFace, float]]
+    # in the long face axis
     width: float
+    # in the end axis
     height: float
     depth: float
 
@@ -683,18 +685,17 @@ def _timber_face_to_vector(face: TimberFace) -> Direction3D:
 def _get_timber_face_direction(timber: Timber, face: TimberFace) -> Direction3D:
     """Get the world direction vector for a specific face of a timber"""
     if face == TimberFace.TOP:
-        return timber.height_direction
+        return timber.length_direction
     elif face == TimberFace.BOTTOM:
-        return -timber.height_direction
+        return -timber.length_direction
     elif face == TimberFace.RIGHT:
         return timber.face_direction
     elif face == TimberFace.LEFT:
         return -timber.face_direction
     elif face == TimberFace.FORWARD:
-        # Forward is perpendicular to both face and height directions
-        return normalize_vector(cross_product(timber.face_direction, timber.height_direction))
+        return timber.height_direction
     else:  # BACK
-        return -normalize_vector(cross_product(timber.face_direction, timber.height_direction))
+        return -timber.height_direction
 
 def _get_tenon_end_direction(timber: Timber, end: TimberReferenceEnd) -> Direction3D:
     """Get the world direction vector for a specific end of a timber"""
