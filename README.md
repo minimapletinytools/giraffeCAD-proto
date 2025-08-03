@@ -44,12 +44,18 @@ pip install -r requirements.txt
 ### 4. Install Development Dependencies
 
 ```bash
+# Testing framework
 pip install pytest
+
+# Auto-testing tool (recommended for development)
+pip install pytest-watch
 ```
 
 ## Running Tests
 
-To run the test suite:
+### One-Time Testing
+
+To run the test suite once:
 
 ```bash
 # Make sure your virtual environment is activated
@@ -62,6 +68,41 @@ source venv/bin/activate
 ./venv/bin/python -m pytest tests/test_giraffe.py -v
 ./venv/bin/python -m pytest tests/test_moothymoth.py -v
 ```
+
+### Automatic Testing (Recommended for Development)
+
+For continuous development, you can have tests run automatically whenever you save changes to your code:
+
+```bash
+# Install pytest-watch (one-time setup)
+pip install pytest-watch
+
+# Activate venv
+source venv/bin/activate 
+
+# Start automatic testing - watches all Python files and runs tests on changes
+ptw --ignore fusion360 . tests/
+
+# Or watch specific files with verbose output
+ptw giraffe.py tests/ -- -v
+
+# Or just watch the main files
+ptw giraffe.py moothymoth.py
+```
+
+**How it works:**
+- `ptw` (pytest-watch) monitors your Python files for changes
+- When you save a file, it automatically runs the test suite
+- Shows immediate feedback as you develop
+- Press `Ctrl+C` to stop the auto-testing
+
+**Recommended workflow:**
+1. Open one terminal and run `source venv/bin/activate && ptw`
+2. Edit your code in your editor
+3. Save files and see test results immediately
+4. Keep the auto-tester running while you develop
+
+### Test Suite Coverage
 
 The test suite includes:
 - **Vector and matrix operations** - Testing SymPy-based vector math
