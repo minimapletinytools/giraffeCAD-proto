@@ -326,7 +326,7 @@ class Joint:
 # tenon_length is in the length direction of the mortise_timber
 # tenon_depth is the depth is how deep the tenon extends into the mortise_timber
 # TODO provide optional drawbore arguments
-simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber, tenon_thickness: float, tenon_length: float, tenon_depth: float)
+simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber, tenon_end: TimberReferenceEnd, tenon_thickness: float, tenon_length: float, tenon_depth: float)
 ```
 
 To store joints on the timber, we have:

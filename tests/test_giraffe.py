@@ -8,7 +8,7 @@ import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
 from moothymoth import Orientation
 from giraffe import *
-from giraffe import _timber_face_to_vector
+from giraffe import _timber_face_to_vector, _find_aligned_face, _get_timber_face_direction, _get_tenon_end_direction
 
 
 class TestVectorHelpers:
@@ -399,8 +399,8 @@ class TestTimberCreation:
 class TestJointConstruction:
     """Test joint construction functions."""
     
-    def test_simple_mortise_and_tenon_joint(self):
-        """Test simple mortise and tenon joint creation."""
+    def test_simple_mortise_and_tenon_joint_on_face_aligned_timbers(self):
+        """Test simple mortise and tenon joint creation for face-aligned timbers."""
         mortise_timber = Timber(
             length=3.0,
             size=create_vector2d(0.2, 0.2),
@@ -417,8 +417,9 @@ class TestJointConstruction:
             face_direction=create_vector3d(1.0, 0.0, 0.0)
         )
         
-        joint = simple_mortise_and_tenon_joint(
-            mortise_timber, tenon_timber, 
+        joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+            mortise_timber, tenon_timber,
+            tenon_end=TimberReferenceEnd.BOTTOM,
             tenon_thickness=0.05,
             tenon_length=0.1,
             tenon_depth=0.08
@@ -909,10 +910,9 @@ class TestTimberCutOperations:
         )
         
         tenon_spec = StandardTenon(
-            shoulder_plane=ShoulderPlane(
+            shoulder_plane=ShoulderPlane.create(
                 reference_end=TimberReferenceEnd.TOP,
-                distance=0.05,
-                normal=create_vector3d(0, 0, 1)
+                distance=0.05
             ),
             pos_rel_to_long_edge=None,
             width=0.04,
@@ -970,10 +970,9 @@ class TestEnumsAndDataStructures:
     
     def test_standard_tenon_dataclass(self):
         """Test StandardTenon dataclass."""
-        shoulder_plane = ShoulderPlane(
+        shoulder_plane = ShoulderPlane.create(
             reference_end=TimberReferenceEnd.TOP,
-            distance=0.1,
-            normal=create_vector3d(0, 0, 1)
+            distance=0.1
         )
         
         tenon = StandardTenon(
@@ -999,3 +998,241 @@ class TestEnumsAndDataStructures:
         assert offset.reference_face == TimberFace.TOP
         assert offset.centerline_offset == 0.05
         assert offset.face_offset == 0.02
+    
+    def test_shoulder_plane_create_method(self):
+        """Test ShoulderPlane.create method with automatic normal determination."""
+        # Test TOP reference_end - should get upward normal
+        plane_top = ShoulderPlane.create(
+            reference_end=TimberReferenceEnd.TOP,
+            distance=0.1
+        )
+        
+        assert plane_top.reference_end == TimberReferenceEnd.TOP
+        assert plane_top.distance == 0.1
+        assert plane_top.normal == create_vector3d(0, 0, 1)  # Upward
+        
+        # Test BOTTOM reference_end - should get downward normal
+        plane_bottom = ShoulderPlane.create(
+            reference_end=TimberReferenceEnd.BOTTOM,
+            distance=0.05
+        )
+        
+        assert plane_bottom.reference_end == TimberReferenceEnd.BOTTOM
+        assert plane_bottom.distance == 0.05
+        assert plane_bottom.normal == create_vector3d(0, 0, -1)  # Downward
+        
+        # Test with explicit normal - should use provided normal
+        custom_normal = create_vector3d(1, 0, 0)
+        plane_custom = ShoulderPlane.create(
+            reference_end=TimberReferenceEnd.TOP,
+            distance=0.2,
+            normal=custom_normal
+        )
+        
+        assert plane_custom.reference_end == TimberReferenceEnd.TOP
+        assert plane_custom.distance == 0.2
+        assert plane_custom.normal == custom_normal
+
+
+class TestHelperFunctions:
+    """Test helper functions for timber operations."""
+    
+    def test_find_aligned_face_axis_aligned_timber(self):
+        """Test _find_aligned_face with axis-aligned timber."""
+        # Create an axis-aligned timber (standard orientation)
+        timber = Timber(
+            length=2.0,
+            size=create_vector2d(0.2, 0.3),  # width=0.2, height=0.3
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),  # Z-up (length)
+            face_direction=create_vector3d(1, 0, 0)     # X-right (face/width)
+        )
+        
+        # Test alignment with each cardinal direction
+        # Note: In timber coordinate system:
+        # - FORWARD/BACK faces are along length_direction (Z-axis)
+        # - RIGHT/LEFT faces are along face_direction (X-axis)  
+        # - TOP/BOTTOM faces are along height_direction (Y-axis)
+        
+        # Target pointing in +Z (length direction) should align with FORWARD face
+        target_length_pos = create_vector3d(0, 0, 1)
+        aligned_face = _find_aligned_face(timber, target_length_pos)
+        assert aligned_face == TimberFace.FORWARD
+        
+        # Target pointing in -Z (negative length direction) should align with BACK face  
+        target_length_neg = create_vector3d(0, 0, -1)
+        aligned_face = _find_aligned_face(timber, target_length_neg)
+        assert aligned_face == TimberFace.BACK
+        
+        # Target pointing in +X (face direction) should align with RIGHT face
+        target_face_pos = create_vector3d(1, 0, 0)
+        aligned_face = _find_aligned_face(timber, target_face_pos)
+        assert aligned_face == TimberFace.RIGHT
+        
+        # Target pointing in -X (negative face direction) should align with LEFT face
+        target_face_neg = create_vector3d(-1, 0, 0)
+        aligned_face = _find_aligned_face(timber, target_face_neg)
+        assert aligned_face == TimberFace.LEFT
+        
+        # Target pointing in +Y (height direction) should align with TOP face
+        target_height_pos = create_vector3d(0, 1, 0)
+        aligned_face = _find_aligned_face(timber, target_height_pos)
+        assert aligned_face == TimberFace.TOP
+        
+        # Target pointing in -Y (negative height direction) should align with BOTTOM face
+        target_height_neg = create_vector3d(0, -1, 0)
+        aligned_face = _find_aligned_face(timber, target_height_neg)
+        assert aligned_face == TimberFace.BOTTOM
+    
+    def test_find_aligned_face_rotated_timber(self):
+        """Test _find_aligned_face with rotated timber."""
+        # Create a timber rotated 90 degrees around Z axis
+        # length_direction stays Z-up, but face_direction becomes Y-forward
+        timber = Timber(
+            length=2.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),  # Z-up (length)
+            face_direction=create_vector3d(0, 1, 0)     # Y-forward (face/width)
+        )
+        
+        # Now the timber's faces are rotated:
+        # TOP face points in -X direction (negative height)
+        # BOTTOM face points in +X direction (positive height)
+        # RIGHT face points in +Y direction (face_direction)
+        # LEFT face points in -Y direction (negative face)  
+        # FORWARD face points in +Z direction (length_direction)
+        # BACK face points in -Z direction (negative length)
+        
+        # Target pointing in +Y direction should align with RIGHT face
+        target_y_pos = create_vector3d(0, 1, 0)
+        aligned_face = _find_aligned_face(timber, target_y_pos)
+        assert aligned_face == TimberFace.RIGHT
+        
+        # Target pointing in -Y direction should align with LEFT face
+        target_y_neg = create_vector3d(0, -1, 0)
+        aligned_face = _find_aligned_face(timber, target_y_neg)
+        assert aligned_face == TimberFace.LEFT
+        
+        # Target pointing in -X direction should align with TOP face
+        target_x_neg = create_vector3d(-1, 0, 0)
+        aligned_face = _find_aligned_face(timber, target_x_neg)
+        assert aligned_face == TimberFace.TOP
+        
+        # Target pointing in +X direction should align with BOTTOM face
+        target_x_pos = create_vector3d(1, 0, 0)
+        aligned_face = _find_aligned_face(timber, target_x_pos)
+        assert aligned_face == TimberFace.BOTTOM
+    
+    def test_find_aligned_face_horizontal_timber(self):
+        """Test _find_aligned_face with horizontal timber."""
+        # Create a horizontal timber lying along X axis
+        timber = Timber(
+            length=3.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(1, 0, 0),   # X-right (length)
+            face_direction=create_vector3d(0, 0, 1)      # Z-up (face/width)
+        )
+        
+        # For this horizontal timber:
+        # TOP face points in -Y direction (negative height)
+        # BOTTOM face points in +Y direction (positive height)
+        # RIGHT face points in +Z direction (face_direction)
+        # LEFT face points in -Z direction (negative face)
+        # FORWARD face points in +X direction (length_direction)  
+        # BACK face points in -X direction (negative length)
+        
+        # Target pointing in +Z should align with RIGHT face
+        target_z_pos = create_vector3d(0, 0, 1)
+        aligned_face = _find_aligned_face(timber, target_z_pos)
+        assert aligned_face == TimberFace.RIGHT
+        
+        # Target pointing in -Z should align with LEFT face
+        target_z_neg = create_vector3d(0, 0, -1)
+        aligned_face = _find_aligned_face(timber, target_z_neg)
+        assert aligned_face == TimberFace.LEFT
+        
+        # Target pointing in +X (length direction) should align with FORWARD face
+        target_x_pos = create_vector3d(1, 0, 0)
+        aligned_face = _find_aligned_face(timber, target_x_pos)
+        assert aligned_face == TimberFace.FORWARD
+        
+        # Target pointing in +Y should align with BOTTOM face
+        target_y_pos = create_vector3d(0, 1, 0)
+        aligned_face = _find_aligned_face(timber, target_y_pos)
+        assert aligned_face == TimberFace.BOTTOM
+    
+    def test_find_aligned_face_diagonal_target(self):
+        """Test _find_aligned_face with diagonal target direction."""
+        # Create an axis-aligned timber
+        timber = Timber(
+            length=2.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Z-up
+            face_direction=create_vector3d(1, 0, 0)      # X-right
+        )
+        
+        # Test with diagonal direction that's closer to +Z than +X
+        # This should align with FORWARD face (Z-direction)
+        target_diagonal_z = normalize_vector(create_vector3d(0.3, 0, 1))  # Mostly +Z, little bit +X
+        aligned_face = _find_aligned_face(timber, target_diagonal_z)
+        assert aligned_face == TimberFace.FORWARD
+        
+        # Test with diagonal direction that's closer to +X than +Z
+        # This should align with RIGHT face (X-direction)
+        target_diagonal_x = normalize_vector(create_vector3d(1, 0, 0.3))  # Mostly +X, little bit +Z
+        aligned_face = _find_aligned_face(timber, target_diagonal_x)
+        assert aligned_face == TimberFace.RIGHT
+    
+    def test_get_timber_face_direction(self):
+        """Test _get_timber_face_direction helper function."""
+        # Create an axis-aligned timber
+        timber = Timber(
+            length=2.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Z-up
+            face_direction=create_vector3d(1, 0, 0)      # X-right
+        )
+        
+        # Test that face directions match expected values
+        top_dir = _get_timber_face_direction(timber, TimberFace.TOP)
+        assert top_dir == timber.height_direction
+        
+        bottom_dir = _get_timber_face_direction(timber, TimberFace.BOTTOM)
+        assert bottom_dir == -timber.height_direction
+        
+        right_dir = _get_timber_face_direction(timber, TimberFace.RIGHT)
+        assert right_dir == timber.face_direction
+        
+        left_dir = _get_timber_face_direction(timber, TimberFace.LEFT)
+        assert left_dir == -timber.face_direction
+        
+        # FORWARD should be perpendicular to both face and height
+        forward_dir = _get_timber_face_direction(timber, TimberFace.FORWARD)
+        expected_forward = normalize_vector(cross_product(timber.face_direction, timber.height_direction))
+        
+        # Check that vectors are equal (within floating point precision)
+        diff = forward_dir - expected_forward
+        assert float(diff.norm()) < 1e-10
+    
+    def test_get_tenon_end_direction(self):
+        """Test _get_tenon_end_direction helper function."""
+        # Create a timber
+        timber = Timber(
+            length=2.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Z-up
+            face_direction=create_vector3d(1, 0, 0)      # X-right
+        )
+        
+        # Test TOP end direction
+        top_dir = _get_tenon_end_direction(timber, TimberReferenceEnd.TOP)
+        assert top_dir == timber.length_direction
+        
+        # Test BOTTOM end direction  
+        bottom_dir = _get_tenon_end_direction(timber, TimberReferenceEnd.BOTTOM)
+        assert bottom_dir == -timber.length_direction
