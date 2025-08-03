@@ -909,10 +909,10 @@ class TestTimberCutOperations:
         )
         
         tenon_spec = StandardTenon(
-            shoulder_plane=OrientedShoulderPlane(
-                direction=TimberReferenceEnd.TOP,
+            shoulder_plane=ShoulderPlane(
+                reference_end=TimberReferenceEnd.TOP,
                 distance=0.05,
-                orientation=Orientation.identity()
+                normal=create_vector3d(0, 0, 1)
             ),
             pos_rel_to_long_edge=None,
             width=0.04,
@@ -970,10 +970,10 @@ class TestEnumsAndDataStructures:
     
     def test_standard_tenon_dataclass(self):
         """Test StandardTenon dataclass."""
-        shoulder_plane = OrientedShoulderPlane(
-            direction=TimberReferenceEnd.TOP,
+        shoulder_plane = ShoulderPlane(
+            reference_end=TimberReferenceEnd.TOP,
             distance=0.1,
-            orientation=Orientation.identity()
+            normal=create_vector3d(0, 0, 1)
         )
         
         tenon = StandardTenon(
