@@ -32,9 +32,25 @@ We will also say +X is "east" and +Y is "north"
 
 ## Alignment
 
-2 timbers are "face-aligned" if their faces are parallel or perpendicular to each other
-parts on 2 separate timbers are "face-plane-aligned" if they are coplanar with the face planes of 2 face-aligned timbers
-So for example, in conventional framing, all posts on a wall would their vertical center lines face-plane-aligned
+### Face-Aligned Timbers
+Two timbers are **face-aligned** if any face of one timber is parallel to any face of the other timber. This occurs when their orientations are related by 90-degree rotations around any axis, meaning they share the same coordinate grid alignment.
+
+Mathematically, timbers are face-aligned if any of their orthogonal direction vectors (length_direction, face_direction, height_direction) are parallel to each other.
+
+Examples of face-aligned timbers:
+- A vertical post and a horizontal beam (orthogonal but face-aligned)
+- Two parallel beams with the same orientation
+- Two posts where one is rotated 90° around its vertical axis
+- A floor joist and a rim joist meeting at 90°
+
+### Face-Parallel Timbers
+Two timbers are **face-parallel** if their length directions are parallel (same or opposite direction).
+
+### Face-Orthogonal Timbers  
+Two timbers are **face-orthogonal** if their length directions are perpendicular.
+
+### Face-Plane-Aligned Parts
+Parts on two separate timbers are **face-plane-aligned** if they are coplanar with the face planes of two face-aligned timbers. For example, in conventional framing, all posts on a wall would have their vertical center lines face-plane-aligned.
 
 ## Footprint
 A support class representing the footprint of the structure in the XY plane to help position and orient timbers

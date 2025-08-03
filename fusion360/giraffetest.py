@@ -22,7 +22,7 @@ try:
     # Import from parent directory - these files are NOT copied locally
     from sawhorse_example import create_sawhorse
     from supersimple_example import create_supersimple_structure
-    from supersimpleexample2 import create_supersimple_structure2
+    from supersimple_example2 import create_supersimple_structure2
     from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
     
     # Test that core dependencies are available
@@ -41,11 +41,125 @@ except ImportError as e:
 app = adsk.core.Application.get()
 ui = app.userInterface
 
+# Global variables for command handlers
+handlers = []
+
+
+class GiraffeTestCommandHandler(adsk.core.CommandEventHandler):
+    """Command handler for GiraffeTest shortcut."""
+    
+    def __init__(self):
+        super().__init__()
+    
+    def notify(self, args):
+        """Called when the command is executed."""
+        try:
+            # Run the main script functionality
+            run('shortcut')
+        except Exception as e:
+            ui.messageBox(f'Error running GiraffeTest: {str(e)}')
+
+
+def create_giraffe_command():
+    """Create the GiraffeTest command with keyboard shortcut."""
+    command_created = False
+    shortcut_created = False
+    
+    try:
+        # Get the CommandDefinitions collection
+        cmdDefs = ui.commandDefinitions
+        
+        # Check if command already exists and remove it
+        existingCmd = cmdDefs.itemById('giraffeTestCmd')
+        if existingCmd:
+            print("Removing existing GiraffeCAD command...")
+            existingCmd.deleteMe()
+        
+        # Create the command definition
+        cmdDef = cmdDefs.addButtonDefinition(
+            'giraffeTestCmd',
+            'GiraffeCAD Test',
+            'Run GiraffeCAD sawhorse generation',
+            ''  # No icon resource for now
+        )
+        
+        # Connect the command handler
+        cmdHandler = GiraffeTestCommandHandler()
+        cmdDef.commandCreated.add(cmdHandler)
+        handlers.append(cmdHandler)
+        
+        command_created = True
+        print("GiraffeCAD command created successfully")
+        app.log("GiraffeCAD command created successfully")
+        
+        # Try to add keyboard shortcut
+        try:
+            shortcuts = ui.keyboardShortcuts
+            
+            # Check if shortcut already exists and remove it
+            existing_shortcut = shortcuts.itemById('giraffeTestCmd')
+            if existing_shortcut:
+                print("Removing existing shortcut...")
+                existing_shortcut.deleteMe()
+            
+            # Try different shortcut combinations if the first one fails
+            shortcut_attempts = [
+                ('Ctrl+Shift+G', 'Ctrl+Shift+G'),
+                ('Ctrl+Alt+G', 'Ctrl+Alt+G'),
+                ('Ctrl+Shift+M', 'Ctrl+Shift+M'),  # M for "My script" as in your example
+                ('F9', 'F9')
+            ]
+            
+            for shortcut_key, display_name in shortcut_attempts:
+                try:
+                    shortcut = shortcuts.add('giraffeTestCmd', shortcut_key)
+                    shortcut_created = True
+                    print(f"GiraffeCAD shortcut created: {display_name}")
+                    app.log(f"GiraffeCAD shortcut created: {display_name}")
+                    break
+                except Exception as shortcut_error:
+                    print(f"Failed to create shortcut {shortcut_key}: {str(shortcut_error)}")
+                    continue
+            
+            if not shortcut_created:
+                print("Could not create any keyboard shortcut - all attempts failed")
+                app.log("Could not create any keyboard shortcut - all attempts failed")
+                
+        except Exception as shortcut_error:
+            print(f"Shortcut creation failed: {str(shortcut_error)}")
+            app.log(f"Shortcut creation failed: {str(shortcut_error)}")
+            import traceback
+            print(f"Shortcut error traceback: {traceback.format_exc()}")
+        
+        return command_created
+        
+    except Exception as e:
+        print(f"Failed to create GiraffeCAD command: {str(e)}")
+        app.log(f"Failed to create GiraffeCAD command: {str(e)}")
+        import traceback
+        print(f"Command creation error traceback: {traceback.format_exc()}")
+        return False
+
 
 def run(_context: str):
     """This function is called by Fusion when the script is run."""
 
     try:
+        # If this is the initial script run (not from shortcut), create the command
+        if _context != 'shortcut':
+            if create_giraffe_command():
+                # Check what was actually created by looking at the logs
+                ui.messageBox('🎯 GiraffeCAD Command Created!\n\n'
+                            'Check the TEXT COMMANDS panel for shortcut details.\n'
+                            'If a shortcut was created, you can use it to quickly regenerate.\n\n'
+                            'Running initial sawhorse generation now...',
+                            'GiraffeCAD Ready')
+            else:
+                #ui.messageBox('Warning: Could not create command.\n'
+                #            'Check the TEXT COMMANDS panel for error details.\n'
+                #            'Running sawhorse generation anyway...',
+                #            'Command Creation Failed')
+        
         # Check if imports were successful
         if not import_success:
             ui.messageBox(f'Failed to import required modules: {import_error}\n\n'
@@ -200,7 +314,28 @@ def run_debug(_context: str):
 def stop(_context: str):
     """This function is called by Fusion when the script is stopped."""
     try:
-        # Clean up any resources if needed
-        pass
+        # Clean up command and shortcut
+        cmdDefs = ui.commandDefinitions
+        existingCmd = cmdDefs.itemById('giraffeTestCmd')
+        if existingCmd:
+            existingCmd.deleteMe()
+        
+        # Clean up keyboard shortcut
+        try:
+            shortcuts = ui.keyboardShortcuts
+            shortcut = shortcuts.itemById('giraffeTestCmd')
+            if shortcut:
+                shortcut.deleteMe()
+        except:
+            # Shortcut cleanup may fail, but it's not critical
+            pass
+        
+        # Clear handlers
+        global handlers
+        handlers.clear()
+        
+        print("GiraffeCAD command and shortcut cleaned up")
+        app.log("GiraffeCAD command and shortcut cleaned up")
+        
     except:  #pylint:disable=bare-except
         app.log(f'Stop failed:\n{traceback.format_exc()}')
