@@ -245,7 +245,7 @@ class TimberCutOperation:
 A tenon consists of a shoulder plan, a tenon direction (bottom to top), and additive geometry built in the volume of the timber in the tenon direction past the shoulder plane. Depth can be measured from the the shoulder plane. For angled shoulder planes, the distance is measured from where the shoulder plane meets the reference long edge. The tenon direction must be provided is usually determined by the joint operation (i.e. always in the direction of the length vector of timber the tenon is intended to it into).
 
 ```
-class OrientedShoulderPlane:
+class ShoulderPlane:
     direction : TimberEnd
     # distance is measured from the TimberEnd face
     distance : float
@@ -258,7 +258,7 @@ A standard tenon is a rectangular cross section that extrudes from the shoulder 
 
 ```
 class StandardTenon:
-    shoulder_plane : OrientedShoulderPlane
+    shoulder_plane : ShoulderPlane
     # if not provided, the cross section is centered on the centerline of the timber
     pos_rel_to_long_edge : (TimberReferenceLongEdge, V2)?
     # in the X axis

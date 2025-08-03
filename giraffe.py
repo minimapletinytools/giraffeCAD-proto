@@ -51,15 +51,17 @@ class TimberReferenceLongEdge(Enum):
 # Data Structures
 # ============================================================================
 
+# the shoulder plane is defined by the normal of a plane that is distance away from the center point of the TimberReferenceEnd face of the timber
+# the "cut" side is in the direction of the normal which should always point towards reference_end
 @dataclass
-class OrientedShoulderPlane:
-    direction: TimberReferenceEnd
+class ShoulderPlane:
+    reference_end: TimberReferenceEnd
     distance: float
-    orientation: Orientation
+    normal: V3
 
 @dataclass
 class StandardTenon:
-    shoulder_plane: OrientedShoulderPlane
+    shoulder_plane: ShoulderPlane
     pos_rel_to_long_edge: Optional[Tuple[TimberReferenceLongEdge, V2]]
     width: float
     height: float
@@ -575,10 +577,10 @@ def simple_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
     
     # Create tenon specification
     tenon_spec = StandardTenon(
-        shoulder_plane=OrientedShoulderPlane(
-            direction=TimberReferenceEnd.BOTTOM,
+        shoulder_plane=ShoulderPlane(
+            reference_end=TimberReferenceEnd.BOTTOM,
             distance=0,  # Use integer instead of 0.0
-            orientation=Orientation.identity()
+            normal=create_vector3d(0, 0, 1)
         ),
         pos_rel_to_long_edge=None,  # Centered
         width=tenon_thickness,
