@@ -602,7 +602,20 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
         tenon_thickness: Width and height of the tenon
         tenon_length: Length (depth) of the tenon extending from the timber
         tenon_depth: How deep the mortise goes into the mortise timber
+        
+    Raises:
+        AssertionError: If timbers are not properly oriented for this joint type
     """
+    # Verify that the timbers are face-aligned and orthogonal
+    # Face-aligned means they share the same coordinate grid alignment  
+    assert _are_timbers_face_aligned(mortise_timber, tenon_timber), \
+        "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
+    
+    # Verify that the timbers are orthogonal (perpendicular length directions)
+    # This is required for proper mortise and tenon joint geometry
+    assert _are_timbers_face_orthogonal(mortise_timber, tenon_timber), \
+        "Timbers must be orthogonal (perpendicular length directions) for this joint type"
+    
     # Create the joint
     joint = Joint()
     
@@ -610,6 +623,11 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
     # aligns with the tenon end face
     tenon_end_direction = _get_tenon_end_direction(tenon_timber, tenon_end)
     mortise_face = _find_aligned_face(mortise_timber, tenon_end_direction)
+    
+    # Calculate the correct mortise position based on tenon timber intersection
+    mortise_ref_end, mortise_distance = _calculate_mortise_position_from_tenon_intersection(
+        mortise_timber, tenon_timber, tenon_end
+    )
     
     # Create tenon specification
     tenon_spec = StandardTenon(
@@ -626,7 +644,7 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
     # Create mortise specification
     mortise_spec = StandardMortise(
         mortise_face=mortise_face,
-        pos_rel_to_end=(TimberReferenceEnd.BOTTOM, 0),  # Use integer instead of 0.0
+        pos_rel_to_end=(mortise_ref_end, mortise_distance),
         pos_rel_to_long_face=None,  # Centered
         width=tenon_thickness,
         height=tenon_length,
@@ -702,3 +720,100 @@ def _find_aligned_face(mortise_timber: Timber, target_direction: Direction3D) ->
             best_face = face
     
     return best_face
+
+def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: float = 1e-10) -> bool:
+    """Check if two timbers have parallel length directions"""
+    dot_product = float(Abs(timber1.length_direction.dot(timber2.length_direction)))
+    return Abs(dot_product - 1) < tolerance
+
+def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: float = 1e-10) -> bool:
+    """Check if two timbers have orthogonal (perpendicular) length directions"""
+    dot_product = float(Abs(timber1.length_direction.dot(timber2.length_direction)))
+    return dot_product < tolerance
+
+def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: float = 1e-10) -> bool:
+    """
+    Check if two timbers are face-aligned.
+    
+    Two timbers are face-aligned if any face of one timber is parallel to any face 
+    of the other timber. This occurs when their orientations are related by 90-degree 
+    rotations around any axis (i.e., they share the same coordinate grid alignment).
+    
+    Args:
+        timber1: First timber
+        timber2: Second timber  
+        tolerance: Numerical tolerance for parallel check
+        
+    Returns:
+        True if timbers are face-aligned, False otherwise
+    """
+    # Get the three orthogonal direction vectors for each timber
+    dirs1 = [timber1.length_direction, timber1.face_direction, timber1.height_direction]
+    dirs2 = [timber2.length_direction, timber2.face_direction, timber2.height_direction]
+    
+    # Check if any direction from timber1 is parallel to any direction from timber2
+    for dir1 in dirs1:
+        for dir2 in dirs2:
+            dot_product = float(Abs(dir1.dot(dir2)))
+            if Abs(dot_product - 1) < tolerance:
+                return True
+    
+    return False
+
+def _project_point_on_timber_centerline(point: V3, timber: Timber) -> Tuple[float, V3]:
+    """
+    Project a point onto a timber's centerline.
+    
+    Args:
+        point: 3D point to project
+        timber: Timber whose centerline to project onto
+        
+    Returns:
+        Tuple of (parameter_t, projected_point) where:
+        - parameter_t: Distance along timber from bottom_position (can be negative or > length)
+        - projected_point: The actual projected point on the centerline
+    """
+    # Vector from timber's bottom to the point
+    to_point = point - timber.bottom_position
+    
+    # Project this vector onto the timber's length direction
+    length_dir = timber.length_direction
+    t = float(to_point.dot(length_dir) / length_dir.dot(length_dir))
+    
+    # Calculate the projected point
+    projected_point = timber.bottom_position + timber.length_direction * t
+    
+    return t, projected_point
+
+def _calculate_mortise_position_from_tenon_intersection(mortise_timber: Timber, tenon_timber: Timber, tenon_end: TimberReferenceEnd) -> Tuple[TimberReferenceEnd, float]:
+    """
+    Calculate the mortise position based on where the tenon timber intersects the mortise timber.
+    
+    Args:
+        mortise_timber: Timber that will receive the mortise
+        tenon_timber: Timber that will have the tenon
+        tenon_end: Which end of the tenon timber the tenon comes from
+        
+    Returns:
+        Tuple of (reference_end, distance) for the mortise position
+    """
+    # Get the tenon end point
+    if tenon_end == TimberReferenceEnd.TOP:
+        tenon_point = tenon_timber.bottom_position + tenon_timber.length_direction * tenon_timber.length
+    else:  # BOTTOM
+        tenon_point = tenon_timber.bottom_position
+    
+    # Project the tenon point onto the mortise timber's centerline
+    t, projected_point = _project_point_on_timber_centerline(tenon_point, mortise_timber)
+    
+    # Clamp t to be within the mortise timber's length
+    t = max(0, min(float(mortise_timber.length), t))
+    
+    # Determine which end to reference based on which is closer
+    distance_from_bottom = t
+    distance_from_top = float(mortise_timber.length) - t
+    
+    if distance_from_bottom <= distance_from_top:
+        return TimberReferenceEnd.BOTTOM, distance_from_bottom
+    else:
+        return TimberReferenceEnd.TOP, distance_from_top

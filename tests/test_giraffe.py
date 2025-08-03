@@ -8,7 +8,7 @@ import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
 from moothymoth import Orientation
 from giraffe import *
-from giraffe import _timber_face_to_vector, _find_aligned_face, _get_timber_face_direction, _get_tenon_end_direction
+from giraffe import _timber_face_to_vector, _find_aligned_face, _get_timber_face_direction, _get_tenon_end_direction, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned, _project_point_on_timber_centerline, _calculate_mortise_position_from_tenon_intersection
 
 
 class TestVectorHelpers:
@@ -1236,3 +1236,293 @@ class TestHelperFunctions:
         # Test BOTTOM end direction  
         bottom_dir = _get_tenon_end_direction(timber, TimberReferenceEnd.BOTTOM)
         assert bottom_dir == -timber.length_direction
+    
+    def test_are_timbers_face_parallel(self):
+        """Test _are_timbers_face_parallel helper function."""
+        # Create two timbers with parallel length directions
+        timber1 = Timber(
+            length=2.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Z-up
+            face_direction=create_vector3d(1, 0, 0)      # X-right
+        )
+        
+        timber2 = Timber(
+            length=3.0,
+            size=create_vector2d(0.15, 0.25),
+            bottom_position=create_vector3d(2, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Same direction
+            face_direction=create_vector3d(0, 1, 0)      # Different face direction
+        )
+        
+        # Should be parallel (parallel length directions)
+        assert _are_timbers_face_parallel(timber1, timber2)
+        
+        # Create a timber with opposite direction (still parallel)
+        timber3 = Timber(
+            length=1.5,
+            size=create_vector2d(0.1, 0.2),
+            bottom_position=create_vector3d(-1, 0, 0),
+            length_direction=create_vector3d(0, 0, -1),  # Opposite direction
+            face_direction=create_vector3d(1, 0, 0)
+        )
+        
+        # Should still be parallel (anti-parallel is still parallel)
+        assert _are_timbers_face_parallel(timber1, timber3)
+        
+        # Create a timber with perpendicular direction
+        timber4 = Timber(
+            length=2.5,
+            size=create_vector2d(0.3, 0.3),
+            bottom_position=create_vector3d(1, 1, 0),
+            length_direction=create_vector3d(1, 0, 0),   # Perpendicular
+            face_direction=create_vector3d(0, 0, 1)
+        )
+        
+        # Should NOT be parallel
+        assert not _are_timbers_face_parallel(timber1, timber4)
+    
+    def test_are_timbers_face_orthogonal(self):
+        """Test _are_timbers_face_orthogonal helper function."""
+        # Create two timbers with perpendicular length directions
+        timber1 = Timber(
+            length=2.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Z-up
+            face_direction=create_vector3d(1, 0, 0)      # X-right
+        )
+        
+        timber2 = Timber(
+            length=3.0,
+            size=create_vector2d(0.15, 0.25),
+            bottom_position=create_vector3d(2, 0, 0),
+            length_direction=create_vector3d(1, 0, 0),   # X-right (perpendicular to timber1)
+            face_direction=create_vector3d(0, 0, 1)      # Z-up
+        )
+        
+        # Should be orthogonal
+        assert _are_timbers_face_orthogonal(timber1, timber2)
+        
+        # Create a timber with parallel direction
+        timber3 = Timber(
+            length=1.5,
+            size=create_vector2d(0.1, 0.2),
+            bottom_position=create_vector3d(-1, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Same as timber1
+            face_direction=create_vector3d(1, 0, 0)
+        )
+        
+        # Should NOT be orthogonal
+        assert not _are_timbers_face_orthogonal(timber1, timber3)
+        
+        # Test with Y-direction
+        timber4 = Timber(
+            length=2.5,
+            size=create_vector2d(0.3, 0.3),
+            bottom_position=create_vector3d(1, 1, 0),
+            length_direction=create_vector3d(0, 1, 0),   # Y-forward (perpendicular to timber1)
+            face_direction=create_vector3d(1, 0, 0)
+        )
+        
+        # Should be orthogonal
+        assert _are_timbers_face_orthogonal(timber1, timber4)
+    
+    def test_are_timbers_face_aligned(self):
+        """Test _are_timbers_face_aligned helper function."""
+        # Create a reference timber with standard orientation
+        timber1 = Timber(
+            length=2.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Z-up
+            face_direction=create_vector3d(1, 0, 0)      # X-right
+        )
+        # timber1 directions: length=[0,0,1], face=[1,0,0], height=[0,1,0]
+        
+        # Test 1: Timber with same orientation - should be face-aligned
+        timber2 = Timber(
+            length=3.0,
+            size=create_vector2d(0.15, 0.25),
+            bottom_position=create_vector3d(2, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Same as timber1
+            face_direction=create_vector3d(1, 0, 0)      # Same as timber1
+        )
+        assert _are_timbers_face_aligned(timber1, timber2)
+        
+        # Test 2: Timber rotated 90° around Z - should be face-aligned  
+        # (length stays Z, but face becomes Y, height becomes -X)
+        timber3 = Timber(
+            length=1.5,
+            size=create_vector2d(0.1, 0.2),
+            bottom_position=create_vector3d(-1, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Same Z
+            face_direction=create_vector3d(0, 1, 0)      # Y direction
+        )
+        assert _are_timbers_face_aligned(timber1, timber3)
+        
+        # Test 3: Timber rotated 90° around X - should be face-aligned
+        # (length becomes -Y, face stays X, height becomes Z) 
+        timber4 = Timber(
+            length=2.5,
+            size=create_vector2d(0.3, 0.3),
+            bottom_position=create_vector3d(1, 1, 0),
+            length_direction=create_vector3d(0, -1, 0),  # -Y direction
+            face_direction=create_vector3d(1, 0, 0)      # Same X
+        )
+        assert _are_timbers_face_aligned(timber1, timber4)
+        
+        # Test 4: Timber with perpendicular orientation but face-aligned
+        # (length becomes X, face becomes Z, height becomes Y)
+        timber5 = Timber(
+            length=1.8,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(0, 2, 0),
+            length_direction=create_vector3d(1, 0, 0),   # X direction  
+            face_direction=create_vector3d(0, 0, 1)      # Z direction
+        )
+        assert _are_timbers_face_aligned(timber1, timber5)
+        
+        # Test 5: Timber with arbitrary 3D rotation - should NOT be face-aligned
+        # Using a rotation that doesn't align any direction with cardinal axes
+        import math
+        # Create a rotation that's 30° around X, then 45° around the new Y
+        cos30 = math.cos(math.pi/6)
+        sin30 = math.sin(math.pi/6)
+        cos45 = math.cos(math.pi/4)
+        sin45 = math.sin(math.pi/4)
+        
+        # This creates a timber whose directions don't align with any cardinal axes
+        timber6 = Timber(
+            length=1.0,
+            size=create_vector2d(0.1, 0.1),
+            bottom_position=create_vector3d(0, 0, 2),
+            length_direction=create_vector3d(sin45*cos30, sin45*sin30, cos45),  # Complex 3D direction
+            face_direction=create_vector3d(cos45*cos30, cos45*sin30, -sin45)    # Perpendicular complex direction
+        )
+        assert not _are_timbers_face_aligned(timber1, timber6)
+        
+        # Test 6: Verify that 45° rotation in XY plane IS face-aligned 
+        # (because height direction is still Z, parallel to timber1's length direction)
+        cos45_xy = math.cos(math.pi/4)
+        sin45_xy = math.sin(math.pi/4)
+        timber7 = Timber(
+            length=1.0,
+            size=create_vector2d(0.1, 0.1),
+            bottom_position=create_vector3d(0, 0, 2),
+            length_direction=create_vector3d(cos45_xy, sin45_xy, 0),  # 45° in XY plane
+            face_direction=create_vector3d(-sin45_xy, cos45_xy, 0)    # Perpendicular in XY
+        )
+        # This SHOULD be face-aligned because height direction = [0,0,1] = timber1.length_direction
+        assert _are_timbers_face_aligned(timber1, timber7)
+        
+        # Test 8: Verify face-aligned timbers can be orthogonal
+        # timber1 length=[0,0,1], timber5 length=[1,0,0] - these are orthogonal but face-aligned
+        assert _are_timbers_face_aligned(timber1, timber5)
+        assert _are_timbers_face_orthogonal(timber1, timber5)
+        
+        # Test 9: Verify face-aligned timbers can be parallel  
+        # timber1 and timber2 have same length direction - parallel and face-aligned
+        assert _are_timbers_face_aligned(timber1, timber2)
+        assert _are_timbers_face_parallel(timber1, timber2)
+    
+    def test_project_point_on_timber_centerline(self):
+        """Test _project_point_on_timber_centerline helper function."""
+        # Create a timber along Z-axis
+        timber = Timber(
+            length=4.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(1, 2, 0),    # Offset from origin
+            length_direction=create_vector3d(0, 0, 1),   # Z-up
+            face_direction=create_vector3d(1, 0, 0)
+        )
+        
+        # Test point directly on the centerline
+        point_on_line = create_vector3d(1, 2, 2)  # 2 units up from bottom
+        t, projected = _project_point_on_timber_centerline(point_on_line, timber)
+        
+        assert abs(t - 2.0) < 1e-10  # Should be 2 units along timber
+        assert (projected - point_on_line).norm() < 1e-10  # Should project to itself
+        
+        # Test point off the centerline
+        point_off_line = create_vector3d(3, 5, 1.5)  # 1.5 units up, but offset in X and Y
+        t, projected = _project_point_on_timber_centerline(point_off_line, timber)
+        
+        assert abs(t - 1.5) < 1e-10  # Should be 1.5 units along timber
+        expected_projection = create_vector3d(1, 2, 1.5)  # On centerline at same Z
+        assert (projected - expected_projection).norm() < 1e-10
+        
+        # Test point before timber start (negative t)
+        point_before = create_vector3d(1, 2, -1)  # 1 unit below bottom
+        t, projected = _project_point_on_timber_centerline(point_before, timber)
+        
+        assert abs(t - (-1.0)) < 1e-10  # Should be -1 units
+        assert (projected - point_before).norm() < 1e-10
+        
+        # Test point beyond timber end
+        point_beyond = create_vector3d(1, 2, 5)  # 5 units up (beyond length of 4)
+        t, projected = _project_point_on_timber_centerline(point_beyond, timber)
+        
+        assert abs(t - 5.0) < 1e-10  # Should be 5 units
+        assert (projected - point_beyond).norm() < 1e-10
+    
+    def test_calculate_mortise_position_from_tenon_intersection(self):
+        """Test _calculate_mortise_position_from_tenon_intersection helper function."""
+        # Create a vertical mortise timber (post)
+        mortise_timber = Timber(
+            length=3.0,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),   # Z-up
+            face_direction=create_vector3d(1, 0, 0)
+        )
+        
+        # Create a horizontal tenon timber (beam) that intersects the post
+        tenon_timber = Timber(
+            length=2.0,
+            size=create_vector2d(0.15, 0.25),
+            bottom_position=create_vector3d(-0.5, 0, 1.5),  # Starts at X=-0.5, intersects post at Z=1.5
+            length_direction=create_vector3d(1, 0, 0),    # X-right
+            face_direction=create_vector3d(0, 0, 1)
+        )
+        
+        # Test with BOTTOM end of tenon timber
+        ref_end, distance = _calculate_mortise_position_from_tenon_intersection(
+            mortise_timber, tenon_timber, TimberReferenceEnd.BOTTOM
+        )
+        
+        # The tenon BOTTOM is at (-0.5, 0, 1.5), which projects to (0, 0, 1.5) on the mortise centerline
+        # Distance from mortise bottom (0, 0, 0) is 1.5
+        # Distance from mortise top (0, 0, 3) is 1.5, so both are equal
+        # Function should choose BOTTOM when distances are equal
+        assert ref_end == TimberReferenceEnd.BOTTOM
+        assert abs(distance - 1.5) < 1e-10
+        
+        # Test with TOP end of tenon timber  
+        ref_end, distance = _calculate_mortise_position_from_tenon_intersection(
+            mortise_timber, tenon_timber, TimberReferenceEnd.TOP
+        )
+        
+        # The tenon TOP is at (1.5, 0, 1.5), which also projects to (0, 0, 1.5) on the mortise centerline
+        # Same result as above
+        assert ref_end == TimberReferenceEnd.BOTTOM
+        assert abs(distance - 1.5) < 1e-10
+        
+        # Test with tenon closer to mortise top
+        tenon_timber_high = Timber(
+            length=2.0,
+            size=create_vector2d(0.15, 0.25),
+            bottom_position=create_vector3d(-0.5, 0, 2.8),  # Higher intersection
+            length_direction=create_vector3d(1, 0, 0),
+            face_direction=create_vector3d(0, 0, 1)
+        )
+        
+        ref_end, distance = _calculate_mortise_position_from_tenon_intersection(
+            mortise_timber, tenon_timber_high, TimberReferenceEnd.BOTTOM
+        )
+        
+        # Intersection at Z=2.8, distance from bottom=2.8, distance from top=0.2
+        # Should reference from TOP since it's closer
+        assert ref_end == TimberReferenceEnd.TOP
+        assert abs(distance - 0.2) < 1e-10
