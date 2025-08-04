@@ -45,6 +45,8 @@ ui = app.userInterface
 def run(_context: str):
     """This function is called by Fusion when the script is run."""
 
+
+
     try:
         # Check for import errors first
         if not import_success:
@@ -54,6 +56,7 @@ def run(_context: str):
         # Force reload all GiraffeCAD modules to avoid caching issues
         print("Force reloading GiraffeCAD modules to avoid cache...")
         app.log("Force reloading GiraffeCAD modules to avoid cache...")
+        app.log("ORIG MODULE LOADED 5:39")
         
         try:
             import importlib
@@ -95,6 +98,8 @@ def run(_context: str):
 
         # Run the supersimple structure generation
         try:
+            print("🐘 GIRAFFETEST: TRANSFORMS ENABLED - Version 18:05 🐘")
+            app.log("🐘 GIRAFFETEST: TRANSFORMS ENABLED - Version 18:05 🐘")
             print("Starting supersimple structure generation...")
             cut_timbers = create_supersimple_structure2()
             print(f"Created structure with {len(cut_timbers)} timbers")
@@ -103,12 +108,12 @@ def run(_context: str):
             clear_design()
             
             # Render the timbers in Fusion 360 using three-pass rendering approach
-            print(f"Starting three-pass rendering of {len(cut_timbers)} supersimple timbers (DEBUG MODE - no transforms)...")
-            app.log(f"Starting three-pass rendering of {len(cut_timbers)} supersimple timbers (DEBUG MODE - no transforms)...")
+            print(f"Starting three-pass rendering of {len(cut_timbers)} supersimple timbers with transforms...")
+            app.log(f"Starting three-pass rendering of {len(cut_timbers)} supersimple timbers with transforms...")
             
-            # Use the three-pass rendering function with debug mode (no transforms)
-            # Set apply_transforms=False to keep timbers at origin for debugging mortise positions
-            success_count = render_multiple_timbers(cut_timbers, "Supersimple_Timber", apply_transforms=False)
+            # Use the three-pass rendering function with transforms enabled
+            # Set apply_transforms=True to move timbers to their final positions
+            success_count = render_multiple_timbers(cut_timbers, "Supersimple_Timber", apply_transforms=True)
             
             # Log detailed information
             app.log(f'Supersimple rendering complete: {success_count}/{len(cut_timbers)} timbers rendered')
