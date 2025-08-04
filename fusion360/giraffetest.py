@@ -96,37 +96,37 @@ def run(_context: str):
             print(f"Error reloading modules: {reload_error}")
             app.log(f"Error reloading modules: {reload_error}")
 
-        # Run the supersimple structure generation
+        # Run the sawhorse structure generation to test full system
         try:
-            print("🐘 GIRAFFETEST: TRANSFORMS ENABLED - Version 18:05 🐘")
-            app.log("🐘 GIRAFFETEST: TRANSFORMS ENABLED - Version 18:05 🐘")
-            print("Starting supersimple structure generation...")
-            cut_timbers = create_supersimple_structure2()
-            print(f"Created structure with {len(cut_timbers)} timbers")
+            print("🦓 GIRAFFETEST: SAWHORSE NO TRANSFORMS - Testing Sketch Position - Version 18:10 🦓")
+            app.log("🦓 GIRAFFETEST: SAWHORSE NO TRANSFORMS - Testing Sketch Position - Version 18:10 🦓")
+            print("Starting sawhorse structure generation...")
+            cut_timbers = create_sawhorse()
+            print(f"Created sawhorse structure with {len(cut_timbers)} timbers")
             
             # Clear design first to start fresh
             clear_design()
             
-            # Render the timbers in Fusion 360 using three-pass rendering approach
-            print(f"Starting three-pass rendering of {len(cut_timbers)} supersimple timbers with transforms...")
-            app.log(f"Starting three-pass rendering of {len(cut_timbers)} supersimple timbers with transforms...")
+            # Render the timbers in Fusion 360 using three-pass rendering approach  
+            print(f"Starting three-pass rendering of {len(cut_timbers)} sawhorse timbers (NO TRANSFORMS - testing sketch positions)...")
+            app.log(f"Starting three-pass rendering of {len(cut_timbers)} sawhorse timbers (NO TRANSFORMS - testing sketch positions)...")
             
-            # Use the three-pass rendering function with transforms enabled
-            # Set apply_transforms=True to move timbers to their final positions
-            success_count = render_multiple_timbers(cut_timbers, "Supersimple_Timber", apply_transforms=True)
+            # Use the three-pass rendering function with transforms DISABLED
+            # Set apply_transforms=False to keep timbers at origin for sketch position testing
+            success_count = render_multiple_timbers(cut_timbers, "Sawhorse_Timber", apply_transforms=False)
             
             # Log detailed information
-            app.log(f'Supersimple rendering complete: {success_count}/{len(cut_timbers)} timbers rendered')
+            app.log(f'Sawhorse rendering complete (NO TRANSFORMS): {success_count}/{len(cut_timbers)} timbers rendered')
             
-            # Show final summary
-            print(f"Supersimple rendering complete: {success_count}/{len(cut_timbers)} timbers rendered")
+            # Show final summary  
+            print(f"Sawhorse rendering complete (NO TRANSFORMS): {success_count}/{len(cut_timbers)} timbers rendered")
             
-        except Exception as supersimple_error:
-            print(f"❌ Error during supersimple rendering: {supersimple_error}")
-            app.log(f"Error during supersimple rendering: {supersimple_error}")
+        except Exception as sawhorse_error:
+            print(f"❌ Error during sawhorse rendering: {sawhorse_error}")
+            app.log(f"Error during sawhorse rendering: {sawhorse_error}")
             import traceback
             print(traceback.format_exc())
-            ui.messageBox(f'Error during supersimple rendering:\n{supersimple_error}', 'Rendering Error')
+            ui.messageBox(f'Error during sawhorse rendering:\n{sawhorse_error}', 'Rendering Error')
 
     except Exception as e:
         print(f"Unexpected error in run(): {str(e)}")
