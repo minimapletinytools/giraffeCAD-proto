@@ -5,6 +5,14 @@ This module provides functions to render timber structures in Autodesk Fusion 36
 using the Fusion 360 Python API.
 """
 
+# Module load tracker - must use app.log for Fusion 360 console
+try:
+    app = adsk.core.Application.get()
+    if app:
+        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 18:00 - SKETCH PLANE FIX 🐘")
+except:
+    pass  # Ignore if app not available during import
+
 import adsk.core
 import adsk.fusion
 import adsk.cam
@@ -146,12 +154,21 @@ def calculate_mortise_position(timber: Timber, mortise_spec: StandardMortise) ->
     
     # Calculate position along length (Z axis - from BOTTOM=0 to TOP=length_cm)
     ref_end, distance_from_end = mortise_spec.pos_rel_to_end
+    # Debug Z calculation using app.log for Fusion 360 console
+    app = get_fusion_app()
+    if app:
+        app.log(f"    Z calculation: ref_end={ref_end.name}, distance_from_end={distance_from_end:.3f}m")
+    
     if ref_end == TimberReferenceEnd.TOP:
         # Distance from TOP end (Z=length_cm)
         z_pos = length_cm - (distance_from_end * 100)
+        if app:
+            app.log(f"    Z = {length_cm:.1f} - {distance_from_end * 100:.1f} = {z_pos:.1f} cm (from TOP)")
     else:  # BOTTOM
         # Distance from BOTTOM end (Z=0)
         z_pos = distance_from_end * 100
+        if app:
+            app.log(f"    Z = {distance_from_end * 100:.1f} cm (from BOTTOM)")
     
     # Calculate position across width/height (centered for now)
     if mortise_spec.pos_rel_to_long_face is not None:
@@ -180,10 +197,28 @@ def calculate_mortise_position(timber: Timber, mortise_spec: StandardMortise) ->
         return cross_pos, height_cm/2, z_pos
     else:  # BACK
         # Back face is at Y = -height_cm/2
-        return cross_pos, -height_cm/2, z_pos
+        result = (cross_pos, -height_cm/2, z_pos)
+        app = get_fusion_app()
+        if app:
+            app.log(f"    BACK face position: ({cross_pos:.1f}, {-height_cm/2:.1f}, {z_pos:.1f}) cm")
+        return result
 
 
 def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise_spec: StandardMortise, component_name: str) -> bool:
+    app = get_fusion_app()
+    if app:
+        app.log("🐘 FUNCTION TRACKER: create_mortise_cut called - Version 18:00 - SKETCH PLANE FIX 🐘")
+        app.log(f"🎯 CRITICAL: Component has {component.bRepBodies.count} bodies at START")
+        
+        # List all bodies if any exist
+        for i in range(component.bRepBodies.count):
+            body = component.bRepBodies.item(i)
+            app.log(f"  Body {i}: {body.name} (solid: {body.isSolid}, volume: {body.volume:.2f})")
+        
+        if component.bRepBodies.count == 0:
+            app.log("🚨 CRITICAL ERROR: NO BODIES IN COMPONENT - Cannot cut mortise!")
+            app.log("🚨 This means timber geometry was never created in Pass 1!")
+            return False
     """
     Create a mortise cut in a timber component.
     
@@ -293,14 +328,16 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         
         # CORRECTED: Position sketch at face surface, not timber center
         if face in [TimberFace.FORWARD, TimberFace.BACK]:
-            # XZ plane: For BACK face, translate the sketch to account for Y offset
+            # XZ plane: CRITICAL FIX - Fusion 360 XZ plane has +Y pointing in -Z world direction
             sketch_x = pos_x  # World X coordinate (across timber width) 
-            sketch_y = pos_z  # World Z coordinate (along timber length)
-            # The sketch will be created on XZ plane, but we need to position it where timber actually exists
-            # For BACK face: timber extends from Y=-5.1 to Y=+5.1, sketch is on Y=0 plane
-            print(f"      SKETCH POSITIONING: {face.name} face on XZ plane at ({sketch_x:.1f}, {sketch_y:.1f}) cm")
-            print(f"      ⚠️  ISSUE: Sketch on Y=0 plane, but BACK face is at Y={pos_y:.1f} cm")
-            print(f"      SOLUTION: Create sketch on XZ plane and extrude to reach face surface")
+            sketch_y = -pos_z  # INVERTED: Sketch +Y maps to world -Z, so negate to get correct orientation
+            
+            if app:
+                app.log(f"      🎯 SKETCH PLANE ORIENTATION FIX:")
+                app.log(f"      World Z position: {pos_z:.1f} cm")
+                app.log(f"      Sketch Y coord: {sketch_y:.1f} cm (inverted for correct orientation)")
+                app.log(f"      REASON: XZ plane +Y maps to world -Z, so we use negative sketch Y")
+                app.log(f"      RESULT: Sketch at ({sketch_x:.1f}, {sketch_y:.1f}) should appear at world Z={pos_z:.1f}")
         elif face in [TimberFace.TOP, TimberFace.BOTTOM]:
             # XY plane: sketch X = world X, sketch Y = world Y
             sketch_x = pos_x  # World X coordinate (across timber width)
@@ -396,17 +433,17 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         # Use simple distance extrusion for now (cut inward by mortise depth)
         distance = adsk.core.ValueInput.createByReal(cut_depth)  # Already in cm as expected by Fusion 360
         
-        # CORRECTED: Cut from face surface toward timber center
-        # For BACK face: face is at Y=-5.1, sketch at Y=0, so cut in +Y direction (from face toward center)
+        # CORRECTED: Cut from sketch position toward face surface
+        # For BACK face: face is at Y=-5.1, sketch at Y=0, so cut in -Y direction (from sketch toward face)
         if face == TimberFace.BACK:
-            # BACK face: cut from Y=-5.1 toward Y=0 (positive Y direction)
-            cut_direction = True  # Cut in +Y direction  
-            print(f"      EXTRUSION: Cut {cut_depth:.1f} cm in +Y direction (from BACK face toward center)")
-            print(f"      LOGIC: Face at Y={pos_y:.1f}, sketch at Y=0, cut toward center")
+            # BACK face: cut from Y=0 toward Y=-5.1 (negative Y direction)
+            cut_direction = False  # Cut in -Y direction  
+            print(f"      EXTRUSION: Cut {cut_depth:.1f} cm in -Y direction (from sketch toward BACK face)")
+            print(f"      LOGIC: Sketch at Y=0, face at Y={pos_y:.1f}, cut toward face")
         elif face == TimberFace.FORWARD:
-            # FORWARD face: cut from Y=+5.1 toward Y=0 (negative Y direction)
-            cut_direction = False
-            print(f"      EXTRUSION: Cut {cut_depth:.1f} cm in -Y direction (from FORWARD face toward center)")
+            # FORWARD face: cut from Y=0 toward Y=+5.1 (positive Y direction)
+            cut_direction = True
+            print(f"      EXTRUSION: Cut {cut_depth:.1f} cm in +Y direction (from sketch toward FORWARD face)")
         elif face == TimberFace.TOP:
             # TOP face: cut from Z=100 toward center (negative Z direction)
             cut_direction = False
@@ -782,33 +819,27 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     """
     try:
         print(f"Starting three-pass rendering of {len(cut_timbers)} timbers...")
-        print(f"🔥🔥🔥 RENDER_MULTIPLE_TIMBERS: {base_name}, transforms={apply_transforms}")
         app = get_fusion_app()
         if app:
-            app.log(f"DEBUG: Starting three-pass rendering of {len(cut_timbers)} timbers...")
-        
-        print(f"🔥🔥🔥 AFTER APP LOG")
+            app.log(f"DEBUG: Starting three-pass rendering of {len(cut_timbers)} timbers (transforms={apply_transforms})")
         
         # Get the active design
-        print(f"🔥🔥🔥 ABOUT TO GET DESIGN")
         design = get_active_design()
-        print(f"🔥🔥🔥 GOT DESIGN: {design}")
         if not design:
             print("Error: No active design found in Fusion 360")
             return 0
         
         root_comp = design.rootComponent
-        print(f"🔥🔥🔥 GOT ROOT COMPONENT: {root_comp}")
         created_components = []
-        print(f"🔥🔥🔥 ABOUT TO START PASS 1")
         
         # PASS 1: Create all timber geometry at origin
-        print(f"\n=== PASS 1: Creating timber geometry ===")
+        if app:
+            app.log(f"=== PASS 1: Creating timber geometry ===")
         
         for i, cut_timber in enumerate(cut_timbers):
-            print(f"🔥🔥🔥 PASS 1 LOOP: Processing timber {i}: {cut_timber}")
             component_name = cut_timber.name if cut_timber.name else f"{base_name}_{i+1:03d}"
-            print(f"🔥🔥🔥 COMPONENT NAME: {component_name}")
+            if app:
+                app.log(f"  Processing timber {i+1}/{len(cut_timbers)}: {component_name}")
             
             # Create component at origin
             occurrence = root_comp.occurrences.addNewComponent(adsk.core.Matrix3D.create())
@@ -818,16 +849,20 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             # Create basic timber geometry
             geometry_success = create_timber_geometry(timber_component, cut_timber.timber, component_name)
             if geometry_success:
-                print(f"  ✅ Created geometry for {component_name}: {timber_component.bRepBodies.count} bodies")
+                if app:
+                    app.log(f"  ✅ Created geometry for {component_name}: {timber_component.bRepBodies.count} bodies")
                 created_components.append((occurrence, cut_timber, component_name))
             else:
-                print(f"  ❌ Failed to create geometry for {component_name}")
+                if app:
+                    app.log(f"  ❌ Failed to create geometry for {component_name}")
+                    app.log(f"🚨 GEOMETRY CREATION FAILED - This will cause 'No target body' error later!")
         
         # Force refresh after all geometry creation
         adsk.doEvents()
         
         # PASS 2: Apply all cuts while timbers are at origin
-        print(f"\n=== PASS 2: Applying cuts at origin ===")
+        if app:
+            app.log(f"=== PASS 2: Applying cuts at origin ===")
         
         cut_success_count = 0
         total_cuts = 0
@@ -836,26 +871,29 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
         for occurrence, cut_timber, component_name in created_components:
             timber_joints = len(cut_timber.joints)
             total_cuts += timber_joints
-            print(f"Processing {component_name}: {timber_joints} joints")
             app = get_fusion_app()
             if app:
                 app.log(f"Processing {component_name}: {timber_joints} joints")
             
             if timber_joints > 0:
                 timber_component = occurrence.component
-                print(f"  Applying cuts to {component_name}...")
-                print(f"    Component has {timber_component.bRepBodies.count} bodies before cuts")
+                if app:
+                    app.log(f"  Applying cuts to {component_name}...")
+                    app.log(f"    Component has {timber_component.bRepBodies.count} bodies before cuts")
                 cut_success = apply_timber_cuts(timber_component, cut_timber, component_name)
                 if cut_success:
                     cut_success_count += 1
                     applied_cuts += timber_joints
-                    print(f"  ✓ Successfully applied {timber_joints} cuts to {component_name}")
+                    if app:
+                        app.log(f"  ✓ Successfully applied {timber_joints} cuts to {component_name}")
                 else:
-                    print(f"  ✗ Failed to apply cuts to {component_name}")
+                    if app:
+                        app.log(f"  ✗ Failed to apply cuts to {component_name}")
             else:
                 # No cuts to apply counts as success
                 cut_success_count += 1
-                print(f"  No cuts to apply to {component_name}")
+                if app:
+                    app.log(f"  No cuts to apply to {component_name}")
         
         # Force refresh after all cuts
         time.sleep(0.2)
@@ -879,20 +917,21 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             # All timbers remain at origin for debugging
             transform_success_count = len(created_components)  # Count as successful since we skipped intentionally
         
-        print(f"\n=== SUMMARY ===")
-        print(f"Successfully rendered {transform_success_count} out of {len(cut_timbers)} timbers")
-        print(f"Successfully applied cuts to {cut_success_count} out of {len(created_components)} timbers")
-        print(f"Total cuts applied: {applied_cuts} out of {total_cuts}")
-        if not apply_transforms:
-            print(f"🐛 DEBUG MODE: All timbers kept at origin (transforms skipped)")
+        if app:
+            app.log(f"=== SUMMARY ===")
+            app.log(f"Successfully rendered {transform_success_count} out of {len(cut_timbers)} timbers")
+            app.log(f"Successfully applied cuts to {cut_success_count} out of {len(created_components)} timbers")
+            app.log(f"Total cuts applied: {applied_cuts} out of {total_cuts}")
+            if not apply_transforms:
+                app.log(f"🐛 DEBUG MODE: All timbers kept at origin (transforms skipped)")
         
         return transform_success_count
         
     except Exception as e:
-        print(f"🔥🔥🔥 EXCEPTION IN RENDER_MULTIPLE_TIMBERS: {str(e)}")
-        print(f"Error in three-pass rendering: {str(e)}")
+        if app:
+            app.log(f"🚨 EXCEPTION IN RENDER_MULTIPLE_TIMBERS: {str(e)}")
         import traceback
-        print(traceback.format_exc())
+        print(traceback.format_exc())  # Keep this as print for terminal debugging
         return 0
 
 
