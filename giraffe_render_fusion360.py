@@ -339,18 +339,16 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         if mortise_spec.pos_rel_to_long_face is not None:
             raise NotImplementedError(f"pos_rel_to_long_face positioning is not supported yet for {component_name}")
         
-        print(f"      Step 6: Getting Fusion 360 face from timber body...")
-        
         # Get the timber body from the component
         if component.bRepBodies.count == 0:
-            print(f"      ❌ FATAL ERROR: No bodies in component to cut from!")
+            app.log(f"      ❌ FATAL ERROR: No bodies in component to cut from!")
             return False
         
         timber_body = component.bRepBodies.item(0)  # Get the first (and should be only) body
-        print(f"      Found timber body: {timber_body.name if timber_body.name else 'Unnamed'}")
+        app.log(f"      Found timber body: {timber_body.name if timber_body.name else 'Unnamed'}")
         
         # Step 7: Find the appropriate face on the Fusion 360 timber body using normals
-        print(f"      Looking for {face.name} face on timber body using face normals...")
+        app.log(f"      Looking for {face.name} face on timber body using face normals...")
         
         target_face = find_timber_face_by_normal(timber_body, face)
         if not target_face:
