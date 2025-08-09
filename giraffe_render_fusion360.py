@@ -156,19 +156,13 @@ def calculate_mortise_position(timber: Timber, mortise_spec: StandardMortise) ->
     ref_end, distance_from_end = mortise_spec.pos_rel_to_end
     # Debug Z calculation using app.log for Fusion 360 console
     app = get_fusion_app()
-    if app:
-        app.log(f"    Z calculation: ref_end={ref_end.name}, distance_from_end={distance_from_end:.3f}m")
     
     if ref_end == TimberReferenceEnd.TOP:
         # Distance from TOP end (Z=length_cm)
         z_pos = length_cm - (distance_from_end * 100)
-        if app:
-            app.log(f"    Z = {length_cm:.1f} - {distance_from_end * 100:.1f} = {z_pos:.1f} cm (from TOP)")
     else:  # BOTTOM
         # Distance from BOTTOM end (Z=0)
         z_pos = distance_from_end * 100
-        if app:
-            app.log(f"    Z = {distance_from_end * 100:.1f} cm (from BOTTOM)")
     
     # Calculate position across width/height (centered for now)
     if mortise_spec.pos_rel_to_long_face is not None:
@@ -180,13 +174,7 @@ def calculate_mortise_position(timber: Timber, mortise_spec: StandardMortise) ->
     
     # Return position based on which face we're cutting (CORRECTED MAPPING)
     face = mortise_spec.mortise_face
-    if face == TimberFace.TOP:
-        # Top face is at Z = +length_cm (top end)
-        return cross_pos, 0, length_cm
-    elif face == TimberFace.BOTTOM:
-        # Bottom face is at Z = 0 (bottom end)
-        return cross_pos, 0, 0
-    elif face == TimberFace.RIGHT:
+    if face == TimberFace.RIGHT:
         # Right face is at X = +width_cm/2
         return width_cm/2, cross_pos, z_pos
     elif face == TimberFace.LEFT:
@@ -195,13 +183,12 @@ def calculate_mortise_position(timber: Timber, mortise_spec: StandardMortise) ->
     elif face == TimberFace.FORWARD:
         # Forward face is at Y = +height_cm/2
         return cross_pos, height_cm/2, z_pos
-    else:  # BACK
+    elif face == TimberFace.BACK:
         # Back face is at Y = -height_cm/2
-        result = (cross_pos, -height_cm/2, z_pos)
-        app = get_fusion_app()
-        if app:
-            app.log(f"    BACK face position: ({cross_pos:.1f}, {-height_cm/2:.1f}, {z_pos:.1f}) cm")
-        return result
+        return (cross_pos, -height_cm/2, z_pos)
+    else:
+        assert(f"can not position mortise on {face}, not supported yet")
+
 
 
 def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise_spec: StandardMortise, component_name: str) -> bool:
@@ -274,57 +261,35 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         
         # Get the face from mortise spec
         face = mortise_spec.mortise_face
+
+        # TODO REWRITE EVERYTHING BELOW
+        # we need to create the sketch ON the timber
+        # 1. convert face to the appropriate face on the fusion 360 timber component that was passed into this function
+        # 2. the sketch is created on the center of the face and we want the y position  of the sketch (which is the z position on the body) to be pos_rel_to_end from ref_end
+        # 3. the x position on the sketch (which is the x or y position on the body) can be zero for now, assert that pos_rel_to_long_face is None and explain that it's not supported yet
         
+
+        
+        # TODO DELETE STUFF BELOW HERE
         # Calculate mortise position
         pos_x, pos_y, pos_z = calculate_mortise_position(timber, mortise_spec)
-        
-        print(f"  Calculated 3D position: ({pos_x:.2f}, {pos_y:.2f}, {pos_z:.2f}) cm")
-        print(f"  Timber dimensions: {float(timber.size[0])*100:.1f} x {float(timber.size[1])*100:.1f} x {float(timber.length)*100:.1f} cm (W x H x L)")
-        print(f"  Timber bottom position: ({float(timber.bottom_position[0])*100:.1f}, {float(timber.bottom_position[1])*100:.1f}, {float(timber.bottom_position[2])*100:.1f}) cm")
-        print(f"  Timber extends to: Z = {float(timber.bottom_position[2])*100 + float(timber.length)*100:.1f} cm")
-        print(f"  FACE ANALYSIS: {face.name} face should be positioned at:")
-        if face == TimberFace.BACK:
-            expected_y = -float(timber.size[1])*100/2
-            print(f"    Y = {expected_y:.1f} cm (back face surface)")
-        print(f"  ACTUAL calculated Y = {pos_y:.1f} cm")
-        
+
         # Debug timber extents
         timber_width = float(timber.size[0]) * 100
         timber_height = float(timber.size[1]) * 100
         timber_length = float(timber.length) * 100
-        print(f"  Timber extents:")
-        print(f"    X: {-timber_width/2:.1f} to {timber_width/2:.1f} cm")
-        print(f"    Y: {-timber_height/2:.1f} to {timber_height/2:.1f} cm") 
-        print(f"    Z: 0.0 to {timber_length:.1f} cm")
-        
-        print(f"      Step 3: Creating sketch...")
-        
+
         # Create sketch on appropriate plane based on face
         sketches = component.sketches
-        
-        print(f"      Step 4: Selected face {face.name}, getting sketch plane...")
-        
-        # Now that sketch creation works, use correct face-based positioning
-        print(f"      Step 5: Creating mortise on {face.name} face...")
-        if app:
-            app.log(f"      Step 5: Creating mortise on {face.name} face...")
-        
-        # SIMPLIFIED APPROACH: Create sketch on base plane and position mortise directly in 3D coordinates
-        print(f"      Step 5a: Creating sketch on base plane for {face.name} face")
+
         if face in [TimberFace.TOP, TimberFace.BOTTOM]:
             base_plane = component.xYConstructionPlane
-            print(f"      Using XY base plane for {face.name} face")
         elif face in [TimberFace.RIGHT, TimberFace.LEFT]:
             base_plane = component.yZConstructionPlane
-            print(f"      Using YZ base plane for {face.name} face")
         else:  # FORWARD, BACK
             base_plane = component.xZConstructionPlane
-            print(f"      Using XZ base plane for {face.name} face")
             
         sketch = sketches.add(base_plane)
-        print(f"      Step 5b: Created sketch on {face.name} face base plane")
-        if app:
-            app.log(f"      Step 5b: Added sketch to {face.name} face plane")
         
         # CORRECTED: Position sketch at face surface, not timber center
         if face in [TimberFace.FORWARD, TimberFace.BACK]:
