@@ -624,7 +624,7 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
     # Compute the mortise face by finding which face of the mortise timber 
     # aligns with the tenon end face
     tenon_end_direction = _get_tenon_end_direction(tenon_timber, tenon_end)
-    mortise_face = _find_aligned_face(mortise_timber, tenon_end_direction)
+    mortise_face = _find_aligned_face(mortise_timber, -tenon_end_direction)
     
     # Calculate the correct mortise position based on tenon timber intersection
     mortise_ref_end, mortise_distance = _calculate_mortise_position_from_tenon_intersection(
