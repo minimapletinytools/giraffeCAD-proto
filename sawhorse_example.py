@@ -172,9 +172,9 @@ def create_sawhorse() -> list[CutTimber]:
 
     # now create mortise and tenon joints between the posts and the beam
     beam_left_joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(
-        mortise_timber=left_post,
-        tenon_timber=beam,
-        tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom end of beam
+        mortise_timber=beam,
+        tenon_timber=left_post,
+        tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from bottom end of beam
         tenon_thickness=tenon_thickness,
         tenon_length=tenon_length,
         tenon_depth=tenon_depth
@@ -182,8 +182,8 @@ def create_sawhorse() -> list[CutTimber]:
     beam_left_joint.name = "Left Post to Beam Joint"
 
     beam_right_joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(
-        mortise_timber=right_post,
-        tenon_timber=beam,
+        mortise_timber=beam,
+        tenon_timber=right_post,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of beam
         tenon_thickness=tenon_thickness,
         tenon_length=tenon_length,
