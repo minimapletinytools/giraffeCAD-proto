@@ -9,7 +9,7 @@ using the Fusion 360 Python API.
 try:
     app = adsk.core.Application.get()
     if app:
-        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 18:00 - SKETCH PLANE FIX 🐘")
+        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 19:45 - PROFILE SELECTION FIX 🐘")
 except:
     pass  # Ignore if app not available during import
 
@@ -194,7 +194,7 @@ def calculate_mortise_position(timber: Timber, mortise_spec: StandardMortise) ->
 def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise_spec: StandardMortise, component_name: str) -> bool:
     app = get_fusion_app()
     if app:
-        app.log("🐘 FUNCTION TRACKER: create_mortise_cut called - Version 18:00 - SKETCH PLANE FIX 🐘")
+        app.log("🐘 FUNCTION TRACKER: create_mortise_cut called - Version 19:00 - FACE-BASED MORTISE FIX 🐘")
         app.log(f"🎯 CRITICAL: Component has {component.bRepBodies.count} bodies at START")
         
         # List all bodies if any exist
@@ -218,7 +218,7 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
     Returns:
         bool: True if cut was successful
     """
-    print("🚀🚀🚀 NEW VERSION LOADED - VERSION 2024.12.19.16.30 🚀🚀🚀")
+    print("🚀🚀🚀 NEW VERSION LOADED - VERSION 2024.12.19.19.00 - FACE-BASED MORTISE 🚀🚀🚀")
     print(f"\n🔧 ENTERING create_mortise_cut for {component_name}")
     app = get_fusion_app()
     if app:
@@ -262,222 +262,190 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         # Get the face from mortise spec
         face = mortise_spec.mortise_face
 
-        # TODO REWRITE EVERYTHING BELOW
-        # we need to create the sketch ON the timber
-        # 1. convert face to the appropriate face on the fusion 360 timber component that was passed into this function
-        # 2. the sketch is created on the center of the face and we want the y position  of the sketch (which is the z position on the body) to be pos_rel_to_end from ref_end
-        # 3. the x position on the sketch (which is the x or y position on the body) can be zero for now, assert that pos_rel_to_long_face is None and explain that it's not supported yet
+        # Step 5: Assert that pos_rel_to_long_face is None (not supported yet)
+        if mortise_spec.pos_rel_to_long_face is not None:
+            raise NotImplementedError(f"pos_rel_to_long_face positioning is not supported yet for {component_name}")
         
-
+        print(f"      Step 6: Getting Fusion 360 face from timber body...")
         
-        # TODO DELETE STUFF BELOW HERE
-        # Calculate mortise position
-        pos_x, pos_y, pos_z = calculate_mortise_position(timber, mortise_spec)
-
-        # Debug timber extents
-        timber_width = float(timber.size[0]) * 100
-        timber_height = float(timber.size[1]) * 100
-        timber_length = float(timber.length) * 100
-
-        # Create sketch on appropriate plane based on face
+        # Get the timber body from the component
+        if component.bRepBodies.count == 0:
+            print(f"      ❌ FATAL ERROR: No bodies in component to cut from!")
+            return False
+        
+        timber_body = component.bRepBodies.item(0)  # Get the first (and should be only) body
+        print(f"      Found timber body: {timber_body.name if timber_body.name else 'Unnamed'}")
+        
+        # Step 7: Find the appropriate face on the Fusion 360 timber body
+        # The timber is oriented as: X=width, Y=height, Z=length (extruded along Z)
+        # Faces: LEFT/RIGHT (YZ planes), FORWARD/BACK (XZ planes), TOP/BOTTOM (XY planes)
+        
+        target_face = None
+        timber_width_cm = float(timber.size[0]) * 100
+        timber_height_cm = float(timber.size[1]) * 100
+        timber_length_cm = float(timber.length) * 100
+        
+        print(f"      Timber dimensions: {timber_width_cm:.1f} x {timber_height_cm:.1f} x {timber_length_cm:.1f} cm")
+        print(f"      Looking for {face.name} face on timber body...")
+        
+        # Iterate through all faces to find the one that matches our target face
+        for i in range(timber_body.faces.count):
+            brepface = timber_body.faces.item(i)
+            # Get the face's center point to determine which face this is
+            face_eval = brepface.evaluator
+            (success, center_point) = face_eval.getPointAtParameter(adsk.core.Point2D.create(0.5, 0.5))
+            
+            if success:
+                # Check which face this is based on its center position
+                x, y, z = center_point.x, center_point.y, center_point.z
+                
+                print(f"        Face {i}: center at ({x:.1f}, {y:.1f}, {z:.1f})")
+                
+                # Determine face type based on position (with tolerance for floating point)
+                tolerance = 0.1  # cm
+                
+                if face == TimberFace.RIGHT and abs(x - timber_width_cm/2) < tolerance:
+                    target_face = brepface
+                    print(f"        ✓ Found RIGHT face at X={x:.1f}")
+                    break
+                elif face == TimberFace.LEFT and abs(x + timber_width_cm/2) < tolerance:
+                    target_face = brepface
+                    print(f"        ✓ Found LEFT face at X={x:.1f}")
+                    break
+                elif face == TimberFace.FORWARD and abs(y - timber_height_cm/2) < tolerance:
+                    target_face = brepface
+                    print(f"        ✓ Found FORWARD face at Y={y:.1f}")
+                    break
+                elif face == TimberFace.BACK and abs(y + timber_height_cm/2) < tolerance:
+                    target_face = brepface
+                    print(f"        ✓ Found BACK face at Y={y:.1f}")
+                    break
+                elif face == TimberFace.TOP and abs(z - timber_length_cm) < tolerance:
+                    target_face = brepface
+                    print(f"        ✓ Found TOP face at Z={z:.1f}")
+                    break
+                elif face == TimberFace.BOTTOM and abs(z) < tolerance:
+                    target_face = brepface
+                    print(f"        ✓ Found BOTTOM face at Z={z:.1f}")
+                    break
+        
+        if not target_face:
+            print(f"      ❌ Could not find {face.name} face on timber body!")
+            return False
+        
+        print(f"      Step 8: Creating sketch on {face.name} face...")
+        
+        # Create sketch on the target face
         sketches = component.sketches
-
-        if face in [TimberFace.TOP, TimberFace.BOTTOM]:
-            base_plane = component.xYConstructionPlane
-        elif face in [TimberFace.RIGHT, TimberFace.LEFT]:
-            base_plane = component.yZConstructionPlane
-        else:  # FORWARD, BACK
-            base_plane = component.xZConstructionPlane
-            
-        sketch = sketches.add(base_plane)
+        sketch = sketches.add(target_face)
         
-        # CORRECTED: Position sketch at face surface, not timber center
-        if face in [TimberFace.FORWARD, TimberFace.BACK]:
-            # XZ plane: CRITICAL FIX - Fusion 360 XZ plane has +Y pointing in -Z world direction
-            sketch_x = pos_x  # World X coordinate (across timber width) 
-            sketch_y = -pos_z  # INVERTED: Sketch +Y maps to world -Z, so negate to get correct orientation
-            
-            if app:
-                app.log(f"      🎯 SKETCH PLANE ORIENTATION FIX:")
-                app.log(f"      World Z position: {pos_z:.1f} cm")
-                app.log(f"      Sketch Y coord: {sketch_y:.1f} cm (inverted for correct orientation)")
-                app.log(f"      REASON: XZ plane +Y maps to world -Z, so we use negative sketch Y")
-                app.log(f"      RESULT: Sketch at ({sketch_x:.1f}, {sketch_y:.1f}) should appear at world Z={pos_z:.1f}")
-        elif face in [TimberFace.TOP, TimberFace.BOTTOM]:
-            # XY plane: sketch X = world X, sketch Y = world Y
-            sketch_x = pos_x  # World X coordinate (across timber width)
-            sketch_y = pos_y  # World Y coordinate (across timber height)
-            print(f"      SKETCH POSITIONING: {face.name} face on XY plane at ({sketch_x:.1f}, {sketch_y:.1f}) cm")
-        else:  # RIGHT, LEFT faces
-            # YZ plane: sketch X = world Y, sketch Y = world Z
-            sketch_x = pos_y  # World Y coordinate (across timber height)
-            sketch_y = pos_z  # World Z coordinate (along timber length)
-            print(f"      SKETCH POSITIONING: {face.name} face on YZ plane at ({sketch_x:.1f}, {sketch_y:.1f}) cm")
-            
-        rect_width = width_cm  # Use actual mortise width
-        rect_height = height_cm  # Use actual mortise height
-        print(f"      Step 5c: Setting up {rect_width:.1f}x{rect_height:.1f}cm mortise at ({sketch_x:.1f}, {sketch_y:.1f})")
-        print(f"      SKETCH COORDS DEBUG: X={sketch_x:.1f} cm, Y={sketch_y:.1f} cm on {face.name} face plane")
-        print(f"      COORDINATE MAPPING CHECK:")
-        print(f"        World 3D position: ({pos_x:.1f}, {pos_y:.1f}, {pos_z:.1f}) cm")
-        print(f"        Sketch 2D position: ({sketch_x:.1f}, {sketch_y:.1f}) cm") 
-        print(f"        Expected: sketch should be ABOVE XY plane (sketch_y = {sketch_y:.1f} should be > 0)")
-        if sketch_y < 0:
-            print(f"        ⚠️  WARNING: sketch_y is negative! This will place sketch below XY plane!")
-        if app:
-            app.log(f"      Step 5c: Setting up {rect_width:.1f}x{rect_height:.1f}cm mortise at ({sketch_x:.1f}, {sketch_y:.1f})")
+        print(f"      Step 9: Calculating mortise position on face...")
         
-        print(f"      Step 6: Creating rectangle for mortise...")
+        # Calculate position along the length of the timber (Z direction in sketch coordinates)
+        ref_end, distance_from_end = mortise_spec.pos_rel_to_end
+        if ref_end == TimberReferenceEnd.TOP:
+            # Distance from TOP end (Z=length_cm)
+            z_pos_on_face = timber_length_cm - (distance_from_end * 100)
+        else:  # BOTTOM
+            # Distance from BOTTOM end (Z=0)
+            z_pos_on_face = distance_from_end * 100
         
-        # Create rectangle for mortise
+        # X position on sketch is centered (0) for now since pos_rel_to_long_face is None
+        x_pos_on_face = 0  # Centered on face
+        
+        print(f"      Mortise position on {face.name} face:")
+        print(f"        X (cross-face): {x_pos_on_face:.1f} cm (centered)")
+        print(f"        Y (along-length): {z_pos_on_face:.1f} cm from bottom")
+        print(f"        Reference: {ref_end.name} end, {distance_from_end*100:.1f} cm from end")
+        
+        # Step 10: Create mortise rectangle on the face
+        print(f"      Step 10: Creating {width_cm:.1f}x{height_cm:.1f} cm rectangle...")
+        
         rect_lines = sketch.sketchCurves.sketchLines
-        x1 = sketch_x - rect_width / 2
-        x2 = sketch_x + rect_width / 2
-        y1 = sketch_y - rect_height / 2
-        y2 = sketch_y + rect_height / 2
         
-        print(f"      Rectangle corners:")
-        print(f"        ({x1:.1f}, {y1:.1f}) to ({x2:.1f}, {y2:.1f})")
-        print(f"        Width: {x2-x1:.1f} cm, Height: {y2-y1:.1f} cm")
+        # Rectangle centered at calculated position
+        x1 = x_pos_on_face - width_cm / 2
+        x2 = x_pos_on_face + width_cm / 2
+        y1 = z_pos_on_face - height_cm / 2
+        y2 = z_pos_on_face + height_cm / 2
         
-        # Coordinates in centimeters as expected by Fusion 360 API
+        print(f"      Rectangle bounds: X=[{x1:.1f}, {x2:.1f}], Y=[{y1:.1f}, {y2:.1f}]")
+        
+        # Create rectangle points (Z=0 since we're in the sketch plane)
         point1 = adsk.core.Point3D.create(x1, y1, 0)
         point2 = adsk.core.Point3D.create(x2, y1, 0)
         point3 = adsk.core.Point3D.create(x2, y2, 0)
         point4 = adsk.core.Point3D.create(x1, y2, 0)
         
-        print(f"      RECTANGLE POINTS DEBUG:")
-        print(f"        Point1: ({x1:.1f}, {y1:.1f}, 0) cm")
-        print(f"        Point2: ({x2:.1f}, {y1:.1f}, 0) cm")
-        print(f"        Point3: ({x2:.1f}, {y2:.1f}, 0) cm")
-        print(f"        Point4: ({x1:.1f}, {y2:.1f}, 0) cm")
-        print(f"        Coordinates in centimeters as expected by Fusion 360 API")
-        
-        print(f"      Step 7: Drawing rectangle lines...")
-        if app:
-            app.log(f"      Step 7: Drawing rectangle lines...")
-        
+        # Draw rectangle
         rect_lines.addByTwoPoints(point1, point2)
-        print(f"      Step 7a: Added line 1")
         rect_lines.addByTwoPoints(point2, point3)
-        print(f"      Step 7b: Added line 2")
         rect_lines.addByTwoPoints(point3, point4)
-        print(f"      Step 7c: Added line 3")
         rect_lines.addByTwoPoints(point4, point1)
-        print(f"      Step 7d: Added line 4 - rectangle complete!")
-        if app:
-            app.log(f"      Step 7d: Rectangle drawing complete!")
         
-        print(f"      Step 8: Getting profile for extrusion...")
-        if app:
-            app.log(f"      Step 8: Getting profile for extrusion...")
+        print(f"      ✓ Rectangle created on {face.name} face")
         
-        # Get the profile for extrusion
-        profile = sketch.profiles.item(0) if sketch.profiles.count > 0 else None
-        if not profile:
-            print(f"      ✗ Failed to create mortise profile for {component_name}")
+        # Step 11: Get profile and create cut extrusion
+        print(f"      Step 11: Creating cut extrusion...")
+        
+        # Find the correct profile for the mortise cavity
+        if sketch.profiles.count == 0:
+            print(f"      ❌ No profiles found in sketch")
             return False
         
-        print(f"      EXTRUSION DEBUG:")
-        print(f"        Profile found: {'Yes' if profile else 'No'}")
-        print(f"        Sketch location: {face.name} face plane")
-        print(f"        Target timber bounds: X=[{-float(timber.size[0])*100/2:.1f}, {float(timber.size[0])*100/2:.1f}] Y=[{-float(timber.size[1])*100/2:.1f}, {float(timber.size[1])*100/2:.1f}] Z=[0, {float(timber.length)*100:.1f}]")
-        print(f"        Sketch position: ({sketch_x:.1f}, {sketch_y:.1f}) on {face.name} plane")
-        print(f"        Issue: Sketch might be outside timber geometry!")
+        # Debug: show all profiles found
+        print(f"      Found {sketch.profiles.count} profiles in sketch")
         
-        # Use actual mortise depth from spec
-        cut_depth = depth_cm  # Use actual mortise depth
-        print(f"      Step 9: Creating cut extrusion with depth {cut_depth:.1f} cm...")
-        if app:
-            app.log(f"      Step 9: Creating cut extrusion with depth {cut_depth:.1f} cm...")
+        # Look for the bounded profile (the inner rectangle area)
+        profile = None
+        smallest_area = float('inf')
         
-        # Create cut extrusion with proper start/end positioning
+        for i in range(sketch.profiles.count):
+            test_profile = sketch.profiles.item(i)
+            try:
+                # Check if this profile has a finite area (bounded)
+                area_props = test_profile.areaProperties()
+                if area_props:
+                    area = area_props.area
+                    print(f"        Profile {i}: area = {area:.4f} cm², bounded = {area > 0 and area < 1e6}")
+                    
+                    # Select the smallest positive area (should be our rectangle)
+                    if 0 < area < smallest_area:
+                        smallest_area = area
+                        profile = test_profile
+                        print(f"        ✓ New best profile {i}: area = {area:.4f} cm²")
+            except:
+                print(f"        Profile {i}: unbounded or invalid")
+                continue
+        
+        # If still no profile found, try a different approach
+        if not profile:
+            print(f"      No bounded profile found, trying first profile...")
+            profile = sketch.profiles.item(0)
+        
+        if not profile:
+            print(f"      ❌ Failed to find suitable mortise profile")
+            return False
+        
+        print(f"      ✓ Using profile with area {smallest_area:.4f} cm² for mortise cut")
+        
+        # Create cut extrusion
         extrudes = component.features.extrudeFeatures
         extrude_input = extrudes.createInput(profile, adsk.fusion.FeatureOperations.CutFeatureOperation)
         
-        # Use simple distance extrusion for now (cut inward by mortise depth)
-        distance = adsk.core.ValueInput.createByReal(cut_depth)  # Already in cm as expected by Fusion 360
+        # Cut inward by mortise depth
+        distance = adsk.core.ValueInput.createByReal(-depth_cm)
+        extrude_input.setDistanceExtent(False, distance)  # Cut inward (negative direction)
         
-        # CORRECTED: Cut from sketch position toward face surface
-        # For BACK face: face is at Y=-5.1, sketch at Y=0, so cut in -Y direction (from sketch toward face)
-        if face == TimberFace.BACK:
-            # BACK face: cut from Y=0 toward Y=-5.1 (negative Y direction)
-            cut_direction = False  # Cut in -Y direction  
-            print(f"      EXTRUSION: Cut {cut_depth:.1f} cm in -Y direction (from sketch toward BACK face)")
-            print(f"      LOGIC: Sketch at Y=0, face at Y={pos_y:.1f}, cut toward face")
-        elif face == TimberFace.FORWARD:
-            # FORWARD face: cut from Y=0 toward Y=+5.1 (positive Y direction)
-            cut_direction = True
-            print(f"      EXTRUSION: Cut {cut_depth:.1f} cm in +Y direction (from sketch toward FORWARD face)")
-        elif face == TimberFace.TOP:
-            # TOP face: cut from Z=100 toward center (negative Z direction)
-            cut_direction = False
-            print(f"      EXTRUSION: Cut {cut_depth:.1f} cm in -Z direction (from TOP face toward center)")
-        elif face == TimberFace.BOTTOM:
-            # BOTTOM face: cut from Z=0 toward center (positive Z direction)
-            cut_direction = True
-            print(f"      EXTRUSION: Cut {cut_depth:.1f} cm in +Z direction (from BOTTOM face toward center)")
-        elif face == TimberFace.RIGHT:
-            # RIGHT face: cut from X=+5.1 toward center (negative X direction)
-            cut_direction = False
-            print(f"      EXTRUSION: Cut {cut_depth:.1f} cm in -X direction (from RIGHT face toward center)")
-        else:  # LEFT face
-            # LEFT face: cut from X=-5.1 toward center (positive X direction)
-            cut_direction = True
-            print(f"      EXTRUSION: Cut {cut_depth:.1f} cm in +X direction (from LEFT face toward center)")
-            
-        extrude_input.setDistanceExtent(cut_direction, distance)
-        print(f"      Step 9a: Set extrusion distance for {face.name} face")
-        if app:
-            app.log(f"      Step 9a: Set extrusion direction and distance")
-        
-        print(f"      Step 10: Adding extrude feature...")
-        print(f"      FINAL DEBUG BEFORE EXTRUSION:")
-        print(f"        Sketch position: ({sketch_x:.1f}, {sketch_y:.1f}) cm")
-        print(f"        Cut depth: {cut_depth:.1f} cm") 
-        print(f"        Cut direction: {'Positive' if cut_direction else 'Negative'}")
-        print(f"        Timber bounds: X=[-5.1,+5.1] Y=[-5.1,+5.1] Z=[0,100] cm")
-        
-        # Check if component has bodies to cut from
-        bodies = component.bRepBodies
-        print(f"        Component has {bodies.count} bodies to cut from")
-        if bodies.count == 0:
-            print(f"      ❌ FATAL ERROR: No bodies in component to cut from!")
-            print(f"      The timber geometry might not have been created yet.")
-            return False
-        else:
-            for i in range(bodies.count):
-                body = bodies.item(i)
-                print(f"        Body {i}: {body.name if body.name else 'Unnamed'}")
-        
-        if app:
-            app.log(f"      Step 10: Adding extrude feature...")
-        
-        # EMERGENCY DEBUG: Check bodies right before extrusion
-        print(f"      🚨 EMERGENCY DEBUG: About to extrude")
-        print(f"      Component: {component.name}")
-        print(f"      Bodies count: {component.bRepBodies.count}")
-        print(f"      Sketch profiles: {sketch.profiles.count}")
-        
-        # List all bodies in component
-        for i in range(component.bRepBodies.count):
-            body = component.bRepBodies.item(i)
-            print(f"        Body {i}: {body.name} (solid: {body.isSolid})")
-        
-        # Check extrude input setup
-        print(f"      Extrude operation: {extrude_input.operation}")
-        print(f"      Extrude profiles: {extrude_input.profile}")
+        print(f"      Creating cut: depth={depth_cm:.1f} cm inward from {face.name} face")
         
         extrude = extrudes.add(extrude_input)
-        print(f"      Step 10a: Extrude feature added")
-        if app:
-            app.log(f"      Step 10a: Extrude feature added")
         
         if extrude:
-            print(f"      ✓ Created mortise cut on {face.name} face")
+            print(f"      ✓ Successfully created mortise cut on {face.name} face")
             return True
         else:
-            print(f"      ✗ Failed to create mortise extrusion")
+            print(f"      ❌ Failed to create mortise extrusion")
             return False
             
     except Exception as e:
