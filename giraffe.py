@@ -818,3 +818,35 @@ def _calculate_mortise_position_from_tenon_intersection(mortise_timber: Timber, 
         return TimberReferenceEnd.BOTTOM, distance_from_bottom
     else:
         return TimberReferenceEnd.TOP, distance_from_top
+
+
+def apply_joint_to_cut_timbers(joint: Joint, cut_timber_mapping: dict[Timber, CutTimber]) -> None:
+    """
+    Apply a joint's cuts to the appropriate CutTimber objects.
+    
+    This helper function extracts the common pattern of applying joint cuts
+    to CutTimber objects that appears frequently in examples.
+    
+    Args:
+        joint: The TimberJoint object containing cuts to apply
+        cut_timber_mapping: Dictionary mapping Timber objects to their corresponding CutTimber objects
+        
+    Example:
+        # Create joint
+        joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(...)
+        
+        # Apply cuts using helper
+        apply_joint_to_cut_timbers(joint, {
+            timber1: cut_timber1,
+            timber2: cut_timber2
+        })
+    """
+    for timber, cuts in joint.timber_cuts:
+        if timber in cut_timber_mapping:
+            cut_timber_mapping[timber].joints.extend(cuts)
+        else:
+            # Log warning if timber not found in mapping
+            print(f"Warning: Timber {timber.name if hasattr(timber, 'name') else 'unnamed'} not found in cut_timber_mapping")
+
+
+

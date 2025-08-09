@@ -23,6 +23,7 @@ try:
     from sawhorse_example import create_sawhorse
     from supersimple_example import create_supersimple_structure
     from supersimple_example2 import create_supersimple_structure2
+    from supersimple_example5 import create_supersimple_structure5
     from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
     
     # Test that core dependencies are available
@@ -71,7 +72,8 @@ def run(_context: str):
                 'supersimple_example',
                 'supersimple_example2',
                 'supersimple_example3',
-                'supersimple_example4'
+                'supersimple_example4',
+                'supersimple_example5'
             ]
             
             for module_name in modules_to_reload:
@@ -87,6 +89,7 @@ def run(_context: str):
             from supersimple_example2 import create_supersimple_structure2
             from supersimple_example3 import create_supersimple_structure3
             from supersimple_example4 import create_supersimple_structure4
+            from supersimple_example5 import create_supersimple_structure5
             from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
             
             print("✓ Module reload complete")
@@ -96,38 +99,38 @@ def run(_context: str):
             print(f"Error reloading modules: {reload_error}")
             app.log(f"Error reloading modules: {reload_error}")
 
-        # Run the sawhorse structure generation to test full system
+        # Run the supersimple example 5 structure generation to test full system
         try:
-            print("🦓 GIRAFFETEST: SAWHORSE NO TRANSFORMS - Testing Sketch Position - Version 18:10 🦓")
-            app.log("🦓 GIRAFFETEST: SAWHORSE NO TRANSFORMS - Testing Sketch Position - Version 18:10 🦓")
-            print("Starting sawhorse structure generation...")
+            print("🦓 GIRAFFETEST: SUPERSIMPLE 5 - Testing Normal-Based Face Detection - Version 20:00 🦓")
+            app.log("🦓 GIRAFFETEST: SUPERSIMPLE 5 - Testing Normal-Based Face Detection - Version 20:00 🦓")
+            print("Starting supersimple structure 5 generation...")
+            cut_timbers = create_supersimple_structure5()
             #cut_timbers = create_sawhorse()
-            cut_timbers = create_supersimple_structure2()
-            print(f"Created sawhorse structure with {len(cut_timbers)} timbers")
+            #cut_timbers = create_supersimple_structure2()
+            print(f"Created structure with {len(cut_timbers)} timbers")
             
             # Clear design first to start fresh
             clear_design()
             
             # Render the timbers in Fusion 360 using three-pass rendering approach  
-            print(f"Starting three-pass rendering of {len(cut_timbers)} sawhorse timbers (NO TRANSFORMS - testing sketch positions)...")
-            app.log(f"Starting three-pass rendering of {len(cut_timbers)} sawhorse timbers (NO TRANSFORMS - testing sketch positions)...")
+            print(f"Starting three-pass rendering of {len(cut_timbers)} supersimple 5 timbers (testing normal-based face detection)...")
+            app.log(f"Starting three-pass rendering of {len(cut_timbers)} supersimple 5 timbers (testing normal-based face detection)...")
             
-            # Use the three-pass rendering function with transforms DISABLED
-            # Set apply_transforms=False to keep timbers at origin for sketch position testing
-            success_count = render_multiple_timbers(cut_timbers, "Sawhorse_Timber", apply_transforms=False)
+            # Use the three-pass rendering function with transforms enabled to test full workflow
+            success_count = render_multiple_timbers(cut_timbers, "SuperSimple5_Timber", apply_transforms=True)
             
             # Log detailed information
-            app.log(f'Sawhorse rendering complete (NO TRANSFORMS): {success_count}/{len(cut_timbers)} timbers rendered')
+            app.log(f'SuperSimple 5 rendering complete: {success_count}/{len(cut_timbers)} timbers rendered')
             
             # Show final summary  
-            print(f"Sawhorse rendering complete (NO TRANSFORMS): {success_count}/{len(cut_timbers)} timbers rendered")
+            print(f"SuperSimple 5 rendering complete: {success_count}/{len(cut_timbers)} timbers rendered")
             
-        except Exception as sawhorse_error:
-            print(f"❌ Error during sawhorse rendering: {sawhorse_error}")
-            app.log(f"Error during sawhorse rendering: {sawhorse_error}")
+        except Exception as rendering_error:
+            print(f"❌ Error during supersimple 5 rendering: {rendering_error}")
+            app.log(f"Error during supersimple 5 rendering: {rendering_error}")
             import traceback
             print(traceback.format_exc())
-            ui.messageBox(f'Error during sawhorse rendering:\n{sawhorse_error}', 'Rendering Error')
+            ui.messageBox(f'Error during supersimple 5 rendering:\n{rendering_error}', 'Rendering Error')
 
     except Exception as e:
         print(f"Unexpected error in run(): {str(e)}")

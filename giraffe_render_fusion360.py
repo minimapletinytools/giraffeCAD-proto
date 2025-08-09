@@ -9,7 +9,7 @@ using the Fusion 360 Python API.
 try:
     app = adsk.core.Application.get()
     if app:
-        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 19:45 - PROFILE SELECTION FIX 🐘")
+        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 20:00 - NORMAL-BASED FACE DETECTION 🐘")
 except:
     pass  # Ignore if app not available during import
 
@@ -104,6 +104,79 @@ def create_matrix3d_from_orientation(position: Matrix, orientation: Orientation)
     ])
     
     return matrix3d
+
+
+def find_timber_face_by_normal(timber_body: adsk.fusion.BRepBody, target_face: TimberFace) -> Optional[adsk.fusion.BRepFace]:
+    """
+    Find the appropriate face on a timber body using face normals.
+    
+    This assumes the timber is in its base orientation (no transformations applied):
+    - X axis: width (face direction)
+    - Y axis: height 
+    - Z axis: length (extrusion direction)
+    
+    Args:
+        timber_body: The BRep body of the timber
+        target_face: Which face to find (TimberFace enum)
+        
+    Returns:
+        The matching BRepFace, or None if not found
+    """
+    tolerance = 0.1  # Tolerance for normal vector comparison
+    
+    # Expected normal vectors for each face in base orientation
+    expected_normals = {
+        TimberFace.RIGHT:   (1.0, 0.0, 0.0),   # +X direction
+        TimberFace.LEFT:    (-1.0, 0.0, 0.0),  # -X direction  
+        TimberFace.FORWARD: (0.0, 1.0, 0.0),   # +Y direction
+        TimberFace.BACK:    (0.0, -1.0, 0.0),  # -Y direction
+        TimberFace.TOP:     (0.0, 0.0, 1.0),   # +Z direction
+        TimberFace.BOTTOM:  (0.0, 0.0, -1.0),  # -Z direction
+    }
+    
+    expected_normal = expected_normals[target_face]
+    print(f"      Looking for {target_face.name} face with normal {expected_normal}")
+    
+    for i in range(timber_body.faces.count):
+        brepface = timber_body.faces.item(i)
+        
+        # Get face normal at center point
+        face_eval = brepface.evaluator
+        (success, center_point) = face_eval.getPointAtParameter(adsk.core.Point2D.create(0.5, 0.5))
+        
+        if success:
+            # Get the normal vector at the center point
+            (success_normal, normal_vec) = face_eval.getNormalAtParameter(adsk.core.Point2D.create(0.5, 0.5))
+            
+            if success_normal:
+                # Normalize and compare with expected normal
+                normal = (normal_vec.x, normal_vec.y, normal_vec.z)
+                
+                print(f"        Face {i}: normal = ({normal[0]:.3f}, {normal[1]:.3f}, {normal[2]:.3f})")
+                
+                # Check if this normal matches our target (within tolerance)
+                normal_matches = (
+                    abs(normal[0] - expected_normal[0]) < tolerance and
+                    abs(normal[1] - expected_normal[1]) < tolerance and
+                    abs(normal[2] - expected_normal[2]) < tolerance
+                )
+                
+                if normal_matches:
+                    # Verify normal is axis-aligned (assert no rotation)
+                    axis_aligned = (
+                        (abs(normal[0]) > 0.9 and abs(normal[1]) < tolerance and abs(normal[2]) < tolerance) or
+                        (abs(normal[1]) > 0.9 and abs(normal[0]) < tolerance and abs(normal[2]) < tolerance) or  
+                        (abs(normal[2]) > 0.9 and abs(normal[0]) < tolerance and abs(normal[1]) < tolerance)
+                    )
+                    
+                    if not axis_aligned:
+                        raise AssertionError(f"Timber face normal {normal} is not axis-aligned! Timber orientation may be incorrect.")
+                    
+                    print(f"        ✓ Found {target_face.name} face with normal {normal}")
+                    return brepface
+    
+    print(f"      ❌ Could not find {target_face.name} face with expected normal {expected_normal}")
+    return None
 
 
 def get_face_normal_and_plane(timber: Timber, face: TimberFace) -> Tuple[Matrix, str]:
@@ -218,7 +291,7 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
     Returns:
         bool: True if cut was successful
     """
-    print("🚀🚀🚀 NEW VERSION LOADED - VERSION 2024.12.19.19.00 - FACE-BASED MORTISE 🚀🚀🚀")
+    print("🚀🚀🚀 NEW VERSION LOADED - VERSION 2024.12.19.20.00 - NORMAL-BASED FACE DETECTION 🚀🚀🚀")
     print(f"\n🔧 ENTERING create_mortise_cut for {component_name}")
     app = get_fusion_app()
     if app:
@@ -276,59 +349,10 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         timber_body = component.bRepBodies.item(0)  # Get the first (and should be only) body
         print(f"      Found timber body: {timber_body.name if timber_body.name else 'Unnamed'}")
         
-        # Step 7: Find the appropriate face on the Fusion 360 timber body
-        # The timber is oriented as: X=width, Y=height, Z=length (extruded along Z)
-        # Faces: LEFT/RIGHT (YZ planes), FORWARD/BACK (XZ planes), TOP/BOTTOM (XY planes)
+        # Step 7: Find the appropriate face on the Fusion 360 timber body using normals
+        print(f"      Looking for {face.name} face on timber body using face normals...")
         
-        target_face = None
-        timber_width_cm = float(timber.size[0]) * 100
-        timber_height_cm = float(timber.size[1]) * 100
-        timber_length_cm = float(timber.length) * 100
-        
-        print(f"      Timber dimensions: {timber_width_cm:.1f} x {timber_height_cm:.1f} x {timber_length_cm:.1f} cm")
-        print(f"      Looking for {face.name} face on timber body...")
-        
-        # Iterate through all faces to find the one that matches our target face
-        for i in range(timber_body.faces.count):
-            brepface = timber_body.faces.item(i)
-            # Get the face's center point to determine which face this is
-            face_eval = brepface.evaluator
-            (success, center_point) = face_eval.getPointAtParameter(adsk.core.Point2D.create(0.5, 0.5))
-            
-            if success:
-                # Check which face this is based on its center position
-                x, y, z = center_point.x, center_point.y, center_point.z
-                
-                print(f"        Face {i}: center at ({x:.1f}, {y:.1f}, {z:.1f})")
-                
-                # Determine face type based on position (with tolerance for floating point)
-                tolerance = 0.1  # cm
-                
-                if face == TimberFace.RIGHT and abs(x - timber_width_cm/2) < tolerance:
-                    target_face = brepface
-                    print(f"        ✓ Found RIGHT face at X={x:.1f}")
-                    break
-                elif face == TimberFace.LEFT and abs(x + timber_width_cm/2) < tolerance:
-                    target_face = brepface
-                    print(f"        ✓ Found LEFT face at X={x:.1f}")
-                    break
-                elif face == TimberFace.FORWARD and abs(y - timber_height_cm/2) < tolerance:
-                    target_face = brepface
-                    print(f"        ✓ Found FORWARD face at Y={y:.1f}")
-                    break
-                elif face == TimberFace.BACK and abs(y + timber_height_cm/2) < tolerance:
-                    target_face = brepface
-                    print(f"        ✓ Found BACK face at Y={y:.1f}")
-                    break
-                elif face == TimberFace.TOP and abs(z - timber_length_cm) < tolerance:
-                    target_face = brepface
-                    print(f"        ✓ Found TOP face at Z={z:.1f}")
-                    break
-                elif face == TimberFace.BOTTOM and abs(z) < tolerance:
-                    target_face = brepface
-                    print(f"        ✓ Found BOTTOM face at Z={z:.1f}")
-                    break
-        
+        target_face = find_timber_face_by_normal(timber_body, face)
         if not target_face:
             print(f"      ❌ Could not find {face.name} face on timber body!")
             return False
@@ -340,6 +364,9 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         sketch = sketches.add(target_face)
         
         print(f"      Step 9: Calculating mortise position on face...")
+        
+        # Calculate timber dimensions for positioning
+        timber_length_cm = float(timber.length) * 100
         
         # Calculate position along the length of the timber (Z direction in sketch coordinates)
         ref_end, distance_from_end = mortise_spec.pos_rel_to_end
