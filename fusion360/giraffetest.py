@@ -101,7 +101,8 @@ def run(_context: str):
             print("🦓 GIRAFFETEST: SAWHORSE NO TRANSFORMS - Testing Sketch Position - Version 18:10 🦓")
             app.log("🦓 GIRAFFETEST: SAWHORSE NO TRANSFORMS - Testing Sketch Position - Version 18:10 🦓")
             print("Starting sawhorse structure generation...")
-            cut_timbers = create_sawhorse()
+            #cut_timbers = create_sawhorse()
+            cut_timbers = create_supersimple_structure2()
             print(f"Created sawhorse structure with {len(cut_timbers)} timbers")
             
             # Clear design first to start fresh

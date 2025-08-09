@@ -74,7 +74,7 @@ def create_supersimple_structure2() -> list[CutTimber]:
         elif timber == horizontal_timber:
             cut_horizontal.joints.extend(cuts)
     
-    return [cut_vertical, cut_horizontal]
+    return [cut_vertical]
 
 def main():
     """Main function to demonstrate the supersimple structure with perpendicular intersecting timbers."""
