@@ -491,8 +491,17 @@ def create_tenon_cut(component: adsk.fusion.Component, timber: Timber, tenon_spe
         timber_width_cm = float(timber.size[0]) * 100
         timber_height_cm = float(timber.size[1]) * 100
         
-        # For now, just use the XY plane and position the tenon with the extrude start point
-        tenon_sketch_plane = component.xYConstructionPlane
+        # Create sketch plane at the correct timber end
+        if tenon_spec.shoulder_plane.reference_end == TimberReferenceEnd.TOP:
+            # For TOP tenons, create a plane at the top of the timber
+            construction_planes = component.constructionPlanes
+            plane_input = construction_planes.createInput()
+            offset_value = adsk.core.ValueInput.createByReal(timber_length_cm)
+            plane_input.setByOffset(component.xYConstructionPlane, offset_value)
+            tenon_sketch_plane = construction_planes.add(plane_input)
+        else:  # BOTTOM
+            # For BOTTOM tenons, use the XY plane at origin
+            tenon_sketch_plane = component.xYConstructionPlane
         
         # Step 5: Create box sketch matching tenon dimensions
         sketches = component.sketches
@@ -602,8 +611,8 @@ def create_tenon_cut(component: adsk.fusion.Component, timber: Timber, tenon_spe
                 # Determine extrusion range for this cutting region
                 if tenon_spec.shoulder_plane.reference_end == TimberReferenceEnd.TOP:
                     # Cut from timber top to beyond tenon end
-                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(0))
-                    end_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(-depth_cm))
+                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(-depth_cm))
+                    end_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(0))
                 else:  # BOTTOM
                     # Cut from below tenon end to timber bottom
                     start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(depth_cm))
