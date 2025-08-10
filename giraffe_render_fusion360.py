@@ -9,7 +9,7 @@ using the Fusion 360 Python API.
 try:
     app = adsk.core.Application.get()
     if app:
-        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 20:50 - CUT BOOLEAN TYPE 🐘")
+        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 21:00 - CLEANUP 🐘")
 except:
     pass  # Ignore if app not available during import
 
@@ -135,7 +135,6 @@ def find_timber_face_by_normal(timber_body: adsk.fusion.BRepBody, target_face: T
     }
     
     expected_normal = expected_normals[target_face]
-    print(f"      Looking for {target_face.name} face with normal {expected_normal}")
     
     for i in range(timber_body.faces.count):
         brepface = timber_body.faces.item(i)
@@ -149,10 +148,7 @@ def find_timber_face_by_normal(timber_body: adsk.fusion.BRepBody, target_face: T
             (success_normal, normal_vec) = face_eval.getNormalAtParameter(adsk.core.Point2D.create(0.5, 0.5))
             
             if success_normal:
-                # Normalize and compare with expected normal
                 normal = (normal_vec.x, normal_vec.y, normal_vec.z)
-                
-                print(f"        Face {i}: normal = ({normal[0]:.3f}, {normal[1]:.3f}, {normal[2]:.3f})")
                 
                 # Check if this normal matches our target (within tolerance)
                 normal_matches = (
@@ -172,10 +168,8 @@ def find_timber_face_by_normal(timber_body: adsk.fusion.BRepBody, target_face: T
                     if not axis_aligned:
                         raise AssertionError(f"Timber face normal {normal} is not axis-aligned! Timber orientation may be incorrect.")
                     
-                    print(f"        ✓ Found {target_face.name} face with normal {normal}")
                     return brepface
     
-    print(f"      ❌ Could not find {target_face.name} face with expected normal {expected_normal}")
     return None
 
 
@@ -291,49 +285,17 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
     Returns:
         bool: True if cut was successful
     """
-    print("🚀🚀🚀 NEW VERSION LOADED - VERSION 2024.12.19.20.50 - CUT BOOLEAN TYPE 🚀🚀🚀")
-    print(f"\n🔧 ENTERING create_mortise_cut for {component_name}")
     app = get_fusion_app()
-    if app:
-        app.log(f"🔧 ENTERING create_mortise_cut for {component_name}")
     
     try:
-        print(f"🔧 Step A: Basic setup...")
-        if app:
-            app.log(f"🔧 Step A: Basic setup...")
-        print(f"🔧 Component type: {type(component)}")
-        print(f"🔧 Timber type: {type(timber)}")
-        print(f"🔧 ⚡ CRITICAL: Component has {component.bRepBodies.count} bodies at START")
-        print(f"🔧 Mortise spec type: {type(mortise_spec)}")
-        if app:
-            app.log(f"🔧 Component: {type(component)}, Timber: {type(timber)}, Spec: {type(mortise_spec)}")
-        
-        print(f"\n=== Creating mortise cut on {mortise_spec.mortise_face.name} face of {component_name} ===")
-        # Also log to Fusion 360
-        app = get_fusion_app()
-        if app:
-            app.log(f"Creating mortise cut on {mortise_spec.mortise_face.name} face of {component_name}")
-        
-        # Early debug checkpoint
-        print(f"      Step 1: Getting mortise dimensions...")
-        
         # Get mortise dimensions in cm
         width_cm = mortise_spec.width * 100
         height_cm = mortise_spec.height * 100
         depth_cm = mortise_spec.depth * 100
-        
-        print(f"      Step 2: Dimensions calculated: {width_cm:.1f} x {height_cm:.1f} x {depth_cm:.1f} cm")
-        
-        # Debug mortise spec
-        print(f"  Raw mortise spec:")
-        print(f"    Face: {mortise_spec.mortise_face.name}")
-        print(f"    pos_rel_to_end: {mortise_spec.pos_rel_to_end}")
-        print(f"    width: {mortise_spec.width:.3f}m = {width_cm:.1f}cm")
-        print(f"    height: {mortise_spec.height:.3f}m = {height_cm:.1f}cm")
-        print(f"    depth: {mortise_spec.depth:.3f}m = {depth_cm:.1f}cm")
-        
-        # Get the face from mortise spec
         face = mortise_spec.mortise_face
+        
+        if app:
+            app.log(f"Creating {width_cm:.1f}x{height_cm:.1f}x{depth_cm:.1f}cm mortise on {face.name} face of {component_name}")
 
         # Step 5: Assert that pos_rel_to_long_face is None (not supported yet)
         if mortise_spec.pos_rel_to_long_face is not None:
@@ -341,51 +303,35 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         
         # Get the timber body from the component
         if component.bRepBodies.count == 0:
-            app.log(f"      ❌ FATAL ERROR: No bodies in component to cut from!")
+            if app:
+                app.log(f"ERROR: No bodies in component {component_name}")
             return False
         
-        timber_body = component.bRepBodies.item(0)  # Get the first (and should be only) body
-        app.log(f"      Found timber body: {timber_body.name if timber_body.name else 'Unnamed'}")
+        timber_body = component.bRepBodies.item(0)
         
-        # Step 7: Find the appropriate face on the Fusion 360 timber body using normals
-        app.log(f"      Looking for {face.name} face on timber body using face normals...")
-        
+        # Find the appropriate face on the Fusion 360 timber body using normals
         target_face = find_timber_face_by_normal(timber_body, face)
         if not target_face:
-            print(f"      ❌ Could not find {face.name} face on timber body!")
+            if app:
+                app.log(f"ERROR: Could not find {face.name} face on {component_name}")
             return False
-        
-        print(f"      Step 8: Creating sketch on {face.name} face...")
         
         # Create sketch on the target face
         sketches = component.sketches
         sketch = sketches.add(target_face)
         
-        print(f"      Step 9: Calculating mortise position on face...")
-        
-        # Calculate timber dimensions for positioning
+        # Calculate mortise position on face
         timber_length_cm = float(timber.length) * 100
-        
-        # Calculate position along the length of the timber (Z direction in sketch coordinates)
         ref_end, distance_from_end = mortise_spec.pos_rel_to_end
+        
         if ref_end == TimberReferenceEnd.TOP:
-            # Distance from TOP end (Z=length_cm)
             z_pos_on_face = timber_length_cm - (distance_from_end * 100)
         else:  # BOTTOM
-            # Distance from BOTTOM end (Z=0)
             z_pos_on_face = distance_from_end * 100
         
-        # X position on sketch is centered (0) for now since pos_rel_to_long_face is None
         x_pos_on_face = 0  # Centered on face
         
-        print(f"      Mortise position on {face.name} face:")
-        print(f"        X (cross-face): {x_pos_on_face:.1f} cm (centered)")
-        print(f"        Y (along-length): {z_pos_on_face:.1f} cm from bottom")
-        print(f"        Reference: {ref_end.name} end, {distance_from_end*100:.1f} cm from end")
-        
-        # Step 10: Create mortise rectangle on the face
-        print(f"      Step 10: Creating {width_cm:.1f}x{height_cm:.1f} cm rectangle...")
-        
+        # Create mortise rectangle on the face
         rect_lines = sketch.sketchCurves.sketchLines
         
         # Rectangle centered at calculated position
@@ -393,8 +339,6 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         x2 = x_pos_on_face + width_cm / 2
         y1 = z_pos_on_face - height_cm / 2
         y2 = z_pos_on_face + height_cm / 2
-        
-        print(f"      Rectangle bounds: X=[{x1:.1f}, {x2:.1f}], Y=[{y1:.1f}, {y2:.1f}]")
         
         # Create rectangle points (Z=0 since we're in the sketch plane)
         point1 = adsk.core.Point3D.create(x1, y1, 0)
@@ -408,18 +352,11 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         rect_lines.addByTwoPoints(point3, point4)
         rect_lines.addByTwoPoints(point4, point1)
         
-        print(f"      ✓ Rectangle created on {face.name} face")
-        
-        # Step 11: Get profile and create cut extrusion
-        print(f"      Step 11: Creating cut extrusion...")
-        
-        # Find the correct profile for the mortise cavity
+        # Find the correct profile for the mortise cavity (the bounded rectangle area)
         if sketch.profiles.count == 0:
-            print(f"      ❌ No profiles found in sketch")
+            if app:
+                app.log(f"ERROR: No profiles found in sketch for {component_name}")
             return False
-        
-        # Debug: show all profiles found
-        print(f"      Found {sketch.profiles.count} profiles in sketch")
         
         # Look for the bounded profile (the inner rectangle area)
         profile = None
@@ -428,87 +365,63 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         for i in range(sketch.profiles.count):
             test_profile = sketch.profiles.item(i)
             try:
-                # Check if this profile has a finite area (bounded)
                 area_props = test_profile.areaProperties()
                 if area_props:
                     area = area_props.area
-                    print(f"        Profile {i}: area = {area:.4f} cm², bounded = {area > 0 and area < 1e6}")
-                    
                     # Select the smallest positive area (should be our rectangle)
                     if 0 < area < smallest_area:
                         smallest_area = area
                         profile = test_profile
-                        print(f"        ✓ New best profile {i}: area = {area:.4f} cm²")
             except:
-                print(f"        Profile {i}: unbounded or invalid")
                 continue
         
-        # If still no profile found, try a different approach
-        if not profile:
-            print(f"      No bounded profile found, trying first profile...")
+        # Fallback to first profile if none found
+        if not profile and sketch.profiles.count > 0:
             profile = sketch.profiles.item(0)
         
         if not profile:
-            print(f"      ❌ Failed to find suitable mortise profile")
+            if app:
+                app.log(f"ERROR: Failed to find mortise profile for {component_name}")
             return False
-        
-        print(f"      ✓ Using profile with area {smallest_area:.4f} cm² for mortise cut")
         
         # Create cutting body first, then boolean subtract from specific timber body
         extrudes = component.features.extrudeFeatures
         extrude_input = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         
-        # Cut inward by mortise depth
+        # Create cutting body by extruding inward
         distance = adsk.core.ValueInput.createByReal(-depth_cm)
-        extrude_input.setDistanceExtent(False, distance)  # Cut inward (negative direction)
-        
-        app.log(f"      Creating cutting body: depth={depth_cm:.1f} cm inward from {face.name} face")
-        
-        # Create the cutting body (extrude the mortise shape)
+        extrude_input.setDistanceExtent(False, distance)
         extrude = extrudes.add(extrude_input)
         
-        if not extrude:
-            print(f"      ❌ Failed to create cutting body extrusion")
+        if not extrude or extrude.bodies.count == 0:
+            if app:
+                app.log(f"ERROR: Failed to create cutting body for {component_name}")
             return False
         
-        # Get the cutting body that was just created
-        cutting_body = None
-        if extrude.bodies.count > 0:
-            cutting_body = extrude.bodies.item(0)
+        cutting_body = extrude.bodies.item(0)
         
-        if not cutting_body:
-            print(f"      ❌ Failed to get cutting body from extrusion")
-            return False
-        
-        print(f"      ✓ Created cutting body")
-        
-        # Now perform boolean cut operation to subtract the cutting body from the timber
+        # Perform boolean cut operation to subtract cutting body from timber
         combine_features = component.features.combineFeatures
         combine_input = combine_features.createInput(timber_body, adsk.core.ObjectCollection.create())
         combine_input.toolBodies.add(cutting_body)
         combine_input.operation = adsk.fusion.FeatureOperations.CutFeatureOperation
-        combine_input.isKeepToolBodies = False  # Remove the cutting body after operation
-        
-        print(f"      Performing boolean cut operation on {timber_body.name if timber_body.name else 'timber body'}")
+        combine_input.isKeepToolBodies = False  # Remove cutting body after operation
         
         combine_feature = combine_features.add(combine_input)
         
         if combine_feature:
-            print(f"      ✓ Successfully created mortise cut on {face.name} face using boolean operation")
+            if app:
+                app.log(f"✓ Created mortise on {face.name} face of {component_name}")
             return True
         else:
-            print(f"      ❌ Failed to create boolean cut operation")
+            if app:
+                app.log(f"ERROR: Boolean cut failed for {component_name}")
             return False
             
     except Exception as e:
-        print(f"🔧 ERROR: Exception in create_mortise_cut for {component_name}: {str(e)}")
         app = get_fusion_app()
         if app:
-            app.log(f"🔧 ERROR: Exception in create_mortise_cut for {component_name}: {str(e)}")
-        import traceback
-        print(f"🔧 TRACEBACK: {traceback.format_exc()}")
-        if app:
-            app.log(f"🔧 TRACEBACK: {traceback.format_exc()}")
+            app.log(f"ERROR: Exception in create_mortise_cut for {component_name}: {str(e)}")
         return False
 
 
