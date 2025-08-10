@@ -603,12 +603,14 @@ def create_tenon_cut(component: adsk.fusion.Component, timber: Timber, tenon_spe
                 # Determine extrusion range for this cutting region
                 if tenon_spec.shoulder_plane.reference_end == TimberReferenceEnd.TOP:
                     # Cut from timber top to beyond tenon end
-                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(timber_length_cm))
-                    end_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(timber_length_cm - depth_cm - 5))
+                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(0))
+                    end_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(-depth_cm))
                 else:  # BOTTOM
                     # Cut from below tenon end to timber bottom
-                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(depth_cm + 5))
+                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(depth_cm))
                     end_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(0))
+
+                app.log(f"(meow meow {timber_length_cm} O {depth_cm} O {start_extent} {end_extent})")
                 
                 # Create cutting body
                 cutting_extrude_input = extrudes.createInput(cut_profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
