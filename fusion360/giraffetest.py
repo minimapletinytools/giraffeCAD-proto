@@ -105,8 +105,8 @@ def run(_context: str):
             app.log("🦓 GIRAFFETEST: SUPERSIMPLE 5 - Testing Normal-Based Face Detection - Version 20:00 🦓")
             print("Starting supersimple structure 5 generation...")
             #cut_timbers = create_supersimple_structure5()
-            cut_timbers = create_sawhorse()
-            #cut_timbers = create_supersimple_structure2()
+            #cut_timbers = create_sawhorse()
+            cut_timbers = create_supersimple_structure2()
             print(f"Created structure with {len(cut_timbers)} timbers")
             
             # Clear design first to start fresh

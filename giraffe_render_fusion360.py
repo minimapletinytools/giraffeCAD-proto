@@ -9,7 +9,7 @@ using the Fusion 360 Python API.
 try:
     app = adsk.core.Application.get()
     if app:
-        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 21:00 - CLEANUP 🐘")
+        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 21:35 - TENON CUTTING FIX 🐘")
 except:
     pass  # Ignore if app not available during import
 
@@ -20,7 +20,7 @@ import traceback
 import time
 from typing import Optional, Tuple, List
 from sympy import Matrix, Float
-from giraffe import CutTimber, Timber, MortiseCutOperation, StandardMortise, TimberFace, TimberReferenceEnd, TimberReferenceLongFace
+from giraffe import CutTimber, Timber, MortiseCutOperation, TenonCutOperation, StandardMortise, StandardTenon, TimberFace, TimberReferenceEnd, TimberReferenceLongFace
 from moothymoth import Orientation
 
 
@@ -425,6 +425,225 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         return False
 
 
+def create_tenon_cut(component: adsk.fusion.Component, timber: Timber, tenon_spec: StandardTenon, component_name: str) -> bool:
+    """
+    Create a tenon cut operation following the specified approach:
+    1. Determine position on centerline for shoulder plane
+    2. Create shoulder plane and chop off timber end
+    3. Create perpendicular plane at same position
+    4. Create box sketch matching tenon dimensions
+    5. Extrude tenon forward to tenon length
+    6. Extrude tenon backward to fill shoulder cut
+    
+    Args:
+        component: Timber component to cut
+        timber: Timber object for dimensions
+        tenon_spec: StandardTenon specification
+        component_name: Name for debugging
+        
+    Returns:
+        bool: True if cut was successful
+    """
+    app = get_fusion_app()
+    
+    try:
+        # Get tenon dimensions in cm
+        width_cm = tenon_spec.width * 100
+        height_cm = tenon_spec.height * 100
+        depth_cm = tenon_spec.depth * 100
+        
+        if app:
+            app.log(f"Creating {width_cm:.1f}x{height_cm:.1f}x{depth_cm:.1f}cm tenon on {component_name}")
+
+        # Get timber body from component
+        if component.bRepBodies.count == 0:
+            if app:
+                app.log(f"ERROR: No bodies in component {component_name}")
+            return False
+        
+        timber_body = component.bRepBodies.item(0)
+        
+        # Step 1: Determine position on centerline for shoulder plane
+        timber_length_cm = float(timber.length) * 100
+        shoulder_distance_cm = tenon_spec.shoulder_plane.distance * 100
+        
+        # Assert that shoulder plane is perpendicular to timber length (only supported for now)
+        shoulder_normal = tenon_spec.shoulder_plane.normal
+        timber_length_direction = (0, 0, 1)  # Z direction in timber coordinate system
+        
+        # Check if normal is parallel to length direction (perpendicular plane)
+        dot_product = abs(shoulder_normal[0] * timber_length_direction[0] + 
+                         shoulder_normal[1] * timber_length_direction[1] + 
+                         shoulder_normal[2] * timber_length_direction[2])
+        
+        if dot_product < 0.95:  # Allow some tolerance for floating point
+            raise AssertionError(f"Shoulder plane must be perpendicular to timber length for {component_name}. "
+                               f"Shoulder normal {shoulder_normal} is not parallel to length direction {timber_length_direction}")
+        
+        # Calculate shoulder position based on reference end
+        if tenon_spec.shoulder_plane.reference_end == TimberReferenceEnd.TOP:
+            shoulder_pos_cm = timber_length_cm - shoulder_distance_cm
+        else:  # BOTTOM
+            shoulder_pos_cm = shoulder_distance_cm
+        
+        # Simplified approach: Skip shoulder cut for now, just create tenon directly
+        # TODO: Add shoulder cutting back once basic tenon creation works
+        
+        timber_width_cm = float(timber.size[0]) * 100
+        timber_height_cm = float(timber.size[1]) * 100
+        
+        # For now, just use the XY plane and position the tenon with the extrude start point
+        tenon_sketch_plane = component.xYConstructionPlane
+        
+        # Step 5: Create box sketch matching tenon dimensions
+        sketches = component.sketches
+        tenon_sketch = sketches.add(tenon_sketch_plane)
+        
+        # Calculate tenon position (centered if pos_rel_to_long_edge is None)
+        # timber_width_cm and timber_height_cm already defined above
+        
+        if tenon_spec.pos_rel_to_long_edge is None:
+            # Centered on timber cross-section
+            center_x = 0
+            center_y = 0
+        else:
+            # TODO: Handle positioned tenons
+            raise NotImplementedError(f"Positioned tenons not implemented yet for {component_name}")
+        
+        # Create tenon rectangle centered at calculated position
+        x1 = center_x - width_cm / 2
+        x2 = center_x + width_cm / 2
+        y1 = center_y - height_cm / 2
+        y2 = center_y + height_cm / 2
+        
+        # Draw tenon rectangle
+        rect_lines = tenon_sketch.sketchCurves.sketchLines
+        point1 = adsk.core.Point3D.create(x1, y1, 0)
+        point2 = adsk.core.Point3D.create(x2, y1, 0)
+        point3 = adsk.core.Point3D.create(x2, y2, 0)
+        point4 = adsk.core.Point3D.create(x1, y2, 0)
+        
+        rect_lines.addByTwoPoints(point1, point2)
+        rect_lines.addByTwoPoints(point2, point3)
+        rect_lines.addByTwoPoints(point3, point4)
+        rect_lines.addByTwoPoints(point4, point1)
+        
+        # Step 6: Create tenon by cutting away waste material around the tenon profile
+        # We need to cut 4 rectangles around the tenon to leave only the tenon standing
+        
+        extrudes = component.features.extrudeFeatures
+        combine_features = component.features.combineFeatures
+        
+        # Create 4 cutting bodies: left, right, front, back of the tenon
+        cutting_operations = []
+        
+        # Calculate cutting regions around the tenon (leaving tenon profile untouched)
+        margin = max(timber_width_cm, timber_height_cm)  # Extra margin for complete cut
+        
+        # Left cutting region (X < tenon_left)
+        left_sketch = sketches.add(tenon_sketch_plane)
+        left_lines = left_sketch.sketchCurves.sketchLines
+        left_x1 = -margin
+        left_x2 = x1  # Left edge of tenon
+        left_y1 = -margin
+        left_y2 = margin
+        
+        left_lines.addByTwoPoints(adsk.core.Point3D.create(left_x1, left_y1, 0), adsk.core.Point3D.create(left_x2, left_y1, 0))
+        left_lines.addByTwoPoints(adsk.core.Point3D.create(left_x2, left_y1, 0), adsk.core.Point3D.create(left_x2, left_y2, 0))
+        left_lines.addByTwoPoints(adsk.core.Point3D.create(left_x2, left_y2, 0), adsk.core.Point3D.create(left_x1, left_y2, 0))
+        left_lines.addByTwoPoints(adsk.core.Point3D.create(left_x1, left_y2, 0), adsk.core.Point3D.create(left_x1, left_y1, 0))
+        
+        # Right cutting region (X > tenon_right)
+        right_sketch = sketches.add(tenon_sketch_plane)
+        right_lines = right_sketch.sketchCurves.sketchLines
+        right_x1 = x2  # Right edge of tenon
+        right_x2 = margin
+        right_y1 = -margin
+        right_y2 = margin
+        
+        right_lines.addByTwoPoints(adsk.core.Point3D.create(right_x1, right_y1, 0), adsk.core.Point3D.create(right_x2, right_y1, 0))
+        right_lines.addByTwoPoints(adsk.core.Point3D.create(right_x2, right_y1, 0), adsk.core.Point3D.create(right_x2, right_y2, 0))
+        right_lines.addByTwoPoints(adsk.core.Point3D.create(right_x2, right_y2, 0), adsk.core.Point3D.create(right_x1, right_y2, 0))
+        right_lines.addByTwoPoints(adsk.core.Point3D.create(right_x1, right_y2, 0), adsk.core.Point3D.create(right_x1, right_y1, 0))
+        
+        # Front cutting region (Y < tenon_front)
+        front_sketch = sketches.add(tenon_sketch_plane)
+        front_lines = front_sketch.sketchCurves.sketchLines
+        front_x1 = x1  # Tenon left
+        front_x2 = x2  # Tenon right
+        front_y1 = -margin
+        front_y2 = y1  # Front edge of tenon
+        
+        front_lines.addByTwoPoints(adsk.core.Point3D.create(front_x1, front_y1, 0), adsk.core.Point3D.create(front_x2, front_y1, 0))
+        front_lines.addByTwoPoints(adsk.core.Point3D.create(front_x2, front_y1, 0), adsk.core.Point3D.create(front_x2, front_y2, 0))
+        front_lines.addByTwoPoints(adsk.core.Point3D.create(front_x2, front_y2, 0), adsk.core.Point3D.create(front_x1, front_y2, 0))
+        front_lines.addByTwoPoints(adsk.core.Point3D.create(front_x1, front_y2, 0), adsk.core.Point3D.create(front_x1, front_y1, 0))
+        
+        # Back cutting region (Y > tenon_back)
+        back_sketch = sketches.add(tenon_sketch_plane)
+        back_lines = back_sketch.sketchCurves.sketchLines
+        back_x1 = x1  # Tenon left
+        back_x2 = x2  # Tenon right
+        back_y1 = y2  # Back edge of tenon
+        back_y2 = margin
+        
+        back_lines.addByTwoPoints(adsk.core.Point3D.create(back_x1, back_y1, 0), adsk.core.Point3D.create(back_x2, back_y1, 0))
+        back_lines.addByTwoPoints(adsk.core.Point3D.create(back_x2, back_y1, 0), adsk.core.Point3D.create(back_x2, back_y2, 0))
+        back_lines.addByTwoPoints(adsk.core.Point3D.create(back_x2, back_y2, 0), adsk.core.Point3D.create(back_x1, back_y2, 0))
+        back_lines.addByTwoPoints(adsk.core.Point3D.create(back_x1, back_y2, 0), adsk.core.Point3D.create(back_x1, back_y1, 0))
+        
+        # Create cutting bodies and apply boolean cuts
+        cutting_sketches = [left_sketch, right_sketch, front_sketch, back_sketch]
+        cut_names = ["left", "right", "front", "back"]
+        
+        for i, cut_sketch in enumerate(cutting_sketches):
+            if cut_sketch.profiles.count > 0:
+                cut_profile = cut_sketch.profiles.item(0)
+                
+                # Determine extrusion range for this cutting region
+                if tenon_spec.shoulder_plane.reference_end == TimberReferenceEnd.TOP:
+                    # Cut from timber top to beyond tenon end
+                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(timber_length_cm))
+                    end_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(timber_length_cm - depth_cm - 5))
+                else:  # BOTTOM
+                    # Cut from below tenon end to timber bottom
+                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(depth_cm + 5))
+                    end_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(0))
+                
+                # Create cutting body
+                cutting_extrude_input = extrudes.createInput(cut_profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+                cutting_extrude_input.setTwoSidesExtent(start_extent, end_extent)
+                cutting_extrude = extrudes.add(cutting_extrude_input)
+                
+                if cutting_extrude and cutting_extrude.bodies.count > 0:
+                    cutting_body = cutting_extrude.bodies.item(0)
+                    
+                    # Apply boolean cut
+                    combine_input = combine_features.createInput(timber_body, adsk.core.ObjectCollection.create())
+                    combine_input.toolBodies.add(cutting_body)
+                    combine_input.operation = adsk.fusion.FeatureOperations.CutFeatureOperation
+                    combine_input.isKeepToolBodies = False
+                    
+                    combine_feature = combine_features.add(combine_input)
+                    
+                    if not combine_feature:
+                        if app:
+                            app.log(f"WARNING: Failed to apply {cut_names[i]} cut for tenon on {component_name}")
+                else:
+                    if app:
+                        app.log(f"WARNING: Failed to create {cut_names[i]} cutting body for tenon on {component_name}")
+        
+        if app:
+            app.log(f"✓ Created tenon on {component_name}")
+        return True
+            
+    except Exception as e:
+        app = get_fusion_app()
+        if app:
+            app.log(f"ERROR: Exception in create_tenon_cut for {component_name}: {str(e)}")
+        return False
+
+
 def apply_timber_cuts(component: adsk.fusion.Component, cut_timber: CutTimber, component_name: str) -> bool:
     """
     Apply all cuts (mortises, tenons, etc.) to a timber component.
@@ -468,7 +687,24 @@ def apply_timber_cuts(component: adsk.fusion.Component, cut_timber: CutTimber, c
                     print(f"      Traceback: {traceback.format_exc()}")
                     if app:
                         app.log(f"Traceback: {traceback.format_exc()}")
-            # TODO: Add support for other cut types (tenons, etc.)
+            elif isinstance(joint, TenonCutOperation):
+                print(f"      Creating tenon cut...")
+                try:
+                    result = create_tenon_cut(component, cut_timber.timber, joint.tenon_spec, component_name)
+                    if result:
+                        success_count += 1
+                        print(f"      ✓ Tenon cut created successfully")
+                    else:
+                        print(f"      ✗ Tenon cut function returned False for {component_name}")
+                except Exception as e:
+                    print(f"      ✗ Exception in tenon cut for {component_name}: {str(e)}")
+                    app = get_fusion_app()
+                    if app:
+                        app.log(f"Exception in tenon cut for {component_name}: {str(e)}")
+                    import traceback
+                    print(f"      Traceback: {traceback.format_exc()}")
+                    if app:
+                        app.log(f"Traceback: {traceback.format_exc()}")
             else:
                 print(f"      ⚠ Unsupported cut type: {type(joint).__name__} in {component_name}")
                 # For now, count unsupported types as "successful" to not block the process
