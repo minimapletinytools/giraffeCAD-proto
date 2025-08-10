@@ -9,7 +9,7 @@ using the Fusion 360 Python API.
 try:
     app = adsk.core.Application.get()
     if app:
-        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 21:35 - TENON CUTTING FIX 🐘")
+        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 21:45 - CUT ORDER FIX 🐘")
 except:
     pass  # Ignore if app not available during import
 
@@ -262,7 +262,6 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
     app = get_fusion_app()
     if app:
         app.log("🐘 FUNCTION TRACKER: create_mortise_cut called - Version 19:00 - FACE-BASED MORTISE FIX 🐘")
-        app.log(f"🎯 CRITICAL: Component has {component.bRepBodies.count} bodies at START")
         
         # List all bodies if any exist
         for i in range(component.bRepBodies.count):
@@ -453,7 +452,7 @@ def create_tenon_cut(component: adsk.fusion.Component, timber: Timber, tenon_spe
         depth_cm = tenon_spec.depth * 100
         
         if app:
-            app.log(f"Creating {width_cm:.1f}x{height_cm:.1f}x{depth_cm:.1f}cm tenon on {component_name}")
+            app.log(f"Creating {width_cm:.1f}x{height_cm:.1f}x{depth_cm:.1f}cm tenon on {component_name} on {tenon_spec.shoulder_plane.reference_end.name} side")
 
         # Get timber body from component
         if component.bRepBodies.count == 0:
@@ -610,7 +609,6 @@ def create_tenon_cut(component: adsk.fusion.Component, timber: Timber, tenon_spe
                     start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(depth_cm))
                     end_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(0))
 
-                app.log(f"(meow meow {timber_length_cm} O {depth_cm} O {start_extent} {end_extent})")
                 
                 # Create cutting body
                 cutting_extrude_input = extrudes.createInput(cut_profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
@@ -666,51 +664,69 @@ def apply_timber_cuts(component: adsk.fusion.Component, cut_timber: CutTimber, c
             print(f"    No cuts to apply to {component_name}")
             return True
         
-        print(f"    Applying {total_cuts} cuts to {component_name}")
+        print(f"    Applying {total_cuts} cuts to {component_name} (mortises first, then tenons)")
         
-        for i, joint in enumerate(cut_timber.joints):
-            print(f"    Processing cut {i+1}/{total_cuts}: {type(joint).__name__}")
-            
+        # Separate mortise and tenon operations
+        mortise_operations = []
+        tenon_operations = []
+        other_operations = []
+        
+        for joint in cut_timber.joints:
             if isinstance(joint, MortiseCutOperation):
-                print(f"      Creating mortise cut...")
-                try:
-                    result = create_mortise_cut(component, cut_timber.timber, joint.mortise_spec, component_name)
-                    if result:
-                        success_count += 1
-                        print(f"      ✓ Mortise cut created successfully")
-                    else:
-                        print(f"      ✗ Mortise cut function returned False for {component_name}")
-                except Exception as e:
-                    print(f"      ✗ Exception in mortise cut for {component_name}: {str(e)}")
-                    app = get_fusion_app()
-                    if app:
-                        app.log(f"Exception in mortise cut for {component_name}: {str(e)}")
-                    import traceback
-                    print(f"      Traceback: {traceback.format_exc()}")
-                    if app:
-                        app.log(f"Traceback: {traceback.format_exc()}")
+                mortise_operations.append(joint)
             elif isinstance(joint, TenonCutOperation):
-                print(f"      Creating tenon cut...")
-                try:
-                    result = create_tenon_cut(component, cut_timber.timber, joint.tenon_spec, component_name)
-                    if result:
-                        success_count += 1
-                        print(f"      ✓ Tenon cut created successfully")
-                    else:
-                        print(f"      ✗ Tenon cut function returned False for {component_name}")
-                except Exception as e:
-                    print(f"      ✗ Exception in tenon cut for {component_name}: {str(e)}")
-                    app = get_fusion_app()
-                    if app:
-                        app.log(f"Exception in tenon cut for {component_name}: {str(e)}")
-                    import traceback
-                    print(f"      Traceback: {traceback.format_exc()}")
-                    if app:
-                        app.log(f"Traceback: {traceback.format_exc()}")
+                app = get_fusion_app()
+                tenon_operations.append(joint)
             else:
-                print(f"      ⚠ Unsupported cut type: {type(joint).__name__} in {component_name}")
-                # For now, count unsupported types as "successful" to not block the process
-                success_count += 1
+                other_operations.append(joint)
+        
+        # Process all mortises first
+        print(f"    Phase 1: Processing {len(mortise_operations)} mortise cuts...")
+        for i, joint in enumerate(mortise_operations):
+            print(f"      Mortise {i+1}/{len(mortise_operations)}: Creating mortise cut...")
+            try:
+                result = create_mortise_cut(component, cut_timber.timber, joint.mortise_spec, component_name)
+                if result:
+                    success_count += 1
+                    print(f"      ✓ Mortise cut created successfully")
+                else:
+                    print(f"      ✗ Mortise cut function returned False for {component_name}")
+            except Exception as e:
+                print(f"      ✗ Exception in mortise cut for {component_name}: {str(e)}")
+                app = get_fusion_app()
+                if app:
+                    app.log(f"Exception in mortise cut for {component_name}: {str(e)}")
+                import traceback
+                print(f"      Traceback: {traceback.format_exc()}")
+                if app:
+                    app.log(f"Traceback: {traceback.format_exc()}")
+        
+        # Process all tenons second  
+        print(f"    Phase 2: Processing {len(tenon_operations)} tenon cuts...")
+        for i, joint in enumerate(tenon_operations):
+            print(f"      Tenon {i+1}/{len(tenon_operations)}: Creating tenon cut...")
+            try:
+                result = create_tenon_cut(component, cut_timber.timber, joint.tenon_spec, component_name)
+                if result:
+                    success_count += 1
+                    print(f"      ✓ Tenon cut created successfully")
+                else:
+                    print(f"      ✗ Tenon cut function returned False for {component_name}")
+            except Exception as e:
+                print(f"      ✗ Exception in tenon cut for {component_name}: {str(e)}")
+                app = get_fusion_app()
+                if app:
+                    app.log(f"Exception in tenon cut for {component_name}: {str(e)}")
+                import traceback
+                print(f"      Traceback: {traceback.format_exc()}")
+                if app:
+                    app.log(f"Traceback: {traceback.format_exc()}")
+        
+        # Process other operations last
+        for i, joint in enumerate(other_operations):
+            print(f"      ⚠ Unsupported cut type: {type(joint).__name__} in {component_name}")
+            # For now, count unsupported types as "successful" to not block the process
+            success_count += 1
         
         print(f"    Successfully applied {success_count}/{total_cuts} cuts to {component_name}")
         return success_count == total_cuts
