@@ -9,7 +9,7 @@ using the Fusion 360 Python API.
 try:
     app = adsk.core.Application.get()
     if app:
-        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 20:00 - NORMAL-BASED FACE DETECTION 🐘")
+        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 20:50 - CUT BOOLEAN TYPE 🐘")
 except:
     pass  # Ignore if app not available during import
 
@@ -291,7 +291,7 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
     Returns:
         bool: True if cut was successful
     """
-    print("🚀🚀🚀 NEW VERSION LOADED - VERSION 2024.12.19.20.00 - NORMAL-BASED FACE DETECTION 🚀🚀🚀")
+    print("🚀🚀🚀 NEW VERSION LOADED - VERSION 2024.12.19.20.50 - CUT BOOLEAN TYPE 🚀🚀🚀")
     print(f"\n🔧 ENTERING create_mortise_cut for {component_name}")
     app = get_fusion_app()
     if app:
@@ -454,23 +454,50 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         
         print(f"      ✓ Using profile with area {smallest_area:.4f} cm² for mortise cut")
         
-        # Create cut extrusion
+        # Create cutting body first, then boolean subtract from specific timber body
         extrudes = component.features.extrudeFeatures
-        extrude_input = extrudes.createInput(profile, adsk.fusion.FeatureOperations.CutFeatureOperation)
+        extrude_input = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         
         # Cut inward by mortise depth
         distance = adsk.core.ValueInput.createByReal(-depth_cm)
         extrude_input.setDistanceExtent(False, distance)  # Cut inward (negative direction)
         
-        print(f"      Creating cut: depth={depth_cm:.1f} cm inward from {face.name} face")
+        app.log(f"      Creating cutting body: depth={depth_cm:.1f} cm inward from {face.name} face")
         
+        # Create the cutting body (extrude the mortise shape)
         extrude = extrudes.add(extrude_input)
         
-        if extrude:
-            print(f"      ✓ Successfully created mortise cut on {face.name} face")
+        if not extrude:
+            print(f"      ❌ Failed to create cutting body extrusion")
+            return False
+        
+        # Get the cutting body that was just created
+        cutting_body = None
+        if extrude.bodies.count > 0:
+            cutting_body = extrude.bodies.item(0)
+        
+        if not cutting_body:
+            print(f"      ❌ Failed to get cutting body from extrusion")
+            return False
+        
+        print(f"      ✓ Created cutting body")
+        
+        # Now perform boolean cut operation to subtract the cutting body from the timber
+        combine_features = component.features.combineFeatures
+        combine_input = combine_features.createInput(timber_body, adsk.core.ObjectCollection.create())
+        combine_input.toolBodies.add(cutting_body)
+        combine_input.operation = adsk.fusion.FeatureOperations.CutFeatureOperation
+        combine_input.isKeepToolBodies = False  # Remove the cutting body after operation
+        
+        print(f"      Performing boolean cut operation on {timber_body.name if timber_body.name else 'timber body'}")
+        
+        combine_feature = combine_features.add(combine_input)
+        
+        if combine_feature:
+            print(f"      ✓ Successfully created mortise cut on {face.name} face using boolean operation")
             return True
         else:
-            print(f"      ❌ Failed to create mortise extrusion")
+            print(f"      ❌ Failed to create boolean cut operation")
             return False
             
     except Exception as e:
