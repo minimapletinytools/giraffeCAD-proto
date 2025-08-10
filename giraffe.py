@@ -631,11 +631,14 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
         mortise_timber, tenon_timber, tenon_end
     )
     
+    # Calculate tenon shoulder plane distance to position it at the mortise timber face
+    tenon_shoulder_distance = _calculate_tenon_shoulder_distance(tenon_timber, mortise_timber, tenon_end)
+    
     # Create tenon specification
     tenon_spec = StandardTenon(
         shoulder_plane=ShoulderPlane.create(
             reference_end=tenon_end,
-            distance=0
+            distance=tenon_shoulder_distance
         ),
         pos_rel_to_long_edge=None,  # Centered
         width=tenon_thickness,
@@ -818,6 +821,61 @@ def _calculate_mortise_position_from_tenon_intersection(mortise_timber: Timber, 
         return TimberReferenceEnd.BOTTOM, distance_from_bottom
     else:
         return TimberReferenceEnd.TOP, distance_from_top
+
+
+def _calculate_tenon_shoulder_distance(tenon_timber: Timber, mortise_timber: Timber, tenon_end: TimberReferenceEnd) -> float:
+    """
+    Calculate the distance from the tenon end to where the shoulder plane should be positioned.
+    The shoulder plane should be at the face where the tenon timber meets the mortise timber.
+    
+    Args:
+        tenon_timber: Timber that will have the tenon
+        mortise_timber: Timber that will receive the mortise
+        tenon_end: Which end of the tenon timber the tenon comes from
+        
+    Returns:
+        Distance from the tenon end to the shoulder plane position
+    """
+    # Get the tenon end point (where tenon starts)
+    if tenon_end == TimberReferenceEnd.TOP:
+        tenon_end_point = tenon_timber.bottom_position + tenon_timber.length_direction * tenon_timber.length
+    else:  # BOTTOM
+        tenon_end_point = tenon_timber.bottom_position
+    
+    # Find the intersection point where tenon timber centerline meets mortise timber face
+    # We need to find the closest point on the mortise timber's surface to the tenon end point
+    
+    # Project tenon end point onto mortise timber centerline
+    t, projected_point = _project_point_on_timber_centerline(tenon_end_point, mortise_timber)
+    
+    # Get the face direction from mortise timber to tenon timber
+    tenon_end_direction = _get_tenon_end_direction(tenon_timber, tenon_end)
+    mortise_face = _find_aligned_face(mortise_timber, -tenon_end_direction)
+    
+    # Calculate the distance from mortise centerline to mortise face
+    # This depends on which face we're intersecting with
+    if mortise_face in [TimberFace.RIGHT, TimberFace.LEFT]:
+        # X direction faces
+        face_offset = float(mortise_timber.size[0]) / 2  # Half width
+    elif mortise_face in [TimberFace.FORWARD, TimberFace.BACK]:
+        # Y direction faces  
+        face_offset = float(mortise_timber.size[1]) / 2  # Half height
+    else:
+        # TOP/BOTTOM faces (shouldn't happen for typical tenon joints)
+        face_offset = 0
+    
+    # The shoulder plane should be positioned so the tenon starts at the mortise face
+    # Calculate the vector from tenon end to mortise face
+    face_vector = _timber_face_to_vector(mortise_face)
+    
+    # Distance from tenon end to mortise face along tenon direction
+    mortise_face_point = projected_point + create_vector3d(face_vector[0], face_vector[1], face_vector[2]) * face_offset
+    
+    # Calculate distance along tenon timber centerline
+    to_face_vector = mortise_face_point - tenon_end_point
+    distance_along_tenon = abs(float(to_face_vector.dot(tenon_timber.length_direction)))
+    
+    return distance_along_tenon
 
 
 def apply_joint_to_cut_timbers(joint: Joint, cut_timber_mapping: dict[Timber, CutTimber]) -> None:
