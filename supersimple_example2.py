@@ -62,8 +62,7 @@ def create_supersimple_structure2() -> list[CutTimber]:
         tenon_timber=horizontal_timber,      # Horizontal timber gets the tenon
         tenon_end=TimberReferenceEnd.BOTTOM, # Tenon from bottom end of horizontal timber
         tenon_thickness=tenon_thickness,
-        tenon_length=tenon_length,
-        tenon_depth=tenon_depth
+        tenon_length=tenon_depth
     )
     joint.name = "Perpendicular Timber Joint"
     

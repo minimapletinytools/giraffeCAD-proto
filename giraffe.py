@@ -88,7 +88,7 @@ class StandardTenon:
     pos_rel_to_long_edge: Optional[Tuple[TimberReferenceLongEdge, V2]]
     width: float
     height: float
-    depth: float
+    length: float  # How far the tenon extends beyond the shoulder plane
 
 @dataclass
 class MultiTenon:
@@ -592,8 +592,7 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
 
 def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
                                                           tenon_end: TimberReferenceEnd,
-                                                          tenon_thickness: float, tenon_length: float,
-                                                          tenon_depth: float):
+                                                          tenon_thickness: float, tenon_length: float):
     """
     Creates a mortise and tenon joint for face-aligned timbers.
     
@@ -602,8 +601,7 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
         tenon_timber: Timber that will receive the tenon cut
         tenon_end: Which end of the tenon timber the tenon will be cut from
         tenon_thickness: Width and height of the tenon
-        tenon_length: Length (depth) of the tenon extending from the timber
-        tenon_depth: How deep the mortise goes into the mortise timber
+        tenon_length: Length of the tenon extending from mortise face of the mortise timber
         
     Raises:
         AssertionError: If timbers are not properly oriented for this joint type
@@ -643,7 +641,7 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
         pos_rel_to_long_edge=None,  # Centered
         width=tenon_thickness,
         height=tenon_thickness,
-        depth=tenon_length
+        length=tenon_length  # How far tenon extends beyond shoulder plane
     )
     
     # Create mortise specification
@@ -653,7 +651,7 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
         pos_rel_to_long_face=None,  # Centered
         width=tenon_thickness,
         height=tenon_length,
-        depth=tenon_depth
+        depth=tenon_length  # Mortise depth equals tenon length
     )
     
     # Create cut operations
