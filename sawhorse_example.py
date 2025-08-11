@@ -10,7 +10,6 @@ stretcher_size = create_vector2d(4 * INCH_TO_METER, 4 * INCH_TO_METER)
 
 tenon_thickness = 1 * INCH_TO_METER
 tenon_length = 2 * INCH_TO_METER
-tenon_depth = 3 * INCH_TO_METER
 
 # Define constants for the sawhorse (converted to meters)
 bottom_width = 24 * INCH_TO_METER
@@ -134,8 +133,7 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_timber=left_post,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
         tenon_thickness=tenon_thickness,
-        tenon_length=tenon_length,
-        tenon_depth=tenon_depth
+        tenon_length=tenon_length
     )
     mudsill_left_joint.name = "Left Post to Mudsill Joint"
 
@@ -144,8 +142,7 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_timber=right_post,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
         tenon_thickness=tenon_thickness,
-        tenon_length=tenon_length,
-        tenon_depth=tenon_depth
+        tenon_length=tenon_length
     )
     mudsill_right_joint.name = "Right Post to Mudsill Joint"
 
@@ -155,8 +152,7 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_timber=stretcher,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom end of stretcher
         tenon_thickness=tenon_thickness,
-        tenon_length=tenon_length,
-        tenon_depth=tenon_depth
+        tenon_length=tenon_length
     )
     stretcher_left_joint.name = "Left Post to Stretcher Joint"
 
@@ -165,8 +161,7 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_timber=stretcher,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of stretcher
         tenon_thickness=tenon_thickness,
-        tenon_length=tenon_length,
-        tenon_depth=tenon_depth
+        tenon_length=tenon_length
     )
     stretcher_right_joint.name = "Right Post to Stretcher Joint"
 
@@ -176,8 +171,7 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_timber=left_post,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from bottom end of beam
         tenon_thickness=tenon_thickness,
-        tenon_length=tenon_length,
-        tenon_depth=tenon_depth
+        tenon_length=tenon_length
     )
     beam_left_joint.name = "Left Post to Beam Joint"
 
@@ -186,8 +180,7 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_timber=right_post,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of beam
         tenon_thickness=tenon_thickness,
-        tenon_length=tenon_length,
-        tenon_depth=tenon_depth
+        tenon_length=tenon_length
     )
     beam_right_joint.name = "Right Post to Beam Joint"
 
