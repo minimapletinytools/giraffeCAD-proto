@@ -9,7 +9,7 @@ using the Fusion 360 Python API.
 try:
     app = adsk.core.Application.get()
     if app:
-        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 21:55 - TENON LENGTH FIX 🐘")
+        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 22:00 - SHOULDER PLANE CUTTING FIX 🐘")
 except:
     pass  # Ignore if app not available during import
 
@@ -609,13 +609,14 @@ def create_tenon_cut(component: adsk.fusion.Component, timber: Timber, tenon_spe
                 cut_profile = cut_sketch.profiles.item(0)
                 
                 # Determine extrusion range for this cutting region
+                # Cut from timber end back to shoulder plane position
                 if tenon_spec.shoulder_plane.reference_end == TimberReferenceEnd.TOP:
-                    # Cut from timber top to beyond tenon end
-                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(-depth_cm))
+                    # TOP tenon: cut from timber top back to shoulder plane
+                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(-shoulder_distance_cm))
                     end_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(0))
                 else:  # BOTTOM
-                    # Cut from below tenon end to timber bottom
-                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(depth_cm))
+                    # BOTTOM tenon: cut from timber bottom back to shoulder plane
+                    start_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(shoulder_distance_cm))
                     end_extent = adsk.fusion.DistanceExtentDefinition.create(adsk.core.ValueInput.createByReal(0))
 
                 
