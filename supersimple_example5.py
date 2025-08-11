@@ -86,8 +86,7 @@ def create_supersimple_structure5() -> list[CutTimber]:
         tenon_timber=vertical_timber,               # Vertical timber acts as tenon
         tenon_end=TimberReferenceEnd.BOTTOM,        # Bottom end of vertical timber
         tenon_thickness=mortise_width,              # Match mortise width
-        tenon_length=mortise_height,                # Match mortise height 
-        tenon_depth=mortise_depth                   # Match mortise depth
+        tenon_length=mortise_depth                 # Tenon length (mortise depth = tenon length)
     )
     bottom_joint.name = "Bottom Joint (Vertical to Bottom Horizontal)"
     
@@ -100,8 +99,7 @@ def create_supersimple_structure5() -> list[CutTimber]:
         tenon_timber=vertical_timber,               # Vertical timber acts as tenon
         tenon_end=TimberReferenceEnd.TOP,           # Top end of vertical timber
         tenon_thickness=mortise_width,              # Match mortise width
-        tenon_length=mortise_height,                # Match mortise height
-        tenon_depth=mortise_depth                   # Match mortise depth
+        tenon_length=mortise_depth                 # Tenon length (mortise depth = tenon length)
     )
     top_joint.name = "Top Joint (Vertical to Top Horizontal)"
     

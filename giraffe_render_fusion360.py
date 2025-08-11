@@ -9,7 +9,7 @@ using the Fusion 360 Python API.
 try:
     app = adsk.core.Application.get()
     if app:
-        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 21:45 - CUT ORDER FIX 🐘")
+        app.log("🐘 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Version 21:55 - TENON LENGTH FIX 🐘")
 except:
     pass  # Ignore if app not available during import
 
@@ -449,7 +449,7 @@ def create_tenon_cut(component: adsk.fusion.Component, timber: Timber, tenon_spe
         # Get tenon dimensions in cm
         width_cm = tenon_spec.width * 100
         height_cm = tenon_spec.height * 100
-        depth_cm = tenon_spec.depth * 100
+        depth_cm = tenon_spec.length * 100  # How far tenon extends beyond shoulder plane
         
         if app:
             app.log(f"Creating {width_cm:.1f}x{height_cm:.1f}x{depth_cm:.1f}cm tenon on {component_name} on {tenon_spec.shoulder_plane.reference_end.name} side")
