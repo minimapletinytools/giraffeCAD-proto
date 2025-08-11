@@ -421,8 +421,7 @@ class TestJointConstruction:
             mortise_timber, tenon_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
             tenon_thickness=0.05,
-            tenon_length=0.1,
-            tenon_depth=0.08
+            tenon_length=0.1
         )
         
         assert isinstance(joint, Joint)
