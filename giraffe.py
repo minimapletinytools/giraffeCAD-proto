@@ -889,9 +889,10 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
         to_intersection = projected_point - tenon_end_point
         distance_to_intersection = abs(float(to_intersection.dot(tenon_timber.length_direction)))
         
-        # Check if this is an aligned case (tenon end is close to the mortise timber)
-        # by checking if the distance to intersection is small
-        if distance_to_intersection < face_offset * 2:  # Some reasonable threshold
+        # Check if this is an aligned case (tenon end is very close to the mortise timber)
+        # For truly aligned cases, the distance should be essentially zero (within tolerance)
+        alignment_threshold = 1e-3  # 1mm tolerance
+        if distance_to_intersection < alignment_threshold:
             # Aligned case: shoulder distance is just the face offset
             distance_along_tenon = face_offset
         else:
