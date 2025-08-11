@@ -882,22 +882,15 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     
     if abs(direction_dot_normal) < 1e-6:
         # Case 1: Tenon direction is perpendicular to mortise face (typical orthogonal joints)
-        # For this case, we need to check if the timbers are actually aligned (centerlines intersect)
-        # vs. misaligned (centerlines don't intersect)
+        # Calculate distance from tenon end to projected point plus face offset
         
         # Distance from tenon end to the intersection point along tenon centerline
         to_intersection = projected_point - tenon_end_point
         distance_to_intersection = abs(float(to_intersection.dot(tenon_timber.length_direction)))
         
-        # Check if this is an aligned case (tenon end is very close to the mortise timber)
-        # For truly aligned cases, the distance should be essentially zero (within tolerance)
-        alignment_threshold = 1e-3  # 1mm tolerance
-        if distance_to_intersection < alignment_threshold:
-            # Aligned case: shoulder distance is just the face offset
-            distance_along_tenon = face_offset
-        else:
-            # Misaligned case: add the distance to intersection
-            distance_along_tenon = distance_to_intersection + face_offset
+        # Distance to shoulder plane = distance to intersection + face offset
+        # This works for both aligned and misaligned cases
+        distance_along_tenon = distance_to_intersection + face_offset
         
     else:
         # Case 2: Tenon direction is not perpendicular to mortise face
