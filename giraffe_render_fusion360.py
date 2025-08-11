@@ -465,6 +465,8 @@ def create_tenon_cut(component: adsk.fusion.Component, timber: Timber, tenon_spe
         # Step 1: Determine position on centerline for shoulder plane
         timber_length_cm = float(timber.length) * 100
         shoulder_distance_cm = tenon_spec.shoulder_plane.distance * 100
+
+        app.log(f"{shoulder_distance_cm}")
         
         # Assert that shoulder plane is perpendicular to timber length (only supported for now)
         shoulder_normal = tenon_spec.shoulder_plane.normal
