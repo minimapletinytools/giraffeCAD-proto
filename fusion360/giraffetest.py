@@ -20,10 +20,10 @@ if parent_dir not in sys.path:
 # Import our GiraffeCAD modules from parent directory
 try:
     # Import from parent directory - these files are NOT copied locally
-    from sawhorse_example import create_sawhorse
-    from supersimple_example import create_supersimple_structure
-    from supersimple_example2 import create_supersimple_structure2
-    from supersimple_example5 import create_supersimple_structure5
+    from examples.sawhorse_example import create_sawhorse
+    from examples.supersimple_example import create_supersimple_structure
+    from examples.supersimple_example2 import create_supersimple_structure2
+    from examples.supersimple_example5 import create_supersimple_structure5
     from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
     
     # Test that core dependencies are available
@@ -68,12 +68,12 @@ def run(_context: str):
                 'moothymoth',
                 'giraffe', 
                 'giraffe_render_fusion360',
-                'sawhorse_example',
-                'supersimple_example',
-                'supersimple_example2',
-                'supersimple_example3',
-                'supersimple_example4',
-                'supersimple_example5'
+                'examples.sawhorse_example',
+                'examples.supersimple_example',
+                'examples.supersimple_example2',
+                'examples.supersimple_example3',
+                'examples.supersimple_example4',
+                'examples.supersimple_example5'
             ]
             
             for module_name in modules_to_reload:
@@ -84,12 +84,12 @@ def run(_context: str):
                     print(f"  {module_name} not in cache, will import fresh")
             
             # Re-import the functions we need after reload to get fresh versions
-            from sawhorse_example import create_sawhorse
-            from supersimple_example import create_supersimple_structure
-            from supersimple_example2 import create_supersimple_structure2
-            from supersimple_example3 import create_supersimple_structure3
-            from supersimple_example4 import create_supersimple_structure4
-            from supersimple_example5 import create_supersimple_structure5
+            from examples.sawhorse_example import create_sawhorse
+            from examples.supersimple_example import create_supersimple_structure
+            from examples.supersimple_example2 import create_supersimple_structure2
+            from examples.supersimple_example3 import create_supersimple_structure3
+            from examples.supersimple_example4 import create_supersimple_structure4
+            from examples.supersimple_example5 import create_supersimple_structure5
             from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
             
             print("✓ Module reload complete")
