@@ -1,0 +1,45 @@
+# GiraffeCAD Project Rules
+
+## Running Tests
+
+Run all tests:
+```bash
+python3 -m pytest tests/ -v
+```
+
+Run specific test file:
+```bash
+python3 -m pytest tests/test_giraffe.py -v
+```
+
+Run specific test class:
+```bash
+python3 -m pytest tests/test_giraffe.py::TestFootprint -v
+```
+
+## Project Structure
+
+- `giraffe.py` - Main timber framing CAD system
+- `footprint.py` - Footprint class for 2D structure layouts
+- `moothymoth.py` - Orientation and rotation matrix utilities
+- `tests/` - Test suite (pytest)
+- `morenotes.md` - API specification and design notes
+
+## Key Dependencies
+
+- `sympy` - Symbolic mathematics for exact computations
+- `pytest` - Testing framework
+
+## Coding Conventions
+
+- Use exact arithmetic with SymPy when possible (Rational, integers)
+- Vector types: V2 (2D), V3 (3D), Direction3D
+- All tests must pass before committing changes
+- Run tests after making changes
+
+## Notes
+
+- Timbers use exact symbolic computation for precision
+- Footprint operates in XY plane (2D)
+- See `morenotes.md` for detailed API documentation
+
