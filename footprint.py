@@ -19,12 +19,12 @@ class Footprint:
         """
         self.corners: List[V2] = corners
     
-    def boundaries(self) -> List[Tuple[V2, V2]]:
+    def sides(self) -> List[Tuple[V2, V2]]:
         """
-        Returns a list of boundaries (line segments) connecting consecutive corners.
+        Returns a list of sides (line segments) connecting consecutive corners.
         
         Returns:
-            List of tuples, each containing two points (start, end) representing a boundary
+            List of tuples, each containing two points (start, end) representing a side
         """
         result = []
         for i in range(len(self.corners)):
@@ -36,7 +36,7 @@ class Footprint:
     def isValid(self) -> bool:
         """
         Checks if the footprint is valid.
-        A valid footprint has at least 3 corners and no intersecting boundaries.
+        A valid footprint has at least 3 corners and no intersecting sides.
         
         Returns:
             True if valid, False otherwise
@@ -45,18 +45,18 @@ class Footprint:
         if len(self.corners) < 3:
             return False
         
-        # Check for self-intersecting boundaries
-        boundaries = self.boundaries()
-        n = len(boundaries)
+        # Check for self-intersecting sides
+        sides = self.sides()
+        n = len(sides)
         
         for i in range(n):
             for j in range(i + 2, n):
-                # Don't check adjacent boundaries (they share a point)
+                # Don't check adjacent sides (they share a point)
                 if j == (i + n - 1) % n:
                     continue
                     
-                # Check if boundary i intersects with boundary j
-                if self._segments_intersect(boundaries[i], boundaries[j]):
+                # Check if side i intersects with side j
+                if self._segments_intersect(sides[i], sides[j]):
                     return False
         
         return True
@@ -149,27 +149,27 @@ class Footprint:
     
     def nearestBoundary(self, point: V2) -> Tuple[int, Tuple[V2, V2], float]:
         """
-        Find the nearest boundary (line segment) to a given point.
+        Find the nearest side (line segment) to a given point.
         
         Args:
             point: 2D point to measure from
             
         Returns:
-            Tuple of (index, boundary, distance) where:
-                - index is the boundary index
-                - boundary is a tuple (start_corner, end_corner)
-                - distance is the perpendicular distance to the boundary
+            Tuple of (index, side, distance) where:
+                - index is the side index
+                - side is a tuple (start_corner, end_corner)
+                - distance is the perpendicular distance to the side
         """
         if len(self.corners) < 2:
             raise ValueError("Footprint must have at least 2 corners")
         
-        boundaries = self.boundaries()
+        sides = self.sides()
         min_distance = float('inf')
         nearest_idx = 0
         
         px, py = float(point[0]), float(point[1])
         
-        for i, (start, end) in enumerate(boundaries):
+        for i, (start, end) in enumerate(sides):
             # Calculate distance from point to line segment
             x1, y1 = float(start[0]), float(start[1])
             x2, y2 = float(end[0]), float(end[1])
@@ -196,5 +196,5 @@ class Footprint:
                 min_distance = distance
                 nearest_idx = i
         
-        return nearest_idx, boundaries[nearest_idx], min_distance
+        return nearest_idx, sides[nearest_idx], min_distance
 
