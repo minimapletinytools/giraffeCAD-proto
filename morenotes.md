@@ -108,7 +108,7 @@ A mudsill on center of a boundary side will have its midline lying on the same p
 
 A post can be positioned on a point along a boundary side. 
 
-If the post is on center, it will have its center of the bottom face lying on the point, and 2 of the sides of the bottom face will be parallel to the boundary side.
+If the post is on center, it will have its center of the bottom face lying on the point, and 2 of the edges of the bottom face will be parallel to the boundary side.
 
 If the post is inside/outside, it will have one edge of the bottom face lying on the boundary side with the center of that edge coincident with the point, with the rest of the post inside/outside of the boundary side.
 
@@ -116,9 +116,9 @@ If the post is inside/outside, it will have one edge of the bottom face lying on
 
 A post can be positioned on the inside/outside of a boundary corner IF the boundary corner is orthogonal, i.e. the two boundary sides coming out of the boundary corner are perpendicular.
 
-If it is on the inside of the boundary corner, position the post such that it overlaps with the inside of the boundary, has one corner of its bottom face lying on the boundary corner, and has 2 edges of its bottom face aligning with the 2 boundary sides coming out of the boundary corner. 
+If it is on the inside of the boundary corner, position the post such that it overlaps with the inside of the boundary, has one vertex of its bottom face lying on the boundary corner, and has 2 edges of its bottom face aligning with the 2 boundary sides coming out of the boundary corner. 
 
-If it is on the outside of the boundary corner, then position the post first on the inside of the boundary corner, and take the corner of its bottom face that is opposite to the corner lying on the boundary corner and move it so that the opposite corner is instead on the boundary corner.
+If it is on the outside of the boundary corner, then position the post first on the inside of the boundary corner, and take the vertex of its bottom face that is opposite to the vertex lying on the boundary corner and move it so that the opposite vertex is instead on the boundary corner.
 
 
 ## Timber
