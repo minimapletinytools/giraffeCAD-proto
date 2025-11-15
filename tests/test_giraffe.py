@@ -85,8 +85,8 @@ class TestFootprint:
         assert footprint.corners[0][0] == 0
         assert footprint.corners[0][1] == 0
     
-    def test_footprint_boundaries(self):
-        """Test boundaries() method."""
+    def test_footprint_sides(self):
+        """Test sides() method."""
         corners = [
             create_vector2d(0, 0),
             create_vector2d(1, 0),
@@ -95,15 +95,15 @@ class TestFootprint:
         ]
         footprint = Footprint(corners)
         
-        boundaries = footprint.boundaries()
+        sides = footprint.sides()
         
-        assert len(boundaries) == 4
-        # Check first boundary
-        assert boundaries[0][0] == corners[0]
-        assert boundaries[0][1] == corners[1]
-        # Check last boundary wraps around
-        assert boundaries[3][0] == corners[3]
-        assert boundaries[3][1] == corners[0]
+        assert len(sides) == 4
+        # Check first side
+        assert sides[0][0] == corners[0]
+        assert sides[0][1] == corners[1]
+        # Check last side wraps around
+        assert sides[3][0] == corners[3]
+        assert sides[3][1] == corners[0]
     
     def test_footprint_isValid_valid_footprint(self):
         """Test isValid() with a valid footprint."""
@@ -128,7 +128,7 @@ class TestFootprint:
         assert footprint.isValid() == False
     
     def test_footprint_isValid_self_intersecting(self):
-        """Test isValid() with self-intersecting boundary."""
+        """Test isValid() with self-intersecting sides."""
         corners = [
             create_vector2d(0, 0),
             create_vector2d(1, 1),
@@ -193,16 +193,16 @@ class TestFootprint:
         ]
         footprint = Footprint(corners)
         
-        # Point closest to first boundary (bottom edge)
-        idx, boundary, dist = footprint.nearestBoundary(create_vector2d(1, -0.5))
+        # Point closest to first side (bottom edge)
+        idx, side, dist = footprint.nearestBoundary(create_vector2d(1, -0.5))
         assert idx == 0
-        assert boundary == (corners[0], corners[1])
+        assert side == (corners[0], corners[1])
         assert abs(dist - 0.5) < 1e-6
         
-        # Point closest to third boundary (top edge)
-        idx, boundary, dist = footprint.nearestBoundary(create_vector2d(1, 2.5))
+        # Point closest to third side (top edge)
+        idx, side, dist = footprint.nearestBoundary(create_vector2d(1, 2.5))
         assert idx == 2
-        assert boundary == (corners[2], corners[3])
+        assert side == (corners[2], corners[3])
         assert abs(dist - 0.5) < 1e-6
 
 
