@@ -87,38 +87,38 @@ class TimberLocationType(Enum):
 
 ### Inside, Outside and Corners
 
-Footprints consist of a set of corners that form a non intersecting boundary consisting of sides. This boundary defines an inside and outside to the boundary which are used to position timbers around the boundary. 
+Footprints consist of a set of boundary corners that form a non intersecting boundary consisting of boundary sides. This boundary defines an inside and outside to the boundary which are used to position timbers around the boundary. 
 
-Timbers are positioned either on sides or corners. They can either be positioned "inside", "outside", "on center". Each corner and side also have a notion of inside and outside. 
+Timbers are positioned either on boundary sides or boundary corners. They can either be positioned "inside", "outside", "on center". Each boundary corner and boundary side also have a notion of inside and outside. 
 
-For sides, the inside side is simply the side of the side that is towards the inside of the boundary and the outside the opposite.
+For boundary sides, the inside side is simply the side of the boundary side that is towards the inside of the boundary and the outside the opposite.
 
-For corners it is a little more complicated because we want to orient corners of posts around the inisde/outside of the corner. This is elaborated in more detail below.
+For boundary corners it is a little more complicated because we want to orient corners of posts around the inside/outside of the boundary corner. This is elaborated in more detail below.
 
 
-#### Mudsills go on sides
+#### Mudsills go on boundary sides
 
-A mudsill on the side of a footprint will have its length run from one corner to the other corner of the side.
+A mudsill on a boundary side of a footprint will have its length run from one boundary corner to the other boundary corner of the boundary side.
 
-A mudsill on the inside/outside of a side will have an edge lying on the side with the the mudsill on the inside/outside side of the side.
+A mudsill on the inside/outside of a boundary side will have an edge lying on the boundary side with the mudsill on the inside/outside side of the boundary side.
 
-A mudsill on center of a side will have its midline lying on the same plane 
+A mudsill on center of a boundary side will have its midline lying on the same plane 
 
-#### Posts go on points on sides
+#### Posts go on points on boundary sides
 
-A post can be position on a point along the side. 
+A post can be positioned on a point along a boundary side. 
 
-If the post is on center, it will have its center of the bottom face lying on the point, and 2 of the sides of the bottom face will be parallel to the side.
+If the post is on center, it will have its center of the bottom face lying on the point, and 2 of the sides of the bottom face will be parallel to the boundary side.
 
-If the post is inside/outside, it will have one edge of the bottom face lying on the side with the center of that edge coincident with the point, with the rest of the post inside/outside of the side.
+If the post is inside/outside, it will have one edge of the bottom face lying on the boundary side with the center of that edge coincident with the point, with the rest of the post inside/outside of the boundary side.
 
-#### Posts go on corners
+#### Posts go on boundary corners
 
-A post can be position on the inside/outside of a corner IF the corner is orthogonal, i.e. the two sides coming out of the corner are perpendicular.
+A post can be positioned on the inside/outside of a boundary corner IF the boundary corner is orthogonal, i.e. the two boundary sides coming out of the boundary corner are perpendicular.
 
-If it on the inside of the corner, position the post such that it overlaps with the inside of the boundary, has one corner of its bottom face lying on the boundary corner, and has 2 edges of its bottom face aligning with the 2 sides coming out of the corner. 
+If it is on the inside of the boundary corner, position the post such that it overlaps with the inside of the boundary, has one corner of its bottom face lying on the boundary corner, and has 2 edges of its bottom face aligning with the 2 boundary sides coming out of the boundary corner. 
 
-If it is on the outside of the corner, then position the post first on the inside corner, and take the corner of its bottom face that is opposite to the corner lying on the boundary corner and move it so that the opposite corner is instead on the boundary corner.
+If it is on the outside of the boundary corner, then position the post first on the inside of the boundary corner, and take the corner of its bottom face that is opposite to the corner lying on the boundary corner and move it so that the opposite corner is instead on the boundary corner.
 
 
 ## Timber
