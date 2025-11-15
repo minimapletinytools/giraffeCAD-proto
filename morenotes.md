@@ -53,7 +53,7 @@ Two timbers are **face-orthogonal** if their length directions are perpendicular
 Parts on two separate timbers are **face-plane-aligned** if they are coplanar with the face planes of two face-aligned timbers. For example, in conventional framing, all posts on a wall would have their vertical center lines face-plane-aligned.
 
 ## Footprint
-A support class representing the footprint of the structure in the XY plane to help position and orient timbers. Footprints are always defined at Z=0 and members defined on the footprint are always above Z=0.
+A support class representing the footprint of the structure in the XY plane to help position and orient timbers. Footprints are always defined at Z=0 and timbers defined on the footprint are always above Z=0.
 
 
 ```
@@ -87,9 +87,9 @@ class TimberLocationType(Enum):
 
 ### Inside, Outside and Corners
 
-Footprints consist of a set of corners that form a non intersecting boundary consisting of sides. This boundary defines an inside and outside to the boundary which are used to position members around the boundary. 
+Footprints consist of a set of corners that form a non intersecting boundary consisting of sides. This boundary defines an inside and outside to the boundary which are used to position timbers around the boundary. 
 
-Members are positioned either on sides or corners. They can either be positioned "inside", "outside", "on center". Each corner and side also have a notion of inside and outside. 
+Timbers are positioned either on sides or corners. They can either be positioned "inside", "outside", "on center". Each corner and side also have a notion of inside and outside. 
 
 For sides, the inside side is simply the side of the side that is towards the inside of the boundary and the outside the opposite.
 
