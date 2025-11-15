@@ -53,7 +53,7 @@ Two timbers are **face-orthogonal** if their length directions are perpendicular
 Parts on two separate timbers are **face-plane-aligned** if they are coplanar with the face planes of two face-aligned timbers. For example, in conventional framing, all posts on a wall would have their vertical center lines face-plane-aligned.
 
 ## Footprint
-A support class representing the footprint of the structure in the XY plane to help position and orient timbers
+A support class representing the footprint of the structure in the XY plane to help position and orient timbers. Footprints are always defined at Z=0 and members defined on the footprint are always above Z=0.
 
 
 ```
@@ -61,33 +61,64 @@ class Footprint:
     # a list of points defining the corners of the footprint, the last point is connected to the first point
     corners : list[V2]
     
-    def boundaries() -> list[tuple[V2, V2]]:
-        # Returns a list of boundaries (line segments) starting from (corner[0], corner[1])
-        # Each boundary is a tuple of (start_point, end_point)
+    def sides() -> list[tuple[V2, V2]]:
+        # Returns a list of sides (line segments) starting from (corner[0], corner[1])
+        # Each side is a tuple of (start_point, end_point)
     
     def isValid() -> bool:
-        # Checks to ensure a boundary has at least 3 corners and no intersecting boundaries
+        # Checks to ensure a footprint has at least 3 corners and no intersecting sides
     
     def containsPoint(point: V2) -> bool:
-        # Checks to see if a point is contained within the boundary
+        # Checks to see if a point is contained within the footprint
     
     def nearestCorner(point: V2) -> tuple[int, V2]:
         # Returns (index, corner) of the nearest corner to a point
     
     def nearestBoundary(point: V2) -> tuple[int, tuple[V2, V2], float]:
-        # Returns (index, boundary, distance) of the nearest boundary to a point
+        # Returns (index, side, distance) of the nearest side to a point
 ```
 
 ```
 class TimberLocationType(Enum):
-    # place the corner of the timber that closest matches the "shape" of the point on the footprint and put it on the point
     INSIDE = 1
-    # center of timber on the point of on the footprint
     CENTER = 2
     OUTSIDE = 3
 ```
 
+### Inside, Outside and Corners
 
+Footprints consist of a set of corners that form a non intersecting boundary consisting of sides. This boundary defines an inside and outside to the boundary which are used to position members around the boundary. 
+
+Members are positioned either on sides or corners. They can either be positioned "inside", "outside", "on center". Each corner and side also have a notion of inside and outside. 
+
+For sides, the inside side is simply the side of the side that is towards the inside of the boundary and the outside the opposite.
+
+For corners it is a little more complicated because we want to orient corners of posts around the inisde/outside of the corner. This is elaborated in more detail below.
+
+
+#### Mudsills go on sides
+
+A mudsill on the side of a footprint will have its length run from one corner to the other corner of the side.
+
+A mudsill on the inside/outside of a side will have an edge lying on the side with the the mudsill on the inside/outside side of the side.
+
+A mudsill on center of a side will have its midline lying on the same plane 
+
+#### Posts go on points on sides
+
+A post can be position on a point along the side. 
+
+If the post is on center, it will have its center of the bottom face lying on the point, and 2 of the sides of the bottom face will be parallel to the side.
+
+If the post is inside/outside, it will have one edge of the bottom face lying on the side with the center of that edge coincident with the point, with the rest of the post inside/outside of the side.
+
+#### Posts go on corners
+
+A post can be position on the inside/outside of a corner IF the corner is orthogonal, i.e. the two sides coming out of the corner are perpendicular.
+
+If it on the inside of the corner, position the post such that it overlaps with the inside of the boundary, has one corner of its bottom face lying on the boundary corner, and has 2 edges of its bottom face aligning with the 2 sides coming out of the corner. 
+
+If it is on the outside of the corner, then position the post first on the inside corner, and take the corner of its bottom face that is opposite to the corner lying on the boundary corner and move it so that the opposite corner is instead on the boundary corner.
 
 
 ## Timber
