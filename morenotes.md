@@ -58,8 +58,24 @@ A support class representing the footprint of the structure in the XY plane to h
 
 ```
 class Footprint:
-    # a list of points defining the boundary of the footprint, the last point is connected to the first point
-    boundary : list[V2]
+    # a list of points defining the corners of the footprint, the last point is connected to the first point
+    corners : list[V2]
+    
+    def boundaries() -> list[tuple[V2, V2]]:
+        # Returns a list of boundaries (line segments) starting from (corner[0], corner[1])
+        # Each boundary is a tuple of (start_point, end_point)
+    
+    def isValid() -> bool:
+        # Checks to ensure a boundary has at least 3 corners and no intersecting boundaries
+    
+    def containsPoint(point: V2) -> bool:
+        # Checks to see if a point is contained within the boundary
+    
+    def nearestCorner(point: V2) -> tuple[int, V2]:
+        # Returns (index, corner) of the nearest corner to a point
+    
+    def nearestBoundary(point: V2) -> tuple[int, tuple[V2, V2], float]:
+        # Returns (index, boundary, distance) of the nearest boundary to a point
 ```
 
 ```
