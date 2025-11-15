@@ -93,7 +93,7 @@ Timbers are positioned either on boundary sides or boundary corners. They can ei
 
 For boundary sides, the inside side is simply the side of the boundary side that is towards the inside of the boundary and the outside the opposite.
 
-For boundary corners it is a little more complicated because we want to orient corners of posts around the inside/outside of the boundary corner. This is elaborated in more detail below.
+For boundary corners it is a little more complicated because we want to orient vertices of posts around the inside/outside of the boundary corner. This is elaborated in more detail below.
 
 
 #### Mudsills go on boundary sides
@@ -261,7 +261,7 @@ create_timber_extension(timber: Timber, end: TimberEnd, overlap_length: float, e
 
 # TODO instead of symmetric_stickout, you should do stickout : V2 since you might be joining beams of different sizes
 
-# the bottom face of the created timber is on the side of timber1
+# the bottom face of the created timber is parallel to the face of timber1 that it is joined to.
 # orientation_face_vector determines the orientation of the created timber by. The orientation_face_vector will lie on the plane created by the length_vector and face_vector of the created timber. In practice, just set this to the face_vector you want for the created timber. 
 # if location_on_timber2 is not provided, the height is determined by projecting location_on_timber1 to the Z axis of timber2
 # symmetric_stickout is the distance from the centerline of timber1/2 to the ends of the created timber
@@ -277,7 +277,7 @@ class FaceAlignedJoinedTimberOffset:
     centerline_offset : float?
     face_offset : float?
 
-# the bottom face of the created timber is on the side of timber1
+# the bottom face of the created timber is parallel to the face of timber1 that it is joined to.
 # orientation_face_on_timber1 is a face on timber1. The face_vector of the created timber will match orientation_face_on_timber1. If no such orientation is possible the function will warn and the TOP face will be used instead.
 # location_on_timber1 is the location along the length vector of timber1 where the join is made (starting from the bottom of the timber)
 # size is the cross-sectional dimensions (width, height) of the joining timber
