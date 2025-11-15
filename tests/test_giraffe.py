@@ -83,11 +83,6 @@ class TestFootprint:
         assert len(footprint.boundary) == 4
         assert footprint.boundary[0][0] == 0
         assert footprint.boundary[0][1] == 0
-    
-    def test_footprint_boundary(self):
-        """Test FootprintBoundary creation."""
-        boundary = FootprintBoundary(0)
-        assert boundary.start_index == 0
 
 
 class TestTimber:
@@ -916,7 +911,7 @@ class TestTimberCutOperations:
             pos_rel_to_long_edge=None,
             width=0.04,
             height=0.04,
-            depth=0.06
+            length=0.06
         )
         
         cut_op = TenonCutOperation(timber, tenon_spec)
@@ -979,12 +974,12 @@ class TestEnumsAndDataStructures:
             pos_rel_to_long_edge=None,
             width=0.05,
             height=0.05,
-            depth=0.08
+            length=0.08
         )
         
         assert tenon.width == 0.05
         assert tenon.height == 0.05
-        assert tenon.depth == 0.08
+        assert tenon.length == 0.08
     
     def test_face_aligned_joined_timber_offset(self):
         """Test FaceAlignedJoinedTimberOffset dataclass."""

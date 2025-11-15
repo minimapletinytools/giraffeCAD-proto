@@ -63,13 +63,6 @@ class Footprint:
 ```
 
 ```
-class FootprintBoundary:
-    # boundary is the line from start_index to start_index + 1
-    int start_index;
-```
-
-
-```
 class TimberLocationType(Enum):
     # place the corner of the timber that closest matches the "shape" of the point on the footprint and put it on the point
     INSIDE = 1

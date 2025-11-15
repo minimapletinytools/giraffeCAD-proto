@@ -177,12 +177,6 @@ class Footprint:
         """
         self.boundary: List[V2] = boundary
 
-class FootprintBoundary:
-    """Represents a boundary line from start_index to start_index + 1"""
-    
-    def __init__(self, start_index: int):
-        self.start_index: int = start_index
-
 class Timber:
     """Represents a timber in the timber framing system"""
     
