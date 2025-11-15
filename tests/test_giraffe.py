@@ -7,6 +7,7 @@ This module contains tests for the GiraffeCAD timber framing CAD system.
 import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
 from moothymoth import Orientation
+from footprint import Footprint
 from giraffe import *
 from giraffe import _timber_face_to_vector, _find_aligned_face, _get_timber_face_direction, _get_tenon_end_direction, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned, _project_point_on_timber_centerline, _calculate_mortise_position_from_tenon_intersection
 
