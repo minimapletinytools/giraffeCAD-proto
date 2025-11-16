@@ -1,22 +1,56 @@
-:: MATHY MATH TODO
 
 :: TODO
-    -write a few clear tests __mul__
-        -do thet hing where you confirm each case that you end up with maybe_get_rational_orientation is rational
-    -test rotatepoint  (also tests toquaternion)
-        -using known rational rotations
-        -do rotate in 1 direction and then in the other direction sorta tests
 
 
--fix create_axis_aligned_horizontal_timber_on_footprint
-    lets update the create_axis_aligned_horizontal_timber_on_footprint function
+we want to introduce some kind of notion of "ReferencePoint/Line/Plane" for the purpose of positioning timbers relative to each other.
+We'll call these classes "ReferenceFeature" 
 
-    for the # Position based on location type, you need to do the following:
+For example:
 
-    - first determine the "corner shape" by comparing the neighboring footprint points
-    - determine whether it is an inside corner  or an outside corner
-    - if the footprint locatino type is INSIDE .... 
+I want to create 3 timbers like so:
 
--support for non axis/face aligned/ non orthogonal timbers? (so you can do things like 60 degree joints for delta printer lol)
-    -support center axis offsets only yay
+      
+      |
+A-----|
+  |   |
+  |   |
+  B   C  
+
+
+so in this case, we want to use `join_timbers` and align it such that:
+- the top face of timber A align with the top face of timber B
+- the vertical position set above determines where it will connect with timber C
+
+
+
+In general, we want to be able to take a ReferencePoint/Line/Plane of a timber and position that relative to another ReferencePoint/Line/Plane of a timber
+
+We support the following ReferencePoint/Line/Plane of a timber
+
+Timber Vertex  -> ReferencePoint
+Timber Edge -> ReferenceLine
+Timber Face -> ReferencePlane
+Timber Centerline -> ReferenceLine
+Timber Face + Timber Centerline -> ReferencePoint
+
+
+
+Lets look at the current signature of join_timbers:
+
+def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
+                symmetric_stickout: float, offset_from_timber1: float,
+                location_on_timber2: Optional[float] = None,
+                orientation_face_vector: Optional[Direction3D] = None) -> Timber:
+
+In this case we want to be able to do the general positioning instead of just location_on_timber1
+
+There are some limitations since we only have 1 DOF for positioning, in particular we must position against either the Reference Plane that is the top or bottom Face of timber1
+In this case, the ReferenceFeature of Timber1 also carries an implicit direction argument, but perhaps we may as well imbue Reference Features with a direction vector? The direction vector must always be perpendicular to the line/plane. 
+By convention, the directional vector coming out of an vertex/edge will be perpendicular to one of the faces that the vertex/edge lives on
+
+For the ReferenceFeature of the created timber, it could be:
+
+ReferencePoint
+ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
+
 
