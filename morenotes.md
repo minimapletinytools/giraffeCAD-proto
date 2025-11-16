@@ -247,7 +247,8 @@ create_axis_aligned_timber(bottom_position : V3, length : float, size : V2, leng
 
 # AKA a post
 # the length is in the up (+Z) direction
-create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: int, length: float, location_type = TimberLocationType.INSIDE : TimberLocationType) -> Timber
+# positions a post on a boundary corner with INSIDE/OUTSIDE/CENTER logic
+create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_index: int, length: float, location_type: TimberLocationType, size: V2) -> Timber
 
 # AKA a mudsill
 # the left (-X) face is lying on the XY plane
