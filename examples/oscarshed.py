@@ -27,6 +27,12 @@ post_inset = 0.5      # 6 inches = 0.5 feet, inset from corners on long side
 post_back_height = 5.0    # Height of back posts (feet)
 post_front_height = 5.5   # Height of front posts (feet) - 6 inches taller
 
+# Timber size definitions (in inches)
+INCH_TO_METERS = 0.0254
+small_timber_size = (2.5 * INCH_TO_METERS, 4 * INCH_TO_METERS)   # 2.5" x 4"
+med_timber_size = (4 * INCH_TO_METERS, 4 * INCH_TO_METERS)       # 4" x 4"
+big_timber_size = (4 * INCH_TO_METERS, 6 * INCH_TO_METERS)       # 4" x 6" (6" is Z/height)
+
 # Timber dimensions (in meters for consistency with GiraffeCAD defaults)
 # Note: 1 foot = 0.3048 meters
 FEET_TO_METERS = 0.3048
@@ -62,28 +68,31 @@ def create_oscarshed() -> list[CutTimber]:
     # ============================================================================
     # Create mudsills on all 4 sides (INSIDE the footprint)
     # ============================================================================
+    
+    # Mudsill size: 4" x 6" (6" is in Z/height direction)
+    mudsill_size = create_vector2d(big_timber_size[0], big_timber_size[1])
 
     # Front mudsill (corner 0 to corner 1) - along X axis
     mudsill_front = create_axis_aligned_horizontal_timber_on_footprint(
-        footprint, 0, base_width_m, TimberLocationType.INSIDE
+        footprint, 0, base_width_m, TimberLocationType.INSIDE, mudsill_size
     )
     mudsill_front.name = "Front Mudsill"
 
     # Right mudsill (corner 1 to corner 2) - along Y axis
     mudsill_right = create_axis_aligned_horizontal_timber_on_footprint(
-        footprint, 1, base_length_m, TimberLocationType.INSIDE
+        footprint, 1, base_length_m, TimberLocationType.INSIDE, mudsill_size
     )
     mudsill_right.name = "Right Mudsill"
 
     # Back mudsill (corner 2 to corner 3) - along X axis
     mudsill_back = create_axis_aligned_horizontal_timber_on_footprint(
-        footprint, 2, base_width_m, TimberLocationType.INSIDE
+        footprint, 2, base_width_m, TimberLocationType.INSIDE, mudsill_size
     )
     mudsill_back.name = "Back Mudsill"
 
     # Left mudsill (corner 3 to corner 0) - along Y axis
     mudsill_left = create_axis_aligned_horizontal_timber_on_footprint(
-        footprint, 3, base_length_m, TimberLocationType.INSIDE
+        footprint, 3, base_length_m, TimberLocationType.INSIDE, mudsill_size
     )
     mudsill_left.name = "Left Mudsill"
 
@@ -91,9 +100,9 @@ def create_oscarshed() -> list[CutTimber]:
     # Create posts at corners (inset 6 inches from corners on long side)
     # ============================================================================
 
-    # Post dimensions (using default post size from giraffe.py: 9cm x 9cm)
-    post_size = create_vector2d(Rational(9, 100), Rational(9, 100))  # 9cm x 9cm
-    post_width = float(post_size[0])  # 0.09m
+    # Post size: 4" x 4" (med_timber_size)
+    post_size = create_vector2d(med_timber_size[0], med_timber_size[1])
+    post_width = float(post_size[0])
     
     # Offset posts so their edge (not center) is on the boundary
     # Posts extend inward from the boundary

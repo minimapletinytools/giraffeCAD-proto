@@ -40,7 +40,8 @@ def create_sawhorse() -> list[CutTimber]:
         footprint, 
         footprint_index=3, 
         length=bottom_length, 
-        location_type=TimberLocationType.INSIDE
+        location_type=TimberLocationType.INSIDE,
+        size=feet_size
     )
     left_mudsill.name = "Left Mudsill"
     
@@ -49,7 +50,8 @@ def create_sawhorse() -> list[CutTimber]:
         footprint, 
         footprint_index=1, 
         length=bottom_length, 
-        location_type=TimberLocationType.INSIDE
+        location_type=TimberLocationType.INSIDE,
+        size=feet_size
     )
     right_mudsill.name = "Right Mudsill"
     
