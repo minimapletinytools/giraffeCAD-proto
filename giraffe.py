@@ -347,6 +347,7 @@ def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
     
     return create_timber(bottom_position, length, size, length_vec, face_vec)
 
+# TODO use location_type
 def create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: int, 
                                        length: float, location_type: TimberLocationType = TimberLocationType.INSIDE) -> Timber:
     """
@@ -369,42 +370,66 @@ def create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: i
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)
 
-def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, footprint_index: int,
+def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int,
                                         length: float, location_type: TimberLocationType) -> Timber:
     """
-    Creates an axis aligned horizontal timber (mudsill) on the footprint
-    The left (-X) face is lying on the XY plane
-    The mudsill starts at footprint_index and goes to footprint_index + 1
+    Creates an axis aligned horizontal timber (mudsill) on the footprint boundary side.
+    
+    The mudsill runs from corner_index to corner_index + 1 along the boundary side.
+    With the face ends of the mudsill timber starting/ending on the footprint corners.
+    
+    Location types:
+    - INSIDE: One edge of the timber lies on the boundary side, timber is on the inside
+    - OUTSIDE: One edge of the timber lies on the boundary side, timber is on the outside
+    - CENTER: The centerline of the timber lies on the boundary side
+    
+    Args:
+        footprint: The footprint to place the timber on
+        corner_index: Index of the starting boundary corner
+        length: Length of the timber
+        location_type: Where to position the timber relative to the boundary side
+        
+    Returns:
+        Timber positioned on the footprint boundary side
     """
     # Get the footprint points
-    start_point = footprint.corners[footprint_index]
-    end_point = footprint.corners[(footprint_index + 1) % len(footprint.corners)]
+    start_point = footprint.corners[corner_index]
+    end_point = footprint.corners[(corner_index + 1) % len(footprint.corners)]
     
-    # Calculate direction vector
+    # Calculate direction vector along the boundary side
     direction = Matrix([float(end_point[0] - start_point[0]), float(end_point[1] - start_point[1]), 0])
     
-    # Normalize
-    direction_3d = normalize_vector(direction)
+    # Normalize to get the length direction
+    length_direction = normalize_vector(direction)
     
-    # Position based on location type
-    if location_type == TimberLocationType.INSIDE:
-        # Place inside the footprint
-        bottom_position = create_vector3d(float(start_point[0]), float(start_point[1]), 0)
-    elif location_type == TimberLocationType.CENTER:
-        # Center on the footprint line
-        mid_x = float((start_point[0] + end_point[0]) / 2)
-        mid_y = float((start_point[1] + end_point[1]) / 2)
-        bottom_position = create_vector3d(mid_x, mid_y, 0)
-    else:  # OUTSIDE
-        # Place outside the footprint
-        bottom_position = create_vector3d(float(start_point[0]), float(start_point[1]), 0)
+    # Get the inward normal from the footprint
+    inward_x, inward_y, inward_z = footprint.getInwardNormal(corner_index)
+    inward_normal = create_vector3d(inward_x, inward_y, inward_z)
     
     # Default size for horizontal timbers
     size = create_vector2d(Rational(3, 10), Rational(3, 10))  # 30cm x 30cm as exact rationals
     
-    # Horizontal direction
-    length_direction = direction_3d
-    face_direction = create_vector3d(0, 0, 1)  # Up direction
+    # Face direction is up (Z+)
+    face_direction = create_vector3d(0, 0, 1)
+    
+    # The timber's face direction is up, so the width (size[0]) is perpendicular to the length
+    # in the XY plane
+    timber_width = float(size[0])
+    
+    # Calculate bottom position based on location type
+    # Start at the start_point on the boundary side
+    bottom_position = create_vector3d(float(start_point[0]), float(start_point[1]), 0)
+    
+    # Apply offset based on location type
+    if location_type == TimberLocationType.INSIDE:
+        # Position so one edge lies on the boundary side, timber extends inward
+        # Move the centerline inward by half the timber width
+        bottom_position = bottom_position + inward_normal * (timber_width / 2)
+    elif location_type == TimberLocationType.OUTSIDE:
+        # Position so one edge lies on the boundary side, timber extends outward
+        # Move the centerline outward by half the timber width
+        bottom_position = bottom_position - inward_normal * (timber_width / 2)
+    # For CENTER, no offset needed - centerline is already on the boundary side
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)
 
