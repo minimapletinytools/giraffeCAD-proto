@@ -93,10 +93,16 @@ def create_oscarshed() -> list[CutTimber]:
 
     # Post dimensions (using default post size from giraffe.py: 9cm x 9cm)
     post_size = create_vector2d(Rational(9, 100), Rational(9, 100))  # 9cm x 9cm
+    post_width = float(post_size[0])  # 0.09m
+    
+    # Offset posts so their edge (not center) is on the boundary
+    # Posts extend inward from the boundary
+    post_boundary_offset = post_width / 2  # Half the post width
 
     # Front-left post (inset from left corner on front side)
+    # Edge on front boundary (Y=0), extending inward
     post_front_left = create_timber(
-        bottom_position=create_vector3d(post_inset_m, 0, 0),
+        bottom_position=create_vector3d(post_inset_m, post_boundary_offset, 0),
         length=post_front_height_m,
         size=post_size,
         length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
@@ -105,8 +111,9 @@ def create_oscarshed() -> list[CutTimber]:
     post_front_left.name = "Front Left Post"
 
     # Front-right post (inset from right corner on front side)
+    # Edge on front boundary (Y=0), extending inward
     post_front_right = create_timber(
-        bottom_position=create_vector3d(base_width_m - post_inset_m, 0, 0),
+        bottom_position=create_vector3d(base_width_m - post_inset_m, post_boundary_offset, 0),
         length=post_front_height_m,
         size=post_size,
         length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
@@ -115,8 +122,9 @@ def create_oscarshed() -> list[CutTimber]:
     post_front_right.name = "Front Right Post"
 
     # Back-right post (inset from right corner on back side)
+    # Edge on back boundary (Y=base_length_m), extending inward
     post_back_right = create_timber(
-        bottom_position=create_vector3d(base_width_m - post_inset_m, base_length_m, 0),
+        bottom_position=create_vector3d(base_width_m - post_inset_m, base_length_m - post_boundary_offset, 0),
         length=post_back_height_m,
         size=post_size,
         length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
@@ -125,8 +133,9 @@ def create_oscarshed() -> list[CutTimber]:
     post_back_right.name = "Back Right Post"
 
     # Back-left post (inset from left corner on back side)
+    # Edge on back boundary (Y=base_length_m), extending inward
     post_back_left = create_timber(
-        bottom_position=create_vector3d(post_inset_m, base_length_m, 0),
+        bottom_position=create_vector3d(post_inset_m, base_length_m - post_boundary_offset, 0),
         length=post_back_height_m,
         size=post_size,
         length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
