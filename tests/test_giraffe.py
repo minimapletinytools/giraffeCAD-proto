@@ -489,9 +489,11 @@ class TestTimberCreation:
         ]
         footprint = Footprint(corners)
         
-        # Define timber size
-        timber_width = 0.3
-        size = create_vector2d(timber_width, timber_width)
+        # Define timber size: width (vertical) x height (perpendicular to boundary)
+        # For a horizontal timber: size[0] = width (vertical), size[1] = height (horizontal perpendicular)
+        timber_width = Rational(3, 10)   # Vertical dimension (face direction = up)
+        timber_height = Rational(2, 10)  # Perpendicular to boundary in XY plane
+        size = create_vector2d(timber_width, timber_height)
         
         # Test bottom boundary side (from corner 0 to corner 1)
         # This side has inward normal pointing up: (0, 1, 0)
@@ -501,22 +503,22 @@ class TestTimberCreation:
             footprint, 0, 2.0, TimberLocationType.INSIDE, size
         )
         # Timber should extend inward (in +Y direction)
-        # Bottom position Y should be half timber width inside the footprint
-        expected_y_inside = timber_width / 2
-        assert abs(float(timber_inside.bottom_position[1]) - expected_y_inside) < 1e-6
-        assert float(timber_inside.bottom_position[0]) == 0.0  # X unchanged
-        assert float(timber_inside.bottom_position[2]) == 0.0  # Z at ground
+        # Bottom position Y should be half timber height (perpendicular dimension) inside the footprint
+        # Note: getInwardNormal returns floats, so the result is Float
+        assert timber_inside.bottom_position[1] == Float(timber_height / 2)
+        assert timber_inside.bottom_position[0] == 0  # X unchanged
+        assert timber_inside.bottom_position[2] == 0  # Z at ground
         
         # Test OUTSIDE positioning
         timber_outside = create_axis_aligned_horizontal_timber_on_footprint(
             footprint, 0, 2.0, TimberLocationType.OUTSIDE, size
         )
         # Timber should extend outward (in -Y direction)
-        # Bottom position Y should be half timber width outside the footprint
-        expected_y_outside = -timber_width / 2
-        assert abs(float(timber_outside.bottom_position[1]) - expected_y_outside) < 1e-6
-        assert float(timber_outside.bottom_position[0]) == 0.0  # X unchanged
-        assert float(timber_outside.bottom_position[2]) == 0.0  # Z at ground
+        # Bottom position Y should be half timber height (perpendicular dimension) outside the footprint
+        # Note: getInwardNormal returns floats, so the result is Float
+        assert timber_outside.bottom_position[1] == Float(-timber_height / 2)
+        assert timber_outside.bottom_position[0] == 0  # X unchanged
+        assert timber_outside.bottom_position[2] == 0  # Z at ground
         
         # Test CENTER positioning
         timber_center = create_axis_aligned_horizontal_timber_on_footprint(
@@ -547,16 +549,16 @@ class TestTimberCreation:
             footprint, 1, 2.0, TimberLocationType.INSIDE, size
         )
         # Timber should extend inward (in -X direction)
-        expected_x_inside = 2.0 - timber_width / 2
-        assert abs(float(timber_inside_right.bottom_position[0]) - expected_x_inside) < 1e-6
+        # Use timber_height (size[1]) as it's the dimension perpendicular to boundary
+        assert timber_inside_right.bottom_position[0] == Float(2.0 - timber_height / 2)
         assert float(timber_inside_right.bottom_position[1]) == 0.0  # Y unchanged
         
         timber_outside_right = create_axis_aligned_horizontal_timber_on_footprint(
             footprint, 1, 2.0, TimberLocationType.OUTSIDE, size
         )
         # Timber should extend outward (in +X direction)
-        expected_x_outside = 2.0 + timber_width / 2
-        assert abs(float(timber_outside_right.bottom_position[0]) - expected_x_outside) < 1e-6
+        # Use timber_height (size[1]) as it's the dimension perpendicular to boundary
+        assert timber_outside_right.bottom_position[0] == Float(2.0 + timber_height / 2)
         assert float(timber_outside_right.bottom_position[1]) == 0.0  # Y unchanged
         
         timber_center_right = create_axis_aligned_horizontal_timber_on_footprint(

@@ -573,10 +573,12 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, cor
     # Face direction is up (Z+)
     face_direction = create_vector3d(0, 0, 1)
     
-    # TODO This is wrong, the timber has been reoriented to be parallel to the boundary side, you need to pick the axis perpendicular to the boundary, invert it by the reorientation, to determine which axis to use as the width
-    # The timber's face direction is up, so the width (size[0]) is perpendicular to the length
-    # in the XY plane - keep exact
-    timber_width = size[0]
+    # The timber's orientation will be:
+    #   X-axis (width/size[0]) = face_direction = (0, 0, 1) = vertical (up)
+    #   Y-axis (height/size[1]) = length × face = perpendicular to boundary in XY plane
+    #   Z-axis (length) = length_direction = along boundary side
+    # Therefore, size[1] is the dimension perpendicular to the boundary
+    timber_height = size[1]
     
     # Calculate bottom position based on location type
     # Start at the start_point on the boundary side - keep exact
@@ -585,12 +587,12 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, cor
     # Apply offset based on location type
     if location_type == TimberLocationType.INSIDE:
         # Position so one edge lies on the boundary side, timber extends inward
-        # Move the centerline inward by half the timber width
-        bottom_position = bottom_position + inward_normal * (timber_width / 2)
+        # Move the centerline inward by half the timber height (perpendicular dimension)
+        bottom_position = bottom_position + inward_normal * (timber_height / 2)
     elif location_type == TimberLocationType.OUTSIDE:
         # Position so one edge lies on the boundary side, timber extends outward
-        # Move the centerline outward by half the timber width
-        bottom_position = bottom_position - inward_normal * (timber_width / 2)
+        # Move the centerline outward by half the timber height (perpendicular dimension)
+        bottom_position = bottom_position - inward_normal * (timber_height / 2)
     # For CENTER, no offset needed - centerline is already on the boundary side
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)

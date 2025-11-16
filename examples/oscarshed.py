@@ -30,9 +30,9 @@ post_front_height = 5.5   # Height of front posts (feet) - 6 inches taller
 
 # Timber size definitions (in inches)
 INCH_TO_METERS = 0.0254
-small_timber_size = (2.5 * INCH_TO_METERS, 4 * INCH_TO_METERS)   # 2.5" x 4"
+small_timber_size = (4 * INCH_TO_METERS, 2.5 * INCH_TO_METERS)   # 2.5" x 4"
 med_timber_size = (4 * INCH_TO_METERS, 4 * INCH_TO_METERS)       # 4" x 4"
-big_timber_size = (4 * INCH_TO_METERS, 6 * INCH_TO_METERS)       # 4" x 6" (6" is Z/height)
+big_timber_size = (6 * INCH_TO_METERS, 4 * INCH_TO_METERS)       # 4" x 6"
 
 # Timber dimensions (in meters for consistency with GiraffeCAD defaults)
 # Note: 1 foot = 0.3048 meters
@@ -70,7 +70,6 @@ def create_oscarshed() -> list[CutTimber]:
     # Create mudsills on all 4 sides (INSIDE the footprint)
     # ============================================================================
     
-    # Mudsill size: 4" x 6" (6" is in Z/height direction)
     mudsill_size = create_vector2d(big_timber_size[0], big_timber_size[1])
 
     # Front mudsill (corner 0 to corner 1) - along X axis
