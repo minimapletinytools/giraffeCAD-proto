@@ -346,8 +346,8 @@ class TestTimberCreation:
         # Should be vertical
         assert timber_inside.length_direction[2] == 1
         # Face direction should align with outgoing boundary side (+X)
-        # Note: face_direction is normalized, so x is Float(1.0), but y is exact 0
-        assert timber_inside.face_direction[0] == Float(1.0)
+        # For axis-aligned case, direction is exactly 1
+        assert timber_inside.face_direction[0] == 1
         assert timber_inside.face_direction[1] == 0
         assert timber_inside.face_direction[2] == 0
         
@@ -358,15 +358,15 @@ class TestTimberCreation:
         )
         
         assert timber_center.length == Rational(5, 2)
-        # For CENTER, offset by half dimensions: -9/200 in both X and Y
-        # Result is Float because offset calculation uses float(outgoing_dir)
-        assert timber_center.bottom_position[0] == Float(Rational(-9, 200))
-        assert timber_center.bottom_position[1] == Float(Rational(-9, 200))
+        # For CENTER, offset by half dimensions: -9/200 in both X and Y - exact!
+        assert timber_center.bottom_position[0] == Rational(-9, 200)
+        assert timber_center.bottom_position[1] == Rational(-9, 200)
         assert timber_center.bottom_position[2] == 0
         # Should be vertical
         assert timber_center.length_direction[2] == 1
         # Face direction should align with outgoing boundary side (+X)
-        assert timber_center.face_direction[0] == Float(1.0)
+        # For axis-aligned case, direction is exactly 1
+        assert timber_center.face_direction[0] == 1
         assert timber_center.face_direction[1] == 0
         
         # Test OUTSIDE positioning
@@ -376,15 +376,15 @@ class TestTimberCreation:
         )
         
         assert timber_outside.length == Rational(5, 2)
-        # For OUTSIDE, offset by full dimensions: -9/100 in both X and Y
-        # Result is Float because offset calculation uses float(outgoing_dir)
-        assert timber_outside.bottom_position[0] == Float(Rational(-9, 100))
-        assert timber_outside.bottom_position[1] == Float(Rational(-9, 100))
+        # For OUTSIDE, offset by full dimensions: -9/100 in both X and Y - exact!
+        assert timber_outside.bottom_position[0] == Rational(-9, 100)
+        assert timber_outside.bottom_position[1] == Rational(-9, 100)
         assert timber_outside.bottom_position[2] == 0
         # Should be vertical
         assert timber_outside.length_direction[2] == 1
         # Face direction should align with outgoing boundary side (+X)
-        assert timber_outside.face_direction[0] == Float(1.0)
+        # For axis-aligned case, direction is exactly 1
+        assert timber_outside.face_direction[0] == 1
         assert timber_outside.face_direction[1] == 0
     
     def test_create_horizontal_timber_on_footprint(self):

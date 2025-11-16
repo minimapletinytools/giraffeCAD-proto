@@ -383,17 +383,15 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
     next_corner = footprint.corners[(corner_index + 1) % n_corners]
     
     # Calculate direction vectors for the two sides
-    # Incoming side direction (toward the corner)
-    incoming_dir = Matrix([float(corner[0] - prev_corner[0]), 
-                          float(corner[1] - prev_corner[1])])
-    incoming_len = float((incoming_dir[0]**2 + incoming_dir[1]**2)**0.5)
-    incoming_dir = incoming_dir / incoming_len
+    # Keep as exact values - don't convert to float
+    outgoing_dir = Matrix([next_corner[0] - corner[0], 
+                          next_corner[1] - corner[1]])
     
-    # Outgoing side direction (away from the corner)
-    outgoing_dir = Matrix([float(next_corner[0] - corner[0]), 
-                          float(next_corner[1] - corner[1])])
-    outgoing_len = float((outgoing_dir[0]**2 + outgoing_dir[1]**2)**0.5)
-    outgoing_dir = outgoing_dir / outgoing_len
+    # Normalize the direction vector
+    from sympy import sqrt
+    outgoing_len_sq = outgoing_dir[0]**2 + outgoing_dir[1]**2
+    outgoing_len = sqrt(outgoing_len_sq)
+    outgoing_dir_normalized = outgoing_dir / outgoing_len
     
     # Timber dimensions - keep as exact values from size parameter
     timber_width = size[0]   # Face direction (X-axis of timber)
@@ -404,7 +402,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
     
     # Align timber face direction with outgoing boundary side
     # Face direction is in the XY plane along the outgoing side
-    face_direction = create_vector3d(float(outgoing_dir[0]), float(outgoing_dir[1]), 0)
+    face_direction = create_vector3d(outgoing_dir_normalized[0], outgoing_dir_normalized[1], 0)
     
     # Calculate bottom position based on location type
     # Keep corner coordinates exact
@@ -421,15 +419,16 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
         # Position so the opposite vertex is on the boundary corner
         # Need to offset by the full diagonal of the timber base
         # Offset = -timber_width in face direction, -timber_depth in perpendicular direction
-        offset_x = -timber_width * float(outgoing_dir[0]) - timber_depth * float(-outgoing_dir[1])
-        offset_y = -timber_width * float(outgoing_dir[1]) - timber_depth * float(outgoing_dir[0])
+        # Use exact arithmetic: outgoing_dir_normalized components are rationals for axis-aligned
+        offset_x = -timber_width * outgoing_dir_normalized[0] - timber_depth * (-outgoing_dir_normalized[1])
+        offset_y = -timber_width * outgoing_dir_normalized[1] - timber_depth * outgoing_dir_normalized[0]
         bottom_position = create_vector3d(corner_x + offset_x, corner_y + offset_y, 0)
         
     else:  # CENTER
         # Position so center of bottom face is on the boundary corner
         # Offset by half dimensions in both directions
-        offset_x = -timber_width/2 * float(outgoing_dir[0]) - timber_depth/2 * float(-outgoing_dir[1])
-        offset_y = -timber_width/2 * float(outgoing_dir[1]) - timber_depth/2 * float(outgoing_dir[0])
+        offset_x = -timber_width/2 * outgoing_dir_normalized[0] - timber_depth/2 * (-outgoing_dir_normalized[1])
+        offset_y = -timber_width/2 * outgoing_dir_normalized[1] - timber_depth/2 * outgoing_dir_normalized[0]
         bottom_position = create_vector3d(corner_x + offset_x, corner_y + offset_y, 0)
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)
