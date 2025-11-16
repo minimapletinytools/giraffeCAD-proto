@@ -257,8 +257,9 @@ create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: int, 
 
 # AKA create_mudsill
 # the left (-X) face is lying on the XY plane
-# the mudsill starts at footprint_index and goes to footprint_index + 1
-create_horizontal_timber_on_footprint(footprint: Footprint, footprint_index: int, length: float, location_type: TimberLocationType) -> Timber
+# the mudsill starts at corner_index and goes to corner_index + 1
+# length is optional - if not provided, it is calculated from the boundary side length
+create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int, location_type: TimberLocationType, size: V2, length: Optional[float] = None) -> Timber
 
 # create a timber extension by extending the given timber, the end is the end of the timber to extend
 # overlap_length is the length of the timber to overlap with the existing timber

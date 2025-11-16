@@ -469,8 +469,8 @@ class TestTimberCreation:
         # Default size for test
         size = create_vector2d(Rational(3, 10), Rational(3, 10))
         
-        timber = create_axis_aligned_horizontal_timber_on_footprint(
-            footprint, 0, 3.0, TimberLocationType.INSIDE, size
+        timber = create_horizontal_timber_on_footprint(
+            footprint, 0, TimberLocationType.INSIDE, size, length=3.0
         )
         
         assert timber.length == 3.0
@@ -499,8 +499,8 @@ class TestTimberCreation:
         # This side has inward normal pointing up: (0, 1, 0)
         
         # Test INSIDE positioning
-        timber_inside = create_axis_aligned_horizontal_timber_on_footprint(
-            footprint, 0, 2.0, TimberLocationType.INSIDE, size
+        timber_inside = create_horizontal_timber_on_footprint(
+            footprint, 0, TimberLocationType.INSIDE, size, length=2.0
         )
         # Timber should extend inward (in +Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) inside the footprint
@@ -510,8 +510,8 @@ class TestTimberCreation:
         assert timber_inside.bottom_position[2] == 0  # Z at ground
         
         # Test OUTSIDE positioning
-        timber_outside = create_axis_aligned_horizontal_timber_on_footprint(
-            footprint, 0, 2.0, TimberLocationType.OUTSIDE, size
+        timber_outside = create_horizontal_timber_on_footprint(
+            footprint, 0, TimberLocationType.OUTSIDE, size, length=2.0
         )
         # Timber should extend outward (in -Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) outside the footprint
@@ -521,8 +521,8 @@ class TestTimberCreation:
         assert timber_outside.bottom_position[2] == 0  # Z at ground
         
         # Test CENTER positioning
-        timber_center = create_axis_aligned_horizontal_timber_on_footprint(
-            footprint, 0, 2.0, TimberLocationType.CENTER, size
+        timber_center = create_horizontal_timber_on_footprint(
+            footprint, 0, TimberLocationType.CENTER, size, length=2.0
         )
         # Centerline should be on the boundary side
         assert float(timber_center.bottom_position[1]) == 0.0  # Y on boundary
@@ -545,24 +545,24 @@ class TestTimberCreation:
         # Test right boundary side (from corner 1 to corner 2)
         # This side has inward normal pointing left: (-1, 0, 0)
         
-        timber_inside_right = create_axis_aligned_horizontal_timber_on_footprint(
-            footprint, 1, 2.0, TimberLocationType.INSIDE, size
+        timber_inside_right = create_horizontal_timber_on_footprint(
+            footprint, 1, TimberLocationType.INSIDE, size, length=2.0
         )
         # Timber should extend inward (in -X direction)
         # Use timber_height (size[1]) as it's the dimension perpendicular to boundary
         assert timber_inside_right.bottom_position[0] == Float(2.0 - timber_height / 2)
         assert float(timber_inside_right.bottom_position[1]) == 0.0  # Y unchanged
         
-        timber_outside_right = create_axis_aligned_horizontal_timber_on_footprint(
-            footprint, 1, 2.0, TimberLocationType.OUTSIDE, size
+        timber_outside_right = create_horizontal_timber_on_footprint(
+            footprint, 1, TimberLocationType.OUTSIDE, size, length=2.0
         )
         # Timber should extend outward (in +X direction)
         # Use timber_height (size[1]) as it's the dimension perpendicular to boundary
         assert timber_outside_right.bottom_position[0] == Float(2.0 + timber_height / 2)
         assert float(timber_outside_right.bottom_position[1]) == 0.0  # Y unchanged
         
-        timber_center_right = create_axis_aligned_horizontal_timber_on_footprint(
-            footprint, 1, 2.0, TimberLocationType.CENTER, size
+        timber_center_right = create_horizontal_timber_on_footprint(
+            footprint, 1, TimberLocationType.CENTER, size, length=2.0
         )
         # Centerline should be on the boundary side
         assert float(timber_center_right.bottom_position[0]) == 2.0  # X on boundary
