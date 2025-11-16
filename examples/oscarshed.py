@@ -9,7 +9,7 @@ sys.path.append('..')
 
 from giraffe import (
     create_vector2d, create_vector3d,
-    create_axis_aligned_horizontal_timber_on_footprint,
+    create_horizontal_timber_on_footprint,
     create_vertical_timber_on_footprint_side,
     TimberLocationType, CutTimber
 )
@@ -73,26 +73,27 @@ def create_oscarshed() -> list[CutTimber]:
     mudsill_size = create_vector2d(big_timber_size[0], big_timber_size[1])
 
     # Front mudsill (corner 0 to corner 1) - along X axis
-    mudsill_front = create_axis_aligned_horizontal_timber_on_footprint(
-        footprint, 0, base_width_m, TimberLocationType.INSIDE, mudsill_size
+    # Length is automatically calculated from boundary side
+    mudsill_front = create_horizontal_timber_on_footprint(
+        footprint, 0, TimberLocationType.INSIDE, mudsill_size
     )
     mudsill_front.name = "Front Mudsill"
 
     # Right mudsill (corner 1 to corner 2) - along Y axis
-    mudsill_right = create_axis_aligned_horizontal_timber_on_footprint(
-        footprint, 1, base_length_m, TimberLocationType.INSIDE, mudsill_size
+    mudsill_right = create_horizontal_timber_on_footprint(
+        footprint, 1, TimberLocationType.INSIDE, mudsill_size
     )
     mudsill_right.name = "Right Mudsill"
 
     # Back mudsill (corner 2 to corner 3) - along X axis
-    mudsill_back = create_axis_aligned_horizontal_timber_on_footprint(
-        footprint, 2, base_width_m, TimberLocationType.INSIDE, mudsill_size
+    mudsill_back = create_horizontal_timber_on_footprint(
+        footprint, 2, TimberLocationType.INSIDE, mudsill_size
     )
     mudsill_back.name = "Back Mudsill"
 
     # Left mudsill (corner 3 to corner 0) - along Y axis
-    mudsill_left = create_axis_aligned_horizontal_timber_on_footprint(
-        footprint, 3, base_length_m, TimberLocationType.INSIDE, mudsill_size
+    mudsill_left = create_horizontal_timber_on_footprint(
+        footprint, 3, TimberLocationType.INSIDE, mudsill_size
     )
     mudsill_left.name = "Left Mudsill"
 

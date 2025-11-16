@@ -36,22 +36,22 @@ def create_sawhorse() -> list[CutTimber]:
 
     # now create 2 "mudsills on the INSIDE of the footprint, one on the left boundary and one on the right boundary
     # Create mudsill on the left boundary (index 3: bottom-left to top-left)
-    left_mudsill = create_axis_aligned_horizontal_timber_on_footprint(
+    left_mudsill = create_horizontal_timber_on_footprint(
         footprint, 
-        footprint_index=3, 
-        length=bottom_length, 
+        corner_index=3, 
         location_type=TimberLocationType.INSIDE,
-        size=feet_size
+        size=feet_size,
+        length=bottom_length
     )
     left_mudsill.name = "Left Mudsill"
     
     # Create mudsill on the right boundary (index 1: top-right to bottom-right)  
-    right_mudsill = create_axis_aligned_horizontal_timber_on_footprint(
+    right_mudsill = create_horizontal_timber_on_footprint(
         footprint, 
-        footprint_index=1, 
-        length=bottom_length, 
+        corner_index=1, 
         location_type=TimberLocationType.INSIDE,
-        size=feet_size
+        size=feet_size,
+        length=bottom_length
     )
     right_mudsill.name = "Right Mudsill"
     

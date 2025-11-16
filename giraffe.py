@@ -531,13 +531,12 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)
 
-# TODO rename create_axis_aligned_horizontal_timber_on_footprint to create_horizontal_timber_on_footprint
-# TODO make length parameter optional, if it is not provided, it should be the length of the boundary side
-def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int,
-                                        length: float, location_type: TimberLocationType, 
-                                        size: V2) -> Timber:
+def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int,
+                                        location_type: TimberLocationType, 
+                                        size: V2,
+                                        length: Optional[float] = None) -> Timber:
     """
-    Creates an axis aligned horizontal timber (mudsill) on the footprint boundary side.
+    Creates a horizontal timber (mudsill) on the footprint boundary side.
     
     The mudsill runs from corner_index to corner_index + 1 along the boundary side.
     With the face ends of the mudsill timber starting/ending on the footprint corners.
@@ -550,9 +549,9 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, cor
     Args:
         footprint: The footprint to place the timber on
         corner_index: Index of the starting boundary corner
-        length: Length of the timber
         location_type: Where to position the timber relative to the boundary side
         size: Timber size (width, height) as a 2D vector
+        length: Length of the timber (optional; if not provided, uses boundary side length)
         
     Returns:
         Timber positioned on the footprint boundary side
@@ -563,13 +562,12 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, cor
         
     length_direction = normalize_vector(Matrix([end_point[0] - start_point[0], end_point[1] - start_point[1], 0]))
 
-    # set length to the length of the boundary side
-    #xl = (end_point - start_point)[0]
-    #yl = (end_point - start_point)[1]
-    # usually one of these will be 0 so worth trying to simplify right here
-    #length = simplify(sqrt(xl**2 + yl**2))
-    #raise ValueError("length: " + str(length))
-    #length = (end_point - start_point).magnitude
+    # Calculate length from boundary side if not provided
+    if length is None:
+        from sympy import sqrt
+        dx = end_point[0] - start_point[0]
+        dy = end_point[1] - start_point[1]
+        length = sqrt(dx**2 + dy**2)
     
     # Get the inward normal from the footprint
     inward_x, inward_y, inward_z = footprint.getInwardNormal(corner_index)
