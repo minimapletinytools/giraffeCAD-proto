@@ -733,7 +733,7 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
     t = to_pos1.dot(timber2.length_direction) / timber2.length_direction.dot(timber2.length_direction)
     
     # Clamp t to be within the timber's length
-    t = max(0, min(float(timber2.length), float(t)))
+    t = max(0, min(timber2.length, t))
     
     # Calculate the corresponding position on timber2's centerline
     pos2 = timber2.bottom_position + timber2.length_direction * t
@@ -744,7 +744,7 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
     # face_vector already calculated above
     
     # Calculate the distance between the centerlines of timber1 and timber2
-    centerline_distance = float(vector_magnitude(pos2 - pos1))
+    centerline_distance = vector_magnitude(pos2 - pos1)
     
     # Calculate timber length: distance between centerlines + symmetric stickout on both sides
     timber_length = centerline_distance + 2 * symmetric_stickout
@@ -885,12 +885,12 @@ def _find_aligned_face(mortise_timber: Timber, target_direction: Direction3D) ->
     
     best_face = faces[0]
     face_direction = _get_timber_face_direction(mortise_timber, faces[0])
-    best_alignment = float(target_direction.dot(face_direction))
+    best_alignment = target_direction.dot(face_direction)
     
     for face in faces[1:]:
         face_direction = _get_timber_face_direction(mortise_timber, face)
         # Use dot product to find best alignment - prefer faces pointing in same direction
-        alignment = float(target_direction.dot(face_direction))
+        alignment = target_direction.dot(face_direction)
         if alignment > best_alignment:
             best_alignment = alignment
             best_face = face
@@ -899,12 +899,12 @@ def _find_aligned_face(mortise_timber: Timber, target_direction: Direction3D) ->
 
 def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: float = 1e-10) -> bool:
     """Check if two timbers have parallel length directions"""
-    dot_product = float(Abs(timber1.length_direction.dot(timber2.length_direction)))
+    dot_product = Abs(timber1.length_direction.dot(timber2.length_direction))
     return Abs(dot_product - 1) < tolerance
 
 def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: float = 1e-10) -> bool:
     """Check if two timbers have orthogonal (perpendicular) length directions"""
-    dot_product = float(Abs(timber1.length_direction.dot(timber2.length_direction)))
+    dot_product = Abs(timber1.length_direction.dot(timber2.length_direction))
     return dot_product < tolerance
 
 def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: float = 1e-10) -> bool:
@@ -930,7 +930,7 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: float
     # Check if any direction from timber1 is parallel to any direction from timber2
     for dir1 in dirs1:
         for dir2 in dirs2:
-            dot_product = float(Abs(dir1.dot(dir2)))
+            dot_product = Abs(dir1.dot(dir2))
             if Abs(dot_product - 1) < tolerance:
                 return True
     
@@ -954,7 +954,7 @@ def _project_point_on_timber_centerline(point: V3, timber: Timber) -> Tuple[floa
     
     # Project this vector onto the timber's length direction
     length_dir = timber.length_direction
-    t = float(to_point.dot(length_dir) / length_dir.dot(length_dir))
+    t = to_point.dot(length_dir) / length_dir.dot(length_dir)
     
     # Calculate the projected point
     projected_point = timber.bottom_position + timber.length_direction * t
@@ -983,11 +983,11 @@ def _calculate_mortise_position_from_tenon_intersection(mortise_timber: Timber, 
     t, projected_point = _project_point_on_timber_centerline(tenon_point, mortise_timber)
     
     # Clamp t to be within the mortise timber's length
-    t = max(0, min(float(mortise_timber.length), t))
+    t = max(0, min(mortise_timber.length, t))
     
     # Determine which end to reference based on which is closer
     distance_from_bottom = t
-    distance_from_top = float(mortise_timber.length) - t
+    distance_from_top = mortise_timber.length - t
     
     if distance_from_bottom <= distance_from_top:
         return TimberReferenceEnd.BOTTOM, distance_from_bottom
@@ -1029,10 +1029,10 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     # Calculate the distance from mortise centerline to mortise face
     if mortise_face in [TimberFace.RIGHT, TimberFace.LEFT]:
         # X direction faces
-        face_offset = float(mortise_timber.size[0]) / 2  # Half width
+        face_offset = mortise_timber.size[0] / 2  # Half width
     elif mortise_face in [TimberFace.FORWARD, TimberFace.BACK]:
         # Y direction faces  
-        face_offset = float(mortise_timber.size[1]) / 2  # Half height
+        face_offset = mortise_timber.size[1] / 2  # Half height
     else:
         # TOP/BOTTOM faces (shouldn't happen for typical tenon joints)
         assert False, "TOP/BOTTOM faces shouldn't happen for typical tenon joints"
@@ -1052,7 +1052,7 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     face_normal = create_vector3d(face_vector[0], face_vector[1], face_vector[2])
     
     # Check if tenon direction is perpendicular to mortise face normal
-    direction_dot_normal = float(tenon_timber.length_direction.dot(face_normal))
+    direction_dot_normal = tenon_timber.length_direction.dot(face_normal)
     
     if abs(direction_dot_normal) < 1e-6:
         # Case 1: Tenon direction is perpendicular to mortise face (typical orthogonal joints)
@@ -1060,7 +1060,7 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
         
         # Distance from tenon end to the intersection point along tenon centerline
         to_intersection = projected_point - tenon_end_point
-        distance_to_intersection = abs(float(to_intersection.dot(tenon_timber.length_direction)))
+        distance_to_intersection = abs(to_intersection.dot(tenon_timber.length_direction))
         
         # Distance to shoulder plane = distance to intersection + face offset
         # This works for both aligned and misaligned cases
@@ -1071,7 +1071,7 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
         # Use line-plane intersection to find where tenon centerline meets mortise face plane
         
         point_to_plane = tenon_end_point - mortise_face_point
-        t = -float(point_to_plane.dot(face_normal)) / direction_dot_normal
+        t = -point_to_plane.dot(face_normal) / direction_dot_normal
         
         # The distance from tenon end to shoulder plane is |t|
         distance_along_tenon = abs(t)
