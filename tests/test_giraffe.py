@@ -317,25 +317,75 @@ class TestTimberCreation:
         assert timber.length_direction[2] == 1  # Up (exact integer)
         assert timber.face_direction[0] == 1    # East (exact integer)
     
-    def test_create_vertical_timber_on_footprint(self):
-        """Test vertical timber creation on footprint."""
+    def test_create_vertical_timber_on_footprint_corner(self):
+        """Test vertical timber creation on footprint corner with INSIDE, OUTSIDE, and CENTER."""
+        # Create a square footprint with exact integer corners
         corners = [
-            create_vector2d(0, 0),  # Use exact integers
-            create_vector2d(3, 0),  # Use exact integers
-            create_vector2d(3, 4),  # Use exact integers
-            create_vector2d(0, 4)   # Use exact integers
+            create_vector2d(0, 0),  # Corner 0: Bottom-left
+            create_vector2d(3, 0),  # Corner 1: Bottom-right  
+            create_vector2d(3, 4),  # Corner 2: Top-right
+            create_vector2d(0, 4)   # Corner 3: Top-left
         ]
         footprint = Footprint(corners)
         
-        timber = create_vertical_timber_on_footprint(footprint, 0, Rational(5, 2))  # 2.5 as exact rational
+        # Post size: 9cm x 9cm (exact rational)
+        size = create_vector2d(Rational(9, 100), Rational(9, 100))
+        post_height = Rational(5, 2)  # 2.5 meters
         
-        assert timber.length == Rational(5, 2)  # Exact rational
-        # Should be at footprint point 0
-        assert timber.bottom_position[0] == Float('0.0')  # Keep as Float since footprint uses floats internally
-        assert timber.bottom_position[1] == Float('0.0')  # Keep as Float since footprint uses floats internally
-        assert timber.bottom_position[2] == 0  # Exact integer
+        # Test INSIDE positioning
+        # Vertex of bottom face is at corner, post extends inside
+        timber_inside = create_vertical_timber_on_footprint_corner(
+            footprint, 0, post_height, TimberLocationType.INSIDE, size
+        )
+        
+        assert timber_inside.length == Rational(5, 2)
+        # For INSIDE, vertex is at corner (0, 0) - exact!
+        assert timber_inside.bottom_position[0] == 0
+        assert timber_inside.bottom_position[1] == 0
+        assert timber_inside.bottom_position[2] == 0
         # Should be vertical
-        assert timber.length_direction[2] == 1  # Exact integer
+        assert timber_inside.length_direction[2] == 1
+        # Face direction should align with outgoing boundary side (+X)
+        # Note: face_direction is normalized, so x is Float(1.0), but y is exact 0
+        assert timber_inside.face_direction[0] == Float(1.0)
+        assert timber_inside.face_direction[1] == 0
+        assert timber_inside.face_direction[2] == 0
+        
+        # Test CENTER positioning  
+        # Center of bottom face is at corner
+        timber_center = create_vertical_timber_on_footprint_corner(
+            footprint, 0, post_height, TimberLocationType.CENTER, size
+        )
+        
+        assert timber_center.length == Rational(5, 2)
+        # For CENTER, offset by half dimensions: -9/200 in both X and Y
+        # Result is Float because offset calculation uses float(outgoing_dir)
+        assert timber_center.bottom_position[0] == Float(Rational(-9, 200))
+        assert timber_center.bottom_position[1] == Float(Rational(-9, 200))
+        assert timber_center.bottom_position[2] == 0
+        # Should be vertical
+        assert timber_center.length_direction[2] == 1
+        # Face direction should align with outgoing boundary side (+X)
+        assert timber_center.face_direction[0] == Float(1.0)
+        assert timber_center.face_direction[1] == 0
+        
+        # Test OUTSIDE positioning
+        # Opposite vertex is at corner, post extends outside
+        timber_outside = create_vertical_timber_on_footprint_corner(
+            footprint, 0, post_height, TimberLocationType.OUTSIDE, size
+        )
+        
+        assert timber_outside.length == Rational(5, 2)
+        # For OUTSIDE, offset by full dimensions: -9/100 in both X and Y
+        # Result is Float because offset calculation uses float(outgoing_dir)
+        assert timber_outside.bottom_position[0] == Float(Rational(-9, 100))
+        assert timber_outside.bottom_position[1] == Float(Rational(-9, 100))
+        assert timber_outside.bottom_position[2] == 0
+        # Should be vertical
+        assert timber_outside.length_direction[2] == 1
+        # Face direction should align with outgoing boundary side (+X)
+        assert timber_outside.face_direction[0] == Float(1.0)
+        assert timber_outside.face_direction[1] == 0
     
     def test_create_horizontal_timber_on_footprint(self):
         """Test horizontal timber creation on footprint."""

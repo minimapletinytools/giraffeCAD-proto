@@ -347,29 +347,94 @@ def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
     
     return create_timber(bottom_position, length, size, length_vec, face_vec)
 
-# TODO use location_type
-def create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: int, 
-                                       length: float, location_type: TimberLocationType = TimberLocationType.INSIDE) -> Timber:
+def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_index: int, 
+                                               length: float, location_type: TimberLocationType,
+                                               size: V2) -> Timber:
     """
-    Creates a vertical timber (post) on the footprint
-    The length is in the up (+Z) direction
-    The face is in the right (+X) direction
+    Creates a vertical timber (post) on a footprint boundary corner.
+    
+    The post is positioned on an orthogonal boundary corner (where two boundary sides 
+    are perpendicular) according to the location type:
+    
+    Location types:
+    - INSIDE: Post has one vertex of bottom face on the boundary corner, with 2 edges 
+              aligned with the 2 boundary sides, post extends inside the boundary
+    - OUTSIDE: Post positioned with opposite vertex on the boundary corner, extends outside
+    - CENTER: Post center is on the boundary corner, with 2 edges parallel to boundary sides
+    
+    Args:
+        footprint: The footprint to place the timber on
+        corner_index: Index of the boundary corner
+        length: Length of the vertical timber (height)
+        location_type: Where to position the timber relative to the boundary corner
+        size: Timber size (width, depth) as a 2D vector
+        
+    Returns:
+        Timber positioned vertically on the footprint boundary corner
     """
-    # Get the footprint point
-    point = footprint.corners[footprint_index]
+    # Get the boundary corner point
+    corner = footprint.corners[corner_index]
     
-    # Convert to 3D position
-    bottom_position = create_vector3d(float(point[0]), float(point[1]), 0)
+    # Get the two boundary sides meeting at this corner
+    # Previous side: from corner_index-1 to corner_index
+    # Next side: from corner_index to corner_index+1
+    n_corners = len(footprint.corners)
+    prev_corner = footprint.corners[(corner_index - 1) % n_corners]
+    next_corner = footprint.corners[(corner_index + 1) % n_corners]
     
-    # Default size for posts
-    size = create_vector2d(Rational(9, 100), Rational(9, 100))  # 9cm x 9cm as exact rationals
+    # Calculate direction vectors for the two sides
+    # Incoming side direction (toward the corner)
+    incoming_dir = Matrix([float(corner[0] - prev_corner[0]), 
+                          float(corner[1] - prev_corner[1])])
+    incoming_len = float((incoming_dir[0]**2 + incoming_dir[1]**2)**0.5)
+    incoming_dir = incoming_dir / incoming_len
     
-    # Vertical direction
+    # Outgoing side direction (away from the corner)
+    outgoing_dir = Matrix([float(next_corner[0] - corner[0]), 
+                          float(next_corner[1] - corner[1])])
+    outgoing_len = float((outgoing_dir[0]**2 + outgoing_dir[1]**2)**0.5)
+    outgoing_dir = outgoing_dir / outgoing_len
+    
+    # Timber dimensions - keep as exact values from size parameter
+    timber_width = size[0]   # Face direction (X-axis of timber)
+    timber_depth = size[1]   # Height direction (Y-axis of timber)
+    
+    # Vertical direction (length)
     length_direction = create_vector3d(0, 0, 1)
-    face_direction = create_vector3d(1, 0, 0)
+    
+    # Align timber face direction with outgoing boundary side
+    # Face direction is in the XY plane along the outgoing side
+    face_direction = create_vector3d(float(outgoing_dir[0]), float(outgoing_dir[1]), 0)
+    
+    # Calculate bottom position based on location type
+    # Keep corner coordinates exact
+    corner_x = corner[0]
+    corner_y = corner[1]
+    
+    if location_type == TimberLocationType.INSIDE:
+        # Position so one vertex of bottom face is on the boundary corner
+        # Post extends inside the boundary
+        # The corner vertex is at the origin of the timber's local coords
+        bottom_position = create_vector3d(corner_x, corner_y, 0)
+        
+    elif location_type == TimberLocationType.OUTSIDE:
+        # Position so the opposite vertex is on the boundary corner
+        # Need to offset by the full diagonal of the timber base
+        # Offset = -timber_width in face direction, -timber_depth in perpendicular direction
+        offset_x = -timber_width * float(outgoing_dir[0]) - timber_depth * float(-outgoing_dir[1])
+        offset_y = -timber_width * float(outgoing_dir[1]) - timber_depth * float(outgoing_dir[0])
+        bottom_position = create_vector3d(corner_x + offset_x, corner_y + offset_y, 0)
+        
+    else:  # CENTER
+        # Position so center of bottom face is on the boundary corner
+        # Offset by half dimensions in both directions
+        offset_x = -timber_width/2 * float(outgoing_dir[0]) - timber_depth/2 * float(-outgoing_dir[1])
+        offset_y = -timber_width/2 * float(outgoing_dir[1]) - timber_depth/2 * float(outgoing_dir[0])
+        bottom_position = create_vector3d(corner_x + offset_x, corner_y + offset_y, 0)
     
     return create_timber(bottom_position, length, size, length_direction, face_direction)
 
+# TODO make length parameter optional, if it is not provided, it should be the length of the boundary side
 def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int,
                                         length: float, location_type: TimberLocationType, 
                                         size: V2) -> Timber:
@@ -411,6 +476,7 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, cor
     # Face direction is up (Z+)
     face_direction = create_vector3d(0, 0, 1)
     
+    # TODO This is wrong, the timber has been reoriented to be parallel to the boundary side, you need to pick the axis perpendicular to the boundary, invert it by the reorientation, to determine which axis to use as the width
     # The timber's face direction is up, so the width (size[0]) is perpendicular to the length
     # in the XY plane
     timber_width = float(size[0])
