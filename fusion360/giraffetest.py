@@ -24,6 +24,7 @@ try:
     from examples.supersimple_example import create_supersimple_structure
     from examples.supersimple_example2 import create_supersimple_structure2
     from examples.supersimple_example5 import create_supersimple_structure5
+    from examples.oscarshed import create_oscarshed
     from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
     
     # Test that core dependencies are available
@@ -66,6 +67,7 @@ def run(_context: str):
             # List of modules to reload in dependency order
             modules_to_reload = [
                 'moothymoth',
+                'footprint',
                 'giraffe', 
                 'giraffe_render_fusion360',
                 'examples.sawhorse_example',
@@ -73,7 +75,8 @@ def run(_context: str):
                 'examples.supersimple_example2',
                 'examples.supersimple_example3',
                 'examples.supersimple_example4',
-                'examples.supersimple_example5'
+                'examples.supersimple_example5',
+                'examples.oscarshed'
             ]
             
             for module_name in modules_to_reload:
@@ -90,6 +93,7 @@ def run(_context: str):
             from examples.supersimple_example3 import create_supersimple_structure3
             from examples.supersimple_example4 import create_supersimple_structure4
             from examples.supersimple_example5 import create_supersimple_structure5
+            from examples.oscarshed import create_oscarshed
             from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
             
             print("✓ Module reload complete")
@@ -99,38 +103,36 @@ def run(_context: str):
             print(f"Error reloading modules: {reload_error}")
             app.log(f"Error reloading modules: {reload_error}")
 
-        # Run the supersimple example 5 structure generation to test full system
+        # Run Oscar's Shed structure generation
         try:
-            print("🦓 GIRAFFETEST: SUPERSIMPLE 5 - Testing Normal-Based Face Detection - Version 20:00 🦓")
-            app.log("🦓 GIRAFFETEST: SUPERSIMPLE 5 - Testing Normal-Based Face Detection - Version 20:00 🦓")
-            print("Starting supersimple structure 5 generation...")
-            #cut_timbers = create_supersimple_structure5()
-            cut_timbers = create_sawhorse()
-            #cut_timbers = create_supersimple_structure2()
+            print("🦓 GIRAFFETEST: OSCAR'S SHED - 8x3.5 ft Timber Frame Structure 🦓")
+            app.log("🦓 GIRAFFETEST: OSCAR'S SHED - 8x3.5 ft Timber Frame Structure 🦓")
+            print("Starting Oscar's Shed generation...")
+            cut_timbers = create_oscarshed()
             print(f"Created structure with {len(cut_timbers)} timbers")
             
             # Clear design first to start fresh
             clear_design()
             
             # Render the timbers in Fusion 360 using three-pass rendering approach  
-            print(f"Starting three-pass rendering of {len(cut_timbers)} supersimple 5 timbers (testing normal-based face detection)...")
-            app.log(f"Starting three-pass rendering of {len(cut_timbers)} supersimple 5 timbers (testing normal-based face detection)...")
+            print(f"Starting three-pass rendering of {len(cut_timbers)} Oscar's Shed timbers...")
+            app.log(f"Starting three-pass rendering of {len(cut_timbers)} Oscar's Shed timbers...")
             
             # Use the three-pass rendering function with transforms enabled to test full workflow
-            success_count = render_multiple_timbers(cut_timbers, "SuperSimple5_Timber", apply_transforms=True)
+            success_count = render_multiple_timbers(cut_timbers, "OscarShed_Timber", apply_transforms=True)
             
             # Log detailed information
-            app.log(f'SuperSimple 5 rendering complete: {success_count}/{len(cut_timbers)} timbers rendered')
+            app.log(f"Oscar's Shed rendering complete: {success_count}/{len(cut_timbers)} timbers rendered")
             
             # Show final summary  
-            print(f"SuperSimple 5 rendering complete: {success_count}/{len(cut_timbers)} timbers rendered")
+            print(f"Oscar's Shed rendering complete: {success_count}/{len(cut_timbers)} timbers rendered")
             
         except Exception as rendering_error:
-            print(f"❌ Error during supersimple 5 rendering: {rendering_error}")
-            app.log(f"Error during supersimple 5 rendering: {rendering_error}")
+            print(f"❌ Error during Oscar's Shed rendering: {rendering_error}")
+            app.log(f"Error during Oscar's Shed rendering: {rendering_error}")
             import traceback
             print(traceback.format_exc())
-            ui.messageBox(f'Error during supersimple 5 rendering:\n{rendering_error}', 'Rendering Error')
+            ui.messageBox(f"Error during Oscar's Shed rendering:\n{rendering_error}", 'Rendering Error')
 
     except Exception as e:
         print(f"Unexpected error in run(): {str(e)}")
