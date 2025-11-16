@@ -159,27 +159,27 @@ class TestFootprint:
         footprint = Footprint(corners)
         
         # Test bottom edge (should point up/inward: y+)
-        # For axis-aligned edges, normals should be exactly 0, 1, or -1
+        # For axis-aligned edges, normals may be SymPy types
         nx, ny, nz = footprint.getInwardNormal(0)
-        assert nx == 0.0  # Exact comparison for axis-aligned
-        assert ny == 1.0  # Exact comparison for axis-aligned
-        assert nz == 0.0  # Exact comparison for axis-aligned
+        assert float(nx) == 0.0
+        assert float(ny) == 1.0
+        assert float(nz) == 0.0
         
         # Test right edge (should point left/inward: x-)
         nx, ny, nz = footprint.getInwardNormal(1)
-        assert nx == -1.0  # Exact comparison for axis-aligned
-        assert ny == 0.0   # Exact comparison for axis-aligned
-        assert nz == 0.0   # Exact comparison for axis-aligned
+        assert float(nx) == -1.0
+        assert float(ny) == 0.0
+        assert float(nz) == 0.0
         
         # Test top edge (should point down/inward: y-)
         nx, ny, nz = footprint.getInwardNormal(2)
-        assert nx == 0.0   # Exact comparison for axis-aligned
-        assert ny == -1.0  # Exact comparison for axis-aligned
-        assert nz == 0.0   # Exact comparison for axis-aligned
+        assert float(nx) == 0.0
+        assert float(ny) == -1.0
+        assert float(nz) == 0.0
         
         # Test left edge (should point right/inward: x+)
         nx, ny, nz = footprint.getInwardNormal(3)
-        assert nx == 1.0  # Exact comparison for axis-aligned
-        assert ny == 0.0  # Exact comparison for axis-aligned
-        assert nz == 0.0  # Exact comparison for axis-aligned
+        assert float(nx) == 1.0
+        assert float(ny) == 0.0
+        assert float(nz) == 0.0
 

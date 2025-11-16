@@ -75,11 +75,10 @@ class Footprint:
         p1, p2 = seg1
         p3, p4 = seg2
         
-        # Convert to float for numerical computation
-        x1, y1 = float(p1[0]), float(p1[1])
-        x2, y2 = float(p2[0]), float(p2[1])
-        x3, y3 = float(p3[0]), float(p3[1])
-        x4, y4 = float(p4[0]), float(p4[1])
+        x1, y1 = p1[0], p1[1]
+        x2, y2 = p2[0], p2[1]
+        x3, y3 = p3[0], p3[1]
+        x4, y4 = p4[0], p4[1]
         
         # Calculate the direction of the cross products
         def ccw(ax, ay, bx, by, cx, cy):
@@ -99,14 +98,14 @@ class Footprint:
         Returns:
             True if point is inside or on the boundary, False otherwise
         """
-        x, y = float(point[0]), float(point[1])
+        x, y = point[0], point[1]
         n = len(self.corners)
         inside = False
         
-        p1x, p1y = float(self.corners[0][0]), float(self.corners[0][1])
+        p1x, p1y = self.corners[0][0], self.corners[0][1]
         
         for i in range(1, n + 1):
-            p2x, p2y = float(self.corners[i % n][0]), float(self.corners[i % n][1])
+            p2x, p2y = self.corners[i % n][0], self.corners[i % n][1]
             
             if y > min(p1y, p2y):
                 if y <= max(p1y, p2y):
@@ -133,15 +132,15 @@ class Footprint:
         if not self.corners:
             raise ValueError("Footprint has no corners")
         
-        min_distance = float('inf')
+        min_distance = None
         nearest_idx = 0
         
         for i, corner in enumerate(self.corners):
-            dx = float(point[0] - corner[0])
-            dy = float(point[1] - corner[1])
+            dx = point[0] - corner[0]
+            dy = point[1] - corner[1]
             distance = (dx * dx + dy * dy) ** 0.5
             
-            if distance < min_distance:
+            if min_distance is None or distance < min_distance:
                 min_distance = distance
                 nearest_idx = i
         
@@ -164,15 +163,15 @@ class Footprint:
             raise ValueError("Footprint must have at least 2 corners")
         
         sides = self.sides()
-        min_distance = float('inf')
+        min_distance = None
         nearest_idx = 0
         
-        px, py = float(point[0]), float(point[1])
+        px, py = point[0], point[1]
         
         for i, (start, end) in enumerate(sides):
             # Calculate distance from point to line segment
-            x1, y1 = float(start[0]), float(start[1])
-            x2, y2 = float(end[0]), float(end[1])
+            x1, y1 = start[0], start[1]
+            x2, y2 = end[0], end[1]
             
             # Vector from start to end
             dx = x2 - x1
@@ -192,7 +191,7 @@ class Footprint:
                 # Distance to closest point
                 distance = ((px - closest_x) ** 2 + (py - closest_y) ** 2) ** 0.5
             
-            if distance < min_distance:
+            if min_distance is None or distance < min_distance:
                 min_distance = distance
                 nearest_idx = i
         
@@ -219,8 +218,8 @@ class Footprint:
         end = self.corners[(side_index + 1) % len(self.corners)]
         
         # Calculate direction vector along the side
-        dx = float(end[0] - start[0])
-        dy = float(end[1] - start[1])
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
         
         # Normalize the direction
         length = (dx * dx + dy * dy) ** 0.5
@@ -237,8 +236,8 @@ class Footprint:
         
         # Test if this perpendicular points inward by checking if a point
         # slightly offset in this direction is inside the polygon
-        midpoint_x = float((start[0] + end[0]) / 2)
-        midpoint_y = float((start[1] + end[1]) / 2)
+        midpoint_x = (start[0] + end[0]) / 2
+        midpoint_y = (start[1] + end[1]) / 2
         
         # Create a test point offset slightly in the perpendicular direction
         offset = 0.001  # Small offset for testing
