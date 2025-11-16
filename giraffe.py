@@ -371,7 +371,8 @@ def create_vertical_timber_on_footprint(footprint: Footprint, footprint_index: i
     return create_timber(bottom_position, length, size, length_direction, face_direction)
 
 def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int,
-                                        length: float, location_type: TimberLocationType) -> Timber:
+                                        length: float, location_type: TimberLocationType, 
+                                        size: V2) -> Timber:
     """
     Creates an axis aligned horizontal timber (mudsill) on the footprint boundary side.
     
@@ -388,6 +389,7 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, cor
         corner_index: Index of the starting boundary corner
         length: Length of the timber
         location_type: Where to position the timber relative to the boundary side
+        size: Timber size (width, height) as a 2D vector
         
     Returns:
         Timber positioned on the footprint boundary side
@@ -405,9 +407,6 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, cor
     # Get the inward normal from the footprint
     inward_x, inward_y, inward_z = footprint.getInwardNormal(corner_index)
     inward_normal = create_vector3d(inward_x, inward_y, inward_z)
-    
-    # Default size for horizontal timbers
-    size = create_vector2d(Rational(3, 10), Rational(3, 10))  # 30cm x 30cm as exact rationals
     
     # Face direction is up (Z+)
     face_direction = create_vector3d(0, 0, 1)
