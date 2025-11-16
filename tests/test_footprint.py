@@ -146,4 +146,40 @@ class TestFootprint:
         assert idx == 2
         assert side == (corners[2], corners[3])
         assert abs(dist - 0.5) < 1e-6
+    
+    def test_footprint_getInwardNormal(self):
+        """Test getInwardNormal() method with exact arithmetic."""
+        # Create a counter-clockwise square footprint using exact integers
+        corners = [
+            create_vector2d(0, 0),  # Bottom-left - exact integers
+            create_vector2d(2, 0),  # Bottom-right - exact integers
+            create_vector2d(2, 2),  # Top-right - exact integers
+            create_vector2d(0, 2)   # Top-left - exact integers
+        ]
+        footprint = Footprint(corners)
+        
+        # Test bottom edge (should point up/inward: y+)
+        # For axis-aligned edges, normals should be exactly 0, 1, or -1
+        nx, ny, nz = footprint.getInwardNormal(0)
+        assert nx == 0.0  # Exact comparison for axis-aligned
+        assert ny == 1.0  # Exact comparison for axis-aligned
+        assert nz == 0.0  # Exact comparison for axis-aligned
+        
+        # Test right edge (should point left/inward: x-)
+        nx, ny, nz = footprint.getInwardNormal(1)
+        assert nx == -1.0  # Exact comparison for axis-aligned
+        assert ny == 0.0   # Exact comparison for axis-aligned
+        assert nz == 0.0   # Exact comparison for axis-aligned
+        
+        # Test top edge (should point down/inward: y-)
+        nx, ny, nz = footprint.getInwardNormal(2)
+        assert nx == 0.0   # Exact comparison for axis-aligned
+        assert ny == -1.0  # Exact comparison for axis-aligned
+        assert nz == 0.0   # Exact comparison for axis-aligned
+        
+        # Test left edge (should point right/inward: x+)
+        nx, ny, nz = footprint.getInwardNormal(3)
+        assert nx == 1.0  # Exact comparison for axis-aligned
+        assert ny == 0.0  # Exact comparison for axis-aligned
+        assert nz == 0.0  # Exact comparison for axis-aligned
 

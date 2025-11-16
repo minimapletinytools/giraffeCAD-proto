@@ -197,4 +197,62 @@ class Footprint:
                 nearest_idx = i
         
         return nearest_idx, sides[nearest_idx], min_distance
+    
+    def getInwardNormal(self, side_index: int) -> Tuple[float, float, float]:
+        """
+        Get the inward-pointing normal vector for a boundary side.
+        
+        The inward normal is perpendicular to the boundary side and points toward
+        the interior of the footprint.
+        
+        Args:
+            side_index: Index of the boundary side
+            
+        Returns:
+            Tuple of (x, y, z) representing the normalized 3D inward normal vector
+        """
+        if side_index < 0 or side_index >= len(self.corners):
+            raise ValueError(f"Invalid side_index: {side_index}")
+        
+        # Get the start and end points of the side
+        start = self.corners[side_index]
+        end = self.corners[(side_index + 1) % len(self.corners)]
+        
+        # Calculate direction vector along the side
+        dx = float(end[0] - start[0])
+        dy = float(end[1] - start[1])
+        
+        # Normalize the direction
+        length = (dx * dx + dy * dy) ** 0.5
+        if length < 1e-10:
+            raise ValueError(f"Side {side_index} has zero length")
+        
+        dx /= length
+        dy /= length
+        
+        # Calculate perpendicular vector (left perpendicular in 2D)
+        # For direction (dx, dy), left perpendicular is (-dy, dx)
+        left_perp_x = -dy
+        left_perp_y = dx
+        
+        # Test if this perpendicular points inward by checking if a point
+        # slightly offset in this direction is inside the polygon
+        midpoint_x = float((start[0] + end[0]) / 2)
+        midpoint_y = float((start[1] + end[1]) / 2)
+        
+        # Create a test point offset slightly in the perpendicular direction
+        offset = 0.001  # Small offset for testing
+        test_x = midpoint_x + left_perp_x * offset
+        test_y = midpoint_y + left_perp_y * offset
+        
+        # Create a test point vector
+        test_point = Matrix([test_x, test_y])
+        
+        # Check if test point is inside
+        if self.containsPoint(test_point):
+            # Left perpendicular points inward
+            return (left_perp_x, left_perp_y, 0.0)
+        else:
+            # Right perpendicular points inward
+            return (dy, -dx, 0.0)
 
