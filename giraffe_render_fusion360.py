@@ -761,9 +761,10 @@ def create_timber_geometry(component: adsk.fusion.Component, timber: Timber, com
         bool: True if geometry creation was successful
     """
     try:
-        length = timber.length
+        length = float(timber.length)
         width = float(timber.size[0])
         height = float(timber.size[1])
+
         
         # Convert to cm
         length_cm = length * 100
@@ -1019,7 +1020,6 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             else:
                 if app:
                     app.log(f"  ❌ Failed to create geometry for {component_name}")
-                    app.log(f"🚨 GEOMETRY CREATION FAILED - This will cause 'No target body' error later!")
         
         # Force refresh after all geometry creation
         adsk.doEvents()
