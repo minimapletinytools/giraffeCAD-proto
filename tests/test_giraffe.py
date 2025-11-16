@@ -387,6 +387,75 @@ class TestTimberCreation:
         assert timber_outside.face_direction[0] == 1
         assert timber_outside.face_direction[1] == 0
     
+    def test_create_vertical_timber_on_footprint_side(self):
+        """Test vertical timber creation on footprint side with INSIDE, OUTSIDE, and CENTER."""
+        # Create a square footprint with exact integer corners
+        corners = [
+            create_vector2d(0, 0),  # Corner 0: Bottom-left
+            create_vector2d(4, 0),  # Corner 1: Bottom-right
+            create_vector2d(4, 3),  # Corner 2: Top-right
+            create_vector2d(0, 3)   # Corner 3: Top-left
+        ]
+        footprint = Footprint(corners)
+        
+        # Post size: 10cm x 10cm (exact rational)
+        size = create_vector2d(Rational(1, 10), Rational(1, 10))
+        post_height = Rational(3, 1)  # 3 meters
+        
+        # Place post 1 meter along the bottom side (from corner 0 to corner 1)
+        distance_along_side = Rational(1, 1)
+        
+        # Test CENTER positioning
+        # Center of bottom face is on the point (1, 0)
+        timber_center = create_vertical_timber_on_footprint_side(
+            footprint, 0, distance_along_side, post_height, TimberLocationType.CENTER, size
+        )
+        
+        assert timber_center.length == Rational(3, 1)
+        # For CENTER, center is exactly at (1, 0) - exact!
+        assert timber_center.bottom_position[0] == 1
+        assert timber_center.bottom_position[1] == 0
+        assert timber_center.bottom_position[2] == 0
+        # Should be vertical
+        assert timber_center.length_direction[2] == 1
+        # Face direction should be parallel to the side (along +X)
+        assert timber_center.face_direction[0] == 1
+        assert timber_center.face_direction[1] == 0
+        
+        # Test INSIDE positioning
+        # One edge center is at the point, post extends inside (toward +Y)
+        timber_inside = create_vertical_timber_on_footprint_side(
+            footprint, 0, distance_along_side, post_height, TimberLocationType.INSIDE, size
+        )
+        
+        assert timber_inside.length == Rational(3, 1)
+        # For INSIDE, offset by half depth inward (toward +Y)
+        assert timber_inside.bottom_position[0] == 1
+        assert timber_inside.bottom_position[1] == size[1] / 2
+        assert timber_inside.bottom_position[2] == 0
+        # Should be vertical
+        assert timber_inside.length_direction[2] == 1
+        # Face direction parallel to side
+        assert timber_inside.face_direction[0] == 1
+        assert timber_inside.face_direction[1] == 0
+        
+        # Test OUTSIDE positioning
+        # One edge center is at the point, post extends outside (toward -Y)
+        timber_outside = create_vertical_timber_on_footprint_side(
+            footprint, 0, distance_along_side, post_height, TimberLocationType.OUTSIDE, size
+        )
+        
+        assert timber_outside.length == Rational(3, 1)
+        # For OUTSIDE, offset by half depth outward (toward -Y)
+        assert timber_outside.bottom_position[0] == 1
+        assert timber_outside.bottom_position[1] == -size[1] / 2
+        assert timber_outside.bottom_position[2] == 0
+        # Should be vertical
+        assert timber_outside.length_direction[2] == 1
+        # Face direction parallel to side
+        assert timber_outside.face_direction[0] == 1
+        assert timber_outside.face_direction[1] == 0
+    
     def test_create_horizontal_timber_on_footprint(self):
         """Test horizontal timber creation on footprint."""
         corners = [
