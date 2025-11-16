@@ -625,6 +625,7 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
     return Timber(new_length, timber.size, new_bottom_position, 
                  timber.length_direction, timber.face_direction)
 
+# TODO symmetric_stickout should use some Stickout object that has assymmetric and symmetric stickout options, if not provided, it is 0 stickout
 def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
                 symmetric_stickout: float, offset_from_timber1: float,
                 location_on_timber2: Optional[float] = None,
