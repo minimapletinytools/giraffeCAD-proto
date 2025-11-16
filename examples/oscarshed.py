@@ -8,8 +8,9 @@ import sys
 sys.path.append('..')
 
 from giraffe import (
-    create_vector2d, create_vector3d, create_timber,
+    create_vector2d, create_vector3d,
     create_axis_aligned_horizontal_timber_on_footprint,
+    create_vertical_timber_on_footprint_side,
     TimberLocationType, CutTimber
 )
 from footprint import Footprint
@@ -102,53 +103,50 @@ def create_oscarshed() -> list[CutTimber]:
 
     # Post size: 4" x 4" (med_timber_size)
     post_size = create_vector2d(med_timber_size[0], med_timber_size[1])
-    post_width = float(post_size[0])
     
-    # Offset posts so their edge (not center) is on the boundary
-    # Posts extend inward from the boundary
-    post_boundary_offset = post_width / 2  # Half the post width
-
-    # Front-left post (inset from left corner on front side)
-    # Edge on front boundary (Y=0), extending inward
-    post_front_left = create_timber(
-        bottom_position=create_vector3d(post_inset_m, post_boundary_offset, 0),
+    # Front-left post (on front boundary side, inset from left corner)
+    # Side 0 goes from corner 0 (front-left) to corner 1 (front-right)
+    post_front_left = create_vertical_timber_on_footprint_side(
+        footprint, 
+        side_index=0,
+        distance_along_side=post_inset_m,
         length=post_front_height_m,
-        size=post_size,
-        length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
-        face_direction=create_vector3d(1, 0, 0)     # Face right (X+)
+        location_type=TimberLocationType.INSIDE,
+        size=post_size
     )
     post_front_left.name = "Front Left Post"
 
-    # Front-right post (inset from right corner on front side)
-    # Edge on front boundary (Y=0), extending inward
-    post_front_right = create_timber(
-        bottom_position=create_vector3d(base_width_m - post_inset_m, post_boundary_offset, 0),
+    # Front-right post (on front boundary side, inset from right corner)
+    post_front_right = create_vertical_timber_on_footprint_side(
+        footprint,
+        side_index=0,
+        distance_along_side=base_width_m - post_inset_m,
         length=post_front_height_m,
-        size=post_size,
-        length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
-        face_direction=create_vector3d(1, 0, 0)     # Face right (X+)
+        location_type=TimberLocationType.INSIDE,
+        size=post_size
     )
     post_front_right.name = "Front Right Post"
 
-    # Back-right post (inset from right corner on back side)
-    # Edge on back boundary (Y=base_length_m), extending inward
-    post_back_right = create_timber(
-        bottom_position=create_vector3d(base_width_m - post_inset_m, base_length_m - post_boundary_offset, 0),
+    # Back-right post (on back boundary side, inset from right corner)
+    # Side 2 goes from corner 2 (back-right) to corner 3 (back-left)
+    post_back_right = create_vertical_timber_on_footprint_side(
+        footprint,
+        side_index=2,
+        distance_along_side=post_inset_m,
         length=post_back_height_m,
-        size=post_size,
-        length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
-        face_direction=create_vector3d(1, 0, 0)     # Face right (X+)
+        location_type=TimberLocationType.INSIDE,
+        size=post_size
     )
     post_back_right.name = "Back Right Post"
 
-    # Back-left post (inset from left corner on back side)
-    # Edge on back boundary (Y=base_length_m), extending inward
-    post_back_left = create_timber(
-        bottom_position=create_vector3d(post_inset_m, base_length_m - post_boundary_offset, 0),
+    # Back-left post (on back boundary side, inset from left corner)
+    post_back_left = create_vertical_timber_on_footprint_side(
+        footprint,
+        side_index=2,
+        distance_along_side=base_width_m - post_inset_m,
         length=post_back_height_m,
-        size=post_size,
-        length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
-        face_direction=create_vector3d(1, 0, 0)     # Face right (X+)
+        location_type=TimberLocationType.INSIDE,
+        size=post_size
     )
     post_back_left.name = "Back Left Post"
 
