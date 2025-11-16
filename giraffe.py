@@ -462,8 +462,8 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, cor
     start_point = footprint.corners[corner_index]
     end_point = footprint.corners[(corner_index + 1) % len(footprint.corners)]
     
-    # Calculate direction vector along the boundary side
-    direction = Matrix([float(end_point[0] - start_point[0]), float(end_point[1] - start_point[1]), 0])
+    # Calculate direction vector along the boundary side - keep exact
+    direction = Matrix([end_point[0] - start_point[0], end_point[1] - start_point[1], 0])
     
     # Normalize to get the length direction
     length_direction = normalize_vector(direction)
@@ -477,12 +477,12 @@ def create_axis_aligned_horizontal_timber_on_footprint(footprint: Footprint, cor
     
     # TODO This is wrong, the timber has been reoriented to be parallel to the boundary side, you need to pick the axis perpendicular to the boundary, invert it by the reorientation, to determine which axis to use as the width
     # The timber's face direction is up, so the width (size[0]) is perpendicular to the length
-    # in the XY plane
-    timber_width = float(size[0])
+    # in the XY plane - keep exact
+    timber_width = size[0]
     
     # Calculate bottom position based on location type
-    # Start at the start_point on the boundary side
-    bottom_position = create_vector3d(float(start_point[0]), float(start_point[1]), 0)
+    # Start at the start_point on the boundary side - keep exact
+    bottom_position = create_vector3d(start_point[0], start_point[1], 0)
     
     # Apply offset based on location type
     if location_type == TimberLocationType.INSIDE:
