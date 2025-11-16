@@ -356,6 +356,93 @@ class TestTimberCreation:
         assert timber.length_direction[0] == Float('1.0')
         assert timber.length_direction[2] == 0
     
+    def test_create_horizontal_timber_on_footprint_location_types(self):
+        """Test horizontal timber positioning with INSIDE, OUTSIDE, and CENTER location types."""
+        # Create a square footprint with exact integer coordinates
+        corners = [
+            create_vector2d(0, 0),  # Bottom-left
+            create_vector2d(2, 0),  # Bottom-right
+            create_vector2d(2, 2),  # Top-right
+            create_vector2d(0, 2)   # Top-left
+        ]
+        footprint = Footprint(corners)
+        
+        # The timber has a default width of 0.3 (30cm)
+        timber_width = 0.3
+        
+        # Test bottom boundary side (from corner 0 to corner 1)
+        # This side has inward normal pointing up: (0, 1, 0)
+        
+        # Test INSIDE positioning
+        timber_inside = create_axis_aligned_horizontal_timber_on_footprint(
+            footprint, 0, 2.0, TimberLocationType.INSIDE
+        )
+        # Timber should extend inward (in +Y direction)
+        # Bottom position Y should be half timber width inside the footprint
+        expected_y_inside = timber_width / 2
+        assert abs(float(timber_inside.bottom_position[1]) - expected_y_inside) < 1e-6
+        assert float(timber_inside.bottom_position[0]) == 0.0  # X unchanged
+        assert float(timber_inside.bottom_position[2]) == 0.0  # Z at ground
+        
+        # Test OUTSIDE positioning
+        timber_outside = create_axis_aligned_horizontal_timber_on_footprint(
+            footprint, 0, 2.0, TimberLocationType.OUTSIDE
+        )
+        # Timber should extend outward (in -Y direction)
+        # Bottom position Y should be half timber width outside the footprint
+        expected_y_outside = -timber_width / 2
+        assert abs(float(timber_outside.bottom_position[1]) - expected_y_outside) < 1e-6
+        assert float(timber_outside.bottom_position[0]) == 0.0  # X unchanged
+        assert float(timber_outside.bottom_position[2]) == 0.0  # Z at ground
+        
+        # Test CENTER positioning
+        timber_center = create_axis_aligned_horizontal_timber_on_footprint(
+            footprint, 0, 2.0, TimberLocationType.CENTER
+        )
+        # Centerline should be on the boundary side
+        assert float(timber_center.bottom_position[1]) == 0.0  # Y on boundary
+        assert float(timber_center.bottom_position[0]) == 0.0  # X unchanged
+        assert float(timber_center.bottom_position[2]) == 0.0  # Z at ground
+        
+        # Verify all timbers have correct length direction (along +X for bottom side)
+        assert float(timber_inside.length_direction[0]) == 1.0
+        assert float(timber_inside.length_direction[1]) == 0.0
+        assert float(timber_inside.length_direction[2]) == 0.0
+        
+        assert float(timber_outside.length_direction[0]) == 1.0
+        assert float(timber_outside.length_direction[1]) == 0.0
+        assert float(timber_outside.length_direction[2]) == 0.0
+        
+        assert float(timber_center.length_direction[0]) == 1.0
+        assert float(timber_center.length_direction[1]) == 0.0
+        assert float(timber_center.length_direction[2]) == 0.0
+        
+        # Test right boundary side (from corner 1 to corner 2)
+        # This side has inward normal pointing left: (-1, 0, 0)
+        
+        timber_inside_right = create_axis_aligned_horizontal_timber_on_footprint(
+            footprint, 1, 2.0, TimberLocationType.INSIDE
+        )
+        # Timber should extend inward (in -X direction)
+        expected_x_inside = 2.0 - timber_width / 2
+        assert abs(float(timber_inside_right.bottom_position[0]) - expected_x_inside) < 1e-6
+        assert float(timber_inside_right.bottom_position[1]) == 0.0  # Y unchanged
+        
+        timber_outside_right = create_axis_aligned_horizontal_timber_on_footprint(
+            footprint, 1, 2.0, TimberLocationType.OUTSIDE
+        )
+        # Timber should extend outward (in +X direction)
+        expected_x_outside = 2.0 + timber_width / 2
+        assert abs(float(timber_outside_right.bottom_position[0]) - expected_x_outside) < 1e-6
+        assert float(timber_outside_right.bottom_position[1]) == 0.0  # Y unchanged
+        
+        timber_center_right = create_axis_aligned_horizontal_timber_on_footprint(
+            footprint, 1, 2.0, TimberLocationType.CENTER
+        )
+        # Centerline should be on the boundary side
+        assert float(timber_center_right.bottom_position[0]) == 2.0  # X on boundary
+        assert float(timber_center_right.bottom_position[1]) == 0.0  # Y unchanged
+    
     def test_create_timber_extension(self):
         """Test timber extension creation."""
         original_timber = Timber(
