@@ -38,7 +38,7 @@ Timber Face + Timber Centerline -> ReferencePoint
 Lets look at the current signature of join_timbers:
 
 def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
-                symmetric_stickout: float, offset_from_timber1: float,
+                stickout: Stickout, offset_from_timber1: float,
                 location_on_timber2: Optional[float] = None,
                 orientation_face_vector: Optional[Direction3D] = None) -> Timber:
 

@@ -671,7 +671,7 @@ class TestJoinTimbers:
         joining_timber = join_timbers(
             timber1, timber2,
             location_on_timber1=1.5,  # Midpoint of timber1
-            symmetric_stickout=0.1,
+            stickout=Stickout(0.1, 0.1),  # Symmetric stickout
             offset_from_timber1=0.0,
             location_on_timber2=1.0   # Explicit position on timber2
         )
@@ -736,7 +736,7 @@ class TestJoinTimbers:
         joining_timber2 = join_perpendicular_on_face_aligned_timbers(
             timber1, timber2,
             location_on_timber1=1.5,
-            symmetric_stickout=0,
+            stickout=Stickout(0, 0),  # No stickout
             offset_from_timber1=offset,
             size=create_vector2d(0.15, 0.15),
             orientation_face_on_timber1=TimberFace.TOP
@@ -759,14 +759,14 @@ class TestJoinTimbers:
         joining_timber2 = join_perpendicular_on_face_aligned_timbers(
             timber1, timber2,
             location_on_timber1=1.5,
-            symmetric_stickout=1.2,
+            stickout=Stickout(1.2, 1.2),  # Symmetric stickout
             offset_from_timber1=offset,
             size=create_vector2d(0.15, 0.15),
             orientation_face_on_timber1=TimberFace.TOP
         )
         
         assert isinstance(joining_timber2, Timber)
-        # Length should be centerline distance (2.0) + 2 * symmetric_stickout (2 * 1.2 = 2.4) = 4.4
+        # Length should be centerline distance (2.0) + stickout1 (1.2) + stickout2 (1.2) = 4.4
         assert abs(joining_timber2.length - 4.4) < 1e-10
 
     def test_join_timbers_creates_orthogonal_rotation_matrix(self):
@@ -792,7 +792,7 @@ class TestJoinTimbers:
         joining_timber = join_timbers(
             timber1, timber2,
             location_on_timber1=Rational(1, 2),     # Exact rational
-            symmetric_stickout=Rational(1, 10),     # Exact rational
+            stickout=Stickout(Rational(1, 10), Rational(1, 10)),  # Exact symmetric stickout
             offset_from_timber1=0,                  # Integer
             location_on_timber2=Rational(1, 2)     # Exact rational
         )
@@ -973,7 +973,7 @@ class TestJoinTimbers:
                 timber1=base_timber,
                 timber2=beam,
                 location_on_timber1=location_on_base,
-                symmetric_stickout=stickout,
+                stickout=Stickout(stickout, stickout),  # Symmetric stickout
                 offset_from_timber1=offset,
                 size=create_vector2d(Rational(8, 100), Rational(8, 100)),  # 8cm x 8cm posts
                 orientation_face_on_timber1=TimberFace.TOP
@@ -1052,7 +1052,7 @@ class TestJoinTimbers:
                 timber1=timber1,
                 timber2=timber2,
                 location_on_timber1=loc1,
-                symmetric_stickout=stickout,
+                stickout=Stickout(stickout, stickout),  # Symmetric stickout
                 offset_from_timber1=offset,
                 size=create_vector2d(Rational(6, 100), Rational(6, 100)),  # 6cm x 6cm
                 orientation_face_on_timber1=TimberFace.TOP
@@ -1221,6 +1221,43 @@ class TestEnumsAndDataStructures:
         assert plane_custom.reference_end == TimberReferenceEnd.TOP
         assert plane_custom.distance == 0.2
         assert plane_custom.normal == custom_normal
+    
+    
+    def test_stickout_with_join_timbers(self):
+        """Test that stickout produces correct timber length in join_timbers."""
+        # Create two vertical posts 2.5 meters apart
+        post1 = create_axis_aligned_timber(
+            bottom_position=create_vector3d(0, 0, 0),
+            length=2.0,
+            size=create_vector2d(0.15, 0.15),
+            length_direction=create_vector3d(0, 0, 1),
+            face_direction=create_vector3d(1, 0, 0)
+        )
+        
+        post2 = create_axis_aligned_timber(
+            bottom_position=create_vector3d(2.5, 0, 0),
+            length=2.0,
+            size=create_vector2d(0.15, 0.15),
+            length_direction=create_vector3d(0, 0, 1),
+            face_direction=create_vector3d(1, 0, 0)
+        )
+        
+        # Join with asymmetric stickout: 0.1m on post1 side, 0.3m on post2 side
+        stickout1 = 0.1
+        stickout2 = 0.3
+        beam = join_timbers(
+            timber1=post1,
+            timber2=post2,
+            location_on_timber1=1.0,
+            stickout=Stickout(stickout1, stickout2),
+            offset_from_timber1=0.0,
+            location_on_timber2=1.0
+        )
+        
+        # Expected length: distance between posts (2.5m) + stickout1 (0.1m) + stickout2 (0.3m)
+        expected_length = 2.5 + stickout1 + stickout2
+        assert abs(beam.length - expected_length) < 1e-10
+        assert abs(beam.length - 2.9) < 1e-10
 
 
 class TestHelperFunctions:

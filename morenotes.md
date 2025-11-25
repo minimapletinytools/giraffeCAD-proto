@@ -266,15 +266,38 @@ create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int, l
 # extend_length is the length of the timber to extend
 create_timber_extension(timber: Timber, end: TimberEnd, overlap_length: float, extend_length: float) -> Timber
 
-# TODO instead of symmetric_stickout, you should do stickout : V2 since you might be joining beams of different sizes
+# Stickout class defines how much a timber extends beyond connection points
+# For symmetric stickout, use Stickout.symmetric(value) or set stickout1 = stickout2
+# For asymmetric stickout, use Stickout(value1, value2)
+# For no stickout, use Stickout.nostickout() or Stickout()
+@dataclass
+class Stickout:
+    stickout1: float = 0  # Extension beyond the first connection point
+    stickout2: float = 0  # Extension beyond the second connection point
+    
+    @classmethod
+    def symmetric(value: float) -> Stickout:
+        """Create symmetric stickout where both sides extend by the same amount."""
+        return Stickout(value, value)
+    
+    @classmethod
+    def nostickout() -> Stickout:
+        """Create stickout with no extension on either side."""
+        return Stickout(0, 0)
+
+# Examples:
+# Stickout.symmetric(0.2)      # Both sides extend 0.2m
+# Stickout.nostickout()        # No stickout on either side
+# Stickout(0.1, 0.4)           # Asymmetric: 0.1m on side 1, 0.4m on side 2
+# Stickout()                   # Also creates no stickout (default)
 
 # the bottom face of the created timber is parallel to the face of timber1 that it is joined to.
 # orientation_face_vector determines the orientation of the created timber by. The orientation_face_vector will lie on the plane created by the length_vector and face_vector of the created timber. In practice, just set this to the face_vector you want for the created timber. 
 # if location_on_timber2 is not provided, the height is determined by projecting location_on_timber1 to the Z axis of timber2
-# symmetric_stickout is the distance from the centerline of timber1/2 to the ends of the created timber
+# stickout defines how much the timber extends beyond the connection points (stickout1 at timber1, stickout2 at timber2)
 # offset_from_timber1 is in the direction of the cross product of the length vectors of timber1 and the created timber. If this is 0, then the centerline axis of the created timber is coincident with the centerline axis of timber1/2
 # an offset of 0 means the center lines of timber1/timber2 and the created timber are coincident
-join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, symmetric_stickout : float, offset_from_timber1: float, location_on_timber2: float?, orientation_face_vector: V3?) -> Timber
+join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, stickout: Stickout, offset_from_timber1: float, location_on_timber2: float?, orientation_face_vector: V3?) -> Timber
 
 # determines the offset of timberX from timberA
 # if centerline_offset is provided, the offset is between the centerlines of timberA and timberX and in the direction of the reference_face
@@ -288,8 +311,8 @@ class FaceAlignedJoinedTimberOffset:
 # orientation_face_on_timber1 is a face on timber1. The face_vector of the created timber will match orientation_face_on_timber1. If no such orientation is possible the function will warn and the TOP face will be used instead.
 # location_on_timber1 is the location along the length vector of timber1 where the join is made (starting from the bottom of the timber)
 # size is the cross-sectional dimensions (width, height) of the joining timber
-# the timber length is calculated as: distance between timber1 and timber2 centerlines + 2 * symmetric_stickout
-join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, symmetric_stickout : float, offset_from_timber1: FaceAlignedJoinedTimberOffset, size: V2, orientation_face_on_timber1 = TimberFace.TOP : TimberFace) -> Timber
+# the timber length is calculated as: distance between timber1 and timber2 centerlines + stickout.stickout1 + stickout.stickout2
+join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, stickout: Stickout, offset_from_timber1: FaceAlignedJoinedTimberOffset, size: V2, orientation_face_on_timber1 = TimberFace.TOP : TimberFace) -> Timber
 ```
 
 ## joint construction operations
