@@ -155,6 +155,44 @@ def create_oscarshed() -> list[CutTimber]:
     post_back_left.name = "Back Left Post"
 
     # ============================================================================
+    # Create additional back posts for uniform spacing
+    # ============================================================================
+    
+    # Calculate positions for 2 additional back posts
+    # We want 4 posts total with uniform spacing between them
+    # The outer posts are at post_inset_m and (base_width_m - post_inset_m)
+    # Space between outer posts: base_width_m - 2*post_inset_m
+    # With 4 posts, there are 3 equal gaps
+    
+    back_post_spacing = (base_width_m - 2 * post_inset_m) / 3
+    
+    # Middle-right post (2nd from right)
+    post_back_middle_right_position = post_inset_m + back_post_spacing
+    
+    post_back_middle_right = create_vertical_timber_on_footprint_side(
+        footprint,
+        side_index=2,  # Back side
+        distance_along_side=post_back_middle_right_position,
+        length=post_back_height_m,
+        location_type=TimberLocationType.INSIDE,
+        size=post_size
+    )
+    post_back_middle_right.name = "Back Middle-Right Post"
+    
+    # Middle-left post (3rd from right)
+    post_back_middle_left_position = post_inset_m + 2 * back_post_spacing
+    
+    post_back_middle_left = create_vertical_timber_on_footprint_side(
+        footprint,
+        side_index=2,  # Back side
+        distance_along_side=post_back_middle_left_position,
+        length=post_back_height_m,
+        location_type=TimberLocationType.INSIDE,
+        size=post_size
+    )
+    post_back_middle_left.name = "Back Middle-Left Post"
+
+    # ============================================================================
     # Create side girts (running from back to front along the short dimension)
     # ============================================================================
     
@@ -327,6 +365,8 @@ def create_oscarshed() -> list[CutTimber]:
     cut_timbers.append(CutTimber(post_front_left))
     cut_timbers.append(CutTimber(post_front_right))
     cut_timbers.append(CutTimber(post_back_right))
+    cut_timbers.append(CutTimber(post_back_middle_right))
+    cut_timbers.append(CutTimber(post_back_middle_left))
     cut_timbers.append(CutTimber(post_back_left))
     
     # Add side girts
@@ -370,10 +410,10 @@ if __name__ == "__main__":
     print("="*60)
     print(f"Footprint: {base_width} ft x {base_length} ft")
     print(f"Mudsills: 4 (all INSIDE footprint)")
-    print(f"Posts: 4 total")
-    print(f"  - Front posts: {post_front_height} ft tall")
-    print(f"  - Back posts: {post_back_height} ft tall")
-    print(f"  - Post inset: {post_inset} ft from corners")
+    print(f"Posts: 6 total")
+    print(f"  - Front posts: 2 posts, {post_front_height} ft tall")
+    print(f"  - Back posts: 4 posts, {post_back_height} ft tall (uniformly spaced)")
+    print(f"  - Post inset: {post_inset} ft from corners (outer posts only)")
     print(f"Side Girts: 2 (running from back to front)")
     print(f"  - Stickout: 1.5 inches on back, 0 on front")
     print(f"Front Girt: 1 (running left to right)")
