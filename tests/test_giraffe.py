@@ -1344,6 +1344,132 @@ class TestEnumsAndDataStructures:
         expected_length = 2.5 + stickout1 + stickout2
         assert abs(beam.length - expected_length) < 1e-10
         assert abs(beam.length - 2.9) < 1e-10
+    
+    def test_stickout_reference_assertions(self):
+        """Test that join_timbers asserts when non-CENTER_LINE references are used."""
+        import pytest
+        from giraffe import StickoutReference
+        
+        # Create two posts 2.0 meters apart
+        post1 = create_axis_aligned_timber(
+            bottom_position=create_vector3d(0, 0, 0),
+            length=2.0,
+            size=create_vector2d(0.2, 0.2),
+            length_direction=create_vector3d(0, 0, 1),
+            face_direction=create_vector3d(1, 0, 0)
+        )
+        
+        post2 = create_axis_aligned_timber(
+            bottom_position=create_vector3d(2.0, 0, 0),
+            length=2.0,
+            size=create_vector2d(0.2, 0.2),
+            length_direction=create_vector3d(0, 0, 1),
+            face_direction=create_vector3d(1, 0, 0)
+        )
+        
+        # Try to use INSIDE reference - should assert
+        with pytest.raises(AssertionError, match="CENTER_LINE stickout reference"):
+            join_timbers(
+                timber1=post1,
+                timber2=post2,
+                location_on_timber1=1.0,
+                stickout=Stickout(0.1, 0.1, StickoutReference.INSIDE, StickoutReference.CENTER_LINE),
+                offset_from_timber1=0.0,
+                location_on_timber2=1.0
+            )
+        
+        # Try to use OUTSIDE reference - should assert
+        with pytest.raises(AssertionError, match="CENTER_LINE stickout reference"):
+            join_timbers(
+                timber1=post1,
+                timber2=post2,
+                location_on_timber1=1.0,
+                stickout=Stickout(0.1, 0.1, StickoutReference.CENTER_LINE, StickoutReference.OUTSIDE),
+                offset_from_timber1=0.0,
+                location_on_timber2=1.0
+            )
+    
+    def test_stickout_reference_inside_face_aligned(self):
+        """Test INSIDE stickout reference with face-aligned timbers."""
+        from giraffe import StickoutReference, join_perpendicular_on_face_aligned_timbers, FaceAlignedJoinedTimberOffset, TimberFace
+        
+        # Create two parallel horizontal posts 2.0 meters apart
+        post1 = Timber(
+            length=3.0,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(1, 0, 0),  # East
+            face_direction=create_vector3d(0, 0, 1)     # Up
+        )
+        
+        post2 = Timber(
+            length=3.0,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(0, 2, 0),  # 2m north
+            length_direction=create_vector3d(1, 0, 0),  # East (parallel)
+            face_direction=create_vector3d(0, 0, 1)     # Up
+        )
+        
+        # Join with INSIDE reference
+        offset = FaceAlignedJoinedTimberOffset(
+            reference_face=TimberFace.TOP,
+            centerline_offset=None,
+            face_offset=None
+        )
+        
+        beam = join_perpendicular_on_face_aligned_timbers(
+            post1, post2,
+            location_on_timber1=1.5,
+            stickout=Stickout(0.1, 0.1, StickoutReference.INSIDE, StickoutReference.INSIDE),
+            offset_from_timber1=offset,
+            size=create_vector2d(0.2, 0.2),
+            orientation_face_on_timber1=TimberFace.TOP
+        )
+        
+        # Expected length: distance (2.0) + effective_stickout1 (0.1 + 0.1) + effective_stickout2 (0.1 + 0.1)
+        # = 2.0 + 0.2 + 0.2 = 2.4
+        assert abs(beam.length - 2.4) < 1e-10
+    
+    def test_stickout_reference_outside_face_aligned(self):
+        """Test OUTSIDE stickout reference with face-aligned timbers."""
+        from giraffe import StickoutReference, join_perpendicular_on_face_aligned_timbers, FaceAlignedJoinedTimberOffset, TimberFace
+        
+        # Create two parallel horizontal posts 2.0 meters apart
+        post1 = Timber(
+            length=3.0,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(1, 0, 0),  # East
+            face_direction=create_vector3d(0, 0, 1)     # Up
+        )
+        
+        post2 = Timber(
+            length=3.0,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(0, 2, 0),  # 2m north
+            length_direction=create_vector3d(1, 0, 0),  # East (parallel)
+            face_direction=create_vector3d(0, 0, 1)     # Up
+        )
+        
+        # Join with OUTSIDE reference
+        offset = FaceAlignedJoinedTimberOffset(
+            reference_face=TimberFace.TOP,
+            centerline_offset=None,
+            face_offset=None
+        )
+        
+        beam = join_perpendicular_on_face_aligned_timbers(
+            post1, post2,
+            location_on_timber1=1.5,
+            stickout=Stickout(0.2, 0.2, StickoutReference.OUTSIDE, StickoutReference.OUTSIDE),
+            offset_from_timber1=offset,
+            size=create_vector2d(0.2, 0.2),
+            orientation_face_on_timber1=TimberFace.TOP
+        )
+        
+        # Expected length: distance (2.0) + effective_stickout1 (0.2 - 0.1) + effective_stickout2 (0.2 - 0.1)
+        # = 2.0 + 0.1 + 0.1 = 2.2
+        assert abs(beam.length - 2.2) < 1e-10
 
 
 class TestHelperFunctions:
