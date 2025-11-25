@@ -845,7 +845,7 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
         stickout: How much the joining timber extends beyond each connection point
         offset_from_timber1: Offset configuration from timber1
         size: Cross-sectional size (width, height) of the joining timber
-        orientation_face_on_timber1: Which face of timber1 to orient against (default: TOP)
+        orientation_face_on_timber1: Which face of timber1 to orient against (default: TOP) (the right face of the created timber aligns with this face)
         
     Returns:
         New timber that joins timber1 and timber2
