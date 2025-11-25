@@ -191,6 +191,35 @@ def create_oscarshed() -> list[CutTimber]:
     side_girt_right.name = "Right Side Girt"
 
     # ============================================================================
+    # Create front girt (running left to right along the long dimension)
+    # ============================================================================
+    
+    front_girt_size = create_vector2d(med_timber_size[0], med_timber_size[1])
+    
+    # Front girt is positioned 2 inches below the side girts
+    # Side girts attach to front posts at post_back_height_m
+    front_girt_drop_inches = 2.0
+    front_girt_drop_m = front_girt_drop_inches * INCH_TO_METERS
+    front_girt_height_on_posts = post_back_height_m - front_girt_drop_m
+    
+    # Front girt stickout: symmetric on both ends (left and right)
+    front_girt_stickout_inches = 1.5
+    front_girt_stickout_m = front_girt_stickout_inches * INCH_TO_METERS
+    front_girt_stickout = Stickout.symmetric(front_girt_stickout_m)
+    
+    # Front girt connects left front post to right front post
+    front_girt = join_timbers(
+        timber1=post_front_left,       # Left front post (timber1)
+        timber2=post_front_right,      # Right front post (timber2)
+        location_on_timber1=front_girt_height_on_posts,   # 2" below side girts
+        stickout=front_girt_stickout,  # 1.5" stickout on both sides
+        offset_from_timber1=0.0,       # No lateral offset
+        location_on_timber2=front_girt_height_on_posts,   # Same height on right post
+        size=front_girt_size
+    )
+    front_girt.name = "Front Girt"
+
+    # ============================================================================
     # Wrap all timbers in CutTimber objects and return
     # ============================================================================
     
@@ -211,6 +240,9 @@ def create_oscarshed() -> list[CutTimber]:
     # Add side girts
     cut_timbers.append(CutTimber(side_girt_left))
     cut_timbers.append(CutTimber(side_girt_right))
+    
+    # Add front girt
+    cut_timbers.append(CutTimber(front_girt))
     
     return cut_timbers
 
@@ -244,5 +276,8 @@ if __name__ == "__main__":
     print(f"  - Post inset: {post_inset} ft from corners")
     print(f"Side Girts: 2 (running from back to front)")
     print(f"  - Stickout: 1.5 inches on back, 0 on front")
+    print(f"Front Girt: 1 (running left to right)")
+    print(f"  - Position: 2 inches below side girts")
+    print(f"  - Stickout: 1.5 inches on both sides (symmetric)")
     print("="*60)
 
