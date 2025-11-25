@@ -133,6 +133,55 @@ class DistanceFromLongEdge:
     distance1: float
     distance2: float
 
+@dataclass
+class Stickout:
+    """
+    Defines how much a timber extends beyond connection points.
+    
+    For symmetric stickout, set stickout1 = stickout2.
+    For asymmetric stickout, use different values.
+    Default is no stickout (0, 0).
+    
+    Args:
+        stickout1: Extension beyond the first connection point (default: 0)
+        stickout2: Extension beyond the second connection point (default: 0)
+    
+    Examples:
+        # Symmetric stickout
+        s = Stickout.symmetric(0.2)  # Both sides extend 0.2m
+        
+        # No stickout
+        s = Stickout.nostickout()  # Both sides are 0
+        
+        # Asymmetric stickout
+        s = Stickout(0.1, 0.4)  # Left extends 0.1m, right extends 0.4m
+    """
+    stickout1: float = 0
+    stickout2: float = 0
+    
+    @classmethod
+    def symmetric(cls, value: float) -> 'Stickout':
+        """
+        Create a symmetric stickout where both sides extend by the same amount.
+        
+        Args:
+            value: The stickout distance for both sides
+            
+        Returns:
+            Stickout instance with stickout1 = stickout2 = value
+        """
+        return cls(value, value)
+    
+    @classmethod
+    def nostickout(cls) -> 'Stickout':
+        """
+        Create a stickout with no extension on either side.
+        
+        Returns:
+            Stickout instance with stickout1 = stickout2 = 0
+        """
+        return cls(0, 0)
+
 # ============================================================================
 # Helper Functions for Vector Operations
 # ============================================================================
@@ -625,13 +674,24 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
     return Timber(new_length, timber.size, new_bottom_position, 
                  timber.length_direction, timber.face_direction)
 
-# TODO symmetric_stickout should use some Stickout object that has assymmetric and symmetric stickout options, if not provided, it is 0 stickout
 def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
-                symmetric_stickout: float, offset_from_timber1: float,
+                stickout: Stickout, offset_from_timber1: float,
                 location_on_timber2: Optional[float] = None,
                 orientation_face_vector: Optional[Direction3D] = None) -> Timber:
     """
     Joins two timbers by creating a connecting timber
+    
+    Args:
+        timber1: First timber to join
+        timber2: Second timber to join
+        location_on_timber1: Position along timber1's length
+        stickout: How much the timber extends beyond connection points (both sides)
+        offset_from_timber1: Offset in the cross product direction
+        location_on_timber2: Optional position along timber2's length
+        orientation_face_vector: Optional face direction for the joining timber
+        
+    Returns:
+        New timber connecting timber1 and timber2
     """
     # Calculate position on timber1
     pos1 = timber1.get_position_on_timber(location_on_timber1)
@@ -673,7 +733,8 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         face_direction = normalize_vector(cross_product(reference_vector, length_direction))
     
     # Calculate timber length (keep as exact SymPy expression)
-    timber_length = vector_magnitude(pos2 - pos1) + 2 * symmetric_stickout
+    # Distance between connection points plus stickout on both ends
+    timber_length = vector_magnitude(pos2 - pos1) + stickout.stickout1 + stickout.stickout2
     
     # Default size
     size = create_vector2d(Rational(3, 10), Rational(3, 10))  # 30cm x 30cm as exact rationals
@@ -684,15 +745,19 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         offset_dir = normalize_vector(cross_product(timber1.length_direction, length_direction))
         center_pos += offset_dir * offset_from_timber1
     
-    # Calculate the bottom position (start of timber) from center position
-    # Move backward from center by half the timber length
-    bottom_pos = center_pos - length_direction * (timber_length / 2)
+    # Calculate the bottom position (start of timber)
+    # Start from pos1 and move backward by stickout1
+    bottom_pos = pos1 - length_direction * stickout.stickout1
+    
+    # Apply offset to bottom position as well (if any offset was applied to center)
+    if offset_from_timber1 != 0:
+        bottom_pos += offset_dir * offset_from_timber1
     
     return create_timber(bottom_pos, timber_length, size, length_direction, face_direction)
 
 def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
                                              location_on_timber1: float,
-                                             symmetric_stickout: float,
+                                             stickout: Stickout,
                                              offset_from_timber1: FaceAlignedJoinedTimberOffset,
                                              size: V2,
                                              orientation_face_on_timber1: TimberFace = TimberFace.TOP) -> Timber:
@@ -703,7 +768,7 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
         timber1: First timber to join
         timber2: Second timber to join (face-aligned with timber1)
         location_on_timber1: Position along timber1's length where the joining timber attaches
-        symmetric_stickout: How much the joining timber extends beyond each side
+        stickout: How much the joining timber extends beyond each connection point
         offset_from_timber1: Offset configuration from timber1
         size: Cross-sectional size (width, height) of the joining timber
         orientation_face_on_timber1: Which face of timber1 to orient against (default: TOP)
@@ -750,11 +815,11 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
     # Calculate the distance between the centerlines of timber1 and timber2
     centerline_distance = vector_magnitude(pos2 - pos1)
     
-    # Calculate timber length: distance between centerlines + symmetric stickout on both sides
-    timber_length = centerline_distance + 2 * symmetric_stickout
+    # Calculate timber length: distance between centerlines + stickout on both sides
+    timber_length = centerline_distance + stickout.stickout1 + stickout.stickout2
     
     # Adjust starting position to account for stickout on the timber1 side
-    pos1 = pos1 - length_direction * symmetric_stickout
+    pos1 = pos1 - length_direction * stickout.stickout1
     
     # Apply offset
     if offset_from_timber1.centerline_offset is not None:
