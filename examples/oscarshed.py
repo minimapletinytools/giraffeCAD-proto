@@ -24,7 +24,7 @@ from footprint import Footprint
 # the "front/back" of the shed is along the X axis (i.e. the front is wider than it is deep)
 # the "sides" of the shed are along the Y axis
 base_width = 8.0      # Long dimension (X direction)
-base_length = 3.5     # Short dimension (Y direction)
+base_length = 4.0     # Short dimension (Y direction)
 
 # Post parameters
 post_inset = 2.5 / 12      # 6 inches = 0.5 feet, inset from corners on long side
@@ -350,6 +350,64 @@ def create_oscarshed() -> list[CutTimber]:
         joists.append(joist)
 
     # ============================================================================
+    # Create rafters (running from back top plate to front top plate)
+    # ============================================================================
+    
+    # Rafter size: 4" x 4"
+    rafter_size = create_vector2d(med_timber_size[0], med_timber_size[1])
+    rafter_width = med_timber_size[0]  # Width of rafter (for spacing calculation)
+    
+    # Calculate positions for 5 rafters with outer faces flush with ends of top plates
+    # The centerline of the first rafter is at rafter_width/2
+    # The centerline of the last rafter is at (base_width_m - rafter_width/2)
+    # Distance between outer rafter centerlines: base_width_m - rafter_width
+    # With 5 rafters, there are 4 gaps between centerlines
+    
+    num_rafters = 5
+    rafter_centerline_spacing = (base_width_m - rafter_width) / (num_rafters - 1)
+    
+    # Rafter positions along the top plates (X axis)
+    rafter_positions_along_top_plate = []
+    for i in range(num_rafters):
+        position = rafter_width / 2 + i * rafter_centerline_spacing
+        rafter_positions_along_top_plate.append(position)
+    
+    # No stickout on rafters (flush with top plates)
+    rafter_stickout = Stickout.symmetric(12 * INCH_TO_METERS)
+    
+    # Create the 5 rafters
+    rafters = []
+    
+    for i, location_along_top_plate in enumerate(rafter_positions_along_top_plate, start=1):
+        # Rafters connect from back top plate to front top plate
+        # Top plates run along X axis, so the location is the X position
+        
+        rafter = join_timbers(
+            timber1=top_plate_back,        # Back top plate (timber1)
+            timber2=top_plate_front,       # Front top plate (timber2)
+            location_on_timber1=location_along_top_plate,  # Position along back top plate (reversed)
+            stickout=rafter_stickout,      # No stickout
+            offset_from_timber1=0.0,       # No vertical offset (centerline to centerline)
+            location_on_timber2=location_along_top_plate,  # Same position on front top plate
+            size=rafter_size,
+            orientation_face_vector=create_vector3d(0, 0, 1)  # Face up
+        )
+        rafter.name = f"Rafter {i}"
+        rafters.append(rafter)
+    
+    # Offset all rafters upwards by 2 inches
+    rafter_vertical_offset_inches = 3.0
+    rafter_vertical_offset_m = rafter_vertical_offset_inches * INCH_TO_METERS
+    
+    for rafter in rafters:
+        # Move the rafter up by adding to the Z component of bottom_position
+        rafter.bottom_position = create_vector3d(
+            rafter.bottom_position[0],
+            rafter.bottom_position[1],
+            rafter.bottom_position[2] + rafter_vertical_offset_m
+        )
+
+    # ============================================================================
     # Wrap all timbers in CutTimber objects and return
     # ============================================================================
     
@@ -383,6 +441,10 @@ def create_oscarshed() -> list[CutTimber]:
     # Add joists
     for joist in joists:
         cut_timbers.append(CutTimber(joist))
+    
+    # Add rafters
+    for rafter in rafters:
+        cut_timbers.append(CutTimber(rafter))
     
     return cut_timbers
 
@@ -428,5 +490,11 @@ if __name__ == "__main__":
     print(f"  - Spacing: Evenly spaced with equal gaps")
     print(f"  - Position: Tops flush with tops of mudsills")
     print(f"  - No stickout (flush with mudsills lengthwise)")
+    print(f"Rafters: 5 (running from back to front on top plates)")
+    print(f"  - Size: 4\" x 4\"")
+    print(f"  - Spacing: Uniformly spaced")
+    print(f"  - Position: 2 inches above top plates (offset upwards)")
+    print(f"  - Outside faces of outer rafters flush with ends of top plates")
+    print(f"  - No stickout (flush with top plates lengthwise)")
     print("="*60)
 
