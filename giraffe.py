@@ -854,6 +854,11 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
     assert _are_timbers_face_aligned(timber1, timber2), \
         "timber1 and timber2 must be face-aligned (share at least one parallel direction)"
     
+    # Auto-determine size if not provided
+    if size is None:
+        # Use timber1's size as the default
+        size = timber1.size
+    
     # Calculate position on timber1
     pos1 = timber1.get_position_on_timber(location_on_timber1)
     

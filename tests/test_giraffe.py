@@ -826,13 +826,13 @@ class TestJoinTimbers:
             face_direction=create_vector3d(1, 0, 0)     # East
         )
         
-        # Timber2: diagonal at 45 degrees, not aligned with timber1's coordinate grid
+        # Timber2: 3D rotation not aligned with timber1's coordinate grid
         timber2 = Timber(
             length=3.0,
             size=create_vector2d(0.15, 0.15),
             bottom_position=create_vector3d(2.0, 2.0, 0.0),
-            length_direction=create_vector3d(1, 1, 0),  # 45 degrees in XY plane (will be normalized)
-            face_direction=create_vector3d(0, 0, 1)     # Up
+            length_direction=create_vector3d(1, 1, 1),  # 3D diagonal (will be normalized)
+            face_direction=create_vector3d(1, -1, 0)    # Perpendicular in 3D (will be normalized)
         )
         
         # Verify they are NOT face-aligned
@@ -1956,17 +1956,18 @@ class TestHelperFunctions:
         # These should be face-aligned with exact equality (no tolerance)
         assert _are_timbers_face_aligned(timber1, timber2, tolerance=None)
         
-        # Create a non-face-aligned timber (diagonal)
+        # Create a non-face-aligned timber (3D rotation with no aligned axes)
+        # Using a timber rotated in 3D such that none of its axes align with timber1's axes
         timber3 = Timber(
             length=2,  # Integer
             size=create_vector2d(Rational(1, 5), Rational(1, 5)),  # Exact rationals
             bottom_position=create_vector3d(3, 3, 0),  # Integers
-            length_direction=create_vector3d(1, 1, 0),   # 45° diagonal (will be normalized to Float)
-            face_direction=create_vector3d(0, 0, 1)      # Up - integers
+            length_direction=create_vector3d(1, 1, 1),   # 3D diagonal (will be normalized to Float)
+            face_direction=create_vector3d(1, -1, 0)     # Perpendicular in 3D (will be normalized to Float)
         )
         
         # timber1 and timber3 should NOT be face-aligned
-        # Note: This will trigger a warning because timber3's normalized length_direction contains Float values
+        # Note: This will trigger a warning because timber3's normalized directions contain Float values
         import warnings
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
