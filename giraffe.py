@@ -1100,6 +1100,9 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
     of the other timber. This occurs when their orientations are related by 90-degree 
     rotations around any axis (i.e., they share the same coordinate grid alignment).
     
+    Mathematically, timbers are face-aligned if any of their orthogonal direction 
+    vectors (length_direction, face_direction, height_direction) are parallel to each other.
+    
     Args:
         timber1: First timber
         timber2: Second timber  
@@ -1114,28 +1117,32 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
     dirs1 = [timber1.length_direction, timber1.face_direction, timber1.height_direction]
     dirs2 = [timber2.length_direction, timber2.face_direction, timber2.height_direction]
     
-    if tolerance is None:
-        # Check if all values are rational (exact)
-        all_rational = True
-        for direction in dirs1 + dirs2:
-            for i in range(3):
-                val = direction[i]
-                if not isinstance(val, (int, Integer, Rational)):
-                    all_rational = False
-                    break
-            if not all_rational:
+    # Check if all values are rational (exact)
+    all_rational = True
+    for direction in dirs1 + dirs2:
+        for i in range(3):
+            val = direction[i]
+            if not isinstance(val, (int, Integer, Rational)):
+                all_rational = False
                 break
-        
         if not all_rational:
-            import warnings
-            warnings.warn(
-                "Using exact equality check for face alignment but timber direction vectors "
-                "contain non-rational values (e.g., Float). Consider using exact Rational types "
-                "or providing a tolerance parameter for approximate comparison.",
-                UserWarning
-            )
-        
-        # Use exact equality check
+            break
+    
+    if tolerance is None and not all_rational:
+        import warnings
+        warnings.warn(
+            "Using exact equality check for face alignment but timber direction vectors "
+            "contain non-rational values (e.g., Float). Consider using exact Rational types "
+            "or providing a tolerance parameter for approximate comparison.",
+            UserWarning
+        )
+        # Auto-use a small tolerance when Float values are present
+        effective_tolerance = 1e-10
+    else:
+        effective_tolerance = tolerance
+    
+    if effective_tolerance is None:
+        # Use exact equality check (only for rational values)
         for dir1 in dirs1:
             for dir2 in dirs2:
                 dot_product = Abs(dir1.dot(dir2))
@@ -1146,7 +1153,8 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
         for dir1 in dirs1:
             for dir2 in dirs2:
                 dot_product = Abs(dir1.dot(dir2))
-                if Abs(dot_product - 1) < tolerance:
+                # Convert to float for numerical comparison
+                if abs(float(dot_product) - 1.0) < effective_tolerance:
                     return True
     
     return False
