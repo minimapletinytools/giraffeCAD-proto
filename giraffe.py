@@ -48,6 +48,18 @@ class TimberReferenceLongEdge(Enum):
     LEFT_BACK = 9
     BACK_RIGHT = 10
 
+class StickoutReference(Enum):
+    """
+    Defines how stickout is measured relative to timber connection points.
+    
+    CENTER_LINE: Stickout measured from centerline of the timber (default)
+    INSIDE: Stickout measured from inside face of the timber
+    OUTSIDE: Stickout measured from outside face of the timber
+    """
+    CENTER_LINE = 1
+    INSIDE = 2
+    OUTSIDE = 3
+
 # ============================================================================
 # Data Structures
 # ============================================================================
@@ -140,37 +152,54 @@ class Stickout:
     
     For symmetric stickout, set stickout1 = stickout2.
     For asymmetric stickout, use different values.
-    Default is no stickout (0, 0).
+    Default is no stickout (0, 0) from CENTER_LINE.
     
     Args:
         stickout1: Extension beyond the first connection point (default: 0)
         stickout2: Extension beyond the second connection point (default: 0)
+        stickoutReference1: How stickout1 is measured (default: CENTER_LINE)
+        stickoutReference2: How stickout2 is measured (default: CENTER_LINE)
     
     Examples:
-        # Symmetric stickout
-        s = Stickout.symmetric(0.2)  # Both sides extend 0.2m
+        # Symmetric stickout from centerline
+        s = Stickout.symmetric(0.2)  # Both sides extend 0.2m from centerline
         
         # No stickout
         s = Stickout.nostickout()  # Both sides are 0
         
         # Asymmetric stickout
-        s = Stickout(0.1, 0.4)  # Left extends 0.1m, right extends 0.4m
+        s = Stickout(0.1, 0.4)  # Left extends 0.1m, right extends 0.4m from centerline
+        
+        # Stickout from outside faces
+        s = Stickout(0.1, 0.2, StickoutReference.OUTSIDE, StickoutReference.OUTSIDE)
     """
     stickout1: float = 0
     stickout2: float = 0
+    stickoutReference1: 'StickoutReference' = None
+    stickoutReference2: 'StickoutReference' = None
+    
+    def __post_init__(self):
+        """Set default stickout references if not provided."""
+        if self.stickoutReference1 is None:
+            object.__setattr__(self, 'stickoutReference1', StickoutReference.CENTER_LINE)
+        if self.stickoutReference2 is None:
+            object.__setattr__(self, 'stickoutReference2', StickoutReference.CENTER_LINE)
     
     @classmethod
-    def symmetric(cls, value: float) -> 'Stickout':
+    def symmetric(cls, value: float, reference: 'StickoutReference' = None) -> 'Stickout':
         """
         Create a symmetric stickout where both sides extend by the same amount.
         
         Args:
             value: The stickout distance for both sides
+            reference: How stickout is measured (default: CENTER_LINE)
             
         Returns:
             Stickout instance with stickout1 = stickout2 = value
         """
-        return cls(value, value)
+        if reference is None:
+            reference = StickoutReference.CENTER_LINE
+        return cls(value, value, reference, reference)
     
     @classmethod
     def nostickout(cls) -> 'Stickout':
@@ -758,10 +787,6 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         # Generate orthogonal face direction using cross product
         face_direction = normalize_vector(cross_product(reference_vector, length_direction))
     
-    # Calculate timber length (keep as exact SymPy expression)
-    # Distance between connection points plus stickout on both ends
-    timber_length = vector_magnitude(pos2 - pos1) + stickout.stickout1 + stickout.stickout2
-    
     # TODO TEST THIS IT'S PROBABLY WRONG
     # Determine size if not provided
     if size is None:
@@ -778,6 +803,16 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
             # For other orientations, use timber1's size as-is
             size = create_vector2d(timber1.size[0], timber1.size[1])
     
+    # Assert that join_timbers only uses CENTER_LINE stickout reference
+    assert stickout.stickoutReference1 == StickoutReference.CENTER_LINE, \
+        "join_timbers only supports CENTER_LINE stickout reference. Use join_perpendicular_on_face_aligned_timbers for INSIDE/OUTSIDE references."
+    assert stickout.stickoutReference2 == StickoutReference.CENTER_LINE, \
+        "join_timbers only supports CENTER_LINE stickout reference. Use join_perpendicular_on_face_aligned_timbers for INSIDE/OUTSIDE references."
+    
+    # Calculate timber length with stickout (always from centerline in join_timbers)
+    centerline_distance = vector_magnitude(pos2 - pos1)
+    timber_length = centerline_distance + stickout.stickout1 + stickout.stickout2
+    
     # Apply offset
     if offset_from_timber1 != 0:
         # Calculate offset direction (cross product of length vectors)
@@ -785,7 +820,7 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         center_pos += offset_dir * offset_from_timber1
     
     # Calculate the bottom position (start of timber)
-    # Start from pos1 and move backward by stickout1
+    # Start from pos1 and move backward by stickout1 (always centerline)
     bottom_pos = pos1 - length_direction * stickout.stickout1
     
     # Apply offset to bottom position as well (if any offset was applied to center)
@@ -838,12 +873,72 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
     # Extract the centerline offset (use 0 if not provided)
     offset_value = offset_from_timber1.centerline_offset if offset_from_timber1.centerline_offset is not None else 0
     
+    # Convert INSIDE/OUTSIDE stickout references to CENTER_LINE
+    # For face-aligned timbers, we know the joining direction
+    pos2 = timber2.get_position_on_timber(location_on_timber2)
+    joining_direction = normalize_vector(pos2 - pos1)
+    
+    # Determine which dimension of the created timber is perpendicular to the joining direction
+    # The created timber will have:
+    # - length_direction = joining_direction
+    # - face_direction = orientation_face_vector
+    # - height_direction = cross(length_direction, face_direction)
+    
+    # To determine which dimension (width=size[0] or height=size[1]) affects the stickout,
+    # we need to see which one is aligned with the joining direction's perpendicular plane
+    # For simplicity, we'll use the dot product to determine which axis is more aligned
+    
+    # The width (size[0]) is along the face_direction
+    # The height (size[1]) is along the height_direction (perpendicular to both)
+    height_direction = normalize_vector(cross_product(joining_direction, orientation_face_vector))
+    
+    # Check which dimension is more perpendicular to timber1's length direction
+    # This determines which face is "inside" (facing timber1)
+    face_dot = Abs(orientation_face_vector.dot(timber1.length_direction))
+    height_dot = Abs(height_direction.dot(timber1.length_direction))
+    
+    # Use the dimension that's more perpendicular to timber1's length
+    if face_dot < height_dot:
+        # Face direction is more perpendicular, so width (size[0]) affects inside/outside
+        perpendicular_size = size[0]
+    else:
+        # Height direction is more perpendicular, so height (size[1]) affects inside/outside
+        perpendicular_size = size[1]
+    
+    # Convert stickout references to centerline offsets
+    centerline_stickout1 = stickout.stickout1
+    centerline_stickout2 = stickout.stickout2
+    
+    if stickout.stickoutReference1 == StickoutReference.INSIDE:
+        # INSIDE: Extends from the face closest to timber2
+        # Add half the perpendicular size
+        centerline_stickout1 = stickout.stickout1 + perpendicular_size / 2
+    elif stickout.stickoutReference1 == StickoutReference.OUTSIDE:
+        # OUTSIDE: Extends from the face away from timber2
+        # Subtract half the perpendicular size
+        centerline_stickout1 = stickout.stickout1 - perpendicular_size / 2
+    
+    if stickout.stickoutReference2 == StickoutReference.INSIDE:
+        # INSIDE: Extends from the face closest to timber1
+        centerline_stickout2 = stickout.stickout2 + perpendicular_size / 2
+    elif stickout.stickoutReference2 == StickoutReference.OUTSIDE:
+        # OUTSIDE: Extends from the face away from timber1
+        centerline_stickout2 = stickout.stickout2 - perpendicular_size / 2
+    
+    # Create a new Stickout with CENTER_LINE reference
+    centerline_stickout = Stickout(
+        centerline_stickout1,
+        centerline_stickout2,
+        StickoutReference.CENTER_LINE,
+        StickoutReference.CENTER_LINE
+    )
+    
     # Call join_timbers to do the actual work
     return join_timbers(
         timber1=timber1,
         timber2=timber2,
         location_on_timber1=location_on_timber1,
-        stickout=stickout,
+        stickout=centerline_stickout,
         offset_from_timber1=offset_value,
         location_on_timber2=location_on_timber2,
         orientation_face_vector=orientation_face_vector,
