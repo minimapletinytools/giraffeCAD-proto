@@ -322,6 +322,26 @@ class Timber:
         """
         return self.bottom_position + self.length_direction * position
     
+    def reverse_position_on_timber(self, position: float) -> float:
+        """
+        Convert a position measurement to be measured from the opposite end of the timber.
+        
+        This is a utility method that reverses the position measurement. If you have a position
+        measured from one end, this returns the equivalent position measured from the other end.
+        
+        Args:
+            position: Distance along the timber's length direction from the bottom position
+            
+        Returns:
+            Distance from the opposite end (top) of the timber
+            
+        Example:
+            For a timber of length 10:
+            - reverse_position_on_timber(3) returns 7
+            - reverse_position_on_timber(7) returns 3
+        """
+        return self.length - position
+    
     def get_transform_matrix(self) -> Matrix:
         """Get the 4x4 transformation matrix for this timber"""
         # Create 4x4 transformation matrix

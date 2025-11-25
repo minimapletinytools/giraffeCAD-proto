@@ -282,6 +282,36 @@ class TestTimber:
         assert pos_neg[0] == Float('1.0')
         assert pos_neg[1] == Float('1.0')  # 2.0 + (-1.0) * 1.0
         assert pos_neg[2] == Float('3.0')
+    
+    def test_reverse_position_on_timber(self):
+        """Test the reverse_position_on_timber utility method."""
+        timber = Timber(
+            length=10.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length_direction=create_vector3d(0.0, 0.0, 1.0),  # Up
+            face_direction=create_vector3d(1.0, 0.0, 0.0)     # East
+        )
+        
+        # Test reversing a position at 3.0 from bottom -> should be 7.0 from top
+        reversed_pos = timber.reverse_position_on_timber(3.0)
+        assert reversed_pos == Float('7.0')
+        
+        # Test reversing a position at 7.0 from bottom -> should be 3.0 from top
+        reversed_pos2 = timber.reverse_position_on_timber(7.0)
+        assert reversed_pos2 == Float('3.0')
+        
+        # Test at bottom (0) -> should be at top (10)
+        reversed_at_bottom = timber.reverse_position_on_timber(0.0)
+        assert reversed_at_bottom == Float('10.0')
+        
+        # Test at top (10) -> should be at bottom (0)
+        reversed_at_top = timber.reverse_position_on_timber(10.0)
+        assert reversed_at_top == Float('0.0')
+        
+        # Test at midpoint (5) -> should be at midpoint (5)
+        reversed_at_mid = timber.reverse_position_on_timber(5.0)
+        assert reversed_at_mid == Float('5.0')
 
 
 class TestTimberCreation:

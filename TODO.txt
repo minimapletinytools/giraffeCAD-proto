@@ -85,3 +85,10 @@ joined timber
 Also we should probbal yrename join_timbers to refere to timber1/2 as timberA/B instead
 
 :: TODO
+
+you need a better system for determining timber orientation after each timber creation operation
+
+- have sensible defaults 
+  - when joining 2 vertical timberss top face always faces up by default
+  - when joniing 2 horizontal timbers, top face laways faces?
+  - can you throw in a footprint to control which side top fac faces??
