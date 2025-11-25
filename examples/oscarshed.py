@@ -11,7 +11,8 @@ from giraffe import (
     create_vector2d, create_vector3d,
     create_horizontal_timber_on_footprint,
     create_vertical_timber_on_footprint_side,
-    TimberLocationType, CutTimber
+    join_timbers,
+    TimberLocationType, CutTimber, Stickout
 )
 from footprint import Footprint
 
@@ -20,13 +21,15 @@ from footprint import Footprint
 # ============================================================================
 
 # Footprint dimensions (in feet, will convert to meters)
+# the "front/back" of the shed is along the X axis (i.e. the front is wider than it is deep)
+# the "sides" of the shed are along the Y axis
 base_width = 8.0      # Long dimension (X direction)
 base_length = 3.5     # Short dimension (Y direction)
 
 # Post parameters
 post_inset = 0.5      # 6 inches = 0.5 feet, inset from corners on long side
-post_back_height = 5.0    # Height of back posts (feet)
-post_front_height = 5.5   # Height of front posts (feet) - 6 inches taller
+post_back_height = 4    # Height of back posts (feet)
+post_front_height = 5   # Height of front posts (feet)
 
 # Timber size definitions (in inches)
 INCH_TO_METERS = 0.0254
@@ -151,6 +154,43 @@ def create_oscarshed() -> list[CutTimber]:
     post_back_left.name = "Back Left Post"
 
     # ============================================================================
+    # Create side girts (running from back to front along the short dimension)
+    # ============================================================================
+    
+    side_girt_size = create_vector2d(med_timber_size[0], med_timber_size[1])
+
+    # Side girt stickout: 1.5 inches on back side, 0 on front side
+    side_girt_stickout_back_inches = 1.5
+    side_girt_stickout_back_m = side_girt_stickout_back_inches * INCH_TO_METERS
+    side_girt_stickout = Stickout(side_girt_stickout_back_m, 0)  # Asymmetric: 1.5" on back, 0 on front
+    
+    
+    # Left side girt (connects back-left post to front-left post)
+    # Top of girt aligns with top of back post
+    side_girt_left = join_timbers(
+        timber1=post_back_left,        # Back post (timber1)
+        timber2=post_front_left,       # Front post (timber2)
+        location_on_timber1=post_back_height_m,   # At top of back post
+        stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
+        offset_from_timber1=0.0,       # No lateral offset
+        location_on_timber2=post_back_height_m,    # Same height on front post
+        size=side_girt_size
+    )
+    side_girt_left.name = "Left Side Girt"
+    
+    # Right side girt (connects back-right post to front-right post)
+    side_girt_right = join_timbers(
+        timber1=post_back_right,       # Back post (timber1)
+        timber2=post_front_right,      # Front post (timber2)
+        location_on_timber1=post_back_height_m,   # At top of back post
+        stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
+        offset_from_timber1=0.0,       # No lateral offset
+        location_on_timber2=post_back_height_m,    # Same height on front post
+        size=side_girt_size
+    )
+    side_girt_right.name = "Right Side Girt"
+
+    # ============================================================================
     # Wrap all timbers in CutTimber objects and return
     # ============================================================================
     
@@ -167,6 +207,10 @@ def create_oscarshed() -> list[CutTimber]:
     cut_timbers.append(CutTimber(post_front_right))
     cut_timbers.append(CutTimber(post_back_right))
     cut_timbers.append(CutTimber(post_back_left))
+    
+    # Add side girts
+    cut_timbers.append(CutTimber(side_girt_left))
+    cut_timbers.append(CutTimber(side_girt_right))
     
     return cut_timbers
 
@@ -198,5 +242,7 @@ if __name__ == "__main__":
     print(f"  - Front posts: {post_front_height} ft tall")
     print(f"  - Back posts: {post_back_height} ft tall")
     print(f"  - Post inset: {post_inset} ft from corners")
+    print(f"Side Girts: 2 (running from back to front)")
+    print(f"  - Stickout: 1.5 inches on back, 0 on front")
     print("="*60)
 

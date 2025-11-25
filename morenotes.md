@@ -297,7 +297,9 @@ class Stickout:
 # stickout defines how much the timber extends beyond the connection points (stickout1 at timber1, stickout2 at timber2)
 # offset_from_timber1 is in the direction of the cross product of the length vectors of timber1 and the created timber. If this is 0, then the centerline axis of the created timber is coincident with the centerline axis of timber1/2
 # an offset of 0 means the center lines of timber1/timber2 and the created timber are coincident
-join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, stickout: Stickout, offset_from_timber1: float, location_on_timber2: float?, orientation_face_vector: V3?) -> Timber
+# size is optional - if not provided, determined from timber1's size based on orientation:
+#   - It will attempt to match timber1's size such that the created timber shares a common dimension in the same axis with timber1
+join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, stickout: Stickout, offset_from_timber1: float, location_on_timber2: float?, orientation_face_vector: V3?, size: V2?) -> Timber
 
 # determines the offset of timberX from timberA
 # if centerline_offset is provided, the offset is between the centerlines of timberA and timberX and in the direction of the reference_face

@@ -1,6 +1,5 @@
 
-:: TODO
-
+:: Reference Stuff
 
 we want to introduce some kind of notion of "ReferencePoint/Line/Plane" for the purpose of positioning timbers relative to each other.
 We'll call these classes "ReferenceFeature" 
@@ -54,3 +53,35 @@ ReferencePoint
 ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 
 
+
+:: Stickout
+
+by default, join timbers joins between midline of timbers but often we want to join from the outside, so we should add modes to the stickout class like
+
+stickoutReference1 / stickoutReference2
+
+enum StickoutReference = CENTER_LINE | INSIDE | OUTSIDE
+
+
+CENTER_LINE
+joined timber
+| |
+||===== createdtimber
+| |
+
+INSIDE
+joined timber
+| |
+| |===== createdtimber
+| |
+
+OUTSIDE
+joined timber
+| |
+|====== createdtimber
+| |
+
+
+Also we should probbal yrename join_timbers to refere to timber1/2 as timberA/B instead
+
+:: TODO

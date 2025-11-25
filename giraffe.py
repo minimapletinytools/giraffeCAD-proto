@@ -677,7 +677,8 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
 def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
                 stickout: Stickout, offset_from_timber1: float,
                 location_on_timber2: Optional[float] = None,
-                orientation_face_vector: Optional[Direction3D] = None) -> Timber:
+                orientation_face_vector: Optional[Direction3D] = None,
+                size: Optional[V2] = None) -> Timber:
     """
     Joins two timbers by creating a connecting timber
     
@@ -689,6 +690,8 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         offset_from_timber1: Offset in the cross product direction
         location_on_timber2: Optional position along timber2's length
         orientation_face_vector: Optional face direction for the joining timber
+        size: Optional size (width, height) of the joining timber. If not provided,
+              determined from timber1's size based on orientation.
         
     Returns:
         New timber connecting timber1 and timber2
@@ -736,8 +739,21 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     # Distance between connection points plus stickout on both ends
     timber_length = vector_magnitude(pos2 - pos1) + stickout.stickout1 + stickout.stickout2
     
-    # Default size
-    size = create_vector2d(Rational(3, 10), Rational(3, 10))  # 30cm x 30cm as exact rationals
+    # TODO TEST THIS IT'S PROBABLY WRONG
+    # Determine size if not provided
+    if size is None:
+        # Check the orientation of the created timber relative to timber1
+        # Dot product of the created timber's face direction with timber1's length direction
+        dot_product = Abs(face_direction.dot(timber1.length_direction))
+        
+        if dot_product < Rational(1, 2):  # < 0.5, meaning more perpendicular than parallel
+            # The created timber is joining perpendicular to timber1
+            # Its X dimension (width, along face_direction) should match the dimension 
+            # of the face it's joining to on timber1, which is timber1's width (size[0])
+            size = create_vector2d(timber1.size[0], timber1.size[1])
+        else:
+            # For other orientations, use timber1's size as-is
+            size = create_vector2d(timber1.size[0], timber1.size[1])
     
     # Apply offset
     if offset_from_timber1 != 0:
