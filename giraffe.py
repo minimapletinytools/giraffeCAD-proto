@@ -284,6 +284,7 @@ class Timber:
     def length_direction(self) -> Direction3D:
         """Get the length direction vector from the orientation matrix"""
         # Length direction is the 3rd column (index 2) of the rotation matrix
+        # The +length direction is the +Z direction
         return Matrix([
             self.orientation.matrix[0, 2],
             self.orientation.matrix[1, 2],
@@ -294,6 +295,7 @@ class Timber:
     def face_direction(self) -> Direction3D:
         """Get the face direction vector from the orientation matrix"""
         # Face direction is the 1st column (index 0) of the rotation matrix
+        # The +face direction is the +X direction
         return Matrix([
             self.orientation.matrix[0, 0],
             self.orientation.matrix[1, 0],
@@ -304,6 +306,7 @@ class Timber:
     def height_direction(self) -> Direction3D:
         """Get the height direction vector from the orientation matrix"""
         # Height direction is the 2nd column (index 1) of the rotation matrix
+        # The +height direction is the +Y direction
         return Matrix([
             self.orientation.matrix[0, 1],
             self.orientation.matrix[1, 1],
@@ -676,7 +679,7 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
     Args:
         end: The end of the timber to extend
         overlap_length: Length of timber to overlap with existing timber
-        extend_length: Length of timber to extend
+        extend_length: Length of timber to extend beyond the end of the original timber (does not include the overlap length)
     """
     # Calculate new position based on end
     if end == TimberReferenceEnd.TOP:
@@ -689,7 +692,7 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
         new_bottom_position = timber.bottom_position - extension_vector
     
     # Create new timber with extended length
-    new_length = timber.length + extend_length - overlap_length
+    new_length = timber.length + extend_length + overlap_length
     
     return Timber(new_length, timber.size, new_bottom_position, 
                  timber.length_direction, timber.face_direction)

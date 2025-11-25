@@ -599,21 +599,34 @@ class TestTimberCreation:
         assert float(timber_center_right.bottom_position[1]) == 0.0  # Y unchanged
     
     def test_create_timber_extension(self):
-        """Test timber extension creation."""
+        """Test timber extension creation with correct length calculation."""
+        # Create a vertical timber from Z=0 to Z=10
         original_timber = Timber(
-            length=2.0,
-            size=create_vector2d(0.1, 0.1),
-            bottom_position=create_vector3d(0.0, 0.0, 1.0),
-            length_direction=create_vector3d(0.0, 0.0, 1.0),
-            face_direction=create_vector3d(1.0, 0.0, 0.0)
+            length=10.0,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length_direction=create_vector3d(0.0, 0.0, 1.0),  # Vertical (up)
+            face_direction=create_vector3d(1.0, 0.0, 0.0)     # East
         )
         
-        # Extend from top
-        extended = create_timber_extension(original_timber, TimberReferenceEnd.TOP, 0.5, 1.0)
+        # Extend from top with 2 units of overlap and 5 units of extension
+        # overlap_length = 2.0 (overlaps with last 2 units of original timber)
+        # extend_length = 5.0 (extends 5 units beyond the end)
+        extended = create_timber_extension(
+            original_timber, 
+            TimberReferenceEnd.TOP, 
+            overlap_length=2.0, 
+            extend_length=5.0
+        )
         
-        assert extended.length == 2.5  # 2.0 + 1.0 - 0.5
-        # Bottom position should have moved up
-        assert float(extended.bottom_position[2]) == 2.5  # 1.0 + (2.0 - 0.5)
+        # Verify length: original_length + extend_length + overlap_length
+        # = 10.0 + 5.0 + 2.0 = 17.0
+        assert extended.length == 17.0, f"Expected length 17.0, got {extended.length}"
+        
+        # Verify bottom position moved up by (original_length - overlap_length)
+        # = 0.0 + (10.0 - 2.0) = 8.0
+        assert float(extended.bottom_position[2]) == 8.0, \
+            f"Expected bottom Z at 8.0, got {float(extended.bottom_position[2])}"
 
 
 class TestJointConstruction:
