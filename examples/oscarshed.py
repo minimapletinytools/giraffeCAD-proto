@@ -261,6 +261,57 @@ def create_oscarshed() -> list[CutTimber]:
     top_plate_back.name = "Back Top Plate"
 
     # ============================================================================
+    # Create joists (running from front to back, between mudsills)
+    # ============================================================================
+    
+    # Joist size: 4" x 4"
+    joist_size = create_vector2d(med_timber_size[0], med_timber_size[1])
+    joist_width = med_timber_size[0]
+    
+    # Calculate spacing: 3 joists with 4 equal gaps (left side, 2 between joists, right side)
+    num_joists = 3
+    num_gaps = 4
+    gap_spacing = (base_width_m - num_joists * joist_width) / num_gaps
+    
+    # Joist positions along X axis (from left edge, which is where mudsills start)
+    joist_positions_along_mudsill = [
+        gap_spacing + joist_width / 2,                      # Joist 1
+        2 * gap_spacing + 1.5 * joist_width,                # Joist 2
+        3 * gap_spacing + 2.5 * joist_width                 # Joist 3
+    ]
+    
+    # No stickout on joists (flush with mudsills)
+    joist_stickout = Stickout.nostickout()
+    
+    # Calculate vertical offset to make joists flush with top of mudsills
+    # Top of mudsill = mudsill_centerline + mudsill_height/2
+    # Top of joist = joist_centerline + joist_height/2
+    # To align tops: joist_offset = (mudsill_height - joist_height) / 2
+    mudsill_height = big_timber_size[0]  # 6" vertical
+    joist_height = med_timber_size[0]    # 4" vertical
+    joist_vertical_offset = (mudsill_height - joist_height) / 2  # = 1"
+    
+    # Create the 3 joists
+    joists = []
+    
+    for i, location_along_mudsill in enumerate(joist_positions_along_mudsill, start=1):
+        # Joists connect from front mudsill to back mudsill
+        # Mudsills start at X=0 and run along X axis, so the location is just the X position
+        
+        joist = join_timbers(
+            timber1=mudsill_front,             # Front mudsill (timber1)
+            timber2=mudsill_back,              # Back mudsill (timber2)
+            location_on_timber1=location_along_mudsill,    # Distance along front mudsill
+            stickout=joist_stickout,           # No stickout
+            offset_from_timber1=joist_vertical_offset,     # Offset upward to align tops
+            location_on_timber2=mudsill_back.reverse_position_on_timber(location_along_mudsill),    # Reversed distance along back mudsill
+            size=joist_size,
+            orientation_face_vector=create_vector3d(0, 0, 1)  # Face up
+        )
+        joist.name = f"Joist {i}"
+        joists.append(joist)
+
+    # ============================================================================
     # Wrap all timbers in CutTimber objects and return
     # ============================================================================
     
@@ -288,6 +339,10 @@ def create_oscarshed() -> list[CutTimber]:
     # Add top plates
     cut_timbers.append(CutTimber(top_plate_front))
     cut_timbers.append(CutTimber(top_plate_back))
+    
+    # Add joists
+    for joist in joists:
+        cut_timbers.append(CutTimber(joist))
     
     return cut_timbers
 
@@ -328,5 +383,10 @@ if __name__ == "__main__":
     print(f"  - Size: 6\" x 4\" (6\" vertical, same as mudsills)")
     print(f"  - Position: On top of posts")
     print(f"  - Stickout: 1 foot on both sides (symmetric)")
+    print(f"Joists: 3 (running from front to back between mudsills)")
+    print(f"  - Size: 4\" x 4\"")
+    print(f"  - Spacing: Evenly spaced with equal gaps")
+    print(f"  - Position: Tops flush with tops of mudsills")
+    print(f"  - No stickout (flush with mudsills lengthwise)")
     print("="*60)
 
