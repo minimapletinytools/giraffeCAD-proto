@@ -819,55 +819,33 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
     # Calculate position on timber1
     pos1 = timber1.get_position_on_timber(location_on_timber1)
     
-    # For face-aligned timbers, find the point on timber2 that is in the perpendicular 
-    # direction from pos1. We project pos1 onto timber2's centerline.
-    
-    # Get the direction from timber1 to timber2 (perpendicular direction)
-    face_vector = _timber_face_to_vector(orientation_face_on_timber1)
-    
-    # Start from pos1 and move in the face direction to find intersection with timber2's centerline
-    # We need to find where the line from pos1 in the face_vector direction intersects timber2
-    
-    # Timber2's centerline can be parameterized as: timber2.bottom_position + t * timber2.length_direction
-    # The line from pos1 in face_vector direction is: pos1 + s * face_vector
-    # We want to find s and t such that these are equal
-    
-    # This is a line-line intersection problem in 3D
-    # For simplicity in the face-aligned case, we can project pos1 onto timber2's centerline
-    
+    # Project pos1 onto timber2's centerline to find location_on_timber2
     # Vector from timber2's bottom to pos1
     to_pos1 = pos1 - timber2.bottom_position
     
     # Project this onto timber2's length direction to find the parameter t
-    t = to_pos1.dot(timber2.length_direction) / timber2.length_direction.dot(timber2.length_direction)
+    location_on_timber2 = to_pos1.dot(timber2.length_direction) / timber2.length_direction.dot(timber2.length_direction)
     
-    # Clamp t to be within the timber's length
-    t = max(0, min(timber2.length, t))
+    # Clamp location_on_timber2 to be within the timber's length
+    location_on_timber2 = max(0, min(timber2.length, location_on_timber2))
     
-    # Calculate the corresponding position on timber2's centerline
-    pos2 = timber2.bottom_position + timber2.length_direction * t
+    # Convert TimberFace to a direction vector for orientation
+    orientation_face_vector = _timber_face_to_vector(orientation_face_on_timber1)
     
-    # Calculate length direction: from timber1 toward timber2
-    length_direction = normalize_vector(pos2 - pos1)
+    # Extract the centerline offset (use 0 if not provided)
+    offset_value = offset_from_timber1.centerline_offset if offset_from_timber1.centerline_offset is not None else 0
     
-    # face_vector already calculated above
-    
-    # Calculate the distance between the centerlines of timber1 and timber2
-    centerline_distance = vector_magnitude(pos2 - pos1)
-    
-    # Calculate timber length: distance between centerlines + stickout on both sides
-    timber_length = centerline_distance + stickout.stickout1 + stickout.stickout2
-    
-    # Adjust starting position to account for stickout on the timber1 side
-    pos1 = pos1 - length_direction * stickout.stickout1
-    
-    # Apply offset
-    if offset_from_timber1.centerline_offset is not None:
-        # Apply centerline offset
-        offset_dir = normalize_vector(cross_product(timber1.length_direction, length_direction))
-        pos1 += offset_dir * offset_from_timber1.centerline_offset
-    
-    return create_timber(pos1, timber_length, size, length_direction, face_vector)
+    # Call join_timbers to do the actual work
+    return join_timbers(
+        timber1=timber1,
+        timber2=timber2,
+        location_on_timber1=location_on_timber1,
+        stickout=stickout,
+        offset_from_timber1=offset_value,
+        location_on_timber2=location_on_timber2,
+        orientation_face_vector=orientation_face_vector,
+        size=size
+    )
 
 # ============================================================================
 # Joint Construction Functions
