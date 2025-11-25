@@ -798,6 +798,49 @@ class TestJoinTimbers:
         assert isinstance(joining_timber2, Timber)
         # Length should be centerline distance (2.0) + stickout1 (1.2) + stickout2 (1.2) = 4.4
         assert abs(joining_timber2.length - 4.4) < 1e-10
+    
+    def test_join_perpendicular_on_face_aligned_timbers_assertion(self):
+        """Test that join_perpendicular_on_face_aligned_timbers asserts when timbers are not face-aligned."""
+        import pytest
+        
+        # Create two timbers that are NOT face-aligned
+        # Timber1: vertical, facing east
+        timber1 = Timber(
+            length=3.0,
+            size=create_vector2d(0.15, 0.15),
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length_direction=create_vector3d(0, 0, 1),  # Vertical
+            face_direction=create_vector3d(1, 0, 0)     # East
+        )
+        
+        # Timber2: diagonal at 45 degrees, not aligned with timber1's coordinate grid
+        timber2 = Timber(
+            length=3.0,
+            size=create_vector2d(0.15, 0.15),
+            bottom_position=create_vector3d(2.0, 2.0, 0.0),
+            length_direction=create_vector3d(1, 1, 0),  # 45 degrees in XY plane (will be normalized)
+            face_direction=create_vector3d(0, 0, 1)     # Up
+        )
+        
+        # Verify they are NOT face-aligned
+        assert not _are_timbers_face_aligned(timber1, timber2), "Timbers should not be face-aligned"
+        
+        # Now try to join them - should raise AssertionError
+        offset = FaceAlignedJoinedTimberOffset(
+            reference_face=TimberFace.TOP,
+            centerline_offset=None,
+            face_offset=None
+        )
+        
+        with pytest.raises(AssertionError, match="must be face-aligned"):
+            join_perpendicular_on_face_aligned_timbers(
+                timber1, timber2,
+                location_on_timber1=1.5,
+                stickout=Stickout(0.0, 0.0),
+                offset_from_timber1=offset,
+                size=create_vector2d(0.15, 0.15),
+                orientation_face_on_timber1=TimberFace.TOP
+            )
 
     def test_join_timbers_creates_orthogonal_rotation_matrix(self):
         """Test that join_timbers creates valid orthogonal orientation matrices."""
@@ -1682,6 +1725,51 @@ class TestHelperFunctions:
         # timber1 and timber2 have same length direction - parallel and face-aligned
         assert _are_timbers_face_aligned(timber1, timber2)
         assert _are_timbers_face_parallel(timber1, timber2)
+    
+    def test_are_timbers_face_aligned_exact_equality(self):
+        """Test _are_timbers_face_aligned with exact equality (no tolerance)."""
+        # Create two face-aligned timbers using exact rational values
+        timber1 = Timber(
+            length=2,  # Integer
+            size=create_vector2d(Rational(1, 5), Rational(3, 10)),  # Exact rationals
+            bottom_position=create_vector3d(0, 0, 0),  # Integers
+            length_direction=create_vector3d(0, 0, 1),   # Vertical - integers
+            face_direction=create_vector3d(1, 0, 0)      # East - integers
+        )
+        
+        timber2 = Timber(
+            length=3,  # Integer
+            size=create_vector2d(Rational(3, 20), Rational(1, 4)),  # Exact rationals
+            bottom_position=create_vector3d(2, 0, 0),  # Integers
+            length_direction=create_vector3d(1, 0, 0),   # East (perpendicular to timber1) - integers
+            face_direction=create_vector3d(0, 0, 1)      # Up - integers
+        )
+        
+        # These should be face-aligned with exact equality (no tolerance)
+        assert _are_timbers_face_aligned(timber1, timber2, tolerance=None)
+        
+        # Create a non-face-aligned timber (diagonal)
+        timber3 = Timber(
+            length=2,  # Integer
+            size=create_vector2d(Rational(1, 5), Rational(1, 5)),  # Exact rationals
+            bottom_position=create_vector3d(3, 3, 0),  # Integers
+            length_direction=create_vector3d(1, 1, 0),   # 45° diagonal (will be normalized to Float)
+            face_direction=create_vector3d(0, 0, 1)      # Up - integers
+        )
+        
+        # timber1 and timber3 should NOT be face-aligned
+        # Note: This will trigger a warning because timber3's normalized length_direction contains Float values
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = _are_timbers_face_aligned(timber1, timber3, tolerance=None)
+            assert not result
+            # Check that a warning was issued
+            assert len(w) > 0
+            assert "non-rational values" in str(w[0].message)
+        
+        # Test with tolerance parameter (no warning)
+        assert _are_timbers_face_aligned(timber1, timber2, tolerance=1e-10)
     
     def test_project_point_on_timber_centerline(self):
         """Test _project_point_on_timber_centerline helper function."""
