@@ -27,15 +27,16 @@ base_width = 8.0      # Long dimension (X direction)
 base_length = 3.5     # Short dimension (Y direction)
 
 # Post parameters
-post_inset = 0.5      # 6 inches = 0.5 feet, inset from corners on long side
+post_inset = 2.5 / 12      # 6 inches = 0.5 feet, inset from corners on long side
 post_back_height = 4    # Height of back posts (feet)
 post_front_height = 5   # Height of front posts (feet)
 
 # Timber size definitions (in inches)
+# Format: (vertical dimension, horizontal depth)
 INCH_TO_METERS = 0.0254
-small_timber_size = (4 * INCH_TO_METERS, 2.5 * INCH_TO_METERS)   # 2.5" x 4"
+small_timber_size = (4 * INCH_TO_METERS, 2.5 * INCH_TO_METERS)   # 4" vertical x 2.5" depth
 med_timber_size = (4 * INCH_TO_METERS, 4 * INCH_TO_METERS)       # 4" x 4"
-big_timber_size = (6 * INCH_TO_METERS, 4 * INCH_TO_METERS)       # 4" x 6"
+big_timber_size = (6 * INCH_TO_METERS, 4 * INCH_TO_METERS)       # 6" vertical x 4" depth
 
 # Timber dimensions (in meters for consistency with GiraffeCAD defaults)
 # Note: 1 foot = 0.3048 meters
@@ -220,6 +221,46 @@ def create_oscarshed() -> list[CutTimber]:
     front_girt.name = "Front Girt"
 
     # ============================================================================
+    # Create top plates (running left to right on top of posts)
+    # ============================================================================
+    
+    # Top plate size: 6" x 4" (same as mudsills, 6" vertical)
+    top_plate_size = create_vector2d(big_timber_size[0], big_timber_size[1])
+    
+    # Top plate stickout: 1 foot on each side (symmetric)
+    top_plate_stickout_feet = 1.0
+    top_plate_stickout_m = top_plate_stickout_feet * FEET_TO_METERS
+    top_plate_stickout = Stickout.symmetric(top_plate_stickout_m)
+    
+    # Front top plate (connects left front post to right front post)
+    # Sits on top of the front posts
+    top_plate_front = join_timbers(
+        timber1=post_front_left,       # Left front post (timber1)
+        timber2=post_front_right,      # Right front post (timber2)
+        location_on_timber1=post_front_height_m,   # At top of front post
+        stickout=top_plate_stickout,   # 1 foot stickout on both sides
+        offset_from_timber1=0.0,       # No lateral offset
+        location_on_timber2=post_front_height_m,   # Same height on right post
+        size=top_plate_size,
+        orientation_face_vector=create_vector3d(0, 0, 1)
+    )
+    top_plate_front.name = "Front Top Plate"
+    
+    # Back top plate (connects left back post to right back post)
+    # Sits on top of the back posts
+    top_plate_back = join_timbers(
+        timber1=post_back_left,        # Left back post (timber1)
+        timber2=post_back_right,       # Right back post (timber2)
+        location_on_timber1=post_back_height_m,    # At top of back post
+        stickout=top_plate_stickout,   # 1 foot stickout on both sides
+        offset_from_timber1=0.0,       # No lateral offset
+        location_on_timber2=post_back_height_m,    # Same height on right post
+        size=top_plate_size,
+        orientation_face_vector=create_vector3d(0, 0, 1)
+    )
+    top_plate_back.name = "Back Top Plate"
+
+    # ============================================================================
     # Wrap all timbers in CutTimber objects and return
     # ============================================================================
     
@@ -243,6 +284,10 @@ def create_oscarshed() -> list[CutTimber]:
     
     # Add front girt
     cut_timbers.append(CutTimber(front_girt))
+    
+    # Add top plates
+    cut_timbers.append(CutTimber(top_plate_front))
+    cut_timbers.append(CutTimber(top_plate_back))
     
     return cut_timbers
 
@@ -279,5 +324,9 @@ if __name__ == "__main__":
     print(f"Front Girt: 1 (running left to right)")
     print(f"  - Position: 2 inches below side girts")
     print(f"  - Stickout: 1.5 inches on both sides (symmetric)")
+    print(f"Top Plates: 2 (one front, one back)")
+    print(f"  - Size: 6\" x 4\" (6\" vertical, same as mudsills)")
+    print(f"  - Position: On top of posts")
+    print(f"  - Stickout: 1 foot on both sides (symmetric)")
     print("="*60)
 

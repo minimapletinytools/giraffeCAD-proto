@@ -228,7 +228,7 @@ class Timber:
             size: Cross-sectional size (width, height) as 2D vector
             bottom_position: Position of the bottom point (center of cross-section) as 3D vector
             length_direction: Direction vector for the length axis as 3D vector
-            face_direction: Direction vector for the face axis as 3D vector
+            face_direction: Direction vector for the face axis as 3D vector (TODO which face does this correspond to?)
         """
         self.length: float = length
         self.size: V2 = size
