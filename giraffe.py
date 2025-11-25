@@ -225,10 +225,10 @@ class Timber:
         """
         Args:
             length: Length of the timber
-            size: Cross-sectional size (width, height) as 2D vector
+            size: Cross-sectional size (width, height) as 2D vector, width is the X dimension (left to right), height is the Y dimension (front to back)
             bottom_position: Position of the bottom point (center of cross-section) as 3D vector
-            length_direction: Direction vector for the length axis as 3D vector
-            face_direction: Direction vector for the face axis as 3D vector (TODO which face does this correspond to?)
+            length_direction: Direction vector for the length axis as 3D vector, the +length direction is the +Z direction
+            face_direction: Direction vector for the face axis as 3D vector, the +face direction is the +X direction
         """
         self.length: float = length
         self.size: V2 = size
@@ -970,7 +970,7 @@ def _get_tenon_end_direction(timber: Timber, end: TimberReferenceEnd) -> Directi
         return -timber.length_direction
 
 def _find_aligned_face(mortise_timber: Timber, target_direction: Direction3D) -> TimberFace:
-    """Find which face of the mortise timber best aligns with the target direction (direction points outwards from the face, as oppose to into the face)"""
+    """Find which face of the mortise timber best aligns with the target direction (traget_direction points "outwards" from the returned face, as opposed to into the face)"""
     faces = [TimberFace.TOP, TimberFace.BOTTOM, TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FORWARD, TimberFace.BACK]
     
     best_face = faces[0]
