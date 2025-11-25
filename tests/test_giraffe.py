@@ -854,6 +854,75 @@ class TestJoinTimbers:
                 size=create_vector2d(0.15, 0.15),
                 orientation_face_on_timber1=TimberFace.TOP
             )
+    
+    def test_join_perpendicular_on_face_aligned_timbers_auto_size(self):
+        """Test automatic size determination in join_perpendicular_on_face_aligned_timbers."""
+        # Constants using exact rationals
+        # 1 inch = 0.0254 m = 254/10000 m = 127/5000 m
+        INCH_TO_METERS = Rational(127, 5000)
+        # 1 foot = 0.3048 m = 3048/10000 m = 381/1250 m
+        FEET_TO_METERS = Rational(381, 1250)
+        
+        # Create two vertical posts with 1" x 2" cross-section
+        # size[0] = width (1 inch), size[1] = height (2 inches)
+        post1 = Timber(
+            length=3,  # 3 meters tall (exact integer)
+            size=create_vector2d(1 * INCH_TO_METERS, 2 * INCH_TO_METERS),  # 1" x 2"
+            bottom_position=create_vector3d(0, 0, 0),  # Exact integers
+            length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
+            face_direction=create_vector3d(1, 0, 0)     # East (X+)
+        )
+        
+        # Post2 is 5 feet away in the X direction
+        post2 = Timber(
+            length=3,  # Exact integer
+            size=create_vector2d(1 * INCH_TO_METERS, 2 * INCH_TO_METERS),  # 1" x 2"
+            bottom_position=create_vector3d(5 * FEET_TO_METERS, 0, 0),  # 5 feet in X (exact rational)
+            length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
+            face_direction=create_vector3d(1, 0, 0)     # East (X+)
+        )
+        
+        # Join perpendicular with size=None (auto-determine)
+        offset = FaceAlignedJoinedTimberOffset(
+            reference_face=TimberFace.TOP,
+            centerline_offset=None,
+            face_offset=None
+        )
+        
+        beam = join_perpendicular_on_face_aligned_timbers(
+            timber1=post1,
+            timber2=post2,
+            location_on_timber1=Rational(3, 2),  # 1.5m up the post (exact rational)
+            stickout=Stickout.nostickout(),
+            offset_from_timber1=offset,
+            size=None,  # Auto-determine size
+            orientation_face_on_timber1=TimberFace.TOP
+        )
+        
+        # The beam runs horizontally (X direction) connecting the two vertical posts
+        # The beam should match the post's cross-section dimensions
+        # Since the beam is perpendicular to the posts, it should use post1's size
+        # The beam's face direction aligns with the TOP face of post1 (which is Z+)
+        # So the beam should have the same cross-section as the post
+        assert beam.size[0] == post1.size[0], f"Expected beam width {post1.size[0]}, got {beam.size[0]}"
+        assert beam.size[1] == post1.size[1], f"Expected beam height {post1.size[1]}, got {beam.size[1]}"
+        
+        # Verify the beam's orientation
+        # The beam runs in X direction (from post1 to post2)
+        assert beam.length_direction[0] == 1, "Beam should run in X+ direction"
+        assert beam.length_direction[1] == 0, "Beam Y component should be 0"
+        assert beam.length_direction[2] == 0, "Beam Z component should be 0"
+        
+        # The beam's face direction should align with TOP of post1 (Z+)
+        # Since orientation_face_on_timber1=TOP, the beam's right face aligns with the top face of post1
+        assert beam.face_direction[0] == 0, "Beam face X component should be 0"
+        assert beam.face_direction[1] == 0, "Beam face Y component should be 0"
+        assert beam.face_direction[2] == 1, "Beam should face up (Z+)"
+        
+        # Verify the beam connects the posts at the correct height
+        expected_bottom_z = Rational(3, 2)  # At 1.5m up post1 (exact rational)
+        assert beam.bottom_position[2] == expected_bottom_z, \
+            f"Beam should be at Z={expected_bottom_z}, got Z={beam.bottom_position[2]}"
 
     def test_join_timbers_creates_orthogonal_rotation_matrix(self):
         """Test that join_timbers creates valid orthogonal orientation matrices."""
