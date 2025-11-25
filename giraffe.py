@@ -3,7 +3,7 @@ GiraffeCAD - Timber framing CAD system
 Based on the API specification in morenotes.md
 """
 
-from sympy import Matrix, Abs, Rational, Expr, sqrt, simplify
+from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify
 from moothymoth import Orientation
 from footprint import Footprint
 from enum import Enum
@@ -812,6 +812,10 @@ def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
     Returns:
         New timber that joins timber1 and timber2
     """
+    # Verify that the two timbers are face-aligned
+    assert _are_timbers_face_aligned(timber1, timber2), \
+        "timber1 and timber2 must be face-aligned (share at least one parallel direction)"
+    
     # Calculate position on timber1
     pos1 = timber1.get_position_on_timber(location_on_timber1)
     
@@ -1012,7 +1016,7 @@ def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: fl
     dot_product = Abs(timber1.length_direction.dot(timber2.length_direction))
     return dot_product < tolerance
 
-def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: float = 1e-10) -> bool:
+def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[float] = None) -> bool:
     """
     Check if two timbers are face-aligned.
     
@@ -1023,7 +1027,9 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: float
     Args:
         timber1: First timber
         timber2: Second timber  
-        tolerance: Numerical tolerance for parallel check
+        tolerance: Optional numerical tolerance for parallel check. If None, uses exact
+                   equality (recommended when using SymPy Rational types). If provided,
+                   uses approximate floating-point comparison.
         
     Returns:
         True if timbers are face-aligned, False otherwise
@@ -1032,12 +1038,40 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: float
     dirs1 = [timber1.length_direction, timber1.face_direction, timber1.height_direction]
     dirs2 = [timber2.length_direction, timber2.face_direction, timber2.height_direction]
     
-    # Check if any direction from timber1 is parallel to any direction from timber2
-    for dir1 in dirs1:
-        for dir2 in dirs2:
-            dot_product = Abs(dir1.dot(dir2))
-            if Abs(dot_product - 1) < tolerance:
-                return True
+    if tolerance is None:
+        # Check if all values are rational (exact)
+        all_rational = True
+        for direction in dirs1 + dirs2:
+            for i in range(3):
+                val = direction[i]
+                if not isinstance(val, (int, Integer, Rational)):
+                    all_rational = False
+                    break
+            if not all_rational:
+                break
+        
+        if not all_rational:
+            import warnings
+            warnings.warn(
+                "Using exact equality check for face alignment but timber direction vectors "
+                "contain non-rational values (e.g., Float). Consider using exact Rational types "
+                "or providing a tolerance parameter for approximate comparison.",
+                UserWarning
+            )
+        
+        # Use exact equality check
+        for dir1 in dirs1:
+            for dir2 in dirs2:
+                dot_product = Abs(dir1.dot(dir2))
+                if dot_product == 1:
+                    return True
+    else:
+        # Use tolerance-based comparison
+        for dir1 in dirs1:
+            for dir2 in dirs2:
+                dot_product = Abs(dir1.dot(dir2))
+                if Abs(dot_product - 1) < tolerance:
+                    return True
     
     return False
 
