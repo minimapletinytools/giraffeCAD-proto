@@ -53,8 +53,22 @@ class StickoutReference(Enum):
     Defines how stickout is measured relative to timber connection points.
     
     CENTER_LINE: Stickout measured from centerline of the timber (default)
+        joined timber
+        | |
+        |||===== created timber
+        | |
+    
     INSIDE: Stickout measured from inside face of the timber
+        joined timber
+        | |
+        | |===== created timber
+        | |
+    
     OUTSIDE: Stickout measured from outside face of the timber
+        joined timber
+        | |
+        |====== created timber
+        | |
     """
     CENTER_LINE = 1
     INSIDE = 2
@@ -153,6 +167,26 @@ class Stickout:
     For symmetric stickout, set stickout1 = stickout2.
     For asymmetric stickout, use different values.
     Default is no stickout (0, 0) from CENTER_LINE.
+    
+    StickoutReference modes:
+    
+    CENTER_LINE: Stickout measured from centerline of the joined timber
+        joined timber
+        | |
+        |||===== created timber
+        | |
+    
+    INSIDE: Stickout measured from inside face of the joined timber
+        joined timber
+        | |
+        | |===== created timber
+        | |
+    
+    OUTSIDE: Stickout measured from outside face of the joined timber
+        joined timber
+        | |
+        |====== created timber
+        | |
     
     Args:
         stickout1: Extension beyond the first connection point (default: 0)
