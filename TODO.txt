@@ -56,8 +56,8 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 
 :: more orientation stuff
 
-- axis aligned timbers
-- rename face aligned to face parallel timebers
+DONE- axis aligned timbers
+DONE- rename face aligned to face parallel timebers
 - 2 faces can be oriented (same normals) or opposing (opposite normals)
 - note down default orientation of timbers when created in vertical and horizontal position
   - when laying horizontal, the orientation should always be consistent such that either the width or length of the timber runs in the Z axis direction

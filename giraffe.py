@@ -839,9 +839,9 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     
     # Assert that join_timbers only uses CENTER_LINE stickout reference
     assert stickout.stickoutReference1 == StickoutReference.CENTER_LINE, \
-        "join_timbers only supports CENTER_LINE stickout reference. Use join_perpendicular_on_face_aligned_timbers for INSIDE/OUTSIDE references."
+        "join_timbers only supports CENTER_LINE stickout reference. Use join_perpendicular_on_face_parallel_timbers for INSIDE/OUTSIDE references."
     assert stickout.stickoutReference2 == StickoutReference.CENTER_LINE, \
-        "join_timbers only supports CENTER_LINE stickout reference. Use join_perpendicular_on_face_aligned_timbers for INSIDE/OUTSIDE references."
+        "join_timbers only supports CENTER_LINE stickout reference. Use join_perpendicular_on_face_parallel_timbers for INSIDE/OUTSIDE references."
     
     # Calculate timber length with stickout (always from centerline in join_timbers)
     centerline_distance = vector_magnitude(pos2 - pos1)
@@ -863,7 +863,7 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     
     return create_timber(bottom_pos, timber_length, size, length_direction, face_direction)
 
-def join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber,
+def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber,
                                              location_on_timber1: float,
                                              stickout: Stickout,
                                              offset_from_timber1: FaceAlignedJoinedTimberOffset,
