@@ -163,6 +163,9 @@ class TimberOrientation(Enum):
 
 we say a timber is "axis aligned" if its length vector is parallel to the +Z axis and its face vectors are parallel to either the X or Y axis
 
+we say two timbers are "face parallel" if each of the 6 faces of one timber is parallel with one of the 6 faces of the other timber. 
+
+so it follows 2 axis aligned timbers are face parallel
 
 
 
@@ -233,9 +236,6 @@ struct DistanceFromLongEdge(Enum):
     distance2 : float
 ```
 
-#### quick references
-
-TODO in general, when we joint 2 face aligned timbers, we want to easily grab their shared "inside" and "outside" faces
 
 ### operations
 
@@ -314,7 +314,7 @@ class FaceAlignedJoinedTimberOffset:
 # location_on_timber1 is the location along the length vector of timber1 where the join is made (starting from the bottom of the timber)
 # size is the cross-sectional dimensions (width, height) of the joining timber
 # the timber length is calculated as: distance between timber1 and timber2 centerlines + stickout.stickout1 + stickout.stickout2
-join_perpendicular_on_face_aligned_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, stickout: Stickout, offset_from_timber1: FaceAlignedJoinedTimberOffset, size: V2, orientation_face_on_timber1 = TimberFace.TOP : TimberFace) -> Timber
+join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, stickout: Stickout, offset_from_timber1: FaceAlignedJoinedTimberOffset, size: V2, orientation_face_on_timber1 = TimberFace.TOP : TimberFace) -> Timber
 ```
 
 ## joint construction operations

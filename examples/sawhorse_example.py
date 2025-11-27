@@ -74,7 +74,7 @@ def create_sawhorse() -> list[CutTimber]:
         face_offset=None
     )
     
-    left_post = join_perpendicular_on_face_aligned_timbers(
+    left_post = join_perpendicular_on_face_parallel_timbers(
         timber1=left_mudsill,
         timber2=beam,
         location_on_timber1=left_mudsill.length / 2,  # Center of the mudsill
@@ -92,7 +92,7 @@ def create_sawhorse() -> list[CutTimber]:
         face_offset=None
     )
     
-    right_post = join_perpendicular_on_face_aligned_timbers(
+    right_post = join_perpendicular_on_face_parallel_timbers(
         timber1=right_mudsill,
         timber2=beam,
         location_on_timber1=right_mudsill.length / 2,  # Center of the mudsill
@@ -103,14 +103,14 @@ def create_sawhorse() -> list[CutTimber]:
     )
     right_post.name = "Right Post"
 
-    # now create the stretcher that runs between the middle of the 2 posts using the join_perpendicular_on_face_aligned_timbers
+    # now create the stretcher that runs between the middle of the 2 posts using the join_perpendicular_on_face_parallel_timbers
     offset_stretcher = FaceAlignedJoinedTimberOffset(
         reference_face=TimberFace.TOP,
         centerline_offset=None,
         face_offset=None
     )
     
-    stretcher = join_perpendicular_on_face_aligned_timbers(
+    stretcher = join_perpendicular_on_face_parallel_timbers(
         timber1=left_post,
         timber2=right_post,
         location_on_timber1=left_post.length / 2,  # Middle of the post

@@ -767,7 +767,7 @@ class TestJoinTimbers:
 
         return timber1, timber2
     
-    def test_join_perpendicular_on_face_aligned_timbers_position_is_correct(self):
+    def test_join_perpendicular_on_face_parallel_timbers_position_is_correct(self):
         """Test perpendicular joining of face-aligned timbers."""
         timber1, timber2 = self.make_parallel_timbers()
         offset = FaceAlignedJoinedTimberOffset(
@@ -776,7 +776,7 @@ class TestJoinTimbers:
             face_offset=None
         )
 
-        joining_timber2 = join_perpendicular_on_face_aligned_timbers(
+        joining_timber2 = join_perpendicular_on_face_parallel_timbers(
             timber1, timber2,
             location_on_timber1=1.5,
             stickout=Stickout(0, 0),  # No stickout
@@ -789,7 +789,7 @@ class TestJoinTimbers:
         print(joining_timber2.orientation)
         
         
-    def test_join_perpendicular_on_face_aligned_timbers_length_is_correct(self):
+    def test_join_perpendicular_on_face_parallel_timbers_length_is_correct(self):
         """Test perpendicular joining of face-aligned timbers."""
         timber1, timber2 = self.make_parallel_timbers()
         
@@ -799,7 +799,7 @@ class TestJoinTimbers:
             face_offset=None
         )
         
-        joining_timber2 = join_perpendicular_on_face_aligned_timbers(
+        joining_timber2 = join_perpendicular_on_face_parallel_timbers(
             timber1, timber2,
             location_on_timber1=1.5,
             stickout=Stickout(1.2, 1.2),  # Symmetric stickout
@@ -812,8 +812,8 @@ class TestJoinTimbers:
         # Length should be centerline distance (2.0) + stickout1 (1.2) + stickout2 (1.2) = 4.4
         assert abs(joining_timber2.length - 4.4) < 1e-10
     
-    def test_join_perpendicular_on_face_aligned_timbers_assertion(self):
-        """Test that join_perpendicular_on_face_aligned_timbers asserts when timbers are not face-aligned."""
+    def test_join_perpendicular_on_face_parallel_timbers_assertion(self):
+        """Test that join_perpendicular_on_face_parallel_timbers asserts when timbers are not face-aligned."""
         import pytest
         
         # Create two timbers that are NOT face-aligned
@@ -846,7 +846,7 @@ class TestJoinTimbers:
         )
         
         with pytest.raises(AssertionError, match="must be face-aligned"):
-            join_perpendicular_on_face_aligned_timbers(
+            join_perpendicular_on_face_parallel_timbers(
                 timber1, timber2,
                 location_on_timber1=1.5,
                 stickout=Stickout(0.0, 0.0),
@@ -855,8 +855,8 @@ class TestJoinTimbers:
                 orientation_face_on_timber1=TimberFace.TOP
             )
     
-    def test_join_perpendicular_on_face_aligned_timbers_auto_size(self):
-        """Test automatic size determination in join_perpendicular_on_face_aligned_timbers."""
+    def test_join_perpendicular_on_face_parallel_timbers_auto_size(self):
+        """Test automatic size determination in join_perpendicular_on_face_parallel_timbers."""
         # Constants using exact rationals
         # 1 inch = 0.0254 m = 254/10000 m = 127/5000 m
         INCH_TO_METERS = Rational(127, 5000)
@@ -889,7 +889,7 @@ class TestJoinTimbers:
             face_offset=None
         )
         
-        beam = join_perpendicular_on_face_aligned_timbers(
+        beam = join_perpendicular_on_face_parallel_timbers(
             timber1=post1,
             timber2=post2,
             location_on_timber1=Rational(3, 2),  # 1.5m up the post (exact rational)
@@ -1124,7 +1124,7 @@ class TestJoinTimbers:
             )
             
             # Join base timber to beam
-            joining_timber = join_perpendicular_on_face_aligned_timbers(
+            joining_timber = join_perpendicular_on_face_parallel_timbers(
                 timber1=base_timber,
                 timber2=beam,
                 location_on_timber1=location_on_base,
@@ -1203,7 +1203,7 @@ class TestJoinTimbers:
                 face_offset=None
             )
             
-            cross_timber = join_perpendicular_on_face_aligned_timbers(
+            cross_timber = join_perpendicular_on_face_parallel_timbers(
                 timber1=timber1,
                 timber2=timber2,
                 location_on_timber1=loc1,
@@ -1460,7 +1460,7 @@ class TestEnumsAndDataStructures:
     
     def test_stickout_reference_inside_face_aligned(self):
         """Test INSIDE stickout reference with face-aligned timbers."""
-        from giraffe import StickoutReference, join_perpendicular_on_face_aligned_timbers, FaceAlignedJoinedTimberOffset, TimberFace
+        from giraffe import StickoutReference, join_perpendicular_on_face_parallel_timbers, FaceAlignedJoinedTimberOffset, TimberFace
         
         # Create two parallel horizontal posts 2.0 meters apart
         post1 = Timber(
@@ -1486,7 +1486,7 @@ class TestEnumsAndDataStructures:
             face_offset=None
         )
         
-        beam = join_perpendicular_on_face_aligned_timbers(
+        beam = join_perpendicular_on_face_parallel_timbers(
             post1, post2,
             location_on_timber1=1.5,
             stickout=Stickout(0.1, 0.1, StickoutReference.INSIDE, StickoutReference.INSIDE),
@@ -1501,7 +1501,7 @@ class TestEnumsAndDataStructures:
     
     def test_stickout_reference_outside_face_aligned(self):
         """Test OUTSIDE stickout reference with face-aligned timbers."""
-        from giraffe import StickoutReference, join_perpendicular_on_face_aligned_timbers, FaceAlignedJoinedTimberOffset, TimberFace
+        from giraffe import StickoutReference, join_perpendicular_on_face_parallel_timbers, FaceAlignedJoinedTimberOffset, TimberFace
         
         # Create two parallel horizontal posts 2.0 meters apart
         post1 = Timber(
@@ -1527,7 +1527,7 @@ class TestEnumsAndDataStructures:
             face_offset=None
         )
         
-        beam = join_perpendicular_on_face_aligned_timbers(
+        beam = join_perpendicular_on_face_parallel_timbers(
             post1, post2,
             location_on_timber1=1.5,
             stickout=Stickout(0.2, 0.2, StickoutReference.OUTSIDE, StickoutReference.OUTSIDE),
