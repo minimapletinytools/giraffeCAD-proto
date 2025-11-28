@@ -342,7 +342,7 @@ def create_oscarshed() -> list[CutTimber]:
             location_on_timber1=location_along_mudsill,    # Distance along front mudsill
             stickout=joist_stickout,           # No stickout
             offset_from_timber1=joist_vertical_offset,     # Offset upward to align tops
-            location_on_timber2=mudsill_back.reverse_position_on_timber(location_along_mudsill),    # Reversed distance along back mudsill
+            location_on_timber2=mudsill_back.length - location_along_mudsill,    # Reversed distance along back mudsill (measured from opposite end)
             size=joist_size,
             orientation_width_vector=create_vector3d(0, 0, 1)  # Face up
         )

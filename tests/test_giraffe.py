@@ -249,8 +249,8 @@ class TestTimber:
         assert width_dir[1] == 0
         assert width_dir[2] == 0
     
-    def test_get_position_on_timber(self):
-        """Test the get_position_on_timber method."""
+    def test_get_centerline_position_from_bottom(self):
+        """Test the get_centerline_position_from_bottom method."""
         timber = Timber(
             length=5.0,
             size=create_vector2d(0.2, 0.3),
@@ -260,58 +260,84 @@ class TestTimber:
         )
         
         # Test at bottom position (position = 0)
-        pos_at_bottom = timber.get_position_on_timber(0.0)
+        pos_at_bottom = timber.get_centerline_position_from_bottom(0.0)
         assert pos_at_bottom[0] == Float('1.0')
         assert pos_at_bottom[1] == Float('2.0')
         assert pos_at_bottom[2] == Float('3.0')
         
         # Test at midpoint (position = 2.5)
-        pos_at_middle = timber.get_position_on_timber(2.5)
+        pos_at_middle = timber.get_centerline_position_from_bottom(2.5)
         assert pos_at_middle[0] == Float('1.0')
         assert pos_at_middle[1] == Float('4.5')  # 2.0 + 2.5 * 1.0
         assert pos_at_middle[2] == Float('3.0')
         
         # Test at top (position = 5.0)
-        pos_at_top = timber.get_position_on_timber(5.0)
+        pos_at_top = timber.get_centerline_position_from_bottom(5.0)
         assert pos_at_top[0] == Float('1.0')
         assert pos_at_top[1] == Float('7.0')  # 2.0 + 5.0 * 1.0
         assert pos_at_top[2] == Float('3.0')
         
         # Test with negative position (beyond bottom)
-        pos_neg = timber.get_position_on_timber(-1.0)
+        pos_neg = timber.get_centerline_position_from_bottom(-1.0)
         assert pos_neg[0] == Float('1.0')
         assert pos_neg[1] == Float('1.0')  # 2.0 + (-1.0) * 1.0
         assert pos_neg[2] == Float('3.0')
     
-    def test_reverse_position_on_timber(self):
-        """Test the reverse_position_on_timber utility method."""
+    def test_get_centerline_position_from_bottom(self):
+        """Test get_centerline_position_from_bottom method."""
         timber = Timber(
             length=10.0,
             size=create_vector2d(0.2, 0.3),
-            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            bottom_position=create_vector3d(1.0, 2.0, 3.0),
             length_direction=create_vector3d(0.0, 0.0, 1.0),  # Up
             width_direction=create_vector3d(1.0, 0.0, 0.0)     # East
         )
         
-        # Test reversing a position at 3.0 from bottom -> should be 7.0 from top
-        reversed_pos = timber.reverse_position_on_timber(3.0)
-        assert reversed_pos == Float('7.0')
+        # Test position at bottom (0)
+        pos_bottom = timber.get_centerline_position_from_bottom(0.0)
+        assert pos_bottom[0] == Float('1.0')
+        assert pos_bottom[1] == Float('2.0')
+        assert pos_bottom[2] == Float('3.0')
         
-        # Test reversing a position at 7.0 from bottom -> should be 3.0 from top
-        reversed_pos2 = timber.reverse_position_on_timber(7.0)
-        assert reversed_pos2 == Float('3.0')
+        # Test position at 3.0 from bottom
+        pos_3 = timber.get_centerline_position_from_bottom(3.0)
+        assert pos_3[0] == Float('1.0')
+        assert pos_3[1] == Float('2.0')
+        assert pos_3[2] == Float('6.0')  # 3.0 + 3.0
         
-        # Test at bottom (0) -> should be at top (10)
-        reversed_at_bottom = timber.reverse_position_on_timber(0.0)
-        assert reversed_at_bottom == Float('10.0')
+        # Test position at top (10)
+        pos_top = timber.get_centerline_position_from_bottom(10.0)
+        assert pos_top[0] == Float('1.0')
+        assert pos_top[1] == Float('2.0')
+        assert pos_top[2] == Float('13.0')  # 3.0 + 10.0
+    
+    def test_get_centerline_position_from_top(self):
+        """Test get_centerline_position_from_top method."""
+        timber = Timber(
+            length=10.0,
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(1.0, 2.0, 3.0),
+            length_direction=create_vector3d(0.0, 0.0, 1.0),  # Up
+            width_direction=create_vector3d(1.0, 0.0, 0.0)     # East
+        )
         
-        # Test at top (10) -> should be at bottom (0)
-        reversed_at_top = timber.reverse_position_on_timber(10.0)
-        assert reversed_at_top == Float('0.0')
+        # Test position at top (0 from top = 10 from bottom)
+        pos_top = timber.get_centerline_position_from_top(0.0)
+        assert pos_top[0] == Float('1.0')
+        assert pos_top[1] == Float('2.0')
+        assert pos_top[2] == Float('13.0')  # 3.0 + 10.0
         
-        # Test at midpoint (5) -> should be at midpoint (5)
-        reversed_at_mid = timber.reverse_position_on_timber(5.0)
-        assert reversed_at_mid == Float('5.0')
+        # Test position at 3.0 from top (= 7.0 from bottom)
+        pos_3 = timber.get_centerline_position_from_top(3.0)
+        assert pos_3[0] == Float('1.0')
+        assert pos_3[1] == Float('2.0')
+        assert pos_3[2] == Float('10.0')  # 3.0 + 7.0
+        
+        # Test at bottom (10 from top = 0 from bottom)
+        pos_bottom = timber.get_centerline_position_from_top(10.0)
+        assert pos_bottom[0] == Float('1.0')
+        assert pos_bottom[1] == Float('2.0')
+        assert pos_bottom[2] == Float('3.0')  # 3.0 + 0.0
 
 
 class TestTimberCreation:
@@ -793,7 +819,7 @@ class TestJoinTimbers:
         # Check that the timber actually spans the connection points correctly
         # The timber should start before pos1 and end after pos2 (or vice versa)
         timber_start = joining_timber.bottom_position
-        timber_end = joining_timber.get_position_on_timber(joining_timber.length)
+        timber_end = joining_timber.get_centerline_position_from_bottom(joining_timber.length)
         
         # Verify timber spans the connection region
         assert float(joining_timber.length) > 2.0  # Should be longer than just the span between points
@@ -836,7 +862,7 @@ class TestJoinTimbers:
             orientation_face_on_timber1=TimberFace.TOP
         )
    
-        assert joining_timber2.bottom_position == timber1.get_position_on_timber(1.5)
+        assert joining_timber2.bottom_position == timber1.get_centerline_position_from_bottom(1.5)
         print(joining_timber2.orientation)
         
         
@@ -1201,7 +1227,7 @@ class TestJoinTimbers:
             assert vertical_component > 0.8, f"Post_{i} should be mostly vertical, got length_direction={[float(x) for x in length_dir]}"
             
             # 2. Verify the joining timber connects to the correct position on the base timber
-            expected_base_pos = base_timber.get_position_on_timber(location_used)
+            expected_base_pos = base_timber.get_centerline_position_from_bottom(location_used)
             
             # The joining timber should start from approximately the top face of the base timber
             expected_start_z = expected_base_pos[2] + base_timber.size[1]  # Top of base timber
