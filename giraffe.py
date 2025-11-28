@@ -378,18 +378,20 @@ class Timber:
             self.orientation.matrix[2, 1]
         ])
     
+    # TODO rename to get_centerline_position_from_bottom
     def get_position_on_timber(self, position: float) -> V3:
         """
-        Get the 3D position at a specific point along the timber's length.
+        Get the 3D position at a specific point along the timber's length (its centerline).
         
         Args:
             position: Distance along the timber's length direction from the bottom position
             
         Returns:
-            3D position vector at the specified position along the timber
+            3D position vector on the timber's centerline at the specified position along the timber
         """
         return self.bottom_position + self.length_direction * position
     
+    # TODO delete this and create get_centerline_position_from_top
     def reverse_position_on_timber(self, position: float) -> float:
         """
         Convert a position measurement to be measured from the opposite end of the timber.
@@ -1031,6 +1033,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
 # Joint Construction Functions
 # ============================================================================
 
+# TODO prefix all these functions with "cut_"
 def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
                                                           tenon_end: TimberReferenceEnd,
                                                           tenon_thickness: float, tenon_length: float):
@@ -1109,6 +1112,7 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
 # Helper Functions
 # ============================================================================
 
+# TODO convert to class method of TimberFace
 def _timber_face_to_vector(face: TimberFace) -> Direction3D:
     """Convert TimberFace enum to direction vector"""
     if face == TimberFace.TOP:
