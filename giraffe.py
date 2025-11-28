@@ -765,7 +765,7 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
 def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
                 stickout: Stickout, offset_from_timber1: float,
                 location_on_timber2: Optional[float] = None,
-                orientation_face_vector: Optional[Direction3D] = None,
+                orientation_width_vector: Optional[Direction3D] = None,
                 size: Optional[V2] = None) -> Timber:
     """
     Joins two timbers by creating a connecting timber
@@ -777,7 +777,7 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         stickout: How much the timber extends beyond connection points (both sides)
         offset_from_timber1: Offset in the cross product direction
         location_on_timber2: Optional position along timber2's length
-        orientation_face_vector: Optional face direction for the joining timber, must be perpendicular to the length direction derived from the timber1 and timber2 positions
+        orientation_width_vector: Optional face direction for the joining timber, must be perpendicular to the length direction derived from the timber1 and timber2 positions
         size: Optional size (width, height) of the joining timber. If not provided,
               determined from timber1's size based on orientation.
         
@@ -802,8 +802,8 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     length_direction = normalize_vector(length_direction)
     
     # Calculate face direction
-    if orientation_face_vector is not None:
-        face_direction = orientation_face_vector
+    if orientation_width_vector is not None:
+        face_direction = orientation_width_vector
     else:
         # Generate an orthogonal face direction
         # Choose a reference vector that's not parallel to length_direction
@@ -913,7 +913,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     location_on_timber2 = max(0, min(timber2.length, location_on_timber2))
     
     # Convert TimberFace to a direction vector for orientation
-    orientation_face_vector = _timber_face_to_vector(orientation_face_on_timber1)
+    orientation_width_vector = _timber_face_to_vector(orientation_face_on_timber1)
     
     # Extract the centerline offset (use 0 if not provided)
     offset_value = offset_from_timber1.centerline_offset if offset_from_timber1.centerline_offset is not None else 0
@@ -926,7 +926,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     # Determine which dimension of the created timber is perpendicular to the joining direction
     # The created timber will have:
     # - length_direction = joining_direction
-    # - face_direction = orientation_face_vector
+    # - face_direction = orientation_width_vector
     # - height_direction = cross(length_direction, face_direction)
     
     # To determine which dimension (width=size[0] or height=size[1]) affects the stickout,
@@ -935,11 +935,11 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     
     # The width (size[0]) is along the face_direction
     # The height (size[1]) is along the height_direction (perpendicular to both)
-    height_direction = normalize_vector(cross_product(joining_direction, orientation_face_vector))
+    height_direction = normalize_vector(cross_product(joining_direction, orientation_width_vector))
     
     # Check which dimension is more perpendicular to timber1's length direction
     # This determines which face is "inside" (facing timber1)
-    face_dot = Abs(orientation_face_vector.dot(timber1.length_direction))
+    face_dot = Abs(orientation_width_vector.dot(timber1.length_direction))
     height_dot = Abs(height_direction.dot(timber1.length_direction))
     
     # Use the dimension that's more perpendicular to timber1's length
@@ -986,7 +986,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         stickout=centerline_stickout,
         offset_from_timber1=offset_value,
         location_on_timber2=location_on_timber2,
-        orientation_face_vector=orientation_face_vector,
+        orientation_width_vector=orientation_width_vector,
         size=size
     )
 
@@ -1306,8 +1306,8 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
         assert False, "TOP/BOTTOM faces shouldn't happen for typical tenon joints"
     
     # Calculate the actual position of the mortise face at the intersection point
-    face_vector = _timber_face_to_vector(mortise_face)
-    mortise_face_point = projected_point + create_vector3d(face_vector[0], face_vector[1], face_vector[2]) * face_offset
+    width_vector = _timber_face_to_vector(mortise_face)
+    mortise_face_point = projected_point + create_vector3d(width_vector[0], width_vector[1], width_vector[2]) * face_offset
     
     # Calculate the distance from tenon end to where the shoulder plane should be
     # 
@@ -1317,7 +1317,7 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     # For misaligned timbers, we need to find where the tenon centerline would intersect 
     # the plane containing the mortise face at the projected intersection point.
     
-    face_normal = create_vector3d(face_vector[0], face_vector[1], face_vector[2])
+    face_normal = create_vector3d(width_vector[0], width_vector[1], width_vector[2])
     
     # Check if tenon direction is perpendicular to mortise face normal
     direction_dot_normal = tenon_timber.length_direction.dot(face_normal)

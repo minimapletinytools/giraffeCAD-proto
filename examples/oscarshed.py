@@ -280,7 +280,7 @@ def create_oscarshed() -> list[CutTimber]:
         offset_from_timber1=0.0,       # No lateral offset
         location_on_timber2=post_front_height_m,   # Same height on right post
         size=top_plate_size,
-        orientation_face_vector=create_vector3d(0, 0, 1)
+        orientation_width_vector=create_vector3d(0, 0, 1)
     )
     top_plate_front.name = "Front Top Plate"
     
@@ -294,7 +294,7 @@ def create_oscarshed() -> list[CutTimber]:
         offset_from_timber1=0.0,       # No lateral offset
         location_on_timber2=post_back_height_m,    # Same height on right post
         size=top_plate_size,
-        orientation_face_vector=create_vector3d(0, 0, 1)
+        orientation_width_vector=create_vector3d(0, 0, 1)
     )
     top_plate_back.name = "Back Top Plate"
 
@@ -344,7 +344,7 @@ def create_oscarshed() -> list[CutTimber]:
             offset_from_timber1=joist_vertical_offset,     # Offset upward to align tops
             location_on_timber2=mudsill_back.reverse_position_on_timber(location_along_mudsill),    # Reversed distance along back mudsill
             size=joist_size,
-            orientation_face_vector=create_vector3d(0, 0, 1)  # Face up
+            orientation_width_vector=create_vector3d(0, 0, 1)  # Face up
         )
         joist.name = f"Joist {i}"
         joists.append(joist)
@@ -390,7 +390,7 @@ def create_oscarshed() -> list[CutTimber]:
             offset_from_timber1=0.0,       # No vertical offset (centerline to centerline)
             location_on_timber2=location_along_top_plate,  # Same position on front top plate
             size=rafter_size,
-            orientation_face_vector=create_vector3d(0, 0, 1)  # Face up
+            orientation_width_vector=create_vector3d(0, 0, 1)  # Face up
         )
         rafter.name = f"Rafter {i}"
         rafters.append(rafter)
