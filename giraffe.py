@@ -777,9 +777,9 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         stickout: How much the timber extends beyond connection points (both sides)
         offset_from_timber1: Offset in the cross product direction
         location_on_timber2: Optional position along timber2's length
-        orientation_width_vector: Optional width direction for the created timber in global space.
+        orientation_width_vector: Optional width direction for the created timber in global space (i.e. so the width_direction of the created timber is in the direction of orientation_width_vector)
                                   Must be perpendicular to the joining direction (from timber1 to timber2).
-                                  If not provided, uses timber1's length direction.
+                                  If not provided, uses timber1's + length direction.
         size: Optional size (width, height) of the joining timber. If not provided,
               determined from timber1's size based on orientation.
         
