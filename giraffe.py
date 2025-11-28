@@ -777,7 +777,9 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         stickout: How much the timber extends beyond connection points (both sides)
         offset_from_timber1: Offset in the cross product direction
         location_on_timber2: Optional position along timber2's length
-        orientation_width_vector: Optional face direction for the joining timber, must be perpendicular to the length direction derived from the timber1 and timber2 positions
+        orientation_width_vector: Optional width direction for the created timber in absolute space.
+                                  Must be perpendicular to the joining direction (from timber1 to timber2).
+                                  If not provided, uses timber1's length direction.
         size: Optional size (width, height) of the joining timber. If not provided,
               determined from timber1's size based on orientation.
         
@@ -801,31 +803,33 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     length_direction = pos2 - pos1
     length_direction = normalize_vector(length_direction)
     
-    # Calculate face direction
+    # Calculate face direction (width direction for the created timber)
     if orientation_width_vector is not None:
         face_direction = orientation_width_vector
+        
+        # Verify that the provided orientation_width_vector is perpendicular to length_direction
+        assert _are_directions_perpendicular(face_direction, length_direction), \
+            f"orientation_width_vector must be perpendicular to the joining direction. " \
+            f"Dot product: {simplify(face_direction.dot(length_direction))}"
     else:
-        # Generate an orthogonal face direction
-        # Choose a reference vector that's not parallel to length_direction
-        up_vector = create_vector3d(0, 0, 1)    # Use integers for exact computation
-        right_vector = create_vector3d(1, 0, 0)  # Use integers for exact computation
+        # Default: project timber1's length direction onto the plane perpendicular to the joining direction
+        reference_direction = timber1.length_direction
+        dot_product = reference_direction.dot(length_direction)
         
-        # Check which reference vector is more orthogonal to length_direction using exact SymPy comparison
-        up_dot = Abs(length_direction.dot(up_vector))     # Exact SymPy absolute value and dot product
-        right_dot = Abs(length_direction.dot(right_vector))  # Exact SymPy absolute value and dot product
+        # Check if parallel (can't use as reference)
+        dot_mag = Abs(dot_product)
+        is_parallel = (simplify(dot_mag - 1) == 0 if _has_rational_components(reference_direction) 
+                      else abs(float(dot_mag) - 1.0) < 1e-10)
         
-        # Use the more orthogonal reference vector (exact SymPy comparison)
-        if up_dot < right_dot:
-            reference_vector = up_vector
-        else:
-            reference_vector = right_vector
+        if is_parallel:
+            # timber1's length direction is parallel to joining direction
+            # Use timber1's face direction instead
+            reference_direction = timber1.face_direction
+            dot_product = reference_direction.dot(length_direction)
         
-        # Generate orthogonal face direction using cross product
-        face_direction = normalize_vector(cross_product(reference_vector, length_direction))
-    
-    # TODO use perpendicular check function
-    assert face_direction.dot(length_direction) == 0, \
-        "face_direction must be perpendicular to length_direction"
+        # Project onto perpendicular plane: v_perp = v - (v·n)n
+        face_direction = reference_direction - dot_product * length_direction
+        face_direction = normalize_vector(face_direction)
     
     # TODO TEST THIS IT'S PROBABLY WRONG
     # Determine size if not provided
@@ -870,11 +874,11 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     return create_timber(bottom_pos, timber_length, size, length_direction, face_direction)
 
 def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber,
-                                             location_on_timber1: float,
-                                             stickout: Stickout,
-                                             offset_from_timber1: FaceAlignedJoinedTimberOffset,
-                                             size: V2,
-                                             orientation_face_on_timber1: TimberFace = TimberFace.TOP) -> Timber:
+                                                location_on_timber1: float,
+                                                stickout: Stickout,
+                                                offset_from_timber1: FaceAlignedJoinedTimberOffset,
+                                                size: V2,
+                                                orientation_face_on_timber1: Optional[TimberFace] = None) -> Timber:
     """
     Joins two face-aligned timbers with a perpendicular timber.
     
@@ -885,7 +889,10 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         stickout: How much the joining timber extends beyond each connection point
         offset_from_timber1: Offset configuration from timber1
         size: Cross-sectional size (width, height) of the joining timber
-        orientation_face_on_timber1: Which face of timber1 to orient against (default: TOP) (the right face of the created timber aligns with this face)
+        orientation_face_on_timber1: Optional face of timber1 to orient against. If provided,
+                                     the width direction of the created timber will align with this face.
+                                     If not provided, uses timber1's length direction projected onto
+                                     the perpendicular plane.
         
     Returns:
         New timber that joins timber1 and timber2
@@ -912,8 +919,8 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     # Clamp location_on_timber2 to be within the timber's length
     location_on_timber2 = max(0, min(timber2.length, location_on_timber2))
     
-    # Convert TimberFace to a direction vector for orientation
-    orientation_width_vector = _timber_face_to_vector(orientation_face_on_timber1)
+    # Convert TimberFace to a direction vector for orientation (if provided)
+    orientation_width_vector = _timber_face_to_vector(orientation_face_on_timber1) if orientation_face_on_timber1 is not None else None
     
     # Extract the centerline offset (use 0 if not provided)
     offset_value = offset_from_timber1.centerline_offset if offset_from_timber1.centerline_offset is not None else 0
@@ -933,22 +940,33 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     # we need to see which one is aligned with the joining direction's perpendicular plane
     # For simplicity, we'll use the dot product to determine which axis is more aligned
     
-    # The width (size[0]) is along the face_direction
-    # The height (size[1]) is along the height_direction (perpendicular to both)
-    height_direction = normalize_vector(cross_product(joining_direction, orientation_width_vector))
-    
-    # Check which dimension is more perpendicular to timber1's length direction
-    # This determines which face is "inside" (facing timber1)
-    face_dot = Abs(orientation_width_vector.dot(timber1.length_direction))
-    height_dot = Abs(height_direction.dot(timber1.length_direction))
-    
-    # Use the dimension that's more perpendicular to timber1's length
-    if face_dot < height_dot:
-        # Face direction is more perpendicular, so width (size[0]) affects inside/outside
-        perpendicular_size = size[0]
+    # Determine perpendicular size for stickout conversion
+    # Only needed if stickout references are not CENTER_LINE
+    if stickout.stickoutReference1 != StickoutReference.CENTER_LINE or stickout.stickoutReference2 != StickoutReference.CENTER_LINE:
+        # Need to determine which dimension is perpendicular
+        if orientation_width_vector is not None:
+            # The width (size[0]) is along the face_direction
+            # The height (size[1]) is along the height_direction (perpendicular to both)
+            height_direction = normalize_vector(cross_product(joining_direction, orientation_width_vector))
+            
+            # Check which dimension is more perpendicular to timber1's length direction
+            # This determines which face is "inside" (facing timber1)
+            face_dot = Abs(orientation_width_vector.dot(timber1.length_direction))
+            height_dot = Abs(height_direction.dot(timber1.length_direction))
+            
+            # Use the dimension that's more perpendicular to timber1's length
+            if face_dot < height_dot:
+                # Face direction is more perpendicular, so width (size[0]) affects inside/outside
+                perpendicular_size = size[0]
+            else:
+                # Height direction is more perpendicular, so height (size[1]) affects inside/outside
+                perpendicular_size = size[1]
+        else:
+            # Without orientation specified, default to using width
+            perpendicular_size = size[0]
     else:
-        # Height direction is more perpendicular, so height (size[1]) affects inside/outside
-        perpendicular_size = size[1]
+        # Not needed for CENTER_LINE stickout
+        perpendicular_size = 0
     
     # Convert stickout references to centerline offsets
     centerline_stickout1 = stickout.stickout1
@@ -1127,15 +1145,114 @@ def _find_aligned_face(mortise_timber: Timber, target_direction: Direction3D) ->
     
     return best_face
 
-def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: float = 1e-10) -> bool:
-    """Check if two timbers have parallel length directions"""
-    dot_product = Abs(timber1.length_direction.dot(timber2.length_direction))
-    return Abs(dot_product - 1) < tolerance
+def _has_rational_components(vector: Direction3D) -> bool:
+    """
+    Check if a direction vector contains only rational (exact) components.
+    
+    Args:
+        vector: Direction vector to check
+        
+    Returns:
+        True if all components are integers or rationals, False otherwise
+    """
+    for i in range(3):
+        val = vector[i]
+        if not isinstance(val, (int, Integer, Rational)):
+            return False
+    return True
 
-def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: float = 1e-10) -> bool:
-    """Check if two timbers have orthogonal (perpendicular) length directions"""
+def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Optional[float] = None) -> bool:
+    """
+    Check if two timbers have parallel length directions.
+    
+    Args:
+        timber1: First timber
+        timber2: Second timber
+        tolerance: Optional tolerance for approximate comparison. If None, automatically
+                   uses exact comparison for rational values or fuzzy comparison for floats.
+                   
+    Returns:
+        True if timbers have parallel length directions, False otherwise
+    """
+    # Check if all components are rational
+    is_rational = (_has_rational_components(timber1.length_direction) and 
+                   _has_rational_components(timber2.length_direction))
+    
     dot_product = Abs(timber1.length_direction.dot(timber2.length_direction))
-    return dot_product < tolerance
+    
+    if tolerance is None:
+        if is_rational:
+            # Use exact comparison with simplify for symbolic math
+            return simplify(dot_product - 1) == 0
+        else:
+            # Auto-use tolerance for float values
+            tolerance = 1e-10
+            return Abs(dot_product - 1) < tolerance
+    else:
+        # Use provided tolerance
+        return Abs(dot_product - 1) < tolerance
+
+def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional[float] = None) -> bool:
+    """
+    Check if two timbers have orthogonal (perpendicular) length directions.
+    
+    Args:
+        timber1: First timber
+        timber2: Second timber
+        tolerance: Optional tolerance for approximate comparison. If None, automatically
+                   uses exact comparison for rational values or fuzzy comparison for floats.
+                   
+    Returns:
+        True if timbers have orthogonal length directions, False otherwise
+    """
+    # Check if all components are rational
+    is_rational = (_has_rational_components(timber1.length_direction) and 
+                   _has_rational_components(timber2.length_direction))
+    
+    dot_product = timber1.length_direction.dot(timber2.length_direction)
+    
+    if tolerance is None:
+        if is_rational:
+            # Use exact comparison with simplify for symbolic math
+            return simplify(dot_product) == 0
+        else:
+            # Auto-use tolerance for float values
+            tolerance = 1e-10
+            return Abs(dot_product) < tolerance
+    else:
+        # Use provided tolerance
+        return Abs(dot_product) < tolerance
+
+def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[float] = None) -> bool:
+    """
+    Check if two direction vectors are perpendicular (orthogonal).
+    
+    Args:
+        direction1: First direction vector
+        direction2: Second direction vector
+        tolerance: Optional tolerance for approximate comparison. If None, automatically
+                   uses exact comparison for rational values or fuzzy comparison for floats.
+    
+    Returns:
+        True if the directions are perpendicular, False otherwise
+    """
+    # Check if all components are rational
+    is_rational = (_has_rational_components(direction1) and 
+                   _has_rational_components(direction2))
+    
+    dot_product = direction1.dot(direction2)
+    
+    if tolerance is None:
+        if is_rational:
+            # Use exact comparison with simplify for symbolic math
+            return simplify(dot_product) == 0
+        else:
+            # Auto-use tolerance for float values
+            tolerance = 1e-10
+            return Abs(dot_product) < tolerance
+    else:
+        # Use tolerance for approximate comparison
+        return Abs(dot_product) < tolerance
 
 def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[float] = None) -> bool:
     """
@@ -1163,15 +1280,7 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
     dirs2 = [timber2.length_direction, timber2.face_direction, timber2.height_direction]
     
     # Check if all values are rational (exact)
-    all_rational = True
-    for direction in dirs1 + dirs2:
-        for i in range(3):
-            val = direction[i]
-            if not isinstance(val, (int, Integer, Rational)):
-                all_rational = False
-                break
-        if not all_rational:
-            break
+    all_rational = all(_has_rational_components(direction) for direction in dirs1 + dirs2)
     
     if tolerance is None and not all_rational:
         import warnings
