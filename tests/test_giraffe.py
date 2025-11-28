@@ -77,9 +77,9 @@ class TestTimber:
         size = create_vector2d(Rational(1, 10), Rational(1, 10))  # 0.1 as exact rational
         position = create_vector3d(0, 0, 0)  # Use exact integers
         length_dir = create_vector3d(0, 0, 1)  # Use exact integers
-        face_dir = create_vector3d(1, 0, 0)   # Use exact integers
+        width_dir = create_vector3d(1, 0, 0)   # Use exact integers
         
-        timber = Timber(length, size, position, length_dir, face_dir)
+        timber = Timber(length, size, position, length_dir, width_dir)
         
         assert timber.length == 3
         assert timber.size.shape == (2, 1)
@@ -128,19 +128,19 @@ class TestTimber:
         """Test that orientation is correctly computed from input face and length directions."""
         # Test with standard vertical timber facing east
         input_length_dir = create_vector3d(0, 0, 1)  # Up - exact integers
-        input_face_dir = create_vector3d(1, 0, 0)    # East - exact integers
+        input_width_dir = create_vector3d(1, 0, 0)    # East - exact integers
         
         timber = Timber(
             length=2,  # Use exact integer
             size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
             bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
             length_direction=input_length_dir,
-            width_direction=input_face_dir
+            width_direction=input_width_dir
         )
         
         # Verify that the property getters return the correct normalized directions
         length_dir = timber.length_direction
-        face_dir = timber.width_direction
+        width_dir = timber.width_direction
         height_dir = timber.height_direction
         
         # Check that returned directions match input exactly (exact integers now)
@@ -148,9 +148,9 @@ class TestTimber:
         assert length_dir[1] == 0
         assert length_dir[2] == 1  # Exact integer from input
         
-        assert face_dir[0] == 1    # Exact integer from input
-        assert face_dir[1] == 0
-        assert face_dir[2] == 0
+        assert width_dir[0] == 1    # Exact integer from input
+        assert width_dir[1] == 0
+        assert width_dir[2] == 0
         
         # Height direction should be cross product of length x face = Z x X = Y
         assert height_dir[0] == 0
@@ -161,18 +161,18 @@ class TestTimber:
         """Test orientation computation with a horizontal timber."""
         # Horizontal timber running north, facing up
         input_length_dir = create_vector3d(0, 1, 0)  # North - exact integers
-        input_face_dir = create_vector3d(0, 0, 1)    # Up - exact integers
+        input_width_dir = create_vector3d(0, 0, 1)    # Up - exact integers
         
         timber = Timber(
             length=3,  # Use exact integer
             size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
             bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
             length_direction=input_length_dir,
-            width_direction=input_face_dir
+            width_direction=input_width_dir
         )
         
         length_dir = timber.length_direction
-        face_dir = timber.width_direction
+        width_dir = timber.width_direction
         height_dir = timber.height_direction
         
         # Check length direction (north) - exact integers now
@@ -181,9 +181,9 @@ class TestTimber:
         assert length_dir[2] == 0
         
         # Check face direction (up) - exact integers now
-        assert face_dir[0] == 0
-        assert face_dir[1] == 0
-        assert face_dir[2] == 1
+        assert width_dir[0] == 0
+        assert width_dir[1] == 0
+        assert width_dir[2] == 1
         
         # Height direction should be Y x Z = +X (east) - exact integers now
         assert height_dir[0] == 1
@@ -201,12 +201,12 @@ class TestTimber:
         )
         
         length_dir = timber.length_direction
-        face_dir = timber.width_direction
+        width_dir = timber.width_direction
         height_dir = timber.height_direction
         
         # Check that each vector has unit length
         length_mag = float(sqrt(sum(x**2 for x in length_dir)))
-        face_mag = float(sqrt(sum(x**2 for x in face_dir)))
+        face_mag = float(sqrt(sum(x**2 for x in width_dir)))
         height_mag = float(sqrt(sum(x**2 for x in height_dir)))
         
         assert abs(length_mag - 1.0) < 1e-10
@@ -214,9 +214,9 @@ class TestTimber:
         assert abs(height_mag - 1.0) < 1e-10
         
         # Check that vectors are orthogonal (dot products = 0)
-        length_face_dot = float(sum(length_dir[i] * face_dir[i] for i in range(3)))
+        length_face_dot = float(sum(length_dir[i] * width_dir[i] for i in range(3)))
         length_height_dot = float(sum(length_dir[i] * height_dir[i] for i in range(3)))
-        face_height_dot = float(sum(face_dir[i] * height_dir[i] for i in range(3)))
+        face_height_dot = float(sum(width_dir[i] * height_dir[i] for i in range(3)))
         
         assert abs(length_face_dot) < 1e-10
         assert abs(length_height_dot) < 1e-10
@@ -226,28 +226,28 @@ class TestTimber:
         """Test that orientation computation works with non-normalized input vectors."""
         # Use vectors that aren't unit length
         input_length_dir = create_vector3d(0.0, 0.0, 5.0)  # Up, but length 5
-        input_face_dir = create_vector3d(3.0, 0.0, 0.0)    # East, but length 3
+        input_width_dir = create_vector3d(3.0, 0.0, 0.0)    # East, but length 3
         
         timber = Timber(
             length=1.0,
             size=create_vector2d(0.1, 0.1),
             bottom_position=create_vector3d(0.0, 0.0, 0.0),
             length_direction=input_length_dir,
-            width_direction=input_face_dir
+            width_direction=input_width_dir
         )
         
         # Despite non-normalized inputs, the output should be normalized
         length_dir = timber.length_direction
-        face_dir = timber.width_direction
+        width_dir = timber.width_direction
         
         # Check that directions are normalized
         assert length_dir[0] == 0
         assert length_dir[1] == 0
         assert length_dir[2] == Float('1.0')
         
-        assert face_dir[0] == Float('1.0')
-        assert face_dir[1] == 0
-        assert face_dir[2] == 0
+        assert width_dir[0] == Float('1.0')
+        assert width_dir[1] == 0
+        assert width_dir[2] == 0
     
     def test_get_position_on_timber(self):
         """Test the get_position_on_timber method."""
@@ -322,9 +322,9 @@ class TestTimberCreation:
         position = create_vector3d(1.0, 1.0, 0.0)
         size = create_vector2d(0.2, 0.3)
         length_dir = create_vector3d(0.0, 0.0, 1.0)
-        face_dir = create_vector3d(1.0, 0.0, 0.0)
+        width_dir = create_vector3d(1.0, 0.0, 0.0)
         
-        timber = create_timber(position, 2.5, size, length_dir, face_dir)
+        timber = create_timber(position, 2.5, size, length_dir, width_dir)
         
         assert timber.length == 2.5
         assert float(timber.bottom_position[0]) == 1.0
@@ -730,8 +730,8 @@ class TestJoinTimbers:
         # Face direction should be orthogonal to length direction
         # Default behavior: projects timber1's length direction [0,0,1] onto perpendicular plane
         # Result should be perpendicular to joining direction
-        face_dir = joining_timber.width_direction
-        dot_product = length_dir.dot(face_dir)
+        width_dir = joining_timber.width_direction
+        dot_product = length_dir.dot(width_dir)
         assert simplify(dot_product) == 0 or abs(float(dot_product)) < 1e-6, \
             "Face direction should be perpendicular to length direction"
         
@@ -969,30 +969,30 @@ class TestJoinTimbers:
         
         # Verify direction vectors are unit length (exact SymPy comparison)
         length_dir = joining_timber.length_direction
-        face_dir = joining_timber.width_direction  
+        width_dir = joining_timber.width_direction  
         height_dir = joining_timber.height_direction
         
         assert simplify(length_dir.norm() - 1) == 0, "Length direction should be unit vector"
-        assert simplify(face_dir.norm() - 1) == 0, "Face direction should be unit vector"
+        assert simplify(width_dir.norm() - 1) == 0, "Face direction should be unit vector"
         assert simplify(height_dir.norm() - 1) == 0, "Height direction should be unit vector"
         
         # Verify directions are orthogonal to each other (exact SymPy comparison)
-        assert simplify(length_dir.dot(face_dir)) == 0, "Length and face directions should be orthogonal"
+        assert simplify(length_dir.dot(width_dir)) == 0, "Length and face directions should be orthogonal"
         assert simplify(length_dir.dot(height_dir)) == 0, "Length and height directions should be orthogonal"
-        assert simplify(face_dir.dot(height_dir)) == 0, "Face and height directions should be orthogonal"
+        assert simplify(width_dir.dot(height_dir)) == 0, "Face and height directions should be orthogonal"
 
     def test_create_timber_creates_orthogonal_matrix(self):
         """Test that create_timber creates valid orthogonal orientation matrices."""
         # Test with arbitrary (but orthogonal) input directions using exact inputs
         length_dir = create_vector3d(1, 1, 0)  # Will be normalized (integers)
-        face_dir = create_vector3d(0, 0, 1)    # Up direction (integers)
+        width_dir = create_vector3d(0, 0, 1)    # Up direction (integers)
         
         timber = create_timber(
             bottom_position=create_vector3d(0, 0, 0),  # Integers
             length=1,  # Integer
             size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # Exact rationals
             length_direction=length_dir,
-            width_direction=face_dir
+            width_direction=width_dir
         )
         
         # Get the orientation matrix
@@ -1013,15 +1013,15 @@ class TestJoinTimbers:
         """Test that orthogonal matrix is created even with non-orthogonal input directions."""
         # Use non-orthogonal input directions to test the orthogonalization process
         # Using exact rational numbers for exact results
-        length_dir = create_vector3d(2, 0, 1)         # Not orthogonal to face_dir (integers)
-        face_dir = create_vector3d(0, 1, 2)           # Not orthogonal to length_dir (integers)
+        length_dir = create_vector3d(2, 0, 1)         # Not orthogonal to width_dir (integers)
+        width_dir = create_vector3d(0, 1, 2)           # Not orthogonal to length_dir (integers)
         
         timber = create_timber(
             bottom_position=create_vector3d(0, 0, 0),  # Integers
             length=1,  # Integer
             size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # Exact rationals
             length_direction=length_dir,
-            width_direction=face_dir
+            width_direction=width_dir
         )
         
         # The resulting orientation should still be orthogonal
