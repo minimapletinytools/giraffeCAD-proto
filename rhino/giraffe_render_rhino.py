@@ -39,8 +39,8 @@ def create_transform_from_timber(timber: Timber) -> rg.Transform:
     pz = float(timber.bottom_position[2])
     
     # Extract orientation vectors
-    # timber.orientation.matrix columns are [face_direction, height_direction, length_direction]
-    # face_direction = width (X-axis of timber)
+    # timber.orientation.matrix columns are [width_direction, height_direction, length_direction]
+    # width_direction = width (X-axis of timber)
     # height_direction = height (Y-axis of timber)
     # length_direction = length (Z-axis of timber)
     
@@ -247,7 +247,7 @@ def test_render():
         length=2.0,
         size=create_vector2d(Rational(1, 10), Rational(1, 10)),
         length_direction=create_vector3d(0, 0, 1),
-        face_direction=create_vector3d(1, 0, 0)
+        width_direction=create_vector3d(1, 0, 0)
     )
     test_timber.name = "Test Timber"
     

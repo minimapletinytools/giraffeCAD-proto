@@ -34,7 +34,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(0, 0, 1),  # Up in Z
-            face_direction=create_vector3d(0, 1, 0)  # Face forward in Y
+            width_direction=create_vector3d(0, 1, 0)  # Face forward in Y
         )
         
         # Horizontal timber (going in X direction)
@@ -43,7 +43,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(1, 0, 0),  # East in X
-            face_direction=create_vector3d(0, 0, 1)  # Face up in Z
+            width_direction=create_vector3d(0, 0, 1)  # Face up in Z
         )
         
         # Test bottom tenon (vertical timber bottom end)
@@ -63,7 +63,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(0, 0, 1),  # Up in Z
-            face_direction=create_vector3d(0, 1, 0)  # Face forward in Y
+            width_direction=create_vector3d(0, 1, 0)  # Face forward in Y
         )
         
         # Horizontal timber (going in Y direction)
@@ -72,7 +72,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(0, 1, 0),  # North in Y
-            face_direction=create_vector3d(1, 0, 0)  # Face right in X
+            width_direction=create_vector3d(1, 0, 0)  # Face right in X
         )
         
         # Test bottom tenon (vertical timber bottom end)
@@ -93,7 +93,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(1, 0, 0),  # East in X
-            face_direction=create_vector3d(0, 0, 1)  # Face up in Z
+            width_direction=create_vector3d(0, 0, 1)  # Face up in Z
         )
         
         # Vertical timber (going up in Z)
@@ -102,7 +102,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(0, 0, 1),  # Up in Z
-            face_direction=create_vector3d(0, 1, 0)  # Face forward in Y
+            width_direction=create_vector3d(0, 1, 0)  # Face forward in Y
         )
         
         # Test right tenon (horizontal timber right end at [0.5, 0, 0])
@@ -124,7 +124,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(0, 1, 0),  # North in Y
-            face_direction=create_vector3d(0, 0, 1)  # Face up in Z
+            width_direction=create_vector3d(0, 0, 1)  # Face up in Z
         )
         
         # Vertical timber (going up in Z)
@@ -133,7 +133,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(0, 0, 1),  # Up in Z
-            face_direction=create_vector3d(0, 1, 0)  # Face forward in Y
+            width_direction=create_vector3d(0, 1, 0)  # Face forward in Y
         )
         
         # Test top tenon (horizontal timber top end at [0, 0.5, 0])
@@ -155,7 +155,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(1, 0, 0),  # East in X
-            face_direction=create_vector3d(0, 0, 1)  # Face up in Z
+            width_direction=create_vector3d(0, 0, 1)  # Face up in Z
         )
         
         # Second timber going in Y direction
@@ -164,7 +164,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(0, 1, 0),  # North in Y
-            face_direction=create_vector3d(0, 0, 1)  # Face up in Z
+            width_direction=create_vector3d(0, 0, 1)  # Face up in Z
         )
         
         # Test tenon from X timber TOP end [0.5, 0, 0] into Y timber
@@ -186,7 +186,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(0, 1, 0),  # North in Y
-            face_direction=create_vector3d(0, 0, 1)  # Face up in Z
+            width_direction=create_vector3d(0, 0, 1)  # Face up in Z
         )
         
         # Second timber going in X direction
@@ -195,7 +195,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=self.timber_size,
             length_direction=create_vector3d(1, 0, 0),  # East in X
-            face_direction=create_vector3d(0, 0, 1)  # Face up in Z
+            width_direction=create_vector3d(0, 0, 1)  # Face up in Z
         )
         
         # Test tenon from Y timber TOP end [0, 0.5, 0] into X timber
@@ -228,7 +228,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=large_size,
             length_direction=create_vector3d(0, 0, 1),
-            face_direction=create_vector3d(0, 1, 0)
+            width_direction=create_vector3d(0, 1, 0)
         )
         
         # Small timber (mortise) - positioned to intersect large timber's front face
@@ -237,7 +237,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=small_size,
             length_direction=create_vector3d(1, 0, 0),
-            face_direction=create_vector3d(0, 0, 1)
+            width_direction=create_vector3d(0, 0, 1)
         )
         
         distance = _calculate_distance_from_timber_end_to_shoulder_plane(
@@ -261,7 +261,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=post_size,
             length_direction=create_vector3d(0, 0, 1),  # Up in Z
-            face_direction=create_vector3d(1, 0, 0)     # Face east
+            width_direction=create_vector3d(1, 0, 0)     # Face east
         )
         
         # Horizontal timber positioned to intersect vertical at mid-height
@@ -271,7 +271,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=post_size,
             length_direction=create_vector3d(0, 1, 0),   # North in Y
-            face_direction=create_vector3d(0, 0, 1)      # Face up
+            width_direction=create_vector3d(0, 0, 1)      # Face up
         )
         
         # Test horizontal timber tenon into vertical timber mortise
@@ -309,7 +309,7 @@ class TestShoulderDistanceCalculation:
             length=0.9,
             size=post_size,
             length_direction=create_vector3d(0, 0, 1),
-            face_direction=create_vector3d(0, 1, 0)
+            width_direction=create_vector3d(0, 1, 0)
         )
         
         # Bottom horizontal timber
@@ -318,7 +318,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=post_size,
             length_direction=create_vector3d(1, 0, 0),
-            face_direction=create_vector3d(0, 0, 1)
+            width_direction=create_vector3d(0, 0, 1)
         )
         
         # Top horizontal timber  
@@ -327,7 +327,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=post_size,
             length_direction=create_vector3d(1, 0, 0),
-            face_direction=create_vector3d(0, 0, 1)
+            width_direction=create_vector3d(0, 0, 1)
         )
         
         # Test bottom joint (vertical into bottom horizontal)
@@ -361,7 +361,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=post_size,
             length_direction=create_vector3d(0, 0, 1),  # Up in Z
-            face_direction=create_vector3d(0, 1, 0)     # Face forward in Y
+            width_direction=create_vector3d(0, 1, 0)     # Face forward in Y
         )
         
         # Horizontal timber positioned so its LEFT end is exactly at the vertical timber
@@ -371,7 +371,7 @@ class TestShoulderDistanceCalculation:
             length=1.0,
             size=post_size,
             length_direction=create_vector3d(1, 0, 0),   # East in X
-            face_direction=create_vector3d(0, 0, 1)      # Face up in Z
+            width_direction=create_vector3d(0, 0, 1)      # Face up in Z
         )
         
         # Test BOTTOM tenon (horizontal timber left end coincides with vertical timber)

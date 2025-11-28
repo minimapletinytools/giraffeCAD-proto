@@ -32,7 +32,7 @@ def create_supersimple_structure5() -> list[CutTimber]:
         length=1.0,                                         # 1 meter long
         size=post_size,
         length_direction=create_vector3d(1, 0, 0),          # Facing EAST (horizontal)
-        face_direction=create_vector3d(0, 1, 0)             # Face oriented north
+        width_direction=create_vector3d(0, 1, 0)             # Face oriented north
     )
     bottom_timber.name = "Bottom Horizontal Timber"
     
@@ -43,7 +43,7 @@ def create_supersimple_structure5() -> list[CutTimber]:
         length=1.0,                                         # 1 meter long
         size=post_size,
         length_direction=create_vector3d(1, 0, 0),          # Facing EAST (horizontal)
-        face_direction=create_vector3d(0, 1, 0)             # Face oriented north
+        width_direction=create_vector3d(0, 1, 0)             # Face oriented north
     )
     top_timber.name = "Top Horizontal Timber"
     
@@ -57,7 +57,7 @@ def create_supersimple_structure5() -> list[CutTimber]:
         length=0.9,                                         # 80cm long (fits between top and bottom pieces)
         size=post_size,
         length_direction=create_vector3d(0, 0, 1),          # Facing UP (vertical)
-        face_direction=create_vector3d(1, 0, 0)             # Face oriented east
+        width_direction=create_vector3d(1, 0, 0)             # Face oriented east
     )
     vertical_timber.name = "Vertical Post"
     

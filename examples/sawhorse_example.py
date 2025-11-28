@@ -61,7 +61,7 @@ def create_sawhorse() -> list[CutTimber]:
         length=top_beam_length,
         size=beam_size,
         length_direction=TimberFace.RIGHT,
-        face_direction=TimberFace.TOP
+        width_direction=TimberFace.TOP
     )
     beam.name = "Top Beam"
 
