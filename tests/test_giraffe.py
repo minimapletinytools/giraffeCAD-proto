@@ -610,7 +610,7 @@ class TestTimberCreation:
         )
         # Timber should extend inward (in +Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) inside the footprint
-        # Note: getInwardNormal returns floats, so the result is Float
+        # Note: get_inward_normal returns floats, so the result is Float
         assert timber_inside.bottom_position[1] == Float(timber_height / 2)
         assert timber_inside.bottom_position[0] == 0  # X unchanged
         assert timber_inside.bottom_position[2] == 0  # Z at ground
@@ -621,7 +621,7 @@ class TestTimberCreation:
         )
         # Timber should extend outward (in -Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) outside the footprint
-        # Note: getInwardNormal returns floats, so the result is Float
+        # Note: get_inward_normal returns floats, so the result is Float
         assert timber_outside.bottom_position[1] == Float(-timber_height / 2)
         assert timber_outside.bottom_position[0] == 0  # X unchanged
         assert timber_outside.bottom_position[2] == 0  # Z at ground

@@ -33,7 +33,7 @@ class Footprint:
             result.append((start, end))
         return result
     
-    def isValid(self) -> bool:
+    def is_valid(self) -> bool:
         """
         Checks if the footprint is valid.
         A valid footprint has at least 3 corners and no intersecting sides.
@@ -88,7 +88,7 @@ class Footprint:
         return (ccw(x1, y1, x3, y3, x4, y4) != ccw(x2, y2, x3, y3, x4, y4) and
                 ccw(x1, y1, x2, y2, x3, y3) != ccw(x1, y1, x2, y2, x4, y4))
     
-    def containsPoint(self, point: V2) -> bool:
+    def contains_point(self, point: V2) -> bool:
         """
         Check if a point is contained within the footprint boundary using ray casting algorithm.
         
@@ -119,7 +119,7 @@ class Footprint:
         
         return inside
     
-    def nearestCorner(self, point: V2) -> Tuple[int, V2]:
+    def nearest_corner(self, point: V2) -> Tuple[int, V2]:
         """
         Find the nearest corner to a given point.
         
@@ -146,7 +146,7 @@ class Footprint:
         
         return nearest_idx, self.corners[nearest_idx]
     
-    def nearestBoundary(self, point: V2) -> Tuple[int, Tuple[V2, V2], float]:
+    def nearest_boundary(self, point: V2) -> Tuple[int, Tuple[V2, V2], float]:
         """
         Find the nearest side (line segment) to a given point.
         
@@ -197,7 +197,7 @@ class Footprint:
         
         return nearest_idx, sides[nearest_idx], min_distance
     
-    def getInwardNormal(self, side_index: int) -> Tuple[float, float, float]:
+    def get_inward_normal(self, side_index: int) -> Tuple[float, float, float]:
         """
         Get the inward-pointing normal vector for a boundary side.
         
@@ -248,7 +248,7 @@ class Footprint:
         test_point = Matrix([test_x, test_y])
         
         # Check if test point is inside
-        if self.containsPoint(test_point):
+        if self.contains_point(test_point):
             # Left perpendicular points inward
             return (left_perp_x, left_perp_y, 0.0)
         else:
