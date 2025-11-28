@@ -378,39 +378,29 @@ class Timber:
             self.orientation.matrix[2, 1]
         ])
     
-    # TODO rename to get_centerline_position_from_bottom
-    def get_position_on_timber(self, position: float) -> V3:
+    def get_centerline_position_from_bottom(self, distance: float) -> V3:
         """
-        Get the 3D position at a specific point along the timber's length (its centerline).
+        Get the 3D position at a specific point along the timber's centerline, measured from the bottom.
         
         Args:
-            position: Distance along the timber's length direction from the bottom position
+            distance: Distance along the timber's length direction from the bottom position
             
         Returns:
-            3D position vector on the timber's centerline at the specified position along the timber
+            3D position vector on the timber's centerline at the specified distance from bottom
         """
-        return self.bottom_position + self.length_direction * position
+        return self.bottom_position + self.length_direction * distance
     
-    # TODO delete this and create get_centerline_position_from_top
-    def reverse_position_on_timber(self, position: float) -> float:
+    def get_centerline_position_from_top(self, distance: float) -> V3:
         """
-        Convert a position measurement to be measured from the opposite end of the timber.
-        
-        This is a utility method that reverses the position measurement. If you have a position
-        measured from one end, this returns the equivalent position measured from the other end.
+        Get the 3D position at a specific point along the timber's centerline, measured from the top.
         
         Args:
-            position: Distance along the timber's length direction from the bottom position
+            distance: Distance along the timber's length direction from the top position
             
         Returns:
-            Distance from the opposite end (top) of the timber
-            
-        Example:
-            For a timber of length 10:
-            - reverse_position_on_timber(3) returns 7
-            - reverse_position_on_timber(7) returns 3
+            3D position vector on the timber's centerline at the specified distance from top
         """
-        return self.length - position
+        return self.bottom_position + self.length_direction * (self.length - distance)
     
     def get_transform_matrix(self) -> Matrix:
         """Get the 4x4 transformation matrix for this timber"""
@@ -814,11 +804,11 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         New timber connecting timber1 and timber2
     """
     # Calculate position on timber1
-    pos1 = timber1.get_position_on_timber(location_on_timber1)
+    pos1 = timber1.get_centerline_position_from_bottom(location_on_timber1)
     
     # Calculate position on timber2
     if location_on_timber2 is not None:
-        pos2 = timber2.get_position_on_timber(location_on_timber2)
+        pos2 = timber2.get_centerline_position_from_bottom(location_on_timber2)
     else:
         # Project location_on_timber1 to timber2's Z axis
         pos2 = Matrix([pos1[0], pos1[1], timber2.bottom_position[2] + location_on_timber1])
@@ -928,7 +918,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         size = timber1.size
     
     # Calculate position on timber1
-    pos1 = timber1.get_position_on_timber(location_on_timber1)
+    pos1 = timber1.get_centerline_position_from_bottom(location_on_timber1)
     
     # Project pos1 onto timber2's centerline to find location_on_timber2
     # Vector from timber2's bottom to pos1
@@ -948,7 +938,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     
     # Convert INSIDE/OUTSIDE stickout references to CENTER_LINE
     # For face-aligned timbers, we know the joining direction
-    pos2 = timber2.get_position_on_timber(location_on_timber2)
+    pos2 = timber2.get_centerline_position_from_bottom(location_on_timber2)
     joining_direction = normalize_vector(pos2 - pos1)
     
     # Determine which dimension of the created timber is perpendicular to the joining direction
