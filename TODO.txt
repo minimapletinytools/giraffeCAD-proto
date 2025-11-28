@@ -39,7 +39,7 @@ Lets look at the current signature of join_timbers:
 def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
                 stickout: Stickout, offset_from_timber1: float,
                 location_on_timber2: Optional[float] = None,
-                orientation_face_vector: Optional[Direction3D] = None) -> Timber:
+                orientation_width_vector: Optional[Direction3D] = None) -> Timber:
 
 In this case we want to be able to do the general positioning instead of just location_on_timber1
 
@@ -59,7 +59,7 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 DONE- axis aligned timbers
 DONE- rename face aligned to face parallel timebers
 DONE- 2 faces can be oriented (same normals) or opposing (opposite normals)
--rename "face vector" to "plus_x_face_vector" or "plus_x_face_vector_of_created_timber"
+-rename "width vector" to "plus_x_width_vector" or "plus_x_width_vector_of_created_timber"
 -add helper asserts that does symbolic check if ratinoal otherwise fuzzy
   -check_parallel,perpendicular
 - note down default orientation of timbers when created in vertical and horizontal position
