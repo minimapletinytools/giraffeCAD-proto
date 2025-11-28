@@ -31,18 +31,18 @@ create_axis_aligned_timber(bottom_position : V3, length : float, size : V2, leng
 # AKA create_post
 # the length is in the up (+Z) direction
 # positions a post on a boundary corner with INSIDE/OUTSIDE/CENTER logic
-create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_index: int, length: float, location_type: TimberLocationType, size: V2) -> Timber
+create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_index: int, length: float, location_type: FootprintLocation, size: V2) -> Timber
 
 # AKA create_post
 # the length is in the up (+Z) direction
 # positions a post at a point along a boundary side with INSIDE/OUTSIDE/CENTER logic
-create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: int, distance_along_side: float, length: float, location_type: TimberLocationType, size: V2) -> Timber
+create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: int, distance_along_side: float, length: float, location_type: FootprintLocation, size: V2) -> Timber
 
 # AKA create_mudsill
 # the left (-X) face is lying on the XY plane
 # the mudsill starts at corner_index and goes to corner_index + 1
 # length is optional - if not provided, it is calculated from the boundary side length
-create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int, location_type: TimberLocationType, size: V2, length: Optional[float] = None) -> Timber
+create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int, location_type: FootprintLocation, size: V2, length: Optional[float] = None) -> Timber
 
 # create a timber extension by extending the given timber, the end is the end of the timber to extend
 # overlap_length is the length of the timber to overlap with the existing timber
