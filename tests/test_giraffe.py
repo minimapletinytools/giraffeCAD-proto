@@ -9,7 +9,7 @@ from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
 from moothymoth import Orientation
 from footprint import Footprint
 from giraffe import *
-from giraffe import _timber_face_to_vector, _find_aligned_face, _get_timber_width_direction, _get_tenon_end_direction, _has_rational_components, _are_directions_perpendicular, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned, _project_point_on_timber_centerline, _calculate_mortise_position_from_tenon_intersection
+from giraffe import _timber_face_to_vector, _find_aligned_face, _get_timber_width_direction, _get_tenon_end_direction, _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned, _project_point_on_timber_centerline, _calculate_mortise_position_from_tenon_intersection
 
 
 class TestVectorHelpers:
@@ -2010,6 +2010,74 @@ class TestHelperFunctions:
         
         # Should fail with tight tolerance
         assert not _are_directions_perpendicular(v1, v2, tolerance=1e-6)
+    
+    def test_are_directions_parallel_rational(self):
+        """Test _are_directions_parallel with rational (exact) values."""
+        from sympy import Rational
+        
+        # Test parallel rational vectors (same direction)
+        v1 = create_vector3d(1, 0, 0)
+        v2 = create_vector3d(2, 0, 0)
+        v2 = normalize_vector(v2)
+        assert _are_directions_parallel(v1, v2)
+        
+        # Test anti-parallel rational vectors (opposite direction)
+        v3 = create_vector3d(1, 0, 0)
+        v4 = create_vector3d(-1, 0, 0)
+        assert _are_directions_parallel(v3, v4)
+        
+        # Test with rational components
+        v5 = create_vector3d(Rational(1, 2), Rational(1, 2), 0)
+        v5 = normalize_vector(v5)
+        v6 = create_vector3d(Rational(3, 4), Rational(3, 4), 0)
+        v6 = normalize_vector(v6)
+        assert _are_directions_parallel(v5, v6)
+        
+        # Test non-parallel rational vectors
+        v7 = create_vector3d(1, 0, 0)
+        v8 = create_vector3d(0, 1, 0)
+        assert not _are_directions_parallel(v7, v8)
+    
+    def test_are_directions_parallel_float(self):
+        """Test _are_directions_parallel with float (fuzzy) values."""
+        import math
+        
+        # Test parallel float vectors (same direction)
+        v1 = create_vector3d(1.0, 0.0, 0.0)
+        v2 = create_vector3d(2.5, 0.0, 0.0)
+        v2 = normalize_vector(v2)
+        assert _are_directions_parallel(v1, v2)
+        
+        # Test anti-parallel float vectors (opposite direction)
+        v3 = create_vector3d(1.0, 0.0, 0.0)
+        v4 = create_vector3d(-3.7, 0.0, 0.0)
+        v4 = normalize_vector(v4)
+        assert _are_directions_parallel(v3, v4)
+        
+        # Test nearly parallel vectors (within tolerance)
+        small_angle = 1e-11
+        v5 = create_vector3d(1.0, 0.0, 0.0)
+        v6 = create_vector3d(math.cos(small_angle), math.sin(small_angle), 0.0)
+        assert _are_directions_parallel(v5, v6)
+        
+        # Test not parallel (outside tolerance)
+        v7 = create_vector3d(1.0, 0.0, 0.0)
+        v8 = create_vector3d(0.9, 0.1, 0.0)  # About 6 degrees
+        v8 = normalize_vector(v8)
+        assert not _are_directions_parallel(v7, v8)
+    
+    def test_are_directions_parallel_explicit_tolerance(self):
+        """Test _are_directions_parallel with explicit tolerance."""
+        # Test with custom tolerance
+        v1 = create_vector3d(1.0, 0.0, 0.0)
+        v2 = create_vector3d(0.99, 0.01, 0.0)  # Nearly parallel
+        v2 = normalize_vector(v2)
+        
+        # Should pass with loose tolerance
+        assert _are_directions_parallel(v1, v2, tolerance=0.1)
+        
+        # Should fail with tight tolerance
+        assert not _are_directions_parallel(v1, v2, tolerance=1e-6)
     
     def test_are_timbers_face_parallel_rational(self):
         """Test _are_timbers_face_parallel with rational (exact) values."""

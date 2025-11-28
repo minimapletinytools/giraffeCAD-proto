@@ -777,7 +777,7 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         stickout: How much the timber extends beyond connection points (both sides)
         offset_from_timber1: Offset in the cross product direction
         location_on_timber2: Optional position along timber2's length
-        orientation_width_vector: Optional width direction for the created timber in absolute space.
+        orientation_width_vector: Optional width direction for the created timber in global space.
                                   Must be perpendicular to the joining direction (from timber1 to timber2).
                                   If not provided, uses timber1's length direction.
         size: Optional size (width, height) of the joining timber. If not provided,
@@ -814,20 +814,14 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     else:
         # Default: project timber1's length direction onto the plane perpendicular to the joining direction
         reference_direction = timber1.length_direction
-        dot_product = reference_direction.dot(length_direction)
         
-        # Check if parallel (can't use as reference)
-        dot_mag = Abs(dot_product)
-        is_parallel = (simplify(dot_mag - 1) == 0 if _has_rational_components(reference_direction) 
-                      else abs(float(dot_mag) - 1.0) < 1e-10)
-        
-        if is_parallel:
-            # timber1's length direction is parallel to joining direction
-            # Use timber1's face direction instead
+        # eh, maybe better to use a larger tolerance here? Seems silly to project if they are almost parallel.
+        if _are_directions_parallel(reference_direction, length_direction):
+            print("WARNING: timber1's length direction is parallel to the joining direction. Using timber1's width direction instead.")
             reference_direction = timber1.width_direction
-            dot_product = reference_direction.dot(length_direction)
         
         # Project onto perpendicular plane: v_perp = v - (v·n)n
+        dot_product = reference_direction.dot(length_direction)
         width_direction = reference_direction - dot_product * length_direction
         width_direction = normalize_vector(width_direction)
     
@@ -1253,6 +1247,38 @@ def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction
     else:
         # Use tolerance for approximate comparison
         return Abs(dot_product) < tolerance
+
+def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[float] = None) -> bool:
+    """
+    Check if two direction vectors are parallel (or anti-parallel).
+    
+    Args:
+        direction1: First direction vector
+        direction2: Second direction vector
+        tolerance: Optional tolerance for approximate comparison. If None, automatically
+                   uses exact comparison for rational values or fuzzy comparison for floats.
+    
+    Returns:
+        True if the directions are parallel, False otherwise
+    """
+    # Check if all components are rational
+    is_rational = (_has_rational_components(direction1) and 
+                   _has_rational_components(direction2))
+    
+    dot_product = direction1.dot(direction2)
+    dot_mag = Abs(dot_product)
+    
+    if tolerance is None:
+        if is_rational:
+            # Use exact comparison with simplify for symbolic math
+            return simplify(dot_mag - 1) == 0
+        else:
+            # Auto-use tolerance for float values
+            tolerance = 1e-10
+            return abs(float(dot_mag) - 1.0) < tolerance
+    else:
+        # Use provided tolerance
+        return abs(float(dot_mag) - 1.0) < tolerance
 
 def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[float] = None) -> bool:
     """
