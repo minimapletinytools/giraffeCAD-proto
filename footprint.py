@@ -9,6 +9,68 @@ from sympy import Matrix
 V2 = Matrix  # 2D vector - 2x1 Matrix
 
 
+def _segment_to_segment_distance(seg1_start: V2, seg1_end: V2, 
+                                 seg2_start: V2, seg2_end: V2) -> float:
+    """
+    Calculate the minimum distance between two line segments in 2D.
+    
+    Args:
+        seg1_start: Start point of first segment
+        seg1_end: End point of first segment
+        seg2_start: Start point of second segment
+        seg2_end: End point of second segment
+        
+    Returns:
+        Minimum distance between the two segments
+    """
+    # Extract coordinates
+    p1x, p1y = seg1_start[0], seg1_start[1]
+    p2x, p2y = seg1_end[0], seg1_end[1]
+    p3x, p3y = seg2_start[0], seg2_start[1]
+    p4x, p4y = seg2_end[0], seg2_end[1]
+    
+    # Direction vectors
+    d1x, d1y = p2x - p1x, p2y - p1y
+    d2x, d2y = p4x - p3x, p4y - p3y
+    
+    # Helper function: distance from point to segment
+    def point_to_segment_distance(px, py, s1x, s1y, s2x, s2y):
+        dx = s2x - s1x
+        dy = s2y - s1y
+        
+        if dx == 0 and dy == 0:
+            # Segment is a point
+            return ((px - s1x) ** 2 + (py - s1y) ** 2) ** 0.5
+        
+        # Parameter t of projection onto line
+        t = max(0, min(1, ((px - s1x) * dx + (py - s1y) * dy) / (dx * dx + dy * dy)))
+        
+        # Closest point on segment
+        closest_x = s1x + t * dx
+        closest_y = s1y + t * dy
+        
+        return ((px - closest_x) ** 2 + (py - closest_y) ** 2) ** 0.5
+    
+    # Check if segments intersect (distance = 0)
+    # Using the cross product method
+    def ccw(ax, ay, bx, by, cx, cy):
+        return (cy - ay) * (bx - ax) > (by - ay) * (cx - ax)
+    
+    if (ccw(p1x, p1y, p3x, p3y, p4x, p4y) != ccw(p2x, p2y, p3x, p3y, p4x, p4y) and
+        ccw(p1x, p1y, p2x, p2y, p3x, p3y) != ccw(p1x, p1y, p2x, p2y, p4x, p4y)):
+        return 0.0
+    
+    # Segments don't intersect, find minimum distance among endpoints
+    distances = [
+        point_to_segment_distance(p1x, p1y, p3x, p3y, p4x, p4y),  # p1 to seg2
+        point_to_segment_distance(p2x, p2y, p3x, p3y, p4x, p4y),  # p2 to seg2
+        point_to_segment_distance(p3x, p3y, p1x, p1y, p2x, p2y),  # p3 to seg1
+        point_to_segment_distance(p4x, p4y, p1x, p1y, p2x, p2y),  # p4 to seg1
+    ]
+    
+    return min(distances)
+
+
 class Footprint:
     """A support class representing the footprint of the structure in the XY plane"""
     
@@ -254,4 +316,34 @@ class Footprint:
         else:
             # Right perpendicular points inward
             return (dy, -dx, 0.0)
+    
+    def nearest_boundary_from_line(self, line_start: V2, line_end: V2) -> Tuple[int, Tuple[V2, V2], float]:
+        """
+        Find the nearest boundary side to a given line segment.
+        
+        Args:
+            line_start: Start point of the line segment (2D)
+            line_end: End point of the line segment (2D)
+            
+        Returns:
+            Tuple of (index, side, distance) where:
+                - index is the side index
+                - side is a tuple (start_corner, end_corner)
+                - distance is the minimum distance between the line segment and the boundary
+        """
+        if len(self.corners) < 2:
+            raise ValueError("Footprint must have at least 2 corners")
+        
+        sides = self.sides()
+        min_distance = None
+        nearest_idx = 0
+        
+        for i, (start, end) in enumerate(sides):
+            distance = _segment_to_segment_distance(line_start, line_end, start, end)
+            
+            if min_distance is None or distance < min_distance:
+                min_distance = distance
+                nearest_idx = i
+        
+        return nearest_idx, sides[nearest_idx], min_distance
 

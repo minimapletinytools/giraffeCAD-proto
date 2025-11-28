@@ -6,7 +6,7 @@ This module contains tests for the Footprint class in the GiraffeCAD system.
 
 import pytest
 from sympy import Matrix
-from footprint import Footprint
+from footprint import Footprint, _segment_to_segment_distance
 from giraffe import create_vector2d
 
 
@@ -182,4 +182,147 @@ class TestFootprint:
         assert float(nx) == 1.0
         assert float(ny) == 0.0
         assert float(nz) == 0.0
+    
+    def test_segment_to_segment_distance_parallel(self):
+        """Test _segment_to_segment_distance with parallel segments."""
+        corners = [
+            create_vector2d(0, 0),
+            create_vector2d(4, 0),
+            create_vector2d(4, 4),
+            create_vector2d(0, 4)
+        ]
+        footprint = Footprint(corners)
+        
+        # Horizontal line parallel to bottom edge, 1 unit above
+        line_start = create_vector2d(1, 1)
+        line_end = create_vector2d(3, 1)
+        
+        # Calculate distance to bottom edge (y=0)
+        seg_start = create_vector2d(0, 0)
+        seg_end = create_vector2d(4, 0)
+        
+        distance = _segment_to_segment_distance(line_start, line_end, seg_start, seg_end)
+        assert abs(distance - 1.0) < 1e-6
+    
+    def test_segment_to_segment_distance_intersecting(self):
+        """Test _segment_to_segment_distance with intersecting segments."""
+        corners = [
+            create_vector2d(0, 0),
+            create_vector2d(4, 0),
+            create_vector2d(4, 4),
+            create_vector2d(0, 4)
+        ]
+        footprint = Footprint(corners)
+        
+        # Two segments that cross
+        line1_start = create_vector2d(0, 0)
+        line1_end = create_vector2d(2, 2)
+        
+        line2_start = create_vector2d(0, 2)
+        line2_end = create_vector2d(2, 0)
+        
+        distance = _segment_to_segment_distance(line1_start, line1_end, line2_start, line2_end)
+        assert distance == 0.0
+    
+    def test_segment_to_segment_distance_perpendicular(self):
+        """Test _segment_to_segment_distance with perpendicular segments."""
+        corners = [
+            create_vector2d(0, 0),
+            create_vector2d(4, 0),
+            create_vector2d(4, 4),
+            create_vector2d(0, 4)
+        ]
+        footprint = Footprint(corners)
+        
+        # Horizontal segment
+        line1_start = create_vector2d(0, 0)
+        line1_end = create_vector2d(2, 0)
+        
+        # Vertical segment offset by 1 unit
+        line2_start = create_vector2d(3, 0)
+        line2_end = create_vector2d(3, 2)
+        
+        distance = _segment_to_segment_distance(line1_start, line1_end, line2_start, line2_end)
+        assert abs(distance - 1.0) < 1e-6
+    
+    def test_nearest_boundary_from_line_parallel(self):
+        """Test nearest_boundary_from_line with a line parallel to a boundary."""
+        corners = [
+            create_vector2d(0, 0),
+            create_vector2d(4, 0),
+            create_vector2d(4, 4),
+            create_vector2d(0, 4)
+        ]
+        footprint = Footprint(corners)
+        
+        # Horizontal line parallel to bottom edge, 0.5 units above
+        line_start = create_vector2d(1, 0.5)
+        line_end = create_vector2d(3, 0.5)
+        
+        idx, side, dist = footprint.nearest_boundary_from_line(line_start, line_end)
+        
+        # Should be closest to bottom edge (index 0)
+        assert idx == 0
+        assert side == (corners[0], corners[1])
+        assert abs(dist - 0.5) < 1e-6
+    
+    def test_nearest_boundary_from_line_perpendicular(self):
+        """Test nearest_boundary_from_line with a line perpendicular to boundaries."""
+        corners = [
+            create_vector2d(0, 0),
+            create_vector2d(4, 0),
+            create_vector2d(4, 4),
+            create_vector2d(0, 4)
+        ]
+        footprint = Footprint(corners)
+        
+        # Vertical line outside and parallel to right edge
+        line_start = create_vector2d(5, 1)
+        line_end = create_vector2d(5, 3)
+        
+        idx, side, dist = footprint.nearest_boundary_from_line(line_start, line_end)
+        
+        # Should be closest to right edge (index 1)
+        assert idx == 1
+        assert side == (corners[1], corners[2])
+        assert abs(dist - 1.0) < 1e-6
+    
+    def test_nearest_boundary_from_line_diagonal(self):
+        """Test nearest_boundary_from_line with a diagonal line."""
+        corners = [
+            create_vector2d(0, 0),
+            create_vector2d(4, 0),
+            create_vector2d(4, 4),
+            create_vector2d(0, 4)
+        ]
+        footprint = Footprint(corners)
+        
+        # Diagonal line outside, closer to bottom edge
+        line_start = create_vector2d(1, -1)
+        line_end = create_vector2d(3, -1)
+        
+        idx, side, dist = footprint.nearest_boundary_from_line(line_start, line_end)
+        
+        # Should be closest to bottom edge (index 0)
+        assert idx == 0
+        assert abs(dist - 1.0) < 1e-6
+    
+    def test_nearest_boundary_from_line_intersecting(self):
+        """Test nearest_boundary_from_line with a line that intersects the footprint."""
+        corners = [
+            create_vector2d(0, 0),
+            create_vector2d(4, 0),
+            create_vector2d(4, 4),
+            create_vector2d(0, 4)
+        ]
+        footprint = Footprint(corners)
+        
+        # Line that crosses through the footprint
+        line_start = create_vector2d(-1, 2)
+        line_end = create_vector2d(5, 2)
+        
+        idx, side, dist = footprint.nearest_boundary_from_line(line_start, line_end)
+        
+        # Should have distance 0 since it intersects
+        assert dist == 0.0
 
