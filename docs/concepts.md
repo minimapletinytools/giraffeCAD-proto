@@ -146,7 +146,7 @@ Footprints consist of a set of boundary corners that form a non intersecting bou
 
 
 ```
-class TimberLocationType(Enum):
+class FootprintLocation(Enum):
     INSIDE = 1
     CENTER = 2
     OUTSIDE = 3

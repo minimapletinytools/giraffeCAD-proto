@@ -442,7 +442,7 @@ class TestTimberCreation:
         # Test INSIDE positioning
         # Vertex of bottom face is at corner, post extends inside
         timber_inside = create_vertical_timber_on_footprint_corner(
-            footprint, 0, post_height, TimberLocationType.INSIDE, size
+            footprint, 0, post_height, FootprintLocation.INSIDE, size
         )
         
         assert timber_inside.length == Rational(5, 2)
@@ -461,7 +461,7 @@ class TestTimberCreation:
         # Test CENTER positioning  
         # Center of bottom face is at corner
         timber_center = create_vertical_timber_on_footprint_corner(
-            footprint, 0, post_height, TimberLocationType.CENTER, size
+            footprint, 0, post_height, FootprintLocation.CENTER, size
         )
         
         assert timber_center.length == Rational(5, 2)
@@ -479,7 +479,7 @@ class TestTimberCreation:
         # Test OUTSIDE positioning
         # Opposite vertex is at corner, post extends outside
         timber_outside = create_vertical_timber_on_footprint_corner(
-            footprint, 0, post_height, TimberLocationType.OUTSIDE, size
+            footprint, 0, post_height, FootprintLocation.OUTSIDE, size
         )
         
         assert timber_outside.length == Rational(5, 2)
@@ -515,7 +515,7 @@ class TestTimberCreation:
         # Test CENTER positioning
         # Center of bottom face is on the point (1, 0)
         timber_center = create_vertical_timber_on_footprint_side(
-            footprint, 0, distance_along_side, post_height, TimberLocationType.CENTER, size
+            footprint, 0, distance_along_side, post_height, FootprintLocation.CENTER, size
         )
         
         assert timber_center.length == Rational(3, 1)
@@ -532,7 +532,7 @@ class TestTimberCreation:
         # Test INSIDE positioning
         # One edge center is at the point, post extends inside (toward +Y)
         timber_inside = create_vertical_timber_on_footprint_side(
-            footprint, 0, distance_along_side, post_height, TimberLocationType.INSIDE, size
+            footprint, 0, distance_along_side, post_height, FootprintLocation.INSIDE, size
         )
         
         assert timber_inside.length == Rational(3, 1)
@@ -549,7 +549,7 @@ class TestTimberCreation:
         # Test OUTSIDE positioning
         # One edge center is at the point, post extends outside (toward -Y)
         timber_outside = create_vertical_timber_on_footprint_side(
-            footprint, 0, distance_along_side, post_height, TimberLocationType.OUTSIDE, size
+            footprint, 0, distance_along_side, post_height, FootprintLocation.OUTSIDE, size
         )
         
         assert timber_outside.length == Rational(3, 1)
@@ -577,7 +577,7 @@ class TestTimberCreation:
         size = create_vector2d(Rational(3, 10), Rational(3, 10))
         
         timber = create_horizontal_timber_on_footprint(
-            footprint, 0, TimberLocationType.INSIDE, size, length=3.0
+            footprint, 0, FootprintLocation.INSIDE, size, length=3.0
         )
         
         assert timber.length == 3.0
@@ -607,7 +607,7 @@ class TestTimberCreation:
         
         # Test INSIDE positioning
         timber_inside = create_horizontal_timber_on_footprint(
-            footprint, 0, TimberLocationType.INSIDE, size, length=2.0
+            footprint, 0, FootprintLocation.INSIDE, size, length=2.0
         )
         # Timber should extend inward (in +Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) inside the footprint
@@ -618,7 +618,7 @@ class TestTimberCreation:
         
         # Test OUTSIDE positioning
         timber_outside = create_horizontal_timber_on_footprint(
-            footprint, 0, TimberLocationType.OUTSIDE, size, length=2.0
+            footprint, 0, FootprintLocation.OUTSIDE, size, length=2.0
         )
         # Timber should extend outward (in -Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) outside the footprint
@@ -629,7 +629,7 @@ class TestTimberCreation:
         
         # Test CENTER positioning
         timber_center = create_horizontal_timber_on_footprint(
-            footprint, 0, TimberLocationType.CENTER, size, length=2.0
+            footprint, 0, FootprintLocation.CENTER, size, length=2.0
         )
         # Centerline should be on the boundary side
         assert float(timber_center.bottom_position[1]) == 0.0  # Y on boundary
@@ -653,7 +653,7 @@ class TestTimberCreation:
         # This side has inward normal pointing left: (-1, 0, 0)
         
         timber_inside_right = create_horizontal_timber_on_footprint(
-            footprint, 1, TimberLocationType.INSIDE, size, length=2.0
+            footprint, 1, FootprintLocation.INSIDE, size, length=2.0
         )
         # Timber should extend inward (in -X direction)
         # Use timber_height (size[1]) as it's the dimension perpendicular to boundary
@@ -661,7 +661,7 @@ class TestTimberCreation:
         assert float(timber_inside_right.bottom_position[1]) == 0.0  # Y unchanged
         
         timber_outside_right = create_horizontal_timber_on_footprint(
-            footprint, 1, TimberLocationType.OUTSIDE, size, length=2.0
+            footprint, 1, FootprintLocation.OUTSIDE, size, length=2.0
         )
         # Timber should extend outward (in +X direction)
         # Use timber_height (size[1]) as it's the dimension perpendicular to boundary
@@ -669,7 +669,7 @@ class TestTimberCreation:
         assert float(timber_outside_right.bottom_position[1]) == 0.0  # Y unchanged
         
         timber_center_right = create_horizontal_timber_on_footprint(
-            footprint, 1, TimberLocationType.CENTER, size, length=2.0
+            footprint, 1, FootprintLocation.CENTER, size, length=2.0
         )
         # Centerline should be on the boundary side
         assert float(timber_center_right.bottom_position[0]) == 2.0  # X on boundary
@@ -1378,10 +1378,10 @@ class TestEnumsAndDataStructures:
     """Test enums and data structures."""
     
     def test_timber_location_type_enum(self):
-        """Test TimberLocationType enum."""
-        assert TimberLocationType.INSIDE.value == 1
-        assert TimberLocationType.CENTER.value == 2
-        assert TimberLocationType.OUTSIDE.value == 3
+        """Test FootprintLocation enum."""
+        assert FootprintLocation.INSIDE.value == 1
+        assert FootprintLocation.CENTER.value == 2
+        assert FootprintLocation.OUTSIDE.value == 3
     
     def test_timber_face_enum(self):
         """Test TimberFace enum."""

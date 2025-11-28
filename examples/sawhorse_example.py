@@ -39,7 +39,7 @@ def create_sawhorse() -> list[CutTimber]:
     left_mudsill = create_horizontal_timber_on_footprint(
         footprint, 
         corner_index=3, 
-        location_type=TimberLocationType.INSIDE,
+        location_type=FootprintLocation.INSIDE,
         size=feet_size,
         length=bottom_length
     )
@@ -49,7 +49,7 @@ def create_sawhorse() -> list[CutTimber]:
     right_mudsill = create_horizontal_timber_on_footprint(
         footprint, 
         corner_index=1, 
-        location_type=TimberLocationType.INSIDE,
+        location_type=FootprintLocation.INSIDE,
         size=feet_size,
         length=bottom_length
     )

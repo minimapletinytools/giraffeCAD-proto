@@ -12,7 +12,7 @@ from giraffe import (
     create_horizontal_timber_on_footprint,
     create_vertical_timber_on_footprint_side,
     join_timbers,
-    TimberLocationType, CutTimber, Stickout
+    FootprintLocation, CutTimber, Stickout
 )
 from footprint import Footprint
 
@@ -79,25 +79,25 @@ def create_oscarshed() -> list[CutTimber]:
     # Front mudsill (corner 0 to corner 1) - along X axis
     # Length is automatically calculated from boundary side
     mudsill_front = create_horizontal_timber_on_footprint(
-        footprint, 0, TimberLocationType.INSIDE, mudsill_size
+        footprint, 0, FootprintLocation.INSIDE, mudsill_size
     )
     mudsill_front.name = "Front Mudsill"
 
     # Right mudsill (corner 1 to corner 2) - along Y axis
     mudsill_right = create_horizontal_timber_on_footprint(
-        footprint, 1, TimberLocationType.INSIDE, mudsill_size
+        footprint, 1, FootprintLocation.INSIDE, mudsill_size
     )
     mudsill_right.name = "Right Mudsill"
 
     # Back mudsill (corner 2 to corner 3) - along X axis
     mudsill_back = create_horizontal_timber_on_footprint(
-        footprint, 2, TimberLocationType.INSIDE, mudsill_size
+        footprint, 2, FootprintLocation.INSIDE, mudsill_size
     )
     mudsill_back.name = "Back Mudsill"
 
     # Left mudsill (corner 3 to corner 0) - along Y axis
     mudsill_left = create_horizontal_timber_on_footprint(
-        footprint, 3, TimberLocationType.INSIDE, mudsill_size
+        footprint, 3, FootprintLocation.INSIDE, mudsill_size
     )
     mudsill_left.name = "Left Mudsill"
 
@@ -115,7 +115,7 @@ def create_oscarshed() -> list[CutTimber]:
         side_index=0,
         distance_along_side=post_inset_m,
         length=post_front_height_m,
-        location_type=TimberLocationType.INSIDE,
+        location_type=FootprintLocation.INSIDE,
         size=post_size
     )
     post_front_left.name = "Front Left Post"
@@ -126,7 +126,7 @@ def create_oscarshed() -> list[CutTimber]:
         side_index=0,
         distance_along_side=base_width_m - post_inset_m,
         length=post_front_height_m,
-        location_type=TimberLocationType.INSIDE,
+        location_type=FootprintLocation.INSIDE,
         size=post_size
     )
     post_front_right.name = "Front Right Post"
@@ -138,7 +138,7 @@ def create_oscarshed() -> list[CutTimber]:
         side_index=2,
         distance_along_side=post_inset_m,
         length=post_back_height_m,
-        location_type=TimberLocationType.INSIDE,
+        location_type=FootprintLocation.INSIDE,
         size=post_size
     )
     post_back_right.name = "Back Right Post"
@@ -149,7 +149,7 @@ def create_oscarshed() -> list[CutTimber]:
         side_index=2,
         distance_along_side=base_width_m - post_inset_m,
         length=post_back_height_m,
-        location_type=TimberLocationType.INSIDE,
+        location_type=FootprintLocation.INSIDE,
         size=post_size
     )
     post_back_left.name = "Back Left Post"
@@ -174,7 +174,7 @@ def create_oscarshed() -> list[CutTimber]:
         side_index=2,  # Back side
         distance_along_side=post_back_middle_right_position,
         length=post_back_height_m,
-        location_type=TimberLocationType.INSIDE,
+        location_type=FootprintLocation.INSIDE,
         size=post_size
     )
     post_back_middle_right.name = "Back Middle-Right Post"
@@ -187,7 +187,7 @@ def create_oscarshed() -> list[CutTimber]:
         side_index=2,  # Back side
         distance_along_side=post_back_middle_left_position,
         length=post_back_height_m,
-        location_type=TimberLocationType.INSIDE,
+        location_type=FootprintLocation.INSIDE,
         size=post_size
     )
     post_back_middle_left.name = "Back Middle-Left Post"

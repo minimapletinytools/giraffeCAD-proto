@@ -71,19 +71,15 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 :: TODO
 
 -QUESTION should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
--rename TimberLocationType to footprint location Type
+
 - you need a better way to specify timber lenghts... most of the time you don't really care? It should be determined by the joint in most cases.
   - so I guess joints will resize the timber, even tusk tenon joints take a tusk length parameter, tenon joints have a tenon depth parameter etc.. (i think this is how it already is, update the README to explain this)
-DONE- getInside/OutsideFace(timber, footprint)
-DNOE- getFacingFace(tiber, direction)
 - create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
 - maybe split griaffe sad :(
 - create list of joints to support and define their interfaces (spline, butt, corner, other)
 - move joint section from morenotes into concepts.md and then delete morenotes
 
-IGNORE- create readme
-DONE- cleaunp morenotes (maybe delete it, all comments should be in code)
-DONE- start working on docs
+
 
 :: FUTURE shit
 - add nominal_size support for square and line rule desgins
@@ -92,6 +88,12 @@ DONE- start working on docs
 
 :: TODONE
 
+DONE-rename FootprintLocation to footprint location Type
+DONE- getInside/OutsideFace(timber, footprint)
+DNOE- getFacingFace(tiber, direction)
+IGNORE- create readme
+DONE- cleaunp morenotes (maybe delete it, all comments should be in code)
+DONE- start working on docs
 DONE- axis aligned timbers
 DONE- rename face aligned to face parallel timebers
 DONE- 2 faces can be oriented (same normals) or opposing (opposite normals)

@@ -21,7 +21,7 @@ Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
 
 
 # TODO move to footprint?
-class TimberLocationType(Enum):
+class FootprintLocation(Enum):
     INSIDE = 1
     CENTER = 2
     OUTSIDE = 3
@@ -633,7 +633,7 @@ def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
     return create_timber(bottom_position, length, size, length_vec, width_vec)
 
 def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_index: int, 
-                                               length: float, location_type: TimberLocationType,
+                                               length: float, location_type: FootprintLocation,
                                                size: V2) -> Timber:
     """
     Creates a vertical timber (post) on a footprint boundary corner.
@@ -694,13 +694,13 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
     corner_x = corner[0]
     corner_y = corner[1]
     
-    if location_type == TimberLocationType.INSIDE:
+    if location_type == FootprintLocation.INSIDE:
         # Position so one vertex of bottom face is on the boundary corner
         # Post extends inside the boundary
         # The corner vertex is at the origin of the timber's local coords
         bottom_position = create_vector3d(corner_x, corner_y, 0)
         
-    elif location_type == TimberLocationType.OUTSIDE:
+    elif location_type == FootprintLocation.OUTSIDE:
         # Position so the opposite vertex is on the boundary corner
         # Need to offset by the full diagonal of the timber base
         # Offset = -timber_width in face direction, -timber_depth in perpendicular direction
@@ -720,7 +720,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
 
 def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: int, 
                                             distance_along_side: float,
-                                            length: float, location_type: TimberLocationType, 
+                                            length: float, location_type: FootprintLocation, 
                                             size: V2) -> Timber:
     """
     Creates a vertical timber (post) positioned at a point along a footprint boundary side.
@@ -791,12 +791,12 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
     width_direction = create_vector3d(side_dir_normalized[0], side_dir_normalized[1], 0)
     
     # Calculate bottom position based on location type
-    if location_type == TimberLocationType.CENTER:
+    if location_type == FootprintLocation.CENTER:
         # Center of bottom face is on the point
         # No offset needed since timber local origin is at center of bottom face
         bottom_position = create_vector3d(point_x, point_y, 0)
         
-    elif location_type == TimberLocationType.INSIDE:
+    elif location_type == FootprintLocation.INSIDE:
         # One edge of bottom face lies on boundary side
         # Center of that edge is at the point
         # Post extends inside (in direction of inward normal)
@@ -817,7 +817,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
     return create_timber(bottom_position, length, size, length_direction, width_direction)
 
 def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int,
-                                        location_type: TimberLocationType, 
+                                        location_type: FootprintLocation, 
                                         size: V2,
                                         length: Optional[float] = None) -> Timber:
     """
@@ -873,11 +873,11 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     bottom_position = create_vector3d(start_point[0], start_point[1], 0)
     
     # Apply offset based on location type
-    if location_type == TimberLocationType.INSIDE:
+    if location_type == FootprintLocation.INSIDE:
         # Position so one edge lies on the boundary side, timber extends inward
         # Move the centerline inward by half the timber height (perpendicular dimension)
         bottom_position = bottom_position + inward_normal * (timber_height / 2)
-    elif location_type == TimberLocationType.OUTSIDE:
+    elif location_type == FootprintLocation.OUTSIDE:
         # Position so one edge lies on the boundary side, timber extends outward
         # Move the centerline outward by half the timber height (perpendicular dimension)
         bottom_position = bottom_position - inward_normal * (timber_height / 2)
