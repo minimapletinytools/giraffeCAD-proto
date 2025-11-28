@@ -19,18 +19,20 @@ Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
 # Enums and Basic Types
 # ============================================================================
 
+
+# TODO move to footprint?
 class TimberLocationType(Enum):
     INSIDE = 1
     CENTER = 2
     OUTSIDE = 3
 
 class TimberFace(Enum):
-    TOP = 1
-    BOTTOM = 2
-    RIGHT = 3
-    FORWARD = 4
-    LEFT = 5
-    BACK = 6
+    TOP = 1 # the face vector with normal vector in the +Z axis direction
+    BOTTOM = 2 # the face vector with normal vector in the -Z axis direction
+    RIGHT = 3 # the face vector with normal vector in the +X axis direction
+    FORWARD = 4 # the face vector with normal vector in the +Y axis direction
+    LEFT = 5 # the face vector with normal vector in the -X axis direction
+    BACK = 6 # the face vector with normal vector in the -Y axis direction
 
 class TimberReferenceEnd(Enum):
     TOP = 1
@@ -775,7 +777,7 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         stickout: How much the timber extends beyond connection points (both sides)
         offset_from_timber1: Offset in the cross product direction
         location_on_timber2: Optional position along timber2's length
-        orientation_face_vector: Optional face direction for the joining timber
+        orientation_face_vector: Optional face direction for the joining timber, must be perpendicular to the length direction derived from the timber1 and timber2 positions
         size: Optional size (width, height) of the joining timber. If not provided,
               determined from timber1's size based on orientation.
         
@@ -820,6 +822,10 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         
         # Generate orthogonal face direction using cross product
         face_direction = normalize_vector(cross_product(reference_vector, length_direction))
+    
+    # TODO use perpendicular check function
+    assert face_direction.dot(length_direction) == 0, \
+        "face_direction must be perpendicular to length_direction"
     
     # TODO TEST THIS IT'S PROBABLY WRONG
     # Determine size if not provided
