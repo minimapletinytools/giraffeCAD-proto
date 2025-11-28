@@ -332,20 +332,70 @@ class TestTimberCreation:
         assert float(timber.bottom_position[2]) == 0.0
     
     def test_create_axis_aligned_timber(self):
-        """Test axis-aligned timber creation."""
+        """Test axis-aligned timber creation with explicit width_direction."""
         position = create_vector3d(0, 0, 0)  # Use exact integers
         size = create_vector2d(Rational(1, 10), Rational(1, 10))  # 0.1 as exact rational
         
         timber = create_axis_aligned_timber(
             position, 3, size,  # Use exact integer for length
             TimberFace.TOP,    # Length direction (up)
-            TimberFace.RIGHT   # Face direction (east)
+            TimberFace.RIGHT   # Width direction (east)
         )
         
         assert timber.length == 3  # Exact integer
         # Check that directions are correct
         assert timber.length_direction[2] == 1  # Up (exact integer)
         assert timber.width_direction[0] == 1    # East (exact integer)
+    
+    def test_create_axis_aligned_timber_default_width(self):
+        """Test axis-aligned timber creation with default width_direction."""
+        position = create_vector3d(0, 0, 0)
+        size = create_vector2d(Rational(1, 10), Rational(1, 10))
+        
+        # Test with length in +Z direction (default width should be +X)
+        timber1 = create_axis_aligned_timber(
+            position, 3, size,
+            TimberFace.TOP  # Length in +Z
+            # width_direction not provided - should default to RIGHT (+X)
+        )
+        
+        assert timber1.length_direction[2] == 1  # Length in +Z
+        assert timber1.width_direction[0] == 1    # Width in +X (default)
+        
+        # Test with length in +Y direction (default width should be +X)
+        timber2 = create_axis_aligned_timber(
+            position, 3, size,
+            TimberFace.FORWARD  # Length in +Y
+            # width_direction not provided - should default to RIGHT (+X)
+        )
+        
+        assert timber2.length_direction[1] == 1  # Length in +Y
+        assert timber2.width_direction[0] == 1    # Width in +X (default)
+        
+        # Test with length in +X direction (default width should be +Z)
+        timber3 = create_axis_aligned_timber(
+            position, 3, size,
+            TimberFace.RIGHT  # Length in +X
+            # width_direction not provided - should default to TOP (+Z)
+        )
+        
+        assert timber3.length_direction[0] == 1  # Length in +X
+        assert timber3.width_direction[2] == 1    # Width in +Z (special case)
+    
+    def test_create_axis_aligned_timber_explicit_overrides_default(self):
+        """Test that explicit width_direction overrides the default."""
+        position = create_vector3d(0, 0, 0)
+        size = create_vector2d(Rational(1, 10), Rational(1, 10))
+        
+        # Even with length in +X, we can explicitly set width to +Y
+        timber = create_axis_aligned_timber(
+            position, 3, size,
+            TimberFace.RIGHT,    # Length in +X
+            TimberFace.FORWARD   # Explicit width in +Y (not the default +Z)
+        )
+        
+        assert timber.length_direction[0] == 1  # Length in +X
+        assert timber.width_direction[1] == 1    # Width in +Y (explicit)
     
     def test_create_vertical_timber_on_footprint_corner(self):
         """Test vertical timber creation on footprint corner with INSIDE, OUTSIDE, and CENTER."""

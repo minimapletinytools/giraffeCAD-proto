@@ -473,16 +473,37 @@ def create_timber(bottom_position: V3, length: float, size: V2,
     return Timber(length, size, bottom_position, length_direction, width_direction)
 
 def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
-                              length_direction: TimberFace, width_direction: TimberFace) -> Timber:
+                              length_direction: TimberFace, width_direction: Optional[TimberFace] = None) -> Timber:
     """
     Creates an axis-aligned timber using TimberFace to reference directions
-    in the world coordinate system
+    in the world coordinate system.
+    
+    Args:
+        bottom_position: Position of the bottom point of the timber
+        length: Length of the timber
+        size: Cross-sectional size (width, height)
+        length_direction: Direction for the timber's length axis
+        width_direction: Optional direction for the timber's width axis.
+                        If not provided, defaults to RIGHT (+X) unless length_direction
+                        is RIGHT, in which case TOP (+Z) is used.
+    
+    Returns:
+        New timber with the specified axis-aligned orientation
     """
     # Convert TimberFace to direction vectors
     length_vec = _timber_face_to_vector(length_direction)
-    face_vec = _timber_face_to_vector(width_direction)
     
-    return create_timber(bottom_position, length, size, length_vec, face_vec)
+    # Determine width direction if not provided
+    if width_direction is None:
+        # Default to RIGHT (+X) unless length is in +X direction
+        if length_direction == TimberFace.RIGHT:
+            width_direction = TimberFace.TOP
+        else:
+            width_direction = TimberFace.RIGHT
+    
+    width_vec = _timber_face_to_vector(width_direction)
+    
+    return create_timber(bottom_position, length, size, length_vec, width_vec)
 
 def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_index: int, 
                                                length: float, location_type: TimberLocationType,
