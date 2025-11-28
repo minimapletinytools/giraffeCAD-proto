@@ -33,6 +33,21 @@ class TimberFace(Enum):
     FORWARD = 4 # the face vector with normal vector in the +Y axis direction
     LEFT = 5 # the face vector with normal vector in the -X axis direction
     BACK = 6 # the face vector with normal vector in the -Y axis direction
+    
+    def get_direction(self) -> Direction3D:
+        """Get the direction vector for this face in world coordinates."""
+        if self == TimberFace.TOP:
+            return create_vector3d(0, 0, 1)
+        elif self == TimberFace.BOTTOM:
+            return create_vector3d(0, 0, -1)
+        elif self == TimberFace.RIGHT:
+            return create_vector3d(1, 0, 0)
+        elif self == TimberFace.LEFT:
+            return create_vector3d(-1, 0, 0)
+        elif self == TimberFace.FORWARD:
+            return create_vector3d(0, 1, 0)
+        else:  # BACK
+            return create_vector3d(0, -1, 0)
 
 class TimberReferenceEnd(Enum):
     TOP = 1
@@ -402,6 +417,57 @@ class Timber:
         """
         return self.bottom_position + self.length_direction * (self.length - distance)
     
+    # TODO overload this method so it can take TimberReferenceEnd as an argument, or allow TimberReferenceEnd to auto cast into TimberFace
+    def get_face_direction(self, face: TimberFace) -> Direction3D:
+        """
+        Get the world direction vector for a specific face of this timber.
+        
+        Args:
+            face: The face to get the direction for
+            
+        Returns:
+            Direction vector pointing outward from the specified face in world coordinates
+        """
+        if face == TimberFace.TOP:
+            return self.length_direction
+        elif face == TimberFace.BOTTOM:
+            return -self.length_direction
+        elif face == TimberFace.RIGHT:
+            return self.width_direction
+        elif face == TimberFace.LEFT:
+            return -self.width_direction
+        elif face == TimberFace.FORWARD:
+            return self.height_direction
+        else:  # BACK
+            return -self.height_direction
+    
+    def get_closest_oriented_face(self, target_direction: Direction3D) -> TimberFace:
+        """
+        Find which face of this timber best aligns with the target direction.
+        
+        The target_direction should point "outwards" from the desired face (not into it).
+        
+        Args:
+            target_direction: Direction vector to match against
+            
+        Returns:
+            The TimberFace that best aligns with the target direction
+        """
+        faces = [TimberFace.TOP, TimberFace.BOTTOM, TimberFace.RIGHT, 
+                TimberFace.LEFT, TimberFace.FORWARD, TimberFace.BACK]
+        
+        best_face = faces[0]
+        best_alignment = target_direction.dot(self.get_face_direction(faces[0]))
+        
+        for face in faces[1:]:
+            face_direction = self.get_face_direction(face)
+            alignment = target_direction.dot(face_direction)
+            if alignment > best_alignment:
+                best_alignment = alignment
+                best_face = face
+        
+        return best_face
+    
     def get_transform_matrix(self) -> Matrix:
         """Get the 4x4 transformation matrix for this timber"""
         # Create 4x4 transformation matrix
@@ -483,7 +549,7 @@ def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
         New timber with the specified axis-aligned orientation
     """
     # Convert TimberFace to direction vectors
-    length_vec = _timber_face_to_vector(length_direction)
+    length_vec = length_direction.get_direction()
     
     # Determine width direction if not provided
     if width_direction is None:
@@ -497,7 +563,7 @@ def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
         # print a warning, this is usually not what you want
         print("WARNING: creating an axis-aligned timber with length_direction == BOTTOM. This is usually not what you want. Consider using length_direction == TOP instead.")
     
-    width_vec = _timber_face_to_vector(width_direction)
+    width_vec = width_direction.get_direction()
     
     return create_timber(bottom_position, length, size, length_vec, width_vec)
 
@@ -931,7 +997,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     location_on_timber2 = max(0, min(timber2.length, location_on_timber2))
     
     # Convert TimberFace to a direction vector for orientation (if provided)
-    orientation_width_vector = _timber_face_to_vector(orientation_face_on_timber1) if orientation_face_on_timber1 is not None else None
+    orientation_width_vector = orientation_face_on_timber1.get_direction() if orientation_face_on_timber1 is not None else None
     
     # Extract the centerline offset (use 0 if not provided)
     offset_value = offset_from_timber1.centerline_offset if offset_from_timber1.centerline_offset is not None else 0
@@ -1055,8 +1121,8 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
     
     # Compute the mortise face by finding which face of the mortise timber 
     # aligns with the tenon end face
-    tenon_end_direction = _get_tenon_end_direction(tenon_timber, tenon_end)
-    mortise_face = _find_aligned_face(mortise_timber, -tenon_end_direction)
+    tenon_end_direction = tenon_timber.get_face_direction(TimberFace.TOP if tenon_end == TimberReferenceEnd.TOP else TimberFace.BOTTOM)
+    mortise_face = mortise_timber.get_closest_oriented_face(-tenon_end_direction)
     
     # Calculate the correct mortise position based on tenon timber intersection
     mortise_ref_end, mortise_distance = _calculate_mortise_position_from_tenon_intersection(
@@ -1102,61 +1168,6 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
 # Helper Functions
 # ============================================================================
 
-# TODO convert to class method of TimberFace
-def _timber_face_to_vector(face: TimberFace) -> Direction3D:
-    """Convert TimberFace enum to direction vector"""
-    if face == TimberFace.TOP:
-        return create_vector3d(0, 0, 1)
-    elif face == TimberFace.BOTTOM:
-        return create_vector3d(0, 0, -1)
-    elif face == TimberFace.RIGHT:
-        return create_vector3d(1, 0, 0)
-    elif face == TimberFace.LEFT:
-        return create_vector3d(-1, 0, 0)
-    elif face == TimberFace.FORWARD:
-        return create_vector3d(0, 1, 0)
-    else:  # BACK
-        return create_vector3d(0, -1, 0)
-
-def _get_timber_width_direction(timber: Timber, face: TimberFace) -> Direction3D:
-    """Get the world direction vector for a specific face of a timber"""
-    if face == TimberFace.TOP:
-        return timber.length_direction
-    elif face == TimberFace.BOTTOM:
-        return -timber.length_direction
-    elif face == TimberFace.RIGHT:
-        return timber.width_direction
-    elif face == TimberFace.LEFT:
-        return -timber.width_direction
-    elif face == TimberFace.FORWARD:
-        return timber.height_direction
-    else:  # BACK
-        return -timber.height_direction
-
-def _get_tenon_end_direction(timber: Timber, end: TimberReferenceEnd) -> Direction3D:
-    """Get the world direction vector for a specific end of a timber"""
-    if end == TimberReferenceEnd.TOP:
-        return timber.length_direction
-    else:  # BOTTOM
-        return -timber.length_direction
-
-def _find_aligned_face(mortise_timber: Timber, target_direction: Direction3D) -> TimberFace:
-    """Find which face of the mortise timber best aligns with the target direction (traget_direction points "outwards" from the returned face, as opposed to into the face)"""
-    faces = [TimberFace.TOP, TimberFace.BOTTOM, TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FORWARD, TimberFace.BACK]
-    
-    best_face = faces[0]
-    width_direction = _get_timber_width_direction(mortise_timber, faces[0])
-    best_alignment = target_direction.dot(width_direction)
-    
-    for face in faces[1:]:
-        width_direction = _get_timber_width_direction(mortise_timber, face)
-        # Use dot product to find best alignment - prefer faces pointing in same direction
-        alignment = target_direction.dot(width_direction)
-        if alignment > best_alignment:
-            best_alignment = alignment
-            best_face = face
-    
-    return best_face
 
 def _has_rational_components(vector: Direction3D) -> bool:
     """
@@ -1445,8 +1456,8 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     t, projected_point = _project_point_on_timber_centerline(tenon_end_point, mortise_timber)
     
     # Get the face direction from mortise timber to tenon timber
-    tenon_end_direction = _get_tenon_end_direction(tenon_timber, tenon_end)
-    mortise_face = _find_aligned_face(mortise_timber, -tenon_end_direction)
+    tenon_end_direction = tenon_timber.get_face_direction(TimberFace.TOP if tenon_end == TimberReferenceEnd.TOP else TimberFace.BOTTOM)
+    mortise_face = mortise_timber.get_closest_oriented_face(-tenon_end_direction)
     
     # Calculate the distance from mortise centerline to mortise face
     if mortise_face in [TimberFace.RIGHT, TimberFace.LEFT]:
@@ -1460,7 +1471,7 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
         assert False, "TOP/BOTTOM faces shouldn't happen for typical tenon joints"
     
     # Calculate the actual position of the mortise face at the intersection point
-    width_vector = _timber_face_to_vector(mortise_face)
+    width_vector = mortise_face.get_direction()
     mortise_face_point = projected_point + create_vector3d(width_vector[0], width_vector[1], width_vector[2]) * face_offset
     
     # Calculate the distance from tenon end to where the shoulder plane should be
