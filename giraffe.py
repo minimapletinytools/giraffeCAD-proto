@@ -501,6 +501,10 @@ def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
         else:
             width_direction = TimberFace.RIGHT
     
+    if length_direction == TimberFace.BOTTOM:
+        # print a warning, this is usually not what you want
+        print("WARNING: creating an axis-aligned timber with length_direction == BOTTOM. This is usually not what you want. Consider using length_direction == TOP instead.")
+    
     width_vec = _timber_face_to_vector(width_direction)
     
     return create_timber(bottom_position, length, size, length_vec, width_vec)
