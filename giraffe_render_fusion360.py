@@ -68,18 +68,18 @@ def create_matrix3d_from_orientation(position: Matrix, orientation: Orientation)
     matrix3d = adsk.core.Matrix3D.create()
     
     # Extract rotation matrix values (convert sympy expressions to floats)
-    # The orientation matrix columns are [face_direction, height_direction, length_direction]
+    # The orientation matrix columns are [width_direction, height_direction, length_direction]
     # For Fusion 360, we want to create a coordinate system where:
-    # - X-axis (col 0) = face_direction (width of timber)
+    # - X-axis (col 0) = width_direction (width of timber)
     # - Y-axis (col 1) = height_direction (height of timber)  
     # - Z-axis (col 2) = length_direction (length of timber for extrusion)
-    r00 = float(orientation.matrix[0, 0])  # face_direction.x
+    r00 = float(orientation.matrix[0, 0])  # width_direction.x
     r01 = float(orientation.matrix[0, 1])  # height_direction.x
     r02 = float(orientation.matrix[0, 2])  # length_direction.x
-    r10 = float(orientation.matrix[1, 0])  # face_direction.y
+    r10 = float(orientation.matrix[1, 0])  # width_direction.y
     r11 = float(orientation.matrix[1, 1])  # height_direction.y
     r12 = float(orientation.matrix[1, 2])  # length_direction.y
-    r20 = float(orientation.matrix[2, 0])  # face_direction.z
+    r20 = float(orientation.matrix[2, 0])  # width_direction.z
     r21 = float(orientation.matrix[2, 1])  # height_direction.z
     r22 = float(orientation.matrix[2, 2])  # length_direction.z
     
@@ -189,9 +189,9 @@ def get_face_normal_and_plane(timber: Timber, face: TimberFace) -> Tuple[Matrix,
     elif face == TimberFace.BOTTOM:
         return -timber.length_direction, "XY"  # Bottom face is in XY plane with -Z normal
     elif face == TimberFace.RIGHT:
-        return timber.face_direction, "YZ"  # Right face is in YZ plane with +X normal
+        return timber.width_direction, "YZ"  # Right face is in YZ plane with +X normal
     elif face == TimberFace.LEFT:
-        return -timber.face_direction, "YZ"  # Left face is in YZ plane with -X normal
+        return -timber.width_direction, "YZ"  # Left face is in YZ plane with -X normal
     elif face == TimberFace.FORWARD:
         return timber.height_direction, "XZ"  # Forward face is in XZ plane with +Y normal
     else:  # BACK

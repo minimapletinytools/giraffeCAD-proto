@@ -47,7 +47,7 @@ def create_supersimple_structure3():
     length_direction = Matrix([final_orientation.matrix[0, 2], 
                               final_orientation.matrix[1, 2], 
                               final_orientation.matrix[2, 2]])
-    face_direction = Matrix([final_orientation.matrix[0, 0], 
+    width_direction = Matrix([final_orientation.matrix[0, 0], 
                             final_orientation.matrix[1, 0], 
                             final_orientation.matrix[2, 0]])
     
@@ -55,7 +55,7 @@ def create_supersimple_structure3():
     timber = Timber(
         bottom_position=create_vector3d(0, 0, 0),
         length_direction=length_direction,
-        face_direction=face_direction,
+        width_direction=width_direction,
         length=1.0,  # 1 meter long
         size=create_vector2d(0.1, 0.05)  # 10cm wide, 5cm thick
     )
@@ -66,7 +66,7 @@ def create_supersimple_structure3():
     
     print(f"Created timber with orientation:")
     print(f"  Length direction: ({float(timber.length_direction[0]):.3f}, {float(timber.length_direction[1]):.3f}, {float(timber.length_direction[2]):.3f})")
-    print(f"  Face direction:   ({float(timber.face_direction[0]):.3f}, {float(timber.face_direction[1]):.3f}, {float(timber.face_direction[2]):.3f})")
+    print(f"  Face direction:   ({float(timber.width_direction[0]):.3f}, {float(timber.width_direction[1]):.3f}, {float(timber.width_direction[2]):.3f})")
     print(f"  Height direction: ({float(timber.height_direction[0]):.3f}, {float(timber.height_direction[1]):.3f}, {float(timber.height_direction[2]):.3f})")
     
     return [cut_timber]

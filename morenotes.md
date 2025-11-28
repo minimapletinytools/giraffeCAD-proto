@@ -112,7 +112,7 @@ class Timber:
     size : V2
     bottom_position : V3
     length_direction : TimberFace
-    face_direction : TimberFace
+    width_direction : TimberFace
     # nominal_size : V2
 ```
 
@@ -229,10 +229,10 @@ struct DistanceFromLongEdge(Enum):
 ### operations
 
 ```
-create_timber(bottom_position : V3,  length : float, size : V2, length_direction : V3, face_direction : V3) -> Timber
+create_timber(bottom_position : V3,  length : float, size : V2, length_direction : V3, width_direction : V3) -> Timber
 
-# creates a timber at bottom_position with given dimensions and rotates it to the length_direction and face_direction (using TimberFace to reference directions in the world coordinate system)
-create_axis_aligned_timber(bottom_position : V3, length : float, size : V2, length_direction : TimberFace, face_direction : TimberFace) -> Timber
+# creates a timber at bottom_position with given dimensions and rotates it to the length_direction and width_direction (using TimberFace to reference directions in the world coordinate system)
+create_axis_aligned_timber(bottom_position : V3, length : float, size : V2, length_direction : TimberFace, width_direction : TimberFace) -> Timber
 
 # AKA create_post
 # the length is in the up (+Z) direction

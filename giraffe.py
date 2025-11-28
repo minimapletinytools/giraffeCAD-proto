@@ -286,14 +286,14 @@ class Timber:
     """Represents a timber in the timber framing system"""
     
     def __init__(self, length: Union[float, int, Expr], size: V2, bottom_position: V3, 
-                 length_direction: Direction3D, face_direction: Direction3D):
+                 length_direction: Direction3D, width_direction: Direction3D):
         """
         Args:
             length: Length of the timber
             size: Cross-sectional size (width, height) as 2D vector, width is the X dimension (left to right), height is the Y dimension (front to back)
             bottom_position: Position of the bottom point (center of cross-section) as 3D vector
             length_direction: Direction vector for the length axis as 3D vector, the +length direction is the +Z direction
-            face_direction: Direction vector for the face axis as 3D vector, the +face direction is the +X direction
+            width_direction: Direction vector for the width axis as 3D vector, the +width direction is the +X direction
         """
         self.length: float = length
         self.size: V2 = size
@@ -302,15 +302,15 @@ class Timber:
         self.orientation: Orientation
         
         # Calculate orientation matrix from input directions
-        self._compute_orientation(length_direction, face_direction)
+        self._compute_orientation(length_direction, width_direction)
     
-    def _compute_orientation(self, length_direction: Direction3D, face_direction: Direction3D):
+    def _compute_orientation(self, length_direction: Direction3D, width_direction: Direction3D):
         """Compute the orientation matrix from length and face directions"""
         # Normalize the length direction first (this will be our primary axis)
         length_norm = normalize_vector(length_direction)
         
         # Orthogonalize face direction relative to length direction using Gram-Schmidt
-        face_input = normalize_vector(face_direction)
+        face_input = normalize_vector(width_direction)
         
         # Project face_input onto length_norm and subtract to get orthogonal component
         projection = length_norm * (face_input.dot(length_norm))
@@ -357,7 +357,7 @@ class Timber:
         ])
     
     @property
-    def face_direction(self) -> Direction3D:
+    def width_direction(self) -> Direction3D:
         """Get the face direction vector from the orientation matrix"""
         # Face direction is the 1st column (index 0) of the rotation matrix
         # The +face direction is the +X direction
@@ -465,22 +465,22 @@ class CutTimber:
 # ============================================================================
 
 def create_timber(bottom_position: V3, length: float, size: V2, 
-                  length_direction: Direction3D, face_direction: Direction3D) -> Timber:
+                  length_direction: Direction3D, width_direction: Direction3D) -> Timber:
     """
     Creates a timber at bottom_position with given dimensions and rotates it 
-    to the length_direction and face_direction
+    to the length_direction and width_direction
     """
-    return Timber(length, size, bottom_position, length_direction, face_direction)
+    return Timber(length, size, bottom_position, length_direction, width_direction)
 
 def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
-                              length_direction: TimberFace, face_direction: TimberFace) -> Timber:
+                              length_direction: TimberFace, width_direction: TimberFace) -> Timber:
     """
     Creates an axis-aligned timber using TimberFace to reference directions
     in the world coordinate system
     """
     # Convert TimberFace to direction vectors
     length_vec = _timber_face_to_vector(length_direction)
-    face_vec = _timber_face_to_vector(face_direction)
+    face_vec = _timber_face_to_vector(width_direction)
     
     return create_timber(bottom_position, length, size, length_vec, face_vec)
 
@@ -539,7 +539,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
     
     # Align timber face direction with outgoing boundary side
     # Face direction is in the XY plane along the outgoing side
-    face_direction = create_vector3d(outgoing_dir_normalized[0], outgoing_dir_normalized[1], 0)
+    width_direction = create_vector3d(outgoing_dir_normalized[0], outgoing_dir_normalized[1], 0)
     
     # Calculate bottom position based on location type
     # Keep corner coordinates exact
@@ -568,7 +568,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
         offset_y = -timber_width/2 * outgoing_dir_normalized[1] - timber_depth/2 * outgoing_dir_normalized[0]
         bottom_position = create_vector3d(corner_x + offset_x, corner_y + offset_y, 0)
     
-    return create_timber(bottom_position, length, size, length_direction, face_direction)
+    return create_timber(bottom_position, length, size, length_direction, width_direction)
 
 def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: int, 
                                             distance_along_side: float,
@@ -640,7 +640,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
     length_direction = create_vector3d(0, 0, 1)
     
     # Face direction is parallel to the boundary side
-    face_direction = create_vector3d(side_dir_normalized[0], side_dir_normalized[1], 0)
+    width_direction = create_vector3d(side_dir_normalized[0], side_dir_normalized[1], 0)
     
     # Calculate bottom position based on location type
     if location_type == TimberLocationType.CENTER:
@@ -666,7 +666,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
                                          point_y - inward_y * timber_depth / 2, 
                                          0)
     
-    return create_timber(bottom_position, length, size, length_direction, face_direction)
+    return create_timber(bottom_position, length, size, length_direction, width_direction)
 
 def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int,
                                         location_type: TimberLocationType, 
@@ -711,10 +711,10 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     inward_normal = create_vector3d(inward_x, inward_y, inward_z)
     
     # Face direction is up (Z+)
-    face_direction = create_vector3d(0, 0, 1)
+    width_direction = create_vector3d(0, 0, 1)
     
     # The timber's orientation will be:
-    #   X-axis (width/size[0]) = face_direction = (0, 0, 1) = vertical (up)
+    #   X-axis (width/size[0]) = width_direction = (0, 0, 1) = vertical (up)
     #   Y-axis (height/size[1]) = length × face = perpendicular to boundary in XY plane
     #   Z-axis (length) = length_direction = along boundary side
     # Therefore, size[1] is the dimension perpendicular to the boundary
@@ -735,7 +735,7 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
         bottom_position = bottom_position - inward_normal * (timber_height / 2)
     # For CENTER, no offset needed - centerline is already on the boundary side
     
-    return create_timber(bottom_position, length, size, length_direction, face_direction)
+    return create_timber(bottom_position, length, size, length_direction, width_direction)
 
 def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_length: float, 
                            extend_length: float) -> Timber:
@@ -760,7 +760,7 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
     new_length = timber.length + extend_length + overlap_length
     
     return Timber(new_length, timber.size, new_bottom_position, 
-                 timber.length_direction, timber.face_direction)
+                 timber.length_direction, timber.width_direction)
 
 def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
                 stickout: Stickout, offset_from_timber1: float,
@@ -805,12 +805,12 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     
     # Calculate face direction (width direction for the created timber)
     if orientation_width_vector is not None:
-        face_direction = orientation_width_vector
+        width_direction = orientation_width_vector
         
         # Verify that the provided orientation_width_vector is perpendicular to length_direction
-        assert _are_directions_perpendicular(face_direction, length_direction), \
+        assert _are_directions_perpendicular(width_direction, length_direction), \
             f"orientation_width_vector must be perpendicular to the joining direction. " \
-            f"Dot product: {simplify(face_direction.dot(length_direction))}"
+            f"Dot product: {simplify(width_direction.dot(length_direction))}"
     else:
         # Default: project timber1's length direction onto the plane perpendicular to the joining direction
         reference_direction = timber1.length_direction
@@ -824,23 +824,23 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         if is_parallel:
             # timber1's length direction is parallel to joining direction
             # Use timber1's face direction instead
-            reference_direction = timber1.face_direction
+            reference_direction = timber1.width_direction
             dot_product = reference_direction.dot(length_direction)
         
         # Project onto perpendicular plane: v_perp = v - (v·n)n
-        face_direction = reference_direction - dot_product * length_direction
-        face_direction = normalize_vector(face_direction)
+        width_direction = reference_direction - dot_product * length_direction
+        width_direction = normalize_vector(width_direction)
     
     # TODO TEST THIS IT'S PROBABLY WRONG
     # Determine size if not provided
     if size is None:
         # Check the orientation of the created timber relative to timber1
         # Dot product of the created timber's face direction with timber1's length direction
-        dot_product = Abs(face_direction.dot(timber1.length_direction))
+        dot_product = Abs(width_direction.dot(timber1.length_direction))
         
         if dot_product < Rational(1, 2):  # < 0.5, meaning more perpendicular than parallel
             # The created timber is joining perpendicular to timber1
-            # Its X dimension (width, along face_direction) should match the dimension 
+            # Its X dimension (width, along width_direction) should match the dimension 
             # of the face it's joining to on timber1, which is timber1's width (size[0])
             size = create_vector2d(timber1.size[0], timber1.size[1])
         else:
@@ -871,7 +871,7 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     if offset_from_timber1 != 0:
         bottom_pos += offset_dir * offset_from_timber1
     
-    return create_timber(bottom_pos, timber_length, size, length_direction, face_direction)
+    return create_timber(bottom_pos, timber_length, size, length_direction, width_direction)
 
 def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber,
                                                 location_on_timber1: float,
@@ -933,8 +933,8 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     # Determine which dimension of the created timber is perpendicular to the joining direction
     # The created timber will have:
     # - length_direction = joining_direction
-    # - face_direction = orientation_width_vector
-    # - height_direction = cross(length_direction, face_direction)
+    # - width_direction = orientation_width_vector
+    # - height_direction = cross(length_direction, width_direction)
     
     # To determine which dimension (width=size[0] or height=size[1]) affects the stickout,
     # we need to see which one is aligned with the joining direction's perpendicular plane
@@ -945,7 +945,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     if stickout.stickoutReference1 != StickoutReference.CENTER_LINE or stickout.stickoutReference2 != StickoutReference.CENTER_LINE:
         # Need to determine which dimension is perpendicular
         if orientation_width_vector is not None:
-            # The width (size[0]) is along the face_direction
+            # The width (size[0]) is along the width_direction
             # The height (size[1]) is along the height_direction (perpendicular to both)
             height_direction = normalize_vector(cross_product(joining_direction, orientation_width_vector))
             
@@ -1105,16 +1105,16 @@ def _timber_face_to_vector(face: TimberFace) -> Direction3D:
     else:  # BACK
         return create_vector3d(0, -1, 0)
 
-def _get_timber_face_direction(timber: Timber, face: TimberFace) -> Direction3D:
+def _get_timber_width_direction(timber: Timber, face: TimberFace) -> Direction3D:
     """Get the world direction vector for a specific face of a timber"""
     if face == TimberFace.TOP:
         return timber.length_direction
     elif face == TimberFace.BOTTOM:
         return -timber.length_direction
     elif face == TimberFace.RIGHT:
-        return timber.face_direction
+        return timber.width_direction
     elif face == TimberFace.LEFT:
-        return -timber.face_direction
+        return -timber.width_direction
     elif face == TimberFace.FORWARD:
         return timber.height_direction
     else:  # BACK
@@ -1132,13 +1132,13 @@ def _find_aligned_face(mortise_timber: Timber, target_direction: Direction3D) ->
     faces = [TimberFace.TOP, TimberFace.BOTTOM, TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FORWARD, TimberFace.BACK]
     
     best_face = faces[0]
-    face_direction = _get_timber_face_direction(mortise_timber, faces[0])
-    best_alignment = target_direction.dot(face_direction)
+    width_direction = _get_timber_width_direction(mortise_timber, faces[0])
+    best_alignment = target_direction.dot(width_direction)
     
     for face in faces[1:]:
-        face_direction = _get_timber_face_direction(mortise_timber, face)
+        width_direction = _get_timber_width_direction(mortise_timber, face)
         # Use dot product to find best alignment - prefer faces pointing in same direction
-        alignment = target_direction.dot(face_direction)
+        alignment = target_direction.dot(width_direction)
         if alignment > best_alignment:
             best_alignment = alignment
             best_face = face
@@ -1263,7 +1263,7 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
     rotations around any axis (i.e., they share the same coordinate grid alignment).
     
     Mathematically, timbers are face-aligned if any of their orthogonal direction 
-    vectors (length_direction, face_direction, height_direction) are parallel to each other.
+    vectors (length_direction, width_direction, height_direction) are parallel to each other.
     
     Args:
         timber1: First timber
@@ -1276,8 +1276,8 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
         True if timbers are face-aligned, False otherwise
     """
     # Get the three orthogonal direction vectors for each timber
-    dirs1 = [timber1.length_direction, timber1.face_direction, timber1.height_direction]
-    dirs2 = [timber2.length_direction, timber2.face_direction, timber2.height_direction]
+    dirs1 = [timber1.length_direction, timber1.width_direction, timber1.height_direction]
+    dirs2 = [timber2.length_direction, timber2.width_direction, timber2.height_direction]
     
     # Check if all values are rational (exact)
     all_rational = all(_has_rational_components(direction) for direction in dirs1 + dirs2)

@@ -27,7 +27,7 @@ def create_supersimple_structure() -> list[CutTimber]:
         length=1.0,                                         # 1 meter tall
         size=post_size,
         length_direction=create_vector3d(0, 0, 1),          # Vertical (up in Z)
-        face_direction=create_vector3d(1, 0, 0)             # Facing east (X direction)
+        width_direction=create_vector3d(1, 0, 0)             # Facing east (X direction)
     )
     post1.name = "Post 1"
     
@@ -37,7 +37,7 @@ def create_supersimple_structure() -> list[CutTimber]:
         length=1.0,                                         # 1 meter tall
         size=post_size,
         length_direction=create_vector3d(0, 0, 1),          # Vertical (up in Z)
-        face_direction=create_vector3d(1, 0, 0)             # Facing east (X direction)
+        width_direction=create_vector3d(1, 0, 0)             # Facing east (X direction)
     )
     post2.name = "Post 2"
     
@@ -47,7 +47,7 @@ def create_supersimple_structure() -> list[CutTimber]:
         length=2.0,                                         # 2 meters long (distance between posts)
         size=beam_size,
         length_direction=create_vector3d(1, 0, 0),          # Horizontal in X direction
-        face_direction=create_vector3d(0, 0, 1)             # Facing up (Z direction)
+        width_direction=create_vector3d(0, 0, 1)             # Facing up (Z direction)
     )
     beam.name = "Connecting Beam"
     

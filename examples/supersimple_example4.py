@@ -29,7 +29,7 @@ def create_supersimple_structure4() -> list[CutTimber]:
         length=1.0,                                         # 1 meter long
         size=post_size,
         length_direction=create_vector3d(0, 0, 1),          # Facing UP (vertical)
-        face_direction=create_vector3d(1, 0, 0)             # Face oriented east
+        width_direction=create_vector3d(1, 0, 0)             # Face oriented east
     )
     post1.name = "Vertical Post"
     
@@ -39,7 +39,7 @@ def create_supersimple_structure4() -> list[CutTimber]:
         length=1.0,                                         # 1 meter long
         size=post_size,
         length_direction=create_vector3d(0, 1, 0),          # Facing FORWARD (north)
-        face_direction=create_vector3d(0, 0, 1)             # Face oriented up
+        width_direction=create_vector3d(0, 0, 1)             # Face oriented up
     )
     post2.name = "Horizontal Post"
     
@@ -60,7 +60,7 @@ def create_supersimple_structure4() -> list[CutTimber]:
     print(f"Created isolated connecting timber:")
     print(f"  Position: ({float(joining_timber.bottom_position[0]):.3f}, {float(joining_timber.bottom_position[1]):.3f}, {float(joining_timber.bottom_position[2]):.3f})")
     print(f"  Length direction: ({float(joining_timber.length_direction[0]):.3f}, {float(joining_timber.length_direction[1]):.3f}, {float(joining_timber.length_direction[2]):.3f})")
-    print(f"  Face direction:   ({float(joining_timber.face_direction[0]):.3f}, {float(joining_timber.face_direction[1]):.3f}, {float(joining_timber.face_direction[2]):.3f})")
+    print(f"  Face direction:   ({float(joining_timber.width_direction[0]):.3f}, {float(joining_timber.width_direction[1]):.3f}, {float(joining_timber.width_direction[2]):.3f})")
     print(f"  Height direction: ({float(joining_timber.height_direction[0]):.3f}, {float(joining_timber.height_direction[1]):.3f}, {float(joining_timber.height_direction[2]):.3f})")
     
     # Return ONLY the connecting timber
