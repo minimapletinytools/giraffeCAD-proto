@@ -10,6 +10,7 @@ from moothymoth import Orientation
 from footprint import Footprint
 from giraffe import *
 from giraffe import _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned, _project_point_on_timber_centerline, _calculate_mortise_position_from_tenon_intersection
+from footprint import Footprint
 
 
 class TestVectorHelpers:
@@ -2433,3 +2434,95 @@ class TestHelperFunctions:
         # Should reference from TOP since it's closer
         assert ref_end == TimberReferenceEnd.TOP
         assert abs(distance - 0.2) < 1e-10
+
+
+class TestTimberFootprintOrientation:
+    """Test timber inside/outside face determination relative to footprint."""
+    
+    def test_get_inside_outside_faces(self):
+        """Test get_inside_face and get_outside_face for various timber configurations."""
+        # Create a square footprint
+        corners = [
+            create_vector2d(0, 0),
+            create_vector2d(10, 0),
+            create_vector2d(10, 10),
+            create_vector2d(0, 10)
+        ]
+        footprint = Footprint(corners)
+        
+        # Test configurations: (description, bottom_pos, length_dir, width_dir, length, expected_inside, expected_outside)
+        test_cases = [
+            # Horizontal timber near bottom edge (y=1), running along X
+            ("bottom_edge", 
+             create_vector3d(1, 1, 0), create_vector3d(1, 0, 0), create_vector3d(0, 1, 0), 8.0,
+             TimberFace.RIGHT, TimberFace.LEFT),
+            
+            # Timber near right edge (x=9), running along Y
+            ("right_edge", 
+             create_vector3d(9, 1, 0), create_vector3d(0, 1, 0), create_vector3d(-1, 0, 0), 8.0,
+             TimberFace.TOP, TimberFace.BOTTOM),
+            
+            # Horizontal timber near top edge (y=9), running along X
+            ("top_edge", 
+             create_vector3d(1, 9, 0), create_vector3d(1, 0, 0), create_vector3d(0, -1, 0), 8.0,
+             TimberFace.BOTTOM, TimberFace.TOP),
+            
+            # Timber near left edge (x=1), running along Y
+            ("left_edge", 
+             create_vector3d(1, 1, 0), create_vector3d(0, 1, 0), create_vector3d(1, 0, 0), 8.0,
+             TimberFace.TOP, TimberFace.BOTTOM),
+            
+            # Vertical timber near bottom edge
+            ("vertical", 
+             create_vector3d(5, 1, 0), create_vector3d(0, 0, 1), create_vector3d(0, 1, 0), 3.0,
+             TimberFace.RIGHT, TimberFace.LEFT),
+        ]
+        
+        for description, bottom_pos, length_dir, width_dir, length, expected_inside, expected_outside in test_cases:
+            timber = Timber(
+                length=length,
+                size=create_vector2d(0.2, 0.3),
+                bottom_position=bottom_pos,
+                length_direction=length_dir,
+                width_direction=width_dir
+            )
+            
+            inside_face = timber.get_inside_face(footprint)
+            outside_face = timber.get_outside_face(footprint)
+            
+            assert inside_face == expected_inside, \
+                f"{description}: Expected inside face {expected_inside}, got {inside_face}"
+            assert outside_face == expected_outside, \
+                f"{description}: Expected outside face {expected_outside}, got {outside_face}"
+    
+    def test_get_inside_face_diagonal_timber(self):
+        """Test get_inside_face for timber at diagonal orientation."""
+        corners = [
+            create_vector2d(0, 0),
+            create_vector2d(10, 0),
+            create_vector2d(10, 10),
+            create_vector2d(0, 10)
+        ]
+        footprint = Footprint(corners)
+        
+        # Diagonal timber from (1,1) going toward (9,9), but oriented so width points inward
+        timber = Timber(
+            length=11.31,  # ~8*sqrt(2)
+            size=create_vector2d(0.2, 0.3),
+            bottom_position=create_vector3d(1, 1, 0),
+            length_direction=normalize_vector(create_vector3d(1, 1, 0)),  # Diagonal
+            width_direction=normalize_vector(create_vector3d(-1, 1, 0))   # Perpendicular to length, pointing "inward-ish"
+        )
+        
+        inside_face = timber.get_inside_face(footprint)
+        outside_face = timber.get_outside_face(footprint)
+        
+        # Should determine a consistent inside/outside face based on nearest boundary
+        # The exact face depends on which boundary is closest, but they should be opposite
+        assert inside_face != outside_face
+        
+        # Verify that the inside and outside faces are opposite
+        inside_dir = timber.get_face_direction(inside_face)
+        outside_dir = timber.get_face_direction(outside_face)
+        # Dot product should be negative (opposite directions)
+        assert inside_dir.dot(outside_dir) < 0

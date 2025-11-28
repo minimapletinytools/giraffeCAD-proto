@@ -468,29 +468,70 @@ class Timber:
         
         return best_face 
     
+    # UNTESTED
     def get_inside_face(self, footprint: Footprint) -> TimberFace:
         """
         Get the inside face of this timber relative to the footprint.
         
+        This method finds which face of the timber is oriented toward the interior
+        of the footprint by:
+        1. Finding the nearest boundary of the footprint to the timber's centerline
+        2. Getting the inward normal of that boundary
+        3. Finding which timber face best aligns with that inward direction
+        
         Args:
-            footprint: The footprint to get the inside face for
+            footprint: The footprint to determine inside/outside orientation
             
         Returns:
-            The inside face of this timber relative to the footprint
+            The TimberFace that points toward the inside of the footprint
         """
-        return null
+        # Project timber's centerline onto XY plane for footprint comparison
+        bottom_2d = create_vector2d(self.bottom_position[0], self.bottom_position[1])
+        top_position = self.bottom_position + self.length_direction * self.length
+        top_2d = create_vector2d(top_position[0], top_position[1])
+        
+        # Find nearest boundary to timber's centerline
+        boundary_idx, boundary_side, distance = footprint.nearest_boundary_from_line(bottom_2d, top_2d)
+        
+        # Get the inward normal of that boundary
+        inward_x, inward_y, inward_z = footprint.get_inward_normal(boundary_idx)
+        inward_normal = create_vector3d(inward_x, inward_y, inward_z)
+        
+        # Find which face of the timber aligns with the inward direction
+        return self.get_closest_oriented_face(inward_normal)
 
+    # UNTESTED
     def get_outside_face(self, footprint: Footprint) -> TimberFace:
         """
         Get the outside face of this timber relative to the footprint.
         
+        This method finds which face of the timber is oriented toward the exterior
+        of the footprint by:
+        1. Finding the nearest boundary of the footprint to the timber's centerline
+        2. Getting the inward normal of that boundary
+        3. Finding which timber face best aligns with the opposite (outward) direction
+        
         Args:
-            footprint: The footprint to get the outside face for
+            footprint: The footprint to determine inside/outside orientation
             
         Returns:
-            The outside face of this timber relative to the footprint
+            The TimberFace that points toward the outside of the footprint
         """
-        return null
+        # Project timber's centerline onto XY plane for footprint comparison
+        bottom_2d = create_vector2d(self.bottom_position[0], self.bottom_position[1])
+        top_position = self.bottom_position + self.length_direction * self.length
+        top_2d = create_vector2d(top_position[0], top_position[1])
+        
+        # Find nearest boundary to timber's centerline
+        boundary_idx, boundary_side, distance = footprint.nearest_boundary_from_line(bottom_2d, top_2d)
+        
+        # Get the inward normal of that boundary
+        inward_x, inward_y, inward_z = footprint.get_inward_normal(boundary_idx)
+        inward_normal = create_vector3d(inward_x, inward_y, inward_z)
+        
+        # Find which face of the timber aligns with the outward direction (negative of inward)
+        outward_normal = -inward_normal
+        return self.get_closest_oriented_face(outward_normal)
     
     def get_transform_matrix(self) -> Matrix:
         """Get the 4x4 transformation matrix for this timber"""
