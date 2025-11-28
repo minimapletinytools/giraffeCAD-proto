@@ -60,7 +60,7 @@ DONE- axis aligned timbers
 DONE- rename face aligned to face parallel timebers
 DONE- 2 faces can be oriented (same normals) or opposing (opposite normals)
 DONE-rename "width vector" to "plus_x_width_vector" or "plus_x_width_vector_of_created_timber"
--add helper asserts that does symbolic check if ratinoal otherwise fuzzy
+DONE-add helper asserts that does symbolic check if ratinoal otherwise fuzzy
   -check_parallel,perpendicular
 - note down default orientation of timbers when created in vertical and horizontal position
   - when laying horizontal, the orientation should always be consistent such that either the width or height of the timber runs in the Z axis direction
