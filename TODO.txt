@@ -72,8 +72,6 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 
 - you need a better way to specify timber lenghts... most of the time you don't really care? It should be determined by the joint in most cases.
   - so I guess joints will resize the timber, even tusk tenon joints take a tusk length parameter, tenon joints have a tenon depth parameter etc.. (i think this is how it already is, update the README to explain this)
-
-
 - getInside/OutsideFace(timber, footprint)
 - getFacingFace(tiber, direction)
 - maybe split griaffe sad :(
