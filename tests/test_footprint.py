@@ -47,8 +47,8 @@ class TestFootprint:
         assert sides[3][0] == corners[3]
         assert sides[3][1] == corners[0]
     
-    def test_footprint_isValid_valid_footprint(self):
-        """Test isValid() with a valid footprint."""
+    def test_footprint_is_valid_valid_footprint(self):
+        """Test is_valid() with a valid footprint."""
         corners = [
             create_vector2d(0, 0),
             create_vector2d(1, 0),
@@ -57,20 +57,20 @@ class TestFootprint:
         ]
         footprint = Footprint(corners)
         
-        assert footprint.isValid() == True
+        assert footprint.is_valid() == True
     
-    def test_footprint_isValid_too_few_corners(self):
-        """Test isValid() with too few corners."""
+    def test_footprint_is_valid_too_few_corners(self):
+        """Test is_valid() with too few corners."""
         corners = [
             create_vector2d(0, 0),
             create_vector2d(1, 0)
         ]
         footprint = Footprint(corners)
         
-        assert footprint.isValid() == False
+        assert footprint.is_valid() == False
     
-    def test_footprint_isValid_self_intersecting(self):
-        """Test isValid() with self-intersecting sides."""
+    def test_footprint_is_valid_self_intersecting(self):
+        """Test is_valid() with self-intersecting sides."""
         corners = [
             create_vector2d(0, 0),
             create_vector2d(1, 1),
@@ -79,10 +79,10 @@ class TestFootprint:
         ]
         footprint = Footprint(corners)
         
-        assert footprint.isValid() == False
+        assert footprint.is_valid() == False
     
-    def test_footprint_containsPoint_inside(self):
-        """Test containsPoint() with point inside."""
+    def test_footprint_contains_point_inside(self):
+        """Test contains_point() with point inside."""
         corners = [
             create_vector2d(0, 0),
             create_vector2d(2, 0),
@@ -91,10 +91,10 @@ class TestFootprint:
         ]
         footprint = Footprint(corners)
         
-        assert footprint.containsPoint(create_vector2d(1, 1)) == True
+        assert footprint.contains_point(create_vector2d(1, 1)) == True
     
-    def test_footprint_containsPoint_outside(self):
-        """Test containsPoint() with point outside."""
+    def test_footprint_contains_point_outside(self):
+        """Test contains_point() with point outside."""
         corners = [
             create_vector2d(0, 0),
             create_vector2d(2, 0),
@@ -103,10 +103,10 @@ class TestFootprint:
         ]
         footprint = Footprint(corners)
         
-        assert footprint.containsPoint(create_vector2d(3, 3)) == False
+        assert footprint.contains_point(create_vector2d(3, 3)) == False
     
-    def test_footprint_nearestCorner(self):
-        """Test nearestCorner() method."""
+    def test_footprint_nearest_corner(self):
+        """Test nearest_corner() method."""
         corners = [
             create_vector2d(0, 0),
             create_vector2d(2, 0),
@@ -116,17 +116,17 @@ class TestFootprint:
         footprint = Footprint(corners)
         
         # Point closest to corner 0
-        idx, corner = footprint.nearestCorner(create_vector2d(0.1, 0.1))
+        idx, corner = footprint.nearest_corner(create_vector2d(0.1, 0.1))
         assert idx == 0
         assert corner == corners[0]
         
         # Point closest to corner 2
-        idx, corner = footprint.nearestCorner(create_vector2d(1.9, 1.9))
+        idx, corner = footprint.nearest_corner(create_vector2d(1.9, 1.9))
         assert idx == 2
         assert corner == corners[2]
     
-    def test_footprint_nearestBoundary(self):
-        """Test nearestBoundary() method."""
+    def test_footprint_nearest_boundary(self):
+        """Test nearest_boundary() method."""
         corners = [
             create_vector2d(0, 0),
             create_vector2d(2, 0),
@@ -136,19 +136,19 @@ class TestFootprint:
         footprint = Footprint(corners)
         
         # Point closest to first side (bottom edge)
-        idx, side, dist = footprint.nearestBoundary(create_vector2d(1, -0.5))
+        idx, side, dist = footprint.nearest_boundary(create_vector2d(1, -0.5))
         assert idx == 0
         assert side == (corners[0], corners[1])
         assert abs(dist - 0.5) < 1e-6
         
         # Point closest to third side (top edge)
-        idx, side, dist = footprint.nearestBoundary(create_vector2d(1, 2.5))
+        idx, side, dist = footprint.nearest_boundary(create_vector2d(1, 2.5))
         assert idx == 2
         assert side == (corners[2], corners[3])
         assert abs(dist - 0.5) < 1e-6
     
-    def test_footprint_getInwardNormal(self):
-        """Test getInwardNormal() method with exact arithmetic."""
+    def test_footprint_get_inward_normal(self):
+        """Test get_inward_normal() method with exact arithmetic."""
         # Create a counter-clockwise square footprint using exact integers
         corners = [
             create_vector2d(0, 0),  # Bottom-left - exact integers
@@ -160,25 +160,25 @@ class TestFootprint:
         
         # Test bottom edge (should point up/inward: y+)
         # For axis-aligned edges, normals may be SymPy types
-        nx, ny, nz = footprint.getInwardNormal(0)
+        nx, ny, nz = footprint.get_inward_normal(0)
         assert float(nx) == 0.0
         assert float(ny) == 1.0
         assert float(nz) == 0.0
         
         # Test right edge (should point left/inward: x-)
-        nx, ny, nz = footprint.getInwardNormal(1)
+        nx, ny, nz = footprint.get_inward_normal(1)
         assert float(nx) == -1.0
         assert float(ny) == 0.0
         assert float(nz) == 0.0
         
         # Test top edge (should point down/inward: y-)
-        nx, ny, nz = footprint.getInwardNormal(2)
+        nx, ny, nz = footprint.get_inward_normal(2)
         assert float(nx) == 0.0
         assert float(ny) == -1.0
         assert float(nz) == 0.0
         
         # Test left edge (should point right/inward: x+)
-        nx, ny, nz = footprint.getInwardNormal(3)
+        nx, ny, nz = footprint.get_inward_normal(3)
         assert float(nx) == 1.0
         assert float(ny) == 0.0
         assert float(nz) == 0.0

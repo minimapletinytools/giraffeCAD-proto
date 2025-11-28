@@ -466,7 +466,31 @@ class Timber:
                 best_alignment = alignment
                 best_face = face
         
-        return best_face
+        return best_face 
+    
+    def get_inside_face(self, footprint: Footprint) -> TimberFace:
+        """
+        Get the inside face of this timber relative to the footprint.
+        
+        Args:
+            footprint: The footprint to get the inside face for
+            
+        Returns:
+            The inside face of this timber relative to the footprint
+        """
+        return null
+
+    def get_outside_face(self, footprint: Footprint) -> TimberFace:
+        """
+        Get the outside face of this timber relative to the footprint.
+        
+        Args:
+            footprint: The footprint to get the outside face for
+            
+        Returns:
+            The outside face of this timber relative to the footprint
+        """
+        return null
     
     def get_transform_matrix(self) -> Matrix:
         """Get the 4x4 transformation matrix for this timber"""
@@ -706,7 +730,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
     test_point = Matrix([point_x + perp_x * Rational(1, 1000),
                         point_y + perp_y * Rational(1, 1000)])
     
-    if footprint.containsPoint(test_point):
+    if footprint.contains_point(test_point):
         # Left perpendicular points inward
         inward_x = perp_x
         inward_y = perp_y
@@ -790,7 +814,7 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
         length = sqrt(dx**2 + dy**2)
     
     # Get the inward normal from the footprint
-    inward_x, inward_y, inward_z = footprint.getInwardNormal(corner_index)
+    inward_x, inward_y, inward_z = footprint.get_inward_normal(corner_index)
     inward_normal = create_vector3d(inward_x, inward_y, inward_z)
     
     # Face direction is up (Z+)
