@@ -1,10 +1,3 @@
-# TODO
-
-renamed timber1/2 to timberA/B
-
-rename created timber to timberX
-
-
 
 
 
@@ -28,29 +21,17 @@ rename created timber to timberX
 XY is the "ground" and Z is "up" 
 RHS coordinate system
 We will say +X is "right" and +Y is "forward"
-We will also say +X is "east" and +Y is "north"
+We may also say +X is "east" and +Y is "north"
 
-## Alignment
+## Features
+We will refer to the following geometric concepts and their corresponding physical features
 
-### Face-Aligned Timbers
-Two timbers are **face-aligned** if any face of one timber is parallel to any face of the other timber. This occurs when their orientations are related by 90-degree rotations around any axis, meaning they share the same coordinate grid alignment.
+- Point : Vertex
+- Line : Edge
+- Plane : Face
 
-Mathematically, timbers are face-aligned if any of their orthogonal direction vectors (length_direction, face_direction, height_direction) are parallel to each other.
+since faces live on solid objects, they are "sided" objects. We say 2 faces are *oriented* if they share the same normal, and *opposite* if their normals are opposites.
 
-Examples of face-aligned timbers:
-- A vertical post and a horizontal beam (orthogonal but face-aligned)
-- Two parallel beams with the same orientation
-- Two posts where one is rotated 90° around its vertical axis
-- A floor joist and a rim joist meeting at 90°
-
-### Face-Parallel Timbers
-Two timbers are **face-parallel** if their length directions are parallel (same or opposite direction).
-
-### Face-Orthogonal Timbers  
-Two timbers are **face-orthogonal** if their length directions are perpendicular.
-
-### Face-Plane-Aligned Parts
-Parts on two separate timbers are **face-plane-aligned** if they are coplanar with the face planes of two face-aligned timbers. For example, in conventional framing, all posts on a wall would have their vertical center lines face-plane-aligned.
 
 ## Footprint
 A support class representing the footprint of the structure in the XY plane to help position and orient timbers. Footprints are always defined at Z=0 and timbers defined on the footprint are always above Z=0.
@@ -136,8 +117,7 @@ class Timber:
 ```
 
 
-
-### understanding timber position and orientation
+### timber position and orientation
 
 Timbers are referenced in their own local coordinate system
 
@@ -150,22 +130,38 @@ To orient the timber we position the +Z and +X axis. We will call these the "len
 A timber may be rotated in space, but we will continue to refer to the axis of the timber in its default orientation. 
 We also have names for each axis
 
-Z axis - length of the timber
-X axis - width of the timber
-Y axis - height of the timber
+Z axis - *length axis* of the timber
+X axis - *width axis* of the timber
+Y axis - *height axis* of the timber
 
+
+We say a timber is *axis aligned* if its length vector is parallel to the +Z axis and its face vectors are parallel to either the X or Y axis.
+
+We say two timbers are *face parallel* if each of the 6 faces of one timber is parallel with one of the 6 faces of the other timber. 
+
+So it follows 2 axis aligned timbers are face parallel.
+
+we often do not care to distinguish between 2 opposing faces on a timber thus
+
+- the *width-sides* of a timber are the 2 faces perpendicular to its local X axis
+- the *height-sides* of a timber are the 2 faces perpendicular to its local Y axis
+- the *ends* of a timber are the 2 faces perpendicular to its local Z axis
+
+When we do care about referencing a specific face, we may do so relative to its local coordinate system
 
 ```
-class TimberOrientation(Enum):
-    length_vector : V3
-    face_vector : V3
+class TimberFace(Enum):
+    TOP = 1 # the face vector with normal vector in the +Z axis direction
+    BOTTOM = 2 # the face vector with normal vector in the -Z axis direction
+    RIGHT = 3 # the face vector with normal vector in the +X axis direction
+    FORWARD = 4 # the face vector with normal vector in the +Y axis direction
+    LEFT = 5 # the face vector with normal vector in the -X axis direction
+    BACK = 6 # the face vector with normal vector in the -Y axis direction
 ```
 
-we say a timber is "axis aligned" if its length vector is parallel to the +Z axis and its face vectors are parallel to either the X or Y axis
+Or we may do so relative to the footprint
 
-we say two timbers are "face parallel" if each of the 6 faces of one timber is parallel with one of the 6 faces of the other timber. 
-
-so it follows 2 axis aligned timbers are face parallel
+- TODO inside/outside
 
 
 
@@ -173,14 +169,7 @@ so it follows 2 axis aligned timbers are face parallel
 
 
 #### 
-```
-enum TimberFace(Enum):
-    TOP = 1 # the face vector is parallel to the +Z axis
-    BOTTOM = 2 # the face vector is parallel to the -Z axis
-    LEFT = 3 # the face vector is parallel to the +X axis
-    RIGHT = 4 # the face vector is parallel to the -X axis
-    FORWARD = 5 # the face vector is parallel to the +Y axis
-    BACK = 6 # the face vector is parallel to the -Y axis
+
 ```
 
 #### timber reference features

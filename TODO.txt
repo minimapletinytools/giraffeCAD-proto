@@ -58,10 +58,13 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 
 DONE- axis aligned timbers
 DONE- rename face aligned to face parallel timebers
-- 2 faces can be oriented (same normals) or opposing (opposite normals)
+DONE- 2 faces can be oriented (same normals) or opposing (opposite normals)
+-rename "face vector" to "plus_x_face_vector" or "plus_x_face_vector_of_created_timber"
+-add helper asserts that does symbolic check if ratinoal otherwise fuzzy
+  -check_parallel,perpendicular
 - note down default orientation of timbers when created in vertical and horizontal position
-  - when laying horizontal, the orientation should always be consistent such that either the width or length of the timber runs in the Z axis direction
-- update timber join functions to only care about timber axis vs faces (X/widhth axis, and Y/length axis)
+  - when laying horizontal, the orientation should always be consistent such that either the width or height of the timber runs in the Z axis direction
+- update timber join functions to only care about timber axis vs faces (X/widhth axis, and Y/height axis)
 - getInside/OutsideFace(timber, footprint)
 
 
