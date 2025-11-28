@@ -54,19 +54,6 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 
 
 
-:: more orientation stuff
-
-DONE- axis aligned timbers
-DONE- rename face aligned to face parallel timebers
-DONE- 2 faces can be oriented (same normals) or opposing (opposite normals)
-DONE-rename "width vector" to "plus_x_width_vector" or "plus_x_width_vector_of_created_timber"
-DONE-add helper asserts that does symbolic check if ratinoal otherwise fuzzy
-  -check_parallel,perpendicular
-DONE- note down default orientation of timbers when created in vertical and horizontal position
-  - when laying horizontal, the orientation should always be consistent such that either the width or height of the timber runs in the Z axis direction
-- update timber join functions to only care about timber axis vs faces (X/widhth axis, and Y/height axis)
-- getInside/OutsideFace(timber, footprint)
-
 
 :: documentation
 
@@ -82,24 +69,46 @@ DONE- note down default orientation of timbers when created in vertical and hori
 
 
 :: TODO
--split griaffe sad :(
 
-- update timebr sizing notes so its really clear which size is which axis
-- decide on default orientation for horizontal timebrs
-- decide on default orinatiton for vertical timebrs on footprint
-- update join_timber to  only take axis to align with up/down rather tha face (I guess you can add a flip180 optional parameter....)
-- cerate join_timebr_raw that takes a row face normal 
-- maybe split out timebr creation functions into 1 file, joints into another file, types into a third file?
-- create list of joints to support (spline, butt, corner, other)
-- cleaunp morenotes, create readme
 - you need a better way to specify timber lenghts... most of the time you don't really care? It should be determined by the joint in most cases.
   - so I guess joints will resize the timber, even tusk tenon joints take a tusk length parameter, tenon joints have a tenon depth parameter etc.. (i think this is how it already is, update the README to explain this)
-- you need a better system for determining timber orientation after each timber creation operation, have sensible defaults 
+
+
+- getInside/OutsideFace(timber, footprint)
+- getFacingFace(tiber, direction)
+- maybe split griaffe sad :(
+- create list of joints to support and define their interfaces (spline, butt, corner, other)
+- cleaunp morenotes (maybe delete it, all comments should be in code)
+- create readme
+- start working on docs
+
+
+
+:: TODONE
+
+DONE- axis aligned timbers
+DONE- rename face aligned to face parallel timebers
+DONE- 2 faces can be oriented (same normals) or opposing (opposite normals)
+DONE-rename "width vector" to "plus_x_width_vector" or "plus_x_width_vector_of_created_timber"
+DONE-add helper asserts that does symbolic check if ratinoal otherwise fuzzy
+  -check_parallel,perpendicular
+DONE- note down default orientation of timbers when created in vertical and horizontal position
+  - when laying horizontal, the orientation should always be consistent such that either the width or height of the timber runs in the Z axis direction
+DONE/IGNORE- update timber join functions to only care about timber axis vs faces (X/widhth axis, and Y/height axis)
+
+IGNORE- update timebr sizing notes so its really clear which size is which axis
+DONE- decide on default orientation for horizontal timebrs
+DONE- decide on default orinatiton for vertical timebrs on footprint
+IGNORE- update join_timber to  only take axis to align with up/down rather tha face (I guess you can add a flip180 optional parameter....)
+IGNORE- cerate join_timebr_raw that takes a raw face normal 
+IGNORE- you need a better system for determining timber orientation after each timber creation operation, have sensible defaults 
   IGNORE- when joining 2 vertical timberss top face always faces up by default
   IGNORE- when joniing 2 horizontal timbers, top face laways faces?
-  - can you throw in a footprint to control which side top fac faces??
+  IGNORE- can you throw in a footprint to control which side top fac faces??
 
 
+
+:: END TODONE
 
 :: DONE Stickout
 
