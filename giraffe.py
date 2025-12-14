@@ -910,6 +910,9 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
     return Timber(new_length, timber.size, new_bottom_position, 
                  timber.length_direction, timber.width_direction)
 
+# TODO reorder argument orders 
+# TODO fix offset_from_timber1, should either be just "offset" or we could have separate offset from each timber 
+# TODO clarify in comments this function currentyl joints centerline to centerline with the offest
 def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
                 stickout: Stickout, offset_from_timber1: float,
                 location_on_timber2: Optional[float] = None,
@@ -944,6 +947,7 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
         # Project location_on_timber1 to timber2's Z axis
         pos2 = Matrix([pos1[0], pos1[1], timber2.bottom_position[2] + location_on_timber1])
     
+    # TODO DELETE not necessary
     # Calculate center position
     center_pos = (pos1 + pos2) / 2
     
@@ -955,9 +959,11 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     if orientation_width_vector is not None:
         width_direction = orientation_width_vector
         
+        # TODO relax this requirement so we project onto the perpendicular plane instead, useful for creating rafters etc
+
         # Verify that the provided orientation_width_vector is perpendicular to length_direction
         assert _are_directions_perpendicular(width_direction, length_direction), \
-            f"orientation_width_vector must be perpendicular to the joining direction. " \
+            f"orientation_width_vector {width_direction} must be perpendicular to the joining direction {length_direction}. " \
             f"Dot product: {simplify(width_direction.dot(length_direction))}"
     else:
         # Default: project timber1's length direction onto the plane perpendicular to the joining direction
