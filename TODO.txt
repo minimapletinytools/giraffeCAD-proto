@@ -70,19 +70,44 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 
 :: TODO
 
--QUESTION should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
+-NEXT MILESTONE
+  -address TODOS in join_timbers
+  -create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
+  -consider making a better way to store TimberWithJoints
+  -create list of joints to support and define their interfaces (spline, butt, corner, other)
+  -add resultant length function after applying joints computerLength(timebr, [joints])
+    -get fusino 360 to render just at the rusultant length 
+  -get rhino rendering working for the following joints ...
+  -improve examples
+    -create series of examples showcasing each feature
+    -create series of more complex examples
+    -create test runner for examples so the exmaples are also tests :O
+  -make shed example
+  -update docs
+    -write README intro
+    -cleanup comments in code and delete morenotes.md
+    -generate docs
+    - you need a better way to specify timber lenghts... most of the time you don't really care? It should be determined by the joint in most cases.
+      - so I guess joints will resize the timber, even tusk tenon joints take a tusk length parameter, tenon joints have a tenon depth parameter etc.. 
+      - i think this is how it already is, update the README to explain this
+    - move joint section from morenotes into concepts.md and then delete morenotes
 
-- you need a better way to specify timber lenghts... most of the time you don't really care? It should be determined by the joint in most cases.
-  - so I guess joints will resize the timber, even tusk tenon joints take a tusk length parameter, tenon joints have a tenon depth parameter etc.. (i think this is how it already is, update the README to explain this)
-- create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
+
+
+
+
+
 - maybe split griaffe sad :(
-- create list of joints to support and define their interfaces (spline, butt, corner, other)
-- move joint section from morenotes into concepts.md and then delete morenotes
+
+
+
 
 
 
 :: FUTURE shit
-- add nominal_size support for square and line rule desgins
+-should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
+- add nominal_size sup port for square and line rule desgins
+- make really awesome examples that showcase each parameter of each function
 
 
 

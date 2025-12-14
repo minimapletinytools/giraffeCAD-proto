@@ -182,7 +182,7 @@ It is often best to create your timbers from a footprint. Mudsills and Posts can
 - A mudsill on the inside/outside of a boundary side will have an edge lying on the boundary side with the mudsill on the inside/outside side of the boundary side.
 - A mudsill on center of a boundary side will have its midline lying on the same plane 
 
-create_horizontal_timber_on_footprint
+TODO create_horizontal_timber_on_footprint
 
 ### posts go on points on boundary sides
 
@@ -190,7 +190,7 @@ create_horizontal_timber_on_footprint
 - If the post is on center, it will have its center of the bottom face lying on the point, and 2 of the edges of the bottom face will be parallel to the boundary side.
 - If the post is inside/outside, it will have one edge of the bottom face lying on the boundary side with the center of that edge coincident with the point, with the rest of the post inside/outside of the boundary side.
 
-create_vertical_timber_on_footprint_side
+TODO create_vertical_timber_on_footprint_side
 
 ### posts go on boundary corners
 
@@ -198,7 +198,7 @@ create_vertical_timber_on_footprint_side
 - If it is on the inside of the boundary corner, position the post such that it overlaps with the inside of the boundary, has one vertex of its bottom face lying on the boundary corner, and has 2 edges of its bottom face aligning with the 2 boundary sides coming out of the boundary corner. 
 - If it is on the outside of the boundary corner, then position the post first on the inside of the boundary corner, and take the vertex of its bottom face that is opposite to the vertex lying on the boundary corner and move it so that the opposite vertex is instead on the boundary corner.
 
-create_vertical_timber_on_footprint_corner
+TODO create_vertical_timber_on_footprint_corner
 
 
 ## Joining Timbers
