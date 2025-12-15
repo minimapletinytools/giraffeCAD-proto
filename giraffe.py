@@ -947,12 +947,14 @@ def join_timbers(timber1: Timber, timber2: Timber,
                   Defaults to Stickout.nostickout() if not provided.
         size: Optional size (width, height) of the joining timber. If not provided,
               determined from timber1's size based on orientation.
-        orientation_width_vector: Optional width direction for the created timber in global space 
-                                 (i.e. so the width_direction of the created timber is in the 
-                                 direction of orientation_width_vector). Must be perpendicular to 
-                                 the joining direction (from timber1 to timber2).
-                                 If not provided, uses timber1's + length direction projected onto
+        orientation_width_vector: Optional width direction hint for the created timber in global space.
+                                 Will be automatically projected onto the plane perpendicular to the 
+                                 joining direction (from timber1 to timber2). This is useful for 
+                                 specifying orientation like "face up" for rafters.
+                                 If not provided, uses timber1's length direction projected onto
                                  the perpendicular plane.
+                                 If the provided vector is parallel to the joining direction, falls back
+                                 to timber1's width direction.
         
     Returns:
         New timber connecting timber1 and timber2 along their centerlines
@@ -973,27 +975,26 @@ def join_timbers(timber1: Timber, timber2: Timber,
     
     # Calculate face direction (width direction for the created timber)
     if orientation_width_vector is not None:
-        width_direction = orientation_width_vector
-        
-        # TODO relax this requirement so we project onto the perpendicular plane instead, useful for creating rafters etc
-
-        # Verify that the provided orientation_width_vector is perpendicular to length_direction
-        assert _are_directions_perpendicular(width_direction, length_direction), \
-            f"orientation_width_vector {width_direction} must be perpendicular to the joining direction {length_direction}. " \
-            f"Dot product: {simplify(width_direction.dot(length_direction))}"
+        reference_direction = orientation_width_vector
     else:
-        # Default: project timber1's length direction onto the plane perpendicular to the joining direction
+        # Default: use timber1's length direction
         reference_direction = timber1.length_direction
-        
-        # eh, maybe better to use a larger tolerance here? Seems silly to project if they are almost parallel.
-        if _are_directions_parallel(reference_direction, length_direction):
+    
+    # Check if reference direction is parallel to the joining direction
+    if _are_directions_parallel(reference_direction, length_direction):
+        # If parallel, cannot project - use a perpendicular fallback
+        if orientation_width_vector is not None:
+            print(f"WARNING: orientation_width_vector {orientation_width_vector} is parallel to the joining direction {length_direction}. Using timber1's width direction instead.")
+            reference_direction = timber1.width_direction
+        else:
             print("WARNING: timber1's length direction is parallel to the joining direction. Using timber1's width direction instead.")
             reference_direction = timber1.width_direction
-        
-        # Project onto perpendicular plane: v_perp = v - (v·n)n
-        dot_product = reference_direction.dot(length_direction)
-        width_direction = reference_direction - dot_product * length_direction
-        width_direction = normalize_vector(width_direction)
+    
+    # Project reference direction onto the plane perpendicular to the joining direction
+    # Formula: v_perp = v - (v·n)n
+    dot_product = reference_direction.dot(length_direction)
+    width_direction = reference_direction - dot_product * length_direction
+    width_direction = normalize_vector(width_direction)
     
     # TODO TEST THIS IT'S PROBABLY WRONG
     # Determine size if not provided
