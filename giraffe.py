@@ -910,14 +910,11 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
     return Timber(new_length, timber.size, new_bottom_position, 
                  timber.length_direction, timber.width_direction)
 
-# TODO argument ordering should be timber1, timber2, location_on_timber1, location_on_timber2, lateral_offset, stickout, size, orientation_width_vector
-# TODO Stickout should default to nostickout
-# TODO lateral_offset should default to sympy zero
 def join_timbers(timber1: Timber, timber2: Timber, 
                 location_on_timber1: float,
-                stickout: Stickout,
                 location_on_timber2: Optional[float] = None,
-                lateral_offset: float = 0.0,
+                lateral_offset: float = Integer(0),
+                stickout: Stickout = Stickout.nostickout(),
                 size: Optional[V2] = None,
                 orientation_width_vector: Optional[Direction3D] = None) -> Timber:
     """
@@ -931,14 +928,15 @@ def join_timbers(timber1: Timber, timber2: Timber,
         timber1: First timber to join (start point)
         timber2: Second timber to join (end point)
         location_on_timber1: Position along timber1's length where the joining timber starts
-        stickout: How much the joining timber extends beyond each connection point (both sides).
-                  Always measured from centerlines in this function.
         location_on_timber2: Optional position along timber2's length where the joining timber ends.
                             If not provided, uses the same Z-height as location_on_timber1.
         lateral_offset: Lateral offset of the joining timber perpendicular to the direct 
                        centerline-to-centerline path. The offset direction is determined by the
                        cross product of timber1's length direction and the joining direction.
-                       Defaults to 0.0 (no offset).
+                       Defaults to Integer(0) (no offset).
+        stickout: How much the joining timber extends beyond each connection point (both sides).
+                  Always measured from centerlines in this function.
+                  Defaults to Stickout.nostickout() if not provided.
         size: Optional size (width, height) of the joining timber. If not provided,
               determined from timber1's size based on orientation.
         orientation_width_vector: Optional width direction for the created timber in global space 
@@ -960,10 +958,6 @@ def join_timbers(timber1: Timber, timber2: Timber,
     else:
         # Project location_on_timber1 to timber2's Z axis
         pos2 = Matrix([pos1[0], pos1[1], timber2.bottom_position[2] + location_on_timber1])
-    
-    # TODO DELETE not necessary
-    # Calculate center position
-    center_pos = (pos1 + pos2) / 2
     
     # Calculate length direction (from timber1 to timber2)
     length_direction = pos2 - pos1
@@ -1023,7 +1017,6 @@ def join_timbers(timber1: Timber, timber2: Timber,
     if lateral_offset != 0:
         # Calculate offset direction (cross product of length vectors)
         offset_dir = normalize_vector(cross_product(timber1.length_direction, length_direction))
-        center_pos += offset_dir * lateral_offset
     
     # Calculate the bottom position (start of timber)
     # Start from pos1 and move backward by stickout1 (always centerline)
