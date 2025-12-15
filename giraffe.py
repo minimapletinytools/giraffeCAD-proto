@@ -134,6 +134,8 @@ class StandardTenon:
     height: float
     length: float  # How far the tenon extends beyond the shoulder plane
 
+# TODO DELETE hallucination, 
+# we can support MultiTenon but they would all share the same shoulder plane
 @dataclass
 class MultiTenon:
     tenons: List[StandardTenon]
@@ -143,10 +145,16 @@ class StandardMortise:
     mortise_face: TimberFace
     pos_rel_to_end: Tuple[TimberReferenceEnd, float]
     pos_rel_to_long_face: Optional[Tuple[TimberReferenceLongFace, float]]
+
+    # TODO rename to something else? cuz it could be in the height axis or could be in the width axis?
     # in the long face axis
     width: float
-    # in the end axis
+
+    # TODO rename this to length since it's always in the length axis to avoid confusion
+    # in the end axis  
     height: float
+
+
     depth: float
 
 @dataclass
