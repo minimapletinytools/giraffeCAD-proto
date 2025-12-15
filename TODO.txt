@@ -38,9 +38,9 @@ Lets look at the current signature of join_timbers:
 
 def join_timbers(timber1: Timber, timber2: Timber, 
                 location_on_timber1: float,
-                stickout: Stickout,
                 location_on_timber2: Optional[float] = None,
-                lateral_offset: float = 0.0,
+                lateral_offset: float = Integer(0),
+                stickout: Stickout = None,  # Defaults to Stickout.nostickout()
                 size: Optional[V2] = None,
                 orientation_width_vector: Optional[Direction3D] = None) -> Timber:
 
