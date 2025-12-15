@@ -77,12 +77,14 @@ class Stickout:
 # the bottom face of the created timber is parallel to the face of timber1 that it is joined to.
 # orientation_width_vector determines the orientation of the created timber by. The orientation_width_vector will lie on the plane created by the length_vector and width_vector of the created timber. In practice, just set this to the width_vector you want for the created timber. 
 # if location_on_timber2 is not provided, the height is determined by projecting location_on_timber1 to the Z axis of timber2
+# Joins two timbers by creating a connecting timber from centerline to centerline
 # stickout defines how much the timber extends beyond the connection points (stickout1 at timber1, stickout2 at timber2)
-# offset_from_timber1 is in the direction of the cross product of the length vectors of timber1 and the created timber. If this is 0, then the centerline axis of the created timber is coincident with the centerline axis of timber1/2
-# an offset of 0 means the center lines of timber1/timber2 and the created timber are coincident
+# location_on_timber2 is optional - if not provided, uses the same Z-height as location_on_timber1
+# lateral_offset (default 0.0) is in the direction of the cross product of timber1's length vector and the joining direction. An offset of 0 means the centerlines of timber1/timber2 and the created timber are coincident
 # size is optional - if not provided, determined from timber1's size based on orientation:
 #   - It will attempt to match timber1's size such that the created timber shares a common dimension in the same axis with timber1
-join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, stickout: Stickout, offset_from_timber1: float, location_on_timber2: float?, orientation_width_vector: V3?, size: V2?) -> Timber
+# orientation_width_vector is optional - if not provided, uses timber1's length direction projected onto the perpendicular plane
+join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, stickout: Stickout, location_on_timber2: float?, lateral_offset: float = 0.0, size: V2?, orientation_width_vector: V3?) -> Timber
 
 # determines the offset of timberX from timberA
 # if centerline_offset is provided, the offset is between the centerlines of timberA and timberX and in the direction of the reference_face

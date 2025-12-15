@@ -792,8 +792,8 @@ class TestJoinTimbers:
             timber1, timber2,
             location_on_timber1=1.5,  # Midpoint of timber1
             stickout=Stickout(0.1, 0.1),  # Symmetric stickout
-            offset_from_timber1=0.0,
-            location_on_timber2=1.0   # Explicit position on timber2
+            location_on_timber2=1.0,   # Explicit position on timber2
+            lateral_offset=0.0
         )
         
         assert isinstance(joining_timber, Timber)
@@ -1026,8 +1026,8 @@ class TestJoinTimbers:
             timber1, timber2,
             location_on_timber1=Rational(1, 2),     # Exact rational
             stickout=Stickout(Rational(1, 10), Rational(1, 10)),  # Exact symmetric stickout
-            offset_from_timber1=0,                  # Integer
-            location_on_timber2=Rational(1, 2)     # Exact rational
+            location_on_timber2=Rational(1, 2),     # Exact rational
+            lateral_offset=0                  # Integer
         )
         
         # Get the orientation matrix
@@ -1485,8 +1485,8 @@ class TestEnumsAndDataStructures:
             timber2=post2,
             location_on_timber1=1.0,
             stickout=Stickout(stickout1, stickout2),
-            offset_from_timber1=0.0,
-            location_on_timber2=1.0
+            location_on_timber2=1.0,
+            lateral_offset=0.0
         )
         
         # Expected length: distance between posts (2.5m) + stickout1 (0.1m) + stickout2 (0.3m)
@@ -1523,8 +1523,8 @@ class TestEnumsAndDataStructures:
                 timber2=post2,
                 location_on_timber1=1.0,
                 stickout=Stickout(0.1, 0.1, StickoutReference.INSIDE, StickoutReference.CENTER_LINE),
-                offset_from_timber1=0.0,
-                location_on_timber2=1.0
+                location_on_timber2=1.0,
+                lateral_offset=0.0
             )
         
         # Try to use OUTSIDE reference - should assert
@@ -1534,8 +1534,8 @@ class TestEnumsAndDataStructures:
                 timber2=post2,
                 location_on_timber1=1.0,
                 stickout=Stickout(0.1, 0.1, StickoutReference.CENTER_LINE, StickoutReference.OUTSIDE),
-                offset_from_timber1=0.0,
-                location_on_timber2=1.0
+                location_on_timber2=1.0,
+                lateral_offset=0.0
             )
     
     def test_stickout_reference_inside_face_aligned(self):

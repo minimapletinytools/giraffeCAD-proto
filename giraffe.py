@@ -910,32 +910,46 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
     return Timber(new_length, timber.size, new_bottom_position, 
                  timber.length_direction, timber.width_direction)
 
-# TODO reorder argument orders 
-# TODO fix offset_from_timber1, should either be just "offset" or we could have separate offset from each timber 
-# TODO clarify in comments this function currentyl joints centerline to centerline with the offest
-def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
-                stickout: Stickout, offset_from_timber1: float,
+# TODO argument ordering should be timber1, timber2, location_on_timber1, location_on_timber2, lateral_offset, stickout, size, orientation_width_vector
+# TODO Stickout should default to nostickout
+# TODO lateral_offset should default to sympy zero
+def join_timbers(timber1: Timber, timber2: Timber, 
+                location_on_timber1: float,
+                stickout: Stickout,
                 location_on_timber2: Optional[float] = None,
-                orientation_width_vector: Optional[Direction3D] = None,
-                size: Optional[V2] = None) -> Timber:
+                lateral_offset: float = 0.0,
+                size: Optional[V2] = None,
+                orientation_width_vector: Optional[Direction3D] = None) -> Timber:
     """
-    Joins two timbers by creating a connecting timber
+    Joins two timbers by creating a connecting timber from centerline to centerline.
+    
+    This function creates a timber that connects the centerline of timber1 to the centerline
+    of timber2. The joining timber's length direction goes from timber1 to timber2, and its
+    position can be laterally offset from this centerline-to-centerline path.
     
     Args:
-        timber1: First timber to join
-        timber2: Second timber to join
-        location_on_timber1: Position along timber1's length
-        stickout: How much the timber extends beyond connection points (both sides)
-        offset_from_timber1: Offset in the cross product direction
-        location_on_timber2: Optional position along timber2's length
-        orientation_width_vector: Optional width direction for the created timber in global space (i.e. so the width_direction of the created timber is in the direction of orientation_width_vector)
-                                  Must be perpendicular to the joining direction (from timber1 to timber2).
-                                  If not provided, uses timber1's + length direction.
+        timber1: First timber to join (start point)
+        timber2: Second timber to join (end point)
+        location_on_timber1: Position along timber1's length where the joining timber starts
+        stickout: How much the joining timber extends beyond each connection point (both sides).
+                  Always measured from centerlines in this function.
+        location_on_timber2: Optional position along timber2's length where the joining timber ends.
+                            If not provided, uses the same Z-height as location_on_timber1.
+        lateral_offset: Lateral offset of the joining timber perpendicular to the direct 
+                       centerline-to-centerline path. The offset direction is determined by the
+                       cross product of timber1's length direction and the joining direction.
+                       Defaults to 0.0 (no offset).
         size: Optional size (width, height) of the joining timber. If not provided,
               determined from timber1's size based on orientation.
+        orientation_width_vector: Optional width direction for the created timber in global space 
+                                 (i.e. so the width_direction of the created timber is in the 
+                                 direction of orientation_width_vector). Must be perpendicular to 
+                                 the joining direction (from timber1 to timber2).
+                                 If not provided, uses timber1's + length direction projected onto
+                                 the perpendicular plane.
         
     Returns:
-        New timber connecting timber1 and timber2
+        New timber connecting timber1 and timber2 along their centerlines
     """
     # Calculate position on timber1
     pos1 = timber1.get_centerline_position_from_bottom(location_on_timber1)
@@ -1005,19 +1019,19 @@ def join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float,
     centerline_distance = vector_magnitude(pos2 - pos1)
     timber_length = centerline_distance + stickout.stickout1 + stickout.stickout2
     
-    # Apply offset
-    if offset_from_timber1 != 0:
+    # Apply lateral offset
+    if lateral_offset != 0:
         # Calculate offset direction (cross product of length vectors)
         offset_dir = normalize_vector(cross_product(timber1.length_direction, length_direction))
-        center_pos += offset_dir * offset_from_timber1
+        center_pos += offset_dir * lateral_offset
     
     # Calculate the bottom position (start of timber)
     # Start from pos1 and move backward by stickout1 (always centerline)
     bottom_pos = pos1 - length_direction * stickout.stickout1
     
     # Apply offset to bottom position as well (if any offset was applied to center)
-    if offset_from_timber1 != 0:
-        bottom_pos += offset_dir * offset_from_timber1
+    if lateral_offset != 0:
+        bottom_pos += offset_dir * lateral_offset
     
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction)
 
@@ -1150,8 +1164,8 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         timber2=timber2,
         location_on_timber1=location_on_timber1,
         stickout=centerline_stickout,
-        offset_from_timber1=offset_value,
         location_on_timber2=location_on_timber2,
+        lateral_offset=offset_value,
         orientation_width_vector=orientation_width_vector,
         size=size
     )
