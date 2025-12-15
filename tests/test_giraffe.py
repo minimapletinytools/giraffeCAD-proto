@@ -825,6 +825,94 @@ class TestJoinTimbers:
         # Verify timber spans the connection region
         assert float(joining_timber.length) > 2.0  # Should be longer than just the span between points
 
+    def test_join_timbers_with_non_perpendicular_orientation_vector(self):
+        """Test that join_timbers automatically projects non-perpendicular orientation_width_vector."""
+        # Create two vertical posts
+        timber1 = Timber(
+            length=3.0,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length_direction=create_vector3d(0.0, 0.0, 1.0),  # Vertical (Z-up)
+            width_direction=create_vector3d(1.0, 0.0, 0.0)
+        )
+        
+        timber2 = Timber(
+            length=3.0,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(2.0, 0.0, 0.0),
+            length_direction=create_vector3d(0.0, 0.0, 1.0),  # Vertical (Z-up)
+            width_direction=create_vector3d(1.0, 0.0, 0.0)
+        )
+        
+        # Create a horizontal beam connecting them, specifying "face up" (0,0,1)
+        # The joining direction is horizontal [1,0,0], so [0,0,1] is NOT perpendicular
+        # The function should automatically project it onto the perpendicular plane
+        joining_timber = join_timbers(
+            timber1, timber2,
+            location_on_timber1=1.5,  # Midpoint of timber1
+            stickout=Stickout(0.1, 0.1),  # Symmetric stickout
+            location_on_timber2=1.5,   # Same height on timber2
+            orientation_width_vector=create_vector3d(0, 0, 1)  # "Face up" - not perpendicular to joining direction
+        )
+        
+        # Verify the timber was created successfully (no assertion error)
+        assert isinstance(joining_timber, Timber)
+        
+        # The joining direction should be horizontal [1,0,0] (normalized)
+        length_dir = joining_timber.length_direction
+        assert abs(float(length_dir[0]) - 1.0) < 1e-6, "Length direction should be [1,0,0]"
+        assert abs(float(length_dir[1])) < 1e-6
+        assert abs(float(length_dir[2])) < 1e-6
+        
+        # The width direction should be perpendicular to the joining direction
+        # Since we specified [0,0,1] and joining is [1,0,0], projection should give [0,0,1]
+        width_dir = joining_timber.width_direction
+        dot_product = length_dir.dot(width_dir)
+        assert abs(float(dot_product)) < 1e-6, "Width direction should be perpendicular to length direction"
+        
+        # The projected width direction should be close to [0,0,1] (our desired "face up")
+        assert abs(float(width_dir[0])) < 1e-6, "Width X component should be ~0"
+        assert abs(float(width_dir[1])) < 1e-6, "Width Y component should be ~0"
+        assert abs(abs(float(width_dir[2])) - 1.0) < 1e-6, "Width Z component should be ~±1"
+
+    def test_join_timbers_with_angled_orientation_vector(self):
+        """Test projection of angled orientation_width_vector onto perpendicular plane."""
+        # Create two vertical posts
+        timber1 = Timber(
+            length=3.0,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(0.0, 0.0, 0.0),
+            length_direction=create_vector3d(0.0, 0.0, 1.0),  # Vertical
+            width_direction=create_vector3d(1.0, 0.0, 0.0)
+        )
+        
+        timber2 = Timber(
+            length=3.0,
+            size=create_vector2d(0.2, 0.2),
+            bottom_position=create_vector3d(2.0, 1.0, 0.0),  # Offset in both X and Y
+            length_direction=create_vector3d(0.0, 0.0, 1.0),  # Vertical
+            width_direction=create_vector3d(1.0, 0.0, 0.0)
+        )
+        
+        # Provide an orientation vector at an angle: [1, 1, 1]
+        # This should be projected onto the plane perpendicular to the joining direction
+        joining_timber = join_timbers(
+            timber1, timber2,
+            location_on_timber1=1.5,
+            stickout=Stickout(0.0, 0.0),
+            location_on_timber2=1.5,
+            orientation_width_vector=create_vector3d(1, 1, 1)  # Angled vector
+        )
+        
+        # Verify the timber was created successfully
+        assert isinstance(joining_timber, Timber)
+        
+        # Verify width direction is perpendicular to length direction
+        length_dir = joining_timber.length_direction
+        width_dir = joining_timber.width_direction
+        dot_product = length_dir.dot(width_dir)
+        assert abs(float(dot_product)) < 1e-6, "Width direction should be perpendicular to length direction"
+
     # helper function to create 2 parallel timbers 
     def make_parallel_timbers(self):
         timber1 = Timber(

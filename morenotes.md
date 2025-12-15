@@ -83,7 +83,7 @@ class Stickout:
 # stickout defines how much the timber extends beyond the connection points (stickout1 at timber1, stickout2 at timber2). Defaults to Stickout.nostickout() if not provided.
 # size is optional - if not provided, determined from timber1's size based on orientation:
 #   - It will attempt to match timber1's size such that the created timber shares a common dimension in the same axis with timber1
-# orientation_width_vector is optional - if not provided, uses timber1's length direction projected onto the perpendicular plane
+# orientation_width_vector is optional - a direction hint that will be automatically projected onto the plane perpendicular to the joining direction. Useful for specifying "face up" for rafters. If not provided, uses timber1's length direction projected onto the perpendicular plane. If parallel to joining direction, falls back to timber1's width direction
 join_timbers(timber1: Timber, timber2: Timber, location_on_timber1: float, location_on_timber2: float?, lateral_offset: float = Integer(0), stickout: Stickout = None, size: V2?, orientation_width_vector: V3?) -> Timber
 
 # determines the offset of timberX from timberA
