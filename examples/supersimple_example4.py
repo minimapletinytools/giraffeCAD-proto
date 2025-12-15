@@ -49,8 +49,8 @@ def create_supersimple_structure4() -> list[CutTimber]:
         timber2=post2,
         location_on_timber1=0.5,                           # Middle of vertical post (at 0.5m height)
         stickout=Stickout(0.1, 0.1),                       # Symmetric: 10cm stickout on each end
-        offset_from_timber1=0.0,                           # No offset from timber1's centerline
         location_on_timber2=0.5,                           # Middle of horizontal post (0.5m along its length)
+        lateral_offset=0.0,                           # No offset from timber1's centerline
     )
     joining_timber.name = "Connecting Timber (Isolated)"
     
