@@ -211,8 +211,8 @@ def create_oscarshed() -> list[CutTimber]:
         timber2=post_front_left,       # Front post (timber2)
         location_on_timber1=post_back_height_m,   # At top of back post
         stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
-        offset_from_timber1=0.0,       # No lateral offset
         location_on_timber2=post_back_height_m,    # Same height on front post
+        lateral_offset=0.0,       # No lateral offset
         size=side_girt_size
     )
     side_girt_left.name = "Left Side Girt"
@@ -223,8 +223,8 @@ def create_oscarshed() -> list[CutTimber]:
         timber2=post_front_right,      # Front post (timber2)
         location_on_timber1=post_back_height_m,   # At top of back post
         stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
-        offset_from_timber1=0.0,       # No lateral offset
         location_on_timber2=post_back_height_m,    # Same height on front post
+        lateral_offset=0.0,       # No lateral offset
         size=side_girt_size
     )
     side_girt_right.name = "Right Side Girt"
@@ -252,8 +252,8 @@ def create_oscarshed() -> list[CutTimber]:
         timber2=post_front_right,      # Right front post (timber2)
         location_on_timber1=front_girt_height_on_posts,   # 2" below side girts
         stickout=front_girt_stickout,  # 1.5" stickout on both sides
-        offset_from_timber1=0.0,       # No lateral offset
         location_on_timber2=front_girt_height_on_posts,   # Same height on right post
+        lateral_offset=0.0,       # No lateral offset
         size=front_girt_size
     )
     front_girt.name = "Front Girt"
@@ -277,8 +277,8 @@ def create_oscarshed() -> list[CutTimber]:
         timber2=post_front_right,      # Right front post (timber2)
         location_on_timber1=post_front_height_m,   # At top of front post
         stickout=top_plate_stickout,   # 1 foot stickout on both sides
-        offset_from_timber1=0.0,       # No lateral offset
         location_on_timber2=post_front_height_m,   # Same height on right post
+        lateral_offset=0.0,       # No lateral offset
         size=top_plate_size,
         orientation_width_vector=create_vector3d(0, 0, 1)
     )
@@ -291,8 +291,8 @@ def create_oscarshed() -> list[CutTimber]:
         timber2=post_back_right,       # Right back post (timber2)
         location_on_timber1=post_back_height_m,    # At top of back post
         stickout=top_plate_stickout,   # 1 foot stickout on both sides
-        offset_from_timber1=0.0,       # No lateral offset
         location_on_timber2=post_back_height_m,    # Same height on right post
+        lateral_offset=0.0,       # No lateral offset
         size=top_plate_size,
         orientation_width_vector=create_vector3d(0, 0, 1)
     )
@@ -341,8 +341,8 @@ def create_oscarshed() -> list[CutTimber]:
             timber2=mudsill_back,              # Back mudsill (timber2)
             location_on_timber1=location_along_mudsill,    # Distance along front mudsill
             stickout=joist_stickout,           # No stickout
-            offset_from_timber1=joist_vertical_offset,     # Offset upward to align tops
             location_on_timber2=mudsill_back.length - location_along_mudsill,    # Reversed distance along back mudsill (measured from opposite end)
+            lateral_offset=joist_vertical_offset,     # Offset upward to align tops
             size=joist_size,
             orientation_width_vector=create_vector3d(0, 0, 1)  # Face up
         )
@@ -364,7 +364,7 @@ def create_oscarshed() -> list[CutTimber]:
     # With 5 rafters, there are 4 gaps between centerlines
     
     num_rafters = 5
-    rafter_centerline_spacing = (base_width_m - rafter_width) / (num_rafters - 1)
+    rafter_centerline_spacing = (top_plate_front.length - rafter_width) / (num_rafters-1)
     
     # Rafter positions along the top plates (X axis)
     rafter_positions_along_top_plate = []
@@ -387,8 +387,8 @@ def create_oscarshed() -> list[CutTimber]:
             timber2=top_plate_front,       # Front top plate (timber2)
             location_on_timber1=location_along_top_plate,  # Position along back top plate (reversed)
             stickout=rafter_stickout,      # No stickout
-            offset_from_timber1=0.0,       # No vertical offset (centerline to centerline)
             location_on_timber2=location_along_top_plate,  # Same position on front top plate
+            lateral_offset=0.0,       # No vertical offset (centerline to centerline)
             size=rafter_size,
             #orientation_width_vector=create_vector3d(0, 0, 1)  # Face up
         )
