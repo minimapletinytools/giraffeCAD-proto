@@ -390,7 +390,7 @@ def create_oscarshed() -> list[CutTimber]:
             location_on_timber2=location_along_top_plate,  # Same position on front top plate
             lateral_offset=0.0,       # No vertical offset (centerline to centerline)
             size=rafter_size,
-            #orientation_width_vector=create_vector3d(0, 0, 1)  # Face up
+            orientation_width_vector=create_vector3d(0, 0, 1)  # Face up
         )
         rafter.name = f"Rafter {i}"
         rafters.append(rafter)

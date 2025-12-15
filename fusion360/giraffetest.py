@@ -21,9 +21,6 @@ if parent_dir not in sys.path:
 try:
     # Import from parent directory - these files are NOT copied locally
     from examples.sawhorse_example import create_sawhorse
-    from examples.supersimple_example import create_supersimple_structure
-    from examples.supersimple_example2 import create_supersimple_structure2
-    from examples.supersimple_example5 import create_supersimple_structure5
     from examples.oscarshed import create_oscarshed
     from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
     
@@ -71,11 +68,6 @@ def run(_context: str):
                 'giraffe', 
                 'giraffe_render_fusion360',
                 'examples.sawhorse_example',
-                'examples.supersimple_example',
-                'examples.supersimple_example2',
-                'examples.supersimple_example3',
-                'examples.supersimple_example4',
-                'examples.supersimple_example5',
                 'examples.oscarshed'
             ]
             
@@ -88,11 +80,6 @@ def run(_context: str):
             
             # Re-import the functions we need after reload to get fresh versions
             from examples.sawhorse_example import create_sawhorse
-            from examples.supersimple_example import create_supersimple_structure
-            from examples.supersimple_example2 import create_supersimple_structure2
-            from examples.supersimple_example3 import create_supersimple_structure3
-            from examples.supersimple_example4 import create_supersimple_structure4
-            from examples.supersimple_example5 import create_supersimple_structure5
             from examples.oscarshed import create_oscarshed
             from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
             
