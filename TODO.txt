@@ -113,6 +113,7 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 
 
 :: FUTURE shit
+-should I make a "block" class that parents "Timber" and then make a "board" class?
 -should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
 - add nominal_size sup port for square and line rule desgins
 - make really awesome examples that showcase each parameter of each function
