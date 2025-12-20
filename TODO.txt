@@ -64,6 +64,7 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 -quick start 
 -simple reference
   -simple examples of how to use each method with default parameters (axis aligned, face parallel only)
+  -ALWAYS use Sympy types
 -terminology
   -detailed examples explaing all cnocepts
 -advanced reference
@@ -73,11 +74,29 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
 
 :: TODO
 
--NEXT MILESTONE
+-M1
   DONE-address TODOS in join_timbers
-  -create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
+  DONE-create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
   -consider making a better way to store TimberWithJoints
   -create list of joints to support and define their interfaces (spline, butt, corner, other)
+    -simple joints
+      -basic_end_joint
+      -basic_butt_joint
+      -basic_splice_joint
+      -basic_miter_joint
+    -butt joints
+      -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
+        -mortise and tenon
+        -through mortise and tenon
+        -wedged mortise and tenon
+        -wedged through mortise and tenon
+        -fox wedge mortise and tenon
+        -draw bore mortise and tenon
+        -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
+          -same as draw bore but with komisen peg,
+        -tusked mortise and tenon
+
+
   -add resultant length function after applying joints computerLength(timebr, [joints])
     -get fusino 360 to render just at the rusultant length 
   -add helper render functions
@@ -85,12 +104,13 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
     -generic boolean geometry classes
     -use boolean geometery to create negative of tenon cutout timber - (timber - tenon - shoulderplane)
       -calll this method tenon cutter :D
+  
   -get rhino rendering working for the following joints ...
   -improve examples
     -create series of examples showcasing each feature
     -create series of more complex examples
     -create test runner for examples so the exmaples are also tests :O
-  -make shed example
+  -make shed example (just add joints)
   -update docs
     -write README intro
     -cleanup comments in code and delete morenotes.md
@@ -100,7 +120,21 @@ ReferenceLine/Plane that is parallel with ReferencePlane of timber 1
       - i think this is how it already is, update the README to explain this
     - move joint section from morenotes into concepts.md and then delete morenotes
 
-
+-M2
+  -IFC rendering?
+  -add panel/board support 
+  -update shed example to include panels
+  -more joints
+    -splice joints
+      -TODO 
+    -end joints
+      -mortise and tenon end joint (calls mortise and tenon but positions the tenon in away from the end)
+      -half lap
+    -cross joints
+      -single notch
+      -double notch
+    -fancy joints
+      -the one where 2 beams butt up against 1 post and have the thing that passes through them
 
 
 

@@ -675,7 +675,7 @@ class TestTimberCreation:
         assert float(timber_center_right.bottom_position[0]) == 2.0  # X on boundary
         assert float(timber_center_right.bottom_position[1]) == 0.0  # Y unchanged
     
-    def test_create_timber_extension(self):
+    def test_extend_timber(self):
         """Test timber extension creation with correct length calculation."""
         # Create a vertical timber from Z=0 to Z=10
         original_timber = Timber(
@@ -689,7 +689,7 @@ class TestTimberCreation:
         # Extend from top with 2 units of overlap and 5 units of extension
         # overlap_length = 2.0 (overlaps with last 2 units of original timber)
         # extend_length = 5.0 (extends 5 units beyond the end)
-        extended = create_timber_extension(
+        extended = extend_timber(
             original_timber, 
             TimberReferenceEnd.TOP, 
             overlap_length=2.0, 
@@ -2632,7 +2632,7 @@ class TestSplitTimber:
         timber.name = "Test Timber"
         
         # Split at 30% (distance 3)
-        bottom_timber, top_timber = timber.split_timber(Rational(3))
+        bottom_timber, top_timber = split_timber(timber, Rational(3))
         
         # Check bottom timber
         assert bottom_timber.length == Rational(3)
@@ -2664,7 +2664,7 @@ class TestSplitTimber:
         )
         
         # Split at 8 units from bottom
-        bottom_timber, top_timber = timber.split_timber(Rational(8))
+        bottom_timber, top_timber = split_timber(timber, Rational(8))
         
         # Check bottom timber
         assert bottom_timber.length == Rational(8)
@@ -2688,7 +2688,7 @@ class TestSplitTimber:
         )
         
         # Split at 4 units from bottom
-        bottom_timber, top_timber = timber.split_timber(Rational(4))
+        bottom_timber, top_timber = split_timber(timber, Rational(4))
         
         # Check lengths
         assert bottom_timber.length == Rational(4)
@@ -2718,7 +2718,7 @@ class TestSplitTimber:
         
         # Split at exact rational point
         split_distance = Rational(3, 1)
-        bottom_timber, top_timber = timber.split_timber(split_distance)
+        bottom_timber, top_timber = split_timber(timber, split_distance)
         
         # Check exact rational values
         assert bottom_timber.length == Rational(3, 1)
@@ -2737,28 +2737,28 @@ class TestSplitTimber:
         
         # Test split at 0 (should fail)
         try:
-            timber.split_timber(Rational(0))
+            split_timber(timber, Rational(0))
             assert False, "Should have raised assertion for distance = 0"
         except AssertionError:
             pass
         
         # Test split at length (should fail)
         try:
-            timber.split_timber(Rational(10))
+            split_timber(timber, Rational(10))
             assert False, "Should have raised assertion for distance = length"
         except AssertionError:
             pass
         
         # Test split beyond length (should fail)
         try:
-            timber.split_timber(Rational(15))
+            split_timber(timber, Rational(15))
             assert False, "Should have raised assertion for distance > length"
         except AssertionError:
             pass
         
         # Test negative distance (should fail)
         try:
-            timber.split_timber(Rational(-5))
+            split_timber(timber, Rational(-5))
             assert False, "Should have raised assertion for negative distance"
         except AssertionError:
             pass
@@ -2774,7 +2774,7 @@ class TestSplitTimber:
             width_direction=normalize_vector(create_vector3d(Rational(1), Rational(0), Rational(0)))
         )
         
-        bottom_timber, top_timber = timber.split_timber(Rational(5))
+        bottom_timber, top_timber = split_timber(timber, Rational(5))
         
         # Both should have same orientation as original
         assert bottom_timber.length_direction == timber.length_direction

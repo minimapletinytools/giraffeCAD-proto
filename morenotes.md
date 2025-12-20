@@ -47,7 +47,7 @@ create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int, l
 # create a timber extension by extending the given timber, the end is the end of the timber to extend
 # overlap_length is the length of the timber to overlap with the existing timber
 # extend_length is the length of the timber to extend
-create_timber_extension(timber: Timber, end: TimberEnd, overlap_length: float, extend_length: float) -> Timber
+extend_timber(timber: Timber, end: TimberEnd, overlap_length: float, extend_length: float) -> Timber
 
 # Stickout class defines how much a timber extends beyond connection points
 # For symmetric stickout, use Stickout.symmetric(value) or set stickout1 = stickout2
