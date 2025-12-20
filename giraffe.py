@@ -545,59 +545,6 @@ class Timber:
         outward_normal = -inward_normal
         return self.get_closest_oriented_face(outward_normal)
     
-    def split_timber(self, distance_from_bottom: Numeric) -> Tuple['Timber', 'Timber']:
-        """
-        Split this timber into two timbers at the specified distance from the bottom.
-        
-        The original timber is conceptually discarded and replaced with two new timbers:
-        - The first timber extends from the original bottom to the split point
-        - The second timber extends from the split point to the original top
-        
-        Both timbers maintain the same cross-sectional size and orientation as the original.
-        
-        Args:
-            distance_from_bottom: Distance along the timber's length where to split (0 < distance < self.length)
-            
-        Returns:
-            Tuple of (bottom_timber, top_timber) where:
-            - bottom_timber starts at the same position as the original
-            - top_timber starts at the top end of bottom_timber
-            
-        Example:
-            If a timber has length 10 and is split at distance 3:
-            - bottom_timber has length 3, same origin as original
-            - top_timber has length 7, origin at distance 3 from original origin
-        """
-        # Validate input
-        assert 0 < distance_from_bottom < self.length, \
-            f"Split distance {distance_from_bottom} must be between 0 and {self.length}"
-        
-        # Create first timber (bottom part)
-        bottom_timber = Timber(
-            length=distance_from_bottom,
-            size=create_vector2d(self.size[0], self.size[1]),
-            bottom_position=self.bottom_position,
-            length_direction=self.length_direction,
-            width_direction=self.width_direction
-        )
-        bottom_timber.name = f"{self.name}_bottom" if self.name else "split_bottom"
-        
-        # Calculate the bottom position of the second timber
-        # It's at the top of the first timber
-        top_of_first = self.bottom_position + distance_from_bottom * self.length_direction
-        
-        # Create second timber (top part)
-        top_timber = Timber(
-            length=self.length - distance_from_bottom,
-            size=create_vector2d(self.size[0], self.size[1]),
-            bottom_position=top_of_first,
-            length_direction=self.length_direction,
-            width_direction=self.width_direction
-        )
-        top_timber.name = f"{self.name}_top" if self.name else "split_top"
-        
-        return (bottom_timber, top_timber)
-    
     def get_transform_matrix(self) -> Matrix:
         """Get the 4x4 transformation matrix for this timber"""
         # Create 4x4 transformation matrix
@@ -950,8 +897,8 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     
     return create_timber(bottom_position, length, size, length_direction, width_direction)
 
-def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_length: Numeric, 
-                           extend_length: Numeric) -> Timber:
+def extend_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Numeric, 
+                  extend_length: Numeric) -> Timber:
     """
     Creates a new timber extending the original timber by a given length
     Args:
@@ -974,6 +921,62 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
     
     return Timber(new_length, timber.size, new_bottom_position, 
                  timber.length_direction, timber.width_direction)
+
+# TODO add some sorta splice stickout parameter
+def split_timber(timber: Timber, distance_from_bottom: Numeric) -> Tuple[Timber, Timber]:
+    """
+    Split a timber into two timbers at the specified distance from the bottom.
+    
+    The original timber is conceptually discarded and replaced with two new timbers:
+    - The first timber extends from the original bottom to the split point
+    - The second timber extends from the split point to the original top
+    
+    Both timbers maintain the same cross-sectional size and orientation as the original.
+    You will often follow this with a splice joint to join the two timbers together.
+    
+    Args:
+        timber: The timber to split
+        distance_from_bottom: Distance along the timber's length where to split (0 < distance < timber.length)
+        
+    Returns:
+        Tuple of (bottom_timber, top_timber) where:
+        - bottom_timber starts at the same position as the original
+        - top_timber starts at the top end of bottom_timber
+        
+    Example:
+        If a timber has length 10 and is split at distance 3:
+        - bottom_timber has length 3, same origin as original
+        - top_timber has length 7, origin at distance 3 from original origin
+    """
+    # Validate input
+    assert 0 < distance_from_bottom < timber.length, \
+        f"Split distance {distance_from_bottom} must be between 0 and {timber.length}"
+    
+    # Create first timber (bottom part)
+    bottom_timber = Timber(
+        length=distance_from_bottom,
+        size=create_vector2d(timber.size[0], timber.size[1]),
+        bottom_position=timber.bottom_position,
+        length_direction=timber.length_direction,
+        width_direction=timber.width_direction
+    )
+    bottom_timber.name = f"{timber.name}_bottom" if timber.name else "split_bottom"
+    
+    # Calculate the bottom position of the second timber
+    # It's at the top of the first timber
+    top_of_first = timber.bottom_position + distance_from_bottom * timber.length_direction
+    
+    # Create second timber (top part)
+    top_timber = Timber(
+        length=timber.length - distance_from_bottom,
+        size=create_vector2d(timber.size[0], timber.size[1]),
+        bottom_position=top_of_first,
+        length_direction=timber.length_direction,
+        width_direction=timber.width_direction
+    )
+    top_timber.name = f"{timber.name}_top" if timber.name else "split_top"
+    
+    return (bottom_timber, top_timber)
 
 def join_timbers(timber1: Timber, timber2: Timber, 
                 location_on_timber1: Numeric,
