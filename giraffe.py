@@ -130,9 +130,16 @@ class ShoulderPlane:
 @dataclass
 class StandardTenon:
     shoulder_plane: ShoulderPlane
+
+    # TODO which is X and which is Y component, I think you need to change this so that it's 2 reference faces rather than a long edge....
     pos_rel_to_long_edge: Optional[Tuple[TimberReferenceLongEdge, V2]]
+
+    # TODO don't use width/height here, maybe too confusing since they may not always orient with the timber's width/height, or maybe just have them orient with the timber's width/height? and then you don't need something weird like TimberReferenceLongEdge (nah, you should keep this because you may want to position with any long edge dependending on how the timber got created)
+    # so maybe just call it s1 and s2 instead 
     width: Numeric
     height: Numeric
+
+
     length: Numeric  # How far the tenon extends beyond the shoulder plane
 
 # TODO DELETE hallucination, 
@@ -900,7 +907,10 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
 def extend_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Numeric, 
                   extend_length: Numeric) -> Timber:
     """
-    Creates a new timber extending the original timber by a given length
+    Creates a new timber extending the original timber by a given length.
+
+    The original timber is conceptually discarded and replaced with a new timber that is the original timber plus the extension.
+
     Args:
         end: The end of the timber to extend
         overlap_length: Length of timber to overlap with existing timber
@@ -1657,35 +1667,3 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
         distance_along_tenon = abs(t)
     
     return distance_along_tenon
-
-
-def apply_joint_to_cut_timbers(joint: Joint, cut_timber_mapping: dict[Timber, CutTimber]) -> None:
-    """
-    Apply a joint's cuts to the appropriate CutTimber objects.
-    
-    This helper function extracts the common pattern of applying joint cuts
-    to CutTimber objects that appears frequently in examples.
-    
-    Args:
-        joint: The TimberJoint object containing cuts to apply
-        cut_timber_mapping: Dictionary mapping Timber objects to their corresponding CutTimber objects
-        
-    Example:
-        # Create joint
-        joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(...)
-        
-        # Apply cuts using helper
-        apply_joint_to_cut_timbers(joint, {
-            timber1: cut_timber1,
-            timber2: cut_timber2
-        })
-    """
-    for timber, cuts in joint.timber_cuts:
-        if timber in cut_timber_mapping:
-            cut_timber_mapping[timber].joints.extend(cuts)
-        else:
-            # Log warning if timber not found in mapping
-            print(f"Warning: Timber {timber.name if hasattr(timber, 'name') else 'unnamed'} not found in cut_timber_mapping")
-
-
-
