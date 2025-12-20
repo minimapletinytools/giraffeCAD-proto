@@ -2614,3 +2614,179 @@ class TestTimberFootprintOrientation:
         outside_dir = timber.get_face_direction(outside_face)
         # Dot product should be negative (opposite directions)
         assert inside_dir.dot(outside_dir) < 0
+
+
+class TestSplitTimber:
+    """Test the split_timber method"""
+    
+    def test_split_timber_basic(self):
+        """Test basic timber splitting at midpoint"""
+        # Create a simple vertical timber
+        timber = Timber(
+            length=Rational(10),
+            size=create_vector2d(Rational(4), Rational(4)),
+            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
+            length_direction=create_vector3d(Rational(0), Rational(0), Rational(1)),
+            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))
+        )
+        timber.name = "Test Timber"
+        
+        # Split at 30% (distance 3)
+        bottom_timber, top_timber = timber.split_timber(Rational(3))
+        
+        # Check bottom timber
+        assert bottom_timber.length == Rational(3)
+        assert bottom_timber.size[0] == Rational(4)
+        assert bottom_timber.size[1] == Rational(4)
+        assert bottom_timber.bottom_position == create_vector3d(Rational(0), Rational(0), Rational(0))
+        assert bottom_timber.length_direction == create_vector3d(Rational(0), Rational(0), Rational(1))
+        assert bottom_timber.width_direction == create_vector3d(Rational(1), Rational(0), Rational(0))
+        assert bottom_timber.name == "Test Timber_bottom"
+        
+        # Check top timber
+        assert top_timber.length == Rational(7)
+        assert top_timber.size[0] == Rational(4)
+        assert top_timber.size[1] == Rational(4)
+        assert top_timber.bottom_position == create_vector3d(Rational(0), Rational(0), Rational(3))
+        assert top_timber.length_direction == create_vector3d(Rational(0), Rational(0), Rational(1))
+        assert top_timber.width_direction == create_vector3d(Rational(1), Rational(0), Rational(0))
+        assert top_timber.name == "Test Timber_top"
+    
+    def test_split_timber_horizontal(self):
+        """Test splitting a horizontal timber"""
+        # Create a horizontal timber along X axis
+        timber = Timber(
+            length=Rational(20),
+            size=create_vector2d(Rational(6), Rational(4)),
+            bottom_position=create_vector3d(Rational(5), Rational(10), Rational(2)),
+            length_direction=create_vector3d(Rational(1), Rational(0), Rational(0)),
+            width_direction=create_vector3d(Rational(0), Rational(1), Rational(0))
+        )
+        
+        # Split at 8 units from bottom
+        bottom_timber, top_timber = timber.split_timber(Rational(8))
+        
+        # Check bottom timber
+        assert bottom_timber.length == Rational(8)
+        assert bottom_timber.bottom_position == create_vector3d(Rational(5), Rational(10), Rational(2))
+        
+        # Check top timber
+        assert top_timber.length == Rational(12)
+        assert top_timber.bottom_position == create_vector3d(Rational(13), Rational(10), Rational(2))  # 5 + 8
+    
+    def test_split_timber_diagonal(self):
+        """Test splitting a diagonal timber"""
+        # Create a diagonal timber at 45 degrees
+        length_dir = normalize_vector(create_vector3d(Rational(1), Rational(1), Rational(0)))
+        
+        timber = Timber(
+            length=Rational(10),
+            size=create_vector2d(Rational(4), Rational(4)),
+            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
+            length_direction=length_dir,
+            width_direction=normalize_vector(create_vector3d(Rational(-1), Rational(1), Rational(0)))
+        )
+        
+        # Split at 4 units from bottom
+        bottom_timber, top_timber = timber.split_timber(Rational(4))
+        
+        # Check lengths
+        assert bottom_timber.length == Rational(4)
+        assert top_timber.length == Rational(6)
+        
+        # Check positions
+        assert bottom_timber.bottom_position == create_vector3d(Rational(0), Rational(0), Rational(0))
+        
+        # Top timber should start at 4 units along the diagonal
+        expected_top_pos = create_vector3d(Rational(0), Rational(0), Rational(0)) + Rational(4) * length_dir
+        assert top_timber.bottom_position == expected_top_pos
+        
+        # Both should maintain same orientation
+        assert bottom_timber.length_direction == length_dir
+        assert top_timber.length_direction == length_dir
+    
+    def test_split_timber_with_rational(self):
+        """Test splitting with exact rational arithmetic"""
+        # Create a timber with rational values
+        timber = Timber(
+            length=Rational(10, 1),
+            size=create_vector2d(Rational(4, 1), Rational(4, 1)),
+            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
+            length_direction=create_vector3d(Rational(0), Rational(0), Rational(1)),
+            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))
+        )
+        
+        # Split at exact rational point
+        split_distance = Rational(3, 1)
+        bottom_timber, top_timber = timber.split_timber(split_distance)
+        
+        # Check exact rational values
+        assert bottom_timber.length == Rational(3, 1)
+        assert top_timber.length == Rational(7, 1)
+        assert top_timber.bottom_position[2] == Rational(3, 1)
+    
+    def test_split_timber_invalid_distance(self):
+        """Test that invalid split distances raise assertions"""
+        timber = Timber(
+            length=Rational(10),
+            size=create_vector2d(Rational(4), Rational(4)),
+            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
+            length_direction=create_vector3d(Rational(0), Rational(0), Rational(1)),
+            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))
+        )
+        
+        # Test split at 0 (should fail)
+        try:
+            timber.split_timber(Rational(0))
+            assert False, "Should have raised assertion for distance = 0"
+        except AssertionError:
+            pass
+        
+        # Test split at length (should fail)
+        try:
+            timber.split_timber(Rational(10))
+            assert False, "Should have raised assertion for distance = length"
+        except AssertionError:
+            pass
+        
+        # Test split beyond length (should fail)
+        try:
+            timber.split_timber(Rational(15))
+            assert False, "Should have raised assertion for distance > length"
+        except AssertionError:
+            pass
+        
+        # Test negative distance (should fail)
+        try:
+            timber.split_timber(Rational(-5))
+            assert False, "Should have raised assertion for negative distance"
+        except AssertionError:
+            pass
+    
+    def test_split_timber_preserves_orientation(self):
+        """Test that both resulting timbers preserve the original orientation"""
+        # Create a timber with non-standard orientation
+        timber = Timber(
+            length=Rational(15),
+            size=create_vector2d(Rational(6), Rational(8)),
+            bottom_position=create_vector3d(Rational(1), Rational(2), Rational(3)),
+            length_direction=normalize_vector(create_vector3d(Rational(0), Rational(1), Rational(1))),
+            width_direction=normalize_vector(create_vector3d(Rational(1), Rational(0), Rational(0)))
+        )
+        
+        bottom_timber, top_timber = timber.split_timber(Rational(5))
+        
+        # Both should have same orientation as original
+        assert bottom_timber.length_direction == timber.length_direction
+        assert bottom_timber.width_direction == timber.width_direction
+        assert bottom_timber.height_direction == timber.height_direction
+        
+        assert top_timber.length_direction == timber.length_direction
+        assert top_timber.width_direction == timber.width_direction
+        assert top_timber.height_direction == timber.height_direction
+        
+        # Both should have same size as original
+        assert bottom_timber.size[0] == timber.size[0]
+        assert bottom_timber.size[1] == timber.size[1]
+        assert top_timber.size[0] == timber.size[0]
+        assert top_timber.size[1] == timber.size[1]

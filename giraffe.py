@@ -184,6 +184,9 @@ class DistanceFromLongEdge:
     distance1: float
     distance2: float
 
+
+
+# TODO rename to ButtStickout or something like that...
 @dataclass
 class Stickout:
     """
@@ -540,6 +543,59 @@ class Timber:
         # Find which face of the timber aligns with the outward direction (negative of inward)
         outward_normal = -inward_normal
         return self.get_closest_oriented_face(outward_normal)
+    
+    def split_timber(self, distance_from_bottom: float) -> Tuple['Timber', 'Timber']:
+        """
+        Split this timber into two timbers at the specified distance from the bottom.
+        
+        The original timber is conceptually discarded and replaced with two new timbers:
+        - The first timber extends from the original bottom to the split point
+        - The second timber extends from the split point to the original top
+        
+        Both timbers maintain the same cross-sectional size and orientation as the original.
+        
+        Args:
+            distance_from_bottom: Distance along the timber's length where to split (0 < distance < self.length)
+            
+        Returns:
+            Tuple of (bottom_timber, top_timber) where:
+            - bottom_timber starts at the same position as the original
+            - top_timber starts at the top end of bottom_timber
+            
+        Example:
+            If a timber has length 10 and is split at distance 3:
+            - bottom_timber has length 3, same origin as original
+            - top_timber has length 7, origin at distance 3 from original origin
+        """
+        # Validate input
+        assert 0 < distance_from_bottom < self.length, \
+            f"Split distance {distance_from_bottom} must be between 0 and {self.length}"
+        
+        # Create first timber (bottom part)
+        bottom_timber = Timber(
+            length=distance_from_bottom,
+            size=create_vector2d(self.size[0], self.size[1]),
+            bottom_position=self.bottom_position,
+            length_direction=self.length_direction,
+            width_direction=self.width_direction
+        )
+        bottom_timber.name = f"{self.name}_bottom" if self.name else "split_bottom"
+        
+        # Calculate the bottom position of the second timber
+        # It's at the top of the first timber
+        top_of_first = self.bottom_position + distance_from_bottom * self.length_direction
+        
+        # Create second timber (top part)
+        top_timber = Timber(
+            length=self.length - distance_from_bottom,
+            size=create_vector2d(self.size[0], self.size[1]),
+            bottom_position=top_of_first,
+            length_direction=self.length_direction,
+            width_direction=self.width_direction
+        )
+        top_timber.name = f"{self.name}_top" if self.name else "split_top"
+        
+        return (bottom_timber, top_timber)
     
     def get_transform_matrix(self) -> Matrix:
         """Get the 4x4 transformation matrix for this timber"""
