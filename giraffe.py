@@ -14,6 +14,7 @@ from dataclasses import dataclass
 V2 = Matrix  # 2D vector - 2x1 Matrix
 V3 = Matrix  # 3D vector - 3x1 Matrix  
 Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
+Numeric = Union[float, int, Expr]  # Numeric values (SymPy Expr type STRONGLY preferred, there's really no reason to ever be using floats or ints. Always use Rational)
 
 # ============================================================================
 # Enums and Basic Types
@@ -100,11 +101,11 @@ class StickoutReference(Enum):
 @dataclass
 class ShoulderPlane:
     reference_end: TimberReferenceEnd
-    distance: float
+    distance: Numeric
     normal: V3
     
     @classmethod
-    def create(cls, reference_end: TimberReferenceEnd, distance: float, normal: Optional[V3] = None) -> 'ShoulderPlane':
+    def create(cls, reference_end: TimberReferenceEnd, distance: Numeric, normal: Optional[V3] = None) -> 'ShoulderPlane':
         """
         Create a ShoulderPlane with automatic normal determination.
         
@@ -130,9 +131,9 @@ class ShoulderPlane:
 class StandardTenon:
     shoulder_plane: ShoulderPlane
     pos_rel_to_long_edge: Optional[Tuple[TimberReferenceLongEdge, V2]]
-    width: float
-    height: float
-    length: float  # How far the tenon extends beyond the shoulder plane
+    width: Numeric
+    height: Numeric
+    length: Numeric  # How far the tenon extends beyond the shoulder plane
 
 # TODO DELETE hallucination, 
 # we can support MultiTenon but they would all share the same shoulder plane
@@ -143,46 +144,46 @@ class MultiTenon:
 @dataclass
 class StandardMortise:
     mortise_face: TimberFace
-    pos_rel_to_end: Tuple[TimberReferenceEnd, float]
-    pos_rel_to_long_face: Optional[Tuple[TimberReferenceLongFace, float]]
+    pos_rel_to_end: Tuple[TimberReferenceEnd, Numeric]
+    pos_rel_to_long_face: Optional[Tuple[TimberReferenceLongFace, Numeric]]
 
     # TODO rename to something else? cuz it could be in the height axis or could be in the width axis?
     # in the long face axis
-    width: float
+    width: Numeric
 
     # TODO rename this to length since it's always in the length axis to avoid confusion
     # in the end axis  
-    height: float
+    height: Numeric
 
 
-    depth: float
+    depth: Numeric
 
 @dataclass
 class FaceAlignedJoinedTimberOffset:
     reference_face: TimberFace
-    centerline_offset: Optional[float]
-    face_offset: Optional[float]
+    centerline_offset: Optional[Numeric]
+    face_offset: Optional[Numeric]
 
 @dataclass
 class DistanceFromFace:
     face: TimberFace
-    distance: float
+    distance: Numeric
 
 @dataclass
 class DistanceFromLongFace:
     face: TimberReferenceLongFace
-    distance: float
+    distance: Numeric
 
 @dataclass
 class DistanceFromEnd:
     end: TimberReferenceEnd
-    distance: float
+    distance: Numeric
 
 @dataclass
 class DistanceFromLongEdge:
     edge: TimberReferenceLongEdge
-    distance1: float
-    distance2: float
+    distance1: Numeric
+    distance2: Numeric
 
 
 
@@ -235,8 +236,8 @@ class Stickout:
         # Stickout from outside faces
         s = Stickout(0.1, 0.2, StickoutReference.OUTSIDE, StickoutReference.OUTSIDE)
     """
-    stickout1: float = 0
-    stickout2: float = 0
+    stickout1: Numeric = 0
+    stickout2: Numeric = 0
     stickoutReference1: 'StickoutReference' = None
     stickoutReference2: 'StickoutReference' = None
     
@@ -248,7 +249,7 @@ class Stickout:
             object.__setattr__(self, 'stickoutReference2', StickoutReference.CENTER_LINE)
     
     @classmethod
-    def symmetric(cls, value: float, reference: 'StickoutReference' = None) -> 'Stickout':
+    def symmetric(cls, value: Numeric, reference: 'StickoutReference' = None) -> 'Stickout':
         """
         Create a symmetric stickout where both sides extend by the same amount.
         
@@ -277,11 +278,11 @@ class Stickout:
 # Helper Functions for Vector Operations
 # ============================================================================
 
-def create_vector2d(x: float, y: float) -> V2:
+def create_vector2d(x: Numeric, y: Numeric) -> V2:
     """Create a 2D vector"""
     return Matrix([x, y])
 
-def create_vector3d(x: float, y: float, z: float) -> V3:
+def create_vector3d(x: Numeric, y: Numeric, z: Numeric) -> V3:
     """Create a 3D vector"""
     return Matrix([x, y, z])
 
@@ -311,7 +312,7 @@ def vector_magnitude(vec: Matrix):
 class Timber:
     """Represents a timber in the timber framing system"""
     
-    def __init__(self, length: Union[float, int, Expr], size: V2, bottom_position: V3, 
+    def __init__(self, length: Numeric, size: V2, bottom_position: V3, 
                  length_direction: Direction3D, width_direction: Direction3D):
         """
         Args:
@@ -321,7 +322,7 @@ class Timber:
             length_direction: Direction vector for the length axis as 3D vector, the +length direction is the +Z direction
             width_direction: Direction vector for the width axis as 3D vector, the +width direction is the +X direction
         """
-        self.length: float = length
+        self.length: Numeric = length
         self.size: V2 = size
         self.bottom_position: V3 = bottom_position
         self.name: Optional[str] = None
@@ -404,7 +405,7 @@ class Timber:
             self.orientation.matrix[2, 1]
         ])
     
-    def get_centerline_position_from_bottom(self, distance: float) -> V3:
+    def get_centerline_position_from_bottom(self, distance: Numeric) -> V3:
         """
         Get the 3D position at a specific point along the timber's centerline, measured from the bottom.
         
@@ -416,7 +417,7 @@ class Timber:
         """
         return self.bottom_position + self.length_direction * distance
     
-    def get_centerline_position_from_top(self, distance: float) -> V3:
+    def get_centerline_position_from_top(self, distance: Numeric) -> V3:
         """
         Get the 3D position at a specific point along the timber's centerline, measured from the top.
         
@@ -544,7 +545,7 @@ class Timber:
         outward_normal = -inward_normal
         return self.get_closest_oriented_face(outward_normal)
     
-    def split_timber(self, distance_from_bottom: float) -> Tuple['Timber', 'Timber']:
+    def split_timber(self, distance_from_bottom: Numeric) -> Tuple['Timber', 'Timber']:
         """
         Split this timber into two timbers at the specified distance from the bottom.
         
@@ -651,7 +652,7 @@ class CutTimber:
 # Timber Creation Functions
 # ============================================================================
 
-def create_timber(bottom_position: V3, length: float, size: V2, 
+def create_timber(bottom_position: V3, length: Numeric, size: V2, 
                   length_direction: Direction3D, width_direction: Direction3D) -> Timber:
     """
     Creates a timber at bottom_position with given dimensions and rotates it 
@@ -659,7 +660,7 @@ def create_timber(bottom_position: V3, length: float, size: V2,
     """
     return Timber(length, size, bottom_position, length_direction, width_direction)
 
-def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
+def create_axis_aligned_timber(bottom_position: V3, length: Numeric, size: V2,
                               length_direction: TimberFace, width_direction: Optional[TimberFace] = None) -> Timber:
     """
     Creates an axis-aligned timber using TimberFace to reference directions
@@ -697,7 +698,7 @@ def create_axis_aligned_timber(bottom_position: V3, length: float, size: V2,
     return create_timber(bottom_position, length, size, length_vec, width_vec)
 
 def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_index: int, 
-                                               length: float, location_type: FootprintLocation,
+                                               length: Numeric, location_type: FootprintLocation,
                                                size: V2) -> Timber:
     """
     Creates a vertical timber (post) on a footprint boundary corner.
@@ -783,8 +784,8 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
     return create_timber(bottom_position, length, size, length_direction, width_direction)
 
 def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: int, 
-                                            distance_along_side: float,
-                                            length: float, location_type: FootprintLocation, 
+                                            distance_along_side: Numeric,
+                                            length: Numeric, location_type: FootprintLocation, 
                                             size: V2) -> Timber:
     """
     Creates a vertical timber (post) positioned at a point along a footprint boundary side.
@@ -883,7 +884,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
 def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int,
                                         location_type: FootprintLocation, 
                                         size: V2,
-                                        length: Optional[float] = None) -> Timber:
+                                        length: Optional[Numeric] = None) -> Timber:
     """
     Creates a horizontal timber (mudsill) on the footprint boundary side.
     
@@ -949,8 +950,8 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     
     return create_timber(bottom_position, length, size, length_direction, width_direction)
 
-def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_length: float, 
-                           extend_length: float) -> Timber:
+def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_length: Numeric, 
+                           extend_length: Numeric) -> Timber:
     """
     Creates a new timber extending the original timber by a given length
     Args:
@@ -975,9 +976,9 @@ def create_timber_extension(timber: Timber, end: TimberReferenceEnd, overlap_len
                  timber.length_direction, timber.width_direction)
 
 def join_timbers(timber1: Timber, timber2: Timber, 
-                location_on_timber1: float,
-                location_on_timber2: Optional[float] = None,
-                lateral_offset: float = Integer(0),
+                location_on_timber1: Numeric,
+                location_on_timber2: Optional[Numeric] = None,
+                lateral_offset: Numeric = Integer(0),
                 stickout: Stickout = Stickout.nostickout(),
                 size: Optional[V2] = None,
                 orientation_width_vector: Optional[Direction3D] = None) -> Timber:
@@ -1094,7 +1095,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction)
 
 def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber,
-                                                location_on_timber1: float,
+                                                location_on_timber1: Numeric,
                                                 stickout: Stickout,
                                                 offset_from_timber1: FaceAlignedJoinedTimberOffset,
                                                 size: V2,
@@ -1235,7 +1236,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
 # TODO prefix all these functions with "cut_"
 def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
                                                           tenon_end: TimberReferenceEnd,
-                                                          tenon_thickness: float, tenon_length: float):
+                                                          tenon_thickness: Numeric, tenon_length: Numeric):
     """
     Creates a mortise and tenon joint for face-aligned timbers.
     
@@ -1328,7 +1329,7 @@ def _has_rational_components(vector: Direction3D) -> bool:
             return False
     return True
 
-def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Optional[float] = None) -> bool:
+def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two timbers have parallel length directions.
     
@@ -1359,7 +1360,7 @@ def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Opti
         # Use provided tolerance
         return Abs(dot_product - 1) < tolerance
 
-def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional[float] = None) -> bool:
+def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two timbers have orthogonal (perpendicular) length directions.
     
@@ -1390,7 +1391,7 @@ def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Op
         # Use provided tolerance
         return Abs(dot_product) < tolerance
 
-def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[float] = None) -> bool:
+def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two direction vectors are perpendicular (orthogonal).
     
@@ -1421,7 +1422,7 @@ def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction
         # Use tolerance for approximate comparison
         return Abs(dot_product) < tolerance
 
-def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[float] = None) -> bool:
+def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two direction vectors are parallel (or anti-parallel).
     
@@ -1453,7 +1454,7 @@ def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, t
         # Use provided tolerance
         return abs(float(dot_mag) - 1.0) < tolerance
 
-def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[float] = None) -> bool:
+def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two timbers are face-aligned.
     
@@ -1512,7 +1513,7 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
     
     return False
 
-def _project_point_on_timber_centerline(point: V3, timber: Timber) -> Tuple[float, V3]:
+def _project_point_on_timber_centerline(point: V3, timber: Timber) -> Tuple[Numeric, V3]:
     """
     Project a point onto a timber's centerline.
     
@@ -1537,7 +1538,7 @@ def _project_point_on_timber_centerline(point: V3, timber: Timber) -> Tuple[floa
     
     return t, projected_point
 
-def _calculate_mortise_position_from_tenon_intersection(mortise_timber: Timber, tenon_timber: Timber, tenon_end: TimberReferenceEnd) -> Tuple[TimberReferenceEnd, float]:
+def _calculate_mortise_position_from_tenon_intersection(mortise_timber: Timber, tenon_timber: Timber, tenon_end: TimberReferenceEnd) -> Tuple[TimberReferenceEnd, Numeric]:
     """
     Calculate the mortise position based on where the tenon timber intersects the mortise timber.
     
@@ -1571,7 +1572,7 @@ def _calculate_mortise_position_from_tenon_intersection(mortise_timber: Timber, 
         return TimberReferenceEnd.TOP, distance_from_top
 
 
-def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, mortise_timber: Timber, tenon_end: TimberReferenceEnd) -> float:
+def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, mortise_timber: Timber, tenon_end: TimberReferenceEnd) -> Numeric:
     """
     Calculate the distance from the tenon timber end to where the shoulder plane should be positioned.
     The shoulder plane should be at the face where the tenon timber meets the mortise timber.
