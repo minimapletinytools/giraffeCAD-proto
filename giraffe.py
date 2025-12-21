@@ -1331,8 +1331,9 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
 # Joint Construction Functions
 # ============================================================================
 
-# TODO prefix all these functions with "cut_"
-def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
+
+
+def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
                                                           tenon_end: TimberReferenceEnd,
                                                           tenon_thickness: Numeric, tenon_length: Numeric):
     """

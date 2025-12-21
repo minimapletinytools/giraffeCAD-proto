@@ -130,7 +130,7 @@ def create_sawhorse() -> list[CutTimber]:
     cut_stretcher = CutTimber(stretcher)
 
     # next create mortise and tenon joints between the posts and the mudsills
-    mudsill_left_joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    mudsill_left_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         mortise_timber=left_mudsill,
         tenon_timber=left_post,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
@@ -139,7 +139,7 @@ def create_sawhorse() -> list[CutTimber]:
     )
     mudsill_left_joint.name = "Left Post to Mudsill Joint"
 
-    mudsill_right_joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    mudsill_right_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         mortise_timber=right_mudsill,
         tenon_timber=right_post,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
@@ -149,7 +149,7 @@ def create_sawhorse() -> list[CutTimber]:
     mudsill_right_joint.name = "Right Post to Mudsill Joint"
 
     # next create mortise and tenon joints between the posts and the stretcher
-    stretcher_left_joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    stretcher_left_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         mortise_timber=left_post,
         tenon_timber=stretcher,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom end of stretcher
@@ -158,7 +158,7 @@ def create_sawhorse() -> list[CutTimber]:
     )
     stretcher_left_joint.name = "Left Post to Stretcher Joint"
 
-    stretcher_right_joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    stretcher_right_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         mortise_timber=right_post,
         tenon_timber=stretcher,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of stretcher
@@ -168,7 +168,7 @@ def create_sawhorse() -> list[CutTimber]:
     stretcher_right_joint.name = "Right Post to Stretcher Joint"
 
     # now create mortise and tenon joints between the posts and the beam
-    beam_left_joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    beam_left_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         mortise_timber=beam,
         tenon_timber=left_post,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from bottom end of beam
@@ -177,7 +177,7 @@ def create_sawhorse() -> list[CutTimber]:
     )
     beam_left_joint.name = "Left Post to Beam Joint"
 
-    beam_right_joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    beam_right_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         mortise_timber=beam,
         tenon_timber=right_post,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of beam
