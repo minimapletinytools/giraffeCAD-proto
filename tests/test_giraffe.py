@@ -709,7 +709,7 @@ class TestTimberCreation:
 class TestJointConstruction:
     """Test joint construction functions."""
     
-    def test_simple_mortise_and_tenon_joint_on_face_aligned_timbers(self):
+    def test_cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(self):
         """Test simple mortise and tenon joint creation for face-aligned timbers."""
         mortise_timber = Timber(
             length=Rational(3),
@@ -727,7 +727,7 @@ class TestJointConstruction:
             width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))
         )
         
-        joint = simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+        joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
             mortise_timber, tenon_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
             tenon_thickness=Rational("0.05"),
