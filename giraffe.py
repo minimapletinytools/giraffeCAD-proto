@@ -1333,6 +1333,38 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
 
 
 
+
+def cut_basic_miter_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd):
+    """
+    Creates a basic miter joint between two timbers such that the 2 ends meet at a 90 degree angle miter corner.
+    """
+    # TODO assert length axis are perpendicular
+    
+
+def cut_basic_end_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd):
+    """
+    Creates a basic end joint between two timbers such that the 2 ends meet at a 90 degree angle corner.
+    """
+    return cut_basic_miter_joint_on_face_aligned_timbers(timberA, timberA_end, timberB, timberB_end)
+
+
+def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_timber: Timber, butt_end: TimberReferenceEnd):
+    """
+    Creates a basic butt joint between two timbers. The butt timber is extended to meet the face of the receiving timber.
+    """
+    assert _are_timbers_face_aligned(shoulder_timber, butt_timber), \
+        "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
+
+
+def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberB: Timber):
+    """
+    Creates a basic splice joint between two timbers. The butt timber is extended to meet the face of the receiving timber.
+    """
+    # TODO assert length axis are parallel 
+    # TODO check that timber cross sections overlap and if not, output a warning
+
+
+
 def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
                                                           tenon_end: TimberReferenceEnd,
                                                           tenon_thickness: Numeric, tenon_length: Numeric):
