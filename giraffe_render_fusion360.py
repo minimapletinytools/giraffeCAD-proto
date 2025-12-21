@@ -288,13 +288,13 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
     
     try:
         # Get mortise dimensions in cm
-        width_cm = mortise_spec.width * 100
-        height_cm = mortise_spec.height * 100
+        size1_cm = mortise_spec.size1 * 100
+        size2_cm = mortise_spec.size2 * 100
         depth_cm = mortise_spec.depth * 100
         face = mortise_spec.mortise_face
         
         if app:
-            app.log(f"Creating {width_cm:.1f}x{height_cm:.1f}x{depth_cm:.1f}cm mortise on {face.name} face of {component_name}")
+            app.log(f"Creating {size1_cm:.1f}x{size2_cm:.1f}x{depth_cm:.1f}cm mortise on {face.name} face of {component_name}")
 
         # Step 5: Assert that pos_rel_to_long_face is None (not supported yet)
         if mortise_spec.pos_rel_to_long_face is not None:
@@ -334,10 +334,10 @@ def create_mortise_cut(component: adsk.fusion.Component, timber: Timber, mortise
         rect_lines = sketch.sketchCurves.sketchLines
         
         # Rectangle centered at calculated position
-        x1 = x_pos_on_face - width_cm / 2
-        x2 = x_pos_on_face + width_cm / 2
-        y1 = z_pos_on_face - height_cm / 2
-        y2 = z_pos_on_face + height_cm / 2
+        x1 = x_pos_on_face - size1_cm / 2
+        x2 = x_pos_on_face + size1_cm / 2
+        y1 = z_pos_on_face - size2_cm / 2
+        y2 = z_pos_on_face + size2_cm / 2
         
         # Create rectangle points (Z=0 since we're in the sketch plane)
         point1 = adsk.core.Point3D.create(x1, y1, 0)
