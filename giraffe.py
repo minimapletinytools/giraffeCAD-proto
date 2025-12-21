@@ -49,6 +49,34 @@ class TimberFace(Enum):
             return create_vector3d(0, 1, 0)
         else:  # BACK
             return create_vector3d(0, -1, 0)
+    
+    def is_perpendicular(self, other: 'TimberFace') -> bool:
+        """
+        Check if two faces are perpendicular to each other.
+        
+        Perpendicular face pairs (orthogonal axes):
+        - X-axis faces (RIGHT, LEFT) <-> Y-axis faces (FORWARD, BACK)
+        - X-axis faces (RIGHT, LEFT) <-> Z-axis faces (TOP, BOTTOM)
+        - Y-axis faces (FORWARD, BACK) <-> Z-axis faces (TOP, BOTTOM)
+        """
+        # Define axis groups
+        x_faces = {TimberFace.RIGHT, TimberFace.LEFT}
+        y_faces = {TimberFace.FORWARD, TimberFace.BACK}
+        z_faces = {TimberFace.TOP, TimberFace.BOTTOM}
+        
+        # Two faces are perpendicular if they are on different axes
+        self_in_x = self in x_faces
+        self_in_y = self in y_faces
+        self_in_z = self in z_faces
+        
+        other_in_x = other in x_faces
+        other_in_y = other in y_faces
+        other_in_z = other in z_faces
+        
+        # Perpendicular if on different axes
+        return (self_in_x and (other_in_y or other_in_z)) or \
+               (self_in_y and (other_in_x or other_in_z)) or \
+               (self_in_z and (other_in_x or other_in_y))
 
 class TimberReferenceEnd(Enum):
     TOP = 1
@@ -59,12 +87,30 @@ class TimberReferenceLongFace(Enum):
     FORWARD = 4
     LEFT = 5
     BACK = 6
+    
+    def to_timber_face(self) -> TimberFace:
+        """Convert TimberReferenceLongFace to TimberFace."""
+        return TimberFace(self.value)
+    
+    def is_perpendicular(self, other: 'TimberReferenceLongFace') -> bool:
+        """
+        Check if two long faces are perpendicular to each other.
+        
+        Perpendicular face pairs:
+        - RIGHT <-> FORWARD, RIGHT <-> BACK
+        - LEFT <-> FORWARD, LEFT <-> BACK
+        """
+        return self.to_timber_face().is_perpendicular(other.to_timber_face())
 
 class TimberReferenceLongEdge(Enum):
     RIGHT_FORWARD = 7
     FORWARD_LEFT = 8
     LEFT_BACK = 9
     BACK_RIGHT = 10
+    FORWARD_RIGHT = 11
+    RIGHT_BACK = 12
+    BACK_LEFT = 13
+    LEFT_FORWARD = 14
 
 class StickoutReference(Enum):
     """
@@ -149,29 +195,6 @@ class MultiTenon:
     tenons: List[StandardTenon]
 
 @dataclass
-class StandardMortise:
-    mortise_face: TimberFace
-    pos_rel_to_end: Tuple[TimberReferenceEnd, Numeric]
-    pos_rel_to_long_face: Optional[Tuple[TimberReferenceLongFace, Numeric]]
-
-    # TODO rename to something else? cuz it could be in the height axis or could be in the width axis?
-    # in the long face axis
-    width: Numeric
-
-    # TODO rename this to length since it's always in the length axis to avoid confusion
-    # in the end axis  
-    height: Numeric
-
-
-    depth: Numeric
-
-@dataclass
-class FaceAlignedJoinedTimberOffset:
-    reference_face: TimberFace
-    centerline_offset: Optional[Numeric]
-    face_offset: Optional[Numeric]
-
-@dataclass
 class DistanceFromFace:
     face: TimberFace
     distance: Numeric
@@ -187,10 +210,72 @@ class DistanceFromEnd:
     distance: Numeric
 
 @dataclass
+class StandardMortise:
+    # StandardMortise is a rectangular pocket cut into a face of a timber
+    mortise_face: TimberFace
+
+    # Position relative to timber end and long face
+    pos_rel_to_end: DistanceFromEnd
+    pos_rel_to_long_face: Optional[DistanceFromLongFace]
+
+    # Cross-sectional dimensions (perpendicular to mortise depth)
+    # These are generic dimension names because depending on mortise orientation,
+    # they may align with different timber axes
+    size1: Numeric  # First cross-section dimension (in the axis perpendicular to pos_rel_to_long_face.face1)
+    size2: Numeric  # Second cross-section dimension (in the axis perpendicular to pos_rel_to_long_face.face2)
+
+    depth: Numeric  # How deep the mortise goes into the timber, measured relative to the mortise face
+
+@dataclass
+class FaceAlignedJoinedTimberOffset:
+    reference_face: TimberFace
+    centerline_offset: Optional[Numeric]
+    face_offset: Optional[Numeric]
+
+
+@dataclass
 class DistanceFromLongEdge:
-    edge: TimberReferenceLongEdge
-    distance1: Numeric
-    distance2: Numeric
+    """
+    Position defined by distances from two adjacent long faces.
+    This identifies a point on the cross-section by measuring from two perpendicular long faces.
+    The 2 faces MUST be perpendicular to each other.
+    """
+    face1: DistanceFromLongFace
+    face2: DistanceFromLongFace
+
+    def get_long_edge(self) -> TimberReferenceLongEdge:
+        """
+        Get the long edge from the two faces.
+        """
+        f1 = self.face1.face
+        f2 = self.face2.face
+        
+        if f1 == TimberReferenceLongFace.RIGHT and f2 == TimberReferenceLongFace.FORWARD:
+            return TimberReferenceLongEdge.RIGHT_FORWARD
+        elif f1 == TimberReferenceLongFace.FORWARD and f2 == TimberReferenceLongFace.LEFT:
+            return TimberReferenceLongEdge.FORWARD_LEFT
+        elif f1 == TimberReferenceLongFace.LEFT and f2 == TimberReferenceLongFace.BACK:
+            return TimberReferenceLongEdge.LEFT_BACK
+        elif f1 == TimberReferenceLongFace.BACK and f2 == TimberReferenceLongFace.RIGHT:
+            return TimberReferenceLongEdge.BACK_RIGHT
+        elif f1 == TimberReferenceLongFace.FORWARD and f2 == TimberReferenceLongFace.RIGHT:
+            return TimberReferenceLongEdge.FORWARD_RIGHT
+        elif f1 == TimberReferenceLongFace.RIGHT and f2 == TimberReferenceLongFace.BACK:
+            return TimberReferenceLongEdge.RIGHT_BACK
+        elif f1 == TimberReferenceLongFace.BACK and f2 == TimberReferenceLongFace.LEFT:
+            return TimberReferenceLongEdge.BACK_LEFT
+        elif f1 == TimberReferenceLongFace.LEFT and f2 == TimberReferenceLongFace.FORWARD:
+            return TimberReferenceLongEdge.LEFT_FORWARD
+        else:
+            raise ValueError(f"Invalid faces: {f1} and {f2}")
+    
+    def is_valid(self) -> bool:
+        """
+        Check if the two faces are perpendicular to each other.
+        """
+        return self.face1.face.is_perpendicular(self.face2.face)
+
+    
 
 
 
@@ -1304,10 +1389,10 @@ def simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timbe
     # Create mortise specification
     mortise_spec = StandardMortise(
         mortise_face=mortise_face,
-        pos_rel_to_end=(mortise_ref_end, mortise_distance),
+        pos_rel_to_end=DistanceFromEnd(end=mortise_ref_end, distance=mortise_distance),
         pos_rel_to_long_face=None,  # Centered
-        width=tenon_thickness,
-        height=tenon_length,
+        size1=tenon_thickness,
+        size2=tenon_length,
         depth=tenon_length  # Mortise depth equals tenon length
     )
     
