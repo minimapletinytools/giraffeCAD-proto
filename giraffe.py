@@ -1270,11 +1270,13 @@ class Cut:
     # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
     def get_end_position(self) -> V3:
         """
-        Determine the end position of the cut by finding the minimal boundary of the negative CSG
-        in the direction towards the opposite end of the timber, then projecting onto the centerline.
+        Determine the end position of the cut by finding where the cut intersects the timber.
         
-        For a TOP end cut, we find the minimal boundary in the -length_direction (towards bottom).
-        For a BOTTOM end cut, we find the minimal boundary in the +length_direction (towards top).
+        This is computed by:
+        1. Getting the negative CSG (the cut volume)
+        2. Intersecting it with the timber's finite prism (to constrain the cut to the timber bounds)
+        3. Finding the minimal boundary of this intersection
+        4. Projecting onto the timber's centerline
         
         The returned point is on the timber's centerline at the distance where the cut boundary is located.
         
@@ -1290,6 +1292,13 @@ class Cut:
         # Get the negative CSG representing the cut volume
         negative_csg = self.get_negative_csg()
         
+        # Get the timber prism (semi-infinite at this end since we pass [self])
+        timber_prism = _create_timber_prism_csg(self._timber, [self])
+        
+        # The timber with the cut applied: timber - cut_volume
+        from meowmeowcsg import Difference, HalfPlane
+        cut_result = Difference(timber_prism, [negative_csg])
+        
         # Determine the search direction based on which end is being cut
         # Note: minimal_boundary_in_direction minimizes P·direction, so to find
         # the minimum along the length direction, we search in +length_direction
@@ -1304,23 +1313,97 @@ class Cut:
         else:
             raise ValueError(f"Invalid end cut: {self.maybeEndCut}")
         
-        # Find the minimal boundary of the cut CSG in the search direction
-        boundary_point = negative_csg.minimal_boundary_in_direction(search_direction)
-        
-        # Project the boundary point onto the timber's centerline to get the end position
-        # The end position is at: bottom_position + length_direction * distance
-        # where distance = (boundary_point - bottom_position) · length_direction / |length_direction|^2
-        length_dir_norm = normalize_vector(self._timber.length_direction)
-        distance_along_centerline = ((boundary_point - self._timber.bottom_position).T * length_dir_norm)[0, 0]
-        
-        end_position = self._timber.bottom_position + length_dir_norm * distance_along_centerline
-        
-        return end_position
+        # For HalfPlane cuts, we can directly compute the intersection with the centerline
+        # rather than using minimal_boundary_in_direction (which only works for certain directions)
+        if isinstance(negative_csg, HalfPlane):
+            # The centerline is: P(t) = bottom_position + t * length_direction
+            # The half-plane is: normal · P >= offset
+            # At the boundary: normal · P = offset
+            # Substituting: normal · (bottom_position + t * length_direction) = offset
+            # Solving for t: t = (offset - normal · bottom_position) / (normal · length_direction)
+            
+            normal = negative_csg.normal
+            offset = negative_csg.offset
+            length_dir_norm = normalize_vector(self._timber.length_direction)
+            
+            normal_dot_length = (normal.T * length_dir_norm)[0, 0]
+            normal_dot_bottom = (normal.T * self._timber.bottom_position)[0, 0]
+            
+            if abs(normal_dot_length) < Rational(1, 100000):
+                # Plane is parallel to the timber - no unique intersection
+                raise ValueError("Cut plane is parallel to timber centerline")
+            
+            t = (offset - normal_dot_bottom) / normal_dot_length
+            end_position = self._timber.bottom_position + length_dir_norm * t
+            
+            return end_position
+        else:
+            # For other CSG types, use minimal_boundary_in_direction
+            boundary_point = cut_result.minimal_boundary_in_direction(search_direction)
+            
+            # Project the boundary point onto the timber's centerline to get the end position
+            # The end position is at: bottom_position + length_direction * distance
+            # where distance = (boundary_point - bottom_position) · length_direction / |length_direction|^2
+            length_dir_norm = normalize_vector(self._timber.length_direction)
+            distance_along_centerline = ((boundary_point - self._timber.bottom_position).T * length_dir_norm)[0, 0]
+            
+            end_position = self._timber.bottom_position + length_dir_norm * distance_along_centerline
+            
+            return end_position
 
     # returns the negative CSG of the cut (the part of the timber that is removed by the cut)
     @abstractmethod
     def get_negative_csg(self) -> MeowMeowCSG:
         pass
+
+
+def _create_timber_prism_csg(timber: Timber, cuts: list) -> MeowMeowCSG:
+    """
+    Helper function to create a prism CSG for a timber, optionally extending ends with cuts to infinity.
+    
+    Args:
+        timber: The timber to create a prism for
+        cuts: List of cuts on this timber (used to determine if ends should be infinite)
+        
+    Returns:
+        Prism CSG representing the timber (possibly semi-infinite or infinite)
+    """
+    from meowmeowcsg import create_prism
+    
+    # Check if bottom end has cuts
+    has_bottom_cut = any(
+        cut.maybeEndCut == TimberReferenceEnd.BOTTOM 
+        for cut in cuts
+    )
+    
+    # Check if top end has cuts  
+    has_top_cut = any(
+        cut.maybeEndCut == TimberReferenceEnd.TOP
+        for cut in cuts
+    )
+    
+    # Normalize the length direction
+    length_dir_norm = normalize_vector(timber.length_direction)
+    
+    # Compute the distance from origin to bottom along the length direction
+    # This is the projection of bottom_position onto length_direction
+    bottom_distance = (timber.bottom_position.T * length_dir_norm)[0, 0]
+    
+    # Top distance is bottom_distance + length
+    top_distance = bottom_distance + timber.length
+    
+    # Determine start and end distances in absolute coordinates
+    # If an end has cuts, it extends to infinity in that direction
+    start_distance = None if has_bottom_cut else bottom_distance
+    end_distance = None if has_top_cut else top_distance
+    
+    # Create a prism representing the timber
+    return create_prism(
+        size=timber.size,
+        orientation=timber.orientation,
+        start_distance=start_distance,
+        end_distance=end_distance
+    )
 
 
 class CutTimber:
@@ -1353,42 +1436,7 @@ class CutTimber:
         Returns:
             Prism CSG representing the timber (possibly semi-infinite or infinite)
         """
-        from meowmeowcsg import create_prism
-        
-        # Check if bottom end has cuts
-        has_bottom_cut = any(
-            cut.maybeEndCut == TimberReferenceEnd.BOTTOM 
-            for cut in self._cuts
-        )
-        
-        # Check if top end has cuts  
-        has_top_cut = any(
-            cut.maybeEndCut == TimberReferenceEnd.TOP
-            for cut in self._cuts
-        )
-        
-        # Normalize the length direction
-        length_dir_norm = normalize_vector(self._timber.length_direction)
-        
-        # Compute the distance from origin to bottom along the length direction
-        # This is the projection of bottom_position onto length_direction
-        bottom_distance = (self._timber.bottom_position.T * length_dir_norm)[0, 0]
-        
-        # Top distance is bottom_distance + length
-        top_distance = bottom_distance + self._timber.length
-        
-        # Determine start and end distances in absolute coordinates
-        # If an end has cuts, it extends to infinity in that direction
-        start_distance = None if has_bottom_cut else bottom_distance
-        end_distance = None if has_top_cut else top_distance
-        
-        # Create a prism representing the timber
-        return create_prism(
-            size=self._timber.size,
-            orientation=self._timber.orientation,
-            start_distance=start_distance,
-            end_distance=end_distance
-        )
+        return _create_timber_prism_csg(self._timber, self._cuts)
 
     # this one returns the timber without cuts where ends with joints are cut to length based on Cut::get_end_position
     # use this for rendering the timber without cuts for development
