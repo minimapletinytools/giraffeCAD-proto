@@ -549,9 +549,14 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     This approach is more reliable than transforming each timber immediately after creation,
     as it avoids Fusion 360's asynchronous update issues.
     
+    Component names are automatically determined from:
+    1. CutTimber.name if set
+    2. CutTimber.timber.name if set
+    3. {base_name}_{index} as fallback
+    
     Args:
         cut_timbers: List of CutTimber objects to render
-        base_name: Base name for the components
+        base_name: Base name for the components (used if timber has no name)
         
     Returns:
         Number of successfully rendered timbers
@@ -569,7 +574,13 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     created_components: List[Tuple[adsk.fusion.Occurrence, CutTimber, str]] = []
     
     for i, cut_timber in enumerate(cut_timbers):
-        component_name = f"{base_name}_{i}"
+        # Use the timber's name if available, otherwise use index
+        if cut_timber.name:
+            component_name = cut_timber.name
+        elif hasattr(cut_timber, 'timber') and cut_timber.timber.name:
+            component_name = cut_timber.timber.name
+        else:
+            component_name = f"{base_name}_{i}"
         
         try:
             print(f"Creating {component_name}...")
