@@ -17,7 +17,8 @@ import adsk.core
 import adsk.fusion
 import adsk.cam
 import traceback
-from typing import Optional, List
+import time
+from typing import Optional, List, Tuple
 from sympy import Matrix, Float
 from giraffe import CutTimber, Timber
 from moothymoth import Orientation
@@ -225,20 +226,16 @@ def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism) -> Op
         return None
 
 
-def render_meowmeowcsg_component(csg: MeowMeowCSG, component_name: str = "CSG_Component", 
-                                  position: Optional[Matrix] = None,
-                                  orientation: Optional[Orientation] = None) -> Optional[adsk.fusion.Occurrence]:
+def render_meowmeowcsg_component_at_origin(csg: MeowMeowCSG, component_name: str = "CSG_Component") -> Optional[adsk.fusion.Occurrence]:
     """
-    Render a MeowMeowCSG object as a new component in Fusion 360.
+    Render a MeowMeowCSG object as a new component in Fusion 360 AT THE ORIGIN.
     
-    This creates all geometry in local space first, then transforms the entire
-    component to global space based on the provided position and orientation.
+    This creates all geometry in local space at the origin. Transforms should be applied
+    separately in a later pass for better reliability.
     
     Args:
         csg: MeowMeowCSG object to render
         component_name: Name for the created component
-        position: Position vector for the component in global space (default: origin)
-        orientation: Orientation for the component in global space (default: identity)
         
     Returns:
         Created Occurrence, or None if creation failed
@@ -249,13 +246,7 @@ def render_meowmeowcsg_component(csg: MeowMeowCSG, component_name: str = "CSG_Co
         return None
     
     try:
-        # Default position and orientation
-        if position is None:
-            position = Matrix([0, 0, 0])
-        if orientation is None:
-            orientation = Orientation()
-        
-        # Create a new component
+        # Create a new component at origin
         root = design.rootComponent
         transform = adsk.core.Matrix3D.create()
         occurrence = root.occurrences.addNewComponent(transform)
@@ -268,10 +259,6 @@ def render_meowmeowcsg_component(csg: MeowMeowCSG, component_name: str = "CSG_Co
         if body is None:
             print(f"Failed to render CSG in local space for {component_name}")
             return None
-        
-        # Transform the entire occurrence to global space
-        global_transform = create_matrix3d_from_orientation(position, orientation)
-        occurrence.transform = global_transform
         
         return occurrence
         
@@ -444,6 +431,10 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union) -> Op
             # Execute the combine
             combine_features.add(combine_input)
             
+            # Give Fusion 360 time to process the union
+            time.sleep(0.05)
+            adsk.doEvents()
+            
         except Exception as e:
             print(f"Error performing union with child {i}: {e}")
             continue
@@ -493,6 +484,10 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
             # Execute the combine
             combine_features.add(combine_input)
             
+            # Give Fusion 360 time to process the difference
+            time.sleep(0.05)
+            adsk.doEvents()
+            
         except Exception as e:
             print(f"Error performing difference with child {i}: {e}")
             continue
@@ -500,38 +495,84 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
     return base_body
 
 
-def render_cut_timber(cut_timber: CutTimber, component_name: Optional[str] = None) -> Optional[adsk.fusion.Occurrence]:
+def apply_timber_transform(occurrence: adsk.fusion.Occurrence, position: Matrix, 
+                           orientation: Orientation, component_name: str) -> bool:
     """
-    Render a CutTimber using its CSG representation.
-    
-    This renders the timber with all cuts applied in local space, then transforms
-    to global space based on the timber's position and orientation.
+    Apply a transform to move a timber occurrence from origin to its final position.
     
     Args:
-        cut_timber: CutTimber object to render
-        component_name: Optional name for the component (defaults to "Timber_X")
+        occurrence: The occurrence to transform
+        position: Target position vector
+        orientation: Target orientation
+        component_name: Name for debugging
         
     Returns:
-        Created Occurrence, or None if rendering failed
+        True if transform was applied successfully
     """
-    if component_name is None:
-        component_name = f"Timber_{id(cut_timber)}"
-    
-    # Get the CSG representation
-    # For now, use render_timber_without_cuts_csg which gives us a finite prism
-    csg = cut_timber.render_timber_without_cuts_csg()
-    
-    # Get timber position and orientation
-    position = cut_timber._timber.bottom_position
-    orientation = cut_timber._timber.orientation
-    
-    # Render the CSG as a component
-    return render_meowmeowcsg_component(csg, component_name, position, orientation)
+    try:
+        # Create the transformation matrix
+        global_transform = create_matrix3d_from_orientation(position, orientation)
+        
+        # Apply the transform
+        occurrence.transform = global_transform
+        
+        # Verify the transform was applied correctly
+        applied_transform = occurrence.transform
+        expected_tx = float(position[0])
+        expected_ty = float(position[1])
+        expected_tz = float(position[2])
+        applied_tx = applied_transform.getCell(0, 3)
+        applied_ty = applied_transform.getCell(1, 3)
+        applied_tz = applied_transform.getCell(2, 3)
+        
+        translation_correct = (abs(applied_tx - expected_tx) < 0.001 and 
+                              abs(applied_ty - expected_ty) < 0.001 and 
+                              abs(applied_tz - expected_tz) < 0.001)
+        
+        if not translation_correct:
+            print(f"⚠️  Transform verification failed for {component_name}")
+            print(f"  Expected: ({expected_tx:.3f}, {expected_ty:.3f}, {expected_tz:.3f})")
+            print(f"  Applied:  ({applied_tx:.3f}, {applied_ty:.3f}, {applied_tz:.3f})")
+            
+            # Try re-applying the transform
+            print(f"  Attempting to re-apply transform...")
+            occurrence.transform = global_transform
+            time.sleep(0.1)
+            adsk.doEvents()
+            
+            # Check again
+            reapplied_transform = occurrence.transform
+            reapplied_tx = reapplied_transform.getCell(0, 3)
+            reapplied_ty = reapplied_transform.getCell(1, 3)
+            reapplied_tz = reapplied_transform.getCell(2, 3)
+            
+            translation_fixed = (abs(reapplied_tx - expected_tx) < 0.001 and 
+                               abs(reapplied_ty - expected_ty) < 0.001 and 
+                               abs(reapplied_tz - expected_tz) < 0.001)
+            
+            if not translation_fixed:
+                print(f"  ✗ Re-application also failed")
+                return False
+            else:
+                print(f"  ✓ Re-application successful")
+        
+        return True
+        
+    except Exception as e:
+        print(f"Error applying transform to {component_name}: {e}")
+        return False
 
 
 def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber") -> int:
     """
-    Render multiple CutTimber objects in Fusion 360.
+    Render multiple CutTimber objects in Fusion 360 using a three-pass approach.
+    
+    Pass 1: Create all geometry at origin
+    Pass 2: Apply CSG operations (cuts) at origin
+    Pass 3: Transform all occurrences to final positions
+    
+    This approach is more reliable than transforming each timber immediately after creation,
+    as it avoids Fusion 360's asynchronous update issues.
     
     Args:
         cut_timbers: List of CutTimber objects to render
@@ -540,22 +581,112 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     Returns:
         Number of successfully rendered timbers
     """
-    success_count = 0
+    app = get_fusion_app()
+    
+    if app:
+        app.log(f"=== THREE-PASS RENDERING: {len(cut_timbers)} timbers ===")
+    
+    # PASS 1: Create all geometry at origin
+    print(f"\n=== PASS 1: Creating geometry at origin ===")
+    if app:
+        app.log(f"=== PASS 1: Creating geometry at origin ===")
+    
+    created_components: List[Tuple[adsk.fusion.Occurrence, CutTimber, str]] = []
     
     for i, cut_timber in enumerate(cut_timbers):
         component_name = f"{base_name}_{i}"
         
         try:
-            occurrence = render_cut_timber(cut_timber, component_name)
+            print(f"Creating {component_name}...")
+            if app:
+                app.log(f"Creating {component_name}...")
+            
+            # Get the CSG representation
+            csg = cut_timber.render_timber_without_cuts_csg()
+            
+            # Render at origin (no transform yet)
+            occurrence = render_meowmeowcsg_component_at_origin(csg, component_name)
             
             if occurrence is not None:
-                success_count += 1
-                print(f"✓ Rendered {component_name}")
+                created_components.append((occurrence, cut_timber, component_name))
+                print(f"  ✓ Created {component_name}")
+                if app:
+                    app.log(f"  ✓ Created {component_name}")
             else:
-                print(f"✗ Failed to render {component_name}")
-                
+                print(f"  ✗ Failed to create {component_name}")
+                if app:
+                    app.log(f"  ✗ Failed to create {component_name}")
+                    
         except Exception as e:
-            print(f"✗ Error rendering {component_name}: {e}")
+            print(f"  ✗ Error creating {component_name}: {e}")
+            if app:
+                app.log(f"  ✗ Error creating {component_name}: {e}")
             traceback.print_exc()
     
-    return success_count
+    # Force Fusion 360 to process all geometry creation
+    time.sleep(0.2)
+    adsk.doEvents()
+    
+    # PASS 2: Apply CSG operations (for now, skip - no cuts implemented yet)
+    print(f"\n=== PASS 2: Applying CSG operations ===")
+    if app:
+        app.log(f"=== PASS 2: Applying CSG operations (skipped - using render_timber_without_cuts_csg) ===")
+    print(f"  (Skipped - cuts not yet implemented in CSG rendering)")
+    
+    # Force refresh
+    time.sleep(0.1)
+    adsk.doEvents()
+    
+    # PASS 3: Apply all transforms to move to final positions
+    print(f"\n=== PASS 3: Applying transforms ===")
+    if app:
+        app.log(f"=== PASS 3: Applying transforms to {len(created_components)} components ===")
+    
+    transform_success_count = 0
+    
+    for occurrence, cut_timber, component_name in created_components:
+        try:
+            print(f"Transforming {component_name}...")
+            
+            # Get timber position and orientation
+            position = cut_timber._timber.bottom_position
+            orientation = cut_timber._timber.orientation
+            
+            # Apply the transform
+            success = apply_timber_transform(occurrence, position, orientation, component_name)
+            
+            if success:
+                transform_success_count += 1
+                print(f"  ✓ Transformed {component_name}")
+                if app:
+                    app.log(f"  ✓ Transformed {component_name}")
+            else:
+                print(f"  ✗ Failed to transform {component_name}")
+                if app:
+                    app.log(f"  ✗ Failed to transform {component_name}")
+            
+            # Small delay between transforms to avoid race conditions
+            time.sleep(0.05)
+            adsk.doEvents()
+                    
+        except Exception as e:
+            print(f"  ✗ Error transforming {component_name}: {e}")
+            if app:
+                app.log(f"  ✗ Error transforming {component_name}: {e}")
+            traceback.print_exc()
+    
+    # Final refresh
+    time.sleep(0.2)
+    adsk.doEvents()
+    
+    # Summary
+    print(f"\n=== SUMMARY ===")
+    print(f"Created: {len(created_components)}/{len(cut_timbers)} timbers")
+    print(f"Transformed: {transform_success_count}/{len(created_components)} components")
+    
+    if app:
+        app.log(f"=== SUMMARY ===")
+        app.log(f"Created: {len(created_components)}/{len(cut_timbers)} timbers")
+        app.log(f"Transformed: {transform_success_count}/{len(created_components)} components")
+    
+    return transform_success_count
