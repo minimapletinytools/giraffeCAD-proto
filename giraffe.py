@@ -185,14 +185,7 @@ class StandardTenon:
     width: Numeric
     height: Numeric
 
-
     length: Numeric  # How far the tenon extends beyond the shoulder plane
-
-# TODO DELETE hallucination, 
-# we can support MultiTenon but they would all share the same shoulder plane
-@dataclass
-class MultiTenon:
-    tenons: List[StandardTenon]
 
 @dataclass
 class DistanceFromFace:
@@ -1333,6 +1326,15 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
 
 
 
+class BasicMiterJoint(Joint):
+    """
+    A basic miter joint between two timbers such that the 2 ends meet at a 90 degree angle miter corner.
+    """
+    def __init__(self, timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd):
+        super().__init__()
+        self.timberA = timberA
+        self.timberA_end = timberA_end
+        self.timberB = timberB
 
 def cut_basic_miter_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd) -> Joint:
     """
@@ -1792,3 +1794,82 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
         distance_along_tenon = abs(t)
     
     return distance_along_tenon
+  
+
+
+
+
+# SCRATCH AREA FOR NEW JOINT OPERATIONS
+
+class MeowMeowCSG:
+    pass
+
+# list of MeowMeowCSG
+# half plane (infinite)
+# prism (could be infinite in either end)
+# cylinder (could be infinite in either end)
+# union
+# difference
+
+class Cut:
+    # debug reference to the base timber we are cutting
+    # each Cut is tied to a timber so this is very reasonable to store here
+    _timber : Timber
+
+    # set these values by computing them relative to the timber features using helper functions 
+    origin : V3
+    orientation : Orientation
+
+    # end cuts are special as they set the length of the timber
+    maybeEndCut : Optional[TimberReferenceEnd]
+
+
+    # get the "end" position of the cut on the centerline of the timber
+    # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
+    @abstractmethod
+    def get_end_position(self) -> V3:
+        if self.maybeEndCut == TimberReferenceEnd.TOP:
+            return _timber.bottom_position + _timber.length_direction * _timber.length
+        elif self.maybeEndCut == TimberReferenceEnd.BOTTOM:
+            return _timber.bottom_position
+        else:
+            raise ValueError(f"Invalid end cut: {self.maybeEndCut}")
+
+    # returns the negative CSG of the cut (the part of the timber that is removed by the cut)
+    @abstractmethod
+    def get_negative_csg(self) -> MeowMeowCSG:
+        pass
+
+
+class CutTimber:
+    _timber : Timber
+    _cuts : List[Cut]
+
+    # this one returns the timber without cuts where ends with joints are infinite in length
+    def _extended_timber_without_cuts_csg(self) -> MeowMeowCSG:
+        pass
+
+    # this one returns the timber without cuts where ends with joints are cut to length based on Cut::get_end_position
+    # use this for rendering the timber without cuts for development
+    def render_timber_without_cuts_csg(self) -> MeowMeowCSG:
+        # TODO
+        # first find all cuts that are end cuts
+        # assert that each end has no more than one end cut
+        # for each end, if there is an end cut, use Cut::get_end_position to get the end position otherwise use the timber's original end position
+        # finally construct a possible infinite in either end prism CSG and return it
+        pass
+
+    # thi sone returns the timber with all cuts applied
+    def render_timber_with_cuts_csg(self) -> MeowMeowCSG:
+        starting_csg = self._extended_timber_without_cuts_csg()
+        # TODO difference each cut from starting_CSG?
+        pass
+
+class PartiallyCutTimber(CutTimber):
+    pass
+
+class Joint:
+    partiallyCutTimbers : List[PartiallyCutTimber]
+    jointAccessories : List[JointAccessory]
+
+

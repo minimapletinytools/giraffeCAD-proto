@@ -32,8 +32,34 @@ Challenges:
         -we could use an end cut operation to size the timber (pro) (cumbersome, but most elegant)
   -if cutting on the bot (origin) end, the origin remains in the same place, so the final cut timber has a bottom point below 0
     -ALTERNATIVE: move origin to the very bottom always (ick?)
+
+DECISION
+  -timbers defined as is (with origin and length)
+  -when a timber has a cut at the end, it becomes infinite in that direction
+  -if it helps, you can think of timbers without an end cut as an infinite timber with a default end cut at the length
+  
 -joint
   -cuts on 1 ore more timbers that connect them
+
+
+-Cut 
+  -implementation detail (sorta)
+  -happen at the CSG/brep level
+  -if we do the extension thing
+    -extending timber end includes cut
+    -I guess could/should be used to infer timber length if we go with the "extension" method
+  -TODO how are cuts defined, relative to timber origin or relative to a point/face on the timber?
+    -maybe relative to timber, in which case a Cut class on its own is meaningless, maybe was well define TimberCut and then [TimberCut] for a list of cuts on a timber (at which point maybe just name it Cut)
+-TimberCut
+  -A timber with a series of Cuts on it
+  -if we do the extension thing
+    -has some face-cognition, meaning cuts happen relative to a face,  (this actualy only need)
+      -only ends can be "extended", this is very much an ad-hoc operation
+-Joint
+  -a list of TimberCuts that form the joint
+  -also includes joint accesories like draw bore,s fasteners, etc
+-CutTimber
+  -A timber with a list of TimberCuts?  
 
 
 
@@ -56,8 +82,10 @@ Challenges:
 DONE-address TODOs is smiple mrotise and sitance 
 IGNORE-remove LongEdge 
 DONE-update tests to not use floats ever (maybe have a couple float tests in a separate file though)
+-rework joint classes
 
--M1
+
+-M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
   DONE-create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
 
@@ -67,11 +95,8 @@ DONE-update tests to not use floats ever (maybe have a couple float tests in a s
     -basic_splice_joint
     -basic_miter_joint
 
-  
   -consider making a better way to store TimberWithJoints and joints class etc...
   
-
-
   -add helper render functions
     -extend timbers so joint can be diffed out of it (rather than bool in a long timber, just use an extra long timber when creating the original timber)
     -generic boolean geometry classes
@@ -94,10 +119,6 @@ DONE-update tests to not use floats ever (maybe have a couple float tests in a s
       -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
         -same as draw bore but with komisen peg,
       -tusked mortise and tenon
-
-
-  
-
 
   
   -get rhino rendering working for the following joints ...
