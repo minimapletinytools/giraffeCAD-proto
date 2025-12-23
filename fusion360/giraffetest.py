@@ -6,7 +6,7 @@ import adsk.fusion
 import sys
 import os
 
-# Add the local libs directory and parent directory to sys.path
+# Add the local libs directory, current script directory, and parent directory to sys.path
 script_dir = os.path.dirname(os.path.realpath(__file__))
 libs_dir = os.path.join(script_dir, 'libs')
 parent_dir = os.path.dirname(script_dir)
@@ -14,6 +14,8 @@ parent_dir = os.path.dirname(script_dir)
 # Add paths in order of priority
 if libs_dir not in sys.path:
     sys.path.insert(0, libs_dir)
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
@@ -22,7 +24,7 @@ try:
     # Import from parent directory - these files are NOT copied locally
     from examples.sawhorse_example import create_sawhorse
     from examples.oscarshed import create_oscarshed
-    from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
+    from giraffe_render_fusion360_OLD import get_active_design, clear_design, render_multiple_timbers
     
     # Test that core dependencies are available
     import sympy
@@ -66,7 +68,7 @@ def run(_context: str):
                 'moothymoth',
                 'footprint',
                 'giraffe', 
-                'giraffe_render_fusion360',
+                'giraffe_render_fusion360_OLD',
                 'examples.sawhorse_example',
                 'examples.oscarshed'
             ]
@@ -81,7 +83,7 @@ def run(_context: str):
             # Re-import the functions we need after reload to get fresh versions
             from examples.sawhorse_example import create_sawhorse
             from examples.oscarshed import create_oscarshed
-            from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
+            from giraffe_render_fusion360_OLD import get_active_design, clear_design, render_multiple_timbers
             
             print("✓ Module reload complete")
             app.log("Module reload complete")

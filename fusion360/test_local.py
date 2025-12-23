@@ -7,13 +7,15 @@ This simulates what Fusion 360 will do when importing our modules.
 import sys
 import os
 
-# Add the local libs directory and parent directory to sys.path (same as in giraffetest.py)
+# Add the local libs directory, current script directory, and parent directory to sys.path (same as in giraffetest.py)
 script_dir = os.path.dirname(os.path.realpath(__file__))
 libs_dir = os.path.join(script_dir, 'libs')
 parent_dir = os.path.dirname(script_dir)
 
 if libs_dir not in sys.path:
     sys.path.insert(0, libs_dir)
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
@@ -64,16 +66,16 @@ def test_giraffe_modules():
         print(f"✗ Failed to import sawhorse_example from parent dir: {e}")
         return False
     
-    # Note: We can't test giraffe_render_fusion360 outside of Fusion 360
+    # Note: We can't test giraffe_render_fusion360_OLD outside of Fusion 360
     # because it depends on adsk modules, but we can test that the file exists
     try:
-        import giraffe_render_fusion360
-        print("✓ giraffe_render_fusion360 found in parent dir (requires Fusion 360 to run)")
+        import giraffe_render_fusion360_OLD
+        print("✓ giraffe_render_fusion360_OLD found in current dir (requires Fusion 360 to run)")
     except ImportError as e:
         if "adsk" in str(e):
-            print("✓ giraffe_render_fusion360 found in parent dir (adsk modules missing - normal outside Fusion 360)")
+            print("✓ giraffe_render_fusion360_OLD found in current dir (adsk modules missing - normal outside Fusion 360)")
         else:
-            print(f"✗ Failed to find giraffe_render_fusion360 in parent dir: {e}")
+            print(f"✗ Failed to find giraffe_render_fusion360_OLD in current dir: {e}")
             return False
     
     return True
@@ -108,20 +110,33 @@ def test_path_structure():
     script_dir = os.path.dirname(os.path.realpath(__file__))
     parent_dir = os.path.dirname(script_dir)
     
-    required_files = [
+    # Files that should be in parent directory
+    parent_required_files = [
         'giraffe.py',
         'moothymoth.py', 
         'sawhorse_example.py',
-        'giraffe_render_fusion360.py'
+    ]
+    
+    # Files that should be in current (fusion360) directory
+    local_required_files = [
+        'giraffe_render_fusion360_OLD.py'
     ]
     
     missing_files = []
-    for filename in required_files:
+    for filename in parent_required_files:
         filepath = os.path.join(parent_dir, filename)
         if os.path.exists(filepath):
             print(f"✓ Found {filename} in parent directory")
         else:
             print(f"✗ Missing {filename} in parent directory")
+            missing_files.append(filename)
+    
+    for filename in local_required_files:
+        filepath = os.path.join(script_dir, filename)
+        if os.path.exists(filepath):
+            print(f"✓ Found {filename} in current directory")
+        else:
+            print(f"✗ Missing {filename} in current directory")
             missing_files.append(filename)
     
     libs_dir = os.path.join(script_dir, 'libs')
