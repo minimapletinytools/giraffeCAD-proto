@@ -1430,33 +1430,49 @@ class Joint:
     jointAccessories : List[JointAccessory]
 
 
+# ============================================================================
+# Cut Classes
+# ============================================================================
+
+class HalfPlaneCut(Cut):
+    """
+    A half plane cut is a cut that is defined by a half plane.
+    """
+    half_plane : HalfPlane
+    def get_negative_csg(self) -> MeowMeowCSG:
+        return self.half_plane
 
 # ============================================================================
 # Joint Construction Functions
 # ============================================================================
 
 
+def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd) -> Joint:
+    """
+    Creates a basic miter joint between two timbers such that the 2 ends meet and each has a miter cut at half the angle between the two timbers.
+    """
+    # TODO assert that the timbers are not parallel
+    # TODO check that the timbers at least overlap a bit (i.e. their infinite extended ends intersect) and warn if not
+    
+    # TODO
+    # first find the intersection axis of the two timbers i.e. the axis that is perpendicular to both timbers' length directions and passing through both of their centerlines
+    # next figure out the angle between the two timbers' end direction (that is the end which they are being cut)
+    # rather construct a new "miter axis" that points in the direction of the miter cut (towards the acute side of the angle)
+    # next construct a new "miter plane" from the miter axis and the intersection axis
+    # using the miter plane, create two HalfPlaneCuts on each timber that represent the miter cuts
+    # return a Joint with the two HalfPlaneCuts
 
-class BasicMiterJoint(Joint):
-    """
-    A basic miter joint between two timbers such that the 2 ends meet at a 90 degree angle miter corner.
-    """
-    def __init__(self, timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd):
-        super().__init__()
-        self.timberA = timberA
-        self.timberA_end = timberA_end
-        self.timberB = timberB
+    pass
 
 def cut_basic_miter_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd) -> Joint:
     """
     Creates a basic miter joint between two timbers such that the 2 ends meet at a 90 degree angle miter corner.
     """
     # TODO assert length axis are perpendicular
-    # TODO
-    return None
+    return cut_basic_miter_joint(timberA, timberA_end, timberB, timberB_end)
     
 
-def cut_basic_end_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd) -> Joint:
+def cut_basic_corner_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd) -> Joint:
     """
     Creates a basic end joint between two timbers such that the 2 ends meet at a 90 degree angle corner.
     """
