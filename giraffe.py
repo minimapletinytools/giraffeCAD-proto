@@ -6,6 +6,7 @@ Based on the API specification in morenotes.md
 from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify
 from moothymoth import Orientation
 from footprint import Footprint
+from meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUnion, Difference as CSGDifference
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 from dataclasses import dataclass
@@ -1704,16 +1705,6 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
 
 
 # SCRATCH AREA FOR NEW JOINT OPERATIONS
-
-class MeowMeowCSG:
-    pass
-
-# list of MeowMeowCSG
-# half plane (infinite)
-# prism (could be infinite in either end)
-# cylinder (could be infinite in either end)
-# union
-# difference
 
 class Cut:
     # debug reference to the base timber we are cutting
