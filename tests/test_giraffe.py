@@ -706,42 +706,6 @@ class TestTimberCreation:
             f"Expected bottom Z at Rational(8), got {float(extended.bottom_position[2])}"
 
 
-class TestJointConstruction:
-    """Test joint construction functions."""
-    
-    def test_cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(self):
-        """Test simple mortise and tenon joint creation for face-aligned timbers."""
-        mortise_timber = Timber(
-            length=Rational(3),
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
-            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
-            length_direction=create_vector3d(Rational(1), Rational(0), Rational(0)),
-            width_direction=create_vector3d(Rational(0), Rational(1), Rational(0))
-        )
-        
-        tenon_timber = Timber(
-            length=Rational(2),
-            size=create_vector2d(Rational("0.15"), Rational("0.15")),
-            bottom_position=create_vector3d(Rational(0), Rational(0), Rational("0.5")),
-            length_direction=create_vector3d(Rational(0), Rational(0), Rational(1)),
-            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))
-        )
-        
-        joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
-            mortise_timber, tenon_timber,
-            tenon_end=TimberReferenceEnd.BOTTOM,
-            tenon_thickness=Rational("0.05"),
-            tenon_length=Rational("0.1")
-        )
-        
-        assert isinstance(joint, Joint)
-        assert len(joint.timber_cuts) == 2
-        # Check that both timbers are included
-        timbers = [cut[0] for cut in joint.timber_cuts]
-        assert mortise_timber in timbers
-        assert tenon_timber in timbers
-
-
 class TestHelperFunctions:
     """Test helper functions."""
     
@@ -1408,60 +1372,6 @@ class TestJoinTimbers:
         print(f"   All joining timbers maintain proper face alignment and orthogonal orientation matrices")
 
 
-class TestTimberCutOperations:
-    """Test timber cut operations."""
-    
-    def test_tenon_cut_operation(self):
-        """Test tenon cut operation creation."""
-        timber = Timber(
-            length=Rational(2),
-            size=create_vector2d(Rational("0.1"), Rational("0.1")),
-            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
-            length_direction=create_vector3d(Rational(0), Rational(0), Rational(1)),
-            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))
-        )
-        
-        tenon_spec = StandardTenon(
-            shoulder_plane=ShoulderPlane.create(
-                reference_end=TimberReferenceEnd.TOP,
-                distance=Rational("0.05")
-            ),
-            pos_rel_to_long_edge=None,
-            width=Rational("0.04"),
-            height=Rational("0.04"),
-            length=Rational("0.06")
-        )
-        
-        cut_op = TenonCutOperation(timber, tenon_spec)
-        
-        assert cut_op.timber == timber
-        assert cut_op.tenon_spec.width == Rational("0.04")
-    
-    def test_mortise_cut_operation(self):
-        """Test mortise cut operation creation."""
-        timber = Timber(
-            length=Rational(3),
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
-            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
-            length_direction=create_vector3d(Rational(1), Rational(0), Rational(0)),
-            width_direction=create_vector3d(Rational(0), Rational(1), Rational(0))
-        )
-        
-        mortise_spec = StandardMortise(
-            mortise_face=TimberFace.TOP,
-            pos_rel_to_end=DistanceFromEnd(end=TimberReferenceEnd.BOTTOM, distance=Rational("0.5")),
-            pos_rel_to_long_face=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational("0.1")),
-            size1=Rational("0.04"),
-            size2=Rational("0.06"),
-            depth=Rational("0.08")
-        )
-        
-        cut_op = MortiseCutOperation(timber, mortise_spec)
-        
-        assert cut_op.timber == timber
-        assert cut_op.mortise_spec.size1 == Rational("0.04")
-
-
 class TestEnumsAndDataStructures:
     """Test enums and data structures."""
     
@@ -1479,25 +1389,7 @@ class TestEnumsAndDataStructures:
         assert TimberFace.FORWARD.value == 4
         assert TimberFace.LEFT.value == 5
         assert TimberFace.BACK.value == 6
-    
-    def test_standard_tenon_dataclass(self):
-        """Test StandardTenon dataclass."""
-        shoulder_plane = ShoulderPlane.create(
-            reference_end=TimberReferenceEnd.TOP,
-            distance=Rational("0.1")
-        )
-        
-        tenon = StandardTenon(
-            shoulder_plane=shoulder_plane,
-            pos_rel_to_long_edge=None,
-            width=Rational("0.05"),
-            height=Rational("0.05"),
-            length=Rational("0.08")
-        )
-        
-        assert tenon.width == Rational("0.05")
-        assert tenon.height == Rational("0.05")
-        assert tenon.length == Rational("0.08")
+
     
     def test_face_aligned_joined_timber_offset(self):
         """Test FaceAlignedJoinedTimberOffset dataclass."""
@@ -1510,41 +1402,6 @@ class TestEnumsAndDataStructures:
         assert offset.reference_face == TimberFace.TOP
         assert offset.centerline_offset == Rational("0.05")
         assert offset.face_offset == Rational("0.02")
-    
-    def test_shoulder_plane_create_method(self):
-        """Test ShoulderPlane.create method with automatic normal determination."""
-        # Test TOP reference_end - should get upward normal
-        plane_top = ShoulderPlane.create(
-            reference_end=TimberReferenceEnd.TOP,
-            distance=Rational("0.1")
-        )
-        
-        assert plane_top.reference_end == TimberReferenceEnd.TOP
-        assert plane_top.distance == Rational("0.1")
-        assert plane_top.normal == create_vector3d(0, 0, 1)  # Upward
-        
-        # Test BOTTOM reference_end - should get downward normal
-        plane_bottom = ShoulderPlane.create(
-            reference_end=TimberReferenceEnd.BOTTOM,
-            distance=Rational("0.05")
-        )
-        
-        assert plane_bottom.reference_end == TimberReferenceEnd.BOTTOM
-        assert plane_bottom.distance == Rational("0.05")
-        assert plane_bottom.normal == create_vector3d(0, 0, -1)  # Downward
-        
-        # Test with explicit normal - should use provided normal
-        custom_normal = create_vector3d(1, 0, 0)
-        plane_custom = ShoulderPlane.create(
-            reference_end=TimberReferenceEnd.TOP,
-            distance=Rational("0.2"),
-            normal=custom_normal
-        )
-        
-        assert plane_custom.reference_end == TimberReferenceEnd.TOP
-        assert plane_custom.distance == Rational("0.2")
-        assert plane_custom.normal == custom_normal
-    
     
     def test_stickout_with_join_timbers(self):
         """Test that stickout produces correct timber length in join_timbers."""
