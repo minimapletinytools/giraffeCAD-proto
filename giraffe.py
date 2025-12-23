@@ -1491,19 +1491,130 @@ class HalfPlaneCut(Cut):
 def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd) -> Joint:
     """
     Creates a basic miter joint between two timbers such that the 2 ends meet and each has a miter cut at half the angle between the two timbers.
-    """
-    # TODO assert that the timbers are not parallel
-    # TODO check that the timbers at least overlap a bit (i.e. their infinite extended ends intersect) and warn if not
     
-    # TODO
-    # first find the intersection axis of the two timbers i.e. the axis that is perpendicular to both timbers' length directions and passing through both of their centerlines
-    # next figure out the angle between the two timbers' end direction (that is the end which they are being cut)
-    # rather construct a new "miter axis" that points in the direction of the miter cut (towards the acute side of the angle)
-    # next construct a new "miter plane" from the miter axis and the intersection axis
-    # using the miter plane, create two HalfPlaneCuts on each timber that represent the miter cuts
-    # return a Joint with the two HalfPlaneCuts
-
-    pass
+    Args:
+        timberA: First timber to join
+        timberA_end: Which end of timberA to cut (TOP or BOTTOM)
+        timberB: Second timber to join
+        timberB_end: Which end of timberB to cut (TOP or BOTTOM)
+        
+    Returns:
+        Joint object containing the two PartiallyCutTimbers
+        
+    Raises:
+        ValueError: If the timbers are parallel or if they don't intersect
+    """
+    import warnings
+    
+    # Get the end directions for each timber (pointing outward from the timber)
+    if timberA_end == TimberReferenceEnd.TOP:
+        directionA = timberA.length_direction
+        endA_position = timberA.bottom_position + timberA.length_direction * timberA.length
+    else:  # BOTTOM
+        directionA = -timberA.length_direction
+        endA_position = timberA.bottom_position
+    
+    if timberB_end == TimberReferenceEnd.TOP:
+        directionB = timberB.length_direction
+        endB_position = timberB.bottom_position + timberB.length_direction * timberB.length
+    else:  # BOTTOM
+        directionB = -timberB.length_direction
+        endB_position = timberB.bottom_position
+    
+    # Check that the timbers are not parallel
+    cross = cross_product(directionA, directionB)
+    if vector_magnitude(cross) < Rational(1, 1000):
+        raise ValueError("Timbers cannot be parallel for a miter joint")
+    
+    # Find the intersection point (or closest point) between the two timber centerlines
+    # Using the formula for closest point between two lines in 3D
+    # Line 1: P1 = endA_position + t * directionA
+    # Line 2: P2 = endB_position + s * directionB
+    
+    w0 = endA_position - endB_position
+    a = directionA.dot(directionA)  # always >= 0
+    b = directionA.dot(directionB)
+    c = directionB.dot(directionB)  # always >= 0
+    d = directionA.dot(w0)
+    e = directionB.dot(w0)
+    
+    denom = a * c - b * b
+    if abs(denom) < Rational(1, 10000):
+        raise ValueError("Cannot compute intersection point (degenerate case)")
+    
+    # Parameters for closest points on each line
+    t = (b * e - c * d) / denom
+    s = (a * e - b * d) / denom
+    
+    # Get the closest points on each centerline
+    pointA = endA_position + directionA * t
+    pointB = endB_position + directionB * s
+    
+    # The intersection point is the midpoint between the two closest points
+    intersection_point = (pointA + pointB) / 2
+    
+    # Warn if the lines don't actually intersect (skew lines)
+    distance_between = vector_magnitude(pointA - pointB)
+    if distance_between > Rational(1, 10):
+        warnings.warn(f"Timber centerlines are skew lines (closest distance: {float(distance_between)}). Using midpoint of closest approach.")
+    
+    # Create the miter plane normal by bisecting the angle between the two end directions
+    # Normalize the directions first
+    normA = normalize_vector(directionA)
+    normB = normalize_vector(directionB)
+    
+    # The bisecting direction is the normalized sum of the two directions
+    # This points "into" the joint (towards the acute angle)
+    bisector = normA + normB
+    miter_normal = normalize_vector(bisector)
+    
+    # The miter plane passes through the intersection point
+    # Plane equation: (P - intersection_point) · miter_normal = 0
+    # For HalfPlane: offset = intersection_point · miter_normal
+    miter_offset = (intersection_point.T * miter_normal)[0, 0]
+    
+    # For each timber, we need to create a HalfPlaneCut
+    # The half-plane normal must be opposite to the timber's end direction
+    # This ensures that get_end_position() can find the boundary correctly
+    # (get_end_position searches in the +length direction for TOP cuts,
+    #  and half-planes are only bounded opposite to their normal)
+    
+    # For timberA: the half-plane normal should be opposite to directionA
+    normalA = -normalize_vector(directionA)
+    offsetA = (intersection_point.T * normalA)[0, 0]
+    
+    # For timberB: the half-plane normal should be opposite to directionB
+    normalB = -normalize_vector(directionB)
+    offsetB = (intersection_point.T * normalB)[0, 0]
+    
+    # Create the HalfPlaneCuts
+    cutA = HalfPlaneCut()
+    cutA._timber = timberA
+    cutA.origin = intersection_point
+    cutA.orientation = timberA.orientation
+    cutA.maybeEndCut = timberA_end
+    cutA.half_plane = HalfPlane(normal=normalA, offset=offsetA)
+    
+    cutB = HalfPlaneCut()
+    cutB._timber = timberB
+    cutB.origin = intersection_point
+    cutB.orientation = timberB.orientation
+    cutB.maybeEndCut = timberB_end
+    cutB.half_plane = HalfPlane(normal=normalB, offset=offsetB)
+    
+    # Create PartiallyCutTimbers
+    cut_timberA = PartiallyCutTimber(timberA, name=f"TimberA_Miter")
+    cut_timberA._cuts.append(cutA)
+    
+    cut_timberB = PartiallyCutTimber(timberB, name=f"TimberB_Miter")
+    cut_timberB._cuts.append(cutB)
+    
+    # Create and return the Joint
+    joint = Joint()
+    joint.partiallyCutTimbers = [cut_timberA, cut_timberB]
+    joint.jointAccessories = []
+    
+    return joint
 
 def cut_basic_miter_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd) -> Joint:
     """

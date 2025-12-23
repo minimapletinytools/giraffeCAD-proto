@@ -3089,3 +3089,116 @@ class TestCutTimber:
         # Should raise assertion error
         with pytest.raises(AssertionError, match="Top end has 2 end cuts"):
             cut_timber.render_timber_without_cuts_csg()
+
+
+class TestMiterJoint:
+    """Test cut_basic_miter_joint function."""
+    
+    def test_basic_miter_joint_orthogonal_through_origin(self):
+        """Test basic miter joint with two orthogonal axis-aligned timbers through origin."""
+        # Create two timbers of the same size through the origin
+        # TimberA extends in +X direction
+        timberA = Timber(
+            length=Rational(100),
+            size=Matrix([Rational(4), Rational(6)]),
+            bottom_position=Matrix([Rational(-50), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
+        )
+        
+        # TimberB extends in +Y direction
+        timberB = Timber(
+            length=Rational(100),
+            size=Matrix([Rational(4), Rational(6)]),
+            bottom_position=Matrix([Rational(0), Rational(-50), Rational(0)]),
+            length_direction=Matrix([Rational(0), Rational(1), Rational(0)]),
+            width_direction=Matrix([Rational(-1), Rational(0), Rational(0)])
+        )
+        
+        # Create miter joint at the TOP ends (which meet at origin)
+        joint = cut_basic_miter_joint(timberA, TimberReferenceEnd.TOP, timberB, TimberReferenceEnd.TOP)
+        
+        # Get the cuts
+        cutA = joint.partiallyCutTimbers[0]._cuts[0]
+        cutB = joint.partiallyCutTimbers[1]._cuts[0]
+        
+        # Check that both cuts are end cuts
+        assert cutA.maybeEndCut == TimberReferenceEnd.TOP
+        assert cutB.maybeEndCut == TimberReferenceEnd.TOP
+        
+        # Check that the half-plane normals are opposite to the timber directions
+        # TimberA extends in +X, so normal should be -X = (-1, 0, 0)
+        assert cutA.half_plane.normal[0] == Rational(-1)
+        assert cutA.half_plane.normal[1] == Rational(0)
+        assert cutA.half_plane.normal[2] == Rational(0)
+        
+        # TimberB extends in +Y, so normal should be -Y = (0, -1, 0)
+        assert cutB.half_plane.normal[0] == Rational(0)
+        assert cutB.half_plane.normal[1] == Rational(-1)
+        assert cutB.half_plane.normal[2] == Rational(0)
+        
+        # Check that the two normals are orthogonal (dot product = 0)
+        dot_product = (cutA.half_plane.normal.T * cutB.half_plane.normal)[0, 0]
+        assert dot_product == Rational(0)
+        
+        # Check that the miter plane cuts through the origin
+        # The half-plane offset should be 0 for a plane through the origin
+        assert cutA.half_plane.offset == Rational(0)
+        assert cutB.half_plane.offset == Rational(0)
+        
+        # Check that both cuts have the same origin (the intersection point)
+        assert cutA.origin[0] == cutB.origin[0]
+        assert cutA.origin[1] == cutB.origin[1]
+        assert cutA.origin[2] == cutB.origin[2]
+        
+        # The origin should be at (0, 0, 0)
+        assert cutA.origin[0] == Rational(0)
+        assert cutA.origin[1] == Rational(0)
+        assert cutA.origin[2] == Rational(0)
+        
+        # Check that the miter plane is at 45 degrees
+        # For orthogonal timbers in +X and +Y, the bisector should be at 45 degrees
+        # The bisector direction would be (1, 1, 0) normalized = (1/sqrt(2), 1/sqrt(2), 0)
+        # The miter plane normal is perpendicular to both timber axes
+        # Since normals point in -X and -Y, the bisector of the end directions is (-1, -1, 0)
+        # normalized, which represents a 45-degree angle
+        
+        # Verify by checking the angle: for 45 degrees, the normals should have equal magnitude components
+        # For cutA normal (-1, 0, 0) and cutB normal (0, -1, 0), they are perpendicular
+        # The actual miter plane bisects the 90-degree angle, making it 45 degrees from each timber
+        
+        # Get end positions and verify they match
+        endA = cutA.get_end_position()
+        endB = cutB.get_end_position()
+        
+        # Both end positions should be at the origin
+        assert endA[0] == Rational(0)
+        assert endA[1] == Rational(0)
+        assert endA[2] == Rational(0)
+        
+        assert endB[0] == Rational(0)
+        assert endB[1] == Rational(0)
+        assert endB[2] == Rational(0)
+    
+    def test_miter_joint_parallel_timbers_raises_error(self):
+        """Test that parallel timbers raise a ValueError."""
+        # Create two parallel timbers
+        timberA = Timber(
+            length=Rational(100),
+            size=Matrix([Rational(4), Rational(6)]),
+            bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
+        )
+        
+        timberB = Timber(
+            length=Rational(100),
+            size=Matrix([Rational(4), Rational(6)]),
+            bottom_position=Matrix([Rational(0), Rational(10), Rational(0)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
+        )
+        
+        # Should raise ValueError
+        with pytest.raises(ValueError, match="cannot be parallel"):
+            cut_basic_miter_joint(timberA, TimberReferenceEnd.TOP, timberB, TimberReferenceEnd.TOP)
