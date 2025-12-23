@@ -24,7 +24,7 @@ try:
     # Import from parent directory - these files are NOT copied locally
     from examples.sawhorse_example import create_sawhorse
     from examples.oscarshed import create_oscarshed
-    from giraffe_render_fusion360_OLD import get_active_design, clear_design, render_multiple_timbers
+    from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
     
     # Test that core dependencies are available
     import sympy
@@ -67,8 +67,9 @@ def run(_context: str):
             modules_to_reload = [
                 'moothymoth',
                 'footprint',
+                'meowmeowcsg',
                 'giraffe', 
-                'giraffe_render_fusion360_OLD',
+                'giraffe_render_fusion360',
                 'examples.sawhorse_example',
                 'examples.oscarshed'
             ]
@@ -83,7 +84,7 @@ def run(_context: str):
             # Re-import the functions we need after reload to get fresh versions
             from examples.sawhorse_example import create_sawhorse
             from examples.oscarshed import create_oscarshed
-            from giraffe_render_fusion360_OLD import get_active_design, clear_design, render_multiple_timbers
+            from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
             
             print("✓ Module reload complete")
             app.log("Module reload complete")
@@ -107,8 +108,8 @@ def run(_context: str):
             print(f"Starting three-pass rendering of {len(cut_timbers)} Oscar's Shed timbers...")
             app.log(f"Starting three-pass rendering of {len(cut_timbers)} Oscar's Shed timbers...")
             
-            # Use the three-pass rendering function with transforms enabled to test full workflow
-            success_count = render_multiple_timbers(cut_timbers, "OscarShed_Timber", apply_transforms=True)
+            # Render using the new CSG-based rendering system
+            success_count = render_multiple_timbers(cut_timbers, "OscarShed_Timber")
             
             # Log detailed information
             app.log(f"Oscar's Shed rendering complete: {success_count}/{len(cut_timbers)} timbers rendered")
