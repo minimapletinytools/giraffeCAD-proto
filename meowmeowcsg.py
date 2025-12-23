@@ -5,7 +5,7 @@ This module provides CSG primitives and operations for representing timber cuts
 and geometry operations. All operations use SymPy symbolic math for exact computation.
 """
 
-from sympy import Matrix, Rational, Expr
+from sympy import Matrix, Rational, Expr, sqrt, oo
 from typing import List, Optional, Union
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
@@ -23,6 +23,27 @@ class MeowMeowCSG(ABC):
     @abstractmethod
     def __repr__(self) -> str:
         """String representation for debugging."""
+        pass
+
+
+    @abstractmethod
+    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
+        """
+        Get the minimal boundary of the CSG in the given direction.
+        
+        Returns a point on the CSG boundary that is minimal (most negative) along the given direction.
+        In other words, finds the point P on the CSG surface where P·direction is minimized.
+        
+        Args:
+            direction: Direction vector to minimize along (does not need to be normalized)
+            
+        Returns:
+            A point on the CSG boundary that is minimal in the given direction
+            This may return any point, rather than the origin point projected onto the boundary like you'd expect :(
+            
+        Raises:
+            ValueError: If the CSG is infinite/unbounded in the negative direction
+        """
         pass
 
 
@@ -46,6 +67,44 @@ class HalfPlane(MeowMeowCSG):
     
     def __repr__(self) -> str:
         return f"HalfPlane(normal={self.normal.T}, offset={self.offset})"
+    
+    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
+        """
+        Get the minimal boundary point of the half-plane in the given direction.
+        
+        For a half-plane, there is only a minimal boundary when the direction is exactly
+        opposite (anti-parallel) to the normal vector. In all other cases, the half-plane
+        is unbounded in that direction.
+        
+        Args:
+            direction: Direction to minimize along
+            
+        Returns:
+            Point at offset distance along normal (when direction is opposite to normal)
+            
+        Raises:
+            ValueError: If direction is not exactly opposite to the normal
+        """
+        # Normalize both vectors for comparison
+        dir_norm = direction.norm()
+        if dir_norm == 0:
+            raise ValueError("Direction vector cannot be zero")
+        dir_normalized = direction / dir_norm
+        
+        normal_norm = self.normal.norm()
+        normal_normalized = self.normal / normal_norm
+        
+        # Check if direction is exactly opposite to normal (anti-parallel)
+        # direction should equal -k * normal for some positive k
+        # Equivalently: dir_normalized should equal -normal_normalized
+        diff = dir_normalized + normal_normalized
+        
+        # Check if the difference is zero (within tolerance for symbolic computation)
+        if diff.norm() > Rational(1, 10000):
+            raise ValueError("HalfPlane is unbounded except in the direction exactly opposite to its normal")
+        
+        # Return the origin point on the plane boundary
+        return self.normal * self.offset
 
 
 @dataclass
@@ -78,6 +137,71 @@ class Prism(MeowMeowCSG):
     def __repr__(self) -> str:
         return (f"Prism(size={self.size.T}, orientation={self.orientation.T}, "
                 f"start={self.start_distance}, end={self.end_distance})")
+    
+    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
+        """
+        Get the minimal boundary point of the prism in the given direction.
+        
+        For a finite prism, we check all 8 corners and return the one with minimum dot product
+        with the direction. For semi-infinite prisms, we only raise an error if querying in the
+        infinite direction.
+        """
+        # If infinite in both directions, always unbounded
+        if self.start_distance is None and self.end_distance is None:
+            raise ValueError("Cannot compute minimal boundary for prism that is infinite in both directions")
+        
+        # Normalize orientation
+        axis = self.orientation / self.orientation.norm()
+        
+        # Check if we're querying in an infinite direction
+        axis_component = (direction.T * axis)[0, 0]
+        
+        if self.start_distance is None and axis_component < 0:
+            raise ValueError("Cannot compute minimal boundary for prism that is infinite in negative direction")
+        if self.end_distance is None and axis_component > 0:
+            raise ValueError("Cannot compute minimal boundary for prism that is infinite in positive direction")
+        
+        # Compute perpendicular axes for the cross-section
+        # Find a vector not parallel to axis to cross with
+        if abs(axis[0]) < Rational(1, 2):
+            perpendicular = Matrix([1, 0, 0])
+        else:
+            perpendicular = Matrix([0, 1, 0])
+        
+        # Create orthonormal basis
+        u = axis.cross(perpendicular)
+        u = u / u.norm()
+        v = axis.cross(u)
+        v = v / v.norm()
+        
+        # Half widths
+        half_width = self.size[0] / 2
+        half_height = self.size[1] / 2
+        
+        # Generate corners from the finite end(s)
+        min_dot = None
+        min_point = None
+        
+        # Determine which ends to check
+        ends_to_check = []
+        if self.start_distance is not None:
+            ends_to_check.append(self.start_distance)
+        if self.end_distance is not None:
+            ends_to_check.append(self.end_distance)
+        
+        for distance in ends_to_check:
+            for w_sign in [-1, 1]:
+                for h_sign in [-1, 1]:
+                    corner = (axis * distance + 
+                             u * (w_sign * half_width) + 
+                             v * (h_sign * half_height))
+                    
+                    dot = (corner.T * direction)[0, 0]
+                    if min_dot is None or dot < min_dot:
+                        min_dot = dot
+                        min_point = corner
+        
+        return min_point
 
 
 @dataclass
@@ -107,6 +231,73 @@ class Cylinder(MeowMeowCSG):
         return (f"Cylinder(axis={self.axis_direction.T}, "
                 f"radius={self.radius}, "
                 f"start={self.start_distance}, end={self.end_distance})")
+    
+    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
+        """
+        Get the minimal boundary point of the cylinder in the given direction.
+        
+        For a finite cylinder, we find the point on the surface with minimum dot product
+        with the direction vector. For semi-infinite cylinders, we only raise an error if 
+        querying in the infinite direction.
+        """
+        # If infinite in both directions, always unbounded
+        if self.start_distance is None and self.end_distance is None:
+            raise ValueError("Cannot compute minimal boundary for cylinder that is infinite in both directions")
+        
+        # Normalize axis
+        axis = self.axis_direction / self.axis_direction.norm()
+        
+        # Check if we're querying in an infinite direction
+        axis_component = (direction.T * axis)[0, 0]
+        
+        if self.start_distance is None and axis_component < 0:
+            raise ValueError("Cannot compute minimal boundary for cylinder that is infinite in negative direction")
+        if self.end_distance is None and axis_component > 0:
+            raise ValueError("Cannot compute minimal boundary for cylinder that is infinite in positive direction")
+        
+        # Decompose direction into parallel and perpendicular components to axis
+        dir_parallel = axis_component * axis
+        dir_perp = direction - dir_parallel
+        
+        # For the radial component, the minimal point on the circular cross-section
+        # is in the opposite direction of dir_perp
+        dir_perp_norm = dir_perp.norm()
+        
+        if dir_perp_norm == 0:
+            # Direction is parallel to axis, minimal point is anywhere on the appropriate circle
+            # Choose an arbitrary point on the circle
+            if abs(axis[0]) < Rational(1, 2):
+                perpendicular = Matrix([1, 0, 0])
+            else:
+                perpendicular = Matrix([0, 1, 0])
+            
+            radial = axis.cross(perpendicular)
+            radial = radial / radial.norm()
+            
+            # Check the finite end cap(s)
+            candidates = []
+            if self.start_distance is not None:
+                candidates.append(axis * self.start_distance + radial * self.radius)
+            if self.end_distance is not None:
+                candidates.append(axis * self.end_distance + radial * self.radius)
+            
+            # Return the one with minimum dot product
+            min_point = min(candidates, key=lambda p: (p.T * direction)[0, 0])
+            return min_point
+        else:
+            # Minimal radial point is opposite to perpendicular component
+            radial_dir = -dir_perp / dir_perp_norm
+            
+            # Check points on the finite end cap(s) at the minimal radial position
+            candidates = []
+            if self.start_distance is not None:
+                candidates.append(axis * self.start_distance + radial_dir * self.radius)
+            if self.end_distance is not None:
+                candidates.append(axis * self.end_distance + radial_dir * self.radius)
+            
+            # Return the one with minimum dot product
+            min_point = min(candidates, key=lambda p: (p.T * direction)[0, 0])
+            return min_point
 
 
 @dataclass
@@ -123,6 +314,35 @@ class Union(MeowMeowCSG):
     
     def __repr__(self) -> str:
         return f"Union({len(self.children)} children)"
+    
+    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
+        """
+        Get the minimal boundary point of the union in the given direction.
+        
+        For a union, the minimal boundary is the minimum of all children's minimal boundaries.
+        """
+        if not self.children:
+            raise ValueError("Cannot compute minimal boundary for empty union")
+        
+        min_dot = None
+        min_point = None
+        
+        for child in self.children:
+            try:
+                point = child.minimal_boundary_in_direction(direction)
+                dot = (point.T * direction)[0, 0]
+                
+                if min_dot is None or dot < min_dot:
+                    min_dot = dot
+                    min_point = point
+            except ValueError:
+                # Child is unbounded in this direction, skip it
+                continue
+        
+        if min_point is None:
+            raise ValueError("All children of union are unbounded in the given direction")
+        
+        return min_point
 
 
 @dataclass
@@ -142,6 +362,15 @@ class Difference(MeowMeowCSG):
     
     def __repr__(self) -> str:
         return f"Difference(base={self.base}, subtract={len(self.subtract)} objects)"
+    
+    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
+        """
+        Get the minimal boundary point of the difference in the given direction.
+        
+        For a difference operation, the minimal boundary is determined by the base object
+        (subtracting material doesn't extend the boundary in the negative direction).
+        """
+        return self.base.minimal_boundary_in_direction(direction)
 
 
 # Helper functions for creating common CSG primitives
