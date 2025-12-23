@@ -66,16 +66,16 @@ def test_giraffe_modules():
         print(f"✗ Failed to import sawhorse_example from parent dir: {e}")
         return False
     
-    # Note: We can't test giraffe_render_fusion360_OLD outside of Fusion 360
+    # Note: We can't test giraffe_render_fusion360 outside of Fusion 360
     # because it depends on adsk modules, but we can test that the file exists
     try:
-        import giraffe_render_fusion360_OLD
-        print("✓ giraffe_render_fusion360_OLD found in current dir (requires Fusion 360 to run)")
+        import giraffe_render_fusion360
+        print("✓ giraffe_render_fusion360 found in current dir (requires Fusion 360 to run)")
     except ImportError as e:
         if "adsk" in str(e):
-            print("✓ giraffe_render_fusion360_OLD found in current dir (adsk modules missing - normal outside Fusion 360)")
+            print("✓ giraffe_render_fusion360 found in current dir (adsk modules missing - normal outside Fusion 360)")
         else:
-            print(f"✗ Failed to find giraffe_render_fusion360_OLD in current dir: {e}")
+            print(f"✗ Failed to find giraffe_render_fusion360 in current dir: {e}")
             return False
     
     return True
@@ -119,7 +119,7 @@ def test_path_structure():
     
     # Files that should be in current (fusion360) directory
     local_required_files = [
-        'giraffe_render_fusion360_OLD.py'
+        'giraffe_render_fusion360.py'
     ]
     
     missing_files = []
