@@ -1263,19 +1263,60 @@ class Cut:
     orientation : Orientation
 
     # end cuts are special as they set the length of the timber
+    # you can only have an end cut on one end of the timber, you can't have an end cut on both ends at once (maybe we should support this?)
     maybeEndCut : Optional[TimberReferenceEnd]
 
 
     # get the "end" position of the cut on the centerline of the timber
     # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
-    @abstractmethod
     def get_end_position(self) -> V3:
+        """
+        Determine the end position of the cut by finding the minimal boundary of the negative CSG
+        in the direction towards the opposite end of the timber, then projecting onto the centerline.
+        
+        For a TOP end cut, we find the minimal boundary in the -length_direction (towards bottom).
+        For a BOTTOM end cut, we find the minimal boundary in the +length_direction (towards top).
+        
+        The returned point is on the timber's centerline at the distance where the cut boundary is located.
+        
+        Returns:
+            The end position on the timber's centerline where the cut intersects
+            
+        Raises:
+            ValueError: If maybeEndCut is None (this cut is not an end cut)
+        """
+        if self.maybeEndCut is None:
+            raise ValueError("get_end_position can only be called on end cuts (maybeEndCut must be set)")
+        
+        # Get the negative CSG representing the cut volume
+        negative_csg = self.get_negative_csg()
+        
+        # Determine the search direction based on which end is being cut
+        # Note: minimal_boundary_in_direction minimizes P·direction, so to find
+        # the minimum along the length direction, we search in +length_direction
         if self.maybeEndCut == TimberReferenceEnd.TOP:
-            return self._timber.bottom_position + self._timber.length_direction * self._timber.length
+            # For top end cuts, find the point closest to bottom (minimum distance along length)
+            # To minimize the distance, search in the +length_direction
+            search_direction = self._timber.length_direction
         elif self.maybeEndCut == TimberReferenceEnd.BOTTOM:
-            return self._timber.bottom_position
+            # For bottom end cuts, find the point closest to top (maximum distance along length)
+            # To maximize the distance, search in the -length_direction
+            search_direction = -self._timber.length_direction
         else:
             raise ValueError(f"Invalid end cut: {self.maybeEndCut}")
+        
+        # Find the minimal boundary of the cut CSG in the search direction
+        boundary_point = negative_csg.minimal_boundary_in_direction(search_direction)
+        
+        # Project the boundary point onto the timber's centerline to get the end position
+        # The end position is at: bottom_position + length_direction * distance
+        # where distance = (boundary_point - bottom_position) · length_direction / |length_direction|^2
+        length_dir_norm = normalize_vector(self._timber.length_direction)
+        distance_along_centerline = ((boundary_point - self._timber.bottom_position).T * length_dir_norm)[0, 0]
+        
+        end_position = self._timber.bottom_position + length_dir_norm * distance_along_centerline
+        
+        return end_position
 
     # returns the negative CSG of the cut (the part of the timber that is removed by the cut)
     @abstractmethod
