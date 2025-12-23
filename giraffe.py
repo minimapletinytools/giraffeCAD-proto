@@ -9,6 +9,7 @@ from footprint import Footprint
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 from dataclasses import dataclass
+from abc import abstractmethod
 
 # Type aliases for vectors using sympy
 V2 = Matrix  # 2D vector - 2x1 Matrix
@@ -143,55 +144,6 @@ class StickoutReference(Enum):
 # ============================================================================
 
 
-# TODO DELETE
-# the shoulder plane is defined by the normal of a plane that is distance away from the center point of the TimberReferenceEnd face of the timber
-# the "cut" side is in the direction of the normal which should always point towards reference_end
-@dataclass
-class ShoulderPlane:
-    reference_end: TimberReferenceEnd
-    distance: Numeric
-    normal: V3
-    
-    @classmethod
-    def create(cls, reference_end: TimberReferenceEnd, distance: Numeric, normal: Optional[V3] = None) -> 'ShoulderPlane':
-        """
-        Create a ShoulderPlane with automatic normal determination.
-        
-        Args:
-            reference_end: Which end of the timber the plane references
-            distance: Distance from the reference end
-            normal: Optional normal vector. If not provided, determined from reference_end
-            
-        Returns:
-            ShoulderPlane instance
-        """
-        if normal is None:
-            if reference_end == TimberReferenceEnd.TOP:
-                # Normal points toward TOP (upward)
-                normal = create_vector3d(0, 0, 1)
-            else:  # TimberReferenceEnd.BOTTOM
-                # Normal points toward BOTTOM (downward)
-                normal = create_vector3d(0, 0, -1)
-        
-        return cls(reference_end=reference_end, distance=distance, normal=normal)
-
-
-# you can probable delete these?
-@dataclass
-class StandardTenon:
-    shoulder_plane: ShoulderPlane
-
-    # TODO which is X and which is Y component, I think you need to change this so that it's 2 reference faces rather than a long edge....
-    pos_rel_to_long_edge: Optional[Tuple[TimberReferenceLongEdge, V2]]
-
-    # TODO don't use width/height here, maybe too confusing since they may not always orient with the timber's width/height, or maybe just have them orient with the timber's width/height? and then you don't need something weird like TimberReferenceLongEdge (nah, you should keep this because you may want to position with any long edge dependending on how the timber got created)
-    # so maybe just call it s1 and s2 instead 
-    width: Numeric
-    height: Numeric
-
-    length: Numeric  # How far the tenon extends beyond the shoulder plane
-
-
 
 # you can probable delete these?
 @dataclass
@@ -200,6 +152,7 @@ class DistanceFromFace:
     distance: Numeric
 
 # you can probable delete these?
+
 @dataclass
 class DistanceFromLongFace:
     face: TimberReferenceLongFace
@@ -651,51 +604,6 @@ class Timber:
             [0, 0, 0, 1]
         ])
         return transform
-
-# TODO DELETE
-class TimberCutOperation:
-    """Base class for timber cut operations"""
-    
-    def __init__(self, timber: Timber):
-        self.timber: Timber = timber
-
-# TODO DELETE
-class TenonCutOperation(TimberCutOperation):
-    """Tenon cut operation"""
-    
-    def __init__(self, timber: Timber, tenon_spec: StandardTenon):
-        super().__init__(timber)
-        self.tenon_spec = tenon_spec
-
-# TODO DELETE
-class MortiseCutOperation(TimberCutOperation):
-    """Mortise cut operation"""
-    
-    def __init__(self, timber: Timber, mortise_spec: StandardMortise):
-        super().__init__(timber)
-        self.mortise_spec = mortise_spec
-
-# TODO DELETE
-class JointAccessory:
-    """Base class for joint accessories like wedges, drawbores, etc."""
-    pass
-
-# TODO DELETE
-class Joint:
-    """Represents a joint connecting timbers"""
-    
-    def __init__(self):
-        self.name: Optional[str] = None
-        self.timber_cuts: List[Tuple[Timber, List[Union[TimberCutOperation, JointAccessory]]]] = []
-
-# TODO DELETE
-class CutTimber:
-    """A timber with applied cuts/joints"""
-    
-    def __init__(self, timber: Timber):
-        self.timber: Timber = timber
-        self.name: Optional[str] = timber.name
-        self.joints: List[TimberCutOperation] = []
 
 # ============================================================================
 # Timber Creation Functions
@@ -1341,6 +1249,13 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
 # Joint Construction Functions
 # ============================================================================
 
+class JointAccessory:
+    """Base class for joint accessories like wedges, drawbores, etc."""
+    pass
+
+class Joint:
+    partiallyCutTimbers : List['PartiallyCutTimber']
+    jointAccessories : List[JointAccessory]
 
 
 class BasicMiterJoint(Joint):
@@ -1433,37 +1348,9 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: T
     # Calculate tenon shoulder plane distance to position it at the mortise timber face
     tenon_shoulder_distance = _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber, mortise_timber, tenon_end)
     
-    # Create tenon specification
-    tenon_spec = StandardTenon(
-        shoulder_plane=ShoulderPlane.create(
-            reference_end=tenon_end,
-            distance=tenon_shoulder_distance
-        ),
-        pos_rel_to_long_edge=None,  # Centered
-        width=tenon_thickness,
-        height=tenon_thickness,
-        length=tenon_length  # How far tenon extends beyond shoulder plane
-    )
+    # TODO FINISH
+    raise NotImplementedError("Not implemented")
     
-    # Create mortise specification
-    mortise_spec = StandardMortise(
-        mortise_face=mortise_face,
-        pos_rel_to_end=DistanceFromEnd(end=mortise_ref_end, distance=mortise_distance),
-        pos_rel_to_long_face=None,  # Centered
-        size1=tenon_thickness,
-        size2=tenon_length,
-        depth=tenon_length  # Mortise depth equals tenon length
-    )
-    
-    # Create cut operations
-    tenon_cut = TenonCutOperation(tenon_timber, tenon_spec)
-    mortise_cut = MortiseCutOperation(mortise_timber, mortise_spec)
-    
-    # Add cuts to joint
-    joint.timber_cuts.append((tenon_timber, [tenon_cut]))
-    joint.timber_cuts.append((mortise_timber, [mortise_cut]))
-    
-    return joint
 
 # ============================================================================
 # Helper Functions
@@ -1846,9 +1733,9 @@ class Cut:
     @abstractmethod
     def get_end_position(self) -> V3:
         if self.maybeEndCut == TimberReferenceEnd.TOP:
-            return _timber.bottom_position + _timber.length_direction * _timber.length
+            return self._timber.bottom_position + self._timber.length_direction * self._timber.length
         elif self.maybeEndCut == TimberReferenceEnd.BOTTOM:
-            return _timber.bottom_position
+            return self._timber.bottom_position
         else:
             raise ValueError(f"Invalid end cut: {self.maybeEndCut}")
 
@@ -1859,8 +1746,23 @@ class Cut:
 
 
 class CutTimber:
-    _timber : Timber
-    _cuts : List[Cut]
+    def __init__(self, timber: Timber, name: str = None):
+        """
+        Create a CutTimber from a Timber.
+        
+        Args:
+            timber: The timber to be cut
+            name: Optional name for this timber (used for rendering/debugging)
+        """
+        self._timber = timber
+        self._cuts = []
+        self.name = name
+        self.joints = []  # List of joints this timber participates in
+    
+    @property
+    def timber(self) -> Timber:
+        """Get the underlying timber."""
+        return self._timber
 
     # this one returns the timber without cuts where ends with joints are infinite in length
     def _extended_timber_without_cuts_csg(self) -> MeowMeowCSG:
@@ -1884,13 +1786,4 @@ class CutTimber:
 
 class PartiallyCutTimber(CutTimber):
     pass
-
-class JointAccessory:
-    """Base class for joint accessories like wedges, drawbores, etc."""
-    pass
-
-class Joint:
-    partiallyCutTimbers : List[PartiallyCutTimber]
-    jointAccessories : List[JointAccessory]
-
 
