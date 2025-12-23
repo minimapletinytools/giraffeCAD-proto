@@ -9,6 +9,7 @@ from sympy import Matrix, Rational, Expr, sqrt, oo
 from typing import List, Optional, Union
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from moothymoth import Orientation
 
 # Type aliases (matching giraffe.py)
 V2 = Matrix  # 2D vector - 2x1 Matrix
@@ -26,6 +27,7 @@ class MeowMeowCSG(ABC):
         pass
 
 
+    # ALL IMPLEMENTATIONS ARE UNTESTED LOL
     @abstractmethod
     def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
         """
@@ -113,29 +115,30 @@ class Prism(MeowMeowCSG):
     A prism with rectangular cross-section, optionally infinite in one or both ends.
     
     The prism is defined by:
-    - A cross-section size (width x height) in the plane perpendicular to the orientation
-    - An orientation direction (the axis of the prism)
-    - Start and end distances along the orientation from the origin
+    - A cross-section size (width x height) in the local XY plane
+    - An orientation (rotation matrix defining the local coordinate system)
+    - Start and end distances along the local Z-axis from the origin
     
     Use None for start_distance or end_distance to make the prism infinite in that direction.
     
-    The cross-section orientation is determined by the orientation vector, similar to
-    how Timber orientation works. The size[0] is the width and size[1] is the height
-    of the rectangular cross-section.
+    The orientation matrix defines the local coordinate system where:
+    - X-axis (first column) is the width direction (size[0])
+    - Y-axis (second column) is the height direction (size[1])
+    - Z-axis (third column) is the length/axis direction
     
     Args:
         size: Cross-section dimensions [width, height] (2x1 Matrix)
-        orientation: Direction of the prism's axis (3x1 Matrix)
+        orientation: Orientation matrix defining the prism's coordinate system
         start_distance: Distance from origin to start of prism (None = infinite)
         end_distance: Distance from origin to end of prism (None = infinite)
     """
     size: V2
-    orientation: Direction3D
+    orientation: Orientation
     start_distance: Optional[Numeric] = None  # None means infinite in negative direction
     end_distance: Optional[Numeric] = None    # None means infinite in positive direction
     
     def __repr__(self) -> str:
-        return (f"Prism(size={self.size.T}, orientation={self.orientation.T}, "
+        return (f"Prism(size={self.size.T}, orientation={self.orientation}, "
                 f"start={self.start_distance}, end={self.end_distance})")
     
     def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
@@ -150,31 +153,35 @@ class Prism(MeowMeowCSG):
         if self.start_distance is None and self.end_distance is None:
             raise ValueError("Cannot compute minimal boundary for prism that is infinite in both directions")
         
-        # Normalize orientation
-        axis = self.orientation / self.orientation.norm()
+        # Extract axes from orientation matrix
+        # X-axis (width direction) is first column
+        # Y-axis (height direction) is second column
+        # Z-axis (length/axis direction) is third column
+        width_dir = Matrix([
+            self.orientation.matrix[0, 0],
+            self.orientation.matrix[1, 0],
+            self.orientation.matrix[2, 0]
+        ])
+        height_dir = Matrix([
+            self.orientation.matrix[0, 1],
+            self.orientation.matrix[1, 1],
+            self.orientation.matrix[2, 1]
+        ])
+        length_dir = Matrix([
+            self.orientation.matrix[0, 2],
+            self.orientation.matrix[1, 2],
+            self.orientation.matrix[2, 2]
+        ])
         
         # Check if we're querying in an infinite direction
-        axis_component = (direction.T * axis)[0, 0]
+        axis_component = (direction.T * length_dir)[0, 0]
         
         if self.start_distance is None and axis_component < 0:
             raise ValueError("Cannot compute minimal boundary for prism that is infinite in negative direction")
         if self.end_distance is None and axis_component > 0:
             raise ValueError("Cannot compute minimal boundary for prism that is infinite in positive direction")
         
-        # Compute perpendicular axes for the cross-section
-        # Find a vector not parallel to axis to cross with
-        if abs(axis[0]) < Rational(1, 2):
-            perpendicular = Matrix([1, 0, 0])
-        else:
-            perpendicular = Matrix([0, 1, 0])
-        
-        # Create orthonormal basis
-        u = axis.cross(perpendicular)
-        u = u / u.norm()
-        v = axis.cross(u)
-        v = v / v.norm()
-        
-        # Half widths
+        # Half dimensions
         half_width = self.size[0] / 2
         half_height = self.size[1] / 2
         
@@ -192,9 +199,9 @@ class Prism(MeowMeowCSG):
         for distance in ends_to_check:
             for w_sign in [-1, 1]:
                 for h_sign in [-1, 1]:
-                    corner = (axis * distance + 
-                             u * (w_sign * half_width) + 
-                             v * (h_sign * half_height))
+                    corner = (length_dir * distance + 
+                             width_dir * (w_sign * half_width) + 
+                             height_dir * (h_sign * half_height))
                     
                     dot = (corner.T * direction)[0, 0]
                     if min_dot is None or dot < min_dot:
@@ -375,7 +382,7 @@ class Difference(MeowMeowCSG):
 
 # Helper functions for creating common CSG primitives
 
-def create_prism(size: V2, orientation: Direction3D,
+def create_prism(size: V2, orientation: Orientation,
                 start_distance: Optional[Numeric] = None,
                 end_distance: Optional[Numeric] = None) -> Prism:
     """
@@ -388,7 +395,7 @@ def create_prism(size: V2, orientation: Direction3D,
     
     Args:
         size: Cross-section dimensions [width, height] (2x1 Matrix)
-        orientation: Direction of the prism's axis
+        orientation: Orientation matrix defining the prism's coordinate system
         start_distance: Distance from origin to start of prism (None = infinite in negative direction)
         end_distance: Distance from origin to end of prism (None = infinite in positive direction)
         

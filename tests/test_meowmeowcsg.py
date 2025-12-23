@@ -6,6 +6,7 @@ This module contains tests for the CSG primitives and operations.
 
 import pytest
 from sympy import Matrix, Rational, simplify
+from moothymoth import Orientation
 from meowmeowcsg import (
     HalfPlane, Prism, Cylinder, Union, Difference,
     create_prism, create_cylinder
@@ -19,23 +20,23 @@ class TestMinimalBoundary:
         """Test prism minimal boundary in X direction."""
         # Create a prism along Z axis from z=0 to z=10, with 4x6 cross-section
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation (Z-axis aligned)
         prism = create_prism(size, orientation, start_distance=0, end_distance=10)
         
         # Minimal boundary in +X direction should be at one of the corners
         direction = Matrix([1, 0, 0])
         boundary = prism.minimal_boundary_in_direction(direction)
         
-        # Check that it's at one of the corners (minimal x coordinate)
-        # The cross-section has half-dimensions of 2 and 3
-        assert abs(boundary[0]) == 3 or abs(boundary[0]) == 2
-        assert abs(boundary[1]) == 3 or abs(boundary[1]) == 2
+        # With identity orientation: width (4) along X, height (6) along Y
+        # So half-width = 2, half-height = 3
+        assert boundary[0] == -2  # Minimal x coordinate
+        assert abs(boundary[1]) <= 3  # Within Y range
         assert boundary[2] in [0, 10]  # At one of the ends
     
     def test_prism_minimal_boundary_negative_x_direction(self):
         """Test prism minimal boundary in negative X direction."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation, start_distance=0, end_distance=10)
         
         # Minimal boundary in -X direction should be at positive x
@@ -43,12 +44,13 @@ class TestMinimalBoundary:
         boundary = prism.minimal_boundary_in_direction(direction)
         
         # The x-coordinate should be positive (opposite corner from +X test)
-        assert boundary[0] == 3  # At the positive extreme
+        # With identity orientation: width (4) is along X, so half-width = 2
+        assert boundary[0] == 2  # At the positive extreme
     
     def test_prism_minimal_boundary_z_direction(self):
         """Test prism minimal boundary in Z direction (along axis)."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation, start_distance=Rational(5), end_distance=Rational(15))
         
         # Minimal boundary in +Z direction should be at z=5 (start)
@@ -60,7 +62,7 @@ class TestMinimalBoundary:
     def test_prism_minimal_boundary_diagonal_direction(self):
         """Test prism minimal boundary in diagonal direction."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation, start_distance=0, end_distance=10)
         
         # Minimal boundary in diagonal direction
@@ -68,15 +70,15 @@ class TestMinimalBoundary:
         boundary = prism.minimal_boundary_in_direction(direction)
         
         # Should be at one of the corners with negative x, y, z components
-        # (The exact mapping depends on the basis vectors)
-        assert boundary[0] == -3  # Minimal x
-        assert boundary[1] == -2  # Minimal y
+        # With identity orientation: width (4) along X, height (6) along Y
+        assert boundary[0] == -2  # Minimal x (half-width = 2)
+        assert boundary[1] == -3  # Minimal y (half-height = 3)
         assert boundary[2] == 0   # Start (minimal z)
     
     def test_prism_infinite_raises_error(self):
         """Test that infinite prism raises error."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation)  # Infinite in both directions
         
         direction = Matrix([1, 0, 0])
@@ -86,7 +88,7 @@ class TestMinimalBoundary:
     def test_prism_semi_infinite_negative_direction_works(self):
         """Test semi-infinite prism works when querying opposite to infinite direction."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation, end_distance=10)  # Infinite in negative direction
         
         # Query in +Z (away from infinite direction) should work
@@ -99,7 +101,7 @@ class TestMinimalBoundary:
     def test_prism_semi_infinite_negative_direction_raises_error(self):
         """Test semi-infinite prism raises error when querying in infinite direction."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation, end_distance=10)  # Infinite in negative direction
         
         # Query in -Z (toward infinite direction) should raise error
@@ -110,7 +112,7 @@ class TestMinimalBoundary:
     def test_prism_semi_infinite_positive_direction_works(self):
         """Test semi-infinite prism works when querying opposite to infinite direction."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation, start_distance=5)  # Infinite in positive direction
         
         # Query in -Z (away from infinite direction) should work
@@ -123,7 +125,7 @@ class TestMinimalBoundary:
     def test_prism_semi_infinite_positive_direction_raises_error(self):
         """Test semi-infinite prism raises error when querying in infinite direction."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation, start_distance=5)  # Infinite in positive direction
         
         # Query in +Z (toward infinite direction) should raise error
@@ -134,7 +136,7 @@ class TestMinimalBoundary:
     def test_prism_semi_infinite_perpendicular_direction(self):
         """Test semi-infinite prism works for perpendicular directions."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation, end_distance=10)  # Infinite in negative Z
         
         # Query in X direction (perpendicular to axis) should work
@@ -330,7 +332,7 @@ class TestMinimalBoundary:
         """Test union minimal boundary."""
         # Two prisms at different locations
         size = Matrix([2, 2])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         
         prism1 = create_prism(size, orientation, start_distance=0, end_distance=5)
         prism2 = create_prism(size, orientation, start_distance=10, end_distance=15)
@@ -355,7 +357,7 @@ class TestMinimalBoundary:
         """Test difference minimal boundary."""
         # Base prism
         size = Matrix([10, 10])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         base = create_prism(size, orientation, start_distance=0, end_distance=10)
         
         # Subtract a smaller prism (doesn't affect the minimal boundary)
@@ -367,6 +369,7 @@ class TestMinimalBoundary:
         direction = Matrix([1, 0, 0])
         boundary = diff.minimal_boundary_in_direction(direction)
         
+        # With identity orientation: width (10) along X, so half-width = 5
         assert boundary[0] == -5  # Half of base width
 
 
@@ -376,7 +379,7 @@ class TestCreateFunctions:
     def test_create_prism_finite(self):
         """Test creating a finite prism."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation, start_distance=0, end_distance=10)
         
         assert prism.size == size
@@ -387,7 +390,7 @@ class TestCreateFunctions:
     def test_create_prism_semi_infinite(self):
         """Test creating a semi-infinite prism."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation, end_distance=10)
         
         assert prism.start_distance is None
@@ -396,7 +399,7 @@ class TestCreateFunctions:
     def test_create_prism_infinite(self):
         """Test creating an infinite prism."""
         size = Matrix([4, 6])
-        orientation = Matrix([0, 0, 1])
+        orientation = Orientation()  # Identity orientation
         prism = create_prism(size, orientation)
         
         assert prism.start_distance is None
