@@ -30,12 +30,21 @@ python3 -m pytest tests/test_giraffe.py::TestFootprint -v
 - `sympy` - Symbolic mathematics for exact computations
 - `pytest` - Testing framework
 
+
+## Coding Philosophy
+
+- simplicity and clarity over performance!
+- apart from during its initial construction, avoid using data in a mutable way
+- after construction, always treat data as if it's immutable
+- python is a bit of an implementation detail, I would have preferred to hav ewritten this in a functional language
+
 ## Coding Conventions
 
 - ALWAYS use symbolic arithmetic with SymPy (Rational) 
 - Vector types: V2 (2D), V3 (3D), Direction3D
 - All tests must pass before committing changes
 - Run tests after making changes
+
 
 ## Notes
 

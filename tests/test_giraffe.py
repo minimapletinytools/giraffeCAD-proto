@@ -3126,20 +3126,38 @@ class TestMiterJoint:
         assert cutA.maybeEndCut == TimberReferenceEnd.TOP
         assert cutB.maybeEndCut == TimberReferenceEnd.TOP
         
-        # Check that the half-plane normals are opposite to the timber directions
-        # TimberA extends in +X, so normal should be -X = (-1, 0, 0)
-        assert cutA.half_plane.normal[0] == Rational(-1)
-        assert cutA.half_plane.normal[1] == Rational(0)
+        # Check that the half-plane normals form the miter plane at 45 degrees
+        # For orthogonal timbers in +X and +Y directions:
+        # - TimberA end direction: (+1, 0, 0)
+        # - TimberB end direction: (0, +1, 0)
+        # - Bisector (into joint): (+1, +1, 0) normalized = (1/√2, 1/√2, 0)
+        # - Miter plane normal: same as bisector = (1/√2, 1/√2, 0)
+        # 
+        # Both cuts should use the same miter plane (or its opposite)
+        # For proper miter, the normals should be equal (both timbers cut by same plane)
+        
+        # Import sqrt for comparison
+        from sympy import sqrt
+        
+        # The miter normal should be (1/√2, 1/√2, 0) or (-1/√2, -1/√2, 0)
+        expected_component = 1 / sqrt(2)
+        
+        # Check timberA normal - should be the bisector pointing away from timberA
+        # Since directionA = (+1, 0, 0) and bisector = (1/√2, 1/√2, 0)
+        # The dot product is positive, so normal should be the bisector
+        assert simplify(cutA.half_plane.normal[0] - expected_component) == 0
+        assert simplify(cutA.half_plane.normal[1] - expected_component) == 0
         assert cutA.half_plane.normal[2] == Rational(0)
         
-        # TimberB extends in +Y, so normal should be -Y = (0, -1, 0)
-        assert cutB.half_plane.normal[0] == Rational(0)
-        assert cutB.half_plane.normal[1] == Rational(-1)
+        # Check timberB normal - should also be the bisector
+        # Since directionB = (0, +1, 0) and bisector = (1/√2, 1/√2, 0)
+        # The dot product is positive, so normal should be the bisector
+        assert simplify(cutB.half_plane.normal[0] - expected_component) == 0
+        assert simplify(cutB.half_plane.normal[1] - expected_component) == 0
         assert cutB.half_plane.normal[2] == Rational(0)
         
-        # Check that the two normals are orthogonal (dot product = 0)
-        dot_product = (cutA.half_plane.normal.T * cutB.half_plane.normal)[0, 0]
-        assert dot_product == Rational(0)
+        # Check that both normals are THE SAME (same miter plane for both timbers)
+        assert simplify(cutA.half_plane.normal - cutB.half_plane.normal).norm() == 0
         
         # Check that the miter plane cuts through the origin
         # The half-plane offset should be 0 for a plane through the origin
@@ -3156,16 +3174,21 @@ class TestMiterJoint:
         assert cutA.origin[1] == Rational(0)
         assert cutA.origin[2] == Rational(0)
         
-        # Check that the miter plane is at 45 degrees
-        # For orthogonal timbers in +X and +Y, the bisector should be at 45 degrees
-        # The bisector direction would be (1, 1, 0) normalized = (1/sqrt(2), 1/sqrt(2), 0)
-        # The miter plane normal is perpendicular to both timber axes
-        # Since normals point in -X and -Y, the bisector of the end directions is (-1, -1, 0)
-        # normalized, which represents a 45-degree angle
+        # Check that the miter plane is at 45 degrees to each timber
+        # For orthogonal timbers, the angle between the miter normal and each timber direction
+        # should be 45 degrees
+        # 
+        # Angle between miter_normal and directionA:
+        # cos(45°) = miter_normal · directionA = (1/√2, 1/√2, 0) · (1, 0, 0) = 1/√2
+        directionA = Matrix([Rational(1), Rational(0), Rational(0)])
+        directionB = Matrix([Rational(0), Rational(1), Rational(0)])
         
-        # Verify by checking the angle: for 45 degrees, the normals should have equal magnitude components
-        # For cutA normal (-1, 0, 0) and cutB normal (0, -1, 0), they are perpendicular
-        # The actual miter plane bisects the 90-degree angle, making it 45 degrees from each timber
+        cos_angle_A = (cutA.half_plane.normal.T * directionA)[0, 0]
+        cos_angle_B = (cutB.half_plane.normal.T * directionB)[0, 0]
+        
+        # Both should equal 1/√2 (cosine of 45 degrees)
+        assert simplify(cos_angle_A - 1/sqrt(2)) == 0
+        assert simplify(cos_angle_B - 1/sqrt(2)) == 0
         
         # Get end positions and verify they match
         endA = cutA.get_end_position()
