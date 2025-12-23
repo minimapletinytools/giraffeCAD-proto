@@ -2970,11 +2970,12 @@ class TestCutTimber:
         # Get the CSG
         csg = cut_timber.render_timber_without_cuts_csg()
         
-        # Should be a finite prism with original dimensions
+        # Should be a finite prism with original dimensions in LOCAL coordinates
+        # Local coordinates are relative to bottom_position
         from meowmeowcsg import Prism
         assert isinstance(csg, Prism)
-        assert csg.start_distance == 10  # bottom z
-        assert csg.end_distance == 110   # top z
+        assert csg.start_distance == 0    # local: start at bottom (0)
+        assert csg.end_distance == 100    # local: end at length (100)
     
     def test_render_timber_without_cuts_bottom_end_cut(self):
         """Test render_timber_without_cuts_csg with a bottom end cut."""
@@ -2995,9 +2996,11 @@ class TestCutTimber:
         # Get the CSG
         csg = cut_timber.render_timber_without_cuts_csg()
         
-        # Bottom should be at the cut position (z=15), top at original (z=110)
-        assert csg.start_distance == 15
-        assert csg.end_distance == 110
+        # In LOCAL coordinates (relative to bottom_position):
+        # Bottom should be at cut position: z=15 → local = 15 - 10 = 5
+        # Top at original: z=110 → local = 110 - 10 = 100 (timber length)
+        assert csg.start_distance == 5    # local: (15 - 10)
+        assert csg.end_distance == 100    # local: length
     
     def test_render_timber_without_cuts_top_end_cut(self):
         """Test render_timber_without_cuts_csg with a top end cut."""
@@ -3018,9 +3021,11 @@ class TestCutTimber:
         # Get the CSG
         csg = cut_timber.render_timber_without_cuts_csg()
         
-        # Bottom at original (z=10), top at cut position (z=100)
-        assert csg.start_distance == 10
-        assert csg.end_distance == 100
+        # In LOCAL coordinates (relative to bottom_position):
+        # Bottom at original: z=10 → local = 0
+        # Top at cut position: z=100 → local = 100 - 10 = 90
+        assert csg.start_distance == 0    # local: 0 (no bottom cut)
+        assert csg.end_distance == 90     # local: (100 - 10)
     
     def test_render_timber_without_cuts_both_end_cuts(self):
         """Test render_timber_without_cuts_csg with both end cuts."""
@@ -3044,9 +3049,11 @@ class TestCutTimber:
         # Get the CSG
         csg = cut_timber.render_timber_without_cuts_csg()
         
-        # Both ends should be at cut positions
-        assert csg.start_distance == 20
-        assert csg.end_distance == 90
+        # In LOCAL coordinates (relative to bottom_position):
+        # Bottom at cut position: z=20 → local = 20 - 10 = 10
+        # Top at cut position: z=90 → local = 90 - 10 = 80
+        assert csg.start_distance == 10   # local: (20 - 10)
+        assert csg.end_distance == 80     # local: (90 - 10)
     
     def test_render_timber_without_cuts_multiple_bottom_cuts_error(self):
         """Test that multiple bottom end cuts raises an assertion error."""
