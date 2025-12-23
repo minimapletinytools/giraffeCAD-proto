@@ -1757,7 +1757,51 @@ class CutTimber:
 
     # this one returns the timber without cuts where ends with joints are infinite in length
     def _extended_timber_without_cuts_csg(self) -> MeowMeowCSG:
-        pass
+        """
+        Returns a CSG representation of the timber without any cuts applied.
+        
+        If an end has cuts on it (indicated by maybeEndCut), that end is extended to infinity.
+        This allows joints to extend the timber as needed during the CSG cutting operations.
+        
+        Returns:
+            Prism CSG representing the timber (possibly semi-infinite or infinite)
+        """
+        from meowmeowcsg import create_prism
+        
+        # Check if bottom end has cuts
+        has_bottom_cut = any(
+            cut.maybeEndCut == TimberReferenceEnd.BOTTOM 
+            for cut in self._cuts
+        )
+        
+        # Check if top end has cuts  
+        has_top_cut = any(
+            cut.maybeEndCut == TimberReferenceEnd.TOP
+            for cut in self._cuts
+        )
+        
+        # Normalize the length direction
+        length_dir_norm = normalize_vector(self._timber.length_direction)
+        
+        # Compute the distance from origin to bottom along the length direction
+        # This is the projection of bottom_position onto length_direction
+        bottom_distance = (self._timber.bottom_position.T * length_dir_norm)[0, 0]
+        
+        # Top distance is bottom_distance + length
+        top_distance = bottom_distance + self._timber.length
+        
+        # Determine start and end distances in absolute coordinates
+        # If an end has cuts, it extends to infinity in that direction
+        start_distance = None if has_bottom_cut else bottom_distance
+        end_distance = None if has_top_cut else top_distance
+        
+        # Create a prism representing the timber
+        return create_prism(
+            size=self._timber.size,
+            orientation=self._timber.orientation,
+            start_distance=start_distance,
+            end_distance=end_distance
+        )
 
     # this one returns the timber without cuts where ends with joints are cut to length based on Cut::get_end_position
     # use this for rendering the timber without cuts for development

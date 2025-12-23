@@ -82,7 +82,8 @@ DECISION
 DONE-address TODOs is smiple mrotise and sitance 
 IGNORE-remove LongEdge 
 DONE-update tests to not use floats ever (maybe have a couple float tests in a separate file though)
--rework joint classes
+DONE-rework joint classes
+-rename "End joint" it's not what you think it's actulaly a splice joint, I think you should call them corner joints instead?
 
 
 -M1 (reward is reimburse H2D LOL)
@@ -95,17 +96,20 @@ DONE-update tests to not use floats ever (maybe have a couple float tests in a s
     -basic_splice_joint
     -basic_miter_joint
 
-  -consider making a better way to store TimberWithJoints and joints class etc...
-  
+  DONE-consider making a better way to store TimberWithJoints and joints class etc...
+  DONE-fix tenon joint class
+  -add resultant length function after applying joints computerLength(timebr, [joints])
+    -get fusino 360 to render just at the rusultant length 
+
+
   -add helper render functions
     -extend timbers so joint can be diffed out of it (rather than bool in a long timber, just use an extra long timber when creating the original timber)
     -generic boolean geometry classes
     -use boolean geometery to create negative of tenon cutout timber - (timber - tenon - shoulderplane)
       -calll this method tenon cutter :D
-  -fix tenon joint class
 
-  -add resultant length function after applying joints computerLength(timebr, [joints])
-    -get fusino 360 to render just at the rusultant length 
+  
+
 
   
   -butt joints
@@ -120,6 +124,16 @@ DONE-update tests to not use floats ever (maybe have a couple float tests in a s
         -same as draw bore but with komisen peg,
       -tusked mortise and tenon
 
+  -end joints
+    -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
+      -otherwise calls into mortise_and_tenon above
+      -also needs to convert the mortise into an "end cut"
+    -half_lap (special case of mortise and tenon? nah, special case of bridle joint? nah)
+    -bridle joint (special case of mortise and tenon? nah)
+    -maybe try the fancy 
+
+  -cross_joints
+    cross_lap_joint
   
   -get rhino rendering working for the following joints ...
   -improve examples

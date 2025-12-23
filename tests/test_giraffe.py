@@ -2841,3 +2841,100 @@ class TestSplitTimber:
         assert bottom_timber.size[1] == timber.size[1]
         assert top_timber.size[0] == timber.size[0]
         assert top_timber.size[1] == timber.size[1]
+
+
+class TestCutTimber:
+    """Test CutTimber CSG operations."""
+    
+    def test_extended_timber_without_cuts_finite(self):
+        """Test _extended_timber_without_cuts_csg for a timber with no cuts (finite)."""
+        # Create a simple timber
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(10)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber, 'test_timber')
+        
+        # Get the CSG
+        csg = cut_timber._extended_timber_without_cuts_csg()
+        
+        # Should be a finite prism
+        from meowmeowcsg import Prism
+        assert isinstance(csg, Prism)
+        
+        # Start should be at bottom z-coordinate (10)
+        assert csg.start_distance == 10
+        
+        # End should be at bottom z-coordinate + length (110)
+        assert csg.end_distance == 110
+        
+        # Size should match timber
+        assert csg.size == size
+        # Orientation should be the timber's Orientation object
+        assert csg.orientation == timber.orientation
+    
+    def test_extended_timber_without_cuts_positioned(self):
+        """Test that CSG works correctly for timber at different position."""
+        # Create a timber at a different position
+        length = Rational(50)
+        size = Matrix([Rational(3), Rational(4)])
+        bottom_position = Matrix([Rational(5), Rational(10), Rational(20)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber)
+        
+        csg = cut_timber._extended_timber_without_cuts_csg()
+        
+        # Start distance should be projection of bottom_position onto length_direction
+        # For [5, 10, 20] · [0, 0, 1] = 20
+        assert csg.start_distance == 20
+        
+        # End distance should be start + length = 70
+        assert csg.end_distance == 70
+    
+    def test_extended_timber_minimal_boundary(self):
+        """Test that minimal_boundary_in_direction works on the CSG."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(10)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber)
+        
+        csg = cut_timber._extended_timber_without_cuts_csg()
+        
+        # Query minimal boundary in +Z direction (along timber axis)
+        direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        boundary = csg.minimal_boundary_in_direction(direction)
+        
+        # Should be at the bottom of the timber (z=10)
+        assert boundary[2] == 10
+    
+    def test_extended_timber_horizontal(self):
+        """Test CSG for a horizontal timber."""
+        length = Rational(80)
+        size = Matrix([Rational(5), Rational(5)])
+        bottom_position = Matrix([Rational(10), Rational(20), Rational(5)])
+        length_direction = Matrix([Rational(1), Rational(0), Rational(0)])  # Along X
+        width_direction = Matrix([Rational(0), Rational(1), Rational(0)])
+        
+        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber)
+        
+        csg = cut_timber._extended_timber_without_cuts_csg()
+        
+        # Start distance = bottom_position · length_direction = [10,20,5] · [1,0,0] = 10
+        assert csg.start_distance == 10
+        
+        # End distance = start + length = 90
+        assert csg.end_distance == 90
+        
+        # Orientation should be the timber's Orientation object
+        assert csg.orientation == timber.orientation
