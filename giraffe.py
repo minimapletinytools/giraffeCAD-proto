@@ -1266,7 +1266,6 @@ class Cut:
     # you can only have an end cut on one end of the timber, you can't have an end cut on both ends at once (maybe we should support this?)
     maybeEndCut : Optional[TimberReferenceEnd]
 
-
     # get the "end" position of the cut on the centerline of the timber
     # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
     def get_end_position(self) -> V3:
@@ -1480,9 +1479,9 @@ class HalfPlaneCut(Cut):
     A half plane cut is a cut that is defined by a half plane.
     """
     half_plane : HalfPlane
+    
     def get_negative_csg(self) -> MeowMeowCSG:
         return self.half_plane
-
 # ============================================================================
 # Joint Construction Functions
 # ============================================================================
@@ -1569,22 +1568,42 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     miter_normal = normalize_vector(bisector)
     
     # The miter plane passes through the intersection point
-    # Plane equation: (P - intersection_point) · miter_normal = 0
-    # For HalfPlane: offset = intersection_point · miter_normal
-    miter_offset = (intersection_point.T * miter_normal)[0, 0]
+    # Both timbers will be cut by this same plane (but we need to orient the half-plane
+    # normals correctly for each timber so that get_end_position() can find the boundary)
     
-    # For each timber, we need to create a HalfPlaneCut
-    # The half-plane normal must be opposite to the timber's end direction
-    # This ensures that get_end_position() can find the boundary correctly
-    # (get_end_position searches in the +length direction for TOP cuts,
-    #  and half-planes are only bounded opposite to their normal)
+    # For each timber, we need to create a HalfPlaneCut with the miter plane
+    # The key is that the half-plane normal must be oriented so that:
+    # 1. It represents the miter plane (perpendicular to the bisector, OR the bisector itself)
+    # 2. get_end_position() can find the boundary (normal opposite to search direction)
+    #
+    # The miter plane normal is the bisector. We want to keep material on the "inside"
+    # of the joint and remove material on the "outside". For each timber, we need to
+    # determine which side of the miter plane is "outside" (away from the other timber).
+    #
+    # If directionA · miter_normal > 0, then the miter normal points away from timberA,
+    # so we use +miter_normal. Otherwise, we use -miter_normal.
     
-    # For timberA: the half-plane normal should be opposite to directionA
-    normalA = -normalize_vector(directionA)
+    # For timberA: check if miter_normal points away from or towards the timber
+    dot_A = (normA.T * miter_normal)[0, 0]
+    if dot_A > 0:
+        # Miter normal points away from timberA (in the direction of timberA's end)
+        # This is what we want - the half-plane removes material in this direction
+        normalA = miter_normal
+    else:
+        # Miter normal points towards timberA, so flip it
+        normalA = -miter_normal
+    
     offsetA = (intersection_point.T * normalA)[0, 0]
     
-    # For timberB: the half-plane normal should be opposite to directionB
-    normalB = -normalize_vector(directionB)
+    # For timberB: check if miter_normal points away from or towards the timber
+    dot_B = (normB.T * miter_normal)[0, 0]
+    if dot_B > 0:
+        # Miter normal points away from timberB (in the direction of timberB's end)
+        normalB = miter_normal
+    else:
+        # Miter normal points towards timberB, so flip it
+        normalB = -miter_normal
+    
     offsetB = (intersection_point.T * normalB)[0, 0]
     
     # Create the HalfPlaneCuts

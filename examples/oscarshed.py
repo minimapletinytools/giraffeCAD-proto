@@ -12,7 +12,8 @@ from giraffe import (
     create_horizontal_timber_on_footprint,
     create_vertical_timber_on_footprint_side,
     join_timbers,
-    FootprintLocation, CutTimber, Stickout
+    cut_basic_miter_joint,
+    FootprintLocation, CutTimber, Stickout, TimberReferenceEnd
 )
 from footprint import Footprint
 
@@ -100,6 +101,42 @@ def create_oscarshed() -> list[CutTimber]:
         footprint, 3, FootprintLocation.INSIDE, mudsill_size
     )
     mudsill_left.name = "Left Mudsill"
+
+    # ============================================================================
+    # Create miter joints at all four corners of the mudsill rectangle
+    # ============================================================================
+    
+    # Corner 0 (front-left): Front mudsill BOTTOM meets Left mudsill TOP
+    # Front mudsill goes from corner 0 to corner 1 (BOTTOM=corner 0, TOP=corner 1)
+    # Left mudsill goes from corner 3 to corner 0 (BOTTOM=corner 3, TOP=corner 0)
+    joint_corner_0 = cut_basic_miter_joint(
+        mudsill_front, TimberReferenceEnd.BOTTOM,
+        mudsill_left, TimberReferenceEnd.TOP
+    )
+    
+    # Corner 1 (front-right): Front mudsill TOP meets Right mudsill BOTTOM
+    # Front mudsill goes from corner 0 to corner 1 (BOTTOM=corner 0, TOP=corner 1)
+    # Right mudsill goes from corner 1 to corner 2 (BOTTOM=corner 1, TOP=corner 2)
+    joint_corner_1 = cut_basic_miter_joint(
+        mudsill_front, TimberReferenceEnd.TOP,
+        mudsill_right, TimberReferenceEnd.BOTTOM
+    )
+    
+    # Corner 2 (back-right): Right mudsill TOP meets Back mudsill BOTTOM
+    # Right mudsill goes from corner 1 to corner 2 (BOTTOM=corner 1, TOP=corner 2)
+    # Back mudsill goes from corner 2 to corner 3 (BOTTOM=corner 2, TOP=corner 3)
+    joint_corner_2 = cut_basic_miter_joint(
+        mudsill_right, TimberReferenceEnd.TOP,
+        mudsill_back, TimberReferenceEnd.BOTTOM
+    )
+    
+    # Corner 3 (back-left): Back mudsill TOP meets Left mudsill BOTTOM
+    # Back mudsill goes from corner 2 to corner 3 (BOTTOM=corner 2, TOP=corner 3)
+    # Left mudsill goes from corner 3 to corner 0 (BOTTOM=corner 3, TOP=corner 0)
+    joint_corner_3 = cut_basic_miter_joint(
+        mudsill_back, TimberReferenceEnd.TOP,
+        mudsill_left, TimberReferenceEnd.BOTTOM
+    )
 
     # ============================================================================
     # Create posts at corners (inset 6 inches from corners on long side)
@@ -413,11 +450,39 @@ def create_oscarshed() -> list[CutTimber]:
     
     cut_timbers = []
     
-    # Add mudsills
-    cut_timbers.append(CutTimber(mudsill_front))
-    cut_timbers.append(CutTimber(mudsill_right))
-    cut_timbers.append(CutTimber(mudsill_back))
-    cut_timbers.append(CutTimber(mudsill_left))
+    # Add mudsills (with miter joints applied)
+    # Each mudsill participates in 2 joints (one at each end)
+    # We need to collect all cuts for each mudsill and create a single PartiallyCutTimber
+    
+    # Create PartiallyCutTimbers for each mudsill
+    from giraffe import PartiallyCutTimber
+    
+    pct_mudsill_front = PartiallyCutTimber(mudsill_front, "Front Mudsill")
+    pct_mudsill_right = PartiallyCutTimber(mudsill_right, "Right Mudsill")
+    pct_mudsill_back = PartiallyCutTimber(mudsill_back, "Back Mudsill")
+    pct_mudsill_left = PartiallyCutTimber(mudsill_left, "Left Mudsill")
+    
+    # Add cuts from joint_corner_0 (Front BOTTOM, Left TOP)
+    pct_mudsill_front._cuts.append(joint_corner_0.partiallyCutTimbers[0]._cuts[0])
+    pct_mudsill_left._cuts.append(joint_corner_0.partiallyCutTimbers[1]._cuts[0])
+    
+    # Add cuts from joint_corner_1 (Front TOP, Right BOTTOM)
+    pct_mudsill_front._cuts.append(joint_corner_1.partiallyCutTimbers[0]._cuts[0])
+    pct_mudsill_right._cuts.append(joint_corner_1.partiallyCutTimbers[1]._cuts[0])
+    
+    # Add cuts from joint_corner_2 (Right TOP, Back BOTTOM)
+    pct_mudsill_right._cuts.append(joint_corner_2.partiallyCutTimbers[0]._cuts[0])
+    pct_mudsill_back._cuts.append(joint_corner_2.partiallyCutTimbers[1]._cuts[0])
+    
+    # Add cuts from joint_corner_3 (Back TOP, Left BOTTOM)
+    pct_mudsill_back._cuts.append(joint_corner_3.partiallyCutTimbers[0]._cuts[0])
+    pct_mudsill_left._cuts.append(joint_corner_3.partiallyCutTimbers[1]._cuts[0])
+    
+    # Add the mudsills with all their cuts
+    cut_timbers.append(pct_mudsill_front)
+    cut_timbers.append(pct_mudsill_right)
+    cut_timbers.append(pct_mudsill_back)
+    cut_timbers.append(pct_mudsill_left)
     
     # Add posts
     cut_timbers.append(CutTimber(post_front_left))
@@ -471,7 +536,7 @@ if __name__ == "__main__":
     print("OSCAR'S SHED - STRUCTURE SUMMARY")
     print("="*60)
     print(f"Footprint: {base_width} ft x {base_length} ft")
-    print(f"Mudsills: 4 (all INSIDE footprint)")
+    print(f"Mudsills: 4 (all INSIDE footprint, with miter joints at all 4 corners)")
     print(f"Posts: 6 total")
     print(f"  - Front posts: 2 posts, {post_front_height} ft tall")
     print(f"  - Back posts: 4 posts, {post_back_height} ft tall (uniformly spaced)")
