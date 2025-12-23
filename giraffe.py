@@ -1246,17 +1246,195 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         size=size
     )
 
+
+
 # ============================================================================
-# Joint Construction Functions
+# Joint Related Types and Functions
 # ============================================================================
+
+
+class Cut:
+    # debug reference to the base timber we are cutting
+    # each Cut is tied to a timber so this is very reasonable to store here
+    _timber : Timber
+
+    # set these values by computing them relative to the timber features using helper functions 
+    origin : V3
+    orientation : Orientation
+
+    # end cuts are special as they set the length of the timber
+    maybeEndCut : Optional[TimberReferenceEnd]
+
+
+    # get the "end" position of the cut on the centerline of the timber
+    # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
+    @abstractmethod
+    def get_end_position(self) -> V3:
+        if self.maybeEndCut == TimberReferenceEnd.TOP:
+            return self._timber.bottom_position + self._timber.length_direction * self._timber.length
+        elif self.maybeEndCut == TimberReferenceEnd.BOTTOM:
+            return self._timber.bottom_position
+        else:
+            raise ValueError(f"Invalid end cut: {self.maybeEndCut}")
+
+    # returns the negative CSG of the cut (the part of the timber that is removed by the cut)
+    @abstractmethod
+    def get_negative_csg(self) -> MeowMeowCSG:
+        pass
+
+
+class CutTimber:
+    def __init__(self, timber: Timber, name: str = None):
+        """
+        Create a CutTimber from a Timber.
+        
+        Args:
+            timber: The timber to be cut
+            name: Optional name for this timber (used for rendering/debugging)
+        """
+        self._timber = timber
+        self._cuts = []
+        self.name = name
+        self.joints = []  # List of joints this timber participates in
+    
+    @property
+    def timber(self) -> Timber:
+        """Get the underlying timber."""
+        return self._timber
+
+    # this one returns the timber without cuts where ends with joints are infinite in length
+    def _extended_timber_without_cuts_csg(self) -> MeowMeowCSG:
+        """
+        Returns a CSG representation of the timber without any cuts applied.
+        
+        If an end has cuts on it (indicated by maybeEndCut), that end is extended to infinity.
+        This allows joints to extend the timber as needed during the CSG cutting operations.
+        
+        Returns:
+            Prism CSG representing the timber (possibly semi-infinite or infinite)
+        """
+        from meowmeowcsg import create_prism
+        
+        # Check if bottom end has cuts
+        has_bottom_cut = any(
+            cut.maybeEndCut == TimberReferenceEnd.BOTTOM 
+            for cut in self._cuts
+        )
+        
+        # Check if top end has cuts  
+        has_top_cut = any(
+            cut.maybeEndCut == TimberReferenceEnd.TOP
+            for cut in self._cuts
+        )
+        
+        # Normalize the length direction
+        length_dir_norm = normalize_vector(self._timber.length_direction)
+        
+        # Compute the distance from origin to bottom along the length direction
+        # This is the projection of bottom_position onto length_direction
+        bottom_distance = (self._timber.bottom_position.T * length_dir_norm)[0, 0]
+        
+        # Top distance is bottom_distance + length
+        top_distance = bottom_distance + self._timber.length
+        
+        # Determine start and end distances in absolute coordinates
+        # If an end has cuts, it extends to infinity in that direction
+        start_distance = None if has_bottom_cut else bottom_distance
+        end_distance = None if has_top_cut else top_distance
+        
+        # Create a prism representing the timber
+        return create_prism(
+            size=self._timber.size,
+            orientation=self._timber.orientation,
+            start_distance=start_distance,
+            end_distance=end_distance
+        )
+
+    # this one returns the timber without cuts where ends with joints are cut to length based on Cut::get_end_position
+    # use this for rendering the timber without cuts for development
+    def render_timber_without_cuts_csg(self) -> MeowMeowCSG:
+        """
+        Returns a CSG representation of the timber without cuts applied, but with ends
+        positioned according to any end cuts.
+        
+        If an end has an end cut, the timber is cut to the position returned by
+        Cut::get_end_position(). Otherwise, the timber's original end position is used.
+        
+        This is useful for rendering the timber geometry during development/debugging
+        without showing all the joint cuts.
+        
+        Returns:
+            Prism CSG representing the timber (finite at both ends)
+            
+        Raises:
+            AssertionError: If any end has more than one end cut
+        """
+        from meowmeowcsg import create_prism
+        
+        # Find all end cuts for each end
+        bottom_cuts = [cut for cut in self._cuts if cut.maybeEndCut == TimberReferenceEnd.BOTTOM]
+        top_cuts = [cut for cut in self._cuts if cut.maybeEndCut == TimberReferenceEnd.TOP]
+        
+        # Assert that each end has at most one end cut
+        assert len(bottom_cuts) <= 1, f"Bottom end has {len(bottom_cuts)} end cuts, expected at most 1"
+        assert len(top_cuts) <= 1, f"Top end has {len(top_cuts)} end cuts, expected at most 1"
+        
+        # Normalize the length direction
+        length_dir_norm = normalize_vector(self._timber.length_direction)
+        
+        # Determine start and end distances in the timber's LOCAL coordinate system
+        # The timber's origin (bottom_position) is at the origin of its local coords
+        # So distances are relative to the bottom, not global coordinates
+        
+        if bottom_cuts:
+            # Use the end cut's position - project relative to bottom_position
+            bottom_end_pos = bottom_cuts[0].get_end_position()
+            # Distance from bottom_position along length direction
+            bottom_distance = ((bottom_end_pos - self._timber.bottom_position).T * length_dir_norm)[0, 0]
+        else:
+            # No cut at bottom, so start at 0 in local coordinates
+            bottom_distance = 0
+        
+        if top_cuts:
+            # Use the end cut's position - project relative to bottom_position
+            top_end_pos = top_cuts[0].get_end_position()
+            # Distance from bottom_position along length direction
+            top_distance = ((top_end_pos - self._timber.bottom_position).T * length_dir_norm)[0, 0]
+        else:
+            # No cut at top, so end at timber's full length in local coordinates
+            top_distance = self._timber.length
+        
+        # Create a finite prism representing the timber in its local coordinate system
+        return create_prism(
+            size=self._timber.size,
+            orientation=self._timber.orientation,
+            start_distance=bottom_distance,
+            end_distance=top_distance
+        )
+
+    # thi sone returns the timber with all cuts applied
+    def render_timber_with_cuts_csg(self) -> MeowMeowCSG:
+        starting_csg = self._extended_timber_without_cuts_csg()
+        # TODO difference each cut from starting_CSG?
+        pass
+
+class PartiallyCutTimber(CutTimber):
+    pass
 
 class JointAccessory:
     """Base class for joint accessories like wedges, drawbores, etc."""
     pass
 
 class Joint:
-    partiallyCutTimbers : List['PartiallyCutTimber']
+    partiallyCutTimbers : List[PartiallyCutTimber]
     jointAccessories : List[JointAccessory]
+
+
+
+# ============================================================================
+# Joint Construction Functions
+# ============================================================================
+
 
 
 class BasicMiterJoint(Joint):
@@ -1701,176 +1879,4 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     return distance_along_tenon
   
 
-
-
-
-# SCRATCH AREA FOR NEW JOINT OPERATIONS
-
-class Cut:
-    # debug reference to the base timber we are cutting
-    # each Cut is tied to a timber so this is very reasonable to store here
-    _timber : Timber
-
-    # set these values by computing them relative to the timber features using helper functions 
-    origin : V3
-    orientation : Orientation
-
-    # end cuts are special as they set the length of the timber
-    maybeEndCut : Optional[TimberReferenceEnd]
-
-
-    # get the "end" position of the cut on the centerline of the timber
-    # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
-    @abstractmethod
-    def get_end_position(self) -> V3:
-        if self.maybeEndCut == TimberReferenceEnd.TOP:
-            return self._timber.bottom_position + self._timber.length_direction * self._timber.length
-        elif self.maybeEndCut == TimberReferenceEnd.BOTTOM:
-            return self._timber.bottom_position
-        else:
-            raise ValueError(f"Invalid end cut: {self.maybeEndCut}")
-
-    # returns the negative CSG of the cut (the part of the timber that is removed by the cut)
-    @abstractmethod
-    def get_negative_csg(self) -> MeowMeowCSG:
-        pass
-
-
-class CutTimber:
-    def __init__(self, timber: Timber, name: str = None):
-        """
-        Create a CutTimber from a Timber.
-        
-        Args:
-            timber: The timber to be cut
-            name: Optional name for this timber (used for rendering/debugging)
-        """
-        self._timber = timber
-        self._cuts = []
-        self.name = name
-        self.joints = []  # List of joints this timber participates in
-    
-    @property
-    def timber(self) -> Timber:
-        """Get the underlying timber."""
-        return self._timber
-
-    # this one returns the timber without cuts where ends with joints are infinite in length
-    def _extended_timber_without_cuts_csg(self) -> MeowMeowCSG:
-        """
-        Returns a CSG representation of the timber without any cuts applied.
-        
-        If an end has cuts on it (indicated by maybeEndCut), that end is extended to infinity.
-        This allows joints to extend the timber as needed during the CSG cutting operations.
-        
-        Returns:
-            Prism CSG representing the timber (possibly semi-infinite or infinite)
-        """
-        from meowmeowcsg import create_prism
-        
-        # Check if bottom end has cuts
-        has_bottom_cut = any(
-            cut.maybeEndCut == TimberReferenceEnd.BOTTOM 
-            for cut in self._cuts
-        )
-        
-        # Check if top end has cuts  
-        has_top_cut = any(
-            cut.maybeEndCut == TimberReferenceEnd.TOP
-            for cut in self._cuts
-        )
-        
-        # Normalize the length direction
-        length_dir_norm = normalize_vector(self._timber.length_direction)
-        
-        # Compute the distance from origin to bottom along the length direction
-        # This is the projection of bottom_position onto length_direction
-        bottom_distance = (self._timber.bottom_position.T * length_dir_norm)[0, 0]
-        
-        # Top distance is bottom_distance + length
-        top_distance = bottom_distance + self._timber.length
-        
-        # Determine start and end distances in absolute coordinates
-        # If an end has cuts, it extends to infinity in that direction
-        start_distance = None if has_bottom_cut else bottom_distance
-        end_distance = None if has_top_cut else top_distance
-        
-        # Create a prism representing the timber
-        return create_prism(
-            size=self._timber.size,
-            orientation=self._timber.orientation,
-            start_distance=start_distance,
-            end_distance=end_distance
-        )
-
-    # this one returns the timber without cuts where ends with joints are cut to length based on Cut::get_end_position
-    # use this for rendering the timber without cuts for development
-    def render_timber_without_cuts_csg(self) -> MeowMeowCSG:
-        """
-        Returns a CSG representation of the timber without cuts applied, but with ends
-        positioned according to any end cuts.
-        
-        If an end has an end cut, the timber is cut to the position returned by
-        Cut::get_end_position(). Otherwise, the timber's original end position is used.
-        
-        This is useful for rendering the timber geometry during development/debugging
-        without showing all the joint cuts.
-        
-        Returns:
-            Prism CSG representing the timber (finite at both ends)
-            
-        Raises:
-            AssertionError: If any end has more than one end cut
-        """
-        from meowmeowcsg import create_prism
-        
-        # Find all end cuts for each end
-        bottom_cuts = [cut for cut in self._cuts if cut.maybeEndCut == TimberReferenceEnd.BOTTOM]
-        top_cuts = [cut for cut in self._cuts if cut.maybeEndCut == TimberReferenceEnd.TOP]
-        
-        # Assert that each end has at most one end cut
-        assert len(bottom_cuts) <= 1, f"Bottom end has {len(bottom_cuts)} end cuts, expected at most 1"
-        assert len(top_cuts) <= 1, f"Top end has {len(top_cuts)} end cuts, expected at most 1"
-        
-        # Normalize the length direction
-        length_dir_norm = normalize_vector(self._timber.length_direction)
-        
-        # Determine start and end distances in the timber's LOCAL coordinate system
-        # The timber's origin (bottom_position) is at the origin of its local coords
-        # So distances are relative to the bottom, not global coordinates
-        
-        if bottom_cuts:
-            # Use the end cut's position - project relative to bottom_position
-            bottom_end_pos = bottom_cuts[0].get_end_position()
-            # Distance from bottom_position along length direction
-            bottom_distance = ((bottom_end_pos - self._timber.bottom_position).T * length_dir_norm)[0, 0]
-        else:
-            # No cut at bottom, so start at 0 in local coordinates
-            bottom_distance = 0
-        
-        if top_cuts:
-            # Use the end cut's position - project relative to bottom_position
-            top_end_pos = top_cuts[0].get_end_position()
-            # Distance from bottom_position along length direction
-            top_distance = ((top_end_pos - self._timber.bottom_position).T * length_dir_norm)[0, 0]
-        else:
-            # No cut at top, so end at timber's full length in local coordinates
-            top_distance = self._timber.length
-        
-        # Create a finite prism representing the timber in its local coordinate system
-        return create_prism(
-            size=self._timber.size,
-            orientation=self._timber.orientation,
-            start_distance=bottom_distance,
-            end_distance=top_distance
-        )
-
-    # thi sone returns the timber with all cuts applied
-    def render_timber_with_cuts_csg(self) -> MeowMeowCSG:
-        starting_csg = self._extended_timber_without_cuts_csg()
-        # TODO difference each cut from starting_CSG?
-        pass
-
-class PartiallyCutTimber(CutTimber):
-    pass
 
