@@ -142,6 +142,8 @@ class StickoutReference(Enum):
 # Data Structures
 # ============================================================================
 
+
+# TODO DELETE
 # the shoulder plane is defined by the normal of a plane that is distance away from the center point of the TimberReferenceEnd face of the timber
 # the "cut" side is in the direction of the normal which should always point towards reference_end
 @dataclass
@@ -173,6 +175,8 @@ class ShoulderPlane:
         
         return cls(reference_end=reference_end, distance=distance, normal=normal)
 
+
+# you can probable delete these?
 @dataclass
 class StandardTenon:
     shoulder_plane: ShoulderPlane
@@ -187,21 +191,27 @@ class StandardTenon:
 
     length: Numeric  # How far the tenon extends beyond the shoulder plane
 
+
+
+# you can probable delete these?
 @dataclass
 class DistanceFromFace:
     face: TimberFace
     distance: Numeric
 
+# you can probable delete these?
 @dataclass
 class DistanceFromLongFace:
     face: TimberReferenceLongFace
     distance: Numeric
 
+# you can probable delete these?
 @dataclass
 class DistanceFromEnd:
     end: TimberReferenceEnd
     distance: Numeric
 
+# you can probable delete these?
 @dataclass
 class StandardMortise:
     # StandardMortise is a rectangular pocket cut into a face of a timber
@@ -272,6 +282,7 @@ class DistanceFromLongEdge:
 
 
 
+# TODO this is really only needed for JoinTimbers so move it near that function
 # TODO rename to ButtStickout or something like that...
 @dataclass
 class Stickout:
@@ -641,12 +652,14 @@ class Timber:
         ])
         return transform
 
+# TODO DELETE
 class TimberCutOperation:
     """Base class for timber cut operations"""
     
     def __init__(self, timber: Timber):
         self.timber: Timber = timber
 
+# TODO DELETE
 class TenonCutOperation(TimberCutOperation):
     """Tenon cut operation"""
     
@@ -654,6 +667,7 @@ class TenonCutOperation(TimberCutOperation):
         super().__init__(timber)
         self.tenon_spec = tenon_spec
 
+# TODO DELETE
 class MortiseCutOperation(TimberCutOperation):
     """Mortise cut operation"""
     
@@ -661,10 +675,12 @@ class MortiseCutOperation(TimberCutOperation):
         super().__init__(timber)
         self.mortise_spec = mortise_spec
 
+# TODO DELETE
 class JointAccessory:
     """Base class for joint accessories like wedges, drawbores, etc."""
     pass
 
+# TODO DELETE
 class Joint:
     """Represents a joint connecting timbers"""
     
@@ -672,6 +688,7 @@ class Joint:
         self.name: Optional[str] = None
         self.timber_cuts: List[Tuple[Timber, List[Union[TimberCutOperation, JointAccessory]]]] = []
 
+# TODO DELETE
 class CutTimber:
     """A timber with applied cuts/joints"""
     
@@ -1866,6 +1883,10 @@ class CutTimber:
         pass
 
 class PartiallyCutTimber(CutTimber):
+    pass
+
+class JointAccessory:
+    """Base class for joint accessories like wedges, drawbores, etc."""
     pass
 
 class Joint:
