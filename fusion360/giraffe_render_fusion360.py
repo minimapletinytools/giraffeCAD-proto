@@ -124,7 +124,15 @@ def create_matrix3d_from_orientation(position: Matrix, orientation: Orientation)
 
 def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism) -> Optional[adsk.fusion.BRepBody]:
     """
-    Render a Prism CSG at the origin in the component's local coordinate system.
+    Render a Prism CSG in the component's local coordinate system.
+    
+    The prism is rendered in its LOCAL coordinate system where:
+    - Width (size[0]) is along X axis
+    - Height (size[1]) is along Y axis
+    - Length is along Z axis from start_distance to end_distance
+    
+    NO transformations are applied here - the prism's orientation is stored in the
+    Prism object and will be applied later when the entire occurrence is transformed.
     
     Args:
         component: Fusion 360 component to create geometry in
@@ -138,35 +146,21 @@ def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism) -> Op
         width = float(prism.size[0])
         height = float(prism.size[1])
         
-        # Get orientation axes
-        orientation_matrix = prism.orientation.matrix
-        width_dir = Matrix([orientation_matrix[0, 0], orientation_matrix[1, 0], orientation_matrix[2, 0]])
-        height_dir = Matrix([orientation_matrix[0, 1], orientation_matrix[1, 1], orientation_matrix[2, 1]])
-        length_dir = Matrix([orientation_matrix[0, 2], orientation_matrix[1, 2], orientation_matrix[2, 2]])
-        
-        # Calculate the center position of the prism in local space
+        # Get start and end distances along the length axis
         if prism.start_distance is None or prism.end_distance is None:
             raise ValueError("Cannot render infinite prism - must have finite start and end distances")
         
         start_dist = float(prism.start_distance)
         end_dist = float(prism.end_distance)
         length = end_dist - start_dist
-        center_dist = (start_dist + end_dist) / 2
-        
-        # Center position along the length axis
-        center_pos = length_dir * center_dist
         
         # Create a sketch on the XY plane
         sketches = component.sketches
         xy_plane = component.xYConstructionPlane
         sketch = sketches.add(xy_plane)
         
-        # Calculate the four corner points of the rectangle in the sketch's coordinate system
-        # We need to project the prism's cross-section onto the XY plane
-        # For now, assume the prism is axis-aligned (orientation is identity or close to it)
-        # TODO: Handle arbitrary orientations properly
-        
-        # Create rectangle centered at origin in the sketch
+        # Create rectangle centered at origin in the XY plane
+        # This represents the cross-section of the timber in its local coordinate system
         corner1 = adsk.core.Point3D.create(-width/2, -height/2, 0)
         corner2 = adsk.core.Point3D.create(width/2, height/2, 0)
         rect = sketch.sketchCurves.sketchLines.addTwoPointRectangle(corner1, corner2)
@@ -174,13 +168,17 @@ def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism) -> Op
         # Get the profile for extrusion
         profile = sketch.profiles.item(0)
         
-        # Create extrusion
+        # Create extrusion along +Z axis
         extrudes = component.features.extrudeFeatures
         extrude_input = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         
-        # Set extrusion distance
+        # Set extrusion to go from start_dist to end_dist along Z
         distance = adsk.core.ValueInput.createByReal(length)
         extrude_input.setDistanceExtent(False, distance)
+        
+        # Set the start position to start_dist (so extrusion goes from start_dist to end_dist)
+        start_offset = adsk.core.ValueInput.createByReal(start_dist)
+        extrude_input.startExtent = adsk.fusion.OffsetStartDefinition.create(start_offset)
         
         # Create the extrusion
         extrude = extrudes.add(extrude_input)
@@ -191,32 +189,9 @@ def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism) -> Op
         
         body = extrude.bodies.item(0)
         
-        # Transform the body to the correct position and orientation
-        # First translate to center position
-        transform = adsk.core.Matrix3D.create()
-        
-        # The body was extruded along +Z from the XY plane
-        # We need to:
-        # 1. Translate it so the start of extrusion is at start_distance
-        # 2. Rotate it to match the orientation
-        # 3. Translate to center_pos
-        
-        # For now, just translate to center (assuming standard orientation)
-        cx = float(center_pos[0])
-        cy = float(center_pos[1])
-        cz = float(center_pos[2])
-        
-        # Adjust Z to account for extrusion starting at Z=0
-        # The extrusion creates a body from Z=0 to Z=length
-        # We need to shift it so it spans from start_dist to end_dist
-        transform.translation = adsk.core.Vector3D.create(cx, cy, cz - length/2 + center_dist)
-        
-        # Apply transformation
-        move_features = component.features.moveFeatures
-        bodies = adsk.core.ObjectCollection.create()
-        bodies.add(body)
-        move_input = move_features.createInput(bodies, transform)
-        move_features.add(move_input)
+        # DO NOT apply any transformations here!
+        # The body is now in the component's local coordinate system.
+        # The occurrence will be transformed later to position and orient it in global space.
         
         return body
         

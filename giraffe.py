@@ -1835,26 +1835,29 @@ class CutTimber:
         # Normalize the length direction
         length_dir_norm = normalize_vector(self._timber.length_direction)
         
-        # Determine the bottom position
+        # Determine start and end distances in the timber's LOCAL coordinate system
+        # The timber's origin (bottom_position) is at the origin of its local coords
+        # So distances are relative to the bottom, not global coordinates
+        
         if bottom_cuts:
-            # Use the end cut's position
+            # Use the end cut's position - project relative to bottom_position
             bottom_end_pos = bottom_cuts[0].get_end_position()
-            bottom_distance = (bottom_end_pos.T * length_dir_norm)[0, 0]
+            # Distance from bottom_position along length direction
+            bottom_distance = ((bottom_end_pos - self._timber.bottom_position).T * length_dir_norm)[0, 0]
         else:
-            # Use the timber's original bottom position
-            bottom_distance = (self._timber.bottom_position.T * length_dir_norm)[0, 0]
+            # No cut at bottom, so start at 0 in local coordinates
+            bottom_distance = 0
         
-        # Determine the top position
         if top_cuts:
-            # Use the end cut's position
+            # Use the end cut's position - project relative to bottom_position
             top_end_pos = top_cuts[0].get_end_position()
-            top_distance = (top_end_pos.T * length_dir_norm)[0, 0]
+            # Distance from bottom_position along length direction
+            top_distance = ((top_end_pos - self._timber.bottom_position).T * length_dir_norm)[0, 0]
         else:
-            # Use the timber's original top position (bottom + length)
-            top_position = self._timber.bottom_position + self._timber.length_direction * self._timber.length
-            top_distance = (top_position.T * length_dir_norm)[0, 0]
+            # No cut at top, so end at timber's full length in local coordinates
+            top_distance = self._timber.length
         
-        # Create a finite prism representing the timber
+        # Create a finite prism representing the timber in its local coordinate system
         return create_prism(
             size=self._timber.size,
             orientation=self._timber.orientation,
