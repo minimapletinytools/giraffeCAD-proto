@@ -2843,6 +2843,23 @@ class TestSplitTimber:
         assert top_timber.size[1] == timber.size[1]
 
 
+class MockCut:
+    """Mock Cut implementation for testing."""
+    def __init__(self, timber: Timber, end_position: V3, maybe_end_cut: Optional[TimberReferenceEnd] = None):
+        self._timber = timber
+        self._end_position = end_position
+        self.maybeEndCut = maybe_end_cut
+        self.origin = Matrix([0, 0, 0])
+        self.orientation = Orientation()
+    
+    def get_end_position(self) -> V3:
+        return self._end_position
+    
+    def get_negative_csg(self):
+        # Not needed for these tests
+        pass
+
+
 class TestCutTimber:
     """Test CutTimber CSG operations."""
     
@@ -2938,3 +2955,137 @@ class TestCutTimber:
         
         # Orientation should be the timber's Orientation object
         assert csg.orientation == timber.orientation
+    
+    def test_render_timber_without_cuts_no_end_cuts(self):
+        """Test render_timber_without_cuts_csg with no end cuts."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(10)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber)
+        
+        # Get the CSG
+        csg = cut_timber.render_timber_without_cuts_csg()
+        
+        # Should be a finite prism with original dimensions
+        from meowmeowcsg import Prism
+        assert isinstance(csg, Prism)
+        assert csg.start_distance == 10  # bottom z
+        assert csg.end_distance == 110   # top z
+    
+    def test_render_timber_without_cuts_bottom_end_cut(self):
+        """Test render_timber_without_cuts_csg with a bottom end cut."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(10)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber)
+        
+        # Add a bottom end cut at z=15
+        cut_end_position = Matrix([Rational(0), Rational(0), Rational(15)])
+        bottom_cut = MockCut(timber, cut_end_position, TimberReferenceEnd.BOTTOM)
+        cut_timber._cuts.append(bottom_cut)
+        
+        # Get the CSG
+        csg = cut_timber.render_timber_without_cuts_csg()
+        
+        # Bottom should be at the cut position (z=15), top at original (z=110)
+        assert csg.start_distance == 15
+        assert csg.end_distance == 110
+    
+    def test_render_timber_without_cuts_top_end_cut(self):
+        """Test render_timber_without_cuts_csg with a top end cut."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(10)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber)
+        
+        # Add a top end cut at z=100
+        cut_end_position = Matrix([Rational(0), Rational(0), Rational(100)])
+        top_cut = MockCut(timber, cut_end_position, TimberReferenceEnd.TOP)
+        cut_timber._cuts.append(top_cut)
+        
+        # Get the CSG
+        csg = cut_timber.render_timber_without_cuts_csg()
+        
+        # Bottom at original (z=10), top at cut position (z=100)
+        assert csg.start_distance == 10
+        assert csg.end_distance == 100
+    
+    def test_render_timber_without_cuts_both_end_cuts(self):
+        """Test render_timber_without_cuts_csg with both end cuts."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(10)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber)
+        
+        # Add both end cuts
+        bottom_cut_pos = Matrix([Rational(0), Rational(0), Rational(20)])
+        top_cut_pos = Matrix([Rational(0), Rational(0), Rational(90)])
+        bottom_cut = MockCut(timber, bottom_cut_pos, TimberReferenceEnd.BOTTOM)
+        top_cut = MockCut(timber, top_cut_pos, TimberReferenceEnd.TOP)
+        cut_timber._cuts.append(bottom_cut)
+        cut_timber._cuts.append(top_cut)
+        
+        # Get the CSG
+        csg = cut_timber.render_timber_without_cuts_csg()
+        
+        # Both ends should be at cut positions
+        assert csg.start_distance == 20
+        assert csg.end_distance == 90
+    
+    def test_render_timber_without_cuts_multiple_bottom_cuts_error(self):
+        """Test that multiple bottom end cuts raises an assertion error."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(10)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber)
+        
+        # Add two bottom end cuts (invalid!)
+        cut1 = MockCut(timber, Matrix([Rational(0), Rational(0), Rational(15)]), TimberReferenceEnd.BOTTOM)
+        cut2 = MockCut(timber, Matrix([Rational(0), Rational(0), Rational(20)]), TimberReferenceEnd.BOTTOM)
+        cut_timber._cuts.append(cut1)
+        cut_timber._cuts.append(cut2)
+        
+        # Should raise assertion error
+        with pytest.raises(AssertionError, match="Bottom end has 2 end cuts"):
+            cut_timber.render_timber_without_cuts_csg()
+    
+    def test_render_timber_without_cuts_multiple_top_cuts_error(self):
+        """Test that multiple top end cuts raises an assertion error."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(10)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber)
+        
+        # Add two top end cuts (invalid!)
+        cut1 = MockCut(timber, Matrix([Rational(0), Rational(0), Rational(100)]), TimberReferenceEnd.TOP)
+        cut2 = MockCut(timber, Matrix([Rational(0), Rational(0), Rational(95)]), TimberReferenceEnd.TOP)
+        cut_timber._cuts.append(cut1)
+        cut_timber._cuts.append(cut2)
+        
+        # Should raise assertion error
+        with pytest.raises(AssertionError, match="Top end has 2 end cuts"):
+            cut_timber.render_timber_without_cuts_csg()

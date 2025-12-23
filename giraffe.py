@@ -1806,12 +1806,61 @@ class CutTimber:
     # this one returns the timber without cuts where ends with joints are cut to length based on Cut::get_end_position
     # use this for rendering the timber without cuts for development
     def render_timber_without_cuts_csg(self) -> MeowMeowCSG:
-        # TODO
-        # first find all cuts that are end cuts
-        # assert that each end has no more than one end cut
-        # for each end, if there is an end cut, use Cut::get_end_position to get the end position otherwise use the timber's original end position
-        # finally construct a possible infinite in either end prism CSG and return it
-        pass
+        """
+        Returns a CSG representation of the timber without cuts applied, but with ends
+        positioned according to any end cuts.
+        
+        If an end has an end cut, the timber is cut to the position returned by
+        Cut::get_end_position(). Otherwise, the timber's original end position is used.
+        
+        This is useful for rendering the timber geometry during development/debugging
+        without showing all the joint cuts.
+        
+        Returns:
+            Prism CSG representing the timber (finite at both ends)
+            
+        Raises:
+            AssertionError: If any end has more than one end cut
+        """
+        from meowmeowcsg import create_prism
+        
+        # Find all end cuts for each end
+        bottom_cuts = [cut for cut in self._cuts if cut.maybeEndCut == TimberReferenceEnd.BOTTOM]
+        top_cuts = [cut for cut in self._cuts if cut.maybeEndCut == TimberReferenceEnd.TOP]
+        
+        # Assert that each end has at most one end cut
+        assert len(bottom_cuts) <= 1, f"Bottom end has {len(bottom_cuts)} end cuts, expected at most 1"
+        assert len(top_cuts) <= 1, f"Top end has {len(top_cuts)} end cuts, expected at most 1"
+        
+        # Normalize the length direction
+        length_dir_norm = normalize_vector(self._timber.length_direction)
+        
+        # Determine the bottom position
+        if bottom_cuts:
+            # Use the end cut's position
+            bottom_end_pos = bottom_cuts[0].get_end_position()
+            bottom_distance = (bottom_end_pos.T * length_dir_norm)[0, 0]
+        else:
+            # Use the timber's original bottom position
+            bottom_distance = (self._timber.bottom_position.T * length_dir_norm)[0, 0]
+        
+        # Determine the top position
+        if top_cuts:
+            # Use the end cut's position
+            top_end_pos = top_cuts[0].get_end_position()
+            top_distance = (top_end_pos.T * length_dir_norm)[0, 0]
+        else:
+            # Use the timber's original top position (bottom + length)
+            top_position = self._timber.bottom_position + self._timber.length_direction * self._timber.length
+            top_distance = (top_position.T * length_dir_norm)[0, 0]
+        
+        # Create a finite prism representing the timber
+        return create_prism(
+            size=self._timber.size,
+            orientation=self._timber.orientation,
+            start_distance=bottom_distance,
+            end_distance=top_distance
+        )
 
     # thi sone returns the timber with all cuts applied
     def render_timber_with_cuts_csg(self) -> MeowMeowCSG:
