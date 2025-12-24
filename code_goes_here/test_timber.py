@@ -765,7 +765,7 @@ class TestCutTimber:
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
         timber = Timber(length, size, bottom_position, length_direction, width_direction)
-        cut_timber = CutTimber(timber, 'test_timber')
+        cut_timber = CutTimber(timber, name='test_timber')
         
         # Get the CSG
         csg = cut_timber._extended_timber_without_cuts_csg()
@@ -881,12 +881,11 @@ class TestCutTimber:
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
         timber = Timber(length, size, bottom_position, length_direction, width_direction)
-        cut_timber = CutTimber(timber)
         
         # Add a bottom end cut at z=15
         cut_end_position = Matrix([Rational(0), Rational(0), Rational(15)])
         bottom_cut = MockCut(timber, cut_end_position, TimberReferenceEnd.BOTTOM)
-        cut_timber._cuts.append(bottom_cut)
+        cut_timber = CutTimber(timber, cuts=[bottom_cut])
         
         # Get the CSG
         csg = cut_timber.render_timber_without_cuts_csg()
@@ -906,12 +905,11 @@ class TestCutTimber:
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
         timber = Timber(length, size, bottom_position, length_direction, width_direction)
-        cut_timber = CutTimber(timber)
         
         # Add a top end cut at z=100
         cut_end_position = Matrix([Rational(0), Rational(0), Rational(100)])
         top_cut = MockCut(timber, cut_end_position, TimberReferenceEnd.TOP)
-        cut_timber._cuts.append(top_cut)
+        cut_timber = CutTimber(timber, cuts=[top_cut])
         
         # Get the CSG
         csg = cut_timber.render_timber_without_cuts_csg()
@@ -931,15 +929,13 @@ class TestCutTimber:
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
         timber = Timber(length, size, bottom_position, length_direction, width_direction)
-        cut_timber = CutTimber(timber)
         
         # Add both end cuts
         bottom_cut_pos = Matrix([Rational(0), Rational(0), Rational(20)])
         top_cut_pos = Matrix([Rational(0), Rational(0), Rational(90)])
         bottom_cut = MockCut(timber, bottom_cut_pos, TimberReferenceEnd.BOTTOM)
         top_cut = MockCut(timber, top_cut_pos, TimberReferenceEnd.TOP)
-        cut_timber._cuts.append(bottom_cut)
-        cut_timber._cuts.append(top_cut)
+        cut_timber = CutTimber(timber, cuts=[bottom_cut, top_cut])
         
         # Get the CSG
         csg = cut_timber.render_timber_without_cuts_csg()
@@ -959,13 +955,11 @@ class TestCutTimber:
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
         timber = Timber(length, size, bottom_position, length_direction, width_direction)
-        cut_timber = CutTimber(timber)
         
         # Add two bottom end cuts (invalid!)
         cut1 = MockCut(timber, Matrix([Rational(0), Rational(0), Rational(15)]), TimberReferenceEnd.BOTTOM)
         cut2 = MockCut(timber, Matrix([Rational(0), Rational(0), Rational(20)]), TimberReferenceEnd.BOTTOM)
-        cut_timber._cuts.append(cut1)
-        cut_timber._cuts.append(cut2)
+        cut_timber = CutTimber(timber, cuts=[cut1, cut2])
         
         # Should raise assertion error
         with pytest.raises(AssertionError, match="Bottom end has 2 end cuts"):
@@ -980,13 +974,11 @@ class TestCutTimber:
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
         timber = Timber(length, size, bottom_position, length_direction, width_direction)
-        cut_timber = CutTimber(timber)
         
         # Add two top end cuts (invalid!)
         cut1 = MockCut(timber, Matrix([Rational(0), Rational(0), Rational(100)]), TimberReferenceEnd.TOP)
         cut2 = MockCut(timber, Matrix([Rational(0), Rational(0), Rational(95)]), TimberReferenceEnd.TOP)
-        cut_timber._cuts.append(cut1)
-        cut_timber._cuts.append(cut2)
+        cut_timber = CutTimber(timber, cuts=[cut1, cut2])
         
         # Should raise assertion error
         with pytest.raises(AssertionError, match="Top end has 2 end cuts"):

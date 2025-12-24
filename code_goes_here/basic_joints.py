@@ -157,31 +157,31 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     local_offsetB = (intersection_point.T * normalB)[0, 0] - (normalB.T * timberB.bottom_position)[0, 0]
     
     # Create the HalfPlaneCuts (in LOCAL coordinates relative to each timber)
-    cutA = HalfPlaneCut()
-    cutA._timber = timberA
-    cutA.origin = intersection_point
-    cutA.orientation = timberA.orientation
-    cutA.maybeEndCut = timberA_end
-    cutA.half_plane = HalfPlane(normal=local_normalA, offset=local_offsetA)
+    cutA = HalfPlaneCut(
+        timber=timberA,
+        origin=intersection_point,
+        orientation=timberA.orientation,
+        half_plane=HalfPlane(normal=local_normalA, offset=local_offsetA),
+        maybe_end_cut=timberA_end
+    )
     
-    cutB = HalfPlaneCut()
-    cutB._timber = timberB
-    cutB.origin = intersection_point
-    cutB.orientation = timberB.orientation
-    cutB.maybeEndCut = timberB_end
-    cutB.half_plane = HalfPlane(normal=local_normalB, offset=local_offsetB)
+    cutB = HalfPlaneCut(
+        timber=timberB,
+        origin=intersection_point,
+        orientation=timberB.orientation,
+        half_plane=HalfPlane(normal=local_normalB, offset=local_offsetB),
+        maybe_end_cut=timberB_end
+    )
     
-    # Create PartiallyCutTimbers
-    cut_timberA = PartiallyCutTimber(timberA, name=f"TimberA_Miter")
-    cut_timberA._cuts.append(cutA)
+    # Create PartiallyCutTimbers with cuts passed at construction
+    cut_timberA = PartiallyCutTimber(timberA, cuts=[cutA], name=f"TimberA_Miter")
+    cut_timberB = PartiallyCutTimber(timberB, cuts=[cutB], name=f"TimberB_Miter")
     
-    cut_timberB = PartiallyCutTimber(timberB, name=f"TimberB_Miter")
-    cut_timberB._cuts.append(cutB)
-    
-    # Create and return the Joint
-    joint = Joint()
-    joint.partiallyCutTimbers = [cut_timberA, cut_timberB]
-    joint.jointAccessories = []
+    # Create and return the Joint with all data at construction
+    joint = Joint(
+        partially_cut_timbers=[cut_timberA, cut_timberB],
+        joint_accessories=[]
+    )
     
     return joint
 
@@ -264,24 +264,25 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     local_offset = (face_center.T * global_normal)[0, 0] - (global_normal.T * butt_timber.bottom_position)[0, 0]
     
     # Create the HalfPlaneCut for the butt timber
-    cut = HalfPlaneCut()
-    cut._timber = butt_timber
-    cut.origin = face_center
-    cut.orientation = butt_timber.orientation
-    cut.maybeEndCut = butt_end
-    cut.half_plane = HalfPlane(normal=local_normal, offset=local_offset)
+    cut = HalfPlaneCut(
+        timber=butt_timber,
+        origin=face_center,
+        orientation=butt_timber.orientation,
+        half_plane=HalfPlane(normal=local_normal, offset=local_offset),
+        maybe_end_cut=butt_end
+    )
     
-    # Create PartiallyCutTimber for the butt timber
-    cut_butt = PartiallyCutTimber(butt_timber, name=f"ButtTimber")
-    cut_butt._cuts.append(cut)
+    # Create PartiallyCutTimber for the butt timber with cut passed at construction
+    cut_butt = PartiallyCutTimber(butt_timber, cuts=[cut], name=f"ButtTimber")
     
     # Create PartiallyCutTimber for the receiving timber (no cuts)
-    cut_receiving = PartiallyCutTimber(receiving_timber, name=f"ReceivingTimber")
+    cut_receiving = PartiallyCutTimber(receiving_timber, cuts=[], name=f"ReceivingTimber")
     
-    # Create and return the Joint
-    joint = Joint()
-    joint.partiallyCutTimbers = [cut_receiving, cut_butt]
-    joint.jointAccessories = []
+    # Create and return the Joint with all data at construction
+    joint = Joint(
+        partially_cut_timbers=[cut_receiving, cut_butt],
+        joint_accessories=[]
+    )
     
     return joint
 
@@ -417,31 +418,31 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
     local_offsetB = (splice_point.T * normalB)[0, 0] - (normalB.T * timberB.bottom_position)[0, 0]
     
     # Create the HalfPlaneCuts
-    cutA = HalfPlaneCut()
-    cutA._timber = timberA
-    cutA.origin = splice_point
-    cutA.orientation = timberA.orientation
-    cutA.maybeEndCut = timberA_end
-    cutA.half_plane = HalfPlane(normal=local_normalA, offset=local_offsetA)
+    cutA = HalfPlaneCut(
+        timber=timberA,
+        origin=splice_point,
+        orientation=timberA.orientation,
+        half_plane=HalfPlane(normal=local_normalA, offset=local_offsetA),
+        maybe_end_cut=timberA_end
+    )
     
-    cutB = HalfPlaneCut()
-    cutB._timber = timberB
-    cutB.origin = splice_point
-    cutB.orientation = timberB.orientation
-    cutB.maybeEndCut = timberB_end
-    cutB.half_plane = HalfPlane(normal=local_normalB, offset=local_offsetB)
+    cutB = HalfPlaneCut(
+        timber=timberB,
+        origin=splice_point,
+        orientation=timberB.orientation,
+        half_plane=HalfPlane(normal=local_normalB, offset=local_offsetB),
+        maybe_end_cut=timberB_end
+    )
     
-    # Create PartiallyCutTimbers
-    cut_timberA = PartiallyCutTimber(timberA, name=f"TimberA_Splice")
-    cut_timberA._cuts.append(cutA)
+    # Create PartiallyCutTimbers with cuts passed at construction
+    cut_timberA = PartiallyCutTimber(timberA, cuts=[cutA], name=f"TimberA_Splice")
+    cut_timberB = PartiallyCutTimber(timberB, cuts=[cutB], name=f"TimberB_Splice")
     
-    cut_timberB = PartiallyCutTimber(timberB, name=f"TimberB_Splice")
-    cut_timberB._cuts.append(cutB)
-    
-    # Create and return the Joint
-    joint = Joint()
-    joint.partiallyCutTimbers = [cut_timberA, cut_timberB]
-    joint.jointAccessories = []
+    # Create and return the Joint with all data at construction
+    joint = Joint(
+        partially_cut_timbers=[cut_timberA, cut_timberB],
+        joint_accessories=[]
+    )
     
     return joint
 
@@ -473,8 +474,8 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: T
     assert _are_timbers_face_orthogonal(mortise_timber, tenon_timber), \
         "Timbers must be orthogonal (perpendicular length directions) for this joint type"
     
-    # Create the joint
-    joint = Joint()
+    # TODO: Create the joint (when implemented, use new Joint constructor)
+    # joint = Joint(partially_cut_timbers=[...], joint_accessories=[])
     
     # Compute the mortise face by finding which face of the mortise timber 
     # aligns with the tenon end face

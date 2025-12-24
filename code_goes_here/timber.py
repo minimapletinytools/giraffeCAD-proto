@@ -635,6 +635,22 @@ class Cut:
     # you can only have an end cut on one end of the timber, you can't have an end cut on both ends at once (maybe we should support this?)
     maybeEndCut : Optional[TimberReferenceEnd]
 
+    def __init__(self, timber: Timber, origin: V3, orientation: Orientation, 
+                 maybe_end_cut: Optional[TimberReferenceEnd] = None):
+        """
+        Create a Cut with all required parameters.
+        
+        Args:
+            timber: The timber being cut
+            origin: Origin point of the cut
+            orientation: Orientation of the cut
+            maybe_end_cut: Optional end cut designation (TOP or BOTTOM)
+        """
+        self._timber = timber
+        self.origin = origin
+        self.orientation = orientation
+        self.maybeEndCut = maybe_end_cut
+
     # get the "end" position of the cut on the centerline of the timber
     # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
     def get_end_position(self) -> V3:
@@ -784,16 +800,17 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
 
 
 class CutTimber:
-    def __init__(self, timber: Timber, name: str = None):
+    def __init__(self, timber: Timber, cuts: List['Cut'] = None, name: str = None):
         """
         Create a CutTimber from a Timber.
         
         Args:
             timber: The timber to be cut
+            cuts: Optional list of cuts to apply (default: empty list)
             name: Optional name for this timber (used for rendering/debugging)
         """
         self._timber = timber
-        self._cuts = []
+        self._cuts = cuts if cuts is not None else []
         self.name = name
         self.joints = []  # List of joints this timber participates in
     
@@ -896,6 +913,18 @@ class JointAccessory:
 class Joint:
     partiallyCutTimbers : List[PartiallyCutTimber]
     jointAccessories : List[JointAccessory]
+    
+    def __init__(self, partially_cut_timbers: List[PartiallyCutTimber], 
+                 joint_accessories: List[JointAccessory] = None):
+        """
+        Create a Joint with all required parameters.
+        
+        Args:
+            partially_cut_timbers: List of PartiallyCutTimber objects in this joint
+            joint_accessories: Optional list of joint accessories (default: empty list)
+        """
+        self.partiallyCutTimbers = partially_cut_timbers
+        self.jointAccessories = joint_accessories if joint_accessories is not None else []
 
 
 # ============================================================================
@@ -907,6 +936,21 @@ class HalfPlaneCut(Cut):
     A half plane cut is a cut that is defined by a half plane.
     """
     half_plane : HalfPlane
+    
+    def __init__(self, timber: Timber, origin: V3, orientation: Orientation, 
+                 half_plane: HalfPlane, maybe_end_cut: Optional[TimberReferenceEnd] = None):
+        """
+        Create a HalfPlaneCut with all required parameters.
+        
+        Args:
+            timber: The timber being cut
+            origin: Origin point of the cut
+            orientation: Orientation of the cut
+            half_plane: The half plane defining the cut
+            maybe_end_cut: Optional end cut designation (TOP or BOTTOM)
+        """
+        super().__init__(timber, origin, orientation, maybe_end_cut)
+        self.half_plane = half_plane
     
     def get_negative_csg(self) -> MeowMeowCSG:
         return self.half_plane
