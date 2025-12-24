@@ -89,29 +89,21 @@ DONE-rework joint classes
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
   DONE-create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
-
+  DONE-consider making a better way to store TimberWithJoints and joints class etc...
+    DONE-fix tenon joint class
+    DONE-add resultant length function after applying joints computerLength(timebr, [joints])
+      -get fusino 360 to render just at the rusultant length 
+  DONE-add helper render functions
+    DONE-extend timbers so joint can be diffed out of it (rather than bool in a long timber, just use an extra long timber when creating the original timber)
+    DONE-generic boolean geometry classes
+    DONE-use boolean geometery to create negative of tenon cutout timber - (timber - tenon - shoulderplane)
+      FAIL-calll this method tenon cutter :D
   -simple joints
     -basic_end_joint
     -basic_butt_joint
     -basic_splice_joint
     -basic_miter_joint
 
-  DONE-consider making a better way to store TimberWithJoints and joints class etc...
-  DONE-fix tenon joint class
-  -add resultant length function after applying joints computerLength(timebr, [joints])
-    -get fusino 360 to render just at the rusultant length 
-
-
-  -add helper render functions
-    -extend timbers so joint can be diffed out of it (rather than bool in a long timber, just use an extra long timber when creating the original timber)
-    -generic boolean geometry classes
-    -use boolean geometery to create negative of tenon cutout timber - (timber - tenon - shoulderplane)
-      -calll this method tenon cutter :D
-
-  
-
-
-  
   -butt joints
     -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
       -mortise and tenon
@@ -124,23 +116,28 @@ DONE-rework joint classes
         -same as draw bore but with komisen peg,
       -tusked mortise and tenon
 
-  -end joints
+  -corner joints
     -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
       -otherwise calls into mortise_and_tenon above
       -also needs to convert the mortise into an "end cut"
     -half_lap (special case of mortise and tenon? nah, special case of bridle joint? nah)
     -bridle joint (special case of mortise and tenon? nah)
-    -maybe try the fancy 
+    -maybe try the fancy  one we used on the shed
+
+
+  -make shed example (just add joints)
 
   -cross_joints
-    cross_lap_joint
+    -basic_cross_lap_joint
+
+  -splice_joint
+    -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
   
   -get rhino rendering working for the following joints ...
   -improve examples
     -create series of examples showcasing each feature
     -create series of more complex examples
     -create test runner for examples so the exmaples are also tests :O
-  -make shed example (just add joints)
   -update docs
     -write README intro
     -cleanup comments in code and delete morenotes.md
