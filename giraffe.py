@@ -1754,7 +1754,10 @@ def cut_basic_miter_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: 
     """
     Creates a basic miter joint between two timbers such that the 2 ends meet at a 90 degree angle miter corner.
     """
-    # TODO assert length axis are perpendicular
+    # Assert that the timber length axes are perpendicular (90-degree corner)
+    assert _are_directions_perpendicular(timberA.length_direction, timberB.length_direction), \
+        "Timbers must have perpendicular length axes (90-degree angle) for this joint type"
+    
     return cut_basic_miter_joint(timberA, timberA_end, timberB, timberB_end)
     
 
@@ -1772,7 +1775,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     """
     assert _are_timbers_face_aligned(shoulder_timber, butt_timber), \
         "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
-    # TODO
+    # TODO cut thu butt timber by the face of the receiving timber the receiving timberh sa no cuts
     return None
 
 

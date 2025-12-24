@@ -83,6 +83,7 @@ DONE-address TODOs is smiple mrotise and sitance
 IGNORE-remove LongEdge 
 DONE-update tests to not use floats ever (maybe have a couple float tests in a separate file though)
 DONE-rework joint classes
+-cleanup the epsilon constant stuff (when to use flot vs rational for this?? think baotu ti ab it...)
 -rename "End joint" it's not what you think it's actulaly a splice joint, I think you should call them corner joints instead?
 
 
@@ -102,7 +103,7 @@ DONE-rework joint classes
     -basic_end_joint
     -basic_butt_joint
     -basic_splice_joint
-    -basic_miter_joint
+    DONE-basic_miter_joint
 
   -butt joints
     -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
