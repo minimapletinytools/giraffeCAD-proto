@@ -1292,7 +1292,7 @@ class TestJoinTimbers:
             
             # 3. Verify the joining timber connects to the beam
             # The top of the joining timber should be near the beam
-            joining_top = joining_timber.bottom_position + joining_timber.length_direction * joining_timber.length
+            joining_top = joining_timber.get_top_center_position()
             beam_bottom_z = beam.bottom_position[2]
             
             # Should connect somewhere on or near the beam - use exact comparison
