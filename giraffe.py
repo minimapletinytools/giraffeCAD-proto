@@ -162,55 +162,20 @@ class StickoutReference(Enum):
     OUTSIDE = 3
 
 # ============================================================================
-# Data Structures
+# Joint Construction Data Structures
 # ============================================================================
 
-
-
-# you can probable delete these?
-@dataclass
 class DistanceFromFace:
     face: TimberFace
     distance: Numeric
-
-# you can probable delete these?
-
 @dataclass
 class DistanceFromLongFace:
     face: TimberReferenceLongFace
     distance: Numeric
-
-# you can probable delete these?
 @dataclass
 class DistanceFromEnd:
     end: TimberReferenceEnd
     distance: Numeric
-
-# you can probable delete these?
-@dataclass
-class StandardMortise:
-    # StandardMortise is a rectangular pocket cut into a face of a timber
-    mortise_face: TimberFace
-
-    # Position relative to timber end and long face
-    pos_rel_to_end: DistanceFromEnd
-    pos_rel_to_long_face: Optional[DistanceFromLongFace]
-
-    # Cross-sectional dimensions (perpendicular to mortise depth)
-    # These are generic dimension names because depending on mortise orientation,
-    # they may align with different timber axes
-    size1: Numeric  # First cross-section dimension (in the axis perpendicular to pos_rel_to_long_face.face1)
-    size2: Numeric  # Second cross-section dimension (in the axis perpendicular to pos_rel_to_long_face.face2)
-
-    depth: Numeric  # How deep the mortise goes into the timber, measured relative to the mortise face
-
-@dataclass
-class FaceAlignedJoinedTimberOffset:
-    reference_face: TimberFace
-    centerline_offset: Optional[Numeric]
-    face_offset: Optional[Numeric]
-
-
 @dataclass
 class DistanceFromLongEdge:
     """
@@ -255,6 +220,12 @@ class DistanceFromLongEdge:
 
     
 
+# TODO write better comments or give this a better name. wtf is this?
+@dataclass
+class FaceAlignedJoinedTimberOffset:
+    reference_face: TimberFace
+    centerline_offset: Optional[Numeric]
+    face_offset: Optional[Numeric]
 
 
 # TODO this is really only needed for JoinTimbers so move it near that function
