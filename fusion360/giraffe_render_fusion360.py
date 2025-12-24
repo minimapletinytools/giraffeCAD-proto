@@ -456,41 +456,38 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union, timbe
 
 def transform_halfplane_to_component_space(half_plane: HalfPlane, timber_orientation: Orientation) -> Tuple[adsk.core.Vector3D, float]:
     """
-    Transform a HalfPlane from timber's oriented local coordinates to component's axis-aligned space.
+    Prepare a HalfPlane for rendering in Fusion 360's component space.
     
-    The HalfPlane is stored in the timber's LOCAL coordinate system (oriented basis).
-    The Fusion 360 component renders in an AXIS-ALIGNED coordinate system where:
-    - X-axis is along width direction (orientation column 0)
-    - Y-axis is along height direction (orientation column 1)
-    - Z-axis is along length direction (orientation column 2)
+    The HalfPlane is already in the timber's LOCAL coordinate system where:
+    - X-component is along width direction
+    - Y-component is along height direction
+    - Z-component is along length direction
     
-    To convert from the oriented basis to the axis-aligned basis, we multiply by the orientation matrix.
+    The Fusion 360 component also renders in this same axis-aligned space (prism is created
+    axis-aligned at origin, then the occurrence is transformed). So we can use the local
+    normal and offset directly without any additional transformation.
     
     Args:
-        half_plane: HalfPlane in timber's local coordinates (oriented basis)
-        timber_orientation: Timber's orientation matrix
+        half_plane: HalfPlane in timber's local coordinates
+        timber_orientation: Timber's orientation matrix (not used, kept for API compatibility)
         
     Returns:
         Tuple of (component_space_normal_vector, component_space_offset)
     """
-    # Extract local normal and offset (in oriented basis)
+    # Extract local normal and offset
     local_normal = half_plane.normal
     local_offset = half_plane.offset
     
-    # Transform normal from oriented basis to axis-aligned component space
-    # component_normal = orientation * local_normal
-    # This transforms from the timber's oriented basis to the axis-aligned basis
-    orientation_matrix = timber_orientation.matrix
-    component_normal = orientation_matrix * local_normal
-    
-    # The offset remains the same because both coordinate systems have the same origin
+    # The local normal is already in the correct space for component rendering
+    # No transformation needed!
+    component_normal = local_normal
     component_offset = local_offset
     
     # Debug logging
     app = get_fusion_app()
     if app:
-        app.log(f"      Local (oriented): normal=({local_normal[0,0]:.4f}, {local_normal[1,0]:.4f}, {local_normal[2,0]:.4f}), offset={local_offset:.4f}")
-        app.log(f"      Component (axis-aligned): normal=({component_normal[0,0]:.4f}, {component_normal[1,0]:.4f}, {component_normal[2,0]:.4f}), offset={component_offset:.4f}")
+        app.log(f"      HalfPlane normal (local/component): ({local_normal[0,0]:.4f}, {local_normal[1,0]:.4f}, {local_normal[2,0]:.4f})")
+        app.log(f"      HalfPlane offset (local/component): {local_offset:.4f}")
     
     # Convert to Fusion 360 types
     component_normal_vector = adsk.core.Vector3D.create(
