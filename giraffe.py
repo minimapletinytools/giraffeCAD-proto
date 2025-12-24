@@ -479,6 +479,24 @@ class Timber:
         """
         return self.bottom_position + self.length_direction * (self.length - distance)
     
+    def get_bottom_center_position(self) -> V3:
+        """
+        Get the 3D position of the center of the bottom cross-section of the timber.
+        
+        Returns:
+            3D position vector at the center of the bottom cross-section
+        """
+        return self.bottom_position
+    
+    def get_top_center_position(self) -> V3:
+        """
+        Get the 3D position of the center of the top cross-section of the timber.
+        
+        Returns:
+            3D position vector at the center of the top cross-section
+        """
+        return self.bottom_position + self.length_direction * self.length
+    
     # TODO overload this method so it can take TimberReferenceEnd as an argument, or allow TimberReferenceEnd to auto cast into TimberFace
     def get_face_direction(self, face: TimberFace) -> Direction3D:
         """
@@ -549,7 +567,7 @@ class Timber:
         """
         # Project timber's centerline onto XY plane for footprint comparison
         bottom_2d = create_vector2d(self.bottom_position[0], self.bottom_position[1])
-        top_position = self.bottom_position + self.length_direction * self.length
+        top_position = self.get_top_center_position()
         top_2d = create_vector2d(top_position[0], top_position[1])
         
         # Find nearest boundary to timber's centerline
@@ -581,7 +599,7 @@ class Timber:
         """
         # Project timber's centerline onto XY plane for footprint comparison
         bottom_2d = create_vector2d(self.bottom_position[0], self.bottom_position[1])
-        top_position = self.bottom_position + self.length_direction * self.length
+        top_position = self.get_top_center_position()
         top_2d = create_vector2d(top_position[0], top_position[1])
         
         # Find nearest boundary to timber's centerline
@@ -1567,21 +1585,17 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # Get the end directions for each timber (pointing outward from the timber)
     if timberA_end == TimberReferenceEnd.TOP:
         directionA = timberA.length_direction
-        # TODO create a class method on Timebr called "get_top_center_position" for this
-        endA_position = timberA.bottom_position + timberA.length_direction * timberA.length
+        endA_position = timberA.get_top_center_position()
     else:  # BOTTOM
         directionA = -timberA.length_direction 
-        # TODO create a class method on Timebr called "get_bottom_center_position" for this
-        endA_position = timberA.bottom_position
+        endA_position = timberA.get_bottom_center_position()
     
     if timberB_end == TimberReferenceEnd.TOP:
         directionB = timberB.length_direction
-        # TODO create a class method on Timebr called "get_top_center_position" for this
-        endB_position = timberB.bottom_position + timberB.length_direction * timberB.length
+        endB_position = timberB.get_top_center_position()
     else:  # BOTTOM
         directionB = -timberB.length_direction
-        # TODO create a class method on Timebr called "get_bottom_center_position" for this
-        endB_position = timberB.bottom_position
+        endB_position = timberB.get_bottom_center_position()
     
     # Check that the timbers are not parallel
     cross = cross_product(directionA, directionB)
@@ -2035,9 +2049,9 @@ def _calculate_mortise_position_from_tenon_intersection(mortise_timber: Timber, 
     """
     # Get the tenon end point
     if tenon_end == TimberReferenceEnd.TOP:
-        tenon_point = tenon_timber.bottom_position + tenon_timber.length_direction * tenon_timber.length
+        tenon_point = tenon_timber.get_top_center_position()
     else:  # BOTTOM
-        tenon_point = tenon_timber.bottom_position
+        tenon_point = tenon_timber.get_bottom_center_position()
     
     # Project the tenon point onto the mortise timber's centerline
     t, projected_point = _project_point_on_timber_centerline(tenon_point, mortise_timber)
@@ -2075,9 +2089,9 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     """
     # Get the tenon end point (where tenon starts)
     if tenon_end == TimberReferenceEnd.TOP:
-        tenon_end_point = tenon_timber.bottom_position + tenon_timber.length_direction * tenon_timber.length
+        tenon_end_point = tenon_timber.get_top_center_position()
     else:  # BOTTOM
-        tenon_end_point = tenon_timber.bottom_position
+        tenon_end_point = tenon_timber.get_bottom_center_position()
     
     # Project tenon end point onto mortise timber centerline to find intersection
     t, projected_point = _project_point_on_timber_centerline(tenon_end_point, mortise_timber)
