@@ -174,8 +174,8 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     )
     
     # Create PartiallyCutTimbers with cuts passed at construction
-    cut_timberA = PartiallyCutTimber(timberA, cuts=[cutA], name=f"TimberA_Miter")
-    cut_timberB = PartiallyCutTimber(timberB, cuts=[cutB], name=f"TimberB_Miter")
+    cut_timberA = PartiallyCutTimber(timberA, cuts=[cutA])
+    cut_timberB = PartiallyCutTimber(timberB, cuts=[cutB])
     
     # Create and return the Joint with all data at construction
     joint = Joint(
@@ -273,10 +273,10 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     )
     
     # Create PartiallyCutTimber for the butt timber with cut passed at construction
-    cut_butt = PartiallyCutTimber(butt_timber, cuts=[cut], name=f"ButtTimber")
+    cut_butt = PartiallyCutTimber(butt_timber, cuts=[cut])
     
     # Create PartiallyCutTimber for the receiving timber (no cuts)
-    cut_receiving = PartiallyCutTimber(receiving_timber, cuts=[], name=f"ReceivingTimber")
+    cut_receiving = PartiallyCutTimber(receiving_timber, cuts=[])
     
     # Create and return the Joint with all data at construction
     joint = Joint(
@@ -435,8 +435,8 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
     )
     
     # Create PartiallyCutTimbers with cuts passed at construction
-    cut_timberA = PartiallyCutTimber(timberA, cuts=[cutA], name=f"TimberA_Splice")
-    cut_timberB = PartiallyCutTimber(timberB, cuts=[cutB], name=f"TimberB_Splice")
+    cut_timberA = PartiallyCutTimber(timberA, cuts=[cutA])
+    cut_timberB = PartiallyCutTimber(timberB, cuts=[cutB])
     
     # Create and return the Joint with all data at construction
     joint = Joint(

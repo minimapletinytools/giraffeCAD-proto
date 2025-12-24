@@ -83,25 +83,25 @@ def create_oscarshed() -> list[CutTimber]:
     # Front mudsill (corner 0 to corner 1) - along X axis
     # Length is automatically calculated from boundary side
     mudsill_front = create_horizontal_timber_on_footprint(
-        footprint, 0, FootprintLocation.INSIDE, mudsill_size
+        footprint, 0, FootprintLocation.INSIDE, mudsill_size, name="Front Mudsill"
     )
     mudsill_front.name = "Front Mudsill"
 
     # Right mudsill (corner 1 to corner 2) - along Y axis
     mudsill_right = create_horizontal_timber_on_footprint(
-        footprint, 1, FootprintLocation.INSIDE, mudsill_size
+        footprint, 1, FootprintLocation.INSIDE, mudsill_size, name="Right Mudsill"
     )
     mudsill_right.name = "Right Mudsill"
 
     # Back mudsill (corner 2 to corner 3) - along X axis
     mudsill_back = create_horizontal_timber_on_footprint(
-        footprint, 2, FootprintLocation.INSIDE, mudsill_size
+        footprint, 2, FootprintLocation.INSIDE, mudsill_size, name="Back Mudsill"
     )
     mudsill_back.name = "Back Mudsill"
 
     # Left mudsill (corner 3 to corner 0) - along Y axis
     mudsill_left = create_horizontal_timber_on_footprint(
-        footprint, 3, FootprintLocation.INSIDE, mudsill_size
+        footprint, 3, FootprintLocation.INSIDE, mudsill_size, name="Left Mudsill"
     )
     mudsill_left.name = "Left Mudsill"
 
@@ -539,10 +539,10 @@ def create_oscarshed() -> list[CutTimber]:
     ]
     
     # Create PartiallyCutTimbers for each mudsill with all cuts at construction
-    pct_mudsill_front = PartiallyCutTimber(mudsill_front, cuts=mudsill_front_cuts, name="Front Mudsill")
-    pct_mudsill_right = PartiallyCutTimber(mudsill_right, cuts=mudsill_right_cuts, name="Right Mudsill")
-    pct_mudsill_back = PartiallyCutTimber(mudsill_back, cuts=mudsill_back_cuts, name="Back Mudsill")
-    pct_mudsill_left = PartiallyCutTimber(mudsill_left, cuts=mudsill_left_cuts, name="Left Mudsill")
+    pct_mudsill_front = PartiallyCutTimber(mudsill_front, cuts=mudsill_front_cuts)
+    pct_mudsill_right = PartiallyCutTimber(mudsill_right, cuts=mudsill_right_cuts)
+    pct_mudsill_back = PartiallyCutTimber(mudsill_back, cuts=mudsill_back_cuts)
+    pct_mudsill_left = PartiallyCutTimber(mudsill_left, cuts=mudsill_left_cuts)
     
     # Add the mudsills with all their cuts
     cut_timbers.append(pct_mudsill_front)

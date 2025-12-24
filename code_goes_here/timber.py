@@ -355,7 +355,7 @@ class Timber:
     """Represents a timber in the timber framing system"""
     
     def __init__(self, length: Numeric, size: V2, bottom_position: V3, 
-                 length_direction: Direction3D, width_direction: Direction3D):
+                 length_direction: Direction3D, width_direction: Direction3D, name: Optional[str] = None):
         """
         Args:
             length: Length of the timber
@@ -363,11 +363,12 @@ class Timber:
             bottom_position: Position of the bottom point (center of cross-section) as 3D vector
             length_direction: Direction vector for the length axis as 3D vector, the +length direction is the +Z direction
             width_direction: Direction vector for the width axis as 3D vector, the +width direction is the +X direction
+            name: Optional name for this timber (used for rendering/debugging)
         """
         self.length: Numeric = length
         self.size: V2 = size
         self.bottom_position: V3 = bottom_position
-        self.name: Optional[str] = None
+        self.name: Optional[str] = name
         self.orientation: Orientation
         
         # Calculate orientation matrix from input directions
@@ -800,24 +801,27 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
 
 
 class CutTimber:
-    def __init__(self, timber: Timber, cuts: List['Cut'] = None, name: str = None):
+    def __init__(self, timber: Timber, cuts: List['Cut'] = None):
         """
         Create a CutTimber from a Timber.
         
         Args:
             timber: The timber to be cut
             cuts: Optional list of cuts to apply (default: empty list)
-            name: Optional name for this timber (used for rendering/debugging)
         """
         self._timber = timber
         self._cuts = cuts if cuts is not None else []
-        self.name = name
         self.joints = []  # List of joints this timber participates in
     
     @property
     def timber(self) -> Timber:
         """Get the underlying timber."""
         return self._timber
+
+    @property
+    def name(self) -> Optional[str]:
+        """Get the name from the underlying timber."""
+        return self._timber.name
 
     # this one returns the timber without cuts where ends with joints are infinite in length
     def _extended_timber_without_cuts_csg(self) -> MeowMeowCSG:

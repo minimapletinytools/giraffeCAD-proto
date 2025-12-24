@@ -38,7 +38,9 @@ DONE-maybe split griaffe sad :(
 -cleanup the epsilon constant stuff (when to use flot vs rational for this?? think baotu ti ab it...)
 -rename "End joint" it's not what you think it's actulaly a splice joint, I think you should call them corner joints instead?
 -fix the venv stuff in readme, aeither add venv or get rid of it from readme.
--check for mutabel data 
+DONE-fix name usage consistence, name should nto be in CutTimebr just use timber name
+  -also add name to ctor of timber init function
+DONE-check for mutabel data 
 
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
