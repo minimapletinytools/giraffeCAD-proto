@@ -3375,27 +3375,27 @@ class TestButtJoint:
         
         # Test 1: Verify the cut plane is coplanar with the receiving timber's face
         # The butt is approaching the FORWARD face of the receiving timber
-        # FORWARD face normal in global coordinates: +Z direction = (0, 0, 1)
         # FORWARD face is at z = height/2 = 8/2 = 4
+        # The cut normal points INWARD (downward, -Z) to remove material below the mudsill
         
         # Get the global normal of the cut plane
         global_cut_normal = butt.orientation.matrix * cut.half_plane.normal
-        expected_normal = Matrix([Rational(0), Rational(0), Rational(1)])
+        expected_normal = Matrix([Rational(0), Rational(0), Rational(-1)])
         
         # Normalize and compare
         from sympy import simplify
         assert simplify(global_cut_normal - expected_normal).norm() == 0, \
-            f"Cut normal should be (0, 0, 1), got {global_cut_normal.T}"
+            f"Cut normal should be (0, 0, -1), got {global_cut_normal.T}"
         
         # Verify the cut plane offset corresponds to the receiving face position
         # The FORWARD face of receiving timber is at z = 0 + 8/2 = 4
-        # In global coords, the plane equation is: 0*x + 0*y + 1*z = 4
-        # So offset should be 4
+        # With normal = (0, 0, -1), the plane equation is: -z = -4, or z = 4
+        # offset = point_on_plane · normal = (x, y, 4) · (0, 0, -1) = -4
         
         # Get global offset: offset = point_on_plane · normal
         # The cut.origin is a point on the cut plane
         global_offset = (cut.origin.T * global_cut_normal)[0, 0]
-        expected_offset = Rational(4)  # z-coordinate of FORWARD face
+        expected_offset = Rational(-4)  # Negative because normal points -Z
         
         assert simplify(global_offset - expected_offset) == 0, \
             f"Cut plane offset should be {expected_offset}, got {global_offset}"
@@ -3560,18 +3560,20 @@ class TestButtJoint:
         cut = butt_cut_timber._cuts[0]
         
         # Verify cut plane is at the FORWARD face of receiving (z=4)
+        # Normal points inward (-Z) to remove material below the receiving face
         global_cut_normal = butt.orientation.matrix * cut.half_plane.normal
-        expected_normal = Matrix([Rational(0), Rational(0), Rational(1)])
+        expected_normal = Matrix([Rational(0), Rational(0), Rational(-1)])
         
         assert simplify(global_cut_normal - expected_normal).norm() == 0, \
-            f"Cut normal should point up (0,0,1), got {global_cut_normal.T}"
+            f"Cut normal should point down (0,0,-1), got {global_cut_normal.T}"
         
         # FORWARD face is at z = 8/2 = 4 (from bottom_position z=0)
+        # offset = point · normal = (x, y, 4) · (0, 0, -1) = -4
         global_offset = (cut.origin.T * global_cut_normal)[0, 0]
-        expected_offset = Rational(4)
+        expected_offset = Rational(-4)
         
         assert simplify(global_offset - expected_offset) == 0, \
-            f"Cut should be at z=4, got {global_offset}"
+            f"Cut offset should be {expected_offset}, got {global_offset}"
         
         # Verify end position
         butt_end = cut.get_end_position()

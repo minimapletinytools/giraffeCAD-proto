@@ -100,7 +100,7 @@ DONE-rework joint classes
     DONE-use boolean geometery to create negative of tenon cutout timber - (timber - tenon - shoulderplane)
       FAIL-calll this method tenon cutter :D
   -simple joints
-    -basic_end_joint
+    DONE-basic_corner_joint
     -basic_butt_joint
     -basic_splice_joint
     DONE-basic_miter_joint
