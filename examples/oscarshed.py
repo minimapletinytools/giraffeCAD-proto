@@ -509,29 +509,40 @@ def create_oscarshed() -> list[CutTimber]:
     # Each mudsill participates in 2 joints (one at each end)
     # We need to collect all cuts for each mudsill and create a single PartiallyCutTimber
     
-    # Create PartiallyCutTimbers for each mudsill
+    # Collect cuts for each mudsill from the corner joints
     from giraffe import PartiallyCutTimber
     
-    pct_mudsill_front = PartiallyCutTimber(mudsill_front, "Front Mudsill")
-    pct_mudsill_right = PartiallyCutTimber(mudsill_right, "Right Mudsill")
-    pct_mudsill_back = PartiallyCutTimber(mudsill_back, "Back Mudsill")
-    pct_mudsill_left = PartiallyCutTimber(mudsill_left, "Left Mudsill")
+    # Collect cuts from corner joints
+    # joint_corner_0: Front BOTTOM, Left TOP
+    # joint_corner_1: Front TOP, Right BOTTOM
+    # joint_corner_2: Right TOP, Back BOTTOM
+    # joint_corner_3: Back TOP, Left BOTTOM
     
-    # Add cuts from joint_corner_0 (Front BOTTOM, Left TOP)
-    pct_mudsill_front._cuts.append(joint_corner_0.partiallyCutTimbers[0]._cuts[0])
-    pct_mudsill_left._cuts.append(joint_corner_0.partiallyCutTimbers[1]._cuts[0])
+    mudsill_front_cuts = [
+        joint_corner_0.partiallyCutTimbers[0]._cuts[0],  # From corner 0
+        joint_corner_1.partiallyCutTimbers[0]._cuts[0],  # From corner 1
+    ]
     
-    # Add cuts from joint_corner_1 (Front TOP, Right BOTTOM)
-    pct_mudsill_front._cuts.append(joint_corner_1.partiallyCutTimbers[0]._cuts[0])
-    pct_mudsill_right._cuts.append(joint_corner_1.partiallyCutTimbers[1]._cuts[0])
+    mudsill_right_cuts = [
+        joint_corner_1.partiallyCutTimbers[1]._cuts[0],  # From corner 1
+        joint_corner_2.partiallyCutTimbers[0]._cuts[0],  # From corner 2
+    ]
     
-    # Add cuts from joint_corner_2 (Right TOP, Back BOTTOM)
-    pct_mudsill_right._cuts.append(joint_corner_2.partiallyCutTimbers[0]._cuts[0])
-    pct_mudsill_back._cuts.append(joint_corner_2.partiallyCutTimbers[1]._cuts[0])
+    mudsill_back_cuts = [
+        joint_corner_2.partiallyCutTimbers[1]._cuts[0],  # From corner 2
+        joint_corner_3.partiallyCutTimbers[0]._cuts[0],  # From corner 3
+    ]
     
-    # Add cuts from joint_corner_3 (Back TOP, Left BOTTOM)
-    pct_mudsill_back._cuts.append(joint_corner_3.partiallyCutTimbers[0]._cuts[0])
-    pct_mudsill_left._cuts.append(joint_corner_3.partiallyCutTimbers[1]._cuts[0])
+    mudsill_left_cuts = [
+        joint_corner_0.partiallyCutTimbers[1]._cuts[0],  # From corner 0
+        joint_corner_3.partiallyCutTimbers[1]._cuts[0],  # From corner 3
+    ]
+    
+    # Create PartiallyCutTimbers for each mudsill with all cuts at construction
+    pct_mudsill_front = PartiallyCutTimber(mudsill_front, cuts=mudsill_front_cuts, name="Front Mudsill")
+    pct_mudsill_right = PartiallyCutTimber(mudsill_right, cuts=mudsill_right_cuts, name="Right Mudsill")
+    pct_mudsill_back = PartiallyCutTimber(mudsill_back, cuts=mudsill_back_cuts, name="Back Mudsill")
+    pct_mudsill_left = PartiallyCutTimber(mudsill_left, cuts=mudsill_left_cuts, name="Left Mudsill")
     
     # Add the mudsills with all their cuts
     cut_timbers.append(pct_mudsill_front)
