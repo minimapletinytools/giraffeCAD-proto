@@ -454,55 +454,52 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union, timbe
     return result_body
 
 
-def transform_halfplane_to_local(half_plane: HalfPlane, timber_position: Matrix, timber_orientation: Orientation) -> Tuple[adsk.core.Vector3D, float]:
+def transform_halfplane_to_component_space(half_plane: HalfPlane, timber_orientation: Orientation) -> Tuple[adsk.core.Vector3D, float]:
     """
-    Transform a HalfPlane from global coordinates to timber's local coordinate system.
+    Transform a HalfPlane from timber's oriented local coordinates to component's axis-aligned space.
     
-    The timber's local coordinate system is:
-    - Origin at timber_position
-    - X-axis along width direction (orientation column 0)
-    - Y-axis along height direction (orientation column 1)
-    - Z-axis along length direction (orientation column 2)
+    The HalfPlane is stored in the timber's LOCAL coordinate system (oriented basis).
+    The Fusion 360 component renders in an AXIS-ALIGNED coordinate system where:
+    - X-axis is along width direction (orientation column 0)
+    - Y-axis is along height direction (orientation column 1)
+    - Z-axis is along length direction (orientation column 2)
+    
+    To convert from the oriented basis to the axis-aligned basis, we multiply by the orientation matrix.
     
     Args:
-        half_plane: HalfPlane in global coordinates
-        timber_position: Timber's bottom_position in global coordinates
+        half_plane: HalfPlane in timber's local coordinates (oriented basis)
         timber_orientation: Timber's orientation matrix
         
     Returns:
-        Tuple of (local_normal_vector, local_offset)
+        Tuple of (component_space_normal_vector, component_space_offset)
     """
-    # Extract global normal and offset
-    global_normal = half_plane.normal
-    global_offset = half_plane.offset
+    # Extract local normal and offset (in oriented basis)
+    local_normal = half_plane.normal
+    local_offset = half_plane.offset
     
-    # Transform normal to local coordinates: local_normal = orientation^T * global_normal
-    # orientation^T transforms from global to local
+    # Transform normal from oriented basis to axis-aligned component space
+    # component_normal = orientation * local_normal
+    # This transforms from the timber's oriented basis to the axis-aligned basis
     orientation_matrix = timber_orientation.matrix
-    local_normal = Matrix([
-        [orientation_matrix[0, 0], orientation_matrix[1, 0], orientation_matrix[2, 0]],
-        [orientation_matrix[0, 1], orientation_matrix[1, 1], orientation_matrix[2, 1]],
-        [orientation_matrix[0, 2], orientation_matrix[1, 2], orientation_matrix[2, 2]]
-    ]) * global_normal
+    component_normal = orientation_matrix * local_normal
     
-    # Transform offset to local coordinates
-    # Global plane equation: global_normal · P_global = global_offset
-    # Local plane equation: local_normal · P_local = local_offset
-    # Where P_global = timber_position + orientation * P_local
-    # So: global_normal · (timber_position + orientation * P_local) = global_offset
-    #     global_normal · timber_position + global_normal · orientation * P_local = global_offset
-    #     (orientation^T * global_normal) · P_local = global_offset - global_normal · timber_position
-    #     local_normal · P_local = global_offset - global_normal · timber_position
-    local_offset = global_offset - (global_normal.T * timber_position)[0, 0]
+    # The offset remains the same because both coordinate systems have the same origin
+    component_offset = local_offset
+    
+    # Debug logging
+    app = get_fusion_app()
+    if app:
+        app.log(f"      Local (oriented): normal=({local_normal[0,0]:.4f}, {local_normal[1,0]:.4f}, {local_normal[2,0]:.4f}), offset={local_offset:.4f}")
+        app.log(f"      Component (axis-aligned): normal=({component_normal[0,0]:.4f}, {component_normal[1,0]:.4f}, {component_normal[2,0]:.4f}), offset={component_offset:.4f}")
     
     # Convert to Fusion 360 types
-    local_normal_vector = adsk.core.Vector3D.create(
-        float(local_normal[0]),
-        float(local_normal[1]),
-        float(local_normal[2])
+    component_normal_vector = adsk.core.Vector3D.create(
+        float(component_normal[0,0]),
+        float(component_normal[1,0]),
+        float(component_normal[2,0])
     )
     
-    return local_normal_vector, float(local_offset)
+    return component_normal_vector, float(component_offset)
 
 
 def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRepBody, half_plane: HalfPlane, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> bool:
@@ -537,8 +534,10 @@ def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRep
             app.log(f"      Global: normal=({global_nx:.4f}, {global_ny:.4f}, {global_nz:.4f}), offset={global_d:.4f}")
         
         # Transform to local coordinates if timber is provided
+        # The body is rendered axis-aligned, then the occurrence is transformed later
+        # Cuts must be in the body's local space to be correct after transform
         if timber is not None:
-            plane_normal, plane_offset = transform_halfplane_to_local(half_plane, timber.bottom_position, timber.orientation)
+            plane_normal, plane_offset = transform_halfplane_to_component_space(half_plane, timber.orientation)
             if app:
                 app.log(f"      Local:  normal=({plane_normal.x:.4f}, {plane_normal.y:.4f}, {plane_normal.z:.4f}), offset={plane_offset:.4f}")
         else:
@@ -637,6 +636,12 @@ def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRep
             
             # Create transformation matrix
             transform = adsk.core.Matrix3D.create()
+            
+            if app:
+                app.log(f"    Aligning cutting box:")
+                app.log(f"      From: origin=(0,0,0), Z=(0,0,1)")
+                app.log(f"      To: origin=({plane_point.x:.4f},{plane_point.y:.4f},{plane_point.z:.4f}), Z=({new_z.x:.4f},{new_z.y:.4f},{new_z.z:.4f})")
+            
             transform.setToAlignCoordinateSystems(
                 adsk.core.Point3D.create(0, 0, 0),
                 adsk.core.Vector3D.create(1, 0, 0),
@@ -1041,7 +1046,9 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             if app:
                 app.log(f"Creating {component_name}...")
             
-            # Get the extended timber (semi-infinite at ends with cuts)
+            # Get the extended timber in LOCAL coordinates (semi-infinite at ends with cuts)
+            # Local coordinates means the prism distances are relative to the timber's bottom_position
+            # and all cuts are also in local coordinates. This allows us to render at origin and then transform.
             extended_timber_csg = cut_timber._extended_timber_without_cuts_csg()
             
             # Apply all cuts if there are any
