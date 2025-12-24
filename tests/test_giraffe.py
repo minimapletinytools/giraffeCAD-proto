@@ -2882,11 +2882,12 @@ class TestCutTimber:
         from meowmeowcsg import Prism
         assert isinstance(csg, Prism)
         
-        # Start should be at bottom z-coordinate (10)
-        assert csg.start_distance == 10
+        # In LOCAL coordinates (relative to bottom_position):
+        # Start should be at 0 (local bottom)
+        assert csg.start_distance == 0
         
-        # End should be at bottom z-coordinate + length (110)
-        assert csg.end_distance == 110
+        # End should be at timber's length (local top)
+        assert csg.end_distance == 100
         
         # Size should match timber
         assert csg.size == size
@@ -2907,15 +2908,15 @@ class TestCutTimber:
         
         csg = cut_timber._extended_timber_without_cuts_csg()
         
-        # Start distance should be projection of bottom_position onto length_direction
-        # For [5, 10, 20] · [0, 0, 1] = 20
-        assert csg.start_distance == 20
+        # In LOCAL coordinates (relative to bottom_position):
+        # Start distance is 0 (at bottom)
+        assert csg.start_distance == 0
         
-        # End distance should be start + length = 70
-        assert csg.end_distance == 70
+        # End distance is the timber's length
+        assert csg.end_distance == 50
     
     def test_extended_timber_minimal_boundary(self):
-        """Test that minimal_boundary_in_direction works on the CSG."""
+        """Test that minimal_boundary_in_direction works on the CSG in local coordinates."""
         length = Rational(100)
         size = Matrix([Rational(4), Rational(6)])
         bottom_position = Matrix([Rational(0), Rational(0), Rational(10)])
@@ -2928,14 +2929,15 @@ class TestCutTimber:
         csg = cut_timber._extended_timber_without_cuts_csg()
         
         # Query minimal boundary in +Z direction (along timber axis)
+        # Note: boundary is in local coordinates (relative to bottom_position)
         direction = Matrix([Rational(0), Rational(0), Rational(1)])
         boundary = csg.minimal_boundary_in_direction(direction)
         
-        # Should be at the bottom of the timber (z=10)
-        assert boundary[2] == 10
+        # In local coordinates, bottom is at z=0 (not z=10)
+        assert boundary[2] == 0
     
     def test_extended_timber_horizontal(self):
-        """Test CSG for a horizontal timber."""
+        """Test CSG for a horizontal timber in local coordinates."""
         length = Rational(80)
         size = Matrix([Rational(5), Rational(5)])
         bottom_position = Matrix([Rational(10), Rational(20), Rational(5)])
@@ -2947,11 +2949,12 @@ class TestCutTimber:
         
         csg = cut_timber._extended_timber_without_cuts_csg()
         
-        # Start distance = bottom_position · length_direction = [10,20,5] · [1,0,0] = 10
-        assert csg.start_distance == 10
+        # In LOCAL coordinates (relative to bottom_position):
+        # Start distance is 0
+        assert csg.start_distance == 0
         
-        # End distance = start + length = 90
-        assert csg.end_distance == 90
+        # End distance is the timber's length
+        assert csg.end_distance == 80
         
         # Orientation should be the timber's Orientation object
         assert csg.orientation == timber.orientation
@@ -3133,43 +3136,55 @@ class TestMiterJoint:
         assert cutA.maybeEndCut == TimberReferenceEnd.TOP
         assert cutB.maybeEndCut == TimberReferenceEnd.TOP
         
-        # Check that the half-plane normals form the miter plane at 45 degrees
+        # Check that the half-plane normals are in LOCAL coordinates
         # For orthogonal timbers in +X and +Y directions:
-        # - TimberA end direction: (+1, 0, 0)
-        # - TimberB end direction: (0, +1, 0)
-        # - Bisector (into joint): (+1, +1, 0) normalized = (1/√2, 1/√2, 0)
-        # - Miter plane normal: same as bisector = (1/√2, 1/√2, 0)
+        # - TimberA end direction (global): (+1, 0, 0)
+        # - TimberB end direction (global): (0, +1, 0)
+        # - Bisector (into joint, global): (+1, +1, 0) normalized = (1/√2, 1/√2, 0)
         # 
-        # Both cuts should use the same miter plane (or its opposite)
-        # For proper miter, the normals should be equal (both timbers cut by same plane)
+        # TimberA's local basis (columns of orientation):
+        #   X (width): (0, 1, 0), Y (height): (0, 0, 1), Z (length): (1, 0, 0)
+        # TimberB's local basis:
+        #   X (width): (-1, 0, 0), Y (height): (0, 0, 1), Z (length): (0, 1, 0)
+        #
+        # Local normal = orientation^T * global_normal
+        #
+        # For timberA: local_normal = orientation^T * (1/√2, 1/√2, 0)
+        #   = (1/√2 * 0 + 1/√2 * 1 + 0 * 0, 1/√2 * 0 + 1/√2 * 0 + 0 * 1, 1/√2 * 1 + 1/√2 * 0 + 0 * 0)
+        #   = (1/√2, 0, 1/√2)
+        #
+        # For timberB: local_normal = orientation^T * (1/√2, 1/√2, 0)
+        #   = (1/√2 * -1 + 1/√2 * 0 + 0 * 0, 1/√2 * 0 + 1/√2 * 0 + 0 * 1, 1/√2 * 0 + 1/√2 * 1 + 0 * 0)
+        #   = (-1/√2, 0, 1/√2)
         
         # Import sqrt for comparison
         from sympy import sqrt
         
-        # The miter normal should be (1/√2, 1/√2, 0) or (-1/√2, -1/√2, 0)
         expected_component = 1 / sqrt(2)
         
-        # Check timberA normal - should be the bisector pointing away from timberA
-        # Since directionA = (+1, 0, 0) and bisector = (1/√2, 1/√2, 0)
-        # The dot product is positive, so normal should be the bisector
+        # Check timberA local normal
         assert simplify(cutA.half_plane.normal[0] - expected_component) == 0
-        assert simplify(cutA.half_plane.normal[1] - expected_component) == 0
-        assert cutA.half_plane.normal[2] == Rational(0)
+        assert cutA.half_plane.normal[1] == Rational(0)
+        assert simplify(cutA.half_plane.normal[2] - expected_component) == 0
         
-        # Check timberB normal - should also be the bisector
-        # Since directionB = (0, +1, 0) and bisector = (1/√2, 1/√2, 0)
-        # The dot product is positive, so normal should be the bisector
-        assert simplify(cutB.half_plane.normal[0] - expected_component) == 0
-        assert simplify(cutB.half_plane.normal[1] - expected_component) == 0
-        assert cutB.half_plane.normal[2] == Rational(0)
+        # Check timberB local normal
+        assert simplify(cutB.half_plane.normal[0] + expected_component) == 0  # Negative component
+        assert cutB.half_plane.normal[1] == Rational(0)
+        assert simplify(cutB.half_plane.normal[2] - expected_component) == 0
         
-        # Check that both normals are THE SAME (same miter plane for both timbers)
-        assert simplify(cutA.half_plane.normal - cutB.half_plane.normal).norm() == 0
-        
-        # Check that the miter plane cuts through the origin
-        # The half-plane offset should be 0 for a plane through the origin
-        assert cutA.half_plane.offset == Rational(0)
-        assert cutB.half_plane.offset == Rational(0)
+        # Check the local offsets
+        # In local coordinates (relative to each timber's bottom_position), the offset is:
+        # local_offset = global_offset - global_normal · bottom_position
+        # 
+        # For timberA: bottom_position = (-50, 0, 0), intersection at (0, 0, 0)
+        #   global_offset = 0 (plane through origin)
+        #   local_offset = 0 - (1/√2, 1/√2, 0) · (-50, 0, 0) = 0 - (-50/√2) = 50/√2
+        # 
+        # For timberB: bottom_position = (0, -50, 0), intersection at (0, 0, 0)
+        #   local_offset = 0 - (1/√2, 1/√2, 0) · (0, -50, 0) = 0 - (-50/√2) = 50/√2
+        expected_offset = 50 / sqrt(2)
+        assert simplify(cutA.half_plane.offset - expected_offset) == 0
+        assert simplify(cutB.half_plane.offset - expected_offset) == 0
         
         # Check that both cuts have the same origin (the intersection point)
         assert cutA.origin[0] == cutB.origin[0]
@@ -3182,20 +3197,25 @@ class TestMiterJoint:
         assert cutA.origin[2] == Rational(0)
         
         # Check that the miter plane is at 45 degrees to each timber
+        # Need to transform local normals back to global to compare with global timber directions
+        # global_normal = orientation * local_normal
+        global_normalA = timberA.orientation.matrix * cutA.half_plane.normal
+        global_normalB = timberB.orientation.matrix * cutB.half_plane.normal
+        
         # For orthogonal timbers, the angle between the miter normal and each timber direction
         # should be 45 degrees
-        # 
-        # Angle between miter_normal and directionA:
-        # cos(45°) = miter_normal · directionA = (1/√2, 1/√2, 0) · (1, 0, 0) = 1/√2
         directionA = Matrix([Rational(1), Rational(0), Rational(0)])
         directionB = Matrix([Rational(0), Rational(1), Rational(0)])
         
-        cos_angle_A = (cutA.half_plane.normal.T * directionA)[0, 0]
-        cos_angle_B = (cutB.half_plane.normal.T * directionB)[0, 0]
+        cos_angle_A = (global_normalA.T * directionA)[0, 0]
+        cos_angle_B = (global_normalB.T * directionB)[0, 0]
         
         # Both should equal 1/√2 (cosine of 45 degrees)
         assert simplify(cos_angle_A - 1/sqrt(2)) == 0
         assert simplify(cos_angle_B - 1/sqrt(2)) == 0
+        
+        # Verify that the global normals are the same (same miter plane)
+        assert simplify(global_normalA - global_normalB).norm() == 0
         
         # Get end positions and verify they match
         endA = cutA.get_end_position()

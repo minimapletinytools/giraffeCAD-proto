@@ -1289,19 +1289,21 @@ class Cut:
         if self.maybeEndCut is None:
             raise ValueError("get_end_position can only be called on end cuts (maybeEndCut must be set)")
         
-        # Get the negative CSG representing the cut volume
+        # Get the negative CSG representing the cut volume (in LOCAL coordinates)
         negative_csg = self.get_negative_csg()
         
-        # Get the timber prism (semi-infinite at this end since we pass [self])
-        timber_prism = _create_timber_prism_csg(self._timber, [self])
+        # Get the timber prism in LOCAL coordinates (semi-infinite at this end since we pass [self])
+        timber_prism = _create_timber_prism_csg_local(self._timber, [self])
         
         # The timber with the cut applied: timber - cut_volume
         from meowmeowcsg import Difference, HalfPlane
         cut_result = Difference(timber_prism, [negative_csg])
         
         # Determine the search direction based on which end is being cut
-        # Note: minimal_boundary_in_direction minimizes P·direction, so to find
-        # the minimum along the length direction, we search in +length_direction
+        # Search direction is in the timber's LOCAL coordinate system
+        # In local coords, the timber's length direction is the Z-axis (third column of orientation matrix)
+        # But since we're working in the timber's local space where it's axis-aligned,
+        # we use the GLOBAL length_direction as the search direction in the LOCAL CSG space
         if self.maybeEndCut == TimberReferenceEnd.TOP:
             # For top end cuts, find the point closest to bottom (minimum distance along length)
             # To minimize the distance, search in the +length_direction
@@ -1316,24 +1318,32 @@ class Cut:
         # For HalfPlane cuts, we can directly compute the intersection with the centerline
         # rather than using minimal_boundary_in_direction (which only works for certain directions)
         if isinstance(negative_csg, HalfPlane):
-            # The centerline is: P(t) = bottom_position + t * length_direction
-            # The half-plane is: normal · P >= offset
-            # At the boundary: normal · P = offset
-            # Substituting: normal · (bottom_position + t * length_direction) = offset
-            # Solving for t: t = (offset - normal · bottom_position) / (normal · length_direction)
+            # HalfPlane is in LOCAL coordinates (oriented basis) relative to timber.bottom_position
+            # In the timber's LOCAL coordinate system:
+            # - The centerline is along the Z-axis: P_local(t) = (0, 0, t)
+            # - The length direction is (0, 0, 1) in local coordinates
+            # The half-plane is: local_normal · P_local >= local_offset
+            # At the boundary: local_normal · P_local = local_offset
+            # Substituting: local_normal · (0, 0, t) = local_offset
+            # This gives: local_normal[2] * t = local_offset
+            # Solving for t: t = local_offset / local_normal[2]
             
-            normal = negative_csg.normal
-            offset = negative_csg.offset
-            length_dir_norm = normalize_vector(self._timber.length_direction)
+            local_normal = negative_csg.normal
+            local_offset = negative_csg.offset
             
-            normal_dot_length = (normal.T * length_dir_norm)[0, 0]
-            normal_dot_bottom = (normal.T * self._timber.bottom_position)[0, 0]
+            # The Z-component of the local normal (dot product with local length direction (0,0,1))
+            normal_z_component = local_normal[2, 0]
             
-            if abs(normal_dot_length) < Rational(1, 100000):
+            if abs(normal_z_component) < Rational(1, 100000):
                 # Plane is parallel to the timber - no unique intersection
                 raise ValueError("Cut plane is parallel to timber centerline")
             
-            t = (offset - normal_dot_bottom) / normal_dot_length
+            # Distance along centerline in local coordinates (along Z-axis)
+            t = local_offset / normal_z_component
+            
+            # Convert back to global coordinates
+            # In global coords: end_position = bottom_position + t * length_direction
+            length_dir_norm = normalize_vector(self._timber.length_direction)
             end_position = self._timber.bottom_position + length_dir_norm * t
             
             return end_position
@@ -1357,16 +1367,21 @@ class Cut:
         pass
 
 
-def _create_timber_prism_csg(timber: Timber, cuts: list) -> MeowMeowCSG:
+def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     """
-    Helper function to create a prism CSG for a timber, optionally extending ends with cuts to infinity.
+    Helper function to create a prism CSG for a timber in LOCAL coordinates, 
+    optionally extending ends with cuts to infinity.
+    
+    LOCAL coordinates means distances are relative to timber.bottom_position.
+    This is used for rendering (where the prism is created at origin and then transformed)
+    and for CSG operations (where cuts are also in local coordinates).
     
     Args:
         timber: The timber to create a prism for
         cuts: List of cuts on this timber (used to determine if ends should be infinite)
         
     Returns:
-        Prism CSG representing the timber (possibly semi-infinite or infinite)
+        Prism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
     """
     from meowmeowcsg import create_prism
     
@@ -1382,22 +1397,15 @@ def _create_timber_prism_csg(timber: Timber, cuts: list) -> MeowMeowCSG:
         for cut in cuts
     )
     
-    # Normalize the length direction
-    length_dir_norm = normalize_vector(timber.length_direction)
+    # In local coordinates:
+    # - bottom is at 0
+    # - top is at timber.length
+    # - if an end has cuts, extend to infinity in that direction
     
-    # Compute the distance from origin to bottom along the length direction
-    # This is the projection of bottom_position onto length_direction
-    bottom_distance = (timber.bottom_position.T * length_dir_norm)[0, 0]
+    start_distance = None if has_bottom_cut else 0
+    end_distance = None if has_top_cut else timber.length
     
-    # Top distance is bottom_distance + length
-    top_distance = bottom_distance + timber.length
-    
-    # Determine start and end distances in absolute coordinates
-    # If an end has cuts, it extends to infinity in that direction
-    start_distance = None if has_bottom_cut else bottom_distance
-    end_distance = None if has_top_cut else top_distance
-    
-    # Create a prism representing the timber
+    # Create a prism representing the timber in local coordinates
     return create_prism(
         size=timber.size,
         orientation=timber.orientation,
@@ -1433,10 +1441,13 @@ class CutTimber:
         If an end has cuts on it (indicated by maybeEndCut), that end is extended to infinity.
         This allows joints to extend the timber as needed during the CSG cutting operations.
         
+        Uses LOCAL coordinates (relative to timber.bottom_position).
+        All cuts on this timber are also in LOCAL coordinates.
+        
         Returns:
-            Prism CSG representing the timber (possibly semi-infinite or infinite)
+            Prism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
         """
-        return _create_timber_prism_csg(self._timber, self._cuts)
+        return _create_timber_prism_csg_local(self._timber, self._cuts)
 
     # this one returns the timber without cuts where ends with joints are cut to length based on Cut::get_end_position
     # use this for rendering the timber without cuts for development
@@ -1641,7 +1652,11 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
         # Miter normal points towards timberA, so flip it
         normalA = -miter_normal
     
-    offsetA = (intersection_point.T * normalA)[0, 0]
+    # Convert to LOCAL coordinates for timberA
+    # Transform normal: local_normal = orientation^T * global_normal
+    # Transform offset: local_offset = global_offset - (global_normal · timber.bottom_position)
+    local_normalA = timberA.orientation.matrix.T * normalA
+    local_offsetA = (intersection_point.T * normalA)[0, 0] - (normalA.T * timberA.bottom_position)[0, 0]
     
     # For timberB: check if miter_normal points away from or towards the timber
     dot_B = (normB.T * miter_normal)[0, 0]
@@ -1652,22 +1667,24 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
         # Miter normal points towards timberB, so flip it
         normalB = -miter_normal
     
-    offsetB = (intersection_point.T * normalB)[0, 0]
+    # Convert to LOCAL coordinates for timberB
+    local_normalB = timberB.orientation.matrix.T * normalB
+    local_offsetB = (intersection_point.T * normalB)[0, 0] - (normalB.T * timberB.bottom_position)[0, 0]
     
-    # Create the HalfPlaneCuts
+    # Create the HalfPlaneCuts (in LOCAL coordinates relative to each timber)
     cutA = HalfPlaneCut()
     cutA._timber = timberA
     cutA.origin = intersection_point
     cutA.orientation = timberA.orientation
     cutA.maybeEndCut = timberA_end
-    cutA.half_plane = HalfPlane(normal=normalA, offset=offsetA)
+    cutA.half_plane = HalfPlane(normal=local_normalA, offset=local_offsetA)
     
     cutB = HalfPlaneCut()
     cutB._timber = timberB
     cutB.origin = intersection_point
     cutB.orientation = timberB.orientation
     cutB.maybeEndCut = timberB_end
-    cutB.half_plane = HalfPlane(normal=normalB, offset=offsetB)
+    cutB.half_plane = HalfPlane(normal=local_normalB, offset=local_offsetB)
     
     # Create PartiallyCutTimbers
     cut_timberA = PartiallyCutTimber(timberA, name=f"TimberA_Miter")
