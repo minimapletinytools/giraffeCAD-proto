@@ -3214,8 +3214,31 @@ class TestMiterJoint:
         assert simplify(cos_angle_A - 1/sqrt(2)) == 0
         assert simplify(cos_angle_B - 1/sqrt(2)) == 0
         
-        # Verify that the global normals are the same (same miter plane)
-        assert simplify(global_normalA - global_normalB).norm() == 0
+        # Print debug info
+        print(f"\nDEBUG: Global normal A: {global_normalA.T}")
+        print(f"DEBUG: Global normal B: {global_normalB.T}")
+        print(f"DEBUG: Expected: [{1/sqrt(2)}, {1/sqrt(2)}, 0]")
+        
+        # For a proper miter joint where both timbers are being cut:
+        # - TimberA extends in +X, being cut at top (positive end)
+        # - TimberB extends in +Y, being cut at top (positive end)
+        # - They meet at the origin
+        # - The miter plane should bisect the angle between them
+        # - BOTH normals should point AWAY from the intersection (into the material being removed)
+        # - So both should have the SAME normal in global space: (1/√2, 1/√2, 0)
+        #
+        # The HalfPlane represents the material to REMOVE (negative CSG).
+        # For TimberA: we remove the region where (1/√2)x + (1/√2)y >= 0 (the +X side beyond the miter)
+        # For TimberB: we remove the region where (1/√2)x + (1/√2)y >= 0 (the +Y side beyond the miter)
+        
+        # Verify that the global normals are the same (same miter plane for both cuts)
+        assert simplify(global_normalA - global_normalB).norm() == 0, \
+            f"Global normals should be the same! A={global_normalA.T}, B={global_normalB.T}"
+        
+        # Verify they point in the expected direction (bisecting the angle)
+        expected_global_normal = Matrix([1/sqrt(2), 1/sqrt(2), Rational(0)])
+        assert simplify(global_normalA - expected_global_normal).norm() == 0, \
+            f"Global normal A should be {expected_global_normal.T}, got {global_normalA.T}"
         
         # Get end positions and verify they match
         endA = cutA.get_end_position()
@@ -3229,6 +3252,58 @@ class TestMiterJoint:
         assert endB[0] == Rational(0)
         assert endB[1] == Rational(0)
         assert endB[2] == Rational(0)
+        
+        # Test that the two cut timbers DO NOT intersect
+        # Get the CSGs for both timbers with cuts applied
+        cut_timberA = joint.partiallyCutTimbers[0]
+        cut_timberB = joint.partiallyCutTimbers[1]
+        
+        # Render the timbers without cuts first (just the basic prisms)
+        prismA = cut_timberA.render_timber_without_cuts_csg()
+        prismB = cut_timberB.render_timber_without_cuts_csg()
+        
+        print(f"\nDEBUG: PrismA bounds: start={prismA.start_distance}, end={prismA.end_distance}")
+        print(f"DEBUG: PrismB bounds: start={prismB.start_distance}, end={prismB.end_distance}")
+        
+        # For a proper miter with no overlap:
+        # - TimberA should extend from x=-50 to x=0 (cut at the origin)
+        # - TimberB should extend from y=-50 to y=0 (cut at the origin)
+        # - They should meet at exactly (0,0,0) with no overlap
+        #
+        # In local coordinates:
+        # - TimberA: length direction is +X, so it goes from z=0 to z=50 in local coords
+        #   After miter cut at origin (global x=0), it should end at z=50 (which is at global x=0)
+        # - TimberB: length direction is +Y, so it goes from z=0 to z=50 in local coords
+        #   After miter cut at origin (global y=0), it should end at z=50 (which is at global y=0)
+        
+        # Check a few points to ensure no overlap
+        # Point at (10, 10, 0) should NOT be in either timber (it's beyond both miter cuts)
+        test_point1 = Matrix([Rational(10), Rational(10), Rational(0)])
+        
+        # Convert test_point1 to TimberA's local coordinates
+        # local_point = orientation^T * (global_point - bottom_position)
+        test_point1_localA = timberA.orientation.matrix.T * (test_point1 - timberA.bottom_position)
+        print(f"\nDEBUG: Point (10,10,0) in TimberA local coords: {test_point1_localA.T}")
+        
+        # For this point to be in the timber (before cuts):
+        # - X should be in [-width/2, width/2] = [-2, 2]
+        # - Y should be in [-height/2, height/2] = [-3, 3]
+        # - Z should be in [0, 50]
+        print(f"  X in range? {-2 <= test_point1_localA[0] <= 2}")
+        print(f"  Y in range? {-3 <= test_point1_localA[1] <= 3}")
+        print(f"  Z in range? {0 <= test_point1_localA[2] <= 50}")
+        
+        # Check if point is removed by the miter cut
+        # The half-plane normal (local) is (1/√2, 0, 1/√2), offset is 50/√2
+        # Point should be removed if: normal · point >= offset
+        dot_product = (cutA.half_plane.normal.T * test_point1_localA)[0, 0]
+        is_removed = dot_product >= cutA.half_plane.offset
+        print(f"  Dot product: {float(dot_product)}, offset: {float(cutA.half_plane.offset)}")
+        print(f"  Is removed by cut? {is_removed}")
+        
+        # The point (10, 10, 0) should be removed by the miter cut on TimberA
+        # because it's beyond the miter plane (x + y > 0)
+        assert is_removed, "Point (10,10,0) should be removed by TimberA's miter cut"
     
     def test_miter_joint_parallel_timbers_raises_error(self):
         """Test that parallel timbers raise a ValueError."""
