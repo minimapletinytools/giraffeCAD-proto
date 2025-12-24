@@ -1771,21 +1771,97 @@ def cut_basic_corner_joint_on_face_aligned_timbers(timberA: Timber, timberA_end:
 
 def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_timber: Timber, butt_end: TimberReferenceEnd) -> Joint:
     """
-    Creates a basic butt joint between two timbers. The butt timber is extended to meet the face of the receiving timber.
+    Creates a basic butt joint between two timbers. The butt timber is cut flush with the face 
+    of the receiving timber. The receiving timber has no cuts.
+    
+    Args:
+        receiving_timber: The timber that receives the butt (remains uncut)
+        butt_timber: The timber whose end is cut to meet the receiving timber's face
+        butt_end: Which end of the butt timber to cut (TOP or BOTTOM)
+        
+    Returns:
+        Joint object containing the cut butt timber and uncut receiving timber
     """
-    assert _are_timbers_face_aligned(shoulder_timber, butt_timber), \
+    assert _are_timbers_face_aligned(receiving_timber, butt_timber), \
         "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
-    # TODO cut thu butt timber by the face of the receiving timber the receiving timberh sa no cuts
-    return None
+    
+    # Get the direction of the butt end (pointing outward from the timber)
+    if butt_end == TimberReferenceEnd.TOP:
+        butt_direction = butt_timber.length_direction
+        butt_end_position = butt_timber.get_top_center_position()
+    else:  # BOTTOM
+        butt_direction = -butt_timber.length_direction
+        butt_end_position = butt_timber.get_bottom_center_position()
+    
+    # Find which face of the receiving timber the butt is approaching
+    # The butt approaches opposite to its end direction
+    receiving_face = receiving_timber.get_closest_oriented_face(-butt_direction)
+    receiving_face_direction = receiving_timber.get_face_direction(receiving_face)
+    
+    # Compute the center position of the receiving face
+    if receiving_face == TimberFace.TOP:
+        face_center = receiving_timber.get_top_center_position()
+    elif receiving_face == TimberFace.BOTTOM:
+        face_center = receiving_timber.get_bottom_center_position()
+    else:
+        # For long faces (LEFT, RIGHT, FORWARD, BACK), center is at mid-length
+        face_center = receiving_timber.bottom_position + (receiving_timber.length / 2) * receiving_timber.length_direction
+        
+        # Offset to the face surface
+        if receiving_face == TimberFace.RIGHT:
+            face_center = face_center + (receiving_timber.size[0] / 2) * receiving_timber.width_direction
+        elif receiving_face == TimberFace.LEFT:
+            face_center = face_center - (receiving_timber.size[0] / 2) * receiving_timber.width_direction
+        elif receiving_face == TimberFace.FORWARD:
+            face_center = face_center + (receiving_timber.size[1] / 2) * receiving_timber.height_direction
+        else:  # BACK
+            face_center = face_center - (receiving_timber.size[1] / 2) * receiving_timber.height_direction
+    
+    # The cutting plane has the same normal as the receiving face (pointing outward)
+    # We want to remove material on the side away from the receiving timber
+    global_normal = receiving_face_direction
+    
+    # Convert to LOCAL coordinates for the butt timber
+    local_normal = butt_timber.orientation.matrix.T * global_normal
+    local_offset = (face_center.T * global_normal)[0, 0] - (global_normal.T * butt_timber.bottom_position)[0, 0]
+    
+    # Create the HalfPlaneCut for the butt timber
+    cut = HalfPlaneCut()
+    cut._timber = butt_timber
+    cut.origin = face_center
+    cut.orientation = butt_timber.orientation
+    cut.maybeEndCut = butt_end
+    cut.half_plane = HalfPlane(normal=local_normal, offset=local_offset)
+    
+    # Create PartiallyCutTimber for the butt timber
+    cut_butt = PartiallyCutTimber(butt_timber, name=f"ButtTimber")
+    cut_butt._cuts.append(cut)
+    
+    # Create PartiallyCutTimber for the receiving timber (no cuts)
+    cut_receiving = PartiallyCutTimber(receiving_timber, name=f"ReceivingTimber")
+    
+    # Create and return the Joint
+    joint = Joint()
+    joint.partiallyCutTimbers = [cut_receiving, cut_butt]
+    joint.jointAccessories = []
+    
+    return joint
 
 
-def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberB: Timber) -> Joint:
+def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd, splice_point: Optional[V3]) -> Joint:
     """
     Creates a basic splice joint between two timbers. The butt timber is extended to meet the face of the receiving timber.
+
+    If splice_point is not provided, it is calculated as the midpoint of the two timbers.
+
+    If splice_point is provided, it should be on the centerline of timberA. If not, it is projected onto it..
     """
     # TODO assert length axis are parallel 
     # TODO check that timber cross sections overlap and if not, output a warning
-    # TODO
+    # if splice_point is not provided, calculate it as the midpoint of the two timbers
+    # TODO check that splice_point is on the centerline of timberA, if not, output a warning and project it onto the centerline
+    # create the splice plane based on the position of the splice point
+    # return the cut by the splice plane on both timbers as a joint
     return None
 
 
