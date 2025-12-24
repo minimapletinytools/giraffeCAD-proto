@@ -10,15 +10,24 @@ from code_goes_here.timber import *
 # ============================================================================
 
 def create_timber(bottom_position: V3, length: Numeric, size: V2, 
-                  length_direction: Direction3D, width_direction: Direction3D) -> Timber:
+                  length_direction: Direction3D, width_direction: Direction3D, name: Optional[str] = None) -> Timber:
     """
     Creates a timber at bottom_position with given dimensions and rotates it 
     to the length_direction and width_direction
+    
+    Args:
+        bottom_position: Position of the bottom point of the timber
+        length: Length of the timber
+        size: Cross-sectional size (width, height)
+        length_direction: Direction vector for the timber's length axis
+        width_direction: Direction vector for the timber's width axis
+        name: Optional name for this timber (used for rendering/debugging)
     """
-    return Timber(length, size, bottom_position, length_direction, width_direction)
+    return Timber(length, size, bottom_position, length_direction, width_direction, name=name)
 
 def create_axis_aligned_timber(bottom_position: V3, length: Numeric, size: V2,
-                              length_direction: TimberFace, width_direction: Optional[TimberFace] = None) -> Timber:
+                              length_direction: TimberFace, width_direction: Optional[TimberFace] = None, 
+                              name: Optional[str] = None) -> Timber:
     """
     Creates an axis-aligned timber using TimberFace to reference directions
     in the world coordinate system.
@@ -31,6 +40,7 @@ def create_axis_aligned_timber(bottom_position: V3, length: Numeric, size: V2,
         width_direction: Optional direction for the timber's width axis.
                         If not provided, defaults to RIGHT (+X) unless length_direction
                         is RIGHT, in which case TOP (+Z) is used.
+        name: Optional name for this timber (used for rendering/debugging)
     
     Returns:
         New timber with the specified axis-aligned orientation
@@ -52,11 +62,11 @@ def create_axis_aligned_timber(bottom_position: V3, length: Numeric, size: V2,
     
     width_vec = width_direction.get_direction()
     
-    return create_timber(bottom_position, length, size, length_vec, width_vec)
+    return create_timber(bottom_position, length, size, length_vec, width_vec, name=name)
 
 def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_index: int, 
                                                length: Numeric, location_type: FootprintLocation,
-                                               size: V2) -> Timber:
+                                               size: V2, name: Optional[str] = None) -> Timber:
     """
     Creates a vertical timber (post) on a footprint boundary corner.
     
@@ -75,6 +85,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
         length: Length of the vertical timber (height)
         location_type: Where to position the timber relative to the boundary corner
         size: Timber size (width, depth) as a 2D vector
+        name: Optional name for this timber (used for rendering/debugging)
         
     Returns:
         Timber positioned vertically on the footprint boundary corner
@@ -138,12 +149,12 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
         offset_y = -timber_width/2 * outgoing_dir_normalized[1] - timber_depth/2 * outgoing_dir_normalized[0]
         bottom_position = create_vector3d(corner_x + offset_x, corner_y + offset_y, 0)
     
-    return create_timber(bottom_position, length, size, length_direction, width_direction)
+    return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)
 
 def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: int, 
                                             distance_along_side: Numeric,
                                             length: Numeric, location_type: FootprintLocation, 
-                                            size: V2) -> Timber:
+                                            size: V2, name: Optional[str] = None) -> Timber:
     """
     Creates a vertical timber (post) positioned at a point along a footprint boundary side.
     
@@ -161,6 +172,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
         length: Length of the vertical timber (height)
         location_type: Where to position the timber relative to the boundary side
         size: Timber size (width, depth) as a 2D vector
+        name: Optional name for this timber (used for rendering/debugging)
         
     Returns:
         Timber positioned vertically at the specified point on the footprint boundary side
@@ -236,12 +248,12 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
                                          point_y - inward_y * timber_depth / 2, 
                                          0)
     
-    return create_timber(bottom_position, length, size, length_direction, width_direction)
+    return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)
 
 def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int,
                                         location_type: FootprintLocation, 
                                         size: V2,
-                                        length: Optional[Numeric] = None) -> Timber:
+                                        length: Optional[Numeric] = None, name: Optional[str] = None) -> Timber:
     """
     Creates a horizontal timber (mudsill) on the footprint boundary side.
     
@@ -259,6 +271,7 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
         location_type: Where to position the timber relative to the boundary side
         size: Timber size (width, height) as a 2D vector
         length: Length of the timber (optional; if not provided, uses boundary side length)
+        name: Optional name for this timber (used for rendering/debugging)
         
     Returns:
         Timber positioned on the footprint boundary side
@@ -305,7 +318,7 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
         bottom_position = bottom_position - inward_normal * (timber_height / 2)
     # For CENTER, no offset needed - centerline is already on the boundary side
     
-    return create_timber(bottom_position, length, size, length_direction, width_direction)
+    return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)
 
 def extend_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Numeric, 
                   extend_length: Numeric) -> Timber:
@@ -397,7 +410,8 @@ def join_timbers(timber1: Timber, timber2: Timber,
                 lateral_offset: Numeric = Integer(0),
                 stickout: Stickout = Stickout.nostickout(),
                 size: Optional[V2] = None,
-                orientation_width_vector: Optional[Direction3D] = None) -> Timber:
+                orientation_width_vector: Optional[Direction3D] = None, 
+                name: Optional[str] = None) -> Timber:
     """
     Joins two timbers by creating a connecting timber from centerline to centerline.
     
@@ -428,6 +442,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
                                  the perpendicular plane.
                                  If the provided vector is parallel to the joining direction, falls back
                                  to timber1's width direction.
+        name: Optional name for this timber (used for rendering/debugging)
         
     Returns:
         New timber connecting timber1 and timber2 along their centerlines
@@ -508,14 +523,15 @@ def join_timbers(timber1: Timber, timber2: Timber,
     if lateral_offset != 0:
         bottom_pos += offset_dir * lateral_offset
     
-    return create_timber(bottom_pos, timber_length, size, length_direction, width_direction)
+    return create_timber(bottom_pos, timber_length, size, length_direction, width_direction, name=name)
 
 def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber,
                                                 location_on_timber1: Numeric,
                                                 stickout: Stickout,
                                                 offset_from_timber1: FaceAlignedJoinedTimberOffset,
                                                 size: V2,
-                                                orientation_face_on_timber1: Optional[TimberFace] = None) -> Timber:
+                                                orientation_face_on_timber1: Optional[TimberFace] = None, 
+                                                name: Optional[str] = None) -> Timber:
     """
     Joins two face-aligned timbers with a perpendicular timber.
     
@@ -530,6 +546,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
                                      the width direction of the created timber will align with this face.
                                      If not provided, uses timber1's length direction projected onto
                                      the perpendicular plane.
+        name: Optional name for this timber (used for rendering/debugging)
         
     Returns:
         New timber that joins timber1 and timber2
@@ -642,7 +659,8 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         location_on_timber2=location_on_timber2,
         lateral_offset=offset_value,
         orientation_width_vector=orientation_width_vector,
-        size=size
+        size=size,
+        name=name
     )
 
 

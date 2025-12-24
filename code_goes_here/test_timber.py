@@ -764,8 +764,8 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction)
-        cut_timber = CutTimber(timber, name='test_timber')
+        timber = Timber(length, size, bottom_position, length_direction, width_direction, name='test_timber')
+        cut_timber = CutTimber(timber)
         
         # Get the CSG
         csg = cut_timber._extended_timber_without_cuts_csg()
