@@ -34,10 +34,10 @@ DONE-address TODOs is smiple mrotise and sitance
 IGNORE-remove LongEdge 
 DONE-update tests to not use floats ever (maybe have a couple float tests in a separate file though)
 DONE-rework joint classes
-- maybe split griaffe sad :(
+-maybe split griaffe sad :(
 -cleanup the epsilon constant stuff (when to use flot vs rational for this?? think baotu ti ab it...)
 -rename "End joint" it's not what you think it's actulaly a splice joint, I think you should call them corner joints instead?
-
+-fix the venv stuff in readme, aeither add venv or get rid of it from readme.
 
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
