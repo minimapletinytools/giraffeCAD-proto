@@ -1,67 +1,10 @@
 
+:: 12/24/2025 reorg code notes
 
-:: BREP CUTTING OPERATIONS
-
-make a generic B-rep cutting operations for doing most joints:
-
--very basic
-  -shoulder plane 
-    -specified by a position and a normal (infintie plane)
-    -created relative to a timber end + direction
-  -rectangular prism
-    -easy for tenon ends
-    -for mortises, do we use the joining timber to locate? Probably not,
-
-
-
-Challenges:
-- locating rectangular prisms from tenon and mortises
-- infinet to finite bounds
-
-
-:: timber joint rep and  timber length calculatino notes
-
--cut
-  -substractive operation on timber
-  -end cuts "set" the length of the timber (either extending it or shortening it) on the end it cut
-    -ALTERNATIVE 
-      -cut does not care, just does substractive cut. (this is kinda nice)
-      -add suppor for infinite timbers (this is really nice)
-      -unjointed end cuts can either 
-        -be non infinte timber ends (a little ad-hoc)
-        -we could use an end cut operation to size the timber (pro) (cumbersome, but most elegant)
-  -if cutting on the bot (origin) end, the origin remains in the same place, so the final cut timber has a bottom point below 0
-    -ALTERNATIVE: move origin to the very bottom always (ick?)
-
-DECISION
-  -timbers defined as is (with origin and length)
-  -when a timber has a cut at the end, it becomes infinite in that direction
-  -if it helps, you can think of timbers without an end cut as an infinite timber with a default end cut at the length
-  
--joint
-  -cuts on 1 ore more timbers that connect them
-
-
--Cut 
-  -implementation detail (sorta)
-  -happen at the CSG/brep level
-  -if we do the extension thing
-    -extending timber end includes cut
-    -I guess could/should be used to infer timber length if we go with the "extension" method
-  -TODO how are cuts defined, relative to timber origin or relative to a point/face on the timber?
-    -maybe relative to timber, in which case a Cut class on its own is meaningless, maybe was well define TimberCut and then [TimberCut] for a list of cuts on a timber (at which point maybe just name it Cut)
--TimberCut
-  -A timber with a series of Cuts on it
-  -if we do the extension thing
-    -has some face-cognition, meaning cuts happen relative to a face,  (this actualy only need)
-      -only ends can be "extended", this is very much an ad-hoc operation
--Joint
-  -a list of TimberCuts that form the joint
-  -also includes joint accesories like draw bore,s fasteners, etc
--CutTimber
-  -A timber with a list of TimberCuts?  
-
-
+-timber.py cotains all enums constants and types
+-construction.py contains all our timber creation functions
+-basic_joints.py contains all basic joint creation functions
+-giraffe.py imports all files and rexports them together
 
 :: documentation
 
@@ -101,7 +44,7 @@ DONE-rework joint classes
       FAIL-calll this method tenon cutter :D
   -simple joints
     DONE-basic_corner_joint
-    -basic_butt_joint
+    DONE-basic_butt_joint
     -basic_splice_joint
     DONE-basic_miter_joint
 
@@ -214,6 +157,68 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 :: END TODONE
 
+
+::12/2025 BREP CUTTING OPERATIONS
+
+make a generic B-rep cutting operations for doing most joints:
+
+-very basic
+  -shoulder plane 
+    -specified by a position and a normal (infintie plane)
+    -created relative to a timber end + direction
+  -rectangular prism
+    -easy for tenon ends
+    -for mortises, do we use the joining timber to locate? Probably not,
+
+
+
+Challenges:
+- locating rectangular prisms from tenon and mortises
+- infinet to finite bounds
+
+
+
+:: 12/2025 timber joint rep and  timber length calculatino notes
+
+-cut
+  -substractive operation on timber
+  -end cuts "set" the length of the timber (either extending it or shortening it) on the end it cut
+    -ALTERNATIVE 
+      -cut does not care, just does substractive cut. (this is kinda nice)
+      -add suppor for infinite timbers (this is really nice)
+      -unjointed end cuts can either 
+        -be non infinte timber ends (a little ad-hoc)
+        -we could use an end cut operation to size the timber (pro) (cumbersome, but most elegant)
+  -if cutting on the bot (origin) end, the origin remains in the same place, so the final cut timber has a bottom point below 0
+    -ALTERNATIVE: move origin to the very bottom always (ick?)
+
+DECISION
+  -timbers defined as is (with origin and length)
+  -when a timber has a cut at the end, it becomes infinite in that direction
+  -if it helps, you can think of timbers without an end cut as an infinite timber with a default end cut at the length
+  
+-joint
+  -cuts on 1 ore more timbers that connect them
+
+
+-Cut 
+  -implementation detail (sorta)
+  -happen at the CSG/brep level
+  -if we do the extension thing
+    -extending timber end includes cut
+    -I guess could/should be used to infer timber length if we go with the "extension" method
+  -TODO how are cuts defined, relative to timber origin or relative to a point/face on the timber?
+    -maybe relative to timber, in which case a Cut class on its own is meaningless, maybe was well define TimberCut and then [TimberCut] for a list of cuts on a timber (at which point maybe just name it Cut)
+-TimberCut
+  -A timber with a series of Cuts on it
+  -if we do the extension thing
+    -has some face-cognition, meaning cuts happen relative to a face,  (this actualy only need)
+      -only ends can be "extended", this is very much an ad-hoc operation
+-Joint
+  -a list of TimberCuts that form the joint
+  -also includes joint accesories like draw bore,s fasteners, etc
+-CutTimber
+  -A timber with a list of TimberCuts?  
 
 
 :: 11/2025 Reference Stuff
