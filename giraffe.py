@@ -1567,20 +1567,25 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # Get the end directions for each timber (pointing outward from the timber)
     if timberA_end == TimberReferenceEnd.TOP:
         directionA = timberA.length_direction
+        # TODO create a class method on Timebr called "get_top_center_position" for this
         endA_position = timberA.bottom_position + timberA.length_direction * timberA.length
     else:  # BOTTOM
-        directionA = -timberA.length_direction
+        directionA = -timberA.length_direction 
+        # TODO create a class method on Timebr called "get_bottom_center_position" for this
         endA_position = timberA.bottom_position
     
     if timberB_end == TimberReferenceEnd.TOP:
         directionB = timberB.length_direction
+        # TODO create a class method on Timebr called "get_top_center_position" for this
         endB_position = timberB.bottom_position + timberB.length_direction * timberB.length
     else:  # BOTTOM
         directionB = -timberB.length_direction
+        # TODO create a class method on Timebr called "get_bottom_center_position" for this
         endB_position = timberB.bottom_position
     
     # Check that the timbers are not parallel
     cross = cross_product(directionA, directionB)
+    # TODO replace with a epsilon constant defined at the top (here and everywhere else)
     if vector_magnitude(cross) < Rational(1, 1000):
         raise ValueError("Timbers cannot be parallel for a miter joint")
     
@@ -1611,6 +1616,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # The intersection point is the midpoint between the two closest points
     intersection_point = (pointA + pointB) / 2
     
+    # TODO what's this for??? delete this... linse are allowed to be skew
     # Warn if the lines don't actually intersect (skew lines)
     distance_between = vector_magnitude(pointA - pointB)
     if distance_between > Rational(1, 10):
@@ -1624,6 +1630,8 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # The bisecting direction is the normalized sum of the two directions
     # This points "into" the joint (towards the acute angle)
     bisector = normA + normB
+
+    # TODO this is wrong, this vector lives in the miter plane and is NOT the miter plane's normal
     miter_normal = normalize_vector(bisector)
     
     # The miter plane passes through the intersection point
