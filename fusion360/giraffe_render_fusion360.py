@@ -122,7 +122,7 @@ def create_matrix3d_from_orientation(position: Matrix, orientation: Orientation)
     return matrix3d
 
 
-def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism) -> Optional[adsk.fusion.BRepBody]:
+def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
     Render a Prism CSG in the component's local coordinate system.
     
@@ -137,6 +137,7 @@ def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism) -> Op
     Args:
         component: Fusion 360 component to create geometry in
         prism: Prism CSG object
+        infinite_extent: Extent to use for infinite dimensions (in cm)
         
     Returns:
         Created BRepBody, or None if creation failed
@@ -147,11 +148,29 @@ def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism) -> Op
         height = float(prism.size[1])
         
         # Get start and end distances along the length axis
-        if prism.start_distance is None or prism.end_distance is None:
-            raise ValueError("Cannot render infinite prism - must have finite start and end distances")
+        # For infinite prisms, use the provided extent
+        LARGE_NUMBER = infinite_extent
         
-        start_dist = float(prism.start_distance)
-        end_dist = float(prism.end_distance)
+        if prism.start_distance is None and prism.end_distance is None:
+            # Fully infinite prism - extend both ways
+            start_dist = -LARGE_NUMBER
+            end_dist = LARGE_NUMBER
+            print(f"  Warning: Rendering fully infinite prism, cropping to ±{LARGE_NUMBER}")
+        elif prism.start_distance is None:
+            # Semi-infinite extending in negative direction
+            end_dist = float(prism.end_distance)
+            start_dist = end_dist - 2 * LARGE_NUMBER
+            print(f"  Warning: Rendering semi-infinite prism (negative), cropping start to {start_dist}")
+        elif prism.end_distance is None:
+            # Semi-infinite extending in positive direction
+            start_dist = float(prism.start_distance)
+            end_dist = start_dist + 2 * LARGE_NUMBER
+            print(f"  Warning: Rendering semi-infinite prism (positive), cropping end to {end_dist}")
+        else:
+            # Finite prism
+            start_dist = float(prism.start_distance)
+            end_dist = float(prism.end_distance)
+        
         length = end_dist - start_dist
         
         # Create a sketch on the XY plane
@@ -201,7 +220,7 @@ def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism) -> Op
         return None
 
 
-def render_meowmeowcsg_component_at_origin(csg: MeowMeowCSG, component_name: str = "CSG_Component") -> Optional[adsk.fusion.Occurrence]:
+def render_meowmeowcsg_component_at_origin(csg: MeowMeowCSG, component_name: str = "CSG_Component", timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.Occurrence]:
     """
     Render a MeowMeowCSG object as a new component in Fusion 360 AT THE ORIGIN.
     
@@ -211,6 +230,8 @@ def render_meowmeowcsg_component_at_origin(csg: MeowMeowCSG, component_name: str
     Args:
         csg: MeowMeowCSG object to render
         component_name: Name for the created component
+        timber: Optional timber object (needed for coordinate transformations during cuts)
+        infinite_extent: Extent to use for infinite geometry (in cm)
         
     Returns:
         Created Occurrence, or None if creation failed
@@ -229,7 +250,7 @@ def render_meowmeowcsg_component_at_origin(csg: MeowMeowCSG, component_name: str
         component.name = component_name
         
         # Render the CSG in local space
-        body = render_csg_in_local_space(component, csg)
+        body = render_csg_in_local_space(component, csg, timber, infinite_extent)
         
         if body is None:
             print(f"Failed to render CSG in local space for {component_name}")
@@ -243,7 +264,7 @@ def render_meowmeowcsg_component_at_origin(csg: MeowMeowCSG, component_name: str
         return None
 
 
-def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG) -> Optional[adsk.fusion.BRepBody]:
+def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
     Render a CSG object in the component's local coordinate system.
     
@@ -253,29 +274,45 @@ def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG
     Args:
         component: Component to render into
         csg: CSG object to render
+        timber: Optional timber object (needed for coordinate transformations during cuts)
+        infinite_extent: Extent to use for infinite geometry (in cm)
         
     Returns:
         Created BRepBody, or None if creation failed
     """
+    app = get_fusion_app()
+    
     if isinstance(csg, Prism):
-        return render_prism_at_origin(component, csg)
+        if app:
+            app.log(f"  render_csg_in_local_space: Rendering Prism")
+        return render_prism_at_origin(component, csg, infinite_extent)
     
     elif isinstance(csg, Cylinder):
+        if app:
+            app.log(f"  render_csg_in_local_space: Rendering Cylinder")
         return render_cylinder_at_origin(component, csg)
     
     elif isinstance(csg, HalfPlane):
         # HalfPlane is typically used for cutting operations, not standalone rendering
         print("Warning: HalfPlane rendering not implemented (typically used in Difference operations)")
+        if app:
+            app.log("Warning: HalfPlane standalone rendering not implemented")
         return None
     
     elif isinstance(csg, Union):
-        return render_union_at_origin(component, csg)
+        if app:
+            app.log(f"  render_csg_in_local_space: Rendering Union with {len(csg.children)} children")
+        return render_union_at_origin(component, csg, timber, infinite_extent)
     
     elif isinstance(csg, Difference):
-        return render_difference_at_origin(component, csg)
+        if app:
+            app.log(f"  render_csg_in_local_space: Rendering Difference (base={type(csg.base).__name__}, {len(csg.subtract)} subtractions)")
+        return render_difference_at_origin(component, csg, timber, infinite_extent)
     
     else:
         print(f"Unknown CSG type: {type(csg)}")
+        if app:
+            app.log(f"Unknown CSG type: {type(csg)}")
         return None
 
 
@@ -360,7 +397,7 @@ def render_cylinder_at_origin(component: adsk.fusion.Component, cylinder: Cylind
         return None
 
 
-def render_union_at_origin(component: adsk.fusion.Component, union: Union) -> Optional[adsk.fusion.BRepBody]:
+def render_union_at_origin(component: adsk.fusion.Component, union: Union, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
     Render a Union CSG operation at the origin.
     
@@ -376,7 +413,7 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union) -> Op
         return None
     
     # Render the first child
-    result_body = render_csg_in_local_space(component, union.children[0])
+    result_body = render_csg_in_local_space(component, union.children[0], timber, infinite_extent)
     
     if result_body is None:
         print("Failed to render first child of union")
@@ -384,7 +421,7 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union) -> Op
     
     # Union with remaining children
     for i, child in enumerate(union.children[1:], start=1):
-        child_body = render_csg_in_local_space(component, child)
+        child_body = render_csg_in_local_space(component, child, timber, infinite_extent)
         
         if child_body is None:
             print(f"Failed to render union child {i}")
@@ -417,31 +454,306 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union) -> Op
     return result_body
 
 
-def render_difference_at_origin(component: adsk.fusion.Component, difference: Difference) -> Optional[adsk.fusion.BRepBody]:
+def transform_halfplane_to_local(half_plane: HalfPlane, timber_position: Matrix, timber_orientation: Orientation) -> Tuple[adsk.core.Vector3D, float]:
+    """
+    Transform a HalfPlane from global coordinates to timber's local coordinate system.
+    
+    The timber's local coordinate system is:
+    - Origin at timber_position
+    - X-axis along width direction (orientation column 0)
+    - Y-axis along height direction (orientation column 1)
+    - Z-axis along length direction (orientation column 2)
+    
+    Args:
+        half_plane: HalfPlane in global coordinates
+        timber_position: Timber's bottom_position in global coordinates
+        timber_orientation: Timber's orientation matrix
+        
+    Returns:
+        Tuple of (local_normal_vector, local_offset)
+    """
+    # Extract global normal and offset
+    global_normal = half_plane.normal
+    global_offset = half_plane.offset
+    
+    # Transform normal to local coordinates: local_normal = orientation^T * global_normal
+    # orientation^T transforms from global to local
+    orientation_matrix = timber_orientation.matrix
+    local_normal = Matrix([
+        [orientation_matrix[0, 0], orientation_matrix[1, 0], orientation_matrix[2, 0]],
+        [orientation_matrix[0, 1], orientation_matrix[1, 1], orientation_matrix[2, 1]],
+        [orientation_matrix[0, 2], orientation_matrix[1, 2], orientation_matrix[2, 2]]
+    ]) * global_normal
+    
+    # Transform offset to local coordinates
+    # Global plane equation: global_normal · P_global = global_offset
+    # Local plane equation: local_normal · P_local = local_offset
+    # Where P_global = timber_position + orientation * P_local
+    # So: global_normal · (timber_position + orientation * P_local) = global_offset
+    #     global_normal · timber_position + global_normal · orientation * P_local = global_offset
+    #     (orientation^T * global_normal) · P_local = global_offset - global_normal · timber_position
+    #     local_normal · P_local = global_offset - global_normal · timber_position
+    local_offset = global_offset - (global_normal.T * timber_position)[0, 0]
+    
+    # Convert to Fusion 360 types
+    local_normal_vector = adsk.core.Vector3D.create(
+        float(local_normal[0]),
+        float(local_normal[1]),
+        float(local_normal[2])
+    )
+    
+    return local_normal_vector, float(local_offset)
+
+
+def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRepBody, half_plane: HalfPlane, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> bool:
+    """
+    Apply a HalfPlane cut to a body using a large box and boolean difference.
+    
+    The HalfPlane is defined in global coordinates but must be transformed to the timber's
+    local coordinate system for rendering.
+    
+    Args:
+        component: Component containing the body
+        body: Body to cut
+        half_plane: HalfPlane defining the cut (in global coordinates)
+        timber: Timber object (needed for coordinate transformation)
+        infinite_extent: Extent to use for the cutting box (in cm)
+        
+    Returns:
+        True if cut was applied successfully
+    """
+    app = get_fusion_app()
+    
+    try:
+        if app:
+            app.log(f"    apply_halfplane_cut: Starting (global coords)")
+            
+        # Log global coordinates
+        global_nx = float(half_plane.normal[0])
+        global_ny = float(half_plane.normal[1])
+        global_nz = float(half_plane.normal[2])
+        global_d = float(half_plane.offset)
+        if app:
+            app.log(f"      Global: normal=({global_nx:.4f}, {global_ny:.4f}, {global_nz:.4f}), offset={global_d:.4f}")
+        
+        # Transform to local coordinates if timber is provided
+        if timber is not None:
+            plane_normal, plane_offset = transform_halfplane_to_local(half_plane, timber.bottom_position, timber.orientation)
+            if app:
+                app.log(f"      Local:  normal=({plane_normal.x:.4f}, {plane_normal.y:.4f}, {plane_normal.z:.4f}), offset={plane_offset:.4f}")
+        else:
+            # No transformation - use global coordinates directly
+            plane_normal = adsk.core.Vector3D.create(global_nx, global_ny, global_nz)
+            plane_offset = global_d
+            if app:
+                app.log(f"      WARNING: No timber provided, using global coordinates")
+        
+        # The plane equation is: normal · P = offset
+        # A point on the plane can be found by: P = normal * offset (if normal is normalized)
+        # We'll use this as the plane origin
+        normal_mag = (plane_normal.x**2 + plane_normal.y**2 + plane_normal.z**2) ** 0.5
+        plane_point = adsk.core.Point3D.create(
+            plane_normal.x * plane_offset / normal_mag,
+            plane_normal.y * plane_offset / normal_mag,
+            plane_normal.z * plane_offset / normal_mag
+        )
+        
+        if app:
+            app.log(f"    Creating cutting half-space at point ({plane_point.x:.4f}, {plane_point.y:.4f}, {plane_point.z:.4f})")
+        
+        # Create a large box representing the half-space to subtract
+        # The box extends from the plane in the direction of -normal (the "outside" to remove)
+        try:
+            # Use the provided extent for the cutting box
+            BOX_SIZE = infinite_extent * 2  # Double for safety
+            
+            # Create a sketch on XY plane to make the cutting box
+            sketches = component.sketches
+            xy_plane = component.xYConstructionPlane
+            sketch = sketches.add(xy_plane)
+            
+            # Create a large rectangle centered at origin
+            corner1 = adsk.core.Point3D.create(-BOX_SIZE, -BOX_SIZE, 0)
+            corner2 = adsk.core.Point3D.create(BOX_SIZE, BOX_SIZE, 0)
+            rect = sketch.sketchCurves.sketchLines.addTwoPointRectangle(corner1, corner2)
+            
+            # Get the profile for extrusion
+            profile = sketch.profiles.item(0)
+            
+            # Extrude the box
+            extrudes = component.features.extrudeFeatures
+            extrude_input = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+            
+            # Extrude a very large distance
+            distance = adsk.core.ValueInput.createByReal(BOX_SIZE)
+            extrude_input.setDistanceExtent(False, distance)
+            
+            # Create the extrusion
+            extrude = extrudes.add(extrude_input)
+            
+            if not extrude or not extrude.bodies or extrude.bodies.count == 0:
+                print("    Failed to create cutting box")
+                if app:
+                    app.log("    ERROR: Failed to create cutting box")
+                return False
+            
+            cutting_box = extrude.bodies.item(0)
+            
+            if app:
+                app.log(f"    Cutting box created, now positioning it...")
+            
+            # Transform the cutting box to align with the half-plane
+            # We need to position it so the cutting plane is at plane_point with normal plane_normal
+            # The box currently extends from Z=0 to Z=BOX_SIZE
+            # We want to position it so that Z=0 aligns with our cutting plane
+            
+            # Create transformation matrix
+            # We need to:
+            # 1. Rotate so Z-axis aligns with -plane_normal (because we want the Z=0 face to be the cutting plane)
+            # 2. Translate so the Z=0 face passes through plane_point
+            
+            # Build rotation matrix to align Z-axis with +plane_normal
+            # In giraffe.py, we do Difference(timber, [HalfPlane])
+            # HalfPlane represents points where normal · P >= offset
+            # Difference removes those points, so we remove where normal · P >= offset
+            # Therefore, the cutting box should represent the region where normal · P >= offset
+            # The box extends from Z=0 in the +Z direction
+            # So we align Z-axis with +normal (not -normal) to remove the correct half-space
+            new_z = adsk.core.Vector3D.create(plane_normal.x, plane_normal.y, plane_normal.z)
+            new_z.normalize()
+            
+            # Choose an arbitrary X axis perpendicular to new_z
+            if abs(new_z.z) < 0.9:
+                new_x = adsk.core.Vector3D.create(0, 0, 1)
+            else:
+                new_x = adsk.core.Vector3D.create(1, 0, 0)
+            
+            # Make new_x perpendicular to new_z
+            temp = new_z.crossProduct(new_x)
+            new_y = temp
+            new_y.normalize()
+            new_x = new_y.crossProduct(new_z)
+            new_x.normalize()
+            
+            # Create transformation matrix
+            transform = adsk.core.Matrix3D.create()
+            transform.setToAlignCoordinateSystems(
+                adsk.core.Point3D.create(0, 0, 0),
+                adsk.core.Vector3D.create(1, 0, 0),
+                adsk.core.Vector3D.create(0, 1, 0),
+                adsk.core.Vector3D.create(0, 0, 1),
+                plane_point,
+                new_x,
+                new_y,
+                new_z
+            )
+            
+            # Create a move feature to position the cutting box
+            move_features = component.features.moveFeatures
+            bodies_to_move = adsk.core.ObjectCollection.create()
+            bodies_to_move.add(cutting_box)
+            move_input = move_features.createInput(bodies_to_move, transform)
+            move_features.add(move_input)
+            
+            if app:
+                app.log(f"    Cutting box positioned, performing boolean cut...")
+            
+            # Perform boolean difference: body - cutting_box
+            combine_features = component.features.combineFeatures
+            tools = adsk.core.ObjectCollection.create()
+            tools.add(cutting_box)
+            combine_input = combine_features.createInput(body, tools)
+            combine_input.operation = adsk.fusion.FeatureOperations.CutFeatureOperation
+            combine_input.isKeepToolBodies = False
+            
+            combine_features.add(combine_input)
+            
+            if app:
+                app.log(f"    Boolean cut complete")
+            
+        except Exception as e:
+            print(f"    ERROR during half-plane cut: {e}")
+            if app:
+                app.log(f"    ERROR during half-plane cut: {e}")
+            traceback.print_exc()
+            return False
+        
+        time.sleep(0.05)
+        adsk.doEvents()
+        
+        return True
+        
+    except Exception as e:
+        print(f"  Error applying HalfPlane cut: {e}")
+        traceback.print_exc()
+        return False
+
+
+def render_difference_at_origin(component: adsk.fusion.Component, difference: Difference, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
     Render a Difference CSG operation at the origin.
+    
+    For HalfPlane cuts, uses split operations instead of creating infinite solids.
+    For other CSG types, creates the solid and performs boolean difference.
     
     Args:
         component: Component to render into
         difference: Difference CSG object
+        timber: Optional timber object (needed for coordinate transformations during cuts)
+        infinite_extent: Extent to use for infinite geometry (in cm)
         
     Returns:
         Resulting BRepBody after subtraction, or None if creation failed
     """
+    app = get_fusion_app()
+    
+    if app:
+        app.log(f"render_difference_at_origin: Starting - base type={type(difference.base).__name__}, {len(difference.subtract)} cuts")
+    
     # Render the base body
-    base_body = render_csg_in_local_space(component, difference.base)
+    base_body = render_csg_in_local_space(component, difference.base, timber, infinite_extent)
     
     if base_body is None:
         print("Failed to render base of difference")
+        if app:
+            app.log("ERROR: Failed to render base of difference")
         return None
+    
+    if app:
+        app.log(f"render_difference_at_origin: Base body created successfully, now applying {len(difference.subtract)} cuts")
     
     # Subtract each child
     for i, subtract_csg in enumerate(difference.subtract):
-        subtract_body = render_csg_in_local_space(component, subtract_csg)
+        # Special handling for HalfPlane cuts
+        if isinstance(subtract_csg, HalfPlane):
+            print(f"  Applying HalfPlane cut {i+1}/{len(difference.subtract)} using split operation")
+            if app:
+                app.log(f"  Applying HalfPlane cut {i+1}/{len(difference.subtract)} using split operation")
+            success = apply_halfplane_cut(component, base_body, subtract_csg, timber, infinite_extent)
+            if not success:
+                print(f"  Failed to apply HalfPlane cut {i+1}")
+                if app:
+                    app.log(f"  ERROR: Failed to apply HalfPlane cut {i+1}")
+            else:
+                if app:
+                    app.log(f"  SUCCESS: Applied HalfPlane cut {i+1}")
+            continue
+        
+        # For other CSG types, render and perform boolean difference
+        print(f"  Applying {type(subtract_csg).__name__} cut {i+1}/{len(difference.subtract)} using boolean difference")
+        if app:
+            app.log(f"  Applying {type(subtract_csg).__name__} cut {i+1}/{len(difference.subtract)} using boolean difference")
+        
+        subtract_body = render_csg_in_local_space(component, subtract_csg, timber, infinite_extent)
         
         if subtract_body is None:
-            print(f"Failed to render subtract child {i}")
+            print(f"  Failed to render subtract child {i+1}")
+            if app:
+                app.log(f"  ERROR: Failed to render subtract child {i+1}")
             continue
+        
+        if app:
+            app.log(f"    Subtract body created, performing combine cut operation...")
         
         # Perform difference operation
         try:
@@ -459,13 +771,21 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
             # Execute the combine
             combine_features.add(combine_input)
             
+            if app:
+                app.log(f"    SUCCESS: Boolean cut applied for child {i+1}")
+            
             # Give Fusion 360 time to process the difference
             time.sleep(0.05)
             adsk.doEvents()
             
         except Exception as e:
-            print(f"Error performing difference with child {i}: {e}")
+            print(f"  Error performing difference with child {i+1}: {e}")
+            if app:
+                app.log(f"  ERROR performing difference with child {i+1}: {e}")
             continue
+    
+    if app:
+        app.log(f"render_difference_at_origin: COMPLETE - all {len(difference.subtract)} cuts processed")
     
     return base_body
 
@@ -538,6 +858,123 @@ def apply_timber_transform(occurrence: adsk.fusion.Occurrence, position: Matrix,
         return False
 
 
+def calculate_structure_extents(cut_timbers: List[CutTimber]) -> float:
+    """
+    Calculate the bounding box extent of all timbers in the structure.
+    
+    Args:
+        cut_timbers: List of CutTimber objects
+        
+    Returns:
+        Maximum extent (half-size of bounding box) in cm
+    """
+    if not cut_timbers:
+        return 1000.0  # Default 10m
+    
+    # Find min and max coordinates across all timbers
+    min_x = min_y = min_z = float('inf')
+    max_x = max_y = max_z = float('-inf')
+    
+    for cut_timber in cut_timbers:
+        timber = cut_timber._timber
+        
+        # Get the 8 corners of the timber bounding box
+        # Bottom corners
+        bottom_pos = timber.bottom_position
+        
+        # Top position
+        top_pos = bottom_pos + timber.length_direction * timber.length
+        
+        # Width and height directions
+        width_dir = Matrix([
+            timber.orientation.matrix[0, 0],
+            timber.orientation.matrix[1, 0],
+            timber.orientation.matrix[2, 0]
+        ])
+        height_dir = Matrix([
+            timber.orientation.matrix[0, 1],
+            timber.orientation.matrix[1, 1],
+            timber.orientation.matrix[2, 1]
+        ])
+        
+        # Half-size offsets
+        half_width = timber.size[0] / 2
+        half_height = timber.size[1] / 2
+        
+        # All 8 corners
+        corners = [
+            bottom_pos + width_dir * half_width + height_dir * half_height,
+            bottom_pos + width_dir * half_width - height_dir * half_height,
+            bottom_pos - width_dir * half_width + height_dir * half_height,
+            bottom_pos - width_dir * half_width - height_dir * half_height,
+            top_pos + width_dir * half_width + height_dir * half_height,
+            top_pos + width_dir * half_width - height_dir * half_height,
+            top_pos - width_dir * half_width + height_dir * half_height,
+            top_pos - width_dir * half_width - height_dir * half_height,
+        ]
+        
+        # Update min/max
+        for corner in corners:
+            x, y, z = float(corner[0]), float(corner[1]), float(corner[2])
+            min_x = min(min_x, x)
+            min_y = min(min_y, y)
+            min_z = min(min_z, z)
+            max_x = max(max_x, x)
+            max_y = max(max_y, y)
+            max_z = max(max_z, z)
+    
+    # Calculate extent (maximum half-dimension)
+    extent_x = (max_x - min_x) / 2
+    extent_y = (max_y - min_y) / 2
+    extent_z = (max_z - min_z) / 2
+    
+    extent = max(extent_x, extent_y, extent_z)
+    
+    app = get_fusion_app()
+    if app:
+        app.log(f"Structure extents: {extent_x:.2f} x {extent_y:.2f} x {extent_z:.2f} cm")
+        app.log(f"Maximum extent: {extent:.2f} cm")
+    
+    return extent
+
+
+def check_body_extents(body: adsk.fusion.BRepBody, max_allowed_extent: float, component_name: str) -> bool:
+    """
+    Check if a body extends beyond the allowed extent and warn if so.
+    
+    Args:
+        body: Body to check
+        max_allowed_extent: Maximum allowed extent in cm
+        component_name: Name of component for warning message
+        
+    Returns:
+        True if within bounds, False if too large
+    """
+    try:
+        if not body or not body.boundingBox:
+            return True
+        
+        bbox = body.boundingBox
+        extent_x = (bbox.maxPoint.x - bbox.minPoint.x) / 2
+        extent_y = (bbox.maxPoint.y - bbox.minPoint.y) / 2
+        extent_z = (bbox.maxPoint.z - bbox.minPoint.z) / 2
+        
+        max_extent = max(extent_x, extent_y, extent_z)
+        
+        if max_extent > max_allowed_extent:
+            print(f"⚠️  WARNING: {component_name} extends {max_extent:.2f} cm (exceeds limit of {max_allowed_extent:.2f} cm)")
+            app = get_fusion_app()
+            if app:
+                app.log(f"⚠️  WARNING: {component_name} extends {max_extent:.2f} cm (exceeds limit of {max_allowed_extent:.2f} cm)")
+            return False
+        
+        return True
+        
+    except Exception as e:
+        print(f"Warning: Could not check extents for {component_name}: {e}")
+        return True
+
+
 def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber") -> int:
     """
     Render multiple CutTimber objects in Fusion 360 using a three-pass approach.
@@ -566,10 +1003,27 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     if app:
         app.log(f"=== THREE-PASS RENDERING: {len(cut_timbers)} timbers ===")
     
-    # PASS 1: Create all geometry at origin
-    print(f"\n=== PASS 1: Creating geometry at origin ===")
+    # Calculate structure extents for intelligent sizing of infinite geometry
+    print(f"\n=== Calculating structure extents ===")
     if app:
-        app.log(f"=== PASS 1: Creating geometry at origin ===")
+        app.log(f"=== Calculating structure extents ===")
+    
+    structure_extent = calculate_structure_extents(cut_timbers)
+    infinite_geometry_extent = structure_extent * 10  # 10x for infinite geometry
+    validation_extent = structure_extent * 5  # 5x for validation warnings
+    
+    print(f"Structure extent: {structure_extent:.2f} cm")
+    print(f"Infinite geometry will extend to: {infinite_geometry_extent:.2f} cm")
+    print(f"Validation threshold: {validation_extent:.2f} cm")
+    
+    if app:
+        app.log(f"Infinite geometry extent: {infinite_geometry_extent:.2f} cm")
+        app.log(f"Validation threshold: {validation_extent:.2f} cm")
+    
+    # PASS 1: Create all geometry at origin with cuts applied
+    print(f"\n=== PASS 1: Creating geometry at origin (with cuts) ===")
+    if app:
+        app.log(f"=== PASS 1: Creating geometry at origin (with cuts) ===")
     
     created_components: List[Tuple[adsk.fusion.Occurrence, CutTimber, str]] = []
     
@@ -587,17 +1041,43 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             if app:
                 app.log(f"Creating {component_name}...")
             
-            # Get the CSG representation
-            csg = cut_timber.render_timber_without_cuts_csg()
+            # Get the extended timber (semi-infinite at ends with cuts)
+            extended_timber_csg = cut_timber._extended_timber_without_cuts_csg()
+            
+            # Apply all cuts if there are any
+            if cut_timber._cuts:
+                # Collect all negative CSGs from cuts
+                negative_csgs = [cut.get_negative_csg() for cut in cut_timber._cuts]
+                
+                # Create Difference: extended_timber - all_cuts
+                csg = Difference(extended_timber_csg, negative_csgs)
+                
+                print(f"  Applying {len(negative_csgs)} cut(s)")
+                if app:
+                    app.log(f"  Applying {len(negative_csgs)} cut(s)")
+            else:
+                # No cuts, just use the extended timber
+                csg = extended_timber_csg
             
             # Render at origin (no transform yet)
-            occurrence = render_meowmeowcsg_component_at_origin(csg, component_name)
+            # Pass timber info for coordinate transformations
+            if app:
+                app.log(f"  About to render CSG (type: {type(csg).__name__})")
+            
+            occurrence = render_meowmeowcsg_component_at_origin(csg, component_name, cut_timber._timber, infinite_geometry_extent)
             
             if occurrence is not None:
+                # Validate geometry extents
+                component = occurrence.component
+                if component.bRepBodies.count > 0:
+                    for body_idx in range(component.bRepBodies.count):
+                        body = component.bRepBodies.item(body_idx)
+                        check_body_extents(body, validation_extent, component_name)
+                
                 created_components.append((occurrence, cut_timber, component_name))
                 print(f"  ✓ Created {component_name}")
                 if app:
-                    app.log(f"  ✓ Created {component_name}")
+                    app.log(f"  ✓ Created {component_name} - CSG rendered successfully")
             else:
                 print(f"  ✗ Failed to create {component_name}")
                 if app:
@@ -613,11 +1093,10 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     time.sleep(0.2)
     adsk.doEvents()
     
-    # PASS 2: Apply CSG operations (for now, skip - no cuts implemented yet)
-    print(f"\n=== PASS 2: Applying CSG operations ===")
+    # PASS 2: No longer needed - cuts are applied in Pass 1
+    print(f"\n=== PASS 2: CSG operations (already applied in Pass 1) ===")
     if app:
-        app.log(f"=== PASS 2: Applying CSG operations (skipped - using render_timber_without_cuts_csg) ===")
-    print(f"  (Skipped - cuts not yet implemented in CSG rendering)")
+        app.log(f"=== PASS 2: CSG operations (already applied in Pass 1) ===")
     
     # Force refresh
     time.sleep(0.1)
