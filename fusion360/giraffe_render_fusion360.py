@@ -545,14 +545,28 @@ def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRep
                 app.log(f"      WARNING: No timber provided, using global coordinates")
         
         # The plane equation is: normal · P = offset
-        # A point on the plane can be found by: P = normal * offset (if normal is normalized)
-        # We'll use this as the plane origin
-        normal_mag = (plane_normal.x**2 + plane_normal.y**2 + plane_normal.z**2) ** 0.5
-        plane_point = adsk.core.Point3D.create(
-            plane_normal.x * plane_offset / normal_mag,
-            plane_normal.y * plane_offset / normal_mag,
-            plane_normal.z * plane_offset / normal_mag
-        )
+        # We need to find a point on the plane within the timber's bounds
+        # The timber's centerline in local coords is along the Z-axis: (0, 0, z)
+        # Find where the plane intersects the centerline:
+        # normal · (0, 0, z) = offset
+        # normal_z * z = offset
+        # z = offset / normal_z
+        #
+        # However, if normal_z is close to 0, the plane is parallel to the centerline
+        # In that case, use the origin (0, 0, 0) projected onto the plane
+        
+        if abs(plane_normal.z) > 0.01:
+            # Plane intersects the centerline at z = offset / normal_z
+            z_intersect = plane_offset / plane_normal.z
+            plane_point = adsk.core.Point3D.create(0, 0, z_intersect)
+        else:
+            # Plane is parallel to centerline, use normal * offset / |normal|^2
+            normal_mag_sq = plane_normal.x**2 + plane_normal.y**2 + plane_normal.z**2
+            plane_point = adsk.core.Point3D.create(
+                plane_normal.x * plane_offset / normal_mag_sq,
+                plane_normal.y * plane_offset / normal_mag_sq,
+                plane_normal.z * plane_offset / normal_mag_sq
+            )
         
         if app:
             app.log(f"    Creating cutting half-space at point ({plane_point.x:.4f}, {plane_point.y:.4f}, {plane_point.z:.4f})")
@@ -610,11 +624,11 @@ def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRep
             
             # Build rotation matrix to align Z-axis with +plane_normal
             # In giraffe.py, we do Difference(timber, [HalfPlane])
-            # HalfPlane represents points where normal · P >= offset
+            # HalfPlane represents points where normal · P >= offset (material to REMOVE)
             # Difference removes those points, so we remove where normal · P >= offset
             # Therefore, the cutting box should represent the region where normal · P >= offset
             # The box extends from Z=0 in the +Z direction
-            # So we align Z-axis with +normal (not -normal) to remove the correct half-space
+            # So we align Z-axis with +normal to remove the correct half-space
             new_z = adsk.core.Vector3D.create(plane_normal.x, plane_normal.y, plane_normal.z)
             new_z.normalize()
             
