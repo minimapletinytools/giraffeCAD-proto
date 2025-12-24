@@ -1,10 +1,18 @@
 
 :: 12/24/2025 reorg code notes
 
+
+all core code should live in a "code_goes_here" folder
+tests should exists side by side to code (not in their separate test folder)
+
 -timber.py cotains all enums constants and types
 -construction.py contains all our timber creation functions
 -basic_joints.py contains all basic joint creation functions
 -giraffe.py imports all files and rexports them together
+
+don't touch fusion360, rhino, examples, oldcrap folder for now
+
+
 
 :: documentation
 
