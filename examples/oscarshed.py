@@ -12,8 +12,10 @@ from giraffe import (
     create_horizontal_timber_on_footprint,
     create_vertical_timber_on_footprint_side,
     join_timbers,
+    split_timber,
     cut_basic_miter_joint,
     cut_basic_butt_joint_on_face_aligned_timbers,
+    cut_basic_splice_joint_on_aligned_timbers,
     FootprintLocation, CutTimber, Stickout, TimberReferenceEnd
 )
 from footprint import Footprint
@@ -330,6 +332,23 @@ def create_oscarshed() -> list[CutTimber]:
         size=front_girt_size
     )
     front_girt.name = "Front Girt"
+    
+    # ============================================================================
+    # Split the front girt into two pieces and rejoin with a splice joint
+    # ============================================================================
+    
+    # Split the front girt at the midpoint
+    front_girt_split_distance = front_girt.length / 2
+    front_girt_left, front_girt_right = split_timber(front_girt, front_girt_split_distance)
+    front_girt_left.name = "Front Girt Left"
+    front_girt_right.name = "Front Girt Right"
+    
+    # Create a splice joint to rejoin the two pieces
+    # The left piece's TOP end meets the right piece's BOTTOM end
+    front_girt_splice_joint = cut_basic_splice_joint_on_aligned_timbers(
+        front_girt_left, TimberReferenceEnd.TOP,
+        front_girt_right, TimberReferenceEnd.BOTTOM
+    )
 
     # ============================================================================
     # Create top plates (running left to right on top of posts)
@@ -534,8 +553,9 @@ def create_oscarshed() -> list[CutTimber]:
     cut_timbers.append(CutTimber(side_girt_left))
     cut_timbers.append(CutTimber(side_girt_right))
     
-    # Add front girt
-    cut_timbers.append(CutTimber(front_girt))
+    # Add front girt pieces (with splice joint)
+    cut_timbers.append(front_girt_splice_joint.partiallyCutTimbers[0])  # Left piece
+    cut_timbers.append(front_girt_splice_joint.partiallyCutTimbers[1])  # Right piece
     
     # Add top plates
     cut_timbers.append(CutTimber(top_plate_front))
@@ -581,9 +601,10 @@ if __name__ == "__main__":
     print(f"  - Post inset: {post_inset} ft from corners (outer posts only)")
     print(f"Side Girts: 2 (running from back to front)")
     print(f"  - Stickout: 1.5 inches on back, 0 on front")
-    print(f"Front Girt: 1 (running left to right)")
+    print(f"Front Girt: 1 (running left to right, spliced in middle)")
     print(f"  - Position: 2 inches below side girts")
     print(f"  - Stickout: 1.5 inches on both sides (symmetric)")
+    print(f"  - Split at midpoint with splice joint")
     print(f"Top Plates: 2 (one front, one back)")
     print(f"  - Size: 6\" x 4\" (6\" vertical, same as mudsills)")
     print(f"  - Position: On top of posts")
