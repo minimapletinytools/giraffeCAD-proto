@@ -19,6 +19,27 @@ Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
 Numeric = Union[float, int, Expr]  # Numeric values (SymPy Expr type STRONGLY preferred, there's really no reason to ever be using floats or ints. Always use Rational)
 
 # ============================================================================
+# Constants
+# ============================================================================
+
+# TODO refine these ab it, be more consistent abotu float vs rationals here
+# TODO also make sure that sympy can easily compare float with rational and vice versa... 
+# TODO maybe better to have helper functions for all of these comparisons especially if the answer for the above is no
+# Epsilon values for numerical comparisons
+# TODO name this EPISLOT_FLOAT_PARALLEL
+EPSILON_FLOAT = 1e-10  # Tolerance for float comparisons (orthogonality, alignment checks)
+# TODO DELETE relpace with the above, this is just perpendicular check epsilon
+EPSILON_DIRECTION = 1e-6  # Tolerance for direction dot product checks
+EPSILON_PARALLEL = Rational(1, 1000)  # Threshold for checking if vectors are nearly parallel/perpendicular (0.001)
+EPSILON_DEGENERATE = Rational(1, 10000)  # Threshold for detecting degenerate geometric cases (0.0001)
+EPSILON_PLANE_PARALLEL = Rational(1, 100000)  # Threshold for detecting if plane is parallel to centerline (0.00001)
+
+# Thresholds for geometric decisions
+THRESHOLD_PERPENDICULAR_VS_PARALLEL = Rational(1, 2)  # Threshold (0.5) for determining if joining timber is more perpendicular than parallel
+THRESHOLD_SKEW_LINE_WARNING = Rational(1, 10)  # Distance threshold (0.1) for issuing skew line warning
+OFFSET_TEST_POINT = Rational(1, 1000)  # Small offset (0.001) for testing inward direction on footprint
+
+# ============================================================================
 # Enums and Basic Types
 # ============================================================================
 
@@ -394,7 +415,7 @@ class Timber:
         face_orthogonal = face_input - projection
         
         # Check if face_orthogonal is too small (vectors were nearly parallel)
-        if face_orthogonal.norm() < 1e-10:  # Epsilon comparison - use float
+        if face_orthogonal.norm() < EPSILON_FLOAT:
             # Choose an arbitrary orthogonal direction
             # Find a vector that's not parallel to length_norm
             if Abs(length_norm[0]) < 0.9:  # Threshold comparison - use float
@@ -809,8 +830,8 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
     perp_y = side_dir_normalized[0]
     
     # Test if this perpendicular points inward
-    test_point = Matrix([point_x + perp_x * Rational(1, 1000),
-                        point_y + perp_y * Rational(1, 1000)])
+    test_point = Matrix([point_x + perp_x * OFFSET_TEST_POINT,
+                        point_y + perp_y * OFFSET_TEST_POINT])
     
     if footprint.contains_point(test_point):
         # Left perpendicular points inward
@@ -1095,7 +1116,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
         # Dot product of the created timber's face direction with timber1's length direction
         dot_product = Abs(width_direction.dot(timber1.length_direction))
         
-        if dot_product < Rational(1, 2):  # < 0.5, meaning more perpendicular than parallel
+        if dot_product < THRESHOLD_PERPENDICULAR_VS_PARALLEL:  # < 0.5, meaning more perpendicular than parallel
             # The created timber is joining perpendicular to timber1
             # Its X dimension (width, along width_direction) should match the dimension 
             # of the face it's joining to on timber1, which is timber1's width (size[0])
@@ -1352,7 +1373,7 @@ class Cut:
             # The Z-component of the local normal (dot product with local length direction (0,0,1))
             normal_z_component = local_normal[2, 0]
             
-            if abs(normal_z_component) < Rational(1, 100000):
+            if abs(normal_z_component) < EPSILON_PLANE_PARALLEL:
                 # Plane is parallel to the timber - no unique intersection
                 raise ValueError("Cut plane is parallel to timber centerline")
             
@@ -1599,8 +1620,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     
     # Check that the timbers are not parallel
     cross = cross_product(directionA, directionB)
-    # TODO replace with a epsilon constant defined at the top (here and everywhere else)
-    if vector_magnitude(cross) < Rational(1, 1000):
+    if vector_magnitude(cross) < EPSILON_PARALLEL:
         raise ValueError("Timbers cannot be parallel for a miter joint")
     
     # Find the intersection point (or closest point) between the two timber centerlines
@@ -1616,7 +1636,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     e = directionB.dot(w0)
     
     denom = a * c - b * b
-    if abs(denom) < Rational(1, 10000):
+    if abs(denom) < EPSILON_DEGENERATE:
         raise ValueError("Cannot compute intersection point (degenerate case)")
     
     # Parameters for closest points on each line
@@ -1633,7 +1653,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # TODO what's this for??? delete this... linse are allowed to be skew
     # Warn if the lines don't actually intersect (skew lines)
     distance_between = vector_magnitude(pointA - pointB)
-    if distance_between > Rational(1, 10):
+    if distance_between > THRESHOLD_SKEW_LINE_WARNING:
         warnings.warn(f"Timber centerlines are skew lines (closest distance: {float(distance_between)}). Using midpoint of closest approach.")
     
     # Create the miter plane normal by bisecting the angle between the two end directions
@@ -1851,7 +1871,7 @@ def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Opti
             return simplify(dot_product - 1) == 0
         else:
             # Auto-use tolerance for float values
-            tolerance = 1e-10
+            tolerance = EPSILON_FLOAT
             return Abs(dot_product - 1) < tolerance
     else:
         # Use provided tolerance
@@ -1882,7 +1902,7 @@ def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Op
             return simplify(dot_product) == 0
         else:
             # Auto-use tolerance for float values
-            tolerance = 1e-10
+            tolerance = EPSILON_FLOAT
             return Abs(dot_product) < tolerance
     else:
         # Use provided tolerance
@@ -1913,7 +1933,7 @@ def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction
             return simplify(dot_product) == 0
         else:
             # Auto-use tolerance for float values
-            tolerance = 1e-10
+            tolerance = EPSILON_FLOAT
             return Abs(dot_product) < tolerance
     else:
         # Use tolerance for approximate comparison
@@ -1945,7 +1965,7 @@ def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, t
             return simplify(dot_mag - 1) == 0
         else:
             # Auto-use tolerance for float values
-            tolerance = 1e-10
+            tolerance = EPSILON_FLOAT
             return abs(float(dot_mag) - 1.0) < tolerance
     else:
         # Use provided tolerance
@@ -1988,7 +2008,7 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
             UserWarning
         )
         # Auto-use a small tolerance when Float values are present
-        effective_tolerance = 1e-10
+        effective_tolerance = EPSILON_FLOAT
     else:
         effective_tolerance = tolerance
     
@@ -2128,7 +2148,7 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     # Check if tenon direction is perpendicular to mortise face normal
     direction_dot_normal = tenon_timber.length_direction.dot(face_normal)
     
-    if abs(direction_dot_normal) < 1e-6:
+    if abs(direction_dot_normal) < EPSILON_DIRECTION:
         # Case 1: Tenon direction is perpendicular to mortise face (typical orthogonal joints)
         # Calculate distance from tenon end to projected point plus face offset
         
