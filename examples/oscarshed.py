@@ -13,6 +13,7 @@ from giraffe import (
     create_vertical_timber_on_footprint_side,
     join_timbers,
     cut_basic_miter_joint,
+    cut_basic_butt_joint_on_face_aligned_timbers,
     FootprintLocation, CutTimber, Stickout, TimberReferenceEnd
 )
 from footprint import Footprint
@@ -228,6 +229,41 @@ def create_oscarshed() -> list[CutTimber]:
         size=post_size
     )
     post_back_middle_left.name = "Back Middle-Left Post"
+
+    # ============================================================================
+    # Create butt joints where posts meet mudsills
+    # ============================================================================
+    # Each post's bottom end butts into the appropriate mudsill (which remains uncut)
+    
+    # Front-left post butts into front mudsill
+    joint_post_front_left = cut_basic_butt_joint_on_face_aligned_timbers(
+        mudsill_front, post_front_left, TimberReferenceEnd.BOTTOM
+    )
+    
+    # Front-right post butts into front mudsill
+    joint_post_front_right = cut_basic_butt_joint_on_face_aligned_timbers(
+        mudsill_front, post_front_right, TimberReferenceEnd.BOTTOM
+    )
+    
+    # Back-right post butts into back mudsill
+    joint_post_back_right = cut_basic_butt_joint_on_face_aligned_timbers(
+        mudsill_back, post_back_right, TimberReferenceEnd.BOTTOM
+    )
+    
+    # Back middle-right post butts into back mudsill
+    joint_post_back_middle_right = cut_basic_butt_joint_on_face_aligned_timbers(
+        mudsill_back, post_back_middle_right, TimberReferenceEnd.BOTTOM
+    )
+    
+    # Back middle-left post butts into back mudsill
+    joint_post_back_middle_left = cut_basic_butt_joint_on_face_aligned_timbers(
+        mudsill_back, post_back_middle_left, TimberReferenceEnd.BOTTOM
+    )
+    
+    # Back-left post butts into back mudsill
+    joint_post_back_left = cut_basic_butt_joint_on_face_aligned_timbers(
+        mudsill_back, post_back_left, TimberReferenceEnd.BOTTOM
+    )
 
     # ============================================================================
     # Create side girts (running from back to front along the short dimension)
@@ -484,13 +520,15 @@ def create_oscarshed() -> list[CutTimber]:
     cut_timbers.append(pct_mudsill_back)
     cut_timbers.append(pct_mudsill_left)
     
-    # Add posts
-    cut_timbers.append(CutTimber(post_front_left))
-    cut_timbers.append(CutTimber(post_front_right))
-    cut_timbers.append(CutTimber(post_back_right))
-    cut_timbers.append(CutTimber(post_back_middle_right))
-    cut_timbers.append(CutTimber(post_back_middle_left))
-    cut_timbers.append(CutTimber(post_back_left))
+    # Add posts with butt joint cuts
+    # Note: post is partiallyCutTimbers[1] (index 1) in each butt joint
+    # (index 0 is the receiving mudsill which remains uncut)
+    cut_timbers.append(joint_post_front_left.partiallyCutTimbers[1])
+    cut_timbers.append(joint_post_front_right.partiallyCutTimbers[1])
+    cut_timbers.append(joint_post_back_right.partiallyCutTimbers[1])
+    cut_timbers.append(joint_post_back_middle_right.partiallyCutTimbers[1])
+    cut_timbers.append(joint_post_back_middle_left.partiallyCutTimbers[1])
+    cut_timbers.append(joint_post_back_left.partiallyCutTimbers[1])
     
     # Add side girts
     cut_timbers.append(CutTimber(side_girt_left))

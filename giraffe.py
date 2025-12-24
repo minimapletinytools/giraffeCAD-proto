@@ -1817,9 +1817,12 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
         else:  # BACK
             face_center = face_center - (receiving_timber.size[1] / 2) * receiving_timber.height_direction
     
-    # The cutting plane has the same normal as the receiving face (pointing outward)
-    # We want to remove material on the side away from the receiving timber
-    global_normal = receiving_face_direction
+    # The cutting plane is at the receiving face, with normal pointing INWARD
+    # (toward the receiving timber body). This ensures we remove material on the
+    # butt timber that's on the opposite side from the receiving timber.
+    # For example, if a post sits on top of a mudsill (mudsill's top face),
+    # we remove the part of the post that extends below the mudsill.
+    global_normal = -receiving_face_direction
     
     # Convert to LOCAL coordinates for the butt timber
     local_normal = butt_timber.orientation.matrix.T * global_normal
