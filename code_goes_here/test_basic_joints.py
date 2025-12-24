@@ -494,3 +494,173 @@ class TestButtJoint:
         butt_end = cut.get_end_position()
         assert simplify(butt_end[2] - Rational(4)) == 0, \
             f"Butt end should be at z=4, got {butt_end[2]}"
+
+
+class TestSpliceJoint:
+    """Test cut_basic_splice_joint_on_aligned_timbers function."""
+    
+    def test_basic_splice_joint_same_orientation(self):
+        """Test basic splice joint with two aligned timbers with same orientation."""
+        # Create two timbers aligned along the X axis
+        # TimberA extends from x=0 to x=50
+        timberA = Timber(
+            length=Rational(50),
+            size=Matrix([Rational(6), Rational(6)]),
+            bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
+        )
+        
+        # TimberB extends from x=50 to x=100 (meeting at x=50)
+        timberB = Timber(
+            length=Rational(50),
+            size=Matrix([Rational(6), Rational(6)]),
+            bottom_position=Matrix([Rational(50), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
+        )
+        
+        # Create splice joint at x=50 (where they meet)
+        # TimberA TOP meets TimberB BOTTOM
+        joint = cut_basic_splice_joint_on_aligned_timbers(
+            timberA, TimberReferenceEnd.TOP, 
+            timberB, TimberReferenceEnd.BOTTOM
+        )
+        
+        # Verify joint structure
+        assert joint is not None
+        assert len(joint.partiallyCutTimbers) == 2
+        
+        cutA = joint.partiallyCutTimbers[0]._cuts[0]
+        cutB = joint.partiallyCutTimbers[1]._cuts[0]
+        
+        # Verify both cuts are end cuts
+        assert cutA.maybeEndCut == TimberReferenceEnd.TOP
+        assert cutB.maybeEndCut == TimberReferenceEnd.BOTTOM
+        
+        # Verify both cuts have the same origin (the splice point)
+        assert cutA.origin[0] == cutB.origin[0]
+        assert cutA.origin[1] == cutB.origin[1]
+        assert cutA.origin[2] == cutB.origin[2]
+        
+        # The origin should be at (50, 0, 0) - the midpoint
+        assert cutA.origin[0] == Rational(50)
+        assert cutA.origin[1] == Rational(0)
+        assert cutA.origin[2] == Rational(0)
+        
+        # Verify the cut planes are perpendicular to the timber axis (X axis)
+        # In global coordinates, the plane normal should be ±(1, 0, 0)
+        global_normalA = timberA.orientation.matrix * cutA.half_plane.normal
+        global_normalB = timberB.orientation.matrix * cutB.half_plane.normal
+        
+        # For aligned timbers with same orientation:
+        # - TimberA: cut at TOP, normal points +X (away from timber body)
+        # - TimberB: cut at BOTTOM, normal points -X (away from timber body)
+        # So they should be opposite
+        assert simplify(global_normalA + global_normalB).norm() == 0, \
+            f"Normals should be opposite! A={global_normalA.T}, B={global_normalB.T}"
+        
+        # Verify end positions
+        endA = cutA.get_end_position()
+        endB = cutB.get_end_position()
+        
+        # Both should be at the splice point (50, 0, 0)
+        assert simplify(endA[0] - Rational(50)) == 0
+        assert simplify(endB[0] - Rational(50)) == 0
+        
+    def test_splice_joint_with_custom_point(self):
+        """Test splice joint with explicitly specified splice point."""
+        # Create two timbers along Z axis
+        timberA = Timber(
+            length=Rational(100),
+            size=Matrix([Rational(4), Rational(4)]),
+            bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(0), Rational(0), Rational(1)]),
+            width_direction=Matrix([Rational(1), Rational(0), Rational(0)])
+        )
+        
+        timberB = Timber(
+            length=Rational(100),
+            size=Matrix([Rational(4), Rational(4)]),
+            bottom_position=Matrix([Rational(0), Rational(0), Rational(100)]),
+            length_direction=Matrix([Rational(0), Rational(0), Rational(1)]),
+            width_direction=Matrix([Rational(1), Rational(0), Rational(0)])
+        )
+        
+        # Specify splice point at z=120 (not the midpoint)
+        splice_point = Matrix([Rational(0), Rational(0), Rational(120)])
+        
+        joint = cut_basic_splice_joint_on_aligned_timbers(
+            timberA, TimberReferenceEnd.TOP,
+            timberB, TimberReferenceEnd.BOTTOM,
+            splice_point
+        )
+        
+        # Verify the splice occurred at the specified point
+        cutA = joint.partiallyCutTimbers[0]._cuts[0]
+        
+        assert cutA.origin[0] == Rational(0)
+        assert cutA.origin[1] == Rational(0)
+        assert cutA.origin[2] == Rational(120)
+        
+    def test_splice_joint_opposite_orientation(self):
+        """Test splice joint with two aligned timbers with opposite orientations."""
+        # TimberA points in +X direction
+        timberA = Timber(
+            length=Rational(60),
+            size=Matrix([Rational(6), Rational(6)]),
+            bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
+        )
+        
+        # TimberB points in -X direction (opposite orientation)
+        # Bottom is at x=100, top at x=40
+        timberB = Timber(
+            length=Rational(60),
+            size=Matrix([Rational(6), Rational(6)]),
+            bottom_position=Matrix([Rational(100), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(-1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
+        )
+        
+        # Create splice joint (should meet in the middle at x=50)
+        joint = cut_basic_splice_joint_on_aligned_timbers(
+            timberA, TimberReferenceEnd.TOP,
+            timberB, TimberReferenceEnd.TOP
+        )
+        
+        assert joint is not None
+        assert len(joint.partiallyCutTimbers) == 2
+        
+        # Verify the splice point is between the two timbers
+        cutA = joint.partiallyCutTimbers[0]._cuts[0]
+        
+        # Should be at the midpoint between x=60 and x=40 = x=50
+        assert cutA.origin[0] == Rational(50)
+        
+    def test_splice_joint_non_aligned_timbers_raises_error(self):
+        """Test that non-aligned (non-parallel) timbers raise a ValueError."""
+        # Create two perpendicular timbers
+        timberA = Timber(
+            length=Rational(50),
+            size=Matrix([Rational(4), Rational(4)]),
+            bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
+        )
+        
+        timberB = Timber(
+            length=Rational(50),
+            size=Matrix([Rational(4), Rational(4)]),
+            bottom_position=Matrix([Rational(50), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(0), Rational(1), Rational(0)]),  # Perpendicular!
+            width_direction=Matrix([Rational(1), Rational(0), Rational(0)])
+        )
+        
+        # Should raise ValueError
+        with pytest.raises(ValueError, match="must have parallel length axes"):
+            cut_basic_splice_joint_on_aligned_timbers(
+                timberA, TimberReferenceEnd.TOP,
+                timberB, TimberReferenceEnd.BOTTOM
+            )
