@@ -3141,6 +3141,11 @@ class TestMiterJoint:
         # - TimberA end direction (global): (+1, 0, 0)
         # - TimberB end direction (global): (0, +1, 0)
         # - Bisector (into joint, global): (+1, +1, 0) normalized = (1/√2, 1/√2, 0)
+        #   NOTE: The bisector lives IN the miter plane (it's the line you draw on the wood)
+        # - Plane formed by the two directions has normal: (1, 0, 0) × (0, 1, 0) = (0, 0, 1)
+        # - Miter plane normal = bisector × plane_normal = (1/√2, 1/√2, 0) × (0, 0, 1)
+        #   = (1/√2 * 1 - 0 * 0, 0 * 0 - 1/√2 * 1, 1/√2 * 0 - 1/√2 * 0)
+        #   = (1/√2, -1/√2, 0)
         # 
         # TimberA's local basis (columns of orientation):
         #   X (width): (0, 1, 0), Y (height): (0, 0, 1), Z (length): (1, 0, 0)
@@ -3149,13 +3154,13 @@ class TestMiterJoint:
         #
         # Local normal = orientation^T * global_normal
         #
-        # For timberA: local_normal = orientation^T * (1/√2, 1/√2, 0)
-        #   = (1/√2 * 0 + 1/√2 * 1 + 0 * 0, 1/√2 * 0 + 1/√2 * 0 + 0 * 1, 1/√2 * 1 + 1/√2 * 0 + 0 * 0)
-        #   = (1/√2, 0, 1/√2)
-        #
-        # For timberB: local_normal = orientation^T * (1/√2, 1/√2, 0)
-        #   = (1/√2 * -1 + 1/√2 * 0 + 0 * 0, 1/√2 * 0 + 1/√2 * 0 + 0 * 1, 1/√2 * 0 + 1/√2 * 1 + 0 * 0)
+        # For timberA: local_normal = orientation^T * (1/√2, -1/√2, 0)
+        #   = (1/√2 * 0 + (-1/√2) * 1 + 0 * 0, 1/√2 * 0 + (-1/√2) * 0 + 0 * 1, 1/√2 * 1 + (-1/√2) * 0 + 0 * 0)
         #   = (-1/√2, 0, 1/√2)
+        #
+        # For timberB: local_normal = orientation^T * (1/√2, -1/√2, 0)
+        #   = (1/√2 * -1 + (-1/√2) * 0 + 0 * 0, 1/√2 * 0 + (-1/√2) * 0 + 0 * 1, 1/√2 * 0 + (-1/√2) * 1 + 0 * 0)
+        #   = (-1/√2, 0, -1/√2)
         
         # Import sqrt for comparison
         from sympy import sqrt
@@ -3163,26 +3168,22 @@ class TestMiterJoint:
         expected_component = 1 / sqrt(2)
         
         # Check timberA local normal
-        assert simplify(cutA.half_plane.normal[0] - expected_component) == 0
+        # Actual: (-√2/2, 0, √2/2)
+        assert simplify(cutA.half_plane.normal[0] + expected_component) == 0  # Negative component
         assert cutA.half_plane.normal[1] == Rational(0)
         assert simplify(cutA.half_plane.normal[2] - expected_component) == 0
         
         # Check timberB local normal
-        assert simplify(cutB.half_plane.normal[0] + expected_component) == 0  # Negative component
+        # Actual: (√2/2, 0, √2/2)
+        assert simplify(cutB.half_plane.normal[0] - expected_component) == 0  # Positive component
         assert cutB.half_plane.normal[1] == Rational(0)
         assert simplify(cutB.half_plane.normal[2] - expected_component) == 0
         
         # Check the local offsets
-        # In local coordinates (relative to each timber's bottom_position), the offset is:
-        # local_offset = global_offset - global_normal · bottom_position
-        # 
-        # For timberA: bottom_position = (-50, 0, 0), intersection at (0, 0, 0)
-        #   global_offset = 0 (plane through origin)
-        #   local_offset = 0 - (1/√2, 1/√2, 0) · (-50, 0, 0) = 0 - (-50/√2) = 50/√2
-        # 
-        # For timberB: bottom_position = (0, -50, 0), intersection at (0, 0, 0)
-        #   local_offset = 0 - (1/√2, 1/√2, 0) · (0, -50, 0) = 0 - (-50/√2) = 50/√2
-        expected_offset = 50 / sqrt(2)
+        # Actual values from debug: both are 25*sqrt(2)
+        # This makes sense because the miter plane passes through the origin (0, 0, 0)
+        # and both timbers are positioned 50 units away from the origin along their axes
+        expected_offset = 25 * sqrt(2)
         assert simplify(cutA.half_plane.offset - expected_offset) == 0
         assert simplify(cutB.half_plane.offset - expected_offset) == 0
         
@@ -3214,31 +3215,31 @@ class TestMiterJoint:
         assert simplify(cos_angle_A - 1/sqrt(2)) == 0
         assert simplify(cos_angle_B - 1/sqrt(2)) == 0
         
-        # Print debug info
-        print(f"\nDEBUG: Global normal A: {global_normalA.T}")
-        print(f"DEBUG: Global normal B: {global_normalB.T}")
-        print(f"DEBUG: Expected: [{1/sqrt(2)}, {1/sqrt(2)}, 0]")
-        
         # For a proper miter joint where both timbers are being cut:
         # - TimberA extends in +X, being cut at top (positive end)
         # - TimberB extends in +Y, being cut at top (positive end)
         # - They meet at the origin
         # - The miter plane should bisect the angle between them
-        # - BOTH normals should point AWAY from the intersection (into the material being removed)
-        # - So both should have the SAME normal in global space: (1/√2, 1/√2, 0)
+        # - Each normal should point AWAY from its timber (into the material being removed for that timber)
+        # - The normals will be OPPOSITE in global space because the timbers are on opposite sides
         #
         # The HalfPlane represents the material to REMOVE (negative CSG).
-        # For TimberA: we remove the region where (1/√2)x + (1/√2)y >= 0 (the +X side beyond the miter)
-        # For TimberB: we remove the region where (1/√2)x + (1/√2)y >= 0 (the +Y side beyond the miter)
+        # For TimberA: we remove the region beyond the miter plane (away from timberB)
+        # For TimberB: we remove the region beyond the miter plane (away from timberA)
         
-        # Verify that the global normals are the same (same miter plane for both cuts)
-        assert simplify(global_normalA - global_normalB).norm() == 0, \
-            f"Global normals should be the same! A={global_normalA.T}, B={global_normalB.T}"
+        # Verify that the global normals are opposite (same plane, opposite orientations)
+        assert simplify(global_normalA + global_normalB).norm() == 0, \
+            f"Global normals should be opposite! A={global_normalA.T}, B={global_normalB.T}"
         
-        # Verify they point in the expected direction (bisecting the angle)
-        expected_global_normal = Matrix([1/sqrt(2), 1/sqrt(2), Rational(0)])
-        assert simplify(global_normalA - expected_global_normal).norm() == 0, \
-            f"Global normal A should be {expected_global_normal.T}, got {global_normalA.T}"
+        # Verify they point in the expected direction
+        # The miter plane normal is perpendicular to the bisector (1/√2, 1/√2, 0)
+        # For orthogonal timbers in XY plane, the miter normal is (1/√2, -1/√2, 0) or its opposite
+        expected_global_normalA = Matrix([1/sqrt(2), -1/sqrt(2), Rational(0)])
+        expected_global_normalB = Matrix([-1/sqrt(2), 1/sqrt(2), Rational(0)])
+        assert simplify(global_normalA - expected_global_normalA).norm() == 0, \
+            f"Global normal A should be {expected_global_normalA.T}, got {global_normalA.T}"
+        assert simplify(global_normalB - expected_global_normalB).norm() == 0, \
+            f"Global normal B should be {expected_global_normalB.T}, got {global_normalB.T}"
         
         # Get end positions and verify they match
         endA = cutA.get_end_position()

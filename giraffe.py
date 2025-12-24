@@ -1656,32 +1656,40 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     if distance_between > THRESHOLD_SKEW_LINE_WARNING:
         warnings.warn(f"Timber centerlines are skew lines (closest distance: {float(distance_between)}). Using midpoint of closest approach.")
     
-    # Create the miter plane normal by bisecting the angle between the two end directions
+    # Create the miter plane normal
     # Normalize the directions first
     normA = normalize_vector(directionA)
     normB = normalize_vector(directionB)
     
     # The bisecting direction is the normalized sum of the two directions
     # This points "into" the joint (towards the acute angle)
-    bisector = normA + normB
-
-    # TODO this is wrong, this vector lives in the miter plane and is NOT the miter plane's normal
-    miter_normal = normalize_vector(bisector)
+    # IMPORTANT: The bisector lives IN the miter plane (it's the line you draw on the wood)
+    bisector = normalize_vector(normA + normB)
+    
+    # The plane formed by the two timber directions has normal:
+    plane_normal = cross_product(normA, normB)
+    
+    # The miter plane:
+    # 1. Contains the bisector line
+    # 2. Is perpendicular to the plane formed by directionA and directionB
+    # Therefore, the miter plane's normal is perpendicular to both the bisector
+    # and the plane_normal. This is the cross product: bisector × plane_normal
+    miter_normal = normalize_vector(cross_product(bisector, plane_normal))
     
     # The miter plane passes through the intersection point
-    # Both timbers will be cut by this same plane (but we need to orient the half-plane
-    # normals correctly for each timber so that get_end_position() can find the boundary)
+    # Both timbers will be cut by this same plane, but each timber needs its half-plane
+    # normal oriented to point "away from" that timber (into the material to remove).
     
     # For each timber, we need to create a HalfPlaneCut with the miter plane
     # The key is that the half-plane normal must be oriented so that:
-    # 1. It represents the miter plane (perpendicular to the bisector, OR the bisector itself)
-    # 2. get_end_position() can find the boundary (normal opposite to search direction)
+    # 1. It represents the miter plane (normal perpendicular to the bisector line)
+    # 2. The normal points "away from" the timber (into the material to remove)
     #
-    # The miter plane normal is the bisector. We want to keep material on the "inside"
-    # of the joint and remove material on the "outside". For each timber, we need to
-    # determine which side of the miter plane is "outside" (away from the other timber).
+    # The miter_normal is perpendicular to both the bisector and the plane formed by
+    # the two timbers. For each timber, we need to determine which orientation of the
+    # miter plane normal points "away from" that timber.
     #
-    # If directionA · miter_normal > 0, then the miter normal points away from timberA,
+    # If directionA · miter_normal > 0, then miter_normal points away from timberA,
     # so we use +miter_normal. Otherwise, we use -miter_normal.
     
     # For timberA: check if miter_normal points away from or towards the timber
