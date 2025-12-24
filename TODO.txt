@@ -62,6 +62,9 @@ DONE-check for mutabel data
     DONE-basic_splice_joint
     DONE-basic_miter_joint
 
+  -cross_joints
+    -basic_cross_lap_joint
+
   -butt joints
     -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
       -mortise and tenon
@@ -82,11 +85,7 @@ DONE-check for mutabel data
     -bridle joint (special case of mortise and tenon? nah)
     -maybe try the fancy  one we used on the shed
 
-
   -make shed example (just add joints)
-
-  -cross_joints
-    -basic_cross_lap_joint
 
   -splice_joint
     -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)

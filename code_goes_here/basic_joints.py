@@ -447,6 +447,34 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
     return joint
 
 
+def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face: Optional[TimberFace] = None, timberB_cut_face: Optional[TimberFace] = None, cut_ratio: Numeric = Rational(1, 2)) -> Joint:
+    """
+    Creates a basic cross lap joint between two timbers.
+
+    Args:
+        timberA: First timber to join
+        timberB: Second timber to join
+        timberA_cut_face: Optional face of timberA to cut the lap from. If not provided, the face is chosen automatically to minimize the amount of material removed.
+        timberB_cut_face: Optional face of timberB to cut the lap from. If not provided, the face is chosen automatically to minimize the amount of material removed.
+        cut_ratio: ratio [0,1] of timberA : timberB to cut the lap from. 
+            example: if cut_ratio is 1, then timberA is cut entirely such that timberB fits into the cut and timberB is not cut at all.
+        
+
+    Returns:
+        Joint object containing the two PartiallyCutTimbers
+
+    Raises:
+    """
+
+    # TODO
+    # assert the 2 timbers overlap 
+    # assert that the 2 timbers are not parallel
+    # if timberA/B_cut_face is not provided, choose a face that would minimize the amount of material removed
+    # assert that the normals of timberA_cut_face and timberB_cut_face have dot product in the range (0,1] otherwise the cut would not be valid
+    # pick the cutting plane by lerping the cut faces based on the cut_ratio (so if cut_ratio is 1, the cutface would be timberB_cut_face)
+    # cut timberA by the CSG (timberB prism - cutting plane)
+    # do the same for timberB (timberA prism + cutting plane)
+    pass
 
 def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
                                                           tenon_end: TimberReferenceEnd,
