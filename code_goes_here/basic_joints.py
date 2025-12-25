@@ -467,13 +467,29 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     """
 
     # TODO
-    # assert the 2 timbers overlap 
+    # assert the 2 infinitely extended timbers overlap
     # assert that the 2 timbers are not parallel
     # if timberA/B_cut_face is not provided, choose a face that would minimize the amount of material removed
     # assert that the normals of timberA_cut_face and timberB_cut_face have dot product in the range (0,1] otherwise the cut would not be valid
     # pick the cutting plane by lerping the cut faces based on the cut_ratio (so if cut_ratio is 1, the cutface would be timberB_cut_face)
     # cut timberA by the CSG (timberB prism - cutting plane)
     # do the same for timberB (timberA prism + cutting plane)
+    pass
+
+
+def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber) -> Joint:
+    """
+    Creates a basic house joint where housing_timber is notched to fit the housed_timber.
+
+    Args:
+        housing_timber: Timber that will receive the house cut
+        housed_timber: Timber that will be housed in the housing_timber
+    """
+    # TODO: Implement this, this is to be used as a reference implementation for the cut_ratio = 1 case of the   cross lap joint
+    # assert the 2 infinitely extended timbers overlap (write a helper function for this)
+    # assert that the 2 timbers are not parallel
+    # create a difference CSG hwere the housing_timber is subtracted from the housed_timber
+
     pass
 
 def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
