@@ -271,7 +271,7 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
         List of CutTimber objects representing the joint
     """
     half_length = TIMBER_LENGTH / 2
-    offset = Rational(45, 1000)  # 45mm offset in meters
+    offset = Rational(20, 1000) 
     
     # Housing timber (beam) extends in +X direction
     # This is the timber that gets the groove cut into it

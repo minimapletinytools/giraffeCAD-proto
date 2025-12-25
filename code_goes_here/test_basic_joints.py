@@ -689,7 +689,7 @@ class TestHouseJoint:
         )
         
         # Create house joint
-        joint = cut_basic_house_joint(housing_timber, housed_timber)
+        joint = cut_basic_house_joint(housing_timber, housed_timber, extend_housed_timber_to_infinity=True)
         
         # Verify joint structure
         assert joint is not None
@@ -699,6 +699,46 @@ class TestHouseJoint:
         housed_cut_timber = joint.partiallyCutTimbers[1]
         
         # Housing timber should have one CSG cut
+        assert len(housing_cut_timber._cuts) == 1
+        assert isinstance(housing_cut_timber._cuts[0], CSGCut)
+        
+        # Housed timber should have no cuts
+        assert len(housed_cut_timber._cuts) == 0
+        
+        # Verify the cut is not an end cut
+        assert housing_cut_timber._cuts[0].maybeEndCut is None
+    
+    def test_basic_house_joint_perpendicular_timbers_finite(self):
+        """Test basic housed joint with finite housed timber."""
+        # Create housing timber (horizontal beam along +X)
+        housing_timber = Timber(
+            length=Rational(100),
+            size=Matrix([Rational(10), Rational(10)]),
+            bottom_position=Matrix([Rational(-50), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
+        )
+        
+        # Create housed timber (shelf along +Y, crossing through housing timber)
+        housed_timber = Timber(
+            length=Rational(60),
+            size=Matrix([Rational(6), Rational(6)]),
+            bottom_position=Matrix([Rational(10), Rational(-30), Rational(5)]),
+            length_direction=Matrix([Rational(0), Rational(1), Rational(0)]),
+            width_direction=Matrix([Rational(-1), Rational(0), Rational(0)])
+        )
+        
+        # Create house joint with finite housed timber
+        joint = cut_basic_house_joint(housing_timber, housed_timber, extend_housed_timber_to_infinity=False)
+        
+        # Verify joint structure
+        assert joint is not None
+        assert len(joint.partiallyCutTimbers) == 2
+        
+        housing_cut_timber = joint.partiallyCutTimbers[0]
+        housed_cut_timber = joint.partiallyCutTimbers[1]
+        
+        # Housing timber should have one CSG cut with finite prism
         assert len(housing_cut_timber._cuts) == 1
         assert isinstance(housing_cut_timber._cuts[0], CSGCut)
         
