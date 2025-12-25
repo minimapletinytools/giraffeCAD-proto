@@ -32,11 +32,11 @@ TIMBER_SIZE = Rational(90, 1000)  # 90mm in meters
 TIMBER_LENGTH = Rational(1)  # 1m
 
 
-# TODO have the two timbers point in non axis aligned directions since we already have the face aligned version example (lets do 77 degrees apart)
 def make_miter_joint_example(position: V3) -> list[CutTimber]:
     """
-    Create a basic miter joint example.
-    Two timbers meet at their ends with a 45-degree miter cut.
+    Create a basic miter joint example with non-axis-aligned timbers.
+    Two timbers meet at their ends with a miter cut, at 77 degrees apart.
+    This demonstrates the general miter joint (non-face-aligned case).
     
     Args:
         position: Center position of the joint (V3)
@@ -44,26 +44,43 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     Returns:
         List of CutTimber objects representing the joint
     """
+    from sympy import cos, sin, pi, sqrt
+    
     half_length = TIMBER_LENGTH / 2
     
-    # TimberA extends in +X direction from position
+    # Angle in radians (67 degrees)
+    angle_deg = 67
+    angle_rad = angle_deg * pi / 180
+    
+    # TimberA extends at 0 degrees (along +X axis)
+    direction_A = Matrix([1, 0, 0])
+    
+    # TimberB extends at 77 degrees from TimberA (rotated counterclockwise in XY plane)
+    direction_B = Matrix([cos(angle_rad), sin(angle_rad), 0])
+    
+    # Calculate perpendicular directions in XY plane for width directions
+    # For direction (dx, dy, 0), perpendicular is (-dy, dx, 0)
+    width_A = Matrix([0, 1, 0])  # Perpendicular to direction_A
+    width_B = Matrix([-sin(angle_rad), cos(angle_rad), 0])  # Perpendicular to direction_B
+    
+    # TimberA extends from position in direction_A
     timberA = Timber(
         name="MiterJoint_TimberA",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
-        bottom_position=position - Matrix([half_length, 0, 0]),
-        length_direction=Matrix([1, 0, 0]),
-        width_direction=Matrix([0, 1, 0])
+        bottom_position=position - direction_A * half_length,
+        length_direction=direction_A,
+        width_direction=width_A
     )
     
-    # TimberB extends in +Y direction from position
+    # TimberB extends from position in direction_B
     timberB = Timber(
         name="MiterJoint_TimberB",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
-        bottom_position=position - Matrix([0, half_length, 0]),
-        length_direction=Matrix([0, 1, 0]),
-        width_direction=Matrix([-1, 0, 0])
+        bottom_position=position - direction_B * half_length,
+        length_direction=direction_B,
+        width_direction=width_B
     )
     
     # Create miter joint at the ends that meet at position
@@ -357,5 +374,8 @@ if __name__ == "__main__":
     
     print()
     print("Examples are spaced 2m apart along the X-axis starting at origin.")
-    print("Each joint shows timbers meeting at right angles (+X and +Y directions).")
+    print()
+    print("Joint configurations:")
+    print("  • Miter Joint: 77° angle (non-axis-aligned)")
+    print("  • Other joints: Right angles (+X and +Y directions)")
 
