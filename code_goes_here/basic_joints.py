@@ -478,20 +478,16 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     pass
 
 
-def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber) -> Joint:
+def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber, extend_housed_timber_to_infinity: bool = False) -> Joint:
     """
     Creates a basic housed joint (also called housing joint or dado joint) where the 
     housing_timber is notched to fit the housed_timber. The housed timber fits completely
-    into a rectangular groove cut in the housing timber.
-    
-    This is commonly used for:
-    - Shelves fitting into uprights
-    - Cross members fitting into beams
-    - Floor joists fitting into sill plates
+    into a notch cut in the housing timber.
     
     Args:
         housing_timber: Timber that will receive the housing cut (gets the groove)
         housed_timber: Timber that will be housed (fits into the groove, remains uncut)
+        extend_housed_timber_to_infinity: If True, the housed timber is extended to infinity in both directions, otherwise the finite timber is used
         
     Returns:
         Joint object containing both timbers
@@ -568,18 +564,6 @@ def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber) -> Join
     # Create a CSG difference: housing_timber - housed_timber
     # The housed timber's prism will be subtracted from the housing timber
     
-    # Create a prism for the housed timber in GLOBAL coordinates
-    # We'll use an infinite prism to ensure it cuts through the housing timber completely
-    housed_prism_global = create_prism(
-        size=housed_timber.size,
-        orientation=housed_timber.orientation,
-        start_distance=None,  # Infinite in both directions
-        end_distance=None
-    )
-    
-    # Transform the global CSG to LOCAL coordinates of the housing timber
-    # This requires transforming the housed prism's orientation relative to housing timber
-    
     # Calculate the relative transformation
     # housed_prism in housing_timber's local frame = housing_orientation^T * housed_orientation
     relative_orientation = Orientation(housing_timber.orientation.matrix.T * housed_timber.orientation.matrix)
@@ -587,12 +571,32 @@ def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber) -> Join
     # Transform the housed timber's position to housing timber's local coordinates
     housed_origin_local = housing_timber.orientation.matrix.T * (housed_timber.bottom_position - housing_timber.bottom_position)
     
+    # Determine start and end distances based on extend_housed_timber_to_infinity
+    if extend_housed_timber_to_infinity:
+        # Use infinite prism to ensure it cuts through the housing timber completely
+        start_distance = None
+        end_distance = None
+    else:
+        # Use finite timber dimensions
+        # In the housed timber's local coordinate system, its length extends along its Z-axis (length direction)
+        # The housed timber's length axis in the housing timber's local frame
+        housed_length_axis_local = relative_orientation.matrix[:, 2]  # Third column = Z-axis = length direction
+        
+        # Project the housed timber's local origin onto its length axis
+        # This gives us where the housed timber's bottom is along its own length axis
+        projection = (housed_origin_local.T * housed_length_axis_local)[0, 0]
+        
+        # The housed timber extends from its bottom for housed_timber.length along its length axis
+        # The prism's start_distance and end_distance are measured along its local Z-axis from its origin
+        start_distance = projection
+        end_distance = projection + housed_timber.length
+    
     # Create the housed prism in housing timber's LOCAL coordinate system
     housed_prism_local = create_prism(
         size=housed_timber.size,
         orientation=relative_orientation,
-        start_distance=None,  # Infinite
-        end_distance=None
+        start_distance=start_distance,
+        end_distance=end_distance
     )
     
     # Create the CSG cut for the housing timber

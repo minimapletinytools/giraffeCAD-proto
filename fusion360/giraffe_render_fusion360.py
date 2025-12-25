@@ -266,7 +266,7 @@ def render_meowmeowcsg_component_at_origin(csg: MeowMeowCSG, component_name: str
 
 def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
-    Render a CSG object in the component's local coordinate system.
+    Render a CSG object in the component's (timber's) local coordinate system.
     
     This recursively processes CSG operations (Union, Difference, etc.) and
     creates the corresponding Fusion 360 geometry.
@@ -285,11 +285,14 @@ def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG
     if isinstance(csg, Prism):
         if app:
             app.log(f"  render_csg_in_local_space: Rendering Prism")
+
+        # TODO this is wrong, you need to apply the prism's orientation here. Also rename render_prims_at_origin to render_prism_in_local_space
         return render_prism_at_origin(component, csg, infinite_extent)
     
     elif isinstance(csg, Cylinder):
         if app:
             app.log(f"  render_csg_in_local_space: Rendering Cylinder")
+        # TODO also wrong
         return render_cylinder_at_origin(component, csg)
     
     elif isinstance(csg, HalfPlane):
