@@ -350,50 +350,57 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
 
 def create_all_joint_examples() -> list[CutTimber]:
     """
-    Create all joint examples with spacing so they don't overlap.
+    Create joint examples with automatic spacing starting from the origin.
+    
+    To enable/disable specific joints, just comment/uncomment lines in the JOINTS_TO_RENDER list below.
+    Joints will be positioned sequentially starting at the origin with 2m spacing.
     
     Returns:
-        List of all CutTimber objects for all joints
+        List of all CutTimber objects for the enabled joints
     """
+    
+    # ============================================================================
+    # CONFIGURATION: Comment out lines to disable specific joints
+    # 
+    # Example: To render only Miter and House joints:
+    #   JOINTS_TO_RENDER = [
+    #       ("Miter Joint (67°)", make_miter_joint_example),
+    #       # ("Miter Joint (Face Aligned)", make_miter_joint_face_aligned_example),
+    #       # ("Corner Joint", make_corner_joint_example),
+    #       # ("Butt Joint", make_butt_joint_example),
+    #       # ("Splice Joint", make_splice_joint_example),
+    #       ("House Joint", make_house_joint_example),
+    #   ]
+    # Result: Joints will be at x=0.0m and x=2.0m (automatically spaced)
+    # ============================================================================
+    JOINTS_TO_RENDER = [
+        #("Miter Joint (67°)", make_miter_joint_example),
+        #("Miter Joint (Face Aligned)", make_miter_joint_face_aligned_example),
+        #("Corner Joint", make_corner_joint_example),
+        #("Butt Joint", make_butt_joint_example),
+        #("Splice Joint", make_splice_joint_example),
+        ("House Joint", make_house_joint_example),
+        # ("Cross Lap Joint", make_cross_lap_joint_example),  # Not yet implemented
+    ]
+    
+    # Spacing between joints (in meters)
+    SPACING = Rational(2)
+    
+    # ============================================================================
+    # Render enabled joints starting from origin
+    # ============================================================================
     all_timbers = []
+    current_position_x = 0
     
-    # Space joints 2 meters apart in the X direction
-    spacing = Rational(2)
-    
-    # Joint 1: Miter Joint at origin
-    position_1 = create_vector3d(0, 0, 0)
-    all_timbers.extend(make_miter_joint_example(position_1))
-    print(f"Created Miter Joint at {position_1.T}")
-    
-    # Joint 2: Miter Joint (Face Aligned)
-    position_2 = create_vector3d(spacing, 0, 0)
-    all_timbers.extend(make_miter_joint_face_aligned_example(position_2))
-    print(f"Created Miter Joint (Face Aligned) at {position_2.T}")
-    
-    # Joint 3: Corner Joint
-    position_3 = create_vector3d(spacing * 2, 0, 0)
-    all_timbers.extend(make_corner_joint_example(position_3))
-    print(f"Created Corner Joint at {position_3.T}")
-    
-    # Joint 4: Butt Joint
-    position_4 = create_vector3d(spacing * 3, 0, 0)
-    all_timbers.extend(make_butt_joint_example(position_4))
-    print(f"Created Butt Joint at {position_4.T}")
-    
-    # Joint 5: Splice Joint
-    position_5 = create_vector3d(spacing * 4, 0, 0)
-    all_timbers.extend(make_splice_joint_example(position_5))
-    print(f"Created Splice Joint at {position_5.T}")
-    
-    # Joint 6: House Joint (Housed/Housing/Dado Joint)
-    position_6 = create_vector3d(spacing * 5, 0, 0)
-    all_timbers.extend(make_house_joint_example(position_6))
-    print(f"Created House Joint at {position_6.T}")
-    
-    # Joint 7: Cross Lap Joint (not yet implemented)
-    position_7 = create_vector3d(spacing * 6, 0, 0)
-    print(f"Skipping Cross Lap Joint at {position_7.T}")
-    all_timbers.extend(make_cross_lap_joint_example(position_7))
+    for joint_name, joint_function in JOINTS_TO_RENDER:
+        position = create_vector3d(current_position_x, 0, 0)
+        timbers = joint_function(position)
+        all_timbers.extend(timbers)
+        
+        print(f"Created {joint_name} at x={float(current_position_x):.1f}m")
+        
+        # Move to next position
+        current_position_x += SPACING
     
     return all_timbers
 
@@ -425,10 +432,18 @@ if __name__ == "__main__":
         print(f"{i+1:2d}. {timber.name:30s} | Cuts: {num_cuts} | Length: {float(timber.length):.2f}m")
     
     print()
-    print("Examples are spaced 2m apart along the X-axis starting at origin.")
+    print("=" * 70)
+    print("Configuration:")
+    print("  • Joints are spaced 2m apart along the X-axis")
+    print("  • Positioning starts at the origin")
+    print("  • Edit JOINTS_TO_RENDER list in the code to enable/disable joints")
     print()
-    print("Joint configurations:")
+    print("Joint details:")
     print("  • Miter Joint: 67° angle (non-axis-aligned)")
-    print("  • House Joint: Housing timber gets groove, housed timber fits in (like shelf in upright)")
-    print("  • Other joints: Right angles (+X and +Y directions)")
+    print("  • Miter Joint (Face Aligned): Right angles, optimized for aligned faces")
+    print("  • Corner Joint: One timber cut at angle, one straight")
+    print("  • Butt Joint: One timber butts into another")
+    print("  • Splice Joint: End-to-end scarf joint")
+    print("  • House Joint: Rectangular notch (like shelf in upright)")
+    print("=" * 70)
 
