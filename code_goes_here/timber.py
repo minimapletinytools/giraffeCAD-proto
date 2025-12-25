@@ -794,7 +794,7 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     # Create a prism representing the timber in local coordinates
     return create_prism(
         size=timber.size,
-        orientation=timber.orientation,
+        orientation=Orientation.identity(),
         start_distance=start_distance,
         end_distance=end_distance
     )
