@@ -21,7 +21,8 @@ from code_goes_here.basic_joints import (
     cut_basic_corner_joint_on_face_aligned_timbers,
     cut_basic_butt_joint_on_face_aligned_timbers,
     cut_basic_splice_joint_on_aligned_timbers,
-    cut_basic_cross_lap_joint
+    cut_basic_cross_lap_joint,
+    cut_basic_house_joint
 )
 
 # Type alias
@@ -255,6 +256,52 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
     return joint.partiallyCutTimbers
 
 
+def make_house_joint_example(position: V3) -> list[CutTimber]:
+    """
+    Create a housed joint (also called housing joint or dado joint).
+    One timber (housing timber) gets a rectangular groove cut into it,
+    and the other timber (housed timber) fits into that groove.
+    
+    This is commonly used for shelves fitting into uprights.
+    
+    Args:
+        position: Center position of the joint (V3)
+        
+    Returns:
+        List of CutTimber objects representing the joint
+    """
+    half_length = TIMBER_LENGTH / 2
+    offset = Rational(45, 1000)  # 45mm offset in meters
+    
+    # Housing timber (beam) extends in +X direction
+    # This is the timber that gets the groove cut into it
+    housing_timber = Timber(
+        name="HouseJoint_Housing",
+        length=TIMBER_LENGTH,
+        size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
+        bottom_position=position - Matrix([half_length, 0, 0]) + Matrix([0, 0, offset]),
+        length_direction=Matrix([1, 0, 0]),
+        width_direction=Matrix([0, 1, 0])
+    )
+    
+    # Housed timber (shelf) extends in +Y direction, crossing through the housing timber
+    # This timber fits into the groove and remains uncut
+    # Offset by 45mm vertically so they intersect properly
+    housed_timber = Timber(
+        name="HouseJoint_Housed",
+        length=TIMBER_LENGTH,
+        size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
+        bottom_position=position - Matrix([0, half_length, 0]) - Matrix([0, 0, offset]),
+        length_direction=Matrix([0, 1, 0]),
+        width_direction=Matrix([-1, 0, 0])
+    )
+    
+    # Create house joint
+    joint = cut_basic_house_joint(housing_timber, housed_timber)
+    
+    return joint.partiallyCutTimbers
+
+
 def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
     """
     Create a cross lap joint where two timbers cross each other.
@@ -338,10 +385,15 @@ def create_all_joint_examples() -> list[CutTimber]:
     all_timbers.extend(make_splice_joint_example(position_5))
     print(f"Created Splice Joint at {position_5.T}")
     
-    # Joint 6: Cross Lap Joint (not yet implemented)
+    # Joint 6: House Joint (Housed/Housing/Dado Joint)
     position_6 = create_vector3d(spacing * 5, 0, 0)
-    print(f"Skipping Cross Lap Joint at {position_6.T}")
-    all_timbers.extend(make_cross_lap_joint_example(position_6))
+    all_timbers.extend(make_house_joint_example(position_6))
+    print(f"Created House Joint at {position_6.T}")
+    
+    # Joint 7: Cross Lap Joint (not yet implemented)
+    position_7 = create_vector3d(spacing * 6, 0, 0)
+    print(f"Skipping Cross Lap Joint at {position_7.T}")
+    all_timbers.extend(make_cross_lap_joint_example(position_7))
     
     return all_timbers
 
@@ -376,6 +428,7 @@ if __name__ == "__main__":
     print("Examples are spaced 2m apart along the X-axis starting at origin.")
     print()
     print("Joint configurations:")
-    print("  • Miter Joint: 77° angle (non-axis-aligned)")
+    print("  • Miter Joint: 67° angle (non-axis-aligned)")
+    print("  • House Joint: Housing timber gets groove, housed timber fits in (like shelf in upright)")
     print("  • Other joints: Right angles (+X and +Y directions)")
 

@@ -5,6 +5,7 @@ Contains functions for creating joints between timbers
 
 from code_goes_here.timber import *
 from code_goes_here.construction import *
+from code_goes_here.moothymoth import Orientation
 
 # Explicitly import private helper functions used by joint functions
 from code_goes_here.construction import (
@@ -479,18 +480,143 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
 
 def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber) -> Joint:
     """
-    Creates a basic house joint where housing_timber is notched to fit the housed_timber.
-
+    Creates a basic housed joint (also called housing joint or dado joint) where the 
+    housing_timber is notched to fit the housed_timber. The housed timber fits completely
+    into a rectangular groove cut in the housing timber.
+    
+    This is commonly used for:
+    - Shelves fitting into uprights
+    - Cross members fitting into beams
+    - Floor joists fitting into sill plates
+    
     Args:
-        housing_timber: Timber that will receive the house cut
-        housed_timber: Timber that will be housed in the housing_timber
+        housing_timber: Timber that will receive the housing cut (gets the groove)
+        housed_timber: Timber that will be housed (fits into the groove, remains uncut)
+        
+    Returns:
+        Joint object containing both timbers
+        
+    Raises:
+        AssertionError: If timbers don't intersect or are parallel
+        
+    Example:
+        A shelf (housed_timber) fitting into the side of a cabinet (housing_timber).
+        The cabinet side gets a groove cut into it to receive the shelf.
     """
-    # TODO: Implement this, this is to be used as a reference implementation for the cut_ratio = 1 case of the   cross lap joint
-    # assert the 2 infinitely extended timbers overlap (write a helper function for this)
-    # assert that the 2 timbers are not parallel
-    # create a difference CSG hwere the housing_timber is subtracted from the housed_timber
-
-    pass
+    from code_goes_here.meowmeowcsg import Difference, create_prism
+    
+    # Verify that the timbers are not parallel (their length directions must differ)
+    dot_product = (housing_timber.length_direction.T * housed_timber.length_direction)[0, 0]
+    assert abs(abs(dot_product) - 1) > Rational(1, 1000000), \
+        "Timbers must not be parallel (their length directions must differ)"
+    
+    # Check that the timbers intersect when extended infinitely
+    # For two lines to intersect, they must either:
+    # 1. Actually intersect at a point, or
+    # 2. Be skew lines that would intersect if one were translated
+    # For housed joints, we require that they actually overlap in 3D space
+    
+    # A simple check: compute the closest points between the two timber centerlines
+    # If the distance is less than the sum of half their cross-sections, they overlap
+    
+    # Direction vectors
+    d1 = housing_timber.length_direction
+    d2 = housed_timber.length_direction
+    
+    # Points on each line (use bottom positions)
+    p1 = housing_timber.bottom_position
+    p2 = housed_timber.bottom_position
+    
+    # Vector between the two line points
+    w = p1 - p2
+    
+    # Calculate closest points between two lines in 3D
+    # See: http://paulbourke.net/geometry/pointlineplane/
+    a = (d1.T * d1)[0, 0]
+    b = (d1.T * d2)[0, 0]
+    c = (d2.T * d2)[0, 0]
+    d = (d1.T * w)[0, 0]
+    e = (d2.T * w)[0, 0]
+    
+    denom = a * c - b * b
+    
+    # If denom is very small, lines are parallel (already checked above)
+    # Calculate parameters for closest points
+    if abs(denom) < Rational(1, 1000000):
+        # Lines are parallel, use simple distance check
+        # Project p2 onto the line defined by p1 and d1
+        t = -(d1.T * w)[0, 0] / a if a > 0 else 0
+        closest_on_1 = p1 + t * d1
+        distance = (p2 - closest_on_1).norm()
+    else:
+        t1 = (b * e - c * d) / denom
+        t2 = (a * e - b * d) / denom
+        
+        closest_on_1 = p1 + t1 * d1
+        closest_on_2 = p2 + t2 * d2
+        
+        distance = (closest_on_1 - closest_on_2).norm()
+    
+    # Check if timbers are close enough to intersect
+    # They should intersect if the closest distance is less than the sum of half their cross-sections
+    max_separation = (housing_timber.size[0] + housing_timber.size[1] + 
+                     housed_timber.size[0] + housed_timber.size[1]) / 2
+    
+    assert float(distance) < float(max_separation), \
+        f"Timbers do not intersect (closest distance: {float(distance):.4f}m, max allowed: {float(max_separation):.4f}m)"
+    
+    # Create a CSG difference: housing_timber - housed_timber
+    # The housed timber's prism will be subtracted from the housing timber
+    
+    # Create a prism for the housed timber in GLOBAL coordinates
+    # We'll use an infinite prism to ensure it cuts through the housing timber completely
+    housed_prism_global = create_prism(
+        size=housed_timber.size,
+        orientation=housed_timber.orientation,
+        start_distance=None,  # Infinite in both directions
+        end_distance=None
+    )
+    
+    # Transform the global CSG to LOCAL coordinates of the housing timber
+    # This requires transforming the housed prism's orientation relative to housing timber
+    
+    # Calculate the relative transformation
+    # housed_prism in housing_timber's local frame = housing_orientation^T * housed_orientation
+    relative_orientation = Orientation(housing_timber.orientation.matrix.T * housed_timber.orientation.matrix)
+    
+    # Transform the housed timber's position to housing timber's local coordinates
+    housed_origin_local = housing_timber.orientation.matrix.T * (housed_timber.bottom_position - housing_timber.bottom_position)
+    
+    # Create the housed prism in housing timber's LOCAL coordinate system
+    housed_prism_local = create_prism(
+        size=housed_timber.size,
+        orientation=relative_orientation,
+        start_distance=None,  # Infinite
+        end_distance=None
+    )
+    
+    # Create the CSG cut for the housing timber
+    cut = CSGCut(
+        timber=housing_timber,
+        origin=housing_timber.bottom_position,  # Reference point (not used for CSG cuts)
+        orientation=housing_timber.orientation,
+        negative_csg=housed_prism_local,  # Subtract the housed timber's volume
+        maybe_end_cut=None  # Not an end cut
+    )
+    
+    # Create PartiallyCutTimber for the housing timber (with cut)
+    cut_housing = PartiallyCutTimber(housing_timber, cuts=[cut])
+    
+    # Create PartiallyCutTimber for the housed timber (no cuts)
+    cut_housed = PartiallyCutTimber(housed_timber, cuts=[])
+    
+    # Create and return the Joint
+    joint = Joint(
+        partially_cut_timbers=[cut_housing, cut_housed],
+        joint_accessories=[]
+    )
+    
+    return joint
 
 def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
                                                           tenon_end: TimberReferenceEnd,
