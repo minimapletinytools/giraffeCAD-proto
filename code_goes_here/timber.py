@@ -901,7 +901,7 @@ class CutTimber:
             end_distance=top_distance
         )
 
-    # thi sone returns the timber with all cuts applied
+    # this one returns the timber with all cuts applied
     def render_timber_with_cuts_csg(self) -> MeowMeowCSG:
         starting_csg = self._extended_timber_without_cuts_csg()
         # TODO difference each cut from starting_CSG?
