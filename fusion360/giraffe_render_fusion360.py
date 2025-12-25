@@ -122,17 +122,16 @@ def create_matrix3d_from_orientation(position: Matrix, orientation: Orientation)
     return matrix3d
 
 
-def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
+def render_prism_in_local_space(component: adsk.fusion.Component, prism: Prism, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
-    Render a Prism CSG in the component's local coordinate system.
+    Render a Prism CSG in the component's local coordinate system with its orientation applied.
     
-    The prism is rendered in its LOCAL coordinate system where:
+    The prism is first rendered axis-aligned where:
     - Width (size[0]) is along X axis
     - Height (size[1]) is along Y axis
     - Length is along Z axis from start_distance to end_distance
     
-    NO transformations are applied here - the prism's orientation is stored in the
-    Prism object and will be applied later when the entire occurrence is transformed.
+    Then the prism's orientation matrix is applied to rotate it into the correct orientation.
     
     Args:
         component: Fusion 360 component to create geometry in
@@ -179,7 +178,7 @@ def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism, infin
         sketch = sketches.add(xy_plane)
         
         # Create rectangle centered at origin in the XY plane
-        # This represents the cross-section of the timber in its local coordinate system
+        # This represents the cross-section in the prism's local coordinate system
         corner1 = adsk.core.Point3D.create(-width/2, -height/2, 0)
         corner2 = adsk.core.Point3D.create(width/2, height/2, 0)
         rect = sketch.sketchCurves.sketchLines.addTwoPointRectangle(corner1, corner2)
@@ -208,9 +207,33 @@ def render_prism_at_origin(component: adsk.fusion.Component, prism: Prism, infin
         
         body = extrude.bodies.item(0)
         
-        # DO NOT apply any transformations here!
-        # The body is now in the component's local coordinate system.
-        # The occurrence will be transformed later to position and orient it in global space.
+        # Apply the prism's orientation if it's not identity
+        # The prism's orientation defines how it's rotated in the component's coordinate system
+        orientation_matrix = prism.orientation.matrix
+        
+        # Check if orientation is identity (no rotation needed)
+        is_identity = (orientation_matrix == Matrix.eye(3))
+        
+        if not is_identity:
+            # Create a transformation matrix from the orientation
+            transform = adsk.core.Matrix3D.create()
+            
+            # Set rotation part (3x3 matrix)
+            for i in range(3):
+                for j in range(3):
+                    transform.setCell(i, j, float(orientation_matrix[i, j]))
+            
+            # Translation is zero (prism is at origin, only rotation applied)
+            transform.setCell(0, 3, 0)
+            transform.setCell(1, 3, 0)
+            transform.setCell(2, 3, 0)
+            
+            # Apply the transformation to the body
+            move_features = component.features.moveFeatures
+            bodies = adsk.core.ObjectCollection.create()
+            bodies.add(body)
+            move_input = move_features.createInput(bodies, transform)
+            move_features.add(move_input)
         
         return body
         
@@ -284,16 +307,13 @@ def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG
     
     if isinstance(csg, Prism):
         if app:
-            app.log(f"  render_csg_in_local_space: Rendering Prism")
-
-        # TODO this is wrong, you need to apply the prism's orientation here. Also rename render_prims_at_origin to render_prism_in_local_space
-        return render_prism_at_origin(component, csg, infinite_extent)
+            app.log(f"  render_csg_in_local_space: Rendering Prism with orientation")
+        return render_prism_in_local_space(component, csg, infinite_extent)
     
     elif isinstance(csg, Cylinder):
         if app:
-            app.log(f"  render_csg_in_local_space: Rendering Cylinder")
-        # TODO also wrong
-        return render_cylinder_at_origin(component, csg)
+            app.log(f"  render_csg_in_local_space: Rendering Cylinder with orientation")
+        return render_cylinder_in_local_space(component, csg)
     
     elif isinstance(csg, HalfPlane):
         # HalfPlane is typically used for cutting operations, not standalone rendering
@@ -319,9 +339,11 @@ def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG
         return None
 
 
-def render_cylinder_at_origin(component: adsk.fusion.Component, cylinder: Cylinder) -> Optional[adsk.fusion.BRepBody]:
+def render_cylinder_in_local_space(component: adsk.fusion.Component, cylinder: Cylinder) -> Optional[adsk.fusion.BRepBody]:
     """
-    Render a Cylinder CSG at the origin in the component's local coordinate system.
+    Render a Cylinder CSG in the component's local coordinate system with orientation applied.
+    
+    The cylinder is created with its axis aligned to the cylinder's axis_direction.
     
     Args:
         component: Fusion 360 component to create geometry in
@@ -342,8 +364,10 @@ def render_cylinder_at_origin(component: adsk.fusion.Component, cylinder: Cylind
         length = end_dist - start_dist
         center_dist = (start_dist + end_dist) / 2
         
-        # Get axis direction
+        # Get axis direction (normalized)
         axis_dir = cylinder.axis_direction
+        axis_norm = axis_dir.norm()
+        axis_normalized = axis_dir / axis_norm
         
         # Create a sketch on the XY plane
         sketches = component.sketches
@@ -357,13 +381,17 @@ def render_cylinder_at_origin(component: adsk.fusion.Component, cylinder: Cylind
         # Get the profile for extrusion
         profile = sketch.profiles.item(0)
         
-        # Create extrusion
+        # Create extrusion along +Z axis initially
         extrudes = component.features.extrudeFeatures
         extrude_input = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
         
         # Set extrusion distance
         distance = adsk.core.ValueInput.createByReal(length)
         extrude_input.setDistanceExtent(False, distance)
+        
+        # Set start offset to position the cylinder correctly along its axis
+        start_offset = adsk.core.ValueInput.createByReal(start_dist)
+        extrude_input.startExtent = adsk.fusion.OffsetStartDefinition.create(start_offset)
         
         # Create the extrusion
         extrude = extrudes.add(extrude_input)
@@ -374,23 +402,60 @@ def render_cylinder_at_origin(component: adsk.fusion.Component, cylinder: Cylind
         
         body = extrude.bodies.item(0)
         
-        # Transform the body to the correct position along the axis
-        transform = adsk.core.Matrix3D.create()
+        # Now we need to rotate the cylinder from +Z axis to the axis_direction
+        # Create a rotation matrix that transforms (0, 0, 1) to axis_normalized
+        z_axis = Matrix([0, 0, 1])
         
-        # Calculate center position
-        cx = float(axis_dir[0]) * center_dist
-        cy = float(axis_dir[1]) * center_dist
-        cz = float(axis_dir[2]) * center_dist
+        # Check if axis is already along Z
+        dot_with_z = (axis_normalized.T * z_axis)[0, 0]
         
-        # Adjust for extrusion starting at Z=0
-        transform.translation = adsk.core.Vector3D.create(cx, cy, cz - length/2 + center_dist)
-        
-        # Apply transformation
-        move_features = component.features.moveFeatures
-        bodies = adsk.core.ObjectCollection.create()
-        bodies.add(body)
-        move_input = move_features.createInput(bodies, transform)
-        move_features.add(move_input)
+        if abs(float(dot_with_z) - 1.0) > 0.001:  # Not aligned with +Z
+            # Calculate rotation needed
+            # We need to find a rotation matrix R such that R * z_axis = axis_normalized
+            
+            # Use Rodrigues' rotation formula
+            # Rotation axis: cross product of z_axis and axis_normalized
+            rotation_axis = z_axis.cross(axis_normalized)
+            rotation_axis_norm = rotation_axis.norm()
+            
+            if rotation_axis_norm > 0.001:  # Not parallel
+                rotation_axis_unit = rotation_axis / rotation_axis_norm
+                
+                # Rotation angle
+                import math
+                cos_angle = float(dot_with_z)
+                angle = math.acos(max(-1.0, min(1.0, cos_angle)))  # Clamp to avoid numerical errors
+                
+                # Create rotation matrix using Rodrigues' formula
+                from sympy import cos as sym_cos, sin as sym_sin
+                K = Matrix([
+                    [0, -rotation_axis_unit[2], rotation_axis_unit[1]],
+                    [rotation_axis_unit[2], 0, -rotation_axis_unit[0]],
+                    [-rotation_axis_unit[1], rotation_axis_unit[0], 0]
+                ])
+                
+                import math
+                rotation_matrix = Matrix.eye(3) + math.sin(angle) * K + (1 - math.cos(angle)) * (K * K)
+                
+                # Create Fusion 360 transformation matrix
+                transform = adsk.core.Matrix3D.create()
+                
+                # Set rotation part
+                for i in range(3):
+                    for j in range(3):
+                        transform.setCell(i, j, float(rotation_matrix[i, j]))
+                
+                # No translation (cylinder is centered at origin along its axis)
+                transform.setCell(0, 3, 0)
+                transform.setCell(1, 3, 0)
+                transform.setCell(2, 3, 0)
+                
+                # Apply the transformation
+                move_features = component.features.moveFeatures
+                bodies = adsk.core.ObjectCollection.create()
+                bodies.add(body)
+                move_input = move_features.createInput(bodies, transform)
+                move_features.add(move_input)
         
         return body
         

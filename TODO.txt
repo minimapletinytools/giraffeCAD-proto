@@ -43,6 +43,8 @@ DONE-check for mutabel data
 -fix the venv stuff in readme, aeither add venv or get rid of it from readme.
 -remove mutable position/name stuff from examples and oscarshed
 -maybe get rid of cross joint
+-change giraffe to use render_timber_with_cuts_csg rather than do it itself
+-prefix timber methods with _in_local_space (meaning orientation and translation not applied)
 
 
 -M1 (reward is reimburse H2D LOL)
