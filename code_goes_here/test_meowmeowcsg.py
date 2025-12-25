@@ -6,8 +6,8 @@ This module contains tests for the CSG primitives and operations.
 
 import pytest
 from sympy import Matrix, Rational, simplify
-from moothymoth import Orientation
-from meowmeowcsg import (
+from code_goes_here.moothymoth import Orientation
+from code_goes_here.meowmeowcsg import (
     HalfPlane, Prism, Cylinder, Union, Difference,
     create_prism, create_cylinder
 )

@@ -9,7 +9,7 @@ from sympy import Matrix, Rational, Expr, sqrt, oo
 from typing import List, Optional, Union
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from moothymoth import Orientation
+from .moothymoth import Orientation
 
 # Type aliases (matching giraffe.py)
 V2 = Matrix  # 2D vector - 2x1 Matrix

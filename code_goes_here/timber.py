@@ -4,9 +4,9 @@ Contains all core data structures and type definitions for the timber framing sy
 """
 
 from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify
-from moothymoth import Orientation
-from footprint import Footprint
-from meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUnion, Difference as CSGDifference
+from .moothymoth import Orientation
+from .footprint import Footprint
+from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUnion, Difference as CSGDifference
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 from dataclasses import dataclass
@@ -682,7 +682,7 @@ class Cut:
         timber_prism = _create_timber_prism_csg_local(self._timber, [self])
         
         # The timber with the cut applied: timber - cut_volume
-        from meowmeowcsg import Difference, HalfPlane
+        from .meowmeowcsg import Difference, HalfPlane
         cut_result = Difference(timber_prism, [negative_csg])
         
         # Determine the search direction based on which end is being cut
@@ -769,7 +769,7 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     Returns:
         Prism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
     """
-    from meowmeowcsg import create_prism
+    from .meowmeowcsg import create_prism
     
     # Check if bottom end has cuts
     has_bottom_cut = any(
@@ -858,7 +858,7 @@ class CutTimber:
         Raises:
             AssertionError: If any end has more than one end cut
         """
-        from meowmeowcsg import create_prism
+        from .meowmeowcsg import create_prism
         
         # Find all end cuts for each end
         bottom_cuts = [cut for cut in self._cuts if cut.maybeEndCut == TimberReferenceEnd.BOTTOM]

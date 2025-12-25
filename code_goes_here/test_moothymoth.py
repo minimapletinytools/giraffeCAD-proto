@@ -8,7 +8,7 @@ This module contains tests for the Orientation class which represents
 import pytest
 import math
 from sympy import Matrix, pi, simplify, Abs, eye, det
-from moothymoth import Orientation
+from code_goes_here.moothymoth import Orientation
 import random
 
 

@@ -21,8 +21,8 @@ import time
 from typing import Optional, List, Tuple
 from sympy import Matrix, Float
 from giraffe import CutTimber, Timber
-from moothymoth import Orientation
-from meowmeowcsg import (
+from code_goes_here.moothymoth import Orientation
+from code_goes_here.meowmeowcsg import (
     MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference
 )
 

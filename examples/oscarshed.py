@@ -18,7 +18,7 @@ from giraffe import (
     cut_basic_splice_joint_on_aligned_timbers,
     FootprintLocation, CutTimber, Stickout, TimberReferenceEnd
 )
-from footprint import Footprint
+from code_goes_here.footprint import Footprint
 
 # ============================================================================
 # PARAMETERS - Modify these to adjust the shed design

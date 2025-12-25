@@ -4,11 +4,10 @@ Tests for GiraffeCAD timber framing system
 
 import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
-from moothymoth import Orientation
-from footprint import Footprint
+from code_goes_here.moothymoth import Orientation
+from code_goes_here.footprint import Footprint
 from giraffe import *
 from giraffe import _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned, _project_point_on_timber_centerline, _calculate_mortise_position_from_tenon_intersection
-from footprint import Footprint
 
 
 # ============================================================================
@@ -771,7 +770,7 @@ class TestCutTimber:
         csg = cut_timber._extended_timber_without_cuts_csg()
         
         # Should be a finite prism
-        from meowmeowcsg import Prism
+        from code_goes_here.meowmeowcsg import Prism
         assert isinstance(csg, Prism)
         
         # In LOCAL coordinates (relative to bottom_position):
@@ -867,7 +866,7 @@ class TestCutTimber:
         
         # Should be a finite prism with original dimensions in LOCAL coordinates
         # Local coordinates are relative to bottom_position
-        from meowmeowcsg import Prism
+        from code_goes_here.meowmeowcsg import Prism
         assert isinstance(csg, Prism)
         assert csg.start_distance == 0    # local: start at bottom (0)
         assert csg.end_distance == 100    # local: end at length (100)
