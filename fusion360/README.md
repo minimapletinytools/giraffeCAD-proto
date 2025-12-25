@@ -5,11 +5,16 @@ This directory contains a complete, self-contained Fusion 360 script for renderi
 ## 🏗️ What's Included
 
 ### Core Files
-- **`giraffetest.py`** - Main Fusion 360 script (run this in Fusion 360)
-- **`../giraffe.py`** - Core GiraffeCAD timber framing library (imported from parent)
-- **`../moothymoth.py`** - 3D orientation and rotation math using sympy (imported from parent)
-- **`../giraffe_render_fusion360.py`** - Fusion 360 rendering engine (imported from parent)
-- **`../sawhorse_example.py`** - Complete sawhorse example with joints (imported from parent)
+- **`giraffetest.py`** - Main Fusion 360 script with example selector (run this in Fusion 360)
+- **`giraffe_render_fusion360.py`** - Fusion 360 rendering engine
+- **`giraffe_render_fusion360_OLD.py`** - Previous version (backup)
+
+### Imported from Parent Directory
+- **`../giraffe.py`** - Core GiraffeCAD timber framing library
+- **`../code_goes_here/`** - Core modules (moothymoth, footprint, etc.)
+- **`../examples/sawhorse_example.py`** - Sawhorse structure
+- **`../examples/oscarshed.py`** - Oscar's Shed structure
+- **`../examples/reference/basic_joints_example.py`** - Joint type demonstrations
 
 ### Local Dependencies
 - **`libs/`** - Contains locally installed Python packages:
@@ -36,19 +41,48 @@ This directory contains a complete, self-contained Fusion 360 script for renderi
 ### 2. What the Script Does
 When you run the script, it will:
 
-1. **Clear the current design** (removes existing geometry)
-2. **Create a sawhorse structure** with 6 timbers:
-   - 2 mudsills (base rails)
-   - 2 vertical posts
-   - 1 top beam
-   - 1 horizontal stretcher
-3. **Generate mortise & tenon joints** between all connected timbers
+1. **Show a dialog** asking which example to render:
+   - **YES** = Basic Joints Examples (5 different joint types)
+   - **NO** = Oscar's Shed (8×4 ft timber frame structure)
+   - **CANCEL** = Sawhorse (simple two-leg sawhorse)
+
+2. **Clear the current design** (removes existing geometry)
+
+3. **Generate the selected structure** with all joints
+
 4. **Render in 3D** as properly positioned and oriented rectangular prisms
 
-### 3. Expected Output
-- **6 components** named `Sawhorse_Timber_001` through `Sawhorse_Timber_006`
-- **Realistic dimensions** (converted from inches to metric)
-- **Proper assembly** with timbers positioned according to traditional timber framing
+### 3. Available Examples
+
+#### Basic Joints Examples (10 timbers)
+Demonstrates 5 joint types, each with two 90×90mm timbers:
+- **Miter Joint** - 45° angled cuts meeting at a corner
+- **Miter Joint (Face Aligned)** - Miter optimized for aligned faces
+- **Corner Joint** - One timber cut, one straight
+- **Butt Joint** - One timber butts into another
+- **Splice Joint** - End-to-end scarf joint
+
+All joints are spaced 2m apart along the X-axis for easy viewing.
+
+#### Oscar's Shed (24 timbers)
+Complete timber frame shed structure:
+- 4 Mudsills with miter joints at corners
+- 6 Posts (front and back)
+- Side girts, front girt, top plates
+- 3 Floor joists
+- 5 Rafters
+
+#### Sawhorse (6 timbers)
+Simple traditional sawhorse:
+- 2 mudsills (base rails)
+- 2 vertical posts
+- 1 top beam
+- 1 horizontal stretcher
+
+### 4. Expected Output
+- **Components** named with appropriate prefixes (e.g., `Joint_001`, `OscarShed_Timber_001`)
+- **Realistic dimensions** (90mm or custom sizes depending on example)
+- **Proper assembly** with all joints and cuts visible
 
 ## 🧪 Testing
 
@@ -61,8 +95,19 @@ python3 test_local.py
 This will test:
 - ✅ All dependencies import correctly
 - ✅ GiraffeCAD modules load properly  
-- ✅ Sawhorse creation works
-- ✅ All 6 timbers with joints are generated
+- ✅ Example structures can be created
+- ✅ All timbers with joints are generated
+
+You can also test examples directly:
+```bash
+# Test Basic Joints
+cd ../examples/reference
+python3 basic_joints_example.py
+
+# Test Oscar's Shed
+cd ../examples
+python3 oscarshed.py
+```
 
 ## 📐 Technical Details
 
@@ -87,14 +132,23 @@ This ensures Fusion 360's isolated Python environment can access them.
 
 ### Architecture
 ```
-giraffetest/
-├── giraffetest.py (main script)
+fusion360/
+├── giraffetest.py (main script with example selector)
+├── giraffe_render_fusion360.py (Fusion 360 CSG rendering)
 ├── libs/ (local dependencies: sympy, mpmath)
 └── imports from parent directory:
-    ├── ../sawhorse_example.py (creates timber structure)
-    ├── ../giraffe.py (timber framing library)
-    ├── ../moothymoth.py (3D math with sympy)
-    └── ../giraffe_render_fusion360.py (renders in Fusion 360)
+    ├── ../giraffe.py (timber framing API)
+    ├── ../code_goes_here/ (core modules)
+    │   ├── moothymoth.py (3D rotations)
+    │   ├── footprint.py (2D layouts)
+    │   ├── meowmeowcsg.py (CSG operations)
+    │   ├── timber.py (timber class)
+    │   ├── construction.py (timber helpers)
+    │   └── basic_joints.py (joint functions)
+    └── ../examples/
+        ├── sawhorse_example.py
+        ├── oscarshed.py
+        └── reference/basic_joints_example.py
 ```
 
 ## 🔧 Troubleshooting
