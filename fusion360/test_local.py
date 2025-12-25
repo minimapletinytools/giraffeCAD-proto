@@ -46,7 +46,7 @@ def test_giraffe_modules():
     print("\nTesting GiraffeCAD module imports from parent directory...")
     
     try:
-        from moothymoth import Orientation
+        from code_goes_here.moothymoth import Orientation
         print("✓ moothymoth.Orientation imported successfully from parent dir")
     except ImportError as e:
         print(f"✗ Failed to import moothymoth from parent dir: {e}")
@@ -60,7 +60,7 @@ def test_giraffe_modules():
         return False
     
     try:
-        from sawhorse_example import create_sawhorse
+        from examples.sawhorse_example import create_sawhorse
         print("✓ sawhorse_example imported successfully from parent dir")
     except ImportError as e:
         print(f"✗ Failed to import sawhorse_example from parent dir: {e}")
@@ -85,7 +85,7 @@ def test_sawhorse_creation():
     print("\nTesting sawhorse creation with path imports...")
     
     try:
-        from sawhorse_example import create_sawhorse
+        from examples.sawhorse_example import create_sawhorse
         cut_timbers = create_sawhorse()
         
         print(f"✓ Created sawhorse with {len(cut_timbers)} timbers:")
@@ -113,8 +113,8 @@ def test_path_structure():
     # Files that should be in parent directory
     parent_required_files = [
         'giraffe.py',
-        'moothymoth.py', 
-        'sawhorse_example.py',
+        'code_goes_here/moothymoth.py', 
+        'examples/sawhorse_example.py',
     ]
     
     # Files that should be in current (fusion360) directory

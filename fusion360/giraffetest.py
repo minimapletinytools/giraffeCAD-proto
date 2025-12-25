@@ -28,7 +28,7 @@ try:
     
     # Test that core dependencies are available
     import sympy
-    from moothymoth import Orientation
+    from code_goes_here.moothymoth import Orientation
     from giraffe import CutTimber
     
     import_success = True
@@ -65,9 +65,9 @@ def run(_context: str):
             
             # List of modules to reload in dependency order
             modules_to_reload = [
-                'moothymoth',
-                'footprint',
-                'meowmeowcsg',
+                'code_goes_here.moothymoth',
+                'code_goes_here.footprint',
+                'code_goes_here.meowmeowcsg',
                 'code_goes_here.timber',
                 'code_goes_here.construction',
                 'code_goes_here.basic_joints',
