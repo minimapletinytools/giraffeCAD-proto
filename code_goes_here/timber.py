@@ -959,3 +959,32 @@ class HalfPlaneCut(Cut):
     def get_negative_csg(self) -> MeowMeowCSG:
         return self.half_plane
 
+
+class CSGCut(Cut):
+    """
+    A CSG cut is a cut defined by an arbitrary CSG object.
+    This allows for more complex cuts like grooves, dados, and other shapes
+    that can't be represented by a simple half-plane.
+    
+    The CSG object represents the volume to be REMOVED from the timber (negative CSG).
+    """
+    negative_csg: MeowMeowCSG
+    
+    def __init__(self, timber: Timber, origin: V3, orientation: Orientation,
+                 negative_csg: MeowMeowCSG, maybe_end_cut: Optional[TimberReferenceEnd] = None):
+        """
+        Create a CSGCut with all required parameters.
+        
+        Args:
+            timber: The timber being cut
+            origin: Origin point of the cut (reference point)
+            orientation: Orientation of the cut
+            negative_csg: The CSG object defining the volume to remove
+            maybe_end_cut: Optional end cut designation (TOP or BOTTOM)
+        """
+        super().__init__(timber, origin, orientation, maybe_end_cut)
+        self.negative_csg = negative_csg
+    
+    def get_negative_csg(self) -> MeowMeowCSG:
+        return self.negative_csg
+

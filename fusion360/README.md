@@ -54,13 +54,14 @@ When you run the script, it will:
 
 ### 3. Available Examples
 
-#### Basic Joints Examples (10 timbers)
-Demonstrates 5 joint types, each with two 90×90mm timbers:
-- **Miter Joint** - 45° angled cuts meeting at a corner
+#### Basic Joints Examples (12 timbers)
+Demonstrates 6 joint types, each with two 90×90mm timbers:
+- **Miter Joint** - 67° angled cuts (non-axis-aligned)
 - **Miter Joint (Face Aligned)** - Miter optimized for aligned faces
 - **Corner Joint** - One timber cut, one straight
 - **Butt Joint** - One timber butts into another
 - **Splice Joint** - End-to-end scarf joint
+- **House Joint** - Groove cut into housing timber, housed timber fits in (like shelf in upright)
 
 All joints are spaced 2m apart along the X-axis for easy viewing.
 

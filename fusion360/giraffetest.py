@@ -104,7 +104,7 @@ def run(_context: str):
             # Use a simple message box with buttons to select example
             result = ui.messageBox(
                 'Choose which example to render:\n\n' +
-                '• YES = Basic Joints Examples (5 joint types)\n' +
+                '• YES = Basic Joints Examples (6 joint types)\n' +
                 '• NO = Oscar\'s Shed (timber frame structure)\n' +
                 '• CANCEL = Sawhorse',
                 'GiraffeCAD - Select Example',
