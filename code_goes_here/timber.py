@@ -769,7 +769,7 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     Returns:
         Prism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
     """
-    from .meowmeowcsg import create_prism
+    from .meowmeowcsg import Prism
     
     # Check if bottom end has cuts
     has_bottom_cut = any(
@@ -792,7 +792,7 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     end_distance = None if has_top_cut else timber.length
     
     # Create a prism representing the timber in local coordinates
-    return create_prism(
+    return Prism(
         size=timber.size,
         orientation=Orientation.identity(),
         start_distance=start_distance,
@@ -858,7 +858,7 @@ class CutTimber:
         Raises:
             AssertionError: If any end has more than one end cut
         """
-        from .meowmeowcsg import create_prism
+        from .meowmeowcsg import Prism
         
         # Find all end cuts for each end
         bottom_cuts = [cut for cut in self._cuts if cut.maybeEndCut == TimberReferenceEnd.BOTTOM]
@@ -894,7 +894,7 @@ class CutTimber:
             top_distance = self._timber.length
         
         # Create a finite prism representing the timber in its local coordinate system
-        return create_prism(
+        return Prism(
             size=self._timber.size,
             orientation=self._timber.orientation,
             start_distance=bottom_distance,

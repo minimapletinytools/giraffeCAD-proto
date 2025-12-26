@@ -8,8 +8,7 @@ import pytest
 from sympy import Matrix, Rational, simplify
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
-    HalfPlane, Prism, Cylinder, Union, Difference,
-    create_prism, create_cylinder
+    HalfPlane, Prism, Cylinder, Union, Difference
 )
 
 
@@ -21,7 +20,7 @@ class TestMinimalBoundary:
         # Create a prism along Z axis from z=0 to z=10, with 4x6 cross-section
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation (Z-axis aligned)
-        prism = create_prism(size, orientation, start_distance=0, end_distance=10)
+        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
         
         # Minimal boundary in +X direction should be at one of the corners
         direction = Matrix([1, 0, 0])
@@ -37,7 +36,7 @@ class TestMinimalBoundary:
         """Test prism minimal boundary in negative X direction."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation, start_distance=0, end_distance=10)
+        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
         
         # Minimal boundary in -X direction should be at positive x
         direction = Matrix([-1, 0, 0])
@@ -51,7 +50,7 @@ class TestMinimalBoundary:
         """Test prism minimal boundary in Z direction (along axis)."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation, start_distance=Rational(5), end_distance=Rational(15))
+        prism = Prism(size=size, orientation=orientation, start_distance=Rational(5), end_distance=Rational(15))
         
         # Minimal boundary in +Z direction should be at z=5 (start)
         direction = Matrix([0, 0, 1])
@@ -63,7 +62,7 @@ class TestMinimalBoundary:
         """Test prism minimal boundary in diagonal direction."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation, start_distance=0, end_distance=10)
+        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
         
         # Minimal boundary in diagonal direction
         direction = Matrix([1, 1, 1])
@@ -79,7 +78,7 @@ class TestMinimalBoundary:
         """Test that infinite prism raises error."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation)  # Infinite in both directions
+        prism = Prism(size=size, orientation=orientation)  # Infinite in both directions
         
         direction = Matrix([1, 0, 0])
         with pytest.raises(ValueError, match="infinite in both directions"):
@@ -89,7 +88,7 @@ class TestMinimalBoundary:
         """Test semi-infinite prism works when querying opposite to infinite direction."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation, end_distance=10)  # Infinite in negative direction
+        prism = Prism(size=size, orientation=orientation, end_distance=10)  # Infinite in negative direction
         
         # Query in +Z (away from infinite direction) should work
         direction = Matrix([0, 0, 1])
@@ -102,7 +101,7 @@ class TestMinimalBoundary:
         """Test semi-infinite prism raises error when querying in infinite direction."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation, end_distance=10)  # Infinite in negative direction
+        prism = Prism(size=size, orientation=orientation, end_distance=10)  # Infinite in negative direction
         
         # Query in -Z (toward infinite direction) should raise error
         direction = Matrix([0, 0, -1])
@@ -113,7 +112,7 @@ class TestMinimalBoundary:
         """Test semi-infinite prism works when querying opposite to infinite direction."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation, start_distance=5)  # Infinite in positive direction
+        prism = Prism(size=size, orientation=orientation, start_distance=5)  # Infinite in positive direction
         
         # Query in -Z (away from infinite direction) should work
         direction = Matrix([0, 0, -1])
@@ -126,7 +125,7 @@ class TestMinimalBoundary:
         """Test semi-infinite prism raises error when querying in infinite direction."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation, start_distance=5)  # Infinite in positive direction
+        prism = Prism(size=size, orientation=orientation, start_distance=5)  # Infinite in positive direction
         
         # Query in +Z (toward infinite direction) should raise error
         direction = Matrix([0, 0, 1])
@@ -137,7 +136,7 @@ class TestMinimalBoundary:
         """Test semi-infinite prism works for perpendicular directions."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation, end_distance=10)  # Infinite in negative Z
+        prism = Prism(size=size, orientation=orientation, end_distance=10)  # Infinite in negative Z
         
         # Query in X direction (perpendicular to axis) should work
         direction = Matrix([1, 0, 0])
@@ -151,7 +150,7 @@ class TestMinimalBoundary:
         # Cylinder along Z axis, radius 3, from z=0 to z=10
         axis = Matrix([0, 0, 1])
         radius = Rational(3)
-        cylinder = create_cylinder(axis, radius, start_distance=0, end_distance=10)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=0, end_distance=10)
         
         # Minimal boundary in +X direction should be at x=-3 (leftmost point)
         direction = Matrix([1, 0, 0])
@@ -166,7 +165,7 @@ class TestMinimalBoundary:
         """Test cylinder minimal boundary in Z direction (along axis)."""
         axis = Matrix([0, 0, 1])
         radius = Rational(3)
-        cylinder = create_cylinder(axis, radius, start_distance=Rational(5), end_distance=Rational(15))
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=Rational(5), end_distance=Rational(15))
         
         # Minimal boundary in +Z direction should be at z=5
         direction = Matrix([0, 0, 1])
@@ -181,7 +180,7 @@ class TestMinimalBoundary:
         """Test cylinder minimal boundary in diagonal direction."""
         axis = Matrix([0, 0, 1])
         radius = Rational(2)
-        cylinder = create_cylinder(axis, radius, start_distance=0, end_distance=10)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=0, end_distance=10)
         
         # Minimal in (1, 1, 1) direction
         direction = Matrix([1, 1, 1])
@@ -199,7 +198,7 @@ class TestMinimalBoundary:
         """Test that infinite cylinder raises error."""
         axis = Matrix([0, 0, 1])
         radius = Rational(3)
-        cylinder = create_cylinder(axis, radius)  # Infinite
+        cylinder = Cylinder(axis_direction=axis, radius=radius)  # Infinite
         
         direction = Matrix([1, 0, 0])
         with pytest.raises(ValueError, match="infinite in both directions"):
@@ -209,7 +208,7 @@ class TestMinimalBoundary:
         """Test semi-infinite cylinder works when querying opposite to infinite direction."""
         axis = Matrix([1, 0, 0])
         radius = Rational(3)
-        cylinder = create_cylinder(axis, radius, end_distance=10)  # Infinite in negative direction
+        cylinder = Cylinder(axis_direction=axis, radius=radius, end_distance=10)  # Infinite in negative direction
         
         # Query in +X (away from infinite direction) should work
         direction = Matrix([1, 0, 0])
@@ -222,7 +221,7 @@ class TestMinimalBoundary:
         """Test semi-infinite cylinder raises error when querying in infinite direction."""
         axis = Matrix([1, 0, 0])
         radius = Rational(3)
-        cylinder = create_cylinder(axis, radius, end_distance=10)  # Infinite in negative direction
+        cylinder = Cylinder(axis_direction=axis, radius=radius, end_distance=10)  # Infinite in negative direction
         
         # Query in -X (toward infinite direction) should raise error
         direction = Matrix([-1, 0, 0])
@@ -233,7 +232,7 @@ class TestMinimalBoundary:
         """Test semi-infinite cylinder works when querying opposite to infinite direction."""
         axis = Matrix([1, 0, 0])
         radius = Rational(3)
-        cylinder = create_cylinder(axis, radius, start_distance=-5)  # Infinite in positive direction
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=-5)  # Infinite in positive direction
         
         # Query in -X (away from infinite direction) should work
         direction = Matrix([-1, 0, 0])
@@ -246,7 +245,7 @@ class TestMinimalBoundary:
         """Test semi-infinite cylinder raises error when querying in infinite direction."""
         axis = Matrix([1, 0, 0])
         radius = Rational(3)
-        cylinder = create_cylinder(axis, radius, start_distance=-5)  # Infinite in positive direction
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=-5)  # Infinite in positive direction
         
         # Query in +X (toward infinite direction) should raise error
         direction = Matrix([1, 0, 0])
@@ -257,7 +256,7 @@ class TestMinimalBoundary:
         """Test semi-infinite cylinder works for perpendicular directions."""
         axis = Matrix([0, 0, 1])
         radius = Rational(3)
-        cylinder = create_cylinder(axis, radius, end_distance=10)  # Infinite in negative Z
+        cylinder = Cylinder(axis_direction=axis, radius=radius, end_distance=10)  # Infinite in negative Z
         
         # Query in X direction (perpendicular to axis) should work
         direction = Matrix([1, 0, 0])
@@ -334,8 +333,8 @@ class TestMinimalBoundary:
         size = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        prism1 = create_prism(size, orientation, start_distance=0, end_distance=5)
-        prism2 = create_prism(size, orientation, start_distance=10, end_distance=15)
+        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
         
         union = Union([prism1, prism2])
         
@@ -358,10 +357,10 @@ class TestMinimalBoundary:
         # Base prism
         size = Matrix([10, 10])
         orientation = Orientation()  # Identity orientation
-        base = create_prism(size, orientation, start_distance=0, end_distance=10)
+        base = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
         
         # Subtract a smaller prism (doesn't affect the minimal boundary)
-        subtract = create_prism(Matrix([2, 2]), orientation, start_distance=2, end_distance=8)
+        subtract = Prism(size=Matrix([2, 2]), orientation=orientation, start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -373,54 +372,54 @@ class TestMinimalBoundary:
         assert boundary[0] == -5  # Half of base width
 
 
-class TestCreateFunctions:
-    """Test the create_prism and create_cylinder functions."""
+class TestConstructors:
+    """Test the Prism and Cylinder constructors."""
     
-    def test_create_prism_finite(self):
+    def test_prism_constructor_finite(self):
         """Test creating a finite prism."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation, start_distance=0, end_distance=10)
+        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
         
         assert prism.size == size
         assert prism.orientation == orientation
         assert prism.start_distance == 0
         assert prism.end_distance == 10
     
-    def test_create_prism_semi_infinite(self):
+    def test_prism_constructor_semi_infinite(self):
         """Test creating a semi-infinite prism."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation, end_distance=10)
+        prism = Prism(size=size, orientation=orientation, end_distance=10)
         
         assert prism.start_distance is None
         assert prism.end_distance == 10
     
-    def test_create_prism_infinite(self):
+    def test_prism_constructor_infinite(self):
         """Test creating an infinite prism."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = create_prism(size, orientation)
+        prism = Prism(size=size, orientation=orientation)
         
         assert prism.start_distance is None
         assert prism.end_distance is None
     
-    def test_create_cylinder_finite(self):
+    def test_cylinder_constructor_finite(self):
         """Test creating a finite cylinder."""
         axis = Matrix([1, 0, 0])
         radius = Rational(5)
-        cylinder = create_cylinder(axis, radius, start_distance=-5, end_distance=5)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=-5, end_distance=5)
         
         assert cylinder.axis_direction == axis
         assert cylinder.radius == radius
         assert cylinder.start_distance == -5
         assert cylinder.end_distance == 5
     
-    def test_create_cylinder_infinite(self):
+    def test_cylinder_constructor_infinite(self):
         """Test creating an infinite cylinder."""
         axis = Matrix([1, 0, 0])
         radius = Rational(5)
-        cylinder = create_cylinder(axis, radius)
+        cylinder = Cylinder(axis_direction=axis, radius=radius)
         
         assert cylinder.start_distance is None
         assert cylinder.end_distance is None

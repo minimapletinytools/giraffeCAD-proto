@@ -499,7 +499,7 @@ def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber, extend_
         A shelf (housed_timber) fitting into the side of a cabinet (housing_timber).
         The cabinet side gets a groove cut into it to receive the shelf.
     """
-    from code_goes_here.meowmeowcsg import Difference, create_prism
+    from code_goes_here.meowmeowcsg import Difference, Prism
     
     # Verify that the timbers are not parallel (their length directions must differ)
     dot_product = (housing_timber.length_direction.T * housed_timber.length_direction)[0, 0]
@@ -592,7 +592,7 @@ def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber, extend_
         end_distance = projection + housed_timber.length
     
     # Create the housed prism in housing timber's LOCAL coordinate system
-    housed_prism_local = create_prism(
+    housed_prism_local = Prism(
         size=housed_timber.size,
         orientation=relative_orientation,
         start_distance=start_distance,
