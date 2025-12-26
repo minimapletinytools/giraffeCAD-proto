@@ -687,7 +687,7 @@ class Cut(ABC):
             raise ValueError("get_end_position can only be called on end cuts (maybe_end_cut must be set)")
         
         # Get the negative CSG representing the cut volume (in LOCAL coordinates)
-        negative_csg = self.get_negative_csg()
+        negative_csg = self.get_negative_csg_local()
         
         # Get the timber prism in LOCAL coordinates (semi-infinite at this end since we pass [self])
         timber_prism = _create_timber_prism_csg_local(self.timber, [self])
@@ -760,8 +760,9 @@ class Cut(ABC):
             return end_position
 
     # returns the negative CSG of the cut (the part of the timber that is removed by the cut)
+    # in LOCAL coordinates (relative to timber.bottom_position)
     @abstractmethod
-    def get_negative_csg(self) -> MeowMeowCSG:
+    def get_negative_csg_local(self) -> MeowMeowCSG:
         pass
 
 
@@ -836,7 +837,7 @@ class CutTimber:
         return self._timber.name
 
     # this one returns the timber without cuts where ends with joints are infinite in length
-    def _extended_timber_without_cuts_csg(self) -> MeowMeowCSG:
+    def _extended_timber_without_cuts_csg_local(self) -> MeowMeowCSG:
         """
         Returns a CSG representation of the timber without any cuts applied.
         
@@ -853,7 +854,7 @@ class CutTimber:
 
     # this one returns the timber without cuts where ends with joints are cut to length based on Cut::get_end_position
     # use this for rendering the timber without cuts for development
-    def render_timber_without_cuts_csg(self) -> MeowMeowCSG:
+    def render_timber_without_cuts_csg_local(self) -> MeowMeowCSG:
         """
         Returns a CSG representation of the timber without cuts applied, but with ends
         positioned according to any end cuts.
@@ -914,8 +915,8 @@ class CutTimber:
         )
 
     # this one returns the timber with all cuts applied
-    def render_timber_with_cuts_csg(self) -> MeowMeowCSG:
-        starting_csg = self._extended_timber_without_cuts_csg()
+    def render_timber_with_cuts_csg_local(self) -> MeowMeowCSG:
+        starting_csg = self._extended_timber_without_cuts_csg_local()
         # TODO difference each cut from starting_CSG?
         pass
 
@@ -944,7 +945,7 @@ class HalfPlaneCut(Cut):
     """
     half_plane: HalfPlane
     
-    def get_negative_csg(self) -> MeowMeowCSG:
+    def get_negative_csg_local(self) -> MeowMeowCSG:
         return self.half_plane
 
 
@@ -959,6 +960,6 @@ class CSGCut(Cut):
     """
     negative_csg: MeowMeowCSG
     
-    def get_negative_csg(self) -> MeowMeowCSG:
+    def get_negative_csg_local(self) -> MeowMeowCSG:
         return self.negative_csg
 

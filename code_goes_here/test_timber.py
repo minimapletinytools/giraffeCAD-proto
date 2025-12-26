@@ -767,7 +767,7 @@ class TestCutTimber:
         cut_timber = CutTimber(timber)
         
         # Get the CSG
-        csg = cut_timber._extended_timber_without_cuts_csg()
+        csg = cut_timber._extended_timber_without_cuts_csg_local()
         
         # Should be a finite prism
         from code_goes_here.meowmeowcsg import Prism
@@ -799,7 +799,7 @@ class TestCutTimber:
         timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         cut_timber = CutTimber(timber)
         
-        csg = cut_timber._extended_timber_without_cuts_csg()
+        csg = cut_timber._extended_timber_without_cuts_csg_local()
         
         # In LOCAL coordinates (relative to bottom_position):
         # Start distance is 0 (at bottom)
@@ -819,7 +819,7 @@ class TestCutTimber:
         timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         cut_timber = CutTimber(timber)
         
-        csg = cut_timber._extended_timber_without_cuts_csg()
+        csg = cut_timber._extended_timber_without_cuts_csg_local()
         
         # Query minimal boundary in +Z direction (along timber axis)
         # Note: boundary is in local coordinates (relative to bottom_position)
@@ -840,7 +840,7 @@ class TestCutTimber:
         timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         cut_timber = CutTimber(timber)
         
-        csg = cut_timber._extended_timber_without_cuts_csg()
+        csg = cut_timber._extended_timber_without_cuts_csg_local()
         
         # In LOCAL coordinates (relative to bottom_position):
         # Start distance is 0
@@ -866,7 +866,7 @@ class TestCutTimber:
         cut_timber = CutTimber(timber)
         
         # Get the CSG
-        csg = cut_timber.render_timber_without_cuts_csg()
+        csg = cut_timber.render_timber_without_cuts_csg_local()
         
         # Should be a finite prism with original dimensions in LOCAL coordinates
         # Local coordinates are relative to bottom_position
@@ -891,7 +891,7 @@ class TestCutTimber:
         cut_timber = CutTimber(timber, cuts=[bottom_cut])
         
         # Get the CSG
-        csg = cut_timber.render_timber_without_cuts_csg()
+        csg = cut_timber.render_timber_without_cuts_csg_local()
         
         # In LOCAL coordinates (relative to bottom_position):
         # Bottom should be at cut position: z=15 → local = 15 - 10 = 5
@@ -915,7 +915,7 @@ class TestCutTimber:
         cut_timber = CutTimber(timber, cuts=[top_cut])
         
         # Get the CSG
-        csg = cut_timber.render_timber_without_cuts_csg()
+        csg = cut_timber.render_timber_without_cuts_csg_local()
         
         # In LOCAL coordinates (relative to bottom_position):
         # Bottom at original: z=10 → local = 0
@@ -941,7 +941,7 @@ class TestCutTimber:
         cut_timber = CutTimber(timber, cuts=[bottom_cut, top_cut])
         
         # Get the CSG
-        csg = cut_timber.render_timber_without_cuts_csg()
+        csg = cut_timber.render_timber_without_cuts_csg_local()
         
         # In LOCAL coordinates (relative to bottom_position):
         # Bottom at cut position: z=20 → local = 20 - 10 = 10
@@ -966,7 +966,7 @@ class TestCutTimber:
         
         # Should raise assertion error
         with pytest.raises(AssertionError, match="Bottom end has 2 end cuts"):
-            cut_timber.render_timber_without_cuts_csg()
+            cut_timber.render_timber_without_cuts_csg_local()
     
     def test_render_timber_without_cuts_multiple_top_cuts_error(self):
         """Test that multiple top end cuts raises an assertion error."""
@@ -985,6 +985,6 @@ class TestCutTimber:
         
         # Should raise assertion error
         with pytest.raises(AssertionError, match="Top end has 2 end cuts"):
-            cut_timber.render_timber_without_cuts_csg()
+            cut_timber.render_timber_without_cuts_csg_local()
 
 

@@ -42,8 +42,8 @@ DONE-check for mutabel data
 DONE-remove mutable position/name stuff from examples and oscarshed
 
 -change giraffe to use render_timber_with_cuts_csg rather than do it itself
--prefix timber methods with _in_local_space (meaning orientation and translation not applied)
--cleanup the epsilon constant stuff (when to use flot vs rational for this?? think baotu ti ab it...)
+DONE-prefix timber methods with _in_local_space (meaning orientation and translation not applied)
+DONE-cleanup the epsilon constant stuff (when to use flot vs rational for this?? think baotu ti ab it...)
 -fix the venv stuff in readme, aeither add venv or get rid of it from readme.
 -maybe get rid of corner joint
 -update all warnings to use warning.warn
