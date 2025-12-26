@@ -101,6 +101,69 @@ def exact_zero_test(value) -> bool:
     return zero_test(value, always_exact=True, epsilon=None)
 
 
+def equality_test(value, expected, always_exact: bool = False, epsilon: Optional[Float] = None) -> bool:
+    """
+    Test if a value equals an expected value, with options for exact or epsilon-based checking.
+    
+    Args:
+        value: The value to test (SymPy expression, Rational, Float, or numeric)
+        expected: The expected value to compare against
+        always_exact: If True, force exact checking (raises assertion if epsilon provided)
+        epsilon: If provided, use epsilon-based comparison
+    
+    Returns:
+        True if value is (approximately) equal to expected
+    
+    Behavior:
+    - If value and expected are Rational and epsilon is None: exact check (value == expected)
+    - If always_exact is True: assert epsilon is None, warn if not Rational, do exact check
+    - If epsilon is provided: check if |value - expected| < epsilon
+    """
+    if always_exact:
+        assert epsilon is None, "Cannot provide epsilon when always_exact=True"
+        if not (isinstance(value, Rational) and isinstance(expected, Rational)):
+            warnings.warn(f"exact_equality_test called with non-Rational values {type(value).__name__} and {type(expected).__name__}. Proceeding with exact check.")
+        return value == expected
+    
+    if epsilon is None:
+        if isinstance(value, Rational) and isinstance(expected, Rational):
+            return value == expected
+        else:
+            # Default to epsilon-based check for non-Rational values
+            return Abs(value - expected) < EPSILON_GENERIC
+    
+    return Abs(value - expected) < epsilon
+
+
+def epsilon_equality_test(value, expected, epsilon: Float = EPSILON_GENERIC) -> bool:
+    """
+    Test if a value is approximately equal to an expected value using epsilon comparison.
+    
+    Args:
+        value: The value to test
+        expected: The expected value
+        epsilon: Epsilon threshold (defaults to EPSILON_GENERIC)
+    
+    Returns:
+        True if |value - expected| < epsilon
+    """
+    return equality_test(value, expected, always_exact=False, epsilon=epsilon)
+
+
+def exact_equality_test(value, expected) -> bool:
+    """
+    Test if a value is exactly equal to an expected value. Warns if values are not Rational.
+    
+    Args:
+        value: The value to test
+        expected: The expected value
+    
+    Returns:
+        True if value == expected (exact comparison)
+    """
+    return equality_test(value, expected, always_exact=True, epsilon=None)
+
+
 # ============================================================================
 # Parallel and Perpendicular Check Functions
 # ============================================================================

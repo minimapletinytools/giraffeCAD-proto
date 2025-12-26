@@ -5,6 +5,7 @@ Footprint class for GiraffeCAD - Represents the 2D footprint of a structure
 from typing import List, Tuple
 from sympy import Matrix
 from dataclasses import dataclass
+from .moothymoth import epsilon_zero_test, EPSILON_GENERIC
 
 # Type aliases for vectors using sympy
 V2 = Matrix  # 2D vector - 2x1 Matrix
@@ -292,7 +293,7 @@ class Footprint:
         
         # Normalize the direction
         length = (dx * dx + dy * dy) ** 0.5
-        if length < 1e-10:
+        if epsilon_zero_test(length, EPSILON_GENERIC):
             raise ValueError(f"Side {side_index} has zero length")
         
         dx /= length

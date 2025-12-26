@@ -8,6 +8,8 @@ from code_goes_here.timber import *
 from code_goes_here.moothymoth import (
     EPSILON_PARALLEL,
     EPSILON_GENERIC,
+    epsilon_zero_test,
+    epsilon_equality_test,
     construction_parallel_check,
     construction_perpendicular_check
 )
@@ -731,11 +733,10 @@ def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Opti
         else:
             
             warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if timbers with float values are parallel")
-            tolerance = EPSILON_GENERIC
-            return Abs(dot_product - 1) < tolerance
+            return epsilon_equality_test(dot_product, 1, EPSILON_GENERIC)
     else:
         # Use provided tolerance
-        return Abs(dot_product - 1) < tolerance
+        return epsilon_equality_test(dot_product, 1, tolerance)
 
 def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
     """
@@ -762,11 +763,10 @@ def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Op
             return simplify(dot_product) == 0
         else:
             warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if timbers with float values are perpendicular")
-            tolerance = EPSILON_GENERIC
-            return Abs(dot_product) < tolerance
+            return epsilon_zero_test(dot_product, EPSILON_GENERIC)
     else:
         # Use provided tolerance
-        return Abs(dot_product) < tolerance
+        return epsilon_zero_test(dot_product, tolerance)
 
 def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[Numeric] = None) -> bool:
     """
@@ -793,11 +793,10 @@ def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction
             return simplify(dot_product) == 0
         else:
             warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if directions with float values are perpendicular")
-            tolerance = EPSILON_GENERIC
-            return Abs(dot_product) < tolerance
+            return epsilon_zero_test(dot_product, EPSILON_GENERIC)
     else:
         # Use tolerance for approximate comparison
-        return Abs(dot_product) < tolerance
+        return epsilon_zero_test(dot_product, tolerance)
 
 def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[Numeric] = None) -> bool:
     """
@@ -825,11 +824,10 @@ def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, t
             return simplify(dot_mag - 1) == 0
         else:
             warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if directions with float values are parallel")
-            tolerance = EPSILON_GENERIC
-            return abs(float(dot_mag) - 1.0) < tolerance
+            return epsilon_equality_test(dot_mag, 1, EPSILON_GENERIC)
     else:
         # Use provided tolerance
-        return abs(float(dot_mag) - 1.0) < tolerance
+        return epsilon_equality_test(dot_mag, 1, tolerance)
 
 def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
     """
@@ -884,8 +882,8 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
         for dir1 in dirs1:
             for dir2 in dirs2:
                 dot_product = Abs(dir1.dot(dir2))
-                # Convert to float for numerical comparison
-                if abs(float(dot_product) - 1.0) < effective_tolerance:
+                # Check if directions are parallel using helper function
+                if epsilon_equality_test(dot_product, 1, effective_tolerance):
                     return True
     
     return False
