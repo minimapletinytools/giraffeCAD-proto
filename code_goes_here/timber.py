@@ -9,7 +9,7 @@ from .footprint import Footprint
 from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUnion, Difference as CSGDifference
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from abc import abstractmethod
 
 # Type aliases for vectors using sympy
@@ -352,69 +352,98 @@ def vector_magnitude(vec: Matrix):
 # Core Classes
 # ============================================================================
 
+
+def _compute_timber_orientation(length_direction: Direction3D, width_direction: Direction3D) -> Orientation:
+    """Compute the orientation matrix from length and width directions
+    
+    Args:
+        length_direction: Direction vector for the length axis as 3D vector, the +length direction is the +Z direction
+        width_direction: Direction vector for the width axis as 3D vector, the +width direction is the +X direction
+        
+    Returns:
+        Orientation object representing the timber's orientation in 3D space
+    """
+    # Normalize the length direction first (this will be our primary axis)
+    length_norm = normalize_vector(length_direction)
+    
+    # Orthogonalize face direction relative to length direction using Gram-Schmidt
+    face_input = normalize_vector(width_direction)
+    
+    # Project face_input onto length_norm and subtract to get orthogonal component
+    projection = length_norm * (face_input.dot(length_norm))
+    face_orthogonal = face_input - projection
+    
+    # Check if face_orthogonal is too small (vectors were nearly parallel)
+    if face_orthogonal.norm() < EPSILON_FLOAT:
+        # Choose an arbitrary orthogonal direction
+        # Find a vector that's not parallel to length_norm
+        if Abs(length_norm[0]) < 0.9:  # Threshold comparison - use float
+            temp_vector = create_vector3d(1, 0, 0)
+        else:
+            temp_vector = create_vector3d(0, 1, 0)
+        
+        # Project and orthogonalize
+        projection = length_norm * (temp_vector.dot(length_norm))
+        face_orthogonal = temp_vector - projection
+    
+    # Normalize the orthogonalized face direction
+    face_norm = normalize_vector(face_orthogonal)
+    
+    # Cross product to get the third axis (guaranteed to be orthogonal)
+    height_norm = normalize_vector(cross_product(length_norm, face_norm))
+    
+    # Create rotation matrix [face_norm, height_norm, length_norm]
+    rotation_matrix = Matrix([
+        [face_norm[0], height_norm[0], length_norm[0]],
+        [face_norm[1], height_norm[1], length_norm[1]],
+        [face_norm[2], height_norm[2], length_norm[2]]
+    ])
+    
+    # Convert to Orientation
+    return Orientation(rotation_matrix)
+
+
+# TODO rename to create_timber (or maybe hew lolololol) + add defaults
+def timber_from_directions(length: Numeric, size: V2, bottom_position: V3,
+                           length_direction: Direction3D, width_direction: Direction3D,
+                           name: Optional[str] = None) -> 'Timber':
+    """Factory function to create a Timber with computed orientation from direction vectors
+    
+    This is the main way to construct Timber instances. It takes direction vectors
+    and computes the proper orientation matrix automatically.
+    
+    Args:
+        length: Length of the timber
+        size: Cross-sectional size (width, height) as 2D vector, width is the X dimension (left to right), height is the Y dimension (front to back)
+        bottom_position: Position of the bottom point (center of cross-section) as 3D vector
+        length_direction: Direction vector for the length axis as 3D vector, the +length direction is the +Z direction
+        width_direction: Direction vector for the width axis as 3D vector, the +width direction is the +X direction
+        name: Optional name for this timber (used for rendering/debugging)
+        
+    Returns:
+        Timber instance with computed orientation
+    """
+    orientation = _compute_timber_orientation(length_direction, width_direction)
+    return Timber(length=length, size=size, bottom_position=bottom_position,
+                  orientation=orientation, name=name)
+
+
+@dataclass(frozen=True)
 class Timber:
-    """Represents a timber in the timber framing system"""
+    """Represents a timber in the timber framing system (immutable)
     
-    def __init__(self, length: Numeric, size: V2, bottom_position: V3, 
-                 length_direction: Direction3D, width_direction: Direction3D, name: Optional[str] = None):
-        """
-        Args:
-            length: Length of the timber
-            size: Cross-sectional size (width, height) as 2D vector, width is the X dimension (left to right), height is the Y dimension (front to back)
-            bottom_position: Position of the bottom point (center of cross-section) as 3D vector
-            length_direction: Direction vector for the length axis as 3D vector, the +length direction is the +Z direction
-            width_direction: Direction vector for the width axis as 3D vector, the +width direction is the +X direction
-            name: Optional name for this timber (used for rendering/debugging)
-        """
-        self.length: Numeric = length
-        self.size: V2 = size
-        self.bottom_position: V3 = bottom_position
-        self.name: Optional[str] = name
-        self.orientation: Orientation
-        
-        # Calculate orientation matrix from input directions
-        self._compute_orientation(length_direction, width_direction)
+    Note: Use timber_from_directions() factory function to construct Timber instances from
+    length_direction and width_direction vectors. This class is frozen to ensure immutability
+    after construction.
     
-    def _compute_orientation(self, length_direction: Direction3D, width_direction: Direction3D):
-        """Compute the orientation matrix from length and face directions"""
-        # Normalize the length direction first (this will be our primary axis)
-        length_norm = normalize_vector(length_direction)
-        
-        # Orthogonalize face direction relative to length direction using Gram-Schmidt
-        face_input = normalize_vector(width_direction)
-        
-        # Project face_input onto length_norm and subtract to get orthogonal component
-        projection = length_norm * (face_input.dot(length_norm))
-        face_orthogonal = face_input - projection
-        
-        # Check if face_orthogonal is too small (vectors were nearly parallel)
-        if face_orthogonal.norm() < EPSILON_FLOAT:
-            # Choose an arbitrary orthogonal direction
-            # Find a vector that's not parallel to length_norm
-            if Abs(length_norm[0]) < 0.9:  # Threshold comparison - use float
-                temp_vector = create_vector3d(1, 0, 0)
-            else:
-                temp_vector = create_vector3d(0, 1, 0)
-            
-            # Project and orthogonalize
-            projection = length_norm * (temp_vector.dot(length_norm))
-            face_orthogonal = temp_vector - projection
-        
-        # Normalize the orthogonalized face direction
-        face_norm = normalize_vector(face_orthogonal)
-        
-        # Cross product to get the third axis (guaranteed to be orthogonal)
-        height_norm = normalize_vector(cross_product(length_norm, face_norm))
-        
-        # Create rotation matrix [face_norm, height_norm, length_norm]
-        rotation_matrix = Matrix([
-            [face_norm[0], height_norm[0], length_norm[0]],
-            [face_norm[1], height_norm[1], length_norm[1]],
-            [face_norm[2], height_norm[2], length_norm[2]]
-        ])
-        
-        # Convert to Orientation
-        self.orientation = Orientation(rotation_matrix)
+    Alternatively, if you already have an Orientation object, you can construct
+    Timber directly by passing: Timber(length, size, bottom_position, orientation, name)
+    """
+    length: Numeric
+    size: V2
+    bottom_position: V3
+    orientation: Orientation
+    name: Optional[str] = None
     
     @property
     def length_direction(self) -> Direction3D:

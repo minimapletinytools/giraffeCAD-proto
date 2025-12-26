@@ -351,7 +351,7 @@ class TestTimberCreation:
     def test_extend_timber(self):
         """Test timber extension creation with correct length calculation."""
         # Create a vertical timber from Z=0 to Z=10
-        original_timber = Timber(
+        original_timber = timber_from_directions(
             length=Rational(10),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -411,7 +411,7 @@ class TestJoinTimbers:
     
     def test_join_timbers_basic(self):
         """Test basic timber joining."""
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -419,7 +419,7 @@ class TestJoinTimbers:
             width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))
         )
         
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(Rational(2), Rational(0), Rational(0)),
@@ -467,7 +467,7 @@ class TestJoinTimbers:
     def test_join_timbers_with_non_perpendicular_orientation_vector(self):
         """Test that join_timbers automatically projects non-perpendicular orientation_width_vector."""
         # Create two vertical posts
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -475,7 +475,7 @@ class TestJoinTimbers:
             width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))
         )
         
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(Rational(2), Rational(0), Rational(0)),
@@ -517,7 +517,7 @@ class TestJoinTimbers:
     def test_join_timbers_with_angled_orientation_vector(self):
         """Test projection of angled orientation_width_vector onto perpendicular plane."""
         # Create two vertical posts
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -525,7 +525,7 @@ class TestJoinTimbers:
             width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))
         )
         
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(Rational(2), Rational(1), Rational(0)),  # Offset in both X and Y
@@ -554,7 +554,7 @@ class TestJoinTimbers:
 
     # helper function to create 2 parallel timbers 
     def make_parallel_timbers(self):
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -562,7 +562,7 @@ class TestJoinTimbers:
             width_direction=create_vector3d(Rational(0), Rational(0), Rational(1))     # Up
         )
         
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(Rational(0), Rational(2), Rational(0)),
@@ -623,7 +623,7 @@ class TestJoinTimbers:
         
         # Create two timbers that are NOT face-aligned
         # Timber1: vertical, facing east
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.15"), Rational("0.15")),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -632,7 +632,7 @@ class TestJoinTimbers:
         )
         
         # Timber2: 3D rotation not aligned with timber1's coordinate grid
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.15"), Rational("0.15")),
             bottom_position=create_vector3d(Rational(2), Rational(2), Rational(0)),
@@ -670,7 +670,7 @@ class TestJoinTimbers:
         
         # Create two vertical posts with 1" x 2" cross-section
         # size[0] = width (1 inch), size[1] = height (2 inches)
-        post1 = Timber(
+        post1 = timber_from_directions(
             length=3,  # 3 meters tall (exact integer)
             size=create_vector2d(1 * INCH_TO_METERS, 2 * INCH_TO_METERS),  # 1" x 2"
             bottom_position=create_vector3d(0, 0, 0),  # Exact integers
@@ -679,7 +679,7 @@ class TestJoinTimbers:
         )
         
         # Post2 is 5 feet away in the X direction
-        post2 = Timber(
+        post2 = timber_from_directions(
             length=3,  # Exact integer
             size=create_vector2d(1 * INCH_TO_METERS, 2 * INCH_TO_METERS),  # 1" x 2"
             bottom_position=create_vector3d(5 * FEET_TO_METERS, 0, 0),  # 5 feet in X (exact rational)
@@ -733,7 +733,7 @@ class TestJoinTimbers:
         """Test that join_timbers creates valid orthogonal orientation matrices."""
         # Create two non-parallel timbers to ensure non-trivial orientation
         # Use exact integer/rational inputs for exact SymPy results
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=1,  # Integer
             size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # Exact rationals
             bottom_position=create_vector3d(Rational(-1, 2), 0, 0),  # Exact rationals
@@ -741,7 +741,7 @@ class TestJoinTimbers:
             width_direction=create_vector3d(1, 0, 0)     # Integers
         )
         
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=1,  # Integer
             size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # Exact rationals
             bottom_position=create_vector3d(Rational(1, 2), 0, 0),   # Exact rationals
@@ -865,26 +865,26 @@ class TestJoinTimbers:
         
         # Create base timbers - all horizontal and face-aligned
         for i, pos in enumerate(positions):
-            timber = Timber(
+            timber = timber_from_directions(
                 length=2,  # 2m long
                 size=timber_size,
                 bottom_position=pos,
                 length_direction=create_vector3d(1, 0, 0),  # All point east
-                width_direction=create_vector3d(0, 1, 0)     # All face north
+                width_direction=create_vector3d(0, 1, 0),    # All face north
+                name=f"Base_Timber_{i}"
             )
-            timber.name = f"Base_Timber_{i}"
             base_timbers.append(timber)
         
         # Create a beam at a higher level
         beam_z = Rational(3, 2)  # 1.5m height
-        beam = Timber(
+        beam = timber_from_directions(
             length=4,  # 4m long beam
             size=create_vector2d(Rational(15, 100), Rational(15, 100)),  # 15cm x 15cm
             bottom_position=create_vector3d(-2, 0, beam_z),
             length_direction=create_vector3d(1, 0, 0),  # East direction
-            width_direction=create_vector3d(0, 1, 0)     # North facing
+            width_direction=create_vector3d(0, 1, 0),    # North facing
+            name="Top_Beam"
         )
-        beam.name = "Top_Beam"
         
         # Verify that base timbers are face-aligned (same top face Z coordinate)
         for timber in base_timbers:
@@ -940,7 +940,7 @@ class TestJoinTimbers:
                 size=create_vector2d(Rational(8, 100), Rational(8, 100))  # 8cm x 8cm posts
                 # Note: orientation_face_on_timber1 not specified - uses default projection
             )
-            joining_timber.name = f"Post_{i}"
+            # Note: Cannot set name after construction since Timber is frozen
             joining_timbers.append(joining_timber)
         
         # Verify properties of joining timbers
@@ -1019,7 +1019,7 @@ class TestJoinTimbers:
                 size=create_vector2d(Rational(6, 100), Rational(6, 100)),  # 6cm x 6cm
                 orientation_face_on_timber1=TimberFace.TOP
             )
-            cross_timber.name = f"Cross_{i}"
+            # Note: Cannot set name after construction since Timber is frozen
             cross_connections.append(cross_timber)
         
         # Verify cross-connections
@@ -1054,7 +1054,7 @@ class TestHelperFunctions:
     def test_timber_get_closest_oriented_face_axis_aligned(self):
         """Test Timber.get_closest_oriented_face() with axis-aligned timber."""
         # Create an axis-aligned timber (standard orientation)
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),  # width=0.2, height=0.3
             bottom_position=create_vector3d(0, 0, 0),
@@ -1102,7 +1102,7 @@ class TestHelperFunctions:
         """Test Timber.get_closest_oriented_face() with rotated timber."""
         # Create a timber rotated 90 degrees around Z axis
         # length_direction stays Z-up, but width_direction becomes Y-forward
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1141,7 +1141,7 @@ class TestHelperFunctions:
     def test_timber_get_closest_oriented_face_horizontal(self):
         """Test Timber.get_closest_oriented_face() with horizontal timber."""
         # Create a horizontal timber lying along X axis
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1180,7 +1180,7 @@ class TestHelperFunctions:
     def test_timber_get_closest_oriented_face_diagonal(self):
         """Test Timber.get_closest_oriented_face() with diagonal target direction."""
         # Create an axis-aligned timber
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1203,7 +1203,7 @@ class TestHelperFunctions:
     def test_timber_get_face_direction(self):
         """Test Timber.get_face_direction() method."""
         # Create an axis-aligned timber
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1235,7 +1235,7 @@ class TestHelperFunctions:
     def test_timber_get_face_direction_for_ends(self):
         """Test using Timber.get_face_direction() for timber ends."""
         # Create a timber
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1254,7 +1254,7 @@ class TestHelperFunctions:
     def test_are_timbers_face_parallel(self):
         """Test _are_timbers_face_parallel helper function."""
         # Create two timbers with parallel length directions
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1262,7 +1262,7 @@ class TestHelperFunctions:
             width_direction=create_vector3d(1, 0, 0)      # X-right
         )
         
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.15"), Rational("0.25")),
             bottom_position=create_vector3d(2, 0, 0),
@@ -1274,7 +1274,7 @@ class TestHelperFunctions:
         assert _are_timbers_face_parallel(timber1, timber2)
         
         # Create a timber with opposite direction (still parallel)
-        timber3 = Timber(
+        timber3 = timber_from_directions(
             length=Rational("1.5"),
             size=create_vector2d(Rational("0.1"), Rational("0.2")),
             bottom_position=create_vector3d(-1, 0, 0),
@@ -1286,7 +1286,7 @@ class TestHelperFunctions:
         assert _are_timbers_face_parallel(timber1, timber3)
         
         # Create a timber with perpendicular direction
-        timber4 = Timber(
+        timber4 = timber_from_directions(
             length=Rational("2.5"),
             size=create_vector2d(Rational("0.3"), Rational("0.3")),
             bottom_position=create_vector3d(1, 1, 0),
@@ -1300,7 +1300,7 @@ class TestHelperFunctions:
     def test_are_timbers_face_orthogonal(self):
         """Test _are_timbers_face_orthogonal helper function."""
         # Create two timbers with perpendicular length directions
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1308,7 +1308,7 @@ class TestHelperFunctions:
             width_direction=create_vector3d(1, 0, 0)      # X-right
         )
         
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.15"), Rational("0.25")),
             bottom_position=create_vector3d(2, 0, 0),
@@ -1320,7 +1320,7 @@ class TestHelperFunctions:
         assert _are_timbers_face_orthogonal(timber1, timber2)
         
         # Create a timber with parallel direction
-        timber3 = Timber(
+        timber3 = timber_from_directions(
             length=Rational("1.5"),
             size=create_vector2d(Rational("0.1"), Rational("0.2")),
             bottom_position=create_vector3d(-1, 0, 0),
@@ -1332,7 +1332,7 @@ class TestHelperFunctions:
         assert not _are_timbers_face_orthogonal(timber1, timber3)
         
         # Test with Y-direction
-        timber4 = Timber(
+        timber4 = timber_from_directions(
             length=Rational("2.5"),
             size=create_vector2d(Rational("0.3"), Rational("0.3")),
             bottom_position=create_vector3d(1, 1, 0),
@@ -1346,7 +1346,7 @@ class TestHelperFunctions:
     def test_are_timbers_face_aligned(self):
         """Test _are_timbers_face_aligned helper function."""
         # Create a reference timber with standard orientation
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1356,7 +1356,7 @@ class TestHelperFunctions:
         # timber1 directions: length=[0,0,1], face=[1,0,0], height=[0,1,0]
         
         # Test 1: Timber with same orientation - should be face-aligned
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.15"), Rational("0.25")),
             bottom_position=create_vector3d(2, 0, 0),
@@ -1367,7 +1367,7 @@ class TestHelperFunctions:
         
         # Test 2: Timber rotated 90° around Z - should be face-aligned  
         # (length stays Z, but face becomes Y, height becomes -X)
-        timber3 = Timber(
+        timber3 = timber_from_directions(
             length=Rational("1.5"),
             size=create_vector2d(Rational("0.1"), Rational("0.2")),
             bottom_position=create_vector3d(-1, 0, 0),
@@ -1378,7 +1378,7 @@ class TestHelperFunctions:
         
         # Test 3: Timber rotated 90° around X - should be face-aligned
         # (length becomes -Y, face stays X, height becomes Z) 
-        timber4 = Timber(
+        timber4 = timber_from_directions(
             length=Rational("2.5"),
             size=create_vector2d(Rational("0.3"), Rational("0.3")),
             bottom_position=create_vector3d(1, 1, 0),
@@ -1389,7 +1389,7 @@ class TestHelperFunctions:
         
         # Test 4: Timber with perpendicular orientation but face-aligned
         # (length becomes X, face becomes Z, height becomes Y)
-        timber5 = Timber(
+        timber5 = timber_from_directions(
             length=Rational("1.8"),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(0, 2, 0),
@@ -1408,7 +1408,7 @@ class TestHelperFunctions:
         sin45 = math.sin(math.pi/4)
         
         # This creates a timber whose directions don't align with any cardinal axes
-        timber6 = Timber(
+        timber6 = timber_from_directions(
             length=Rational(1),
             size=create_vector2d(Rational("0.1"), Rational("0.1")),
             bottom_position=create_vector3d(0, 0, 2),
@@ -1421,7 +1421,7 @@ class TestHelperFunctions:
         # (because height direction is still Z, parallel to timber1's length direction)
         cos45_xy = math.cos(math.pi/4)
         sin45_xy = math.sin(math.pi/4)
-        timber7 = Timber(
+        timber7 = timber_from_directions(
             length=Rational(1),
             size=create_vector2d(Rational("0.1"), Rational("0.1")),
             bottom_position=create_vector3d(0, 0, 2),
@@ -1588,7 +1588,7 @@ class TestHelperFunctions:
         from sympy import Rational
         
         # Create timbers with exact rational directions
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=2,
             size=create_vector2d(Rational(1, 5), Rational(3, 10)),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1596,7 +1596,7 @@ class TestHelperFunctions:
             width_direction=create_vector3d(1, 0, 0)
         )
         
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=3,
             size=create_vector2d(Rational(1, 10), Rational(1, 4)),
             bottom_position=create_vector3d(2, 0, 0),
@@ -1608,7 +1608,7 @@ class TestHelperFunctions:
         assert _are_timbers_face_parallel(timber1, timber2)
         
         # Test anti-parallel (should still be parallel)
-        timber3 = Timber(
+        timber3 = timber_from_directions(
             length=Rational(3, 2),
             size=create_vector2d(Rational(1, 10), Rational(1, 5)),
             bottom_position=create_vector3d(-1, 0, 0),
@@ -1619,7 +1619,7 @@ class TestHelperFunctions:
         assert _are_timbers_face_parallel(timber1, timber3)
         
         # Test perpendicular (should not be parallel)
-        timber4 = Timber(
+        timber4 = timber_from_directions(
             length=2,
             size=create_vector2d(Rational(3, 10), Rational(3, 10)),
             bottom_position=create_vector3d(1, 1, 0),
@@ -1634,7 +1634,7 @@ class TestHelperFunctions:
         import math
         
         # Create timbers with float directions
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -1644,7 +1644,7 @@ class TestHelperFunctions:
         
         # Slightly off parallel (within tolerance)
         small_angle = 1e-11
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.15"), Rational("0.25")),
             bottom_position=create_vector3d(Rational(2), Rational(0), Rational(0)),
@@ -1660,7 +1660,7 @@ class TestHelperFunctions:
         from sympy import Rational
         
         # Create timbers with exact rational perpendicular directions
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=2,
             size=create_vector2d(Rational(1, 5), Rational(3, 10)),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1668,7 +1668,7 @@ class TestHelperFunctions:
             width_direction=create_vector3d(1, 0, 0)
         )
         
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=3,
             size=create_vector2d(Rational(15, 100), Rational(1, 4)),
             bottom_position=create_vector3d(2, 0, 0),
@@ -1680,7 +1680,7 @@ class TestHelperFunctions:
         assert _are_timbers_face_orthogonal(timber1, timber2)
         
         # Test non-orthogonal
-        timber3 = Timber(
+        timber3 = timber_from_directions(
             length=Rational(3, 2),
             size=create_vector2d(Rational(1, 10), Rational(1, 5)),
             bottom_position=create_vector3d(-1, 0, 0),
@@ -1695,7 +1695,7 @@ class TestHelperFunctions:
         import math
         
         # Create timbers with float perpendicular directions
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -1705,7 +1705,7 @@ class TestHelperFunctions:
         
         # Nearly perpendicular (within tolerance)
         small_offset = 1e-11
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.15"), Rational("0.25")),
             bottom_position=create_vector3d(Rational(2), Rational(0), Rational(0)),
@@ -1719,7 +1719,7 @@ class TestHelperFunctions:
     def test_are_timbers_face_aligned_exact_equality(self):
         """Test _are_timbers_face_aligned with exact equality (no tolerance)."""
         # Create two face-aligned timbers using exact rational values
-        timber1 = Timber(
+        timber1 = timber_from_directions(
             length=2,  # Integer
             size=create_vector2d(Rational(1, 5), Rational(3, 10)),  # Exact rationals
             bottom_position=create_vector3d(0, 0, 0),  # Integers
@@ -1727,7 +1727,7 @@ class TestHelperFunctions:
             width_direction=create_vector3d(1, 0, 0)      # East - integers
         )
         
-        timber2 = Timber(
+        timber2 = timber_from_directions(
             length=3,  # Integer
             size=create_vector2d(Rational(3, 20), Rational(1, 4)),  # Exact rationals
             bottom_position=create_vector3d(2, 0, 0),  # Integers
@@ -1740,7 +1740,7 @@ class TestHelperFunctions:
         
         # Create a non-face-aligned timber (3D rotation with no aligned axes)
         # Using a timber rotated in 3D such that none of its axes align with timber1's axes
-        timber3 = Timber(
+        timber3 = timber_from_directions(
             length=2,  # Integer
             size=create_vector2d(Rational(1, 5), Rational(1, 5)),  # Exact rationals
             bottom_position=create_vector3d(3, 3, 0),  # Integers
@@ -1765,7 +1765,7 @@ class TestHelperFunctions:
     def test_project_point_on_timber_centerline(self):
         """Test _project_point_on_timber_centerline helper function."""
         # Create a timber along Z-axis
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(4),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(1, 2, 0),    # Offset from origin
@@ -1805,7 +1805,7 @@ class TestHelperFunctions:
     def test_calculate_mortise_position_from_tenon_intersection(self):
         """Test _calculate_mortise_position_from_tenon_intersection helper function."""
         # Create a vertical mortise timber (post)
-        mortise_timber = Timber(
+        mortise_timber = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -1814,7 +1814,7 @@ class TestHelperFunctions:
         )
         
         # Create a horizontal tenon timber (beam) that intersects the post
-        tenon_timber = Timber(
+        tenon_timber = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.15"), Rational("0.25")),
             bottom_position=create_vector3d(-Rational("0.5"), 0, Rational("1.5")),  # Starts at X=-0.5, intersects post at Z=1.5
@@ -1845,7 +1845,7 @@ class TestHelperFunctions:
         assert abs(distance - Rational("1.5")) < 1e-10
         
         # Test with tenon closer to mortise top
-        tenon_timber_high = Timber(
+        tenon_timber_high = timber_from_directions(
             length=Rational(2),
             size=create_vector2d(Rational("0.15"), Rational("0.25")),
             bottom_position=create_vector3d(-Rational("0.5"), 0, Rational("2.8")),  # Higher intersection
@@ -1907,7 +1907,7 @@ class TestTimberFootprintOrientation:
         ]
         
         for description, bottom_pos, length_dir, width_dir, length, expected_inside, expected_outside in test_cases:
-            timber = Timber(
+            timber = timber_from_directions(
                 length=length,
                 size=create_vector2d(Rational("0.2"), Rational("0.3")),
                 bottom_position=bottom_pos,
@@ -1934,7 +1934,7 @@ class TestTimberFootprintOrientation:
         footprint = Footprint(corners)
         
         # Diagonal timber from (1,1) going toward (9,9), but oriented so width points inward
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational("11.31"),  # ~8*sqrt(2)
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(1, 1, 0),
@@ -1963,14 +1963,14 @@ class TestSplitTimber:
     def test_split_timber_basic(self):
         """Test basic timber splitting at midpoint"""
         # Create a simple vertical timber
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(10),
             size=create_vector2d(Rational(4), Rational(4)),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
             length_direction=create_vector3d(Rational(0), Rational(0), Rational(1)),
-            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))
+            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0)),
+            name="Test Timber"
         )
-        timber.name = "Test Timber"
         
         # Split at 30% (distance 3)
         bottom_timber, top_timber = split_timber(timber, Rational(3))
@@ -1996,7 +1996,7 @@ class TestSplitTimber:
     def test_split_timber_horizontal(self):
         """Test splitting a horizontal timber"""
         # Create a horizontal timber along X axis
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(20),
             size=create_vector2d(Rational(6), Rational(4)),
             bottom_position=create_vector3d(Rational(5), Rational(10), Rational(2)),
@@ -2020,7 +2020,7 @@ class TestSplitTimber:
         # Create a diagonal timber at 45 degrees
         length_dir = normalize_vector(create_vector3d(Rational(1), Rational(1), Rational(0)))
         
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(10),
             size=create_vector2d(Rational(4), Rational(4)),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -2049,7 +2049,7 @@ class TestSplitTimber:
     def test_split_timber_with_rational(self):
         """Test splitting with exact rational arithmetic"""
         # Create a timber with rational values
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(10, 1),
             size=create_vector2d(Rational(4, 1), Rational(4, 1)),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -2068,7 +2068,7 @@ class TestSplitTimber:
     
     def test_split_timber_invalid_distance(self):
         """Test that invalid split distances raise assertions"""
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(10),
             size=create_vector2d(Rational(4), Rational(4)),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -2107,7 +2107,7 @@ class TestSplitTimber:
     def test_split_timber_preserves_orientation(self):
         """Test that both resulting timbers preserve the original orientation"""
         # Create a timber with non-standard orientation
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(15),
             size=create_vector2d(Rational(6), Rational(8)),
             bottom_position=create_vector3d(Rational(1), Rational(2), Rational(3)),
