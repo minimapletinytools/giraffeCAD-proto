@@ -67,7 +67,7 @@ def create_axis_aligned_timber(bottom_position: V3, length: Numeric, size: V2,
     
     if length_direction == TimberFace.BOTTOM:
         # print a warning, this is usually not what you want
-        print("WARNING: creating an axis-aligned timber with length_direction == BOTTOM. This is usually not what you want. Consider using length_direction == TOP instead.")
+        warnings.warn("Creating an axis-aligned timber with length_direction == BOTTOM. This is usually not what you want. Consider using length_direction == TOP instead.")
     
     width_vec = width_direction.get_direction()
     
@@ -492,10 +492,10 @@ def join_timbers(timber1: Timber, timber2: Timber,
     if _are_directions_parallel(reference_direction, length_direction):
         # If parallel, cannot project - use a perpendicular fallback
         if orientation_width_vector is not None:
-            print(f"WARNING: orientation_width_vector {orientation_width_vector} is parallel to the joining direction {length_direction}. Using timber1's width direction instead.")
+            warnings.warn(f"orientation_width_vector {orientation_width_vector} is parallel to the joining direction {length_direction}. Using timber1's width direction instead.")
             reference_direction = timber1.width_direction
         else:
-            print("WARNING: timber1's length direction is parallel to the joining direction. Using timber1's width direction instead.")
+            warnings.warn("timber1's length direction is parallel to the joining direction. Using timber1's width direction instead.")
             reference_direction = timber1.width_direction
     
     # Project reference direction onto the plane perpendicular to the joining direction
