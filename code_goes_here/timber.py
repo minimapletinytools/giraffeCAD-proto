@@ -728,14 +728,15 @@ class Cut(ABC):
             local_normal = negative_csg.normal
             local_offset = negative_csg.offset
             
-            # The Z-component of the local normal (dot product with local length direction (0,0,1))
-            normal_z_component = local_normal[2, 0]
+            # In local coordinates, the timber's length direction is the Z-axis
+            local_z_axis = create_vector3d(0, 0, 1)
             
-            if construction_perpendicular_check(normal_z_component, EPSILON_PARALLEL):
+            if construction_perpendicular_check(local_normal, local_z_axis, epsilon=EPSILON_PARALLEL):
                 # Plane is parallel to the timber - no unique intersection
                 raise ValueError("Cut plane is parallel to timber centerline")
             
             # Distance along centerline in local coordinates (along Z-axis)
+            normal_z_component = local_normal[2, 0]
             t = local_offset / normal_z_component
             
             # Convert back to global coordinates

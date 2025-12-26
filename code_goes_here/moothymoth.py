@@ -168,36 +168,57 @@ def exact_equality_test(value, expected) -> bool:
 # Parallel and Perpendicular Check Functions
 # ============================================================================
 
-def construction_parallel_check(dot_product, epsilon: Float = EPSILON_PARALLEL) -> bool:
+def construction_parallel_check(vector1: Matrix, vector2: Matrix, always_exact: bool = False, epsilon: Optional[Float] = None) -> bool:
     """
-    Check if two vectors are parallel based on their dot product.
+    Check if two vectors are parallel.
     
     For normalized vectors: dot product ≈ ±1 means parallel
     
     Args:
-        dot_product: Dot product of two (normalized) direction vectors
-        epsilon: Threshold for parallel check
+        vector1: First direction vector
+        vector2: Second direction vector
+        always_exact: If True, force exact checking (raises assertion if epsilon provided)
+        epsilon: Threshold for parallel check (defaults to EPSILON_PARALLEL if None)
     
     Returns:
         True if |abs(dot_product) - 1| < epsilon (vectors are parallel)
     """
-    return Abs(Abs(dot_product) - 1) < epsilon
+    if epsilon is None and not always_exact:
+        epsilon = EPSILON_PARALLEL
+    
+    # Compute dot product
+    dot_product = vector1.dot(vector2)
+    
+    # Check if |abs(dot_product) - 1| is approximately zero
+    # This is equivalent to checking if abs(dot_product) is approximately 1
+    deviation = Abs(Abs(dot_product) - 1)
+    
+    return zero_test(deviation, always_exact=always_exact, epsilon=epsilon)
 
 
-def construction_perpendicular_check(dot_product, epsilon: Float = EPSILON_PARALLEL) -> bool:
+def construction_perpendicular_check(vector1: Matrix, vector2: Matrix, always_exact: bool = False, epsilon: Optional[Float] = None) -> bool:
     """
-    Check if two vectors are perpendicular based on their dot product.
+    Check if two vectors are perpendicular.
     
     For any vectors: dot product ≈ 0 means perpendicular
     
     Args:
-        dot_product: Dot product of two direction vectors
-        epsilon: Threshold for perpendicular check
+        vector1: First direction vector
+        vector2: Second direction vector
+        always_exact: If True, force exact checking (raises assertion if epsilon provided)
+        epsilon: Threshold for perpendicular check (defaults to EPSILON_PARALLEL if None)
     
     Returns:
         True if |dot_product| < epsilon (vectors are perpendicular)
     """
-    return Abs(dot_product) < epsilon
+    if epsilon is None and not always_exact:
+        epsilon = EPSILON_PARALLEL
+    
+    # Compute dot product
+    dot_product = vector1.dot(vector2)
+    
+    # Check if dot product is approximately zero
+    return zero_test(dot_product, always_exact=always_exact, epsilon=epsilon)
 
 
 # ============================================================================

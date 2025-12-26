@@ -10,6 +10,7 @@ from code_goes_here.moothymoth import (
     EPSILON_PARALLEL,
     EPSILON_GENERIC,
     epsilon_zero_test,
+    construction_parallel_check,
     construction_perpendicular_check
 )
 
@@ -61,8 +62,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
         endB_position = timberB.get_bottom_center_position()
     
     # Check that the timbers are not parallel
-    cross = cross_product(directionA, directionB)
-    if epsilon_zero_test(vector_magnitude(cross), EPSILON_PARALLEL):
+    if construction_parallel_check(directionA, directionB, epsilon=EPSILON_PARALLEL):
         raise ValueError("Timbers cannot be parallel for a miter joint")
     
     # Find the intersection point (or closest point) between the two timber centerlines

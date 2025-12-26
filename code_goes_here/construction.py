@@ -1006,7 +1006,7 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     # Check if tenon direction is perpendicular to mortise face normal
     direction_dot_normal = tenon_timber.length_direction.dot(face_normal)
     
-    if construction_perpendicular_check(direction_dot_normal):
+    if construction_perpendicular_check(tenon_timber.length_direction, face_normal):
         # Case 1: Tenon direction is perpendicular to mortise face (typical orthogonal joints)
         # Calculate distance from tenon end to projected point plus face offset
         
