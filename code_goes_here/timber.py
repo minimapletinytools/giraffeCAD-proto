@@ -4,7 +4,15 @@ Contains all core data structures and type definitions for the timber framing sy
 """
 
 from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify
-from .moothymoth import Orientation
+from .moothymoth import (
+    Orientation,
+    EPSILON_PARALLEL,
+    EPSILON_GENERIC,
+    epsilon_zero_test,
+    exact_zero_test,
+    construction_parallel_check,
+    construction_perpendicular_check
+)
 from .footprint import Footprint
 from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUnion, Difference as CSGDifference
 from enum import Enum
@@ -22,18 +30,7 @@ Numeric = Union[float, int, Expr]  # Numeric values (SymPy Expr type STRONGLY pr
 # Constants
 # ============================================================================
 
-
-
-# TODO replace with EPSILON_PARALLEL
-EPSILON_FLOAT = 1e-10  # Tolerance for float comparisons (orthogonality, alignment checks)
-
-EPSILON_PARALLEL = Rational(1, 1000)  # epsilon threshold for checking dot products to see if vectors are nearly parallel/perpendicular
-
-# TODO rename to EPSILON_GENERIC
-EPSILON_DEGENERATE = Rational(1, 10000)  # generic epsilon threshold used everywhere else where we aren't being more specific
-
-# TODO get rid of this one, just use EPSILON_PARALLEL
-EPSILON_PLANE_PARALLEL = Rational(1, 100000)  # Threshold for detecting if plane is parallel to centerline (0.00001)
+# Epsilon constants are now imported from moothymoth module
 
 # Thresholds for geometric decisions
 OFFSET_TEST_POINT = Rational(1, 1000)  # Small offset (0.001) for testing inward direction on footprint
@@ -373,7 +370,7 @@ def _compute_timber_orientation(length_direction: Direction3D, width_direction: 
     face_orthogonal = face_input - projection
     
     # Check if face_orthogonal is too small (vectors were nearly parallel)
-    if face_orthogonal.norm() < EPSILON_FLOAT:
+    if epsilon_zero_test(face_orthogonal.norm(), EPSILON_GENERIC):
         # Choose an arbitrary orthogonal direction
         # Find a vector that's not parallel to length_norm
         if Abs(length_norm[0]) < 0.9:  # Threshold comparison - use float
@@ -734,7 +731,7 @@ class Cut(ABC):
             # The Z-component of the local normal (dot product with local length direction (0,0,1))
             normal_z_component = local_normal[2, 0]
             
-            if abs(normal_z_component) < EPSILON_PLANE_PARALLEL:
+            if construction_perpendicular_check(normal_z_component, EPSILON_PARALLEL):
                 # Plane is parallel to the timber - no unique intersection
                 raise ValueError("Cut plane is parallel to timber centerline")
             

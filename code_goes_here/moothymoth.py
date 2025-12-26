@@ -22,10 +22,124 @@ RHS = Right Hand System
 '''
 
 import sympy as sp
-from sympy import Matrix, cos, sin, pi
+from sympy import Matrix, cos, sin, pi, Float, Rational, Abs
 from typing import Optional, Union
 from dataclasses import dataclass, field
+import warnings
 
+
+# ============================================================================
+# Epsilon Constants for Numerical Comparisons
+# ============================================================================
+
+# Epsilon constants for numerical comparisons
+EPSILON_PARALLEL = Float('1e-4')  # Threshold for checking if vectors are nearly parallel/perpendicular
+EPSILON_GENERIC = Float('1e-8')   # Generic epsilon threshold for all other comparisons
+
+
+# ============================================================================
+# Zero Test Helper Functions
+# ============================================================================
+
+def zero_test(value, always_exact: bool = False, epsilon: Optional[Float] = None) -> bool:
+    """
+    Test if a value is zero, with options for exact or epsilon-based checking.
+    
+    Args:
+        value: The value to test (SymPy expression, Rational, Float, or numeric)
+        always_exact: If True, force exact checking (raises assertion if epsilon provided)
+        epsilon: If provided, use epsilon-based comparison
+    
+    Returns:
+        True if value is (approximately) zero
+    
+    Behavior:
+    - If value is Rational and epsilon is None: exact check (value == 0)
+    - If always_exact is True: assert epsilon is None, warn if value is not Rational, do exact check
+    - If epsilon is provided: check if |value| < epsilon
+    """
+    if always_exact:
+        assert epsilon is None, "Cannot provide epsilon when always_exact=True"
+        if not isinstance(value, Rational):
+            warnings.warn(f"exact_zero_test called with non-Rational value {type(value).__name__}. Proceeding with exact check.")
+        return value == 0
+    
+    if epsilon is None:
+        if isinstance(value, Rational):
+            return value == 0
+        else:
+            # Default to epsilon-based check for non-Rational values
+            return Abs(value) < EPSILON_GENERIC
+    
+    return Abs(value) < epsilon
+
+
+def epsilon_zero_test(value, epsilon: Float = EPSILON_GENERIC) -> bool:
+    """
+    Test if a value is approximately zero using epsilon comparison.
+    
+    Args:
+        value: The value to test
+        epsilon: Epsilon threshold (defaults to EPSILON_GENERIC)
+    
+    Returns:
+        True if |value| < epsilon
+    """
+    return zero_test(value, always_exact=False, epsilon=epsilon)
+
+
+def exact_zero_test(value) -> bool:
+    """
+    Test if a value is exactly zero. Warns if value is not Rational.
+    
+    Args:
+        value: The value to test
+    
+    Returns:
+        True if value == 0 (exact comparison)
+    """
+    return zero_test(value, always_exact=True, epsilon=None)
+
+
+# ============================================================================
+# Parallel and Perpendicular Check Functions
+# ============================================================================
+
+def construction_parallel_check(dot_product, epsilon: Float = EPSILON_PARALLEL) -> bool:
+    """
+    Check if two vectors are parallel based on their dot product.
+    
+    For normalized vectors: dot product ≈ ±1 means parallel
+    
+    Args:
+        dot_product: Dot product of two (normalized) direction vectors
+        epsilon: Threshold for parallel check
+    
+    Returns:
+        True if |abs(dot_product) - 1| < epsilon (vectors are parallel)
+    """
+    return Abs(Abs(dot_product) - 1) < epsilon
+
+
+def construction_perpendicular_check(dot_product, epsilon: Float = EPSILON_PARALLEL) -> bool:
+    """
+    Check if two vectors are perpendicular based on their dot product.
+    
+    For any vectors: dot product ≈ 0 means perpendicular
+    
+    Args:
+        dot_product: Dot product of two direction vectors
+        epsilon: Threshold for perpendicular check
+    
+    Returns:
+        True if |dot_product| < epsilon (vectors are perpendicular)
+    """
+    return Abs(dot_product) < epsilon
+
+
+# ============================================================================
+# Orientation Class
+# ============================================================================
 
 @dataclass(frozen=True)
 class Orientation:
