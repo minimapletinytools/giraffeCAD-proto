@@ -1125,25 +1125,15 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             if app:
                 app.log(f"Creating {component_name}...")
             
-            # Get the extended timber in LOCAL coordinates (semi-infinite at ends with cuts)
+            # Get the timber with cuts applied in LOCAL coordinates
             # Local coordinates means the prism distances are relative to the timber's bottom_position
             # and all cuts are also in local coordinates. This allows us to render at origin and then transform.
-            extended_timber_csg = cut_timber._extended_timber_without_cuts_csg()
+            csg = cut_timber.render_timber_with_cuts_csg_local()
             
-            # Apply all cuts if there are any
             if cut_timber._cuts:
-                # Collect all negative CSGs from cuts
-                negative_csgs = [cut.get_negative_csg() for cut in cut_timber._cuts]
-                
-                # Create Difference: extended_timber - all_cuts
-                csg = Difference(extended_timber_csg, negative_csgs)
-                
-                print(f"  Applying {len(negative_csgs)} cut(s)")
+                print(f"  Applying {len(cut_timber._cuts)} cut(s)")
                 if app:
-                    app.log(f"  Applying {len(negative_csgs)} cut(s)")
-            else:
-                # No cuts, just use the extended timber
-                csg = extended_timber_csg
+                    app.log(f"  Applying {len(cut_timber._cuts)} cut(s)")
             
             # Render at origin (no transform yet)
             # Pass timber info for coordinate transformations

@@ -986,5 +986,154 @@ class TestCutTimber:
         # Should raise assertion error
         with pytest.raises(AssertionError, match="Top end has 2 end cuts"):
             cut_timber.render_timber_without_cuts_csg_local()
+    
+    def test_render_timber_with_cuts_no_cuts(self):
+        """Test render_timber_with_cuts_csg_local with no cuts."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(0)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
+        cut_timber = CutTimber(timber, cuts=[])
+        
+        # Get the CSG with cuts applied (should be same as without cuts since there are none)
+        csg = cut_timber.render_timber_with_cuts_csg_local()
+        
+        # Should be a Prism (since no cuts means no Difference operation)
+        from code_goes_here.meowmeowcsg import Prism
+        assert isinstance(csg, Prism)
+        assert csg.size == size
+        assert csg.start_distance == 0
+        assert csg.end_distance == length
+    
+    def test_render_timber_with_cuts_one_cut(self):
+        """Test render_timber_with_cuts_csg_local with one cut."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(10)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
+        
+        # Add a cut (a simple half-plane cut at z=50 in local coordinates)
+        from code_goes_here.meowmeowcsg import HalfPlane
+        # Create a half plane that cuts perpendicular to the timber length
+        # Normal pointing in +Z direction, offset at 50
+        half_plane = HalfPlane(
+            normal=Matrix([Rational(0), Rational(0), Rational(1)]),
+            offset=Rational(50)
+        )
+        cut = HalfPlaneCut(
+            timber=timber,
+            origin=Matrix([Rational(0), Rational(0), Rational(0)]),
+            orientation=Orientation.identity(),
+            half_plane=half_plane,
+            maybe_end_cut=None
+        )
+        
+        cut_timber = CutTimber(timber, cuts=[cut])
+        
+        # Get the CSG with cuts applied
+        csg = cut_timber.render_timber_with_cuts_csg_local()
+        
+        # Should be a Difference operation
+        from code_goes_here.meowmeowcsg import Difference
+        assert isinstance(csg, Difference)
+        assert isinstance(csg.base, Prism)
+        assert len(csg.subtract) == 1
+        assert isinstance(csg.subtract[0], HalfPlane)
+    
+    def test_render_timber_with_cuts_multiple_cuts(self):
+        """Test render_timber_with_cuts_csg_local with multiple cuts."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(0)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
+        
+        # Add two cuts
+        from code_goes_here.meowmeowcsg import HalfPlane
+        half_plane1 = HalfPlane(
+            normal=Matrix([Rational(0), Rational(0), Rational(1)]),
+            offset=Rational(25)
+        )
+        cut1 = HalfPlaneCut(
+            timber=timber,
+            origin=Matrix([Rational(0), Rational(0), Rational(0)]),
+            orientation=Orientation.identity(),
+            half_plane=half_plane1,
+            maybe_end_cut=None
+        )
+        
+        half_plane2 = HalfPlane(
+            normal=Matrix([Rational(0), Rational(0), Rational(-1)]),
+            offset=Rational(-75)
+        )
+        cut2 = HalfPlaneCut(
+            timber=timber,
+            origin=Matrix([Rational(0), Rational(0), Rational(0)]),
+            orientation=Orientation.identity(),
+            half_plane=half_plane2,
+            maybe_end_cut=None
+        )
+        
+        cut_timber = CutTimber(timber, cuts=[cut1, cut2])
+        
+        # Get the CSG with cuts applied
+        csg = cut_timber.render_timber_with_cuts_csg_local()
+        
+        # Should be a Difference operation
+        from code_goes_here.meowmeowcsg import Difference
+        assert isinstance(csg, Difference)
+        assert isinstance(csg.base, Prism)
+        assert len(csg.subtract) == 2
+        assert all(isinstance(sub, HalfPlane) for sub in csg.subtract)
+    
+    def test_render_timber_with_cuts_with_end_cuts(self):
+        """Test render_timber_with_cuts_csg_local with end cuts."""
+        length = Rational(100)
+        size = Matrix([Rational(4), Rational(6)])
+        bottom_position = Matrix([Rational(0), Rational(0), Rational(0)])
+        length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
+        width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
+        
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
+        
+        # Add an end cut at the top
+        from code_goes_here.meowmeowcsg import HalfPlane
+        half_plane = HalfPlane(
+            normal=Matrix([Rational(0), Rational(0), Rational(-1)]),
+            offset=Rational(-50)
+        )
+        end_cut = HalfPlaneCut(
+            timber=timber,
+            origin=Matrix([Rational(0), Rational(0), Rational(0)]),
+            orientation=Orientation.identity(),
+            half_plane=half_plane,
+            maybe_end_cut=TimberReferenceEnd.TOP
+        )
+        
+        cut_timber = CutTimber(timber, cuts=[end_cut])
+        
+        # Get the CSG with cuts applied
+        csg = cut_timber.render_timber_with_cuts_csg_local()
+        
+        # Should be a Difference operation
+        from code_goes_here.meowmeowcsg import Difference, Prism
+        assert isinstance(csg, Difference)
+        assert isinstance(csg.base, Prism)
+        
+        # Base prism should be semi-infinite at the top (end_distance = None)
+        assert csg.base.start_distance == 0
+        assert csg.base.end_distance is None
+        
+        # Should have one cut
+        assert len(csg.subtract) == 1
+        assert isinstance(csg.subtract[0], HalfPlane)
 
 
