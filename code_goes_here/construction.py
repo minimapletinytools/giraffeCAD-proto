@@ -5,6 +5,12 @@ Contains functions for creating and manipulating timbers
 
 import warnings
 from code_goes_here.timber import *
+from code_goes_here.moothymoth import (
+    EPSILON_PARALLEL,
+    EPSILON_GENERIC,
+    construction_parallel_check,
+    construction_perpendicular_check
+)
 
 # ============================================================================
 # Timber Creation Functions
@@ -724,8 +730,8 @@ def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Opti
             return simplify(dot_product - 1) == 0
         else:
             
-            warnings.warn(f"Using default tolerance {EPSILON_FLOAT} for checking if timbers with float values are parallel")
-            tolerance = EPSILON_FLOAT
+            warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if timbers with float values are parallel")
+            tolerance = EPSILON_GENERIC
             return Abs(dot_product - 1) < tolerance
     else:
         # Use provided tolerance
@@ -755,8 +761,8 @@ def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Op
             # Use exact comparison with simplify for symbolic math
             return simplify(dot_product) == 0
         else:
-            warnings.warn(f"Using default tolerance {EPSILON_FLOAT} for checking if timbers with float values are perpendicular")
-            tolerance = EPSILON_FLOAT
+            warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if timbers with float values are perpendicular")
+            tolerance = EPSILON_GENERIC
             return Abs(dot_product) < tolerance
     else:
         # Use provided tolerance
@@ -786,8 +792,8 @@ def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction
             # Use exact comparison with simplify for symbolic math
             return simplify(dot_product) == 0
         else:
-            warnings.warn(f"Using default tolerance {EPSILON_FLOAT} for checking if directions with float values are perpendicular")
-            tolerance = EPSILON_FLOAT
+            warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if directions with float values are perpendicular")
+            tolerance = EPSILON_GENERIC
             return Abs(dot_product) < tolerance
     else:
         # Use tolerance for approximate comparison
@@ -818,8 +824,8 @@ def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, t
             # Use exact comparison with simplify for symbolic math
             return simplify(dot_mag - 1) == 0
         else:
-            warnings.warn(f"Using default tolerance {EPSILON_FLOAT} for checking if directions with float values are parallel")
-            tolerance = EPSILON_FLOAT
+            warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if directions with float values are parallel")
+            tolerance = EPSILON_GENERIC
             return abs(float(dot_mag) - 1.0) < tolerance
     else:
         # Use provided tolerance
@@ -862,7 +868,7 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
             UserWarning
         )
         # Auto-use a small tolerance when Float values are present
-        effective_tolerance = EPSILON_FLOAT
+        effective_tolerance = EPSILON_GENERIC
     else:
         effective_tolerance = tolerance
     
@@ -1002,8 +1008,7 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     # Check if tenon direction is perpendicular to mortise face normal
     direction_dot_normal = tenon_timber.length_direction.dot(face_normal)
     
-    # TODO replace with special helper function that does exact check if Rational otherwise fuzzy check with EPSILON_PARALLEL
-    if abs(direction_dot_normal) < EPSILON_PARALLEL:
+    if construction_perpendicular_check(direction_dot_normal):
         # Case 1: Tenon direction is perpendicular to mortise face (typical orthogonal joints)
         # Calculate distance from tenon end to projected point plus face offset
         
