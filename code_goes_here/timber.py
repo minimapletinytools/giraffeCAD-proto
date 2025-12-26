@@ -916,9 +916,28 @@ class CutTimber:
 
     # this one returns the timber with all cuts applied
     def render_timber_with_cuts_csg_local(self) -> MeowMeowCSG:
+        """
+        Returns a CSG representation of the timber with all cuts applied.
+        
+        Uses LOCAL coordinates (relative to timber.bottom_position).
+        All cuts on this timber are also in LOCAL coordinates.
+        
+        Returns:
+            Difference CSG representing the timber with all cuts subtracted
+        """
+        # Start with the timber prism (possibly with infinite ends where cuts exist)
         starting_csg = self._extended_timber_without_cuts_csg_local()
-        # TODO difference each cut from starting_CSG?
-        pass
+        
+        # If there are no cuts, just return the starting CSG
+        if not self._cuts:
+            return starting_csg
+        
+        # Collect all the negative CSGs (volumes to be removed) from the cuts
+        negative_csgs = [cut.get_negative_csg_local() for cut in self._cuts]
+        
+        # Return the difference: timber - all cuts
+        from .meowmeowcsg import Difference
+        return Difference(starting_csg, negative_csgs)
 
 class PartiallyCutTimber(CutTimber):
     pass
