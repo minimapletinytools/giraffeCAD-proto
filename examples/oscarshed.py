@@ -85,25 +85,21 @@ def create_oscarshed() -> list[CutTimber]:
     mudsill_front = create_horizontal_timber_on_footprint(
         footprint, 0, FootprintLocation.INSIDE, mudsill_size, name="Front Mudsill"
     )
-    mudsill_front.name = "Front Mudsill"
 
     # Right mudsill (corner 1 to corner 2) - along Y axis
     mudsill_right = create_horizontal_timber_on_footprint(
         footprint, 1, FootprintLocation.INSIDE, mudsill_size, name="Right Mudsill"
     )
-    mudsill_right.name = "Right Mudsill"
 
     # Back mudsill (corner 2 to corner 3) - along X axis
     mudsill_back = create_horizontal_timber_on_footprint(
         footprint, 2, FootprintLocation.INSIDE, mudsill_size, name="Back Mudsill"
     )
-    mudsill_back.name = "Back Mudsill"
 
     # Left mudsill (corner 3 to corner 0) - along Y axis
     mudsill_left = create_horizontal_timber_on_footprint(
         footprint, 3, FootprintLocation.INSIDE, mudsill_size, name="Left Mudsill"
     )
-    mudsill_left.name = "Left Mudsill"
 
     # ============================================================================
     # Create miter joints at all four corners of the mudsill rectangle
@@ -156,9 +152,9 @@ def create_oscarshed() -> list[CutTimber]:
         distance_along_side=post_inset_m,
         length=post_front_height_m,
         location_type=FootprintLocation.INSIDE,
-        size=post_size
+        size=post_size,
+        name="Front Left Post"
     )
-    post_front_left.name = "Front Left Post"
 
     # Front-right post (on front boundary side, inset from right corner)
     post_front_right = create_vertical_timber_on_footprint_side(
@@ -167,9 +163,9 @@ def create_oscarshed() -> list[CutTimber]:
         distance_along_side=base_width_m - post_inset_m,
         length=post_front_height_m,
         location_type=FootprintLocation.INSIDE,
-        size=post_size
+        size=post_size,
+        name="Front Right Post"
     )
-    post_front_right.name = "Front Right Post"
 
     # Back-right post (on back boundary side, inset from right corner)
     # Side 2 goes from corner 2 (back-right) to corner 3 (back-left)
@@ -179,9 +175,9 @@ def create_oscarshed() -> list[CutTimber]:
         distance_along_side=post_inset_m,
         length=post_back_height_m,
         location_type=FootprintLocation.INSIDE,
-        size=post_size
+        size=post_size,
+        name="Back Right Post"
     )
-    post_back_right.name = "Back Right Post"
 
     # Back-left post (on back boundary side, inset from left corner)
     post_back_left = create_vertical_timber_on_footprint_side(
@@ -190,9 +186,9 @@ def create_oscarshed() -> list[CutTimber]:
         distance_along_side=base_width_m - post_inset_m,
         length=post_back_height_m,
         location_type=FootprintLocation.INSIDE,
-        size=post_size
+        size=post_size,
+        name="Back Left Post"
     )
-    post_back_left.name = "Back Left Post"
 
     # ============================================================================
     # Create additional back posts for uniform spacing
@@ -215,9 +211,9 @@ def create_oscarshed() -> list[CutTimber]:
         distance_along_side=post_back_middle_right_position,
         length=post_back_height_m,
         location_type=FootprintLocation.INSIDE,
-        size=post_size
+        size=post_size,
+        name="Back Middle-Right Post"
     )
-    post_back_middle_right.name = "Back Middle-Right Post"
     
     # Middle-left post (3rd from right)
     post_back_middle_left_position = post_inset_m + 2 * back_post_spacing
@@ -228,9 +224,9 @@ def create_oscarshed() -> list[CutTimber]:
         distance_along_side=post_back_middle_left_position,
         length=post_back_height_m,
         location_type=FootprintLocation.INSIDE,
-        size=post_size
+        size=post_size,
+        name="Back Middle-Left Post"
     )
-    post_back_middle_left.name = "Back Middle-Left Post"
 
     # ============================================================================
     # Create butt joints where posts meet mudsills
@@ -288,9 +284,9 @@ def create_oscarshed() -> list[CutTimber]:
         stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
         location_on_timber2=post_back_height_m,    # Same height on front post
         lateral_offset=0.0,       # No lateral offset
-        size=side_girt_size
+        size=side_girt_size,
+        name="Left Side Girt"
     )
-    side_girt_left.name = "Left Side Girt"
     
     # Right side girt (connects back-right post to front-right post)
     side_girt_right = join_timbers(
@@ -300,9 +296,9 @@ def create_oscarshed() -> list[CutTimber]:
         stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
         location_on_timber2=post_back_height_m,    # Same height on front post
         lateral_offset=0.0,       # No lateral offset
-        size=side_girt_size
+        size=side_girt_size,
+        name="Right Side Girt"
     )
-    side_girt_right.name = "Right Side Girt"
 
     # ============================================================================
     # Create front girt (running left to right along the long dimension)
@@ -329,9 +325,9 @@ def create_oscarshed() -> list[CutTimber]:
         stickout=front_girt_stickout,  # 1.5" stickout on both sides
         location_on_timber2=front_girt_height_on_posts,   # Same height on right post
         lateral_offset=0.0,       # No lateral offset
-        size=front_girt_size
+        size=front_girt_size,
+        name="Front Girt"
     )
-    front_girt.name = "Front Girt"
     
     # ============================================================================
     # Split the front girt into two pieces and rejoin with a splice joint
@@ -339,9 +335,12 @@ def create_oscarshed() -> list[CutTimber]:
     
     # Split the front girt at the midpoint
     front_girt_split_distance = front_girt.length / 2
-    front_girt_left, front_girt_right = split_timber(front_girt, front_girt_split_distance)
-    front_girt_left.name = "Front Girt Left"
-    front_girt_right.name = "Front Girt Right"
+    front_girt_left, front_girt_right = split_timber(
+        front_girt, 
+        front_girt_split_distance,
+        name1="Front Girt Left",
+        name2="Front Girt Right"
+    )
     
     # Create a splice joint to rejoin the two pieces
     # The left piece's TOP end meets the right piece's BOTTOM end
@@ -372,9 +371,9 @@ def create_oscarshed() -> list[CutTimber]:
         location_on_timber2=post_front_height_m,   # Same height on right post
         lateral_offset=0.0,       # No lateral offset
         size=top_plate_size,
-        orientation_width_vector=create_vector3d(0, 0, 1)
+        orientation_width_vector=create_vector3d(0, 0, 1),
+        name="Front Top Plate"
     )
-    top_plate_front.name = "Front Top Plate"
     
     # Back top plate (connects left back post to right back post)
     # Sits on top of the back posts
@@ -386,9 +385,9 @@ def create_oscarshed() -> list[CutTimber]:
         location_on_timber2=post_back_height_m,    # Same height on right post
         lateral_offset=0.0,       # No lateral offset
         size=top_plate_size,
-        orientation_width_vector=create_vector3d(0, 0, 1)
+        orientation_width_vector=create_vector3d(0, 0, 1),
+        name="Back Top Plate"
     )
-    top_plate_back.name = "Back Top Plate"
 
     # ============================================================================
     # Create joists (running from front to back, between mudsills)
@@ -436,9 +435,9 @@ def create_oscarshed() -> list[CutTimber]:
             location_on_timber2=mudsill_back.length - location_along_mudsill,    # Reversed distance along back mudsill (measured from opposite end)
             lateral_offset=joist_vertical_offset,     # Offset upward to align tops
             size=joist_size,
-            orientation_width_vector=create_vector3d(0, 0, 1)  # Face up
+            orientation_width_vector=create_vector3d(0, 0, 1),  # Face up
+            name=f"Joist {i}"
         )
-        joist.name = f"Joist {i}"
         joists.append(joist)
 
     # ============================================================================
@@ -464,8 +463,10 @@ def create_oscarshed() -> list[CutTimber]:
         position = rafter_width / 2 + i * rafter_centerline_spacing
         rafter_positions_along_top_plate.append(position)
     
-    # No stickout on rafters (flush with top plates)
+    # Rafters have 12" stickout and are offset upwards by 3 inches from top plate centerlines
     rafter_stickout = Stickout.symmetric(12 * INCH_TO_METERS)
+    rafter_vertical_offset_inches = -3.0
+    rafter_vertical_offset_m = rafter_vertical_offset_inches * INCH_TO_METERS
     
     # Create the 5 rafters
     rafters = []
@@ -478,26 +479,14 @@ def create_oscarshed() -> list[CutTimber]:
             timber1=top_plate_back,        # Back top plate (timber1)
             timber2=top_plate_front,       # Front top plate (timber2)
             location_on_timber1=location_along_top_plate,  # Position along back top plate (reversed)
-            stickout=rafter_stickout,      # No stickout
+            stickout=rafter_stickout,      # 12" stickout
             location_on_timber2=location_along_top_plate,  # Same position on front top plate
-            lateral_offset=0.0,       # No vertical offset (centerline to centerline)
+            lateral_offset=rafter_vertical_offset_m,
             size=rafter_size,
-            orientation_width_vector=create_vector3d(0, 0, 1)  # Face up
+            orientation_width_vector=create_vector3d(0, 0, 1),  # Face up
+            name=f"Rafter {i}"
         )
-        rafter.name = f"Rafter {i}"
         rafters.append(rafter)
-    
-    # Offset all rafters upwards by 2 inches
-    rafter_vertical_offset_inches = 3.0
-    rafter_vertical_offset_m = rafter_vertical_offset_inches * INCH_TO_METERS
-    
-    for rafter in rafters:
-        # Move the rafter up by adding to the Z component of bottom_position
-        rafter.bottom_position = create_vector3d(
-            rafter.bottom_position[0],
-            rafter.bottom_position[1],
-            rafter.bottom_position[2] + rafter_vertical_offset_m
-        )
 
     # ============================================================================
     # Wrap all timbers in CutTimber objects and return

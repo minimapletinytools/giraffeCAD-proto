@@ -349,7 +349,12 @@ def extend_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Numer
                  timber.length_direction, timber.width_direction)
 
 # TODO add some sorta splice stickout parameter
-def split_timber(timber: Timber, distance_from_bottom: Numeric) -> Tuple[Timber, Timber]:
+def split_timber(
+    timber: Timber, 
+    distance_from_bottom: Numeric,
+    name1: Optional[str] = None,
+    name2: Optional[str] = None
+) -> Tuple[Timber, Timber]:
     """
     Split a timber into two timbers at the specified distance from the bottom.
     
@@ -363,6 +368,8 @@ def split_timber(timber: Timber, distance_from_bottom: Numeric) -> Tuple[Timber,
     Args:
         timber: The timber to split
         distance_from_bottom: Distance along the timber's length where to split (0 < distance < timber.length)
+        name1: Optional name for the bottom timber (defaults to "{original_name}_bottom")
+        name2: Optional name for the top timber (defaults to "{original_name}_top")
         
     Returns:
         Tuple of (bottom_timber, top_timber) where:
@@ -378,15 +385,19 @@ def split_timber(timber: Timber, distance_from_bottom: Numeric) -> Tuple[Timber,
     assert 0 < distance_from_bottom < timber.length, \
         f"Split distance {distance_from_bottom} must be between 0 and {timber.length}"
     
+    # Determine names for the split timbers
+    bottom_name = name1 if name1 is not None else (f"{timber.name}_bottom" if timber.name else "split_bottom")
+    top_name = name2 if name2 is not None else (f"{timber.name}_top" if timber.name else "split_top")
+    
     # Create first timber (bottom part)
     bottom_timber = Timber(
         length=distance_from_bottom,
         size=create_vector2d(timber.size[0], timber.size[1]),
         bottom_position=timber.bottom_position,
         length_direction=timber.length_direction,
-        width_direction=timber.width_direction
+        width_direction=timber.width_direction,
+        name=bottom_name
     )
-    bottom_timber.name = f"{timber.name}_bottom" if timber.name else "split_bottom"
     
     # Calculate the bottom position of the second timber
     # It's at the top of the first timber
@@ -398,9 +409,9 @@ def split_timber(timber: Timber, distance_from_bottom: Numeric) -> Tuple[Timber,
         size=create_vector2d(timber.size[0], timber.size[1]),
         bottom_position=top_of_first,
         length_direction=timber.length_direction,
-        width_direction=timber.width_direction
+        width_direction=timber.width_direction,
+        name=top_name
     )
-    top_timber.name = f"{timber.name}_top" if timber.name else "split_top"
     
     return (bottom_timber, top_timber)
 
