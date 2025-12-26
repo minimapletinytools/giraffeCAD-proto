@@ -65,7 +65,7 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     width_B = Matrix([-sin(angle_rad), cos(angle_rad), 0])  # Perpendicular to direction_B
     
     # TimberA extends from position in direction_A
-    timberA = Timber(
+    timberA = timber_from_directions(
         name="MiterJoint_TimberA",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -75,7 +75,7 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     )
     
     # TimberB extends from position in direction_B
-    timberB = Timber(
+    timberB = timber_from_directions(
         name="MiterJoint_TimberB",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -104,7 +104,7 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
     half_length = TIMBER_LENGTH / 2
     
     # TimberA extends in +X direction
-    timberA = Timber(
+    timberA = timber_from_directions(
         name="MiterFaceAligned_TimberA",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -114,7 +114,7 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
     )
     
     # TimberB extends in +Y direction
-    timberB = Timber(
+    timberB = timber_from_directions(
         name="MiterFaceAligned_TimberB",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -145,7 +145,7 @@ def make_corner_joint_example(position: V3) -> list[CutTimber]:
     half_length = TIMBER_LENGTH / 2
     
     # TimberA extends in +X direction
-    timberA = Timber(
+    timberA = timber_from_directions(
         name="CornerJoint_TimberA",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -155,7 +155,7 @@ def make_corner_joint_example(position: V3) -> list[CutTimber]:
     )
     
     # TimberB extends in +Y direction
-    timberB = Timber(
+    timberB = timber_from_directions(
         name="CornerJoint_TimberB",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -186,7 +186,7 @@ def make_butt_joint_example(position: V3) -> list[CutTimber]:
     half_length = TIMBER_LENGTH / 2
     
     # Receiving timber extends in +X direction (horizontal)
-    receiving_timber = Timber(
+    receiving_timber = timber_from_directions(
         name="ButtJoint_Receiving",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -196,7 +196,7 @@ def make_butt_joint_example(position: V3) -> list[CutTimber]:
     )
     
     # Butt timber extends in +Y direction, meeting the receiving timber
-    butt_timber = Timber(
+    butt_timber = timber_from_directions(
         name="ButtJoint_Butt",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -228,7 +228,7 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
     half_length = TIMBER_LENGTH / 2
     
     # TimberA extends from left in +X direction
-    timberA = Timber(
+    timberA = timber_from_directions(
         name="SpliceJoint_TimberA",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -238,7 +238,7 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
     )
     
     # TimberB extends from position in +X direction (aligned with A)
-    timberB = Timber(
+    timberB = timber_from_directions(
         name="SpliceJoint_TimberB",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -275,7 +275,7 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
     
     # Housing timber (beam) extends in +X direction
     # This is the timber that gets the groove cut into it
-    housing_timber = Timber(
+    housing_timber = timber_from_directions(
         name="HouseJoint_Housing",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -287,7 +287,7 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
     # Housed timber (shelf) extends in +Y direction, crossing through the housing timber
     # This timber fits into the groove and remains uncut
     # Offset by 45mm vertically so they intersect properly
-    housed_timber = Timber(
+    housed_timber = timber_from_directions(
         name="HouseJoint_Housed",
         length=TIMBER_LENGTH,
         size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -322,7 +322,7 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
     # Implementation will look like this once available:
     # half_length = TIMBER_LENGTH / 2
     # 
-    # timberA = Timber(
+    # timberA = timber_from_directions(
     #     name="CrossLap_TimberA",
     #     length=TIMBER_LENGTH,
     #     size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
@@ -331,7 +331,7 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
     #     width_direction=Matrix([0, 1, 0])
     # )
     # 
-    # timberB = Timber(
+    # timberB = timber_from_directions(
     #     name="CrossLap_TimberB",
     #     length=TIMBER_LENGTH,
     #     size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),

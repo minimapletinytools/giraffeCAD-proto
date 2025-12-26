@@ -21,7 +21,7 @@ class TestMiterJoint:
         """Test basic miter joint with two orthogonal axis-aligned timbers through origin."""
         # Create two timbers of the same size through the origin
         # TimberA extends in +X direction
-        timberA = Timber(
+        timberA = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(4), Rational(6)]),
             bottom_position=Matrix([Rational(-50), Rational(0), Rational(0)]),
@@ -30,7 +30,7 @@ class TestMiterJoint:
         )
         
         # TimberB extends in +Y direction
-        timberB = Timber(
+        timberB = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(4), Rational(6)]),
             bottom_position=Matrix([Rational(0), Rational(-50), Rational(0)]),
@@ -222,7 +222,7 @@ class TestMiterJoint:
     def test_miter_joint_parallel_timbers_raises_error(self):
         """Test that parallel timbers raise a ValueError."""
         # Create two parallel timbers
-        timberA = Timber(
+        timberA = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(4), Rational(6)]),
             bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -230,7 +230,7 @@ class TestMiterJoint:
             width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
         )
         
-        timberB = Timber(
+        timberB = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(4), Rational(6)]),
             bottom_position=Matrix([Rational(0), Rational(10), Rational(0)]),
@@ -250,7 +250,7 @@ class TestButtJoint:
     def test_vertical_butt_into_horizontal_receiving_top_end(self):
         """Test butt joint with vertical timber butting into horizontal from top."""
         # Create horizontal receiving timber along +X axis
-        receiving = Timber(
+        receiving = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(6), Rational(8)]),
             bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -260,7 +260,7 @@ class TestButtJoint:
         
         # Create vertical butt timber (extends downward from above)
         # Positioned so its top end should be cut at the FORWARD face of receiving timber
-        butt = Timber(
+        butt = timber_from_directions(
             length=Rational(60),
             size=Matrix([Rational(4), Rational(4)]),
             bottom_position=Matrix([Rational(50), Rational(0), Rational(20)]),  # Above receiving
@@ -352,7 +352,7 @@ class TestButtJoint:
     def test_horizontal_butt_into_vertical_receiving_bottom_end(self):
         """Test butt joint with horizontal timber butting into vertical from bottom."""
         # Create vertical receiving timber
-        receiving = Timber(
+        receiving = timber_from_directions(
             length=Rational(120),
             size=Matrix([Rational(6), Rational(6)]),
             bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -362,7 +362,7 @@ class TestButtJoint:
         
         # Create horizontal butt timber pointing toward receiving timber
         # Should butt into the RIGHT face of receiving (which is at x=+3)
-        butt = Timber(
+        butt = timber_from_directions(
             length=Rational(80),
             size=Matrix([Rational(4), Rational(4)]),
             bottom_position=Matrix([Rational(100), Rational(0), Rational(60)]),
@@ -415,7 +415,7 @@ class TestButtJoint:
     def test_butt_joint_receiving_timber_uncut(self):
         """Test that receiving timber remains uncut in butt joint."""
         # Create two simple perpendicular timbers
-        receiving = Timber(
+        receiving = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(6), Rational(6)]),
             bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -423,7 +423,7 @@ class TestButtJoint:
             width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
         )
         
-        butt = Timber(
+        butt = timber_from_directions(
             length=Rational(50),
             size=Matrix([Rational(4), Rational(4)]),
             bottom_position=Matrix([Rational(50), Rational(0), Rational(10)]),
@@ -445,7 +445,7 @@ class TestButtJoint:
     def test_butt_into_long_face_of_receiving(self):
         """Test butt joint where butt timber meets a long face (not an end) of receiving."""
         # Create horizontal receiving timber along X axis
-        receiving = Timber(
+        receiving = timber_from_directions(
             length=Rational(200),
             size=Matrix([Rational(6), Rational(8)]),
             bottom_position=Matrix([Rational(-100), Rational(0), Rational(0)]),
@@ -455,7 +455,7 @@ class TestButtJoint:
         
         # Create vertical butt timber above the receiving timber
         # Should butt into the FORWARD face (top face in Z) of receiving
-        butt = Timber(
+        butt = timber_from_directions(
             length=Rational(40),
             size=Matrix([Rational(4), Rational(4)]),
             bottom_position=Matrix([Rational(0), Rational(0), Rational(30)]),
@@ -502,7 +502,7 @@ class TestSpliceJoint:
         """Test basic splice joint with two aligned timbers with same orientation."""
         # Create two timbers aligned along the X axis
         # TimberA extends from x=0 to x=50
-        timberA = Timber(
+        timberA = timber_from_directions(
             length=Rational(50),
             size=Matrix([Rational(6), Rational(6)]),
             bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -511,7 +511,7 @@ class TestSpliceJoint:
         )
         
         # TimberB extends from x=50 to x=100 (meeting at x=50)
-        timberB = Timber(
+        timberB = timber_from_directions(
             length=Rational(50),
             size=Matrix([Rational(6), Rational(6)]),
             bottom_position=Matrix([Rational(50), Rational(0), Rational(0)]),
@@ -570,7 +570,7 @@ class TestSpliceJoint:
     def test_splice_joint_with_custom_point(self):
         """Test splice joint with explicitly specified splice point."""
         # Create two timbers along Z axis
-        timberA = Timber(
+        timberA = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(4), Rational(4)]),
             bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -578,7 +578,7 @@ class TestSpliceJoint:
             width_direction=Matrix([Rational(1), Rational(0), Rational(0)])
         )
         
-        timberB = Timber(
+        timberB = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(4), Rational(4)]),
             bottom_position=Matrix([Rational(0), Rational(0), Rational(100)]),
@@ -605,7 +605,7 @@ class TestSpliceJoint:
     def test_splice_joint_opposite_orientation(self):
         """Test splice joint with two aligned timbers with opposite orientations."""
         # TimberA points in +X direction
-        timberA = Timber(
+        timberA = timber_from_directions(
             length=Rational(60),
             size=Matrix([Rational(6), Rational(6)]),
             bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -615,7 +615,7 @@ class TestSpliceJoint:
         
         # TimberB points in -X direction (opposite orientation)
         # Bottom is at x=100, top at x=40
-        timberB = Timber(
+        timberB = timber_from_directions(
             length=Rational(60),
             size=Matrix([Rational(6), Rational(6)]),
             bottom_position=Matrix([Rational(100), Rational(0), Rational(0)]),
@@ -641,7 +641,7 @@ class TestSpliceJoint:
     def test_splice_joint_non_aligned_timbers_raises_error(self):
         """Test that non-aligned (non-parallel) timbers raise a ValueError."""
         # Create two perpendicular timbers
-        timberA = Timber(
+        timberA = timber_from_directions(
             length=Rational(50),
             size=Matrix([Rational(4), Rational(4)]),
             bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -649,7 +649,7 @@ class TestSpliceJoint:
             width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
         )
         
-        timberB = Timber(
+        timberB = timber_from_directions(
             length=Rational(50),
             size=Matrix([Rational(4), Rational(4)]),
             bottom_position=Matrix([Rational(50), Rational(0), Rational(0)]),
@@ -671,7 +671,7 @@ class TestHouseJoint:
     def test_basic_house_joint_perpendicular_timbers(self):
         """Test basic housed joint with two perpendicular timbers."""
         # Create housing timber (horizontal beam along +X)
-        housing_timber = Timber(
+        housing_timber = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(10), Rational(10)]),
             bottom_position=Matrix([Rational(-50), Rational(0), Rational(0)]),
@@ -680,7 +680,7 @@ class TestHouseJoint:
         )
         
         # Create housed timber (shelf along +Y, crossing through housing timber)
-        housed_timber = Timber(
+        housed_timber = timber_from_directions(
             length=Rational(60),
             size=Matrix([Rational(6), Rational(6)]),
             bottom_position=Matrix([Rational(10), Rational(-30), Rational(5)]),
@@ -711,7 +711,7 @@ class TestHouseJoint:
     def test_basic_house_joint_perpendicular_timbers_finite(self):
         """Test basic housed joint with finite housed timber."""
         # Create housing timber (horizontal beam along +X)
-        housing_timber = Timber(
+        housing_timber = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(10), Rational(10)]),
             bottom_position=Matrix([Rational(-50), Rational(0), Rational(0)]),
@@ -720,7 +720,7 @@ class TestHouseJoint:
         )
         
         # Create housed timber (shelf along +Y, crossing through housing timber)
-        housed_timber = Timber(
+        housed_timber = timber_from_directions(
             length=Rational(60),
             size=Matrix([Rational(6), Rational(6)]),
             bottom_position=Matrix([Rational(10), Rational(-30), Rational(5)]),
@@ -756,7 +756,7 @@ class TestHouseJoint:
         from code_goes_here.meowmeowcsg import Prism
         
         # Create housing timber (vertical post)
-        housing_timber = Timber(
+        housing_timber = timber_from_directions(
             length=Rational(200),
             size=Matrix([Rational(10), Rational(10)]),  # 10 x 10 post
             bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -765,7 +765,7 @@ class TestHouseJoint:
         )
         
         # Create housed timber (horizontal beam intersecting the post)
-        housed_timber = Timber(
+        housed_timber = timber_from_directions(
             length=Rational(80),
             size=Matrix([Rational(6), Rational(6)]),  # 6 x 6 beam
             bottom_position=Matrix([Rational(-20), Rational(0), Rational(100)]),

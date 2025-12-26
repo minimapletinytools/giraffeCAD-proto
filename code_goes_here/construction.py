@@ -23,7 +23,7 @@ def create_timber(bottom_position: V3, length: Numeric, size: V2,
         width_direction: Direction vector for the timber's width axis
         name: Optional name for this timber (used for rendering/debugging)
     """
-    return Timber(length, size, bottom_position, length_direction, width_direction, name=name)
+    return timber_from_directions(length, size, bottom_position, length_direction, width_direction, name=name)
 
 def create_axis_aligned_timber(bottom_position: V3, length: Numeric, size: V2,
                               length_direction: TimberFace, width_direction: Optional[TimberFace] = None, 
@@ -345,8 +345,8 @@ def extend_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Numer
     # Create new timber with extended length
     new_length = timber.length + extend_length + overlap_length
     
-    return Timber(new_length, timber.size, new_bottom_position, 
-                 timber.length_direction, timber.width_direction)
+    return timber_from_directions(new_length, timber.size, new_bottom_position, 
+                                   timber.length_direction, timber.width_direction)
 
 # TODO add some sorta splice stickout parameter
 def split_timber(
@@ -390,7 +390,7 @@ def split_timber(
     top_name = name2 if name2 is not None else (f"{timber.name}_top" if timber.name else "split_top")
     
     # Create first timber (bottom part)
-    bottom_timber = Timber(
+    bottom_timber = timber_from_directions(
         length=distance_from_bottom,
         size=create_vector2d(timber.size[0], timber.size[1]),
         bottom_position=timber.bottom_position,
@@ -404,7 +404,7 @@ def split_timber(
     top_of_first = timber.bottom_position + distance_from_bottom * timber.length_direction
     
     # Create second timber (top part)
-    top_timber = Timber(
+    top_timber = timber_from_directions(
         length=timber.length - distance_from_bottom,
         size=create_vector2d(timber.size[0], timber.size[1]),
         bottom_position=top_of_first,

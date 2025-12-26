@@ -82,7 +82,7 @@ class TestTimber:
         length_dir = create_vector3d(0, 0, 1)  # Use exact integers
         width_dir = create_vector3d(1, 0, 0)   # Use exact integers
         
-        timber = Timber(length, size, position, length_dir, width_dir)
+        timber = timber_from_directions(length, size, position, length_dir, width_dir)
         
         assert timber.length == 3
         assert timber.size.shape == (2, 1)
@@ -92,7 +92,7 @@ class TestTimber:
     def test_timber_orientation_computation(self):
         """Test that timber orientation is computed correctly."""
         # Create vertical timber facing east
-        timber = Timber(
+        timber = timber_from_directions(
             length=2,  # Use exact integer
             size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
             bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
@@ -110,7 +110,7 @@ class TestTimber:
     
     def test_get_transform_matrix(self):
         """Test 4x4 transformation matrix generation."""
-        timber = Timber(
+        timber = timber_from_directions(
             length=1,  # Use exact integer
             size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
             bottom_position=create_vector3d(1, 2, 3),  # Use exact integers
@@ -133,7 +133,7 @@ class TestTimber:
         input_length_dir = create_vector3d(0, 0, 1)  # Up - exact integers
         input_width_dir = create_vector3d(1, 0, 0)    # East - exact integers
         
-        timber = Timber(
+        timber = timber_from_directions(
             length=2,  # Use exact integer
             size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
             bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
@@ -166,7 +166,7 @@ class TestTimber:
         input_length_dir = create_vector3d(0, 1, 0)  # North - exact integers
         input_width_dir = create_vector3d(0, 0, 1)    # Up - exact integers
         
-        timber = Timber(
+        timber = timber_from_directions(
             length=3,  # Use exact integer
             size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
             bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
@@ -195,7 +195,7 @@ class TestTimber:
     
     def test_orientation_directions_are_orthonormal(self):
         """Test that the computed direction vectors form an orthonormal basis."""
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(1),
             size=create_vector2d(Rational("0.1"), Rational("0.1")),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -231,7 +231,7 @@ class TestTimber:
         input_length_dir = create_vector3d(Rational(0), Rational(0), Rational(5))  # Up, but length 5
         input_width_dir = create_vector3d(Rational(3), Rational(0), Rational(0))    # East, but length 3
         
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(1),
             size=create_vector2d(Rational("0.1"), Rational("0.1")),
             bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
@@ -254,7 +254,7 @@ class TestTimber:
     
     def test_get_centerline_position_from_bottom(self):
         """Test the get_centerline_position_from_bottom method."""
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(5),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(Rational(1), Rational(2), Rational(3)),
@@ -288,7 +288,7 @@ class TestTimber:
     
     def test_get_centerline_position_from_bottom(self):
         """Test get_centerline_position_from_bottom method."""
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(10),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(Rational(1), Rational(2), Rational(3)),
@@ -316,7 +316,7 @@ class TestTimber:
     
     def test_get_centerline_position_from_top(self):
         """Test get_centerline_position_from_top method."""
-        timber = Timber(
+        timber = timber_from_directions(
             length=Rational(10),
             size=create_vector2d(Rational("0.2"), Rational("0.3")),
             bottom_position=create_vector3d(Rational(1), Rational(2), Rational(3)),
@@ -378,7 +378,7 @@ class TestEnumsAndDataStructures:
     def test_stickout_with_join_timbers(self):
         """Test that stickout produces correct timber length in join_timbers."""
         # Create two vertical posts 2.5 meters apart
-        post1 = Timber(
+        post1 = timber_from_directions(
             bottom_position=create_vector3d(0, 0, 0),
             length=Rational(2),
             size=create_vector2d(Rational("0.15"), Rational("0.15")),
@@ -386,7 +386,7 @@ class TestEnumsAndDataStructures:
             width_direction=create_vector3d(1, 0, 0)
         )
         
-        post2 = Timber(
+        post2 = timber_from_directions(
             bottom_position=create_vector3d(Rational("2.5"), 0, 0),
             length=Rational(2),
             size=create_vector2d(Rational("0.15"), Rational("0.15")),
@@ -417,7 +417,7 @@ class TestEnumsAndDataStructures:
         from giraffe import StickoutReference
         
         # Create two posts 2.0 meters apart
-        post1 = Timber(
+        post1 = timber_from_directions(
             bottom_position=create_vector3d(0, 0, 0),
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
@@ -425,7 +425,7 @@ class TestEnumsAndDataStructures:
             width_direction=create_vector3d(1, 0, 0)
         )
         
-        post2 = Timber(
+        post2 = timber_from_directions(
             bottom_position=create_vector3d(Rational(2), 0, 0),
             length=Rational(2),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
@@ -460,7 +460,7 @@ class TestEnumsAndDataStructures:
         from giraffe import StickoutReference, join_perpendicular_on_face_parallel_timbers, FaceAlignedJoinedTimberOffset, TimberFace
         
         # Create two parallel horizontal posts 2.0 meters apart
-        post1 = Timber(
+        post1 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -468,7 +468,7 @@ class TestEnumsAndDataStructures:
             width_direction=create_vector3d(0, 0, 1)     # Up
         )
         
-        post2 = Timber(
+        post2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(0, 2, 0),  # 2m north
@@ -501,7 +501,7 @@ class TestEnumsAndDataStructures:
         from giraffe import StickoutReference, join_perpendicular_on_face_parallel_timbers, FaceAlignedJoinedTimberOffset, TimberFace
         
         # Create two parallel horizontal posts 2.0 meters apart
-        post1 = Timber(
+        post1 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(0, 0, 0),
@@ -509,7 +509,7 @@ class TestEnumsAndDataStructures:
             width_direction=create_vector3d(0, 0, 1)     # Up
         )
         
-        post2 = Timber(
+        post2 = timber_from_directions(
             length=Rational(3),
             size=create_vector2d(Rational("0.2"), Rational("0.2")),
             bottom_position=create_vector3d(0, 2, 0),  # 2m north
@@ -763,7 +763,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction, name='test_timber')
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction, name='test_timber')
         cut_timber = CutTimber(timber)
         
         # Get the CSG
@@ -796,7 +796,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         cut_timber = CutTimber(timber)
         
         csg = cut_timber._extended_timber_without_cuts_csg()
@@ -816,7 +816,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         cut_timber = CutTimber(timber)
         
         csg = cut_timber._extended_timber_without_cuts_csg()
@@ -837,7 +837,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(1), Rational(0), Rational(0)])  # Along X
         width_direction = Matrix([Rational(0), Rational(1), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         cut_timber = CutTimber(timber)
         
         csg = cut_timber._extended_timber_without_cuts_csg()
@@ -862,7 +862,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         cut_timber = CutTimber(timber)
         
         # Get the CSG
@@ -883,7 +883,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         
         # Add a bottom end cut at z=15
         cut_end_position = Matrix([Rational(0), Rational(0), Rational(15)])
@@ -907,7 +907,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         
         # Add a top end cut at z=100
         cut_end_position = Matrix([Rational(0), Rational(0), Rational(100)])
@@ -931,7 +931,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         
         # Add both end cuts
         bottom_cut_pos = Matrix([Rational(0), Rational(0), Rational(20)])
@@ -957,7 +957,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         
         # Add two bottom end cuts (invalid!)
         cut1 = MockCut(timber, Matrix([Rational(0), Rational(0), Rational(15)]), TimberReferenceEnd.BOTTOM)
@@ -976,7 +976,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = Timber(length, size, bottom_position, length_direction, width_direction)
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         
         # Add two top end cuts (invalid!)
         cut1 = MockCut(timber, Matrix([Rational(0), Rational(0), Rational(100)]), TimberReferenceEnd.TOP)
