@@ -173,8 +173,8 @@ class TestMiterJoint:
         cut_timberB = joint.partiallyCutTimbers[1]
         
         # Render the timbers without cuts first (just the basic prisms)
-        prismA = cut_timberA.render_timber_without_cuts_csg()
-        prismB = cut_timberB.render_timber_without_cuts_csg()
+        prismA = cut_timberA.render_timber_without_cuts_csg_local()
+        prismB = cut_timberB.render_timber_without_cuts_csg_local()
         
         print(f"\nDEBUG: PrismA bounds: start={prismA.start_distance}, end={prismA.end_distance}")
         print(f"DEBUG: PrismB bounds: start={prismB.start_distance}, end={prismB.end_distance}")
@@ -316,8 +316,8 @@ class TestButtJoint:
         
         # Test 2: Verify the two timber CSGs do not intersect after cutting
         # Render the timbers without cuts (just the basic prisms)
-        prism_receiving = receiving_cut_timber.render_timber_without_cuts_csg()
-        prism_butt = butt_cut_timber.render_timber_without_cuts_csg()
+        prism_receiving = receiving_cut_timber.render_timber_without_cuts_csg_local()
+        prism_butt = butt_cut_timber.render_timber_without_cuts_csg_local()
         
         # The receiving timber extends from x=0 to x=100, y=-3 to y=+3, z=0 to z=8
         # The butt timber (before cut) extends from x=48 to x=52, y=-2 to y=+2, z=-40 to z=20
@@ -406,8 +406,8 @@ class TestButtJoint:
             f"Butt end should be at x=-3 or x=+3, got x={x_coord}"
         
         # Verify CSGs can be rendered (basic sanity check)
-        prism_receiving = receiving_cut_timber.render_timber_without_cuts_csg()
-        prism_butt = butt_cut_timber.render_timber_without_cuts_csg()
+        prism_receiving = receiving_cut_timber.render_timber_without_cuts_csg_local()
+        prism_butt = butt_cut_timber.render_timber_without_cuts_csg_local()
         
         assert prism_receiving is not None
         assert prism_butt is not None
