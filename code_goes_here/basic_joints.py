@@ -86,12 +86,6 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # The intersection point is the midpoint between the two closest points
     intersection_point = (pointA + pointB) / 2
     
-    # TODO what's this for??? delete this... linse are allowed to be skew
-    # Warn if the lines don't actually intersect (skew lines)
-    distance_between = vector_magnitude(pointA - pointB)
-    if distance_between > THRESHOLD_SKEW_LINE_WARNING:
-        warnings.warn(f"Timber centerlines are skew lines (closest distance: {float(distance_between)}). Using midpoint of closest approach.")
-    
     # Create the miter plane normal
     # Normalize the directions first
     normA = normalize_vector(directionA)
