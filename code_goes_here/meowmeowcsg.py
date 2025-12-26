@@ -49,7 +49,7 @@ class MeowMeowCSG(ABC):
         pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class HalfPlane(MeowMeowCSG):
     """
     An infinite half-plane defined by a normal vector and offset from origin.
@@ -109,7 +109,7 @@ class HalfPlane(MeowMeowCSG):
         return self.normal * self.offset
 
 
-@dataclass
+@dataclass(frozen=True)
 class Prism(MeowMeowCSG):
     """
     A prism with rectangular cross-section, optionally infinite in one or both ends.
@@ -211,7 +211,7 @@ class Prism(MeowMeowCSG):
         return min_point
 
 
-@dataclass
+@dataclass(frozen=True)
 class Cylinder(MeowMeowCSG):
     """
     A cylinder with circular cross-section, optionally infinite in one or both ends.
@@ -307,7 +307,7 @@ class Cylinder(MeowMeowCSG):
             return min_point
 
 
-@dataclass
+@dataclass(frozen=True)
 class Union(MeowMeowCSG):
     """
     CSG union operation - combines multiple CSG objects.
@@ -352,7 +352,7 @@ class Union(MeowMeowCSG):
         return min_point
 
 
-@dataclass
+@dataclass(frozen=True)
 class Difference(MeowMeowCSG):
     """
     CSG difference operation - subtracts multiple CSG objects from a base object.
