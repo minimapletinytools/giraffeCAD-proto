@@ -39,10 +39,12 @@ DONE-rename "End joint" it's not what you think it's actulaly a splice joint, I 
 DONE-fix name usage consistence, name should nto be in CutTimebr just use timber name
   -also add name to ctor of timber init function
 DONE-check for mutabel data 
+-fix prism cut rendering stuff for housing join,t noe of the transforms is wrong or fusino 360 is busted
+  -specifically, when cutting teh housed timber from the housing timber, the housed timber prism isn't getting positioned right. Is this happening in fusion 360 (probbaly) or in giraffe code?
 -cleanup the epsilon constant stuff (when to use flot vs rational for this?? think baotu ti ab it...)
 -fix the venv stuff in readme, aeither add venv or get rid of it from readme.
 -remove mutable position/name stuff from examples and oscarshed
--maybe get rid of cross joint
+-maybe get rid of corner joint
 -change giraffe to use render_timber_with_cuts_csg rather than do it itself
 -prefix timber methods with _in_local_space (meaning orientation and translation not applied)
 

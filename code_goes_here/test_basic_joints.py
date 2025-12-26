@@ -747,3 +747,90 @@ class TestHouseJoint:
         
         # Verify the cut is not an end cut
         assert housing_cut_timber._cuts[0].maybeEndCut is None
+    
+    def test_house_joint_prism_matches_housed_timber_global_space(self):
+        """
+        Test that the prism being cut from the housing timber matches the housed timber
+        when both are compared in global coordinates.
+        """
+        from code_goes_here.meowmeowcsg import Prism
+        
+        # Create housing timber (vertical post)
+        housing_timber = Timber(
+            length=Rational(200),
+            size=Matrix([Rational(10), Rational(10)]),  # 10 x 10 post
+            bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(0), Rational(0), Rational(1)]),  # Vertical
+            width_direction=Matrix([Rational(1), Rational(0), Rational(0)])
+        )
+        
+        # Create housed timber (horizontal beam intersecting the post)
+        housed_timber = Timber(
+            length=Rational(80),
+            size=Matrix([Rational(6), Rational(6)]),  # 6 x 6 beam
+            bottom_position=Matrix([Rational(-20), Rational(0), Rational(100)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),  # Horizontal
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
+        )
+        
+        # Create the housed joint
+        joint = cut_basic_house_joint(housing_timber, housed_timber)
+        
+        # Get the housing timber with its cut
+        housing_cut_timber = joint.partiallyCutTimbers[0]
+        cut = housing_cut_timber._cuts[0]
+        
+        assert isinstance(cut, CSGCut), "Cut should be a CSGCut"
+        
+        # Get the negative CSG (the prism being cut away)
+        # This is in the housing timber's LOCAL coordinate system
+        cut_prism_local = cut.negative_csg
+        assert isinstance(cut_prism_local, Prism), "Negative CSG should be a Prism"
+        
+        # ===================================================================
+        # Compare the cut prism with the housed timber in GLOBAL space
+        # ===================================================================
+        
+        # 1. The prism's size should match the housed timber's size
+        assert cut_prism_local.size[0] == housed_timber.size[0], \
+            f"Cut prism width should match housed timber width: {cut_prism_local.size[0]} vs {housed_timber.size[0]}"
+        assert cut_prism_local.size[1] == housed_timber.size[1], \
+            f"Cut prism height should match housed timber height: {cut_prism_local.size[1]} vs {housed_timber.size[1]}"
+        
+        # 2. Check the prism's orientation in global space
+        # cut_prism_local.orientation is relative to housing timber's local frame
+        # Global orientation = housing_orientation * local_orientation
+        cut_prism_global_orientation = housing_timber.orientation.multiply(cut_prism_local.orientation)
+        
+        # The prism's orientation should match the housed timber's orientation
+        # (they should be aligned in the same direction)
+        orientation_diff = cut_prism_global_orientation.matrix - housed_timber.orientation.matrix
+        orientation_diff_norm = simplify(orientation_diff.norm())
+        
+        assert orientation_diff_norm == 0, \
+            f"Cut prism orientation should exactly match housed timber orientation in global space. Difference: {orientation_diff_norm}"
+        
+        # 3. Check that the prism extends along the housed timber's length direction
+        # The prism's length direction (in housing timber's local coords) should match
+        # the housed timber's length direction (also in housing timber's local coords)
+        
+        housed_length_dir_in_housing_local = housing_timber.orientation.matrix.T * housed_timber.length_direction
+        prism_length_dir_in_housing_local = cut_prism_local.orientation.matrix[:, 2]  # Z-axis of prism
+        
+        # These should be parallel (same or opposite direction)
+        dot = simplify((housed_length_dir_in_housing_local.T * prism_length_dir_in_housing_local)[0, 0])
+        assert abs(dot) == 1, \
+            f"Cut prism length direction should be exactly parallel to housed timber length direction. Dot product: {dot}"
+        
+        # Print debug info
+        print(f"\n=== House Joint Verification (Global Space) ===")
+        print(f"Housed timber size: {housed_timber.size[0]} x {housed_timber.size[1]}")
+        print(f"Cut prism size: {cut_prism_local.size[0]} x {cut_prism_local.size[1]}")
+        print(f"Sizes match: {cut_prism_local.size == housed_timber.size}")
+        print(f"Orientation alignment (dot product): {float(dot)}")
+        print(f"Cut prism start_distance: {cut_prism_local.start_distance}")
+        print(f"Cut prism end_distance: {cut_prism_local.end_distance}")
+        if cut_prism_local.start_distance is not None and cut_prism_local.end_distance is not None:
+            prism_length = cut_prism_local.end_distance - cut_prism_local.start_distance
+            print(f"Cut prism length: {prism_length}")
+            print(f"Housed timber length: {housed_timber.length}")
