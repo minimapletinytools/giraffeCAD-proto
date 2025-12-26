@@ -782,8 +782,10 @@ class TestCutTimber:
         
         # Size should match timber
         assert csg.size == size
-        # Orientation should be the timber's Orientation object
-        assert csg.orientation == timber.orientation
+        # In LOCAL coordinates, the prism is always axis-aligned (identity orientation)
+        # The timber's orientation transforms from local to global coordinates
+        from code_goes_here.moothymoth import Orientation
+        assert simplify(csg.orientation.matrix - Orientation.identity().matrix).norm() == 0
     
     def test_extended_timber_without_cuts_positioned(self):
         """Test that CSG works correctly for timber at different position."""
@@ -847,8 +849,10 @@ class TestCutTimber:
         # End distance is the timber's length
         assert csg.end_distance == 80
         
-        # Orientation should be the timber's Orientation object
-        assert csg.orientation == timber.orientation
+        # In LOCAL coordinates, the prism is always axis-aligned (identity orientation)
+        # The timber's orientation transforms from local to global coordinates
+        from code_goes_here.moothymoth import Orientation
+        assert simplify(csg.orientation.matrix - Orientation.identity().matrix).norm() == 0
     
     def test_render_timber_without_cuts_no_end_cuts(self):
         """Test render_timber_without_cuts_csg with no end cuts."""
