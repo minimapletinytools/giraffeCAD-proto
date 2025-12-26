@@ -10,19 +10,7 @@ from sympy import Matrix, Rational
 import sys
 sys.path.append('../..')
 
-from giraffe import (
-    Timber, CutTimber, Joint,
-    TimberReferenceEnd, TimberFace,
-    create_vector3d
-)
-from code_goes_here.basic_joints import (
-    cut_basic_miter_joint,
-    cut_basic_miter_joint_on_face_aligned_timbers,
-    cut_basic_butt_joint_on_face_aligned_timbers,
-    cut_basic_splice_joint_on_aligned_timbers,
-    cut_basic_cross_lap_joint,
-    cut_basic_house_joint
-)
+from giraffe import *
 
 # Type alias
 V3 = Matrix
