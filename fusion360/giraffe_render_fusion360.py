@@ -215,24 +215,28 @@ def render_prism_in_local_space(component: adsk.fusion.Component, prism: Prism, 
         is_identity = (orientation_matrix == Matrix.eye(3))
         
         if not is_identity:
-            # Create a transformation matrix from the orientation
-            transform = adsk.core.Matrix3D.create()
+            # Calculate the center of the prism before rotation
+            # The prism extends from start_dist to end_dist along Z, centered at (0, 0) in XY
+            center_before = Matrix([0, 0, (start_dist + end_dist) / 2])
             
-            # Set rotation part (3x3 matrix)
-            for i in range(3):
-                for j in range(3):
-                    transform.setCell(i, j, float(orientation_matrix[i, j]))
+            # After rotation, the center will be at: rotation_matrix * center_before
+            center_after = orientation_matrix * center_before
             
-            # Translation is zero (prism is at origin, only rotation applied)
-            transform.setCell(0, 3, 0)
-            transform.setCell(1, 3, 0)
-            transform.setCell(2, 3, 0)
+            # We want to rotate around the prism's center, so:
+            # Translation needed: center_before - center_after
+            translation = center_before - center_after
+            
+            # Use the existing infrastructure to create the transformation matrix
+            # Create an Orientation from the rotation matrix and position from translation
+            prism_orientation = Orientation(orientation_matrix)
+            transform = create_matrix3d_from_orientation(translation, prism_orientation)
             
             # Apply the transformation to the body
             move_features = component.features.moveFeatures
             bodies = adsk.core.ObjectCollection.create()
             bodies.add(body)
             move_input = move_features.createInput(bodies, transform)
+            move_input.defineAsFreeMove(transform)
             move_features.add(move_input)
         
         return body
@@ -437,24 +441,28 @@ def render_cylinder_in_local_space(component: adsk.fusion.Component, cylinder: C
                 import math
                 rotation_matrix = Matrix.eye(3) + math.sin(angle) * K + (1 - math.cos(angle)) * (K * K)
                 
-                # Create Fusion 360 transformation matrix
-                transform = adsk.core.Matrix3D.create()
+                # Calculate the center of the cylinder before rotation
+                # The cylinder extends from start_dist to end_dist along Z
+                center_before = Matrix([0, 0, (start_dist + end_dist) / 2])
                 
-                # Set rotation part
-                for i in range(3):
-                    for j in range(3):
-                        transform.setCell(i, j, float(rotation_matrix[i, j]))
+                # After rotation, the center will be at: rotation_matrix * center_before
+                center_after = rotation_matrix * center_before
                 
-                # No translation (cylinder is centered at origin along its axis)
-                transform.setCell(0, 3, 0)
-                transform.setCell(1, 3, 0)
-                transform.setCell(2, 3, 0)
+                # We want to rotate around the cylinder's center, so:
+                # Translation needed: center_before - center_after
+                translation = center_before - center_after
+                
+                # Use the existing infrastructure to create the transformation matrix
+                # Create an Orientation from the rotation matrix and position from translation
+                cylinder_orientation = Orientation(rotation_matrix)
+                transform = create_matrix3d_from_orientation(translation, cylinder_orientation)
                 
                 # Apply the transformation
                 move_features = component.features.moveFeatures
                 bodies = adsk.core.ObjectCollection.create()
                 bodies.add(body)
                 move_input = move_features.createInput(bodies, transform)
+                move_input.defineAsFreeMove(transform)
                 move_features.add(move_input)
         
         return body
@@ -879,6 +887,8 @@ def apply_timber_transform(occurrence: adsk.fusion.Occurrence, position: Matrix,
     """
     Apply a transform to move a timber occurrence from origin to its final position.
     
+    Uses occurrence.transform2 to set the transform, which properly records it.
+    
     Args:
         occurrence: The occurrence to transform
         position: Target position vector
@@ -889,14 +899,25 @@ def apply_timber_transform(occurrence: adsk.fusion.Occurrence, position: Matrix,
         True if transform was applied successfully
     """
     try:
+        # Get the design
+        design = get_active_design()
+        if not design:
+            print(f"Error: No active design for {component_name}")
+            return False
+        
         # Create the transformation matrix
         global_transform = create_matrix3d_from_orientation(position, orientation)
         
-        # Apply the transform
-        occurrence.transform = global_transform
+        # Set the transform using transform2 property
+        # transform2 is the proper way to set occurrence transforms and records them
+        occurrence.transform2 = global_transform
+        
+        # Give Fusion 360 time to process
+        time.sleep(0.05)
+        adsk.doEvents()
         
         # Verify the transform was applied correctly
-        applied_transform = occurrence.transform
+        applied_transform = occurrence.transform2
         expected_tx = float(position[0])
         expected_ty = float(position[1])
         expected_tz = float(position[2])
@@ -912,33 +933,13 @@ def apply_timber_transform(occurrence: adsk.fusion.Occurrence, position: Matrix,
             print(f"⚠️  Transform verification failed for {component_name}")
             print(f"  Expected: ({expected_tx:.3f}, {expected_ty:.3f}, {expected_tz:.3f})")
             print(f"  Applied:  ({applied_tx:.3f}, {applied_ty:.3f}, {applied_tz:.3f})")
-            
-            # Try re-applying the transform
-            print(f"  Attempting to re-apply transform...")
-            occurrence.transform = global_transform
-            time.sleep(0.1)
-            adsk.doEvents()
-            
-            # Check again
-            reapplied_transform = occurrence.transform
-            reapplied_tx = reapplied_transform.getCell(0, 3)
-            reapplied_ty = reapplied_transform.getCell(1, 3)
-            reapplied_tz = reapplied_transform.getCell(2, 3)
-            
-            translation_fixed = (abs(reapplied_tx - expected_tx) < 0.001 and 
-                               abs(reapplied_ty - expected_ty) < 0.001 and 
-                               abs(reapplied_tz - expected_tz) < 0.001)
-            
-            if not translation_fixed:
-                print(f"  ✗ Re-application also failed")
-                return False
-            else:
-                print(f"  ✓ Re-application successful")
+            return False
         
         return True
         
     except Exception as e:
         print(f"Error applying transform to {component_name}: {e}")
+        traceback.print_exc()
         return False
 
 
