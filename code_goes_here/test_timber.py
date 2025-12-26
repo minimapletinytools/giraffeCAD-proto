@@ -736,9 +736,9 @@ class TestEnumsAndDataStructures:
 class MockCut:
     """Mock Cut implementation for testing."""
     def __init__(self, timber: Timber, end_position: V3, maybe_end_cut: Optional[TimberReferenceEnd] = None):
-        self._timber = timber
+        self.timber = timber
         self._end_position = end_position
-        self.maybeEndCut = maybe_end_cut
+        self.maybe_end_cut = maybe_end_cut
         self.origin = Matrix([0, 0, 0])
         self.orientation = Orientation()
     

@@ -46,8 +46,8 @@ class TestMiterJoint:
         cutB = joint.partiallyCutTimbers[1]._cuts[0]
         
         # Check that both cuts are end cuts
-        assert cutA.maybeEndCut == TimberReferenceEnd.TOP
-        assert cutB.maybeEndCut == TimberReferenceEnd.TOP
+        assert cutA.maybe_end_cut == TimberReferenceEnd.TOP
+        assert cutB.maybe_end_cut == TimberReferenceEnd.TOP
         
         # Check that the half-plane normals are in LOCAL coordinates
         # For orthogonal timbers in +X and +Y directions:
@@ -285,7 +285,7 @@ class TestButtJoint:
         assert len(butt_cut_timber._cuts) == 1, "Butt timber should have exactly one cut"
         
         cut = butt_cut_timber._cuts[0]
-        assert cut.maybeEndCut == TimberReferenceEnd.TOP, "Cut should be at TOP end"
+        assert cut.maybe_end_cut == TimberReferenceEnd.TOP, "Cut should be at TOP end"
         
         # Test 1: Verify the cut plane is coplanar with the receiving timber's face
         # The butt is approaching the FORWARD face of the receiving timber
@@ -385,7 +385,7 @@ class TestButtJoint:
         # Verify butt has one cut at BOTTOM
         assert len(butt_cut_timber._cuts) == 1
         cut = butt_cut_timber._cuts[0]
-        assert cut.maybeEndCut == TimberReferenceEnd.BOTTOM
+        assert cut.maybe_end_cut == TimberReferenceEnd.BOTTOM
         
         # Test 1: Verify cut plane is coplanar with receiving timber face
         # The receiving timber extends from x=-3 to x=+3
@@ -534,8 +534,8 @@ class TestSpliceJoint:
         cutB = joint.partiallyCutTimbers[1]._cuts[0]
         
         # Verify both cuts are end cuts
-        assert cutA.maybeEndCut == TimberReferenceEnd.TOP
-        assert cutB.maybeEndCut == TimberReferenceEnd.BOTTOM
+        assert cutA.maybe_end_cut == TimberReferenceEnd.TOP
+        assert cutB.maybe_end_cut == TimberReferenceEnd.BOTTOM
         
         # Verify both cuts have the same origin (the splice point)
         assert cutA.origin[0] == cutB.origin[0]
@@ -706,7 +706,7 @@ class TestHouseJoint:
         assert len(housed_cut_timber._cuts) == 0
         
         # Verify the cut is not an end cut
-        assert housing_cut_timber._cuts[0].maybeEndCut is None
+        assert housing_cut_timber._cuts[0].maybe_end_cut is None
     
     def test_basic_house_joint_perpendicular_timbers_finite(self):
         """Test basic housed joint with finite housed timber."""
@@ -746,7 +746,7 @@ class TestHouseJoint:
         assert len(housed_cut_timber._cuts) == 0
         
         # Verify the cut is not an end cut
-        assert housing_cut_timber._cuts[0].maybeEndCut is None
+        assert housing_cut_timber._cuts[0].maybe_end_cut is None
     
     def test_house_joint_prism_matches_housed_timber_global_space(self):
         """
