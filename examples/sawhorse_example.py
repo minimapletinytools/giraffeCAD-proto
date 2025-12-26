@@ -26,7 +26,7 @@ def create_sawhorse() -> list[CutTimber]:
     """
     # define footprint
     footprint = Footprint(
-        boundary = [
+        corners=[
             create_vector2d(-bottom_width / 2, -bottom_length / 2),
             create_vector2d(bottom_width / 2, -bottom_length / 2),
             create_vector2d(bottom_width / 2, bottom_length / 2),
@@ -41,9 +41,9 @@ def create_sawhorse() -> list[CutTimber]:
         corner_index=3, 
         location_type=FootprintLocation.INSIDE,
         size=feet_size,
-        length=bottom_length
+        length=bottom_length,
+        name="Left Mudsill"
     )
-    left_mudsill.name = "Left Mudsill"
     
     # Create mudsill on the right boundary (index 1: top-right to bottom-right)  
     right_mudsill = create_horizontal_timber_on_footprint(
@@ -51,9 +51,9 @@ def create_sawhorse() -> list[CutTimber]:
         corner_index=1, 
         location_type=FootprintLocation.INSIDE,
         size=feet_size,
-        length=bottom_length
+        length=bottom_length,
+        name="Right Mudsill"
     )
-    right_mudsill.name = "Right Mudsill"
     
     # next create a "beam" that is running from left to right centered on the origin and top_beam_surface_position-stretcher_size[1]/2 above the origin
     beam = create_axis_aligned_timber(
@@ -61,9 +61,9 @@ def create_sawhorse() -> list[CutTimber]:
         length=top_beam_length,
         size=beam_size,
         length_direction=TimberFace.RIGHT,
-        width_direction=TimberFace.TOP
+        width_direction=TimberFace.TOP,
+        name="Top Beam"
     )
-    beam.name = "Top Beam"
 
     # connect the 2 feet to the beam with posts. The posts are centered on the feet
     
@@ -81,9 +81,9 @@ def create_sawhorse() -> list[CutTimber]:
         stickout=Stickout(float(post_size[0]) / 2, float(post_size[0]) / 2),  # Symmetric: half the post width on each side
         offset_from_timber1=offset_left,
         size=post_size,
-        orientation_face_on_timber1=TimberFace.TOP
+        orientation_face_on_timber1=TimberFace.TOP,
+        name="Left Post"
     )
-    left_post.name = "Left Post"
     
     # Connect right foot to beam
     offset_right = FaceAlignedJoinedTimberOffset(
@@ -99,9 +99,9 @@ def create_sawhorse() -> list[CutTimber]:
         stickout=Stickout(float(post_size[0]) / 2, float(post_size[0]) / 2),  # Symmetric: half the post width on each side
         offset_from_timber1=offset_right,
         size=post_size,
-        orientation_face_on_timber1=TimberFace.TOP
+        orientation_face_on_timber1=TimberFace.TOP,
+        name="Right Post"
     )
-    right_post.name = "Right Post"
 
     # now create the stretcher that runs between the middle of the 2 posts using the join_perpendicular_on_face_parallel_timbers
     offset_stretcher = FaceAlignedJoinedTimberOffset(
@@ -117,9 +117,9 @@ def create_sawhorse() -> list[CutTimber]:
         stickout=Stickout(float(stretcher_size[0]) / 2, float(stretcher_size[0]) / 2),  # Symmetric: half the stretcher width on each side
         offset_from_timber1=offset_stretcher,
         size=stretcher_size,
-        orientation_face_on_timber1=TimberFace.TOP
+        orientation_face_on_timber1=TimberFace.TOP,
+        name="Stretcher"
     )
-    stretcher.name = "Stretcher"
 
     # Create CutTimber objects for all timbers (names will be inherited from the timbers)
     cut_left_mudsill = CutTimber(left_mudsill)
@@ -137,7 +137,6 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_thickness=tenon_thickness,
         tenon_length=tenon_length
     )
-    mudsill_left_joint.name = "Left Post to Mudsill Joint"
 
     mudsill_right_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         mortise_timber=right_mudsill,
@@ -146,7 +145,6 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_thickness=tenon_thickness,
         tenon_length=tenon_length
     )
-    mudsill_right_joint.name = "Right Post to Mudsill Joint"
 
     # next create mortise and tenon joints between the posts and the stretcher
     stretcher_left_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
@@ -156,7 +154,6 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_thickness=tenon_thickness,
         tenon_length=tenon_length
     )
-    stretcher_left_joint.name = "Left Post to Stretcher Joint"
 
     stretcher_right_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         mortise_timber=right_post,
@@ -165,7 +162,6 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_thickness=tenon_thickness,
         tenon_length=tenon_length
     )
-    stretcher_right_joint.name = "Right Post to Stretcher Joint"
 
     # now create mortise and tenon joints between the posts and the beam
     beam_left_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
@@ -175,7 +171,6 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_thickness=tenon_thickness,
         tenon_length=tenon_length
     )
-    beam_left_joint.name = "Left Post to Beam Joint"
 
     beam_right_joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         mortise_timber=beam,
@@ -184,7 +179,6 @@ def create_sawhorse() -> list[CutTimber]:
         tenon_thickness=tenon_thickness,
         tenon_length=tenon_length
     )
-    beam_right_joint.name = "Right Post to Beam Joint"
 
     # Apply joints to the cut timbers
     # Each joint affects multiple timbers, so we need to add the cut operations to the appropriate timbers
