@@ -180,8 +180,8 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     
     # Create and return the Joint with all data at construction
     joint = Joint(
-        partially_cut_timbers=[cut_timberA, cut_timberB],
-        joint_accessories=[]
+        partiallyCutTimbers=(cut_timberA, cut_timberB),
+        jointAccessories=()
     )
     
     return joint
@@ -281,8 +281,8 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     
     # Create and return the Joint with all data at construction
     joint = Joint(
-        partially_cut_timbers=[cut_receiving, cut_butt],
-        joint_accessories=[]
+        partiallyCutTimbers=(cut_receiving, cut_butt),
+        jointAccessories=()
     )
     
     return joint
@@ -441,8 +441,8 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
     
     # Create and return the Joint with all data at construction
     joint = Joint(
-        partially_cut_timbers=[cut_timberA, cut_timberB],
-        joint_accessories=[]
+        partiallyCutTimbers=(cut_timberA, cut_timberB),
+        jointAccessories=()
     )
     
     return joint
@@ -616,8 +616,8 @@ def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber, extend_
     
     # Create and return the Joint
     joint = Joint(
-        partially_cut_timbers=[cut_housing, cut_housed],
-        joint_accessories=[]
+        partiallyCutTimbers=(cut_housing, cut_housed),
+        jointAccessories=()
     )
     
     return joint

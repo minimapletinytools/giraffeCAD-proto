@@ -911,25 +911,15 @@ class CutTimber:
 class PartiallyCutTimber(CutTimber):
     pass
 
+@dataclass(frozen=True)
 class JointAccessory:
     """Base class for joint accessories like wedges, drawbores, etc."""
     pass
 
+@dataclass(frozen=True)
 class Joint:
-    partiallyCutTimbers : List[PartiallyCutTimber]
-    jointAccessories : List[JointAccessory]
-    
-    def __init__(self, partially_cut_timbers: List[PartiallyCutTimber], 
-                 joint_accessories: List[JointAccessory] = None):
-        """
-        Create a Joint with all required parameters.
-        
-        Args:
-            partially_cut_timbers: List of PartiallyCutTimber objects in this joint
-            joint_accessories: Optional list of joint accessories (default: empty list)
-        """
-        self.partiallyCutTimbers = partially_cut_timbers
-        self.jointAccessories = joint_accessories if joint_accessories is not None else []
+    partiallyCutTimbers: Tuple[PartiallyCutTimber, ...]
+    jointAccessories: Tuple[JointAccessory, ...] = ()
 
 
 # ============================================================================
