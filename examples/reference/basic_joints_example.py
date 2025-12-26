@@ -18,7 +18,6 @@ from giraffe import (
 from code_goes_here.basic_joints import (
     cut_basic_miter_joint,
     cut_basic_miter_joint_on_face_aligned_timbers,
-    cut_basic_corner_joint_on_face_aligned_timbers,
     cut_basic_butt_joint_on_face_aligned_timbers,
     cut_basic_splice_joint_on_aligned_timbers,
     cut_basic_cross_lap_joint,
@@ -125,47 +124,6 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
     
     joint = cut_basic_miter_joint_on_face_aligned_timbers(
         timberA, TimberReferenceEnd.TOP, 
-        timberB, TimberReferenceEnd.TOP
-    )
-    
-    return joint.partiallyCutTimbers
-
-
-def make_corner_joint_example(position: V3) -> list[CutTimber]:
-    """
-    Create a corner joint for face-aligned timbers.
-    One timber is cut at an angle, the other remains uncut.
-    
-    Args:
-        position: Center position of the joint (V3)
-        
-    Returns:
-        List of CutTimber objects representing the joint
-    """
-    half_length = TIMBER_LENGTH / 2
-    
-    # TimberA extends in +X direction
-    timberA = timber_from_directions(
-        name="CornerJoint_TimberA",
-        length=TIMBER_LENGTH,
-        size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
-        bottom_position=position - Matrix([half_length, 0, 0]),
-        length_direction=Matrix([1, 0, 0]),
-        width_direction=Matrix([0, 1, 0])
-    )
-    
-    # TimberB extends in +Y direction
-    timberB = timber_from_directions(
-        name="CornerJoint_TimberB",
-        length=TIMBER_LENGTH,
-        size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
-        bottom_position=position - Matrix([0, half_length, 0]),
-        length_direction=Matrix([0, 1, 0]),
-        width_direction=Matrix([-1, 0, 0])
-    )
-    
-    joint = cut_basic_corner_joint_on_face_aligned_timbers(
-        timberA, TimberReferenceEnd.TOP,
         timberB, TimberReferenceEnd.TOP
     )
     
@@ -366,7 +324,6 @@ def create_all_joint_examples() -> list[CutTimber]:
     #   JOINTS_TO_RENDER = [
     #       ("Miter Joint (67°)", make_miter_joint_example),
     #       # ("Miter Joint (Face Aligned)", make_miter_joint_face_aligned_example),
-    #       # ("Corner Joint", make_corner_joint_example),
     #       # ("Butt Joint", make_butt_joint_example),
     #       # ("Splice Joint", make_splice_joint_example),
     #       ("House Joint", make_house_joint_example),
@@ -376,7 +333,6 @@ def create_all_joint_examples() -> list[CutTimber]:
     JOINTS_TO_RENDER = [
         #("Miter Joint (67°)", make_miter_joint_example),
         #("Miter Joint (Face Aligned)", make_miter_joint_face_aligned_example),
-        #("Corner Joint", make_corner_joint_example),
         #("Butt Joint", make_butt_joint_example),
         #("Splice Joint", make_splice_joint_example),
         ("House Joint", make_house_joint_example),
@@ -430,20 +386,3 @@ if __name__ == "__main__":
         timber = cut_timber.timber
         num_cuts = len(cut_timber._cuts)
         print(f"{i+1:2d}. {timber.name:30s} | Cuts: {num_cuts} | Length: {float(timber.length):.2f}m")
-    
-    print()
-    print("=" * 70)
-    print("Configuration:")
-    print("  • Joints are spaced 2m apart along the X-axis")
-    print("  • Positioning starts at the origin")
-    print("  • Edit JOINTS_TO_RENDER list in the code to enable/disable joints")
-    print()
-    print("Joint details:")
-    print("  • Miter Joint: 67° angle (non-axis-aligned)")
-    print("  • Miter Joint (Face Aligned): Right angles, optimized for aligned faces")
-    print("  • Corner Joint: One timber cut at angle, one straight")
-    print("  • Butt Joint: One timber butts into another")
-    print("  • Splice Joint: End-to-end scarf joint")
-    print("  • House Joint: Rectangular notch (like shelf in upright)")
-    print("=" * 70)
-

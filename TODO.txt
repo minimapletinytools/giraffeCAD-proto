@@ -44,10 +44,9 @@ DONE-update all warnings to use warning.warn
 DONE-prefix timber methods with _in_local_space (meaning orientation and translation not applied)
 DONE-cleanup the epsilon constant stuff (when to use flot vs rational for this?? think baotu ti ab it...)
 DONE-change giraffe to use render_timber_with_cuts_csg rather than do it itself
+DONE-fix the venv stuff in readme, aeither add venv or get rid of it from readme.
+DONE-maybe get rid of corner joint
 
-
--fix the venv stuff in readme, aeither add venv or get rid of it from readme.
--maybe get rid of corner joint
 
 -fix prism cut rendering stuff for housing join,t noe of the transforms is wrong or fusino 360 is busted
   -specifically, when cutting teh housed timber from the housing timber, the housed timber prism isn't getting positioned right. Is this happening in fusion 360 (probbaly) or in giraffe code?
@@ -108,7 +107,8 @@ DONE-change giraffe to use render_timber_with_cuts_csg rather than do it itself
     -agent prompt examples
   -template project
   -update docs
-    -write README intro
+    -cleanup README
+      -clean up venv/makefile/setup nonsense so its simpler...
     -cleanup comments in code and delete morenotes.md
     -generate docs
     - you need a better way to specify timber lenghts... most of the time you don't really care? It should be determined by the joint in most cases.
