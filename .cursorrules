@@ -40,10 +40,9 @@ python3 -m pytest tests/test_giraffe.py::TestFootprint -v
 
 ## Coding Conventions
 
-- ALWAYS use symbolic arithmetic with SymPy (Rational) 
+- In our tests and examples ALWAYS use symbolic arithmetic with SymPy (Rational) 
 - Vector types: V2 (2D), V3 (3D), Direction3D
-- All tests must pass before committing changes
-- Run tests after making changes
+- ALWAYS Run tests after making changes
 
 
 ## Notes
