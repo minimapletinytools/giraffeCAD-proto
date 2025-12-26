@@ -10,7 +10,7 @@ from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUn
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 from dataclasses import dataclass, field
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 # Type aliases for vectors using sympy
 V2 = Matrix  # 2D vector - 2x1 Matrix
@@ -653,34 +653,19 @@ class Timber:
 # ============================================================================
 
 
-class Cut:
+@dataclass(frozen=True)
+class Cut(ABC):
     # debug reference to the base timber we are cutting
     # each Cut is tied to a timber so this is very reasonable to store here
-    _timber : Timber
+    timber: Timber
 
     # set these values by computing them relative to the timber features using helper functions 
-    origin : V3
-    orientation : Orientation
+    origin: V3
+    orientation: Orientation
 
     # end cuts are special as they set the length of the timber
     # you can only have an end cut on one end of the timber, you can't have an end cut on both ends at once (maybe we should support this?)
-    maybeEndCut : Optional[TimberReferenceEnd]
-
-    def __init__(self, timber: Timber, origin: V3, orientation: Orientation, 
-                 maybe_end_cut: Optional[TimberReferenceEnd] = None):
-        """
-        Create a Cut with all required parameters.
-        
-        Args:
-            timber: The timber being cut
-            origin: Origin point of the cut
-            orientation: Orientation of the cut
-            maybe_end_cut: Optional end cut designation (TOP or BOTTOM)
-        """
-        self._timber = timber
-        self.origin = origin
-        self.orientation = orientation
-        self.maybeEndCut = maybe_end_cut
+    maybe_end_cut: Optional[TimberReferenceEnd]
 
     # get the "end" position of the cut on the centerline of the timber
     # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
@@ -702,14 +687,14 @@ class Cut:
         Raises:
             ValueError: If maybeEndCut is None (this cut is not an end cut)
         """
-        if self.maybeEndCut is None:
-            raise ValueError("get_end_position can only be called on end cuts (maybeEndCut must be set)")
+        if self.maybe_end_cut is None:
+            raise ValueError("get_end_position can only be called on end cuts (maybe_end_cut must be set)")
         
         # Get the negative CSG representing the cut volume (in LOCAL coordinates)
         negative_csg = self.get_negative_csg()
         
         # Get the timber prism in LOCAL coordinates (semi-infinite at this end since we pass [self])
-        timber_prism = _create_timber_prism_csg_local(self._timber, [self])
+        timber_prism = _create_timber_prism_csg_local(self.timber, [self])
         
         # The timber with the cut applied: timber - cut_volume
         from .meowmeowcsg import Difference, HalfPlane
@@ -720,16 +705,16 @@ class Cut:
         # In local coords, the timber's length direction is the Z-axis (third column of orientation matrix)
         # But since we're working in the timber's local space where it's axis-aligned,
         # we use the GLOBAL length_direction as the search direction in the LOCAL CSG space
-        if self.maybeEndCut == TimberReferenceEnd.TOP:
+        if self.maybe_end_cut == TimberReferenceEnd.TOP:
             # For top end cuts, find the point closest to bottom (minimum distance along length)
             # To minimize the distance, search in the +length_direction
-            search_direction = self._timber.length_direction
-        elif self.maybeEndCut == TimberReferenceEnd.BOTTOM:
+            search_direction = self.timber.length_direction
+        elif self.maybe_end_cut == TimberReferenceEnd.BOTTOM:
             # For bottom end cuts, find the point closest to top (maximum distance along length)
             # To maximize the distance, search in the -length_direction
-            search_direction = -self._timber.length_direction
+            search_direction = -self.timber.length_direction
         else:
-            raise ValueError(f"Invalid end cut: {self.maybeEndCut}")
+            raise ValueError(f"Invalid end cut: {self.maybe_end_cut}")
         
         # For HalfPlane cuts, we can directly compute the intersection with the centerline
         # rather than using minimal_boundary_in_direction (which only works for certain directions)
@@ -759,8 +744,8 @@ class Cut:
             
             # Convert back to global coordinates
             # In global coords: end_position = bottom_position + t * length_direction
-            length_dir_norm = normalize_vector(self._timber.length_direction)
-            end_position = self._timber.bottom_position + length_dir_norm * t
+            length_dir_norm = normalize_vector(self.timber.length_direction)
+            end_position = self.timber.bottom_position + length_dir_norm * t
             
             return end_position
         else:
@@ -770,10 +755,10 @@ class Cut:
             # Project the boundary point onto the timber's centerline to get the end position
             # The end position is at: bottom_position + length_direction * distance
             # where distance = (boundary_point - bottom_position) · length_direction / |length_direction|^2
-            length_dir_norm = normalize_vector(self._timber.length_direction)
-            distance_along_centerline = ((boundary_point - self._timber.bottom_position).T * length_dir_norm)[0, 0]
+            length_dir_norm = normalize_vector(self.timber.length_direction)
+            distance_along_centerline = ((boundary_point - self.timber.bottom_position).T * length_dir_norm)[0, 0]
             
-            end_position = self._timber.bottom_position + length_dir_norm * distance_along_centerline
+            end_position = self.timber.bottom_position + length_dir_norm * distance_along_centerline
             
             return end_position
 
@@ -803,13 +788,13 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     
     # Check if bottom end has cuts
     has_bottom_cut = any(
-        cut.maybeEndCut == TimberReferenceEnd.BOTTOM 
+        cut.maybe_end_cut == TimberReferenceEnd.BOTTOM 
         for cut in cuts
     )
     
     # Check if top end has cuts  
     has_top_cut = any(
-        cut.maybeEndCut == TimberReferenceEnd.TOP
+        cut.maybe_end_cut == TimberReferenceEnd.TOP
         for cut in cuts
     )
     
@@ -891,8 +876,8 @@ class CutTimber:
         from .meowmeowcsg import Prism
         
         # Find all end cuts for each end
-        bottom_cuts = [cut for cut in self._cuts if cut.maybeEndCut == TimberReferenceEnd.BOTTOM]
-        top_cuts = [cut for cut in self._cuts if cut.maybeEndCut == TimberReferenceEnd.TOP]
+        bottom_cuts = [cut for cut in self._cuts if cut.maybe_end_cut == TimberReferenceEnd.BOTTOM]
+        top_cuts = [cut for cut in self._cuts if cut.maybe_end_cut == TimberReferenceEnd.TOP]
         
         # Assert that each end has at most one end cut
         assert len(bottom_cuts) <= 1, f"Bottom end has {len(bottom_cuts)} end cuts, expected at most 1"
@@ -955,31 +940,18 @@ class Joint:
 # Cut Classes
 # ============================================================================
 
+@dataclass(frozen=True)
 class HalfPlaneCut(Cut):
     """
     A half plane cut is a cut that is defined by a half plane.
     """
-    half_plane : HalfPlane
-    
-    def __init__(self, timber: Timber, origin: V3, orientation: Orientation, 
-                 half_plane: HalfPlane, maybe_end_cut: Optional[TimberReferenceEnd] = None):
-        """
-        Create a HalfPlaneCut with all required parameters.
-        
-        Args:
-            timber: The timber being cut
-            origin: Origin point of the cut
-            orientation: Orientation of the cut
-            half_plane: The half plane defining the cut
-            maybe_end_cut: Optional end cut designation (TOP or BOTTOM)
-        """
-        super().__init__(timber, origin, orientation, maybe_end_cut)
-        self.half_plane = half_plane
+    half_plane: HalfPlane
     
     def get_negative_csg(self) -> MeowMeowCSG:
         return self.half_plane
 
 
+@dataclass(frozen=True)
 class CSGCut(Cut):
     """
     A CSG cut is a cut defined by an arbitrary CSG object.
@@ -989,21 +961,6 @@ class CSGCut(Cut):
     The CSG object represents the volume to be REMOVED from the timber (negative CSG).
     """
     negative_csg: MeowMeowCSG
-    
-    def __init__(self, timber: Timber, origin: V3, orientation: Orientation,
-                 negative_csg: MeowMeowCSG, maybe_end_cut: Optional[TimberReferenceEnd] = None):
-        """
-        Create a CSGCut with all required parameters.
-        
-        Args:
-            timber: The timber being cut
-            origin: Origin point of the cut (reference point)
-            orientation: Orientation of the cut
-            negative_csg: The CSG object defining the volume to remove
-            maybe_end_cut: Optional end cut designation (TOP or BOTTOM)
-        """
-        super().__init__(timber, origin, orientation, maybe_end_cut)
-        self.negative_csg = negative_csg
     
     def get_negative_csg(self) -> MeowMeowCSG:
         return self.negative_csg
