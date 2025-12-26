@@ -22,21 +22,20 @@ Numeric = Union[float, int, Expr]  # Numeric values (SymPy Expr type STRONGLY pr
 # Constants
 # ============================================================================
 
-# TODO refine these ab it, be more consistent abotu float vs rationals here
-# TODO also make sure that sympy can easily compare float with rational and vice versa... 
-# TODO maybe better to have helper functions for all of these comparisons especially if the answer for the above is no
-# Epsilon values for numerical comparisons
-# TODO name this EPISLOT_FLOAT_PARALLEL
+
+
+# TODO replace with EPSILON_PARALLEL
 EPSILON_FLOAT = 1e-10  # Tolerance for float comparisons (orthogonality, alignment checks)
-# TODO DELETE relpace with the above, this is just perpendicular check epsilon
-EPSILON_DIRECTION = 1e-6  # Tolerance for direction dot product checks
-EPSILON_PARALLEL = Rational(1, 1000)  # Threshold for checking if vectors are nearly parallel/perpendicular (0.001)
-EPSILON_DEGENERATE = Rational(1, 10000)  # Threshold for detecting degenerate geometric cases (0.0001)
+
+EPSILON_PARALLEL = Rational(1, 1000)  # epsilon threshold for checking dot products to see if vectors are nearly parallel/perpendicular
+
+# TODO rename to EPSILON_GENERIC
+EPSILON_DEGENERATE = Rational(1, 10000)  # generic epsilon threshold used everywhere else where we aren't being more specific
+
+# TODO get rid of this one, just use EPSILON_PARALLEL
 EPSILON_PLANE_PARALLEL = Rational(1, 100000)  # Threshold for detecting if plane is parallel to centerline (0.00001)
 
 # Thresholds for geometric decisions
-THRESHOLD_PERPENDICULAR_VS_PARALLEL = Rational(1, 2)  # Threshold (0.5) for determining if joining timber is more perpendicular than parallel
-THRESHOLD_SKEW_LINE_WARNING = Rational(1, 10)  # Distance threshold (0.1) for issuing skew line warning
 OFFSET_TEST_POINT = Rational(1, 1000)  # Small offset (0.001) for testing inward direction on footprint
 
 # ============================================================================

@@ -3,6 +3,7 @@ GiraffeCAD - Timber construction functions
 Contains functions for creating and manipulating timbers
 """
 
+import warnings
 from code_goes_here.timber import *
 
 # ============================================================================
@@ -502,7 +503,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
         # Dot product of the created timber's face direction with timber1's length direction
         dot_product = Abs(width_direction.dot(timber1.length_direction))
         
-        if dot_product < THRESHOLD_PERPENDICULAR_VS_PARALLEL:  # < 0.5, meaning more perpendicular than parallel
+        if dot_product < Rational(1, 2):  # < 0.5, meaning more perpendicular than parallel
             # The created timber is joining perpendicular to timber1
             # Its X dimension (width, along width_direction) should match the dimension 
             # of the face it's joining to on timber1, which is timber1's width (size[0])
@@ -722,7 +723,8 @@ def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Opti
             # Use exact comparison with simplify for symbolic math
             return simplify(dot_product - 1) == 0
         else:
-            # Auto-use tolerance for float values
+            
+            warnings.warn(f"Using default tolerance {EPSILON_FLOAT} for checking if timbers with float values are parallel")
             tolerance = EPSILON_FLOAT
             return Abs(dot_product - 1) < tolerance
     else:
@@ -753,7 +755,7 @@ def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Op
             # Use exact comparison with simplify for symbolic math
             return simplify(dot_product) == 0
         else:
-            # Auto-use tolerance for float values
+            warnings.warn(f"Using default tolerance {EPSILON_FLOAT} for checking if timbers with float values are perpendicular")
             tolerance = EPSILON_FLOAT
             return Abs(dot_product) < tolerance
     else:
@@ -784,7 +786,7 @@ def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction
             # Use exact comparison with simplify for symbolic math
             return simplify(dot_product) == 0
         else:
-            # Auto-use tolerance for float values
+            warnings.warn(f"Using default tolerance {EPSILON_FLOAT} for checking if directions with float values are perpendicular")
             tolerance = EPSILON_FLOAT
             return Abs(dot_product) < tolerance
     else:
@@ -816,7 +818,7 @@ def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, t
             # Use exact comparison with simplify for symbolic math
             return simplify(dot_mag - 1) == 0
         else:
-            # Auto-use tolerance for float values
+            warnings.warn(f"Using default tolerance {EPSILON_FLOAT} for checking if directions with float values are parallel")
             tolerance = EPSILON_FLOAT
             return abs(float(dot_mag) - 1.0) < tolerance
     else:
@@ -1000,7 +1002,8 @@ def _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber: Timber, 
     # Check if tenon direction is perpendicular to mortise face normal
     direction_dot_normal = tenon_timber.length_direction.dot(face_normal)
     
-    if abs(direction_dot_normal) < EPSILON_DIRECTION:
+    # TODO replace with special helper function that does exact check if Rational otherwise fuzzy check with EPSILON_PARALLEL
+    if abs(direction_dot_normal) < EPSILON_PARALLEL:
         # Case 1: Tenon direction is perpendicular to mortise face (typical orthogonal joints)
         # Calculate distance from tenon end to projected point plus face offset
         
