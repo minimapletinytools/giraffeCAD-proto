@@ -8,22 +8,40 @@ Giraffe is written as an **agent friendly** library meaning it was designed to b
 
 - Fusion 360
 - Rhino (WIP)
-- Bledner (WIP)
+- Blender (WIP)
 - IFC file format (WIP)
 
+## Quick Start
+
+```bash
+# Clone and setup (only first time)
+git clone <repository-url>
+cd giraffeCAD-proto
+./setup_dev.sh
+
+# Activate venv (each time you reopen the terminal)
+source venv/bin/activate
+
+# Run tests
+python3 -m pytest code_goes_here/ -v
+```
 
 ## Development Setup
 
 ### 1. Clone the Repository
 
-Currently, the best/easiest way to use Giraffe is to clone the repo. Dependencies are managed locally in the repo which is makes it a lot easier for most CAD scripting interfaces.
+Currently, the best/easiest way to use Giraffe is to clone the repo. Dependencies are managed locally in the repo which makes it a lot easier for most CAD scripting interfaces.
 
 ```bash
 git clone <repository-url>
 cd giraffeCAD-proto
 ```
 
-### 2. Create and Activate Virtual Environment  (TODO add support)
+**Note:** The project uses Python 3.9.6. If you use `pyenv`, it will automatically use the correct version from `.python-version`.
+
+### 2. Create and Activate Virtual Environment
+
+For local development and testing, it's recommended to use a virtual environment:
 
 ```bash
 # Create virtual environment
@@ -34,30 +52,63 @@ python3 -m venv venv
 source venv/bin/activate
 
 # On Windows:
-# venv\Scripts\activate
+venv\Scripts\activate
 ```
 
 ### 3. Install Dependencies
 
 ```bash
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+**Quick Setup:** You can also use the provided setup script:
+
+```bash
+./setup_dev.sh
+
+# Or use make
+make setup
+```
+
+### Note on CAD Integrations
+
+The virtual environment is **only for local development and testing**. When using Giraffe with CAD applications, those programs use their own Python environments:
+
+- **Fusion 360**: Uses embedded Python with bundled libraries in `fusion360/libs/`
+- **Rhino**: Uses RhinoPython environment
+- **Local testing**: Uses your venv
+
+This is why dependencies are also vendored in `fusion360/libs/` for CAD environments. The venv setup does not affect CAD integrations.
+
 ## Running Tests
 
-### One-Time Testing
+### Quick Commands
 
-To run the test suite once:
+If you have `make` installed:
+
+```bash
+make test           # Run all tests
+make test-verbose   # Run tests with verbose output
+make test-cov       # Run tests with coverage report
+```
+
+### Manual Testing
+
+To run the test suite manually:
 
 ```bash
 # Make sure your virtual environment is activated
 source venv/bin/activate
 
 # Run all tests
-python -m pytest code_goes_here/ -v
+python3 -m pytest code_goes_here/ -v
 
 # Or run specific test files
-python -m pytest code_goes_here/test_moothymoth.py -v
+python3 -m pytest code_goes_here/test_moothymoth.py -v
+
+# Run with coverage
+python3 -m pytest code_goes_here/ --cov=code_goes_here --cov-report=html
 ```
 
 ### Automatic Testing (Recommended for Development)
@@ -81,7 +132,46 @@ ptw code_goes_here/
 - Shows immediate feedback as you develop
 - Press `Ctrl+C` to stop the auto-testing
 
+## Development Workflow
 
+### Makefile Commands
+
+The project includes a `Makefile` with common development tasks:
+
+```bash
+make help          # Show all available commands
+make setup         # Setup development environment
+make test          # Run all tests
+make test-verbose  # Run tests with verbose output
+make test-cov      # Run tests with coverage report
+make clean         # Remove build artifacts and cache files
+```
+
+### Cleaning Build Artifacts
+
+To clean up Python cache files and test artifacts:
+
+```bash
+make clean
+
+# Or manually:
+find . -type d -name "__pycache__" -exec rm -rf {} +
+find . -type f -name "*.pyc" -delete
+rm -rf htmlcov/ .coverage .pytest_cache/
+```
+
+### Activating/Deactivating Virtual Environment
+
+```bash
+# Activate (do this each time you open a new terminal)
+source venv/bin/activate
+
+# Your prompt will change to show (venv)
+# Now all python/pip commands use the venv
+
+# Deactivate when done
+deactivate
+```
 
 ## Trying out Examples
 
