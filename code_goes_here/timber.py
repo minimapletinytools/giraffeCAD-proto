@@ -165,18 +165,19 @@ class StickoutReference(Enum):
 # Joint Construction Data Structures
 # ============================================================================
 
+@dataclass(frozen=True)
 class DistanceFromFace:
     face: TimberFace
     distance: Numeric
-@dataclass
+@dataclass(frozen=True)
 class DistanceFromLongFace:
     face: TimberReferenceLongFace
     distance: Numeric
-@dataclass
+@dataclass(frozen=True)
 class DistanceFromEnd:
     end: TimberReferenceEnd
     distance: Numeric
-@dataclass
+@dataclass(frozen=True)
 class DistanceFromLongEdge:
     """
     Position defined by distances from two adjacent long faces.
@@ -221,7 +222,7 @@ class DistanceFromLongEdge:
     
 
 # TODO write better comments or give this a better name. wtf is this?
-@dataclass
+@dataclass(frozen=True)
 class FaceAlignedJoinedTimberOffset:
     reference_face: TimberFace
     centerline_offset: Optional[Numeric]
@@ -230,7 +231,7 @@ class FaceAlignedJoinedTimberOffset:
 
 # TODO this is really only needed for JoinTimbers so move it near that function
 # TODO rename to ButtStickout or something like that...
-@dataclass
+@dataclass(frozen=True)
 class Stickout:
     """
     Defines how much a timber extends beyond connection points.

@@ -4,6 +4,7 @@ Footprint class for GiraffeCAD - Represents the 2D footprint of a structure
 
 from typing import List, Tuple
 from sympy import Matrix
+from dataclasses import dataclass
 
 # Type aliases for vectors using sympy
 V2 = Matrix  # 2D vector - 2x1 Matrix
@@ -71,15 +72,21 @@ def _segment_to_segment_distance(seg1_start: V2, seg1_end: V2,
     return min(distances)
 
 
+@dataclass(frozen=True)
 class Footprint:
     """A support class representing the footprint of the structure in the XY plane"""
     
-    def __init__(self, corners: List[V2]):
+    corners: Tuple[V2, ...]
+    
+    def __post_init__(self):
         """
+        Validate corners.
         Args:
-            corners: List of points defining the corners, last point connects to first
+            corners: Tuple of points defining the corners, last point connects to first
         """
-        self.corners: List[V2] = corners
+        # Convert list to tuple if necessary
+        if isinstance(self.corners, list):
+            object.__setattr__(self, 'corners', tuple(self.corners))
     
     def sides(self) -> List[Tuple[V2, V2]]:
         """

@@ -24,25 +24,25 @@ RHS = Right Hand System
 import sympy as sp
 from sympy import Matrix, cos, sin, pi
 from typing import Optional, Union
+from dataclasses import dataclass, field
 
 
+@dataclass(frozen=True)
 class Orientation:
     """
     Represents a 3D rotation using a 3x3 rotation matrix.
     Uses sympy for symbolic mathematics.
     """
+    matrix: Matrix = field(default_factory=lambda: Matrix.eye(3))
     
-    def __init__(self, matrix: Optional[Union[Matrix, list, tuple]] = None) -> None:
-        """
-        Initialize an Orientation with a 3x3 rotation matrix.
-        If no matrix provided, defaults to identity.
-        """
-        if matrix is None:
-            self.matrix: Matrix = Matrix.eye(3)
-        else:
-            self.matrix = Matrix(matrix)
-            if self.matrix.shape != (3, 3):
-                raise ValueError("Rotation matrix must be 3x3")
+    def __post_init__(self):
+        """Convert to Matrix and validate that the matrix is 3x3."""
+        # Convert to Matrix if necessary (handles list/tuple inputs)
+        if not isinstance(self.matrix, Matrix):
+            object.__setattr__(self, 'matrix', Matrix(self.matrix))
+        
+        if self.matrix.shape != (3, 3):
+            raise ValueError("Rotation matrix must be 3x3")
     
     def multiply(self, other: 'Orientation') -> 'Orientation':
         """
