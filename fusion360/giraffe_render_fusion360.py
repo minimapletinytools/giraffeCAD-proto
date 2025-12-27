@@ -340,9 +340,10 @@ def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG
 
 def render_cylinder_in_local_space(component: adsk.fusion.Component, cylinder: Cylinder) -> Optional[adsk.fusion.BRepBody]:
     """
-    Render a Cylinder CSG in the component's local coordinate system with orientation applied.
+    Render a Cylinder CSG in the component's local coordinate system with orientation and position applied.
     
-    The cylinder is created with its axis aligned to the cylinder's axis_direction.
+    The cylinder is created with its axis aligned along +Z, then rotated to match axis_direction
+    and translated to the cylinder's position.
     
     Args:
         component: Fusion 360 component to create geometry in
@@ -401,52 +402,64 @@ def render_cylinder_in_local_space(component: adsk.fusion.Component, cylinder: C
         body = extrude.bodies.item(0)
         
         # Now we need to rotate the cylinder from +Z axis to the axis_direction
-        # Create a rotation matrix that transforms (0, 0, 1) to axis_normalized
+        # and translate it to the cylinder's position
         z_axis = Matrix([0, 0, 1])
         
         # Check if axis is already along Z
         dot_with_z = (axis_normalized.T * z_axis)[0, 0]
+        is_aligned_with_z = abs(float(dot_with_z) - 1.0) < 0.001
         
-        if abs(float(dot_with_z) - 1.0) > 0.001:  # Not aligned with +Z
-            # Calculate rotation needed
-            # We need to find a rotation matrix R such that R * z_axis = axis_normalized
+        # Check if position is at origin
+        is_at_origin = (cylinder.position == Matrix([0, 0, 0]))
+        
+        app = get_fusion_app()
+        if app:
+            app.log(f"  render_cylinder_in_local_space: Position: {cylinder.position.T}")
+            app.log(f"  render_cylinder_in_local_space: Aligned with Z: {is_aligned_with_z}, At origin: {is_at_origin}")
+        
+        # Only apply transformation if needed
+        if not is_aligned_with_z or not is_at_origin:
+            # Calculate rotation matrix if not aligned with Z
+            if not is_aligned_with_z:
+                # Use Rodrigues' rotation formula
+                # Rotation axis: cross product of z_axis and axis_normalized
+                rotation_axis = z_axis.cross(axis_normalized)
+                rotation_axis_norm = rotation_axis.norm()
+                
+                if rotation_axis_norm > 0.001:  # Not parallel
+                    rotation_axis_unit = rotation_axis / rotation_axis_norm
+                    
+                    # Rotation angle
+                    import math
+                    cos_angle = float(dot_with_z)
+                    angle = math.acos(max(-1.0, min(1.0, cos_angle)))  # Clamp to avoid numerical errors
+                    
+                    # Create rotation matrix using Rodrigues' formula
+                    K = Matrix([
+                        [0, -rotation_axis_unit[2], rotation_axis_unit[1]],
+                        [rotation_axis_unit[2], 0, -rotation_axis_unit[0]],
+                        [-rotation_axis_unit[1], rotation_axis_unit[0], 0]
+                    ])
+                    
+                    rotation_matrix = Matrix.eye(3) + math.sin(angle) * K + (1 - math.cos(angle)) * (K * K)
+                    cylinder_orientation = Orientation(rotation_matrix)
+                else:
+                    # Parallel but might be anti-parallel, use identity
+                    cylinder_orientation = Orientation.identity()
+            else:
+                # Already aligned with Z, use identity orientation
+                cylinder_orientation = Orientation.identity()
             
-            # Use Rodrigues' rotation formula
-            # Rotation axis: cross product of z_axis and axis_normalized
-            rotation_axis = z_axis.cross(axis_normalized)
-            rotation_axis_norm = rotation_axis.norm()
+            # Apply rotation and translation
+            transform = create_matrix3d_from_orientation(cylinder.position, cylinder_orientation)
             
-            if rotation_axis_norm > 0.001:  # Not parallel
-                rotation_axis_unit = rotation_axis / rotation_axis_norm
-                
-                # Rotation angle
-                import math
-                cos_angle = float(dot_with_z)
-                angle = math.acos(max(-1.0, min(1.0, cos_angle)))  # Clamp to avoid numerical errors
-                
-                # Create rotation matrix using Rodrigues' formula
-                from sympy import cos as sym_cos, sin as sym_sin
-                K = Matrix([
-                    [0, -rotation_axis_unit[2], rotation_axis_unit[1]],
-                    [rotation_axis_unit[2], 0, -rotation_axis_unit[0]],
-                    [-rotation_axis_unit[1], rotation_axis_unit[0], 0]
-                ])
-                
-                import math
-                rotation_matrix = Matrix.eye(3) + math.sin(angle) * K + (1 - math.cos(angle)) * (K * K)
-                
-                # The geometry is already built correctly along Z axis
-                # Just apply the rotation to align with axis_direction (no translation needed)
-                cylinder_orientation = Orientation(rotation_matrix)
-                transform = create_matrix3d_from_orientation(Matrix([0, 0, 0]), cylinder_orientation)
-                
-                # Apply the transformation
-                move_features = component.features.moveFeatures
-                bodies = adsk.core.ObjectCollection.create()
-                bodies.add(body)
-                move_input = move_features.createInput(bodies, transform)
-                move_input.defineAsFreeMove(transform)
-                move_features.add(move_input)
+            # Apply the transformation
+            move_features = component.features.moveFeatures
+            bodies = adsk.core.ObjectCollection.create()
+            bodies.add(body)
+            move_input = move_features.createInput(bodies, transform)
+            move_input.defineAsFreeMove(transform)
+            move_features.add(move_input)
         
         return body
         
