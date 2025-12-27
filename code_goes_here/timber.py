@@ -909,7 +909,7 @@ class CutTimber:
         # Create a finite prism representing the timber in its local coordinate system
         return Prism(
             size=self._timber.size,
-            orientation=self._timber.orientation,
+            orientation=Orientation.identity(),
             start_distance=bottom_distance,
             end_distance=top_distance
         )
