@@ -221,26 +221,30 @@ class Cylinder(MeowMeowCSG):
     A cylinder with circular cross-section, optionally infinite in one or both ends.
     
     The cylinder is defined by:
+    - A position (translation from origin)
     - An axis direction
     - A radius
-    - Start and end distances along the axis from the origin
+    - Start and end distances along the axis from the position
     
     Use None for start_distance or end_distance to make the cylinder infinite in that direction.
     
     Args:
         axis_direction: Direction of the cylinder's axis (3x1 Matrix)
         radius: Radius of the cylinder
-        start_distance: Distance from origin to start of cylinder (None = infinite)
-        end_distance: Distance from origin to end of cylinder (None = infinite)
+        position: Position of the cylinder origin in global coordinates (3x1 Matrix, default: origin)
+        start_distance: Distance from position to start of cylinder (None = infinite)
+        end_distance: Distance from position to end of cylinder (None = infinite)
     """
     axis_direction: Direction3D  # direction of the cylinder's axis, which is the +Z local axis
     radius: Numeric
+    position: V3 = field(default_factory=lambda: Matrix([0, 0, 0]))  # Position in global coordinates
     start_distance: Optional[Numeric] = None  # None means infinite in negative direction
     end_distance: Optional[Numeric] = None    # None means infinite in positive direction
     
     def __repr__(self) -> str:
         return (f"Cylinder(axis={self.axis_direction.T}, "
                 f"radius={self.radius}, "
+                f"position={self.position.T}, "
                 f"start={self.start_distance}, end={self.end_distance})")
     
     def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
@@ -288,9 +292,9 @@ class Cylinder(MeowMeowCSG):
             # Check the finite end cap(s)
             candidates = []
             if self.start_distance is not None:
-                candidates.append(axis * self.start_distance + radial * self.radius)
+                candidates.append(self.position + axis * self.start_distance + radial * self.radius)
             if self.end_distance is not None:
-                candidates.append(axis * self.end_distance + radial * self.radius)
+                candidates.append(self.position + axis * self.end_distance + radial * self.radius)
             
             # Return the one with minimum dot product
             min_point = min(candidates, key=lambda p: (p.T * direction)[0, 0])
@@ -302,9 +306,9 @@ class Cylinder(MeowMeowCSG):
             # Check points on the finite end cap(s) at the minimal radial position
             candidates = []
             if self.start_distance is not None:
-                candidates.append(axis * self.start_distance + radial_dir * self.radius)
+                candidates.append(self.position + axis * self.start_distance + radial_dir * self.radius)
             if self.end_distance is not None:
-                candidates.append(axis * self.end_distance + radial_dir * self.radius)
+                candidates.append(self.position + axis * self.end_distance + radial_dir * self.radius)
             
             # Return the one with minimum dot product
             min_point = min(candidates, key=lambda p: (p.T * direction)[0, 0])
