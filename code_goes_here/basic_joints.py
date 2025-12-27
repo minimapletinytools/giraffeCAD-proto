@@ -570,23 +570,16 @@ def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber, extend_
         end_distance = None
     else:
         # Use finite timber dimensions
-        # In the housed timber's local coordinate system, its length extends along its Z-axis (length direction)
-        # The housed timber's length axis in the housing timber's local frame
-        housed_length_axis_local = relative_orientation.matrix[:, 2]  # Third column = Z-axis = length direction
-        
-        # Project the housed timber's local origin onto its length axis
-        # This gives us where the housed timber's bottom is along its own length axis
-        projection = (housed_origin_local.T * housed_length_axis_local)[0, 0]
-        
-        # The housed timber extends from its bottom for housed_timber.length along its length axis
-        # The prism's start_distance and end_distance are measured along its local Z-axis from its origin
-        start_distance = projection
-        end_distance = projection + housed_timber.length
+        # The prism's position and orientation already place it in the housing timber's local space
+        # So we just need the housed timber's own start (0) and end (length) distances
+        start_distance = 0
+        end_distance = housed_timber.length
     
     # Create the housed prism in housing timber's LOCAL coordinate system
     housed_prism_local = Prism(
         size=housed_timber.size,
         orientation=relative_orientation,
+        position=housed_origin_local,
         start_distance=start_distance,
         end_distance=end_distance
     )
