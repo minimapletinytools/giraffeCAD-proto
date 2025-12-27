@@ -124,14 +124,14 @@ def create_matrix3d_from_orientation(position: Matrix, orientation: Orientation)
 
 def render_prism_in_local_space(component: adsk.fusion.Component, prism: Prism, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
-    Render a Prism CSG in the component's local coordinate system with its orientation applied.
+    Render a Prism CSG in the component's local coordinate system with its orientation and position applied.
     
     The prism is first rendered axis-aligned where:
     - Width (size[0]) is along X axis
     - Height (size[1]) is along Y axis
     - Length is along Z axis from start_distance to end_distance
     
-    Then the prism's orientation matrix is applied to rotate it into the correct orientation.
+    Then the prism's orientation matrix is applied to rotate it, and finally it's translated to its position.
     
     Args:
         component: Fusion 360 component to create geometry in
@@ -207,29 +207,24 @@ def render_prism_in_local_space(component: adsk.fusion.Component, prism: Prism, 
         
         body = extrude.bodies.item(0)
         
-        # Apply the prism's orientation if it's not identity
-        # The prism's orientation defines how it's rotated in the component's coordinate system
+        # Apply the prism's orientation and position
         orientation_matrix = prism.orientation.matrix
         
-        # Check if orientation is identity (no rotation needed)
+        # Check if transformation is needed
         is_identity = (orientation_matrix == Matrix.eye(3))
+        is_at_origin = (prism.position == Matrix([0, 0, 0]))
         
-        if not is_identity:
-            # Calculate the center of the prism before rotation
-            # The prism extends from start_dist to end_dist along Z, centered at (0, 0) in XY
-            center_before = Matrix([0, 0, (start_dist + end_dist) / 2])
-            
-            # After rotation, the center will be at: rotation_matrix * center_before
-            center_after = orientation_matrix * center_before
-            
-            # We want to rotate around the prism's center, so:
-            # Translation needed: center_before - center_after
-            translation = center_before - center_after
-            
-            # Use the existing infrastructure to create the transformation matrix
-            # Create an Orientation from the rotation matrix and position from translation
-            prism_orientation = Orientation(orientation_matrix)
-            transform = create_matrix3d_from_orientation(translation, prism_orientation)
+        app = get_fusion_app()
+        if app:
+            # log start and end distances
+            app.log(f"  render_prism_in_local_space: Start distance: {prism.start_distance}")
+            app.log(f"  render_prism_in_local_space: End distance: {prism.end_distance}")
+            app.log(f"  render_prism_in_local_space: Position: {prism.position.T}")
+            app.log(f"  render_prism_in_local_space: Identity: {is_identity}, At origin: {is_at_origin}")
+        
+        # Only apply transformation if needed (non-identity rotation or non-zero position)
+        if not is_identity or not is_at_origin:
+            transform = create_matrix3d_from_orientation(prism.position, prism.orientation)
             
             # Apply the transformation to the body
             move_features = component.features.moveFeatures
@@ -366,7 +361,6 @@ def render_cylinder_in_local_space(component: adsk.fusion.Component, cylinder: C
         start_dist = float(cylinder.start_distance)
         end_dist = float(cylinder.end_distance)
         length = end_dist - start_dist
-        center_dist = (start_dist + end_dist) / 2
         
         # Get axis direction (normalized)
         axis_dir = cylinder.axis_direction
@@ -441,21 +435,10 @@ def render_cylinder_in_local_space(component: adsk.fusion.Component, cylinder: C
                 import math
                 rotation_matrix = Matrix.eye(3) + math.sin(angle) * K + (1 - math.cos(angle)) * (K * K)
                 
-                # Calculate the center of the cylinder before rotation
-                # The cylinder extends from start_dist to end_dist along Z
-                center_before = Matrix([0, 0, (start_dist + end_dist) / 2])
-                
-                # After rotation, the center will be at: rotation_matrix * center_before
-                center_after = rotation_matrix * center_before
-                
-                # We want to rotate around the cylinder's center, so:
-                # Translation needed: center_before - center_after
-                translation = center_before - center_after
-                
-                # Use the existing infrastructure to create the transformation matrix
-                # Create an Orientation from the rotation matrix and position from translation
+                # The geometry is already built correctly along Z axis
+                # Just apply the rotation to align with axis_direction (no translation needed)
                 cylinder_orientation = Orientation(rotation_matrix)
-                transform = create_matrix3d_from_orientation(translation, cylinder_orientation)
+                transform = create_matrix3d_from_orientation(Matrix([0, 0, 0]), cylinder_orientation)
                 
                 # Apply the transformation
                 move_features = component.features.moveFeatures

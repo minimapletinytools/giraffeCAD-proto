@@ -7,7 +7,7 @@ and geometry operations. All operations use SymPy symbolic math for exact comput
 
 from sympy import Matrix, Rational, Expr, sqrt, oo
 from typing import List, Optional, Union
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from .moothymoth import Orientation
 
@@ -115,9 +115,10 @@ class Prism(MeowMeowCSG):
     A prism with rectangular cross-section, optionally infinite in one or both ends.
     
     The prism is defined by:
+    - A position (translation from origin)
     - A cross-section size (width x height) in the local XY plane
     - An orientation (rotation matrix defining the local coordinate system)
-    - Start and end distances along the local Z-axis from the origin
+    - Start and end distances along the local Z-axis from the position
     
     Use None for start_distance or end_distance to make the prism infinite in that direction.
     
@@ -129,17 +130,19 @@ class Prism(MeowMeowCSG):
     Args:
         size: Cross-section dimensions [width, height] (2x1 Matrix)
         orientation: Orientation matrix defining the prism's coordinate system
-        start_distance: Distance from origin to start of prism (None = infinite)
-        end_distance: Distance from origin to end of prism (None = infinite)
+        position: Position of the prism origin in global coordinates (3x1 Matrix, default: origin)
+        start_distance: Distance from position along Z-axis to start of prism (None = infinite)
+        end_distance: Distance from position along Z-axis to end of prism (None = infinite)
     """
     size: V2
     orientation: Orientation
+    position: V3 = field(default_factory=lambda: Matrix([0, 0, 0]))  # Position in global coordinates
     start_distance: Optional[Numeric] = None  # None means infinite in negative direction
     end_distance: Optional[Numeric] = None    # None means infinite in positive direction
     
     def __repr__(self) -> str:
         return (f"Prism(size={self.size.T}, orientation={self.orientation}, "
-                f"start={self.start_distance}, end={self.end_distance})")
+                f"position={self.position.T}, start={self.start_distance}, end={self.end_distance})")
     
     def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
         """
@@ -199,7 +202,8 @@ class Prism(MeowMeowCSG):
         for distance in ends_to_check:
             for w_sign in [-1, 1]:
                 for h_sign in [-1, 1]:
-                    corner = (length_dir * distance + 
+                    corner = (self.position + 
+                             length_dir * distance + 
                              width_dir * (w_sign * half_width) + 
                              height_dir * (h_sign * half_height))
                     
