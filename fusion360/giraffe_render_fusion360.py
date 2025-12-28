@@ -25,6 +25,11 @@ from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
     MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference
 )
+from code_goes_here.rendering_utils import (
+    calculate_structure_extents,
+    transform_halfplane_to_timber_local,
+    sympy_to_float
+)
 
 
 def get_fusion_app() -> Optional[adsk.core.Application]:
@@ -530,14 +535,7 @@ def transform_halfplane_to_component_space(half_plane: HalfPlane, timber_orienta
     """
     Prepare a HalfPlane for rendering in Fusion 360's component space.
     
-    The HalfPlane is already in the timber's LOCAL coordinate system where:
-    - X-component is along width direction
-    - Y-component is along height direction
-    - Z-component is along length direction
-    
-    The Fusion 360 component also renders in this same axis-aligned space (prism is created
-    axis-aligned at origin, then the occurrence is transformed). So we can use the local
-    normal and offset directly without any additional transformation.
+    Uses the shared rendering utility function and converts to Fusion-specific types.
     
     Args:
         half_plane: HalfPlane in timber's local coordinates
@@ -546,20 +544,14 @@ def transform_halfplane_to_component_space(half_plane: HalfPlane, timber_orienta
     Returns:
         Tuple of (component_space_normal_vector, component_space_offset)
     """
-    # Extract local normal and offset
-    local_normal = half_plane.normal
-    local_offset = half_plane.offset
-    
-    # The local normal is already in the correct space for component rendering
-    # No transformation needed!
-    component_normal = local_normal
-    component_offset = local_offset
+    # Use shared utility function
+    component_normal, component_offset = transform_halfplane_to_timber_local(half_plane, timber_orientation)
     
     # Debug logging
     app = get_fusion_app()
     if app:
-        app.log(f"      HalfPlane normal (local/component): ({local_normal[0,0]:.4f}, {local_normal[1,0]:.4f}, {local_normal[2,0]:.4f})")
-        app.log(f"      HalfPlane offset (local/component): {local_offset:.4f}")
+        app.log(f"      HalfPlane normal (local/component): ({component_normal[0,0]:.4f}, {component_normal[1,0]:.4f}, {component_normal[2,0]:.4f})")
+        app.log(f"      HalfPlane offset (local/component): {component_offset:.4f}")
     
     # Convert to Fusion 360 types
     component_normal_vector = adsk.core.Vector3D.create(
@@ -939,84 +931,39 @@ def apply_timber_transform(occurrence: adsk.fusion.Occurrence, position: Matrix,
         return False
 
 
-def calculate_structure_extents(cut_timbers: List[CutTimber]) -> float:
+def log_structure_extents(extent: float, cut_timbers: List[CutTimber]):
     """
-    Calculate the bounding box extent of all timbers in the structure.
+    Log structure extents using Fusion 360's app logger.
     
     Args:
-        cut_timbers: List of CutTimber objects
-        
-    Returns:
-        Maximum extent (half-size of bounding box) in cm
+        extent: Maximum extent value
+        cut_timbers: List of CutTimber objects (for calculating detailed extents)
     """
-    if not cut_timbers:
-        return 1000.0  # Default 10m
-    
-    # Find min and max coordinates across all timbers
-    min_x = min_y = min_z = float('inf')
-    max_x = max_y = max_z = float('-inf')
-    
-    for cut_timber in cut_timbers:
-        timber = cut_timber._timber
-        
-        # Get the 8 corners of the timber bounding box
-        # Bottom corners
-        bottom_pos = timber.bottom_position
-        
-        # Top position
-        top_pos = bottom_pos + timber.length_direction * timber.length
-        
-        # Width and height directions
-        width_dir = Matrix([
-            timber.orientation.matrix[0, 0],
-            timber.orientation.matrix[1, 0],
-            timber.orientation.matrix[2, 0]
-        ])
-        height_dir = Matrix([
-            timber.orientation.matrix[0, 1],
-            timber.orientation.matrix[1, 1],
-            timber.orientation.matrix[2, 1]
-        ])
-        
-        # Half-size offsets
-        half_width = timber.size[0] / 2
-        half_height = timber.size[1] / 2
-        
-        # All 8 corners
-        corners = [
-            bottom_pos + width_dir * half_width + height_dir * half_height,
-            bottom_pos + width_dir * half_width - height_dir * half_height,
-            bottom_pos - width_dir * half_width + height_dir * half_height,
-            bottom_pos - width_dir * half_width - height_dir * half_height,
-            top_pos + width_dir * half_width + height_dir * half_height,
-            top_pos + width_dir * half_width - height_dir * half_height,
-            top_pos - width_dir * half_width + height_dir * half_height,
-            top_pos - width_dir * half_width - height_dir * half_height,
-        ]
-        
-        # Update min/max
-        for corner in corners:
-            x, y, z = float(corner[0]), float(corner[1]), float(corner[2])
-            min_x = min(min_x, x)
-            min_y = min(min_y, y)
-            min_z = min(min_z, z)
-            max_x = max(max_x, x)
-            max_y = max(max_y, y)
-            max_z = max(max_z, z)
-    
-    # Calculate extent (maximum half-dimension)
-    extent_x = (max_x - min_x) / 2
-    extent_y = (max_y - min_y) / 2
-    extent_z = (max_z - min_z) / 2
-    
-    extent = max(extent_x, extent_y, extent_z)
-    
     app = get_fusion_app()
     if app:
+        # Calculate detailed extents for logging
+        from code_goes_here.rendering_utils import calculate_timber_corners
+        
+        min_x = min_y = min_z = float('inf')
+        max_x = max_y = max_z = float('-inf')
+        
+        for cut_timber in cut_timbers:
+            corners = calculate_timber_corners(cut_timber._timber)
+            for corner in corners:
+                x, y, z = float(corner[0]), float(corner[1]), float(corner[2])
+                min_x = min(min_x, x)
+                min_y = min(min_y, y)
+                min_z = min(min_z, z)
+                max_x = max(max_x, x)
+                max_y = max(max_y, y)
+                max_z = max(max_z, z)
+        
+        extent_x = (max_x - min_x) / 2
+        extent_y = (max_y - min_y) / 2
+        extent_z = (max_z - min_z) / 2
+        
         app.log(f"Structure extents: {extent_x:.2f} x {extent_y:.2f} x {extent_z:.2f} cm")
         app.log(f"Maximum extent: {extent:.2f} cm")
-    
-    return extent
 
 
 def check_body_extents(body: adsk.fusion.BRepBody, max_allowed_extent: float, component_name: str) -> bool:
@@ -1098,6 +1045,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     print(f"Validation threshold: {validation_extent:.2f} cm")
     
     if app:
+        log_structure_extents(structure_extent, cut_timbers)
         app.log(f"Infinite geometry extent: {infinite_geometry_extent:.2f} cm")
         app.log(f"Validation threshold: {validation_extent:.2f} cm")
     

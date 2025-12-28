@@ -30,7 +30,8 @@ don't touch fusion360, rhino, examples, oldcrap folder for now
 
 :: TODO
 
-
+-make sure freecad rendering works
+-make sure oscar shed rafter pocket works
 
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
@@ -152,7 +153,7 @@ DONE-maybe get rid of corner joint
 DONE-fix prism cut rendering stuff for housing join,t noe of the transforms is wrong or fusino 360 is busted
   -specifically, when cutting teh housed timber from the housing timber, the housed timber prism isn't getting positioned right. Is this happening in fusion 360 (probbaly) or in giraffe code?
     -it's definitely a fusion 360 issue
-    
+
 DONE-rename FootprintLocation to footprint location Type
 DONE- getInside/OutsideFace(timber, footprint)
 DNOE- getFacingFace(tiber, direction)

@@ -6,10 +6,11 @@ Giraffe is written as an **agent friendly** library meaning it was designed to b
 
 ## Integrations and formats
 
-- Fusion 360
-- Rhino (WIP)
-- Blender (WIP)
-- IFC file format (WIP)
+- **Fusion 360** - Full CSG support with feature-based modeling
+- **FreeCAD** - Full CSG support with direct shape creation (WIP)
+- **Rhino** - Basic geometry support (WIP)
+- **Blender** - Planned
+- **IFC file format** - Planned
 
 ## Quick Start
 
@@ -175,7 +176,27 @@ deactivate
 
 ## Trying out Examples
 
-TODO
+### FreeCAD Integration
+
+To render structures in FreeCAD (open source, free):
+
+1. **Install FreeCAD** (version 0.19 or later)
+   - Download from https://www.freecad.org/
+   - Or use package manager: `brew install freecad` (macOS)
+
+2. **Open FreeCAD and run a script**:
+   - Open FreeCAD
+   - Go to **Macro** → **Macros...**
+   - Click **Create** and name it (e.g., "render_example")
+   - Copy the contents of `freecad/render_example.py`
+   - Click **Execute**
+
+3. **Or use the Python console**:
+   ```python
+   exec(open('/path/to/giraffeCAD-proto/freecad/render_example.py').read())
+   ```
+
+See [`freecad/README.md`](freecad/README.md) for detailed instructions and API documentation.
 
 ### Fusion 360 Integration
 
@@ -224,3 +245,39 @@ If you encounter issues:
 4. **Python version**: Fusion 360 uses its own Python environment
 
 Check the Fusion 360 console for detailed error messages.
+
+### Rhino Integration
+
+The Rhino renderer currently supports basic geometry but does not yet support CSG operations (joints/cuts). See [`rhino/README.md`](rhino/README.md) for current capabilities and usage.
+
+## Architecture
+
+GiraffeCAD uses a modular architecture with shared utilities across rendering backends:
+
+```
+code_goes_here/
+├── timber.py              # Core timber and joint data structures
+├── meowmeowcsg.py        # CSG (Constructive Solid Geometry) operations
+├── moothymoth.py         # Orientation and rotation utilities
+├── rendering_utils.py    # Shared rendering utilities (NEW!)
+└── basic_joints.py       # Joint construction functions
+
+fusion360/
+└── giraffe_render_fusion360.py   # Fusion 360 renderer
+
+freecad/
+└── giraffe_render_freecad.py     # FreeCAD renderer (NEW!)
+
+rhino/
+└── giraffe_render_rhino.py       # Rhino renderer (basic)
+```
+
+### Shared Rendering Utilities
+
+The `rendering_utils.py` module provides common functions used across all rendering backends:
+- SymPy to float conversion
+- Structure extent calculation (for sizing infinite geometry)
+- Coordinate transformations
+- Timber corner calculations
+
+This minimizes code duplication and ensures consistent behavior across different CAD platforms.
