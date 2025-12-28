@@ -16,6 +16,7 @@ from giraffe import (
     cut_basic_miter_joint,
     cut_basic_butt_joint_on_face_aligned_timbers,
     cut_basic_splice_joint_on_aligned_timbers,
+    cut_basic_house_joint,
     FootprintLocation, CutTimber, Stickout, TimberReferenceEnd
 )
 from code_goes_here.footprint import Footprint
@@ -489,6 +490,32 @@ def create_oscarshed() -> list[CutTimber]:
         rafters.append(rafter)
 
     # ============================================================================
+    # Create house joints for rafter pockets in top plates
+    # ============================================================================
+    
+    # Create house joints for each rafter with both the front and back top plates
+    # The top plates are the "housing timber" (receiving the pockets)
+    # The rafters are the "housed timber" (fitting into the pockets)
+    rafter_house_joints = []
+    
+    for i, rafter in enumerate(rafters, start=1):
+        # Create house joint with back top plate
+        joint_back = cut_basic_house_joint(
+            housing_timber=top_plate_back,
+            housed_timber=rafter,
+            extend_housed_timber_to_infinity=False
+        )
+        
+        # Create house joint with front top plate
+        joint_front = cut_basic_house_joint(
+            housing_timber=top_plate_front,
+            housed_timber=rafter,
+            extend_housed_timber_to_infinity=False
+        )
+        
+        rafter_house_joints.append((joint_back, joint_front))
+
+    # ============================================================================
     # Wrap all timbers in CutTimber objects and return
     # ============================================================================
     
@@ -557,9 +584,23 @@ def create_oscarshed() -> list[CutTimber]:
     cut_timbers.append(front_girt_splice_joint.partiallyCutTimbers[0])  # Left piece
     cut_timbers.append(front_girt_splice_joint.partiallyCutTimbers[1])  # Right piece
     
-    # Add top plates
-    cut_timbers.append(CutTimber(top_plate_front))
-    cut_timbers.append(CutTimber(top_plate_back))
+    # Add top plates with rafter pocket cuts
+    # Collect all the cuts for each top plate from the house joints
+    top_plate_back_cuts = []
+    top_plate_front_cuts = []
+    
+    for joint_back, joint_front in rafter_house_joints:
+        # joint_back.partiallyCutTimbers[0] is the housing timber (top_plate_back)
+        # joint_front.partiallyCutTimbers[0] is the housing timber (top_plate_front)
+        top_plate_back_cuts.extend(joint_back.partiallyCutTimbers[0]._cuts)
+        top_plate_front_cuts.extend(joint_front.partiallyCutTimbers[0]._cuts)
+    
+    # Create PartiallyCutTimbers for top plates with all cuts
+    pct_top_plate_back = PartiallyCutTimber(top_plate_back, cuts=top_plate_back_cuts)
+    pct_top_plate_front = PartiallyCutTimber(top_plate_front, cuts=top_plate_front_cuts)
+    
+    cut_timbers.append(pct_top_plate_back)
+    cut_timbers.append(pct_top_plate_front)
     
     # Add joists
     for joist in joists:
@@ -619,6 +660,7 @@ if __name__ == "__main__":
     print(f"  - Spacing: Uniformly spaced")
     print(f"  - Position: 2 inches above top plates (offset upwards)")
     print(f"  - Outside faces of outer rafters flush with ends of top plates")
-    print(f"  - No stickout (flush with top plates lengthwise)")
+    print(f"  - Stickout: 12 inches on both ends (symmetric)")
+    print(f"  - Top plates have housed joints (rafter pockets) for each rafter")
     print("="*60)
 
