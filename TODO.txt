@@ -32,6 +32,7 @@ don't touch fusion360, rhino, examples, oldcrap folder for now
 
 -make sure freecad rendering works
 -make sure oscar shed rafter pocket works
+-cleanup render utilities, some of them seem unecessary
 
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
