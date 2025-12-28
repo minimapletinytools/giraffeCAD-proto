@@ -319,12 +319,12 @@ def create_all_joint_examples() -> list[CutTimber]:
     # Result: Joints will be at x=0.0m and x=2.0m (automatically spaced)
     # ============================================================================
     JOINTS_TO_RENDER = [
-        #("Miter Joint (67°)", make_miter_joint_example),
-        #("Miter Joint (Face Aligned)", make_miter_joint_face_aligned_example),
-        #("Butt Joint", make_butt_joint_example),
-        #("Splice Joint", make_splice_joint_example),
+        ("Miter Joint (67°)", make_miter_joint_example),
+        ("Miter Joint (Face Aligned)", make_miter_joint_face_aligned_example),
+        ("Butt Joint", make_butt_joint_example),
+        ("Splice Joint", make_splice_joint_example),
         ("House Joint", make_house_joint_example),
-        # ("Cross Lap Joint", make_cross_lap_joint_example),  # Not yet implemented
+        ("Cross Lap Joint", make_cross_lap_joint_example),  # Not yet implemented
     ]
     
     # Spacing between joints (in meters)
