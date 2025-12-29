@@ -6,10 +6,9 @@ Contains functions for creating and manipulating timbers
 import warnings
 from code_goes_here.timber import *
 from code_goes_here.moothymoth import (
-    EPSILON_PARALLEL,
     EPSILON_GENERIC,
-    epsilon_zero_test,
-    epsilon_equality_test,
+    zero_test,
+    equality_test,
     construction_parallel_check,
     construction_perpendicular_check
 )
@@ -714,29 +713,19 @@ def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Opti
     Args:
         timber1: First timber
         timber2: Second timber
-        tolerance: Optional tolerance for approximate comparison. If None, automatically
-                   uses exact comparison for rational values or fuzzy comparison for floats.
+        tolerance: Optional tolerance for approximate comparison. If None, attempts exact comparison and uses default epsilon if not possible.
                    
     Returns:
         True if timbers have parallel length directions, False otherwise
     """
-    # Check if all components are rational
-    is_rational = (_has_rational_components(timber1.length_direction) and 
-                   _has_rational_components(timber2.length_direction))
-    
     dot_product = Abs(timber1.length_direction.dot(timber2.length_direction))
     
     if tolerance is None:
-        if is_rational:
-            # Use exact comparison with simplify for symbolic math
-            return simplify(dot_product - 1) == 0
-        else:
-            
-            warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if timbers with float values are parallel")
-            return epsilon_equality_test(dot_product, 1, EPSILON_GENERIC)
+        # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
+        return equality_test(dot_product, 1)
     else:
-        # Use provided tolerance
-        return epsilon_equality_test(dot_product, 1, tolerance)
+        # Use provided tolerance for approximate comparison
+        return Abs(dot_product - 1) < tolerance
 
 def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
     """
@@ -751,22 +740,14 @@ def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Op
     Returns:
         True if timbers have orthogonal length directions, False otherwise
     """
-    # Check if all components are rational
-    is_rational = (_has_rational_components(timber1.length_direction) and 
-                   _has_rational_components(timber2.length_direction))
-    
     dot_product = timber1.length_direction.dot(timber2.length_direction)
     
     if tolerance is None:
-        if is_rational:
-            # Use exact comparison with simplify for symbolic math
-            return simplify(dot_product) == 0
-        else:
-            warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if timbers with float values are perpendicular")
-            return epsilon_zero_test(dot_product, EPSILON_GENERIC)
+        # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
+        return zero_test(dot_product)
     else:
-        # Use provided tolerance
-        return epsilon_zero_test(dot_product, tolerance)
+        # Use provided tolerance for approximate comparison
+        return Abs(dot_product) < tolerance
 
 def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[Numeric] = None) -> bool:
     """
@@ -781,22 +762,14 @@ def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction
     Returns:
         True if the directions are perpendicular, False otherwise
     """
-    # Check if all components are rational
-    is_rational = (_has_rational_components(direction1) and 
-                   _has_rational_components(direction2))
-    
     dot_product = direction1.dot(direction2)
     
     if tolerance is None:
-        if is_rational:
-            # Use exact comparison with simplify for symbolic math
-            return simplify(dot_product) == 0
-        else:
-            warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if directions with float values are perpendicular")
-            return epsilon_zero_test(dot_product, EPSILON_GENERIC)
+        # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
+        return zero_test(dot_product)
     else:
-        # Use tolerance for approximate comparison
-        return epsilon_zero_test(dot_product, tolerance)
+        # Use provided tolerance for approximate comparison
+        return Abs(dot_product) < tolerance
 
 def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[Numeric] = None) -> bool:
     """
@@ -811,23 +784,15 @@ def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, t
     Returns:
         True if the directions are parallel, False otherwise
     """
-    # Check if all components are rational
-    is_rational = (_has_rational_components(direction1) and 
-                   _has_rational_components(direction2))
-    
     dot_product = direction1.dot(direction2)
     dot_mag = Abs(dot_product)
     
     if tolerance is None:
-        if is_rational:
-            # Use exact comparison with simplify for symbolic math
-            return simplify(dot_mag - 1) == 0
-        else:
-            warnings.warn(f"Using default tolerance {EPSILON_GENERIC} for checking if directions with float values are parallel")
-            return epsilon_equality_test(dot_mag, 1, EPSILON_GENERIC)
+        # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
+        return equality_test(dot_mag, 1)
     else:
-        # Use provided tolerance
-        return epsilon_equality_test(dot_mag, 1, tolerance)
+        # Use provided tolerance for approximate comparison
+        return Abs(dot_mag - 1) < tolerance
 
 def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
     """
@@ -854,36 +819,18 @@ def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
     dirs1 = [timber1.length_direction, timber1.width_direction, timber1.height_direction]
     dirs2 = [timber2.length_direction, timber2.width_direction, timber2.height_direction]
     
-    # Check if all values are rational (exact)
-    all_rational = all(_has_rational_components(direction) for direction in dirs1 + dirs2)
-    
-    if tolerance is None and not all_rational:
-        import warnings
-        warnings.warn(
-            "Using exact equality check for face alignment but timber direction vectors "
-            "contain non-rational values (e.g., Float). Consider using exact Rational types "
-            "or providing a tolerance parameter for approximate comparison.",
-            UserWarning
-        )
-        # Auto-use a small tolerance when Float values are present
-        effective_tolerance = EPSILON_GENERIC
-    else:
-        effective_tolerance = tolerance
-    
-    if effective_tolerance is None:
-        # Use exact equality check (only for rational values)
-        for dir1 in dirs1:
-            for dir2 in dirs2:
-                dot_product = Abs(dir1.dot(dir2))
-                if dot_product == 1:
+    # Check all pairs of directions
+    for dir1 in dirs1:
+        for dir2 in dirs2:
+            dot_product = Abs(dir1.dot(dir2))
+            
+            if tolerance is None:
+                # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
+                if equality_test(dot_product, 1):
                     return True
-    else:
-        # Use tolerance-based comparison
-        for dir1 in dirs1:
-            for dir2 in dirs2:
-                dot_product = Abs(dir1.dot(dir2))
-                # Check if directions are parallel using helper function
-                if epsilon_equality_test(dot_product, 1, effective_tolerance):
+            else:
+                # Use provided tolerance for approximate comparison
+                if Abs(dot_product - 1) < tolerance:
                     return True
     
     return False

@@ -37,11 +37,11 @@ don't touch fusion360, rhino, examples, oldcrap folder for now
 -double check floats again, are floats really necessary? I mean they really aren't
   -at least add a warning if floats are passed in.. I don't think we're ever forced to convert to float ever....
 -sympy stuff
-  -fix fuzzy equal comparison function to use the .equals function. If it returns None then you probbaly do need epsilon test thingy...
+  DONE-fix fuzzy equal comparison function to use the .equals function. If it returns None then you probbaly do need epsilon test thingy...
   -ask if we can add assumptions anywhere
   -keep geometries as geometries for as data for as possible before converting to expression
 -cleanup render utilities, some of them seem unecessary
--make sure freecad rendering works
+DONE-make sure freecad rendering works
 DONE-make sure oscar shed rafter pocket works
 
 

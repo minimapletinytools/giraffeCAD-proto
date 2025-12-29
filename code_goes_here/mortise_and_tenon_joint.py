@@ -7,9 +7,8 @@ from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.moothymoth import (
     Orientation,
-    EPSILON_PARALLEL,
     EPSILON_GENERIC,
-    epsilon_zero_test,
+    zero_test,
     construction_parallel_check,
     construction_perpendicular_check
 )

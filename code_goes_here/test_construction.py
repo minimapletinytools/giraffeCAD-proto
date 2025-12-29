@@ -1749,15 +1749,10 @@ class TestHelperFunctions:
         )
         
         # timber1 and timber3 should NOT be face-aligned
-        # Note: This will trigger a warning because timber3's normalized directions contain Float values
-        import warnings
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            result = _are_timbers_face_aligned(timber1, timber3, tolerance=None)
-            assert not result
-            # Check that a warning was issued
-            assert len(w) > 0
-            assert "non-rational values" in str(w[0].message)
+        # Note: timber3's normalized directions contain Float values, but the new
+        # system automatically handles this without warnings
+        result = _are_timbers_face_aligned(timber1, timber3, tolerance=None)
+        assert not result
         
         # Test with tolerance parameter (no warning)
         assert _are_timbers_face_aligned(timber1, timber2, tolerance=1e-10)
