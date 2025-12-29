@@ -96,10 +96,6 @@ def sympy_to_float(value):
     return distance_to_mm(value)
 
 
-# Version marker for debugging
-RENDERER_VERSION = "v4.3_fix_cut_direction_🔄"
-
-
 def get_active_document(doc_name: str = "GiraffeCAD") -> Optional['FreeCAD.Document']:
     """
     Get or create a FreeCAD document.
@@ -475,9 +471,6 @@ def apply_halfplane_cut(shape: 'Part.Shape', half_plane: HalfPlane,
         plane_normal = half_plane.normal
         plane_offset = distance_to_mm(half_plane.offset)  # Convert meters to mm
         
-        print(f"    Applying HalfPlane cut: normal=({plane_normal[0]}, {plane_normal[1]}, {plane_normal[2]}), offset={plane_offset:.1f}mm")
-        
-        
         # The plane equation is: normal · P = offset
         # Find a point on the plane
         normal_norm = plane_normal.norm()
@@ -541,16 +534,8 @@ def apply_halfplane_cut(shape: 'Part.Shape', half_plane: HalfPlane,
         placement = Base.Placement(plane_point_vec, rotation)
         cutting_box.Placement = placement.multiply(cutting_box.Placement)
         
-        # Debug: Show cutting box bounds after rotation
-        bbox_cutter = cutting_box.BoundBox
-        print(f"    Cutting box bounds: X[{bbox_cutter.XMin:.1f}, {bbox_cutter.XMax:.1f}] Y[{bbox_cutter.YMin:.1f}, {bbox_cutter.YMax:.1f}] Z[{bbox_cutter.ZMin:.1f}, {bbox_cutter.ZMax:.1f}] mm")
-        
         # Perform boolean difference: shape - cutting_box
         result_shape = shape.cut(cutting_box)
-        
-        # Debug: Show result bounds
-        bbox_result = result_shape.BoundBox
-        print(f"    Result bounds: X[{bbox_result.XMin:.1f}, {bbox_result.XMax:.1f}] Y[{bbox_result.YMin:.1f}, {bbox_result.YMax:.1f}] Z[{bbox_result.ZMin:.1f}, {bbox_result.ZMax:.1f}] mm")
         
         return result_shape
         
@@ -582,36 +567,26 @@ def render_difference(difference: Difference, timber: Optional[Timber] = None,
     if base_shape is None:
         return None
     
-    # Debug: Show base shape bounds before any cuts
-    bbox = base_shape.BoundBox
-    print(f"  Base shape bounds: X[{bbox.XMin:.1f}, {bbox.XMax:.1f}] Y[{bbox.YMin:.1f}, {bbox.YMax:.1f}] Z[{bbox.ZMin:.1f}, {bbox.ZMax:.1f}] mm")
-    
     # Subtract each child
     for i, subtract_csg in enumerate(difference.subtract):
         # Special handling for HalfPlane cuts
         if isinstance(subtract_csg, HalfPlane):
-            print(f"  Applying HalfPlane cut {i+1}/{len(difference.subtract)}")
             base_shape = apply_halfplane_cut(base_shape, subtract_csg, timber, infinite_extent)
             continue
         
         # For other CSG types, render and perform boolean difference
-        print(f"  Applying {type(subtract_csg).__name__} cut {i+1}/{len(difference.subtract)}")
-        
         subtract_shape = render_csg_shape(subtract_csg, timber, infinite_extent)
         
         if subtract_shape is None:
-            print(f"  Failed to render subtract child {i+1}")
+            print(f"  Warning: Failed to render subtract child {i+1}")
             continue
         
         # Perform difference operation
         try:
             base_shape = base_shape.cut(subtract_shape)
-            print(f"    Boolean cut applied for child {i+1}")
         except Exception as e:
             print(f"  Error performing difference with child {i+1}: {e}")
             continue
-    
-    print(f"  Difference complete - all {len(difference.subtract)} cuts processed")
     
     return base_shape
 
@@ -641,16 +616,11 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
         print("No active document found")
         return 0
     
-    print(f"\n=== RENDERING {len(cut_timbers)} TIMBERS IN FREECAD ===")
-    print(f"Renderer version: {RENDERER_VERSION}")
+    print(f"\n=== Rendering {len(cut_timbers)} timbers ===")
     
     # Calculate structure extents for intelligent sizing of infinite geometry
-    print(f"\n=== Calculating structure extents ===")
     structure_extent = calculate_structure_extents(cut_timbers)
     infinite_geometry_extent = structure_extent * 10  # 10x for infinite geometry
-    
-    print(f"Structure extent: {structure_extent:.2f} m")
-    print(f"Infinite geometry will extend to: {infinite_geometry_extent:.2f} m")
     
     # Render all timbers
     success_count = 0
@@ -665,13 +635,8 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             component_name = f"{base_name}_{i}"
         
         try:
-            print(f"\nCreating {component_name}...")
-            
             # Get the timber with cuts applied in LOCAL coordinates
             csg = cut_timber.render_timber_with_cuts_csg_local()
-            
-            if cut_timber._cuts:
-                print(f"  Applying {len(cut_timber._cuts)} cut(s)")
             
             # Render the CSG to a shape (in local coordinates)
             shape = render_csg_shape(csg, cut_timber._timber, infinite_geometry_extent)
@@ -694,22 +659,20 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                 # Recompute to update bounding box
                 doc.recompute()
                 
-                
                 success_count += 1
-                print(f"  ✓ Created {component_name}")
+                print(f"  ✓ {component_name}")
             else:
-                print(f"  ✗ Failed to create {component_name}")
+                print(f"  ✗ {component_name} - failed to create shape")
                     
         except Exception as e:
-            print(f"  ✗ Error creating {component_name}: {e}")
+            print(f"  ✗ {component_name} - {e}")
             traceback.print_exc()
     
     # Recompute document to update display
     doc.recompute()
     
     # Summary
-    print(f"\n=== SUMMARY ===")
-    print(f"Successfully rendered: {success_count}/{len(cut_timbers)} timbers")
+    print(f"\n=== Complete: {success_count}/{len(cut_timbers)} timbers ===")
     
     return success_count
 

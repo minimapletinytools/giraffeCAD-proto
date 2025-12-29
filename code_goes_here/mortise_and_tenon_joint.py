@@ -28,34 +28,6 @@ from code_goes_here.construction import (
 
 
 
-f""" impl notes
-
-this function is very generic and does a bunch of things. in particluar we want the following variants which will all call into this function;
-
-      -mortise and tenon
-      -through mortise and tenon
-      -wedged mortise and tenon
-      -wedged through mortise and tenon
-      -fox wedge mortise and tenon
-      -draw bore mortise and tenon
-      -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
-        -same as draw bore but with komisen peg,
-      -tusked mortise and tenon (explicitly not supported, will be a separate function due to needing to support more angles of insertion)
-
-so we need to support the folowing features:
-
-
-PEGS
-pegs (could be round or rectangular), rectangular pegs can be inserted at an angle
-class RoundPeg
-class RectangularPeg:
-    size1: Numeric # consistent rule of which axis this is w.r.t to the tenon timber
-    size2: Numeric # consistent rule of which axis this is w.r.t to the tenon timber
-    rotation: angle in degrees # clockwise rotation when looking at the peg from the insertion side
-pegs are always orthogonal to the length axis of the 2 timbers, but they can go in from either side, specified 
-
-"""
-
 
 
 def cut_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
