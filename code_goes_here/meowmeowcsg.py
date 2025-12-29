@@ -113,12 +113,15 @@ class HalfPlane(MeowMeowCSG):
 class Prism(MeowMeowCSG):
     """
     A prism with rectangular cross-section, optionally infinite in one or both ends.
+    Note,they are parameterized similar to the Timber class which is atypical for such a primitive.
     
     The prism is defined by:
     - A position (translation from origin)
-    - A cross-section size (width x height) in the local XY plane
+    - A cross-section size (width (x-axis)) x height (y-axis)) in the local XY plane
     - An orientation (rotation matrix defining the local coordinate system)
     - Start and end distances along the local Z-axis from the position
+
+    So the center point of the size cross section is at position and the timber extends out in -z by start_distance and +z by end_distance.
     
     Use None for start_distance or end_distance to make the prism infinite in that direction.
     
@@ -226,6 +229,8 @@ class Cylinder(MeowMeowCSG):
     - A radius
     - Start and end distances along the axis from the position
     
+    So the center point of the radius cross section is at position and the cylinder extends out in -z by start_distance and +z by end_distance.
+
     Use None for start_distance or end_distance to make the cylinder infinite in that direction.
     
     Args:

@@ -7,7 +7,7 @@ Giraffe is written as an **agent friendly** library meaning it was designed to b
 ## Integrations and formats
 
 - **Fusion 360** - Full CSG support with feature-based modeling
-- **FreeCAD** - Full CSG support with direct shape creation (WIP)
+- **FreeCAD** - Full CSG support with direct shape creation
 - **Rhino** - Basic geometry support (WIP)
 - **Blender** - Planned
 - **IFC file format** - Planned
@@ -184,19 +184,20 @@ To render structures in FreeCAD (open source, free):
    - Download from https://www.freecad.org/
    - Or use package manager: `brew install freecad` (macOS)
 
-2. **Open FreeCAD and run a script**:
+2. **Set up macro folder** (one-time setup):
+   - Open FreeCAD
+   - Go to **Edit** → **Preferences** → **Python** → **Macro**
+   - Click **Add** under "Macro path"
+   - Navigate to and select: `/path/to/giraffeCAD-proto/freecad`
+   - Click **OK**
+
+3. **Run the renderer**:
    - Open FreeCAD
    - Go to **Macro** → **Macros...**
-   - Click **Create** and name it (e.g., "render_example")
-   - Copy the contents of `freecad/render_example.py`
+   - Select `render_example.py` from the list
    - Click **Execute**
-
-3. **Or use the Python console**:
-   ```python
-   exec(open('/path/to/giraffeCAD-proto/freecad/render_example.py').read())
-   ```
-
-See [`freecad/README.md`](freecad/README.md) for detailed instructions and API documentation.
+   
+   The rendered structure will appear in FreeCAD's 3D view!
 
 ### Fusion 360 Integration
 

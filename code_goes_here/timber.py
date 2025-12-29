@@ -769,7 +769,7 @@ class Cut(ABC):
 def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     """
     Helper function to create a prism CSG for a timber in LOCAL coordinates, 
-    optionally extending ends with cuts to infinity.
+    extending ends with cuts to infinity.
     
     LOCAL coordinates means distances are relative to timber.bottom_position.
     This is used for rendering (where the prism is created at origin and then transformed)

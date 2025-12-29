@@ -944,26 +944,26 @@ def log_structure_extents(extent: float, cut_timbers: List[CutTimber]):
         # Calculate detailed extents for logging
         from code_goes_here.rendering_utils import calculate_timber_corners
         
-        min_x = min_y = min_z = float('inf')
-        max_x = max_y = max_z = float('-inf')
-        
-        for cut_timber in cut_timbers:
-            corners = calculate_timber_corners(cut_timber._timber)
-            for corner in corners:
-                x, y, z = float(corner[0]), float(corner[1]), float(corner[2])
-                min_x = min(min_x, x)
-                min_y = min(min_y, y)
-                min_z = min(min_z, z)
-                max_x = max(max_x, x)
-                max_y = max(max_y, y)
-                max_z = max(max_z, z)
-        
-        extent_x = (max_x - min_x) / 2
-        extent_y = (max_y - min_y) / 2
-        extent_z = (max_z - min_z) / 2
-        
-        app.log(f"Structure extents: {extent_x:.2f} x {extent_y:.2f} x {extent_z:.2f} cm")
-        app.log(f"Maximum extent: {extent:.2f} cm")
+    min_x = min_y = min_z = float('inf')
+    max_x = max_y = max_z = float('-inf')
+    
+    for cut_timber in cut_timbers:
+        corners = calculate_timber_corners(cut_timber._timber)
+        for corner in corners:
+            x, y, z = float(corner[0]), float(corner[1]), float(corner[2])
+            min_x = min(min_x, x)
+            min_y = min(min_y, y)
+            min_z = min(min_z, z)
+            max_x = max(max_x, x)
+            max_y = max(max_y, y)
+            max_z = max(max_z, z)
+    
+    extent_x = (max_x - min_x) / 2
+    extent_y = (max_y - min_y) / 2
+    extent_z = (max_z - min_z) / 2
+
+    app.log(f"Structure extents: {extent_x:.2f} x {extent_y:.2f} x {extent_z:.2f} cm")
+    app.log(f"Maximum extent: {extent:.2f} cm")
 
 
 def check_body_extents(body: adsk.fusion.BRepBody, max_allowed_extent: float, component_name: str) -> bool:
