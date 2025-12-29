@@ -7,8 +7,13 @@ This module contains tests for the Orientation class which represents
 
 import pytest
 import math
-from sympy import Matrix, pi, simplify, Abs, eye, det
-from code_goes_here.moothymoth import Orientation
+from sympy import Matrix, pi, simplify, Abs, eye, det, Rational
+from code_goes_here.moothymoth import (
+    Orientation,
+    inches, feet, mm, cm, m,
+    shaku, sun, bu,
+    INCH_TO_METER, FOOT_TO_METER, SHAKU_TO_METER
+)
 import random
 
 
@@ -261,3 +266,228 @@ class TestReprAndString:
         assert "Orientation(" in repr_str
         assert "Matrix(" in repr_str
         assert "1" in repr_str  # Should contain identity matrix elements 
+
+
+class TestDimensionalHelpers:
+    """Test dimensional helper functions."""
+    
+    def test_inches_integer(self):
+        """Test inches with integer input."""
+        result = inches(1)
+        expected = Rational(1) * INCH_TO_METER
+        assert result == expected
+    
+    def test_inches_fraction(self):
+        """Test inches with fractional input (1/32 inch)."""
+        result = inches(1, 32)
+        expected = Rational(1, 32) * INCH_TO_METER
+        assert result == expected
+    
+    def test_inches_float(self):
+        """Test inches with float input (converts to Rational)."""
+        result = inches(3.5)
+        expected = Rational(7, 2) * INCH_TO_METER
+        assert result == expected
+    
+    def test_inches_string(self):
+        """Test inches with string input."""
+        result = inches("1.5")
+        expected = Rational(3, 2) * INCH_TO_METER
+        assert result == expected
+    
+    def test_inches_fraction_string(self):
+        """Test inches with fraction string."""
+        result = inches("1/32")
+        expected = Rational(1, 32) * INCH_TO_METER
+        assert result == expected
+    
+    def test_feet_integer(self):
+        """Test feet with integer input."""
+        result = feet(8)
+        expected = Rational(8) * FOOT_TO_METER
+        assert result == expected
+    
+    def test_feet_fraction(self):
+        """Test feet with fractional input."""
+        result = feet(1, 2)
+        expected = Rational(1, 2) * FOOT_TO_METER
+        assert result == expected
+    
+    def test_feet_float(self):
+        """Test feet with float input."""
+        result = feet(6.5)
+        expected = Rational(13, 2) * FOOT_TO_METER
+        assert result == expected
+    
+    def test_mm_integer(self):
+        """Test millimeters with integer input."""
+        result = mm(90)
+        expected = Rational(90, 1000)
+        assert result == expected
+    
+    def test_mm_fraction(self):
+        """Test millimeters with fractional input."""
+        result = mm(1, 2)
+        expected = Rational(1, 2000)
+        assert result == expected
+    
+    def test_mm_float(self):
+        """Test millimeters with float input."""
+        result = mm(25.4)
+        # Float conversion creates exact Rational from binary representation
+        assert isinstance(result, Rational)
+        # Check it's approximately 0.0254 meters (1 inch)
+        assert abs(float(result) - 0.0254) < 1e-10
+    
+    def test_cm_integer(self):
+        """Test centimeters with integer input."""
+        result = cm(9)
+        expected = Rational(9, 100)
+        assert result == expected
+    
+    def test_cm_fraction(self):
+        """Test centimeters with fractional input."""
+        result = cm(1, 2)
+        expected = Rational(1, 200)
+        assert result == expected
+    
+    def test_m_integer(self):
+        """Test meters with integer input."""
+        result = m(1)
+        expected = Rational(1)
+        assert result == expected
+    
+    def test_m_fraction(self):
+        """Test meters with fractional input."""
+        result = m(1, 2)
+        expected = Rational(1, 2)
+        assert result == expected
+    
+    def test_m_float(self):
+        """Test meters with float input."""
+        result = m(2.5)
+        expected = Rational(5, 2)
+        assert result == expected
+    
+    def test_shaku_integer(self):
+        """Test shaku with integer input."""
+        result = shaku(1)
+        expected = Rational(1) * SHAKU_TO_METER
+        assert result == expected
+        # Verify it's approximately 303.03mm
+        assert abs(float(result) - 0.30303030) < 0.00001
+    
+    def test_shaku_fraction(self):
+        """Test shaku with fractional input."""
+        result = shaku(3, 2)
+        expected = Rational(3, 2) * SHAKU_TO_METER
+        assert result == expected
+    
+    def test_shaku_float(self):
+        """Test shaku with float input."""
+        result = shaku(2.5)
+        expected = Rational(5, 2) * SHAKU_TO_METER
+        assert result == expected
+    
+    def test_sun_integer(self):
+        """Test sun with integer input (1 sun = 1/10 shaku)."""
+        result = sun(1)
+        expected = SHAKU_TO_METER / 10
+        assert result == expected
+        # Verify it's approximately 30.303mm
+        assert abs(float(result) - 0.030303030) < 0.000001
+    
+    def test_sun_fraction(self):
+        """Test sun with fractional input."""
+        result = sun(1, 2)
+        expected = Rational(1, 2) * SHAKU_TO_METER / 10
+        assert result == expected
+    
+    def test_sun_multiple(self):
+        """Test that 10 sun equals 1 shaku."""
+        result_sun = sun(10)
+        result_shaku = shaku(1)
+        assert result_sun == result_shaku
+    
+    def test_bu_integer(self):
+        """Test bu with integer input (1 bu = 1/100 shaku)."""
+        result = bu(1)
+        expected = SHAKU_TO_METER / 100
+        assert result == expected
+        # Verify it's approximately 3.0303mm
+        assert abs(float(result) - 0.0030303030) < 0.0000001
+    
+    def test_bu_fraction(self):
+        """Test bu with fractional input."""
+        result = bu(1, 2)
+        expected = Rational(1, 2) * SHAKU_TO_METER / 100
+        assert result == expected
+    
+    def test_bu_multiple(self):
+        """Test that 10 bu equals 1 sun and 100 bu equals 1 shaku."""
+        result_10bu = bu(10)
+        result_1sun = sun(1)
+        result_100bu = bu(100)
+        result_1shaku = shaku(1)
+        assert result_10bu == result_1sun
+        assert result_100bu == result_1shaku
+    
+    def test_all_return_rational(self):
+        """Test that all helper functions return Rational types."""
+        # Test with integer inputs
+        assert isinstance(inches(1), Rational)
+        assert isinstance(feet(1), Rational)
+        assert isinstance(mm(1), Rational)
+        assert isinstance(cm(1), Rational)
+        assert isinstance(m(1), Rational)
+        assert isinstance(shaku(1), Rational)
+        assert isinstance(sun(1), Rational)
+        assert isinstance(bu(1), Rational)
+        
+        # Test with float inputs (should convert to Rational)
+        assert isinstance(inches(1.5), Rational)
+        assert isinstance(feet(6.5), Rational)
+        assert isinstance(mm(25.4), Rational)
+    
+    def test_conversion_consistency(self):
+        """Test that 1 inch equals 25.4 mm exactly."""
+        result_inch = inches(1)
+        result_mm = mm(Rational(254, 10))  # 25.4 mm
+        assert result_inch == result_mm
+    
+    def test_practical_example_imperial(self):
+        """Test a practical carpentry example with imperial units."""
+        # 2x4 nominal dimensions (actual: 1.5" x 3.5")
+        width = inches(3, 2)  # 1.5 inches
+        height = inches(7, 2)  # 3.5 inches
+        
+        # Verify they're Rational
+        assert isinstance(width, Rational)
+        assert isinstance(height, Rational)
+        
+        # Verify approximate metric values
+        assert abs(float(width) - 0.0381) < 0.0001  # ~38.1mm
+        assert abs(float(height) - 0.0889) < 0.0001  # ~88.9mm
+    
+    def test_practical_example_metric(self):
+        """Test a practical carpentry example with metric units."""
+        # Common timber: 90mm x 90mm
+        width = mm(90)
+        height = mm(90)
+        
+        assert isinstance(width, Rational)
+        assert isinstance(height, Rational)
+        assert width == Rational(9, 100)  # 0.09 meters
+    
+    def test_practical_example_japanese(self):
+        """Test a practical carpentry example with Japanese traditional units."""
+        # Common post: 4 sun x 4 sun (approximately 120mm x 120mm)
+        width = sun(4)
+        height = sun(4)
+        
+        assert isinstance(width, Rational)
+        assert isinstance(height, Rational)
+        
+        # Verify approximate metric values
+        assert abs(float(width) - 0.12121212) < 0.00001  # ~121.2mm
+        assert abs(float(height) - 0.12121212) < 0.00001  # ~121.2mm

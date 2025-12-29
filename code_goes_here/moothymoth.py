@@ -29,12 +29,192 @@ import warnings
 
 
 # ============================================================================
+# Unit Conversion Constants
+# ============================================================================
+
+# Conversion factors to meters (exact Rationals)
+INCH_TO_METER = Rational(254, 10000)      # 0.0254 m (exact by definition)
+FOOT_TO_METER = Rational(3048, 10000)     # 0.3048 m (exact by definition)
+SHAKU_TO_METER = Rational(10, 33)         # ~0.303030... m (1 shaku = 10/33 m, traditional)
+
+# Note: The traditional Japanese shaku is defined as 10/33 meters
+# This gives approximately 303.03mm, and ensures exact rational arithmetic
+
+
+# ============================================================================
 # Epsilon Constants for Numerical Comparisons
 # ============================================================================
 
 # Epsilon constants for numerical comparisons
 EPSILON_GENERIC = Float('1e-8')      # Generic epsilon threshold for float comparisons
 SYMPY_EXPR_EPSILON = Float('1e-12')  # Epsilon for SymPy expressions when .equals() returns None
+
+
+# ============================================================================
+# Dimensional Helper Functions
+# ============================================================================
+
+def inches(numerator, denominator=1):
+    """
+    Create a Rational measurement in meters from inches.
+    
+    Args:
+        numerator: The numerator (can be int, float, str, or Rational)
+        denominator: The denominator (default=1)
+    
+    Returns:
+        Rational value in meters
+    
+    Examples:
+        inches(1, 32)        # 1/32 inch
+        inches(4)            # 4 inches
+        inches(3.5)          # 3.5 inches (converted to Rational)
+        inches("1.5")        # 1.5 inches from string
+        inches("1/32")       # Parses fraction string
+    """
+    return Rational(numerator, denominator) * INCH_TO_METER
+
+
+def feet(numerator, denominator=1):
+    """
+    Create a Rational measurement in meters from feet.
+    
+    Args:
+        numerator: The numerator (can be int, float, str, or Rational)
+        denominator: The denominator (default=1)
+    
+    Returns:
+        Rational value in meters
+    
+    Examples:
+        feet(8)              # 8 feet
+        feet(1, 2)           # 1/2 foot
+        feet(6.5)            # 6.5 feet (converted to Rational)
+    """
+    return Rational(numerator, denominator) * FOOT_TO_METER
+
+
+def mm(numerator, denominator=1):
+    """
+    Create a Rational measurement in meters from millimeters.
+    
+    Args:
+        numerator: The numerator (can be int, float, str, or Rational)
+        denominator: The denominator (default=1)
+    
+    Returns:
+        Rational value in meters
+    
+    Examples:
+        mm(90)               # 90 millimeters
+        mm(1, 2)             # 1/2 millimeter
+        mm(25.4)             # 25.4 millimeters (converted to Rational)
+    """
+    return Rational(numerator, denominator) / 1000
+
+
+def cm(numerator, denominator=1):
+    """
+    Create a Rational measurement in meters from centimeters.
+    
+    Args:
+        numerator: The numerator (can be int, float, str, or Rational)
+        denominator: The denominator (default=1)
+    
+    Returns:
+        Rational value in meters
+    
+    Examples:
+        cm(9)                # 9 centimeters
+        cm(1, 2)             # 1/2 centimeter
+        cm(2.54)             # 2.54 centimeters (converted to Rational)
+    """
+    return Rational(numerator, denominator) / 100
+
+
+def m(numerator, denominator=1):
+    """
+    Create a Rational measurement in meters.
+    
+    Args:
+        numerator: The numerator (can be int, float, str, or Rational)
+        denominator: The denominator (default=1)
+    
+    Returns:
+        Rational value in meters
+    
+    Examples:
+        m(1)                 # 1 meter
+        m(1, 2)              # 1/2 meter
+        m(2.5)               # 2.5 meters (converted to Rational)
+    """
+    return Rational(numerator, denominator)
+
+
+def shaku(numerator, denominator=1):
+    """
+    Create a Rational measurement in meters from shaku (尺).
+    Traditional Japanese carpentry unit.
+    
+    1 shaku ≈ 303.03 mm (exactly 10/33 meters)
+    
+    Args:
+        numerator: The numerator (can be int, float, str, or Rational)
+        denominator: The denominator (default=1)
+    
+    Returns:
+        Rational value in meters
+    
+    Examples:
+        shaku(1)             # 1 shaku
+        shaku(3, 2)          # 3/2 shaku (1.5 shaku)
+        shaku(2.5)           # 2.5 shaku (converted to Rational)
+    """
+    return Rational(numerator, denominator) * SHAKU_TO_METER
+
+
+def sun(numerator, denominator=1):
+    """
+    Create a Rational measurement in meters from sun (寸).
+    Traditional Japanese carpentry unit.
+    
+    1 sun = 1/10 shaku ≈ 30.303 mm
+    
+    Args:
+        numerator: The numerator (can be int, float, str, or Rational)
+        denominator: The denominator (default=1)
+    
+    Returns:
+        Rational value in meters
+    
+    Examples:
+        sun(1)               # 1 sun
+        sun(5)               # 5 sun
+        sun(1, 2)            # 1/2 sun
+    """
+    return Rational(numerator, denominator) * SHAKU_TO_METER / 10
+
+
+def bu(numerator, denominator=1):
+    """
+    Create a Rational measurement in meters from bu (分).
+    Traditional Japanese carpentry unit.
+    
+    1 bu = 1/10 sun = 1/100 shaku ≈ 3.0303 mm
+    
+    Args:
+        numerator: The numerator (can be int, float, str, or Rational)
+        denominator: The denominator (default=1)
+    
+    Returns:
+        Rational value in meters
+    
+    Examples:
+        bu(1)                # 1 bu
+        bu(5)                # 5 bu
+        bu(1, 2)             # 1/2 bu
+    """
+    return Rational(numerator, denominator) * SHAKU_TO_METER / 100
 
 
 # ============================================================================

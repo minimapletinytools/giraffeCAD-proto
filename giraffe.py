@@ -10,6 +10,12 @@ from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.basic_joints import *
 
+# Import dimensional helper functions for convenient unit conversion
+from code_goes_here.moothymoth import (
+    inches, feet, mm, cm, m,
+    shaku, sun, bu
+)
+
 # Explicitly import private helper functions that are used by tests
 # These start with _ so they won't be included in "import *" by default
 from code_goes_here.construction import (
