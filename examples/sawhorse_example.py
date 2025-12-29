@@ -55,7 +55,7 @@ def create_sawhorse() -> list[CutTimber]:
     
     # next create a "beam" that is running from left to right centered on the origin and top_beam_surface_position-stretcher_size[1]/2 above the origin
     beam = create_axis_aligned_timber(
-        bottom_position=create_vector3d(-top_beam_length / 2, 0, top_beam_surface_position - float(stretcher_size[1]) / 2),
+        bottom_position=create_vector3d(-top_beam_length / 2, 0, top_beam_surface_position - stretcher_size[1] / 2),
         length=top_beam_length,
         size=beam_size,
         length_direction=TimberFace.RIGHT,
@@ -76,7 +76,7 @@ def create_sawhorse() -> list[CutTimber]:
         timber1=left_mudsill,
         timber2=beam,
         location_on_timber1=left_mudsill.length / 2,  # Center of the mudsill
-        stickout=Stickout(float(post_size[0]) / 2, float(post_size[0]) / 2),  # Symmetric: half the post width on each side
+        stickout=Stickout(post_size[0] / 2, post_size[0] / 2),  # Symmetric: half the post width on each side
         offset_from_timber1=offset_left,
         size=post_size,
         orientation_face_on_timber1=TimberFace.TOP,
@@ -94,7 +94,7 @@ def create_sawhorse() -> list[CutTimber]:
         timber1=right_mudsill,
         timber2=beam,
         location_on_timber1=right_mudsill.length / 2,  # Center of the mudsill
-        stickout=Stickout(float(post_size[0]) / 2, float(post_size[0]) / 2),  # Symmetric: half the post width on each side
+        stickout=Stickout(post_size[0] / 2, post_size[0] / 2),  # Symmetric: half the post width on each side
         offset_from_timber1=offset_right,
         size=post_size,
         orientation_face_on_timber1=TimberFace.TOP,
@@ -112,7 +112,7 @@ def create_sawhorse() -> list[CutTimber]:
         timber1=left_post,
         timber2=right_post,
         location_on_timber1=left_post.length / 2,  # Middle of the post
-        stickout=Stickout(float(stretcher_size[0]) / 2, float(stretcher_size[0]) / 2),  # Symmetric: half the stretcher width on each side
+        stickout=Stickout(stretcher_size[0] / 2, stretcher_size[0] / 2),  # Symmetric: half the stretcher width on each side
         offset_from_timber1=offset_stretcher,
         size=stretcher_size,
         orientation_face_on_timber1=TimberFace.TOP,

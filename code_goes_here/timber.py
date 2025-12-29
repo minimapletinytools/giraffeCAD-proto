@@ -371,7 +371,7 @@ def _compute_timber_orientation(length_direction: Direction3D, width_direction: 
     if zero_test(face_orthogonal.norm()):
         # Choose an arbitrary orthogonal direction
         # Find a vector that's not parallel to length_norm
-        if Abs(length_norm[0]) < 0.9:  # Threshold comparison - use float
+        if Abs(length_norm[0]) < Rational(9, 10):  # Threshold comparison
             temp_vector = create_vector3d(1, 0, 0)
         else:
             temp_vector = create_vector3d(0, 1, 0)

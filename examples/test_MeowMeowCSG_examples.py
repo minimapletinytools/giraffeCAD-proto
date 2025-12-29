@@ -82,7 +82,7 @@ def example_cube_with_halfplane_cut():
     # When used in Difference, it removes points where z < 0.5
     halfplane = HalfPlane(
         normal=Matrix([0, 0, 1]),  # Normal pointing up (+Z)
-        offset=0.5  # Plane at Z = 0.5
+        offset=Rational(1, 2)  # Plane at Z = 0.5
     )
     
     # Create the difference (remove bottom half)
@@ -106,8 +106,8 @@ def example_cube_at_position():
     """
     cube = Prism(
         size=Matrix([1, 1]),  # 1m x 1m cross-section
-        start_distance=-0.5,   # Start at Z=-0.5 (relative to position Z=1)
-        end_distance=0.5,      # End at Z=0.5 (relative to position Z=1)
+        start_distance=Rational(-1, 2),   # Start at Z=-0.5 (relative to position Z=1)
+        end_distance=Rational(1, 2),      # End at Z=0.5 (relative to position Z=1)
         position=Matrix([2, 3, 1]),  # Center at (2, 3, 1)
         orientation=Orientation(eye(3))  # Identity orientation
     )
