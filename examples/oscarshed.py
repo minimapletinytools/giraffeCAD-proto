@@ -17,7 +17,8 @@ from giraffe import (
     cut_basic_butt_joint_on_face_aligned_timbers,
     cut_basic_splice_joint_on_aligned_timbers,
     cut_basic_house_joint,
-    FootprintLocation, CutTimber, Stickout, TimberReferenceEnd
+    FootprintLocation, CutTimber, Stickout, TimberReferenceEnd,
+    inches, feet
 )
 from code_goes_here.footprint import Footprint
 
@@ -25,27 +26,22 @@ from code_goes_here.footprint import Footprint
 # PARAMETERS - Modify these to adjust the shed design
 # ============================================================================
 
-# Footprint dimensions (in feet, will convert to meters)
+# Footprint dimensions (using dimensional helpers)
 # the "front/back" of the shed is along the X axis (i.e. the front is wider than it is deep)
 # the "sides" of the shed are along the Y axis
-base_width = 8.0      # Long dimension (X direction)
-base_length = 4.0     # Short dimension (Y direction)
+base_width = feet(8)      # Long dimension (X direction)
+base_length = feet(4)     # Short dimension (Y direction)
 
 # Post parameters
-post_inset = 2.5 / 12      # 6 inches = 0.5 feet, inset from corners on long side
-post_back_height = 4    # Height of back posts (feet)
-post_front_height = 5   # Height of front posts (feet)
+post_inset = inches(Rational(5, 2))      # 2.5 inches inset from corners on long side
+post_back_height = feet(4)    # Height of back posts
+post_front_height = feet(5)   # Height of front posts
 
-# Timber size definitions (in inches)
+# Timber size definitions using dimensional helpers
 # Format: (vertical dimension, horizontal depth)
-INCH_TO_METERS = 0.0254
-small_timber_size = (4 * INCH_TO_METERS, 2.5 * INCH_TO_METERS)   # 4" vertical x 2.5" depth
-med_timber_size = (4 * INCH_TO_METERS, 4 * INCH_TO_METERS)       # 4" x 4"
-big_timber_size = (6 * INCH_TO_METERS, 4 * INCH_TO_METERS)       # 6" vertical x 4" depth
-
-# Timber dimensions (in meters for consistency with GiraffeCAD defaults)
-# Note: 1 foot = 0.3048 meters
-FEET_TO_METERS = 0.3048
+small_timber_size = (inches(4), inches(Rational(5, 2)))   # 4" vertical x 2.5" depth
+med_timber_size = (inches(4), inches(4))                   # 4" x 4"
+big_timber_size = (inches(6), inches(4))                   # 6" vertical x 4" depth
 
 
 def create_oscarshed() -> list[CutTimber]:
@@ -55,23 +51,18 @@ def create_oscarshed() -> list[CutTimber]:
     Returns:
         list[CutTimber]: List of CutTimber objects representing the complete shed
     """
-    # Convert dimensions to meters
-    base_width_m = base_width * FEET_TO_METERS
-    base_length_m = base_length * FEET_TO_METERS
-    post_inset_m = post_inset * FEET_TO_METERS
-    post_back_height_m = post_back_height * FEET_TO_METERS
-    post_front_height_m = post_front_height * FEET_TO_METERS
-
+    # Note: Dimensions are already in meters from dimensional helpers
+    
     # ============================================================================
     # BUILD THE STRUCTURE
     # ============================================================================
 
     # Create the footprint (rectangular, counter-clockwise from bottom-left)
     footprint_corners = [
-        create_vector2d(0, 0),                      # Corner 0: Front-left
-        create_vector2d(base_width_m, 0),           # Corner 1: Front-right
-        create_vector2d(base_width_m, base_length_m),  # Corner 2: Back-right
-        create_vector2d(0, base_length_m)           # Corner 3: Back-left
+        create_vector2d(Rational(0), Rational(0)),     # Corner 0: Front-left
+        create_vector2d(base_width, Rational(0)),      # Corner 1: Front-right
+        create_vector2d(base_width, base_length),      # Corner 2: Back-right
+        create_vector2d(Rational(0), base_length)      # Corner 3: Back-left
     ]
     footprint = Footprint(footprint_corners)
 
@@ -150,8 +141,8 @@ def create_oscarshed() -> list[CutTimber]:
     post_front_left = create_vertical_timber_on_footprint_side(
         footprint, 
         side_index=0,
-        distance_along_side=post_inset_m,
-        length=post_front_height_m,
+        distance_along_side=post_inset,
+        length=post_front_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
         name="Front Left Post"
@@ -161,8 +152,8 @@ def create_oscarshed() -> list[CutTimber]:
     post_front_right = create_vertical_timber_on_footprint_side(
         footprint,
         side_index=0,
-        distance_along_side=base_width_m - post_inset_m,
-        length=post_front_height_m,
+        distance_along_side=base_width - post_inset,
+        length=post_front_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
         name="Front Right Post"
@@ -173,8 +164,8 @@ def create_oscarshed() -> list[CutTimber]:
     post_back_right = create_vertical_timber_on_footprint_side(
         footprint,
         side_index=2,
-        distance_along_side=post_inset_m,
-        length=post_back_height_m,
+        distance_along_side=post_inset,
+        length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
         name="Back Right Post"
@@ -184,8 +175,8 @@ def create_oscarshed() -> list[CutTimber]:
     post_back_left = create_vertical_timber_on_footprint_side(
         footprint,
         side_index=2,
-        distance_along_side=base_width_m - post_inset_m,
-        length=post_back_height_m,
+        distance_along_side=base_width - post_inset,
+        length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
         name="Back Left Post"
@@ -197,33 +188,33 @@ def create_oscarshed() -> list[CutTimber]:
     
     # Calculate positions for 2 additional back posts
     # We want 4 posts total with uniform spacing between them
-    # The outer posts are at post_inset_m and (base_width_m - post_inset_m)
-    # Space between outer posts: base_width_m - 2*post_inset_m
+    # The outer posts are at post_inset and (base_width - post_inset)
+    # Space between outer posts: base_width - 2*post_inset
     # With 4 posts, there are 3 equal gaps
     
-    back_post_spacing = (base_width_m - 2 * post_inset_m) / 3
+    back_post_spacing = (base_width - 2 * post_inset) / 3
     
     # Middle-right post (2nd from right)
-    post_back_middle_right_position = post_inset_m + back_post_spacing
+    post_back_middle_right_position = post_inset + back_post_spacing
     
     post_back_middle_right = create_vertical_timber_on_footprint_side(
         footprint,
         side_index=2,  # Back side
         distance_along_side=post_back_middle_right_position,
-        length=post_back_height_m,
+        length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
         name="Back Middle-Right Post"
     )
     
     # Middle-left post (3rd from right)
-    post_back_middle_left_position = post_inset_m + 2 * back_post_spacing
+    post_back_middle_left_position = post_inset + 2 * back_post_spacing
     
     post_back_middle_left = create_vertical_timber_on_footprint_side(
         footprint,
         side_index=2,  # Back side
         distance_along_side=post_back_middle_left_position,
-        length=post_back_height_m,
+        length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
         name="Back Middle-Left Post"
@@ -271,9 +262,8 @@ def create_oscarshed() -> list[CutTimber]:
     side_girt_size = create_vector2d(med_timber_size[0], med_timber_size[1])
 
     # Side girt stickout: 1.5 inches on back side, 0 on front side
-    side_girt_stickout_back_inches = 1.5
-    side_girt_stickout_back_m = side_girt_stickout_back_inches * INCH_TO_METERS
-    side_girt_stickout = Stickout(side_girt_stickout_back_m, 0)  # Asymmetric: 1.5" on back, 0 on front
+    side_girt_stickout_back = inches(Rational(3, 2))  # 1.5 inches
+    side_girt_stickout = Stickout(side_girt_stickout_back, Rational(0))  # Asymmetric: 1.5" on back, 0 on front
     
     
     # Left side girt (connects back-left post to front-left post)
@@ -281,9 +271,9 @@ def create_oscarshed() -> list[CutTimber]:
     side_girt_left = join_timbers(
         timber1=post_back_left,        # Back post (timber1)
         timber2=post_front_left,       # Front post (timber2)
-        location_on_timber1=post_back_height_m,   # At top of back post
+        location_on_timber1=post_back_height,   # At top of back post
         stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
-        location_on_timber2=post_back_height_m,    # Same height on front post
+        location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0.0,       # No lateral offset
         size=side_girt_size,
         name="Left Side Girt"
@@ -293,9 +283,9 @@ def create_oscarshed() -> list[CutTimber]:
     side_girt_right = join_timbers(
         timber1=post_back_right,       # Back post (timber1)
         timber2=post_front_right,      # Front post (timber2)
-        location_on_timber1=post_back_height_m,   # At top of back post
+        location_on_timber1=post_back_height,   # At top of back post
         stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
-        location_on_timber2=post_back_height_m,    # Same height on front post
+        location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0.0,       # No lateral offset
         size=side_girt_size,
         name="Right Side Girt"
@@ -308,15 +298,12 @@ def create_oscarshed() -> list[CutTimber]:
     front_girt_size = create_vector2d(med_timber_size[0], med_timber_size[1])
     
     # Front girt is positioned 2 inches below the side girts
-    # Side girts attach to front posts at post_back_height_m
-    front_girt_drop_inches = 2.0
-    front_girt_drop_m = front_girt_drop_inches * INCH_TO_METERS
-    front_girt_height_on_posts = post_back_height_m - front_girt_drop_m
+    # Side girts attach to front posts at post_back_height
+    front_girt_drop = inches(2)
+    front_girt_height_on_posts = post_back_height - front_girt_drop
     
     # Front girt stickout: symmetric on both ends (left and right)
-    front_girt_stickout_inches = 1.5
-    front_girt_stickout_m = front_girt_stickout_inches * INCH_TO_METERS
-    front_girt_stickout = Stickout.symmetric(front_girt_stickout_m)
+    front_girt_stickout = Stickout.symmetric(inches(Rational(3, 2)))  # 1.5 inches
     
     # Front girt connects left front post to right front post
     front_girt = join_timbers(
@@ -358,18 +345,16 @@ def create_oscarshed() -> list[CutTimber]:
     top_plate_size = create_vector2d(big_timber_size[0], big_timber_size[1])
     
     # Top plate stickout: 1 foot on each side (symmetric)
-    top_plate_stickout_feet = 1.0
-    top_plate_stickout_m = top_plate_stickout_feet * FEET_TO_METERS
-    top_plate_stickout = Stickout.symmetric(top_plate_stickout_m)
+    top_plate_stickout = Stickout.symmetric(feet(1))
     
     # Front top plate (connects left front post to right front post)
     # Sits on top of the front posts
     top_plate_front = join_timbers(
         timber1=post_front_left,       # Left front post (timber1)
         timber2=post_front_right,      # Right front post (timber2)
-        location_on_timber1=post_front_height_m,   # At top of front post
+        location_on_timber1=post_front_height,   # At top of front post
         stickout=top_plate_stickout,   # 1 foot stickout on both sides
-        location_on_timber2=post_front_height_m,   # Same height on right post
+        location_on_timber2=post_front_height,   # Same height on right post
         lateral_offset=0.0,       # No lateral offset
         size=top_plate_size,
         orientation_width_vector=create_vector3d(0, 0, 1),
@@ -381,9 +366,9 @@ def create_oscarshed() -> list[CutTimber]:
     top_plate_back = join_timbers(
         timber1=post_back_left,        # Left back post (timber1)
         timber2=post_back_right,       # Right back post (timber2)
-        location_on_timber1=post_back_height_m,    # At top of back post
+        location_on_timber1=post_back_height,    # At top of back post
         stickout=top_plate_stickout,   # 1 foot stickout on both sides
-        location_on_timber2=post_back_height_m,    # Same height on right post
+        location_on_timber2=post_back_height,    # Same height on right post
         lateral_offset=0.0,       # No lateral offset
         size=top_plate_size,
         orientation_width_vector=create_vector3d(0, 0, 1),
@@ -401,7 +386,7 @@ def create_oscarshed() -> list[CutTimber]:
     # Calculate spacing: 3 joists with 4 equal gaps (left side, 2 between joists, right side)
     num_joists = 3
     num_gaps = 4
-    gap_spacing = (base_width_m - num_joists * joist_width) / num_gaps
+    gap_spacing = (base_width - num_joists * joist_width) / num_gaps
     
     # Joist positions along X axis (from left edge, which is where mudsills start)
     joist_positions_along_mudsill = [
@@ -451,8 +436,8 @@ def create_oscarshed() -> list[CutTimber]:
     
     # Calculate positions for 5 rafters with outer faces flush with ends of top plates
     # The centerline of the first rafter is at rafter_width/2
-    # The centerline of the last rafter is at (base_width_m - rafter_width/2)
-    # Distance between outer rafter centerlines: base_width_m - rafter_width
+    # The centerline of the last rafter is at (base_width - rafter_width/2)
+    # Distance between outer rafter centerlines: base_width - rafter_width
     # With 5 rafters, there are 4 gaps between centerlines
     
     num_rafters = 5
@@ -465,9 +450,8 @@ def create_oscarshed() -> list[CutTimber]:
         rafter_positions_along_top_plate.append(position)
     
     # Rafters have 12" stickout and are offset upwards by 3 inches from top plate centerlines
-    rafter_stickout = Stickout.symmetric(12 * INCH_TO_METERS)
-    rafter_vertical_offset_inches = -3.0
-    rafter_vertical_offset_m = rafter_vertical_offset_inches * INCH_TO_METERS
+    rafter_stickout = Stickout.symmetric(inches(12))
+    rafter_vertical_offset = inches(-3)
     
     # Create the 5 rafters
     rafters = []
@@ -482,7 +466,7 @@ def create_oscarshed() -> list[CutTimber]:
             location_on_timber1=location_along_top_plate,  # Position along back top plate (reversed)
             stickout=rafter_stickout,      # 12" stickout
             location_on_timber2=location_along_top_plate,  # Same position on front top plate
-            lateral_offset=rafter_vertical_offset_m,
+            lateral_offset=rafter_vertical_offset,
             size=rafter_size,
             orientation_width_vector=create_vector3d(0, 0, 1),  # Face up
             name=f"Rafter {i}"
@@ -618,8 +602,8 @@ def create_oscarshed() -> list[CutTimber]:
 # ============================================================================
 
 if __name__ == "__main__":
-    print(f"Creating Oscar's Shed: {base_width} ft x {base_length} ft")
-    print(f"  ({base_width * FEET_TO_METERS:.3f} m x {base_length * FEET_TO_METERS:.3f} m)")
+    print(f"Creating Oscar's Shed: 8 ft x 4 ft")
+    print(f"  ({float(base_width):.3f} m x {float(base_length):.3f} m)")
     
     cut_timbers = create_oscarshed()
     
