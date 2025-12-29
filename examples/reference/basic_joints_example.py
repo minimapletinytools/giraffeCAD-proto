@@ -16,8 +16,8 @@ from giraffe import *
 V3 = Matrix
 
 # Standard timber dimensions (90mm x 90mm, 1m long)
-TIMBER_SIZE = Rational(90, 1000)  # 90mm in meters
-TIMBER_LENGTH = Rational(1)  # 1m
+TIMBER_SIZE = mm(90)  # 90mm
+TIMBER_LENGTH = m(1)  # 1m
 
 
 def make_miter_joint_example(position: V3) -> list[CutTimber]:
@@ -217,7 +217,7 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
         List of CutTimber objects representing the joint
     """
     half_length = TIMBER_LENGTH / 2
-    offset = Rational(20, 1000) 
+    offset = mm(20) 
     
     # Housing timber (beam) extends in +X direction
     # This is the timber that gets the groove cut into it

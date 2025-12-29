@@ -1,21 +1,19 @@
 from giraffe import *
 
-# Define timber dimensions (inches converted to meters)
-INCH_TO_METER = 0.0254
+# Define timber dimensions using dimensional helpers
+feet_size = create_vector2d(inches(4), inches(6))
+beam_size = create_vector2d(inches(4), inches(4))
+post_size = create_vector2d(inches(4), inches(4))
+stretcher_size = create_vector2d(inches(4), inches(4))
 
-feet_size = create_vector2d(4 * INCH_TO_METER, 6 * INCH_TO_METER)
-beam_size = create_vector2d(4 * INCH_TO_METER, 4 * INCH_TO_METER)
-post_size = create_vector2d(4 * INCH_TO_METER, 4 * INCH_TO_METER)
-stretcher_size = create_vector2d(4 * INCH_TO_METER, 4 * INCH_TO_METER)
+tenon_thickness = inches(1)
+tenon_length = inches(2)
 
-tenon_thickness = 1 * INCH_TO_METER
-tenon_length = 2 * INCH_TO_METER
-
-# Define constants for the sawhorse (converted to meters)
-bottom_width = 24 * INCH_TO_METER
-bottom_length = 48 * INCH_TO_METER
-top_beam_length = 100 * INCH_TO_METER
-top_beam_surface_position = 50 * INCH_TO_METER
+# Define constants for the sawhorse
+bottom_width = inches(24)
+bottom_length = inches(48)
+top_beam_length = inches(100)
+top_beam_surface_position = inches(50)
 
 def create_sawhorse() -> list[CutTimber]:
     """
