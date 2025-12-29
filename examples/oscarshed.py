@@ -274,7 +274,7 @@ def create_oscarshed() -> list[CutTimber]:
         location_on_timber1=post_back_height,   # At top of back post
         stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
         location_on_timber2=post_back_height,    # Same height on front post
-        lateral_offset=0.0,       # No lateral offset
+        lateral_offset=0,       # No lateral offset
         size=side_girt_size,
         name="Left Side Girt"
     )
@@ -286,7 +286,7 @@ def create_oscarshed() -> list[CutTimber]:
         location_on_timber1=post_back_height,   # At top of back post
         stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
         location_on_timber2=post_back_height,    # Same height on front post
-        lateral_offset=0.0,       # No lateral offset
+        lateral_offset=0,       # No lateral offset
         size=side_girt_size,
         name="Right Side Girt"
     )
@@ -312,7 +312,7 @@ def create_oscarshed() -> list[CutTimber]:
         location_on_timber1=front_girt_height_on_posts,   # 2" below side girts
         stickout=front_girt_stickout,  # 1.5" stickout on both sides
         location_on_timber2=front_girt_height_on_posts,   # Same height on right post
-        lateral_offset=0.0,       # No lateral offset
+        lateral_offset=0,       # No lateral offset
         size=front_girt_size,
         name="Front Girt"
     )
@@ -355,7 +355,7 @@ def create_oscarshed() -> list[CutTimber]:
         location_on_timber1=post_front_height,   # At top of front post
         stickout=top_plate_stickout,   # 1 foot stickout on both sides
         location_on_timber2=post_front_height,   # Same height on right post
-        lateral_offset=0.0,       # No lateral offset
+        lateral_offset=0,       # No lateral offset
         size=top_plate_size,
         orientation_width_vector=create_vector3d(0, 0, 1),
         name="Front Top Plate"
@@ -369,7 +369,7 @@ def create_oscarshed() -> list[CutTimber]:
         location_on_timber1=post_back_height,    # At top of back post
         stickout=top_plate_stickout,   # 1 foot stickout on both sides
         location_on_timber2=post_back_height,    # Same height on right post
-        lateral_offset=0.0,       # No lateral offset
+        lateral_offset=0,       # No lateral offset
         size=top_plate_size,
         orientation_width_vector=create_vector3d(0, 0, 1),
         name="Back Top Plate"

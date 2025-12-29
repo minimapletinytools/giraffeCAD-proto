@@ -22,7 +22,7 @@ RHS = Right Hand System
 '''
 
 import sympy as sp
-from sympy import Matrix, cos, sin, pi, Float, Rational, Abs
+from sympy import Matrix, cos, sin, pi, Float, Rational, Abs, S, sympify
 from typing import Optional, Union
 from dataclasses import dataclass, field
 import warnings
