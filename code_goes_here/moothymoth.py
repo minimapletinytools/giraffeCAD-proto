@@ -33,142 +33,93 @@ import warnings
 # ============================================================================
 
 # Epsilon constants for numerical comparisons
-EPSILON_PARALLEL = Float('1e-4')  # Threshold for checking if vectors are nearly parallel/perpendicular
-EPSILON_GENERIC = Float('1e-8')   # Generic epsilon threshold for all other comparisons
+EPSILON_GENERIC = Float('1e-8')      # Generic epsilon threshold for float comparisons
+SYMPY_EXPR_EPSILON = Float('1e-12')  # Epsilon for SymPy expressions when .equals() returns None
 
 
 # ============================================================================
 # Zero Test Helper Functions
 # ============================================================================
 
-def zero_test(value, always_exact: bool = False, epsilon: Optional[Float] = None) -> bool:
+def zero_test(value) -> bool:
     """
-    Test if a value is zero, with options for exact or epsilon-based checking.
+    Test if a value is zero using SymPy's equals() method or float comparison.
     
     Args:
         value: The value to test (SymPy expression, Rational, Float, or numeric)
-        always_exact: If True, force exact checking (raises assertion if epsilon provided)
-        epsilon: If provided, use epsilon-based comparison
     
     Returns:
         True if value is (approximately) zero
     
     Behavior:
-    - If value is Rational and epsilon is None: exact check (value == 0)
-    - If always_exact is True: assert epsilon is None, warn if value is not Rational, do exact check
-    - If epsilon is provided: check if |value| < epsilon
+    - If value contains Float: Use epsilon comparison (EPSILON_GENERIC)
+    - If value has .equals() method: Try exact symbolic comparison
+    - For plain floats/ints: Use epsilon comparison (EPSILON_GENERIC)
     """
-    if always_exact:
-        assert epsilon is None, "Cannot provide epsilon when always_exact=True"
-        if not isinstance(value, Rational):
-            warnings.warn(f"exact_zero_test called with non-Rational value {type(value).__name__}. Proceeding with exact check.")
-        return value == 0
+    # Check if value contains Float components (use epsilon comparison for floats)
+    if hasattr(value, 'has') and value.has(Float):
+        return Abs(value) < EPSILON_GENERIC
     
-    if epsilon is None:
-        if isinstance(value, Rational):
-            return value == 0
-        else:
-            # Default to epsilon-based check for non-Rational values
-            return Abs(value) < EPSILON_GENERIC
+    # Try SymPy exact equality for symbolic/Rational values
+    if hasattr(value, 'equals'):
+        result = value.equals(0)
+        if result is True:
+            return True
+        elif result is False:
+            return False
+        # result is None - couldn't determine, fall back to epsilon
+        return Abs(value) < EPSILON_GENERIC
     
-    return Abs(value) < epsilon
+    # For plain Python floats/ints
+    return Abs(value) < EPSILON_GENERIC
 
 
-def epsilon_zero_test(value, epsilon: Float = EPSILON_GENERIC) -> bool:
+def equality_test(value, expected) -> bool:
     """
-    Test if a value is approximately zero using epsilon comparison.
-    
-    Args:
-        value: The value to test
-        epsilon: Epsilon threshold (defaults to EPSILON_GENERIC)
-    
-    Returns:
-        True if |value| < epsilon
-    """
-    return zero_test(value, always_exact=False, epsilon=epsilon)
-
-
-def exact_zero_test(value) -> bool:
-    """
-    Test if a value is exactly zero. Warns if value is not Rational.
-    
-    Args:
-        value: The value to test
-    
-    Returns:
-        True if value == 0 (exact comparison)
-    """
-    return zero_test(value, always_exact=True, epsilon=None)
-
-
-def equality_test(value, expected, always_exact: bool = False, epsilon: Optional[Float] = None) -> bool:
-    """
-    Test if a value equals an expected value, with options for exact or epsilon-based checking.
+    Test if a value equals an expected value using SymPy's equals() method or float comparison.
     
     Args:
         value: The value to test (SymPy expression, Rational, Float, or numeric)
         expected: The expected value to compare against
-        always_exact: If True, force exact checking (raises assertion if epsilon provided)
-        epsilon: If provided, use epsilon-based comparison
     
     Returns:
         True if value is (approximately) equal to expected
     
     Behavior:
-    - If value and expected are Rational and epsilon is None: exact check (value == expected)
-    - If always_exact is True: assert epsilon is None, warn if not Rational, do exact check
-    - If epsilon is provided: check if |value - expected| < epsilon
+    - If value or expected contains Float: Use epsilon comparison (EPSILON_GENERIC)
+    - If both have .equals() method: Try exact symbolic comparison
+    - For plain floats/ints: Use epsilon comparison (EPSILON_GENERIC)
     """
-    if always_exact:
-        assert epsilon is None, "Cannot provide epsilon when always_exact=True"
-        if not (isinstance(value, Rational) and isinstance(expected, Rational)):
-            warnings.warn(f"exact_equality_test called with non-Rational values {type(value).__name__} and {type(expected).__name__}. Proceeding with exact check.")
-        return value == expected
+    # Check if either value contains Float components (use epsilon comparison for floats)
+    has_float = False
+    if hasattr(value, 'has') and value.has(Float):
+        has_float = True
+    if hasattr(expected, 'has') and expected.has(Float):
+        has_float = True
     
-    if epsilon is None:
-        if isinstance(value, Rational) and isinstance(expected, Rational):
-            return value == expected
-        else:
-            # Default to epsilon-based check for non-Rational values
-            return Abs(value - expected) < EPSILON_GENERIC
+    if has_float:
+        return Abs(value - expected) < EPSILON_GENERIC
     
-    return Abs(value - expected) < epsilon
-
-
-def epsilon_equality_test(value, expected, epsilon: Float = EPSILON_GENERIC) -> bool:
-    """
-    Test if a value is approximately equal to an expected value using epsilon comparison.
+    # Try SymPy exact equality for symbolic/Rational values
+    if hasattr(value, 'equals') and hasattr(expected, 'equals'):
+        diff = value - expected
+        result = diff.equals(0)
+        if result is True:
+            return True
+        elif result is False:
+            return False
+        # result is None - couldn't determine, fall back to epsilon
+        return Abs(value - expected) < EPSILON_GENERIC
     
-    Args:
-        value: The value to test
-        expected: The expected value
-        epsilon: Epsilon threshold (defaults to EPSILON_GENERIC)
-    
-    Returns:
-        True if |value - expected| < epsilon
-    """
-    return equality_test(value, expected, always_exact=False, epsilon=epsilon)
-
-
-def exact_equality_test(value, expected) -> bool:
-    """
-    Test if a value is exactly equal to an expected value. Warns if values are not Rational.
-    
-    Args:
-        value: The value to test
-        expected: The expected value
-    
-    Returns:
-        True if value == expected (exact comparison)
-    """
-    return equality_test(value, expected, always_exact=True, epsilon=None)
+    # For plain Python floats/ints
+    return Abs(value - expected) < EPSILON_GENERIC
 
 
 # ============================================================================
 # Parallel and Perpendicular Check Functions
 # ============================================================================
 
-def construction_parallel_check(vector1: Matrix, vector2: Matrix, always_exact: bool = False, epsilon: Optional[Float] = None) -> bool:
+def construction_parallel_check(vector1: Matrix, vector2: Matrix) -> bool:
     """
     Check if two vectors are parallel.
     
@@ -177,15 +128,10 @@ def construction_parallel_check(vector1: Matrix, vector2: Matrix, always_exact: 
     Args:
         vector1: First direction vector
         vector2: Second direction vector
-        always_exact: If True, force exact checking (raises assertion if epsilon provided)
-        epsilon: Threshold for parallel check (defaults to EPSILON_PARALLEL if None)
     
     Returns:
-        True if |abs(dot_product) - 1| < epsilon (vectors are parallel)
+        True if |abs(dot_product) - 1| is approximately zero (vectors are parallel)
     """
-    if epsilon is None and not always_exact:
-        epsilon = EPSILON_PARALLEL
-    
     # Compute dot product
     dot_product = vector1.dot(vector2)
     
@@ -193,10 +139,10 @@ def construction_parallel_check(vector1: Matrix, vector2: Matrix, always_exact: 
     # This is equivalent to checking if abs(dot_product) is approximately 1
     deviation = Abs(Abs(dot_product) - 1)
     
-    return zero_test(deviation, always_exact=always_exact, epsilon=epsilon)
+    return zero_test(deviation)
 
 
-def construction_perpendicular_check(vector1: Matrix, vector2: Matrix, always_exact: bool = False, epsilon: Optional[Float] = None) -> bool:
+def construction_perpendicular_check(vector1: Matrix, vector2: Matrix) -> bool:
     """
     Check if two vectors are perpendicular.
     
@@ -205,20 +151,15 @@ def construction_perpendicular_check(vector1: Matrix, vector2: Matrix, always_ex
     Args:
         vector1: First direction vector
         vector2: Second direction vector
-        always_exact: If True, force exact checking (raises assertion if epsilon provided)
-        epsilon: Threshold for perpendicular check (defaults to EPSILON_PARALLEL if None)
     
     Returns:
-        True if |dot_product| < epsilon (vectors are perpendicular)
+        True if dot_product is approximately zero (vectors are perpendicular)
     """
-    if epsilon is None and not always_exact:
-        epsilon = EPSILON_PARALLEL
-    
     # Compute dot product
     dot_product = vector1.dot(vector2)
     
     # Check if dot product is approximately zero
-    return zero_test(dot_product, always_exact=always_exact, epsilon=epsilon)
+    return zero_test(dot_product)
 
 
 # ============================================================================

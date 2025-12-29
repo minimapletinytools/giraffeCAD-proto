@@ -6,10 +6,8 @@ Contains all core data structures and type definitions for the timber framing sy
 from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify
 from .moothymoth import (
     Orientation,
-    EPSILON_PARALLEL,
     EPSILON_GENERIC,
-    epsilon_zero_test,
-    exact_zero_test,
+    zero_test,
     construction_parallel_check,
     construction_perpendicular_check
 )
@@ -370,7 +368,7 @@ def _compute_timber_orientation(length_direction: Direction3D, width_direction: 
     face_orthogonal = face_input - projection
     
     # Check if face_orthogonal is too small (vectors were nearly parallel)
-    if epsilon_zero_test(face_orthogonal.norm(), EPSILON_GENERIC):
+    if zero_test(face_orthogonal.norm()):
         # Choose an arbitrary orthogonal direction
         # Find a vector that's not parallel to length_norm
         if Abs(length_norm[0]) < 0.9:  # Threshold comparison - use float
@@ -731,7 +729,7 @@ class Cut(ABC):
             # In local coordinates, the timber's length direction is the Z-axis
             local_z_axis = create_vector3d(0, 0, 1)
             
-            if construction_perpendicular_check(local_normal, local_z_axis, epsilon=EPSILON_PARALLEL):
+            if construction_perpendicular_check(local_normal, local_z_axis):
                 # Plane is parallel to the timber - no unique intersection
                 raise ValueError("Cut plane is parallel to timber centerline")
             

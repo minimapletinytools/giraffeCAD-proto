@@ -7,9 +7,8 @@ from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.moothymoth import (
     Orientation,
-    EPSILON_PARALLEL,
     EPSILON_GENERIC,
-    epsilon_zero_test,
+    zero_test,
     construction_parallel_check,
     construction_perpendicular_check
 )
@@ -62,7 +61,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
         endB_position = timberB.get_bottom_center_position()
     
     # Check that the timbers are not parallel
-    if construction_parallel_check(directionA, directionB, epsilon=EPSILON_PARALLEL):
+    if construction_parallel_check(directionA, directionB):
         raise ValueError("Timbers cannot be parallel for a miter joint")
     
     # Find the intersection point (or closest point) between the two timber centerlines
@@ -78,7 +77,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     e = directionB.dot(w0)
     
     denom = a * c - b * b
-    if epsilon_zero_test(denom, EPSILON_GENERIC):
+    if zero_test(denom):
         raise ValueError("Cannot compute intersection point (degenerate case)")
     
     # Parameters for closest points on each line
@@ -340,7 +339,7 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
         
         # Check if the point needed projection (warn if not on centerline)
         distance_from_centerline = vector_magnitude(splice_point - projected_point)
-        if not epsilon_zero_test(distance_from_centerline, EPSILON_GENERIC):
+        if not zero_test(distance_from_centerline):
             warnings.warn(f"Splice point was not on timberA's centerline (distance: {float(distance_from_centerline)}). Projecting onto centerline.")
             splice_point = projected_point
     
