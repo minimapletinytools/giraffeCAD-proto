@@ -8,6 +8,15 @@ from code_goes_here.moothymoth import Orientation
 from code_goes_here.footprint import Footprint
 from giraffe import *
 from giraffe import _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned, _project_point_on_timber_centerline, _calculate_mortise_position_from_tenon_intersection
+from .conftest import (
+    create_standard_vertical_timber,
+    create_standard_horizontal_timber,
+    assert_is_valid_rotation_matrix,
+    assert_vectors_perpendicular,
+    assert_vectors_parallel,
+    assert_vector_normalized,
+    MockCut
+)
 
 
 # ============================================================================
@@ -104,9 +113,8 @@ class TestTimber:
         matrix = timber.orientation.matrix
         assert matrix.shape == (3, 3)
         
-        # Check that it's a valid rotation matrix (determinant = 1) - keep epsilon as float
-        det_val = float(simplify(matrix.det()))
-        assert abs(det_val - Rational(1)) < 1e-10
+        # Check that it's a valid rotation matrix
+        assert_is_valid_rotation_matrix(matrix)
     
     def test_get_transform_matrix(self):
         """Test 4x4 transformation matrix generation."""
@@ -208,22 +216,14 @@ class TestTimber:
         height_dir = timber.height_direction
         
         # Check that each vector has unit length
-        length_mag = float(sqrt(sum(x**2 for x in length_dir)))
-        face_mag = float(sqrt(sum(x**2 for x in width_dir)))
-        height_mag = float(sqrt(sum(x**2 for x in height_dir)))
+        assert_vector_normalized(length_dir)
+        assert_vector_normalized(width_dir)
+        assert_vector_normalized(height_dir)
         
-        assert abs(length_mag - Rational(1)) < 1e-10
-        assert abs(face_mag - Rational(1)) < 1e-10
-        assert abs(height_mag - Rational(1)) < 1e-10
-        
-        # Check that vectors are orthogonal (dot products = 0)
-        length_face_dot = float(sum(length_dir[i] * width_dir[i] for i in range(3)))
-        length_height_dot = float(sum(length_dir[i] * height_dir[i] for i in range(3)))
-        face_height_dot = float(sum(width_dir[i] * height_dir[i] for i in range(3)))
-        
-        assert abs(length_face_dot) < 1e-10
-        assert abs(length_height_dot) < 1e-10
-        assert abs(face_height_dot) < 1e-10
+        # Check that vectors are orthogonal
+        assert_vectors_perpendicular(length_dir, width_dir)
+        assert_vectors_perpendicular(length_dir, height_dir)
+        assert_vectors_perpendicular(width_dir, height_dir)
     
     def test_orientation_handles_non_normalized_inputs(self):
         """Test that orientation computation works with non-normalized input vectors."""
@@ -733,21 +733,6 @@ class TestEnumsAndDataStructures:
 
 
 
-class MockCut:
-    """Mock Cut implementation for testing."""
-    def __init__(self, timber: Timber, end_position: V3, maybe_end_cut: Optional[TimberReferenceEnd] = None):
-        self.timber = timber
-        self._end_position = end_position
-        self.maybe_end_cut = maybe_end_cut
-        self.origin = Matrix([0, 0, 0])
-        self.orientation = Orientation()
-    
-    def get_end_position(self) -> V3:
-        return self._end_position
-    
-    def get_negative_csg(self):
-        # Not needed for these tests
-        pass
 
 
 

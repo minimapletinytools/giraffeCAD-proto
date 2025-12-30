@@ -788,6 +788,7 @@ def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber, housing
     )
 
 
+# TODO DELETE
 def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timber, extend_housed_timber_to_infinity: bool = False) -> Joint:
     """
     DEPRECATED: Use cut_basic_house_joint() instead.

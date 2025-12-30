@@ -10,6 +10,7 @@ from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
     HalfPlane, Prism, Cylinder, Union, Difference
 )
+from .conftest import assert_is_valid_rotation_matrix
 
 
 class TestMinimalBoundary:

@@ -8,6 +8,14 @@ from code_goes_here.moothymoth import Orientation
 from code_goes_here.footprint import Footprint
 from giraffe import *
 from giraffe import _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned, _project_point_on_timber_centerline, _calculate_mortise_position_from_tenon_intersection
+from .conftest import (
+    create_standard_vertical_timber,
+    create_standard_horizontal_timber,
+    create_test_footprint,
+    assert_is_valid_rotation_matrix,
+    assert_vectors_perpendicular
+)
+from code_goes_here.moothymoth import inches, feet
 
 
 # ============================================================================
@@ -447,9 +455,7 @@ class TestJoinTimbers:
         # Default behavior: projects timber1's length direction [0,0,1] onto perpendicular plane
         # Result should be perpendicular to joining direction
         width_dir = joining_timber.width_direction
-        dot_product = length_dir.dot(width_dir)
-        assert simplify(dot_product) == 0 or abs(float(dot_product)) < 1e-6, \
-            "Face direction should be perpendicular to length direction"
+        assert_vectors_perpendicular(length_dir, width_dir)
         
         # Verify the joining timber is positioned correctly
         # pos1 = [0, 0, 1.5] (location 1.5 on timber1), pos2 = [2, 0, 1.0] (location 1.0 on timber2)
@@ -662,17 +668,11 @@ class TestJoinTimbers:
     
     def test_join_perpendicular_on_face_parallel_timbers_auto_size(self):
         """Test automatic size determination in join_perpendicular_on_face_parallel_timbers."""
-        # Constants using exact rationals
-        # 1 inch = 0.0254 m = 254/10000 m = 127/5000 m
-        INCH_TO_METERS = Rational(127, 5000)
-        # 1 foot = 0.3048 m = 3048/10000 m = 381/1250 m
-        FEET_TO_METERS = Rational(381, 1250)
-        
         # Create two vertical posts with 1" x 2" cross-section
         # size[0] = width (1 inch), size[1] = height (2 inches)
         post1 = timber_from_directions(
             length=3,  # 3 meters tall (exact integer)
-            size=create_vector2d(1 * INCH_TO_METERS, 2 * INCH_TO_METERS),  # 1" x 2"
+            size=create_vector2d(inches(1), inches(2)),  # 1" x 2"
             bottom_position=create_vector3d(0, 0, 0),  # Exact integers
             length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
             width_direction=create_vector3d(1, 0, 0)     # East (X+)
@@ -681,8 +681,8 @@ class TestJoinTimbers:
         # Post2 is 5 feet away in the X direction
         post2 = timber_from_directions(
             length=3,  # Exact integer
-            size=create_vector2d(1 * INCH_TO_METERS, 2 * INCH_TO_METERS),  # 1" x 2"
-            bottom_position=create_vector3d(5 * FEET_TO_METERS, 0, 0),  # 5 feet in X (exact rational)
+            size=create_vector2d(inches(1), inches(2)),  # 1" x 2"
+            bottom_position=create_vector3d(feet(5), 0, 0),  # 5 feet in X
             length_direction=create_vector3d(0, 0, 1),  # Vertical (Z+)
             width_direction=create_vector3d(1, 0, 0)     # East (X+)
         )
@@ -780,10 +780,10 @@ class TestJoinTimbers:
         assert simplify(width_dir.norm() - 1) == 0, "Face direction should be unit vector"
         assert simplify(height_dir.norm() - 1) == 0, "Height direction should be unit vector"
         
-        # Verify directions are orthogonal to each other (exact SymPy comparison)
-        assert simplify(length_dir.dot(width_dir)) == 0, "Length and face directions should be orthogonal"
-        assert simplify(length_dir.dot(height_dir)) == 0, "Length and height directions should be orthogonal"
-        assert simplify(width_dir.dot(height_dir)) == 0, "Face and height directions should be orthogonal"
+        # Verify directions are orthogonal to each other
+        assert_vectors_perpendicular(length_dir, width_dir)
+        assert_vectors_perpendicular(length_dir, height_dir)
+        assert_vectors_perpendicular(width_dir, height_dir)
 
     def test_create_timber_creates_orthogonal_matrix(self):
         """Test that create_timber creates valid orthogonal orientation matrices."""

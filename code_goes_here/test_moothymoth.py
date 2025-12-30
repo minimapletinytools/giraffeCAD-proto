@@ -15,35 +15,7 @@ from code_goes_here.moothymoth import (
     INCH_TO_METER, FOOT_TO_METER, SHAKU_TO_METER
 )
 import random
-
-
-def generate_random_orientation() -> Orientation:
-    """
-    Generate a random valid rotation matrix as an Orientation.
-    
-    Uses the method of generating random unit quaternions and converting
-    to rotation matrix to ensure we get valid rotation matrices.
-    
-    Returns:
-        Orientation: A randomly oriented Orientation object
-    """
-    # Generate random unit quaternion (Shepperd's method)
-    u1, u2, u3 = [random.random() for _ in range(3)]
-    
-    # Convert to unit quaternion components
-    q0 = math.sqrt(1 - u1) * math.sin(2 * math.pi * u2)
-    q1 = math.sqrt(1 - u1) * math.cos(2 * math.pi * u2)
-    q2 = math.sqrt(u1) * math.sin(2 * math.pi * u3)
-    q3 = math.sqrt(u1) * math.cos(2 * math.pi * u3)
-    
-    # Convert quaternion to rotation matrix
-    matrix = [
-        [1 - 2*(q2**2 + q3**2), 2*(q1*q2 - q0*q3), 2*(q1*q3 + q0*q2)],
-        [2*(q1*q2 + q0*q3), 1 - 2*(q1**2 + q3**2), 2*(q2*q3 - q0*q1)],
-        [2*(q1*q3 - q0*q2), 2*(q2*q3 + q0*q1), 1 - 2*(q1**2 + q2**2)]
-    ]
-    
-    return Orientation(matrix)
+from .conftest import generate_random_orientation, assert_is_valid_rotation_matrix
 
 
 class TestOrientation:
@@ -229,8 +201,7 @@ class TestRotationMatrixProperties:
         ]
         
         for orientation in orientations:
-            det_val = float(simplify(det(orientation.matrix)))
-            assert abs(det_val - 1.0) < 1e-10
+            assert_is_valid_rotation_matrix(orientation.matrix)
     
     def test_orthogonality(self):
         """Test all orientation matrices are orthogonal (R * R^T = I)."""

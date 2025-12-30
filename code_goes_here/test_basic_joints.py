@@ -8,6 +8,12 @@ from code_goes_here.moothymoth import Orientation
 from code_goes_here.footprint import Footprint
 from giraffe import *
 from giraffe import _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned, _project_point_on_timber_centerline, _calculate_mortise_position_from_tenon_intersection
+from .conftest import (
+    create_standard_vertical_timber,
+    create_standard_horizontal_timber,
+    assert_is_valid_rotation_matrix,
+    assert_vectors_perpendicular
+)
 
 
 # ============================================================================

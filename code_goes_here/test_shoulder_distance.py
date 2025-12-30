@@ -14,6 +14,7 @@ from giraffe import (
     create_vector2d,
     TimberReferenceEnd
 )
+from code_goes_here.moothymoth import inches
 
 
 class TestShoulderDistanceCalculation:
@@ -22,9 +23,8 @@ class TestShoulderDistanceCalculation:
     def setup_method(self):
         """Set up common test data."""
         # Standard 4x4 inch timber dimensions (in meters)
-        self.INCH_TO_METER = 0.0254
-        self.timber_size = create_vector2d(4 * self.INCH_TO_METER, 4 * self.INCH_TO_METER)  # 0.1016m x 0.1016m
-        self.expected_half_dimension = 2 * self.INCH_TO_METER  # 0.0508m
+        self.timber_size = create_vector2d(inches(4), inches(4))  # 0.1016m x 0.1016m
+        self.expected_half_dimension = inches(2)  # 0.0508m
         
     def test_vertical_tenon_into_horizontal_mortise_x_direction(self):
         """Test vertical timber with tenon into horizontal timber (X-aligned)."""
@@ -107,7 +107,7 @@ class TestShoulderDistanceCalculation:
         
         # Test right tenon (horizontal timber right end at [0.5, 0, 0])
         # Distance from [0.5, 0, 0] to vertical timber face should be 0.5 + face_offset
-        expected_distance = 0.5 + (2 * self.INCH_TO_METER)  # 0.5 + 0.0508
+        expected_distance = 0.5 + inches(2)  # 0.5 + 0.0508
         distance = _calculate_distance_from_timber_end_to_shoulder_plane(
             horizontal_timber, vertical_timber, TimberReferenceEnd.TOP
         )
@@ -138,7 +138,7 @@ class TestShoulderDistanceCalculation:
         
         # Test top tenon (horizontal timber top end at [0, 0.5, 0])
         # Distance should be 0.5 + face_offset
-        expected_distance = 0.5 + (2 * self.INCH_TO_METER)  # 0.5508
+        expected_distance = 0.5 + inches(2)  # 0.5508
         distance = _calculate_distance_from_timber_end_to_shoulder_plane(
             horizontal_timber, vertical_timber, TimberReferenceEnd.TOP
         )
@@ -169,7 +169,7 @@ class TestShoulderDistanceCalculation:
         
         # Test tenon from X timber TOP end [0.5, 0, 0] into Y timber
         # Distance should be 0.5 + face_offset = 0.5508
-        expected_distance = 0.5 + (2 * self.INCH_TO_METER)
+        expected_distance = 0.5 + inches(2)
         distance = _calculate_distance_from_timber_end_to_shoulder_plane(
             timber_x, timber_y, TimberReferenceEnd.TOP
         )
@@ -203,7 +203,7 @@ class TestShoulderDistanceCalculation:
         # X timber centerline is at y=0, so distance to intersection is 0.5
         # But X timber's RIGHT face (receiving mortise) is at x=0.0508
         # Since Y timber centerline passes through x=0, the calculation is different
-        expected_distance = 0.5 - (2 * self.INCH_TO_METER)  # 0.4492
+        expected_distance = 0.5 - inches(2)  # 0.4492
         distance = _calculate_distance_from_timber_end_to_shoulder_plane(
             timber_y, timber_x, TimberReferenceEnd.TOP
         )
@@ -215,12 +215,12 @@ class TestShoulderDistanceCalculation:
     def test_different_timber_sizes(self):
         """Test with different timber sizes to ensure calculation scales correctly."""
         # Larger timber (6x6 inches)
-        large_size = create_vector2d(6 * self.INCH_TO_METER, 6 * self.INCH_TO_METER)
-        expected_large_half = 3 * self.INCH_TO_METER
+        large_size = create_vector2d(inches(6), inches(6))
+        expected_large_half = inches(3)
         
         # Smaller timber (2x4 inches) 
-        small_size = create_vector2d(2 * self.INCH_TO_METER, 4 * self.INCH_TO_METER)
-        expected_small_half_width = 1 * self.INCH_TO_METER  # Half of 2 inches
+        small_size = create_vector2d(inches(2), inches(4))
+        expected_small_half_width = inches(1)  # Half of 2 inches
         
         # Large timber (tenon)
         large_timber = create_timber(
@@ -252,8 +252,7 @@ class TestShoulderDistanceCalculation:
     def test_misaligned_timbers_example2_geometry(self):
         """Test misaligned timbers like in supersimple_example2 where centerlines don't intersect."""
         # Recreate the exact geometry from supersimple_example2
-        INCH_TO_METER = 0.0254
-        post_size = create_vector2d(4 * INCH_TO_METER, 4 * INCH_TO_METER)
+        post_size = create_vector2d(inches(4), inches(4))
         
         # Vertical timber at origin
         vertical_timber = create_timber(
@@ -288,7 +287,7 @@ class TestShoulderDistanceCalculation:
         # - Horizontal timber bottom end is at (0, -0.5, 0.5)
         # - Vertical timber forward face is at y = +0.0508 (half timber width from centerline)
         # - Distance along horizontal timber centerline = 0.5 + 0.0508 = 0.5508
-        expected_distance = 0.5 + (2 * INCH_TO_METER)  # 0.5 + 0.0508 = 0.5508
+        expected_distance = 0.5 + inches(2)  # 0.5 + 0.0508 = 0.5508
         
         print(f"Misaligned timbers (Example2): {distance} (expected: {expected_distance})")
         
@@ -300,8 +299,7 @@ class TestShoulderDistanceCalculation:
     def test_supersimple_example5_geometry(self):
         """Test the exact geometry from supersimple_example5."""
         # Recreate the exact geometry from supersimple_example5
-        INCH_TO_METER = 0.0254
-        post_size = create_vector2d(4 * INCH_TO_METER, 4 * INCH_TO_METER)
+        post_size = create_vector2d(inches(4), inches(4))
         
         # Vertical timber
         vertical_timber = create_timber(
@@ -340,7 +338,7 @@ class TestShoulderDistanceCalculation:
             vertical_timber, top_timber, TimberReferenceEnd.TOP
         )
         
-        expected = 2 * INCH_TO_METER  # Half of 4 inch timber
+        expected = inches(2)  # Half of 4 inch timber
         
         print(f"Example5 bottom joint: {bottom_distance} (expected: {expected})")
         print(f"Example5 top joint: {top_distance} (expected: {expected})")
@@ -352,8 +350,7 @@ class TestShoulderDistanceCalculation:
     
     def test_truly_aligned_timbers(self):
         """Test truly aligned timbers where tenon end coincides with projected point."""
-        INCH_TO_METER = 0.0254
-        post_size = create_vector2d(4 * INCH_TO_METER, 4 * INCH_TO_METER)
+        post_size = create_vector2d(inches(4), inches(4))
         
         # Vertical timber at origin
         vertical_timber = create_timber(
@@ -379,7 +376,7 @@ class TestShoulderDistanceCalculation:
             horizontal_timber, vertical_timber, TimberReferenceEnd.BOTTOM
         )
         
-        expected = 2 * INCH_TO_METER  # Just the face offset
+        expected = inches(2)  # Just the face offset
         
         print(f"Truly aligned timbers: {distance} (expected: {expected})")
         assert abs(distance - expected) < 1e-6, \
