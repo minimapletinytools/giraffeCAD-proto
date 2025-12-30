@@ -63,9 +63,8 @@ don't touch fusion360, rhino, examples, oldcrap folder for now
 -do mortise and tenno joint
 -add timber metadata 
 -do the big useless test cleanup
--double check floats again, are floats really necessary? I mean they really aren't
-  -at least add a warning if floats are passed in.. I don't think we're ever forced to convert to float ever....
--cleanup render utilities, some of them seem unecessary
+
+
 
 DONE-add units construction
 DONE-sympy stuff
@@ -75,6 +74,11 @@ DONE-sympy stuff
 DONE-make sure freecad rendering works
 DONE-make sure oscar shed rafter pocket works
 
+-add some more tests for cross lap joint
+
+-double check floats again, are floats really necessary? I mean they really aren't
+  -at least add a warning if floats are passed in.. I don't think we're ever forced to convert to float ever....
+-cleanup render utilities, some of them seem unecessary
 
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
@@ -93,9 +97,9 @@ DONE-make sure oscar shed rafter pocket works
     DONE-basic_butt_joint
     DONE-basic_splice_joint
     DONE-basic_miter_joint
-
-  -cross_joints
-    -basic_cross_lap_joint
+  DONE-cross_joints
+    DONE-basic_house_joint
+    DONE-basic_cross_lap_joint
 
   -butt joints
     -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
