@@ -251,47 +251,54 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
 def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
     """
     Create a cross lap joint where two timbers cross each other.
-    Each timber is notched halfway through so they fit together flush.
-    
-    NOTE: This joint type is not yet implemented in basic_joints.py
+    Each timber is notched halfway through (cut_ratio=0.5) so they fit together flush.
+    TimberA is positioned lower, TimberB is positioned higher, and they overlap in the middle.
     
     Args:
         position: Center position of the joint (V3)
         
     Returns:
-        List of CutTimber objects representing the joint (empty until implemented)
+        List of CutTimber objects representing the joint
     """
-    # TODO: Implement when cut_basic_cross_lap_joint is complete
-    print("  (Cross Lap Joint not yet implemented - skipped)")
-    return []
+    half_length = TIMBER_LENGTH / 2
+    half_height = TIMBER_SIZE / 2
     
-    # Implementation will look like this once available:
-    # half_length = TIMBER_LENGTH / 2
-    # 
-    # timberA = timber_from_directions(
-    #     name="CrossLap_TimberA",
-    #     length=TIMBER_LENGTH,
-    #     size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
-    #     bottom_position=position - Matrix([half_length, 0, 0]),
-    #     length_direction=Matrix([1, 0, 0]),
-    #     width_direction=Matrix([0, 1, 0])
-    # )
-    # 
-    # timberB = timber_from_directions(
-    #     name="CrossLap_TimberB",
-    #     length=TIMBER_LENGTH,
-    #     size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
-    #     bottom_position=position - Matrix([0, half_length, 0]),
-    #     length_direction=Matrix([0, 1, 0]),
-    #     width_direction=Matrix([-1, 0, 0])
-    # )
-    # 
-    # joint = cut_basic_cross_lap_joint(
-    #     timberA, timberB,
-    #     cut_ratio=Rational(1, 2)
-    # )
-    # 
-    # return joint.partiallyCutTimbers
+    # TimberA extends in +X direction, bottom at Z=0 (relative to position)
+    # Height direction is +Z, so top face is at Z=TIMBER_SIZE
+    timberA = timber_from_directions(
+        name="CrossLap_TimberA",
+        length=TIMBER_LENGTH,
+        size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
+        bottom_position=position - Matrix([half_length, 0, 0]),
+        length_direction=Matrix([1, 0, 0]),
+        width_direction=Matrix([0, 1, 0])  # Height direction becomes +Z
+    )
+    
+    # TimberB extends in +Y direction, bottom at Z=half_height (relative to position)
+    # This creates an overlap from Z=half_height to Z=TIMBER_SIZE
+    # Height direction is +Z, so top face is at Z=half_height+TIMBER_SIZE
+    timberB = timber_from_directions(
+        name="CrossLap_TimberB",
+        length=TIMBER_LENGTH,
+        size=Matrix([TIMBER_SIZE, TIMBER_SIZE]),
+        bottom_position=position - Matrix([0, half_length, 0]),
+        length_direction=Matrix([0, 1, 0]),
+        width_direction=Matrix([-1, 0, 0])  # Height direction becomes +Z
+    )
+    
+    # Create cross lap joint with cut_ratio=0.5 (each timber cut halfway)
+    # The function will auto-select FORWARD face of timberA (+Z) and BACK face of timberB (-Z)
+    # which oppose each other (dot product = -1 < 0)
+    joint = cut_basic_cross_lap_joint(
+        timberA, timberB,
+        cut_ratio=Rational(1, 2),
+        # these are coplanar timbers so it can not infer which side to cut
+        # (you can determine which face is which by deriving from the length and width direction... or just ask the AI to help you figure it out)
+        timberA_cut_face=TimberFace.FORWARD,
+        timberB_cut_face=TimberFace.BACK
+    )
+    
+    return joint.partiallyCutTimbers
 
 
 def create_all_joint_examples() -> list[CutTimber]:

@@ -48,6 +48,7 @@ class TimberFace(Enum):
     TOP = 1 # the face vector with normal vector in the +Z axis direction
     BOTTOM = 2 # the face vector with normal vector in the -Z axis direction
     RIGHT = 3 # the face vector with normal vector in the +X axis direction
+    # TODO Seriously? Forward instead of Front?
     FORWARD = 4 # the face vector with normal vector in the +Y axis direction
     LEFT = 5 # the face vector with normal vector in the -X axis direction
     BACK = 6 # the face vector with normal vector in the -Y axis direction

@@ -670,7 +670,7 @@ class TestHouseJoint:
     
     def test_basic_house_joint_perpendicular_timbers(self):
         """Test basic housed joint with two perpendicular timbers."""
-        # Create housing timber (horizontal beam along +X)
+        # Create housing timber (horizontal beam along +X at Z=0)
         housing_timber = timber_from_directions(
             length=Rational(100),
             size=Matrix([Rational(10), Rational(10)]),
@@ -679,7 +679,8 @@ class TestHouseJoint:
             width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
         )
         
-        # Create housed timber (shelf along +Y, crossing through housing timber)
+        # Create housed timber (shelf along +Y, positioned to overlap from above)
+        # Bottom at Z=5, top at Z=11, so it overlaps with housing timber from Z=5 to Z=10
         housed_timber = timber_from_directions(
             length=Rational(60),
             size=Matrix([Rational(6), Rational(6)]),
@@ -689,7 +690,12 @@ class TestHouseJoint:
         )
         
         # Create house joint
-        joint = cut_basic_house_joint(housing_timber, housed_timber, extend_housed_timber_to_infinity=True)
+        # Explicitly specify opposing faces: housing.FORWARD (+Z) vs housed.BACK (-Z)
+        joint = cut_basic_house_joint(
+            housing_timber, housed_timber,
+            housing_timber_cut_face=TimberFace.FORWARD,
+            housed_timber_cut_face=TimberFace.BACK
+        )
         
         # Verify joint structure
         assert joint is not None
@@ -728,8 +734,13 @@ class TestHouseJoint:
             width_direction=Matrix([Rational(-1), Rational(0), Rational(0)])
         )
         
-        # Create house joint with finite housed timber
-        joint = cut_basic_house_joint(housing_timber, housed_timber, extend_housed_timber_to_infinity=False)
+        # Create house joint (now always uses infinite extent for the cut)
+        # Explicitly specify opposing faces: housing.FORWARD (+Z) vs housed.BACK (-Z)
+        joint = cut_basic_house_joint(
+            housing_timber, housed_timber,
+            housing_timber_cut_face=TimberFace.FORWARD,
+            housed_timber_cut_face=TimberFace.BACK
+        )
         
         # Verify joint structure
         assert joint is not None
@@ -774,7 +785,12 @@ class TestHouseJoint:
         )
         
         # Create the housed joint
-        joint = cut_basic_house_joint(housing_timber, housed_timber)
+        # Explicitly specify opposing faces: housing.FORWARD (+Y) vs housed.LEFT (-Y)
+        joint = cut_basic_house_joint(
+            housing_timber, housed_timber,
+            housing_timber_cut_face=TimberFace.FORWARD,
+            housed_timber_cut_face=TimberFace.LEFT
+        )
         
         # Get the housing timber with its cut
         housing_cut_timber = joint.partiallyCutTimbers[0]
@@ -784,8 +800,14 @@ class TestHouseJoint:
         
         # Get the negative CSG (the prism being cut away)
         # This is in the housing timber's LOCAL coordinate system
-        cut_prism_local = cut.negative_csg
-        assert isinstance(cut_prism_local, Prism), "Negative CSG should be a Prism"
+        # Note: The new implementation uses a Difference(Prism, HalfPlane) for the cross lap joint
+        from code_goes_here.meowmeowcsg import Difference
+        cut_csg_local = cut.negative_csg
+        assert isinstance(cut_csg_local, Difference), "Negative CSG should be a Difference (cross lap implementation)"
+        
+        # Extract the base prism from the Difference
+        cut_prism_local = cut_csg_local.base
+        assert isinstance(cut_prism_local, Prism), "Base of Difference should be a Prism"
         
         # ===================================================================
         # Compare the cut prism with the housed timber in GLOBAL space

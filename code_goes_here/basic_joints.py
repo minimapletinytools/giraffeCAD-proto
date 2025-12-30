@@ -456,21 +456,342 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         Joint object containing the two PartiallyCutTimbers
 
     Raises:
+        AssertionError: If timbers don't intersect, are parallel, or face normals are invalid
     """
+    from code_goes_here.meowmeowcsg import Difference, Prism, HalfPlane
+    
+    # Verify that cut_ratio is in valid range [0, 1]
+    assert 0 <= cut_ratio <= 1, f"cut_ratio must be in range [0, 1], got {cut_ratio}"
+    
+    # Verify that the timbers are not parallel (their length directions must differ)
+    dot_product = (timberA.length_direction.T * timberB.length_direction)[0, 0]
+    assert abs(abs(dot_product) - 1) > Rational(1, 1000000), \
+        "Timbers must not be parallel (their length directions must differ)"
+    
+    # Check that the timbers intersect when extended infinitely
+    # Calculate closest points between two lines in 3D
+    d1 = timberA.length_direction
+    d2 = timberB.length_direction
+    p1 = timberA.bottom_position
+    p2 = timberB.bottom_position
+    w = p1 - p2
+    
+    a = (d1.T * d1)[0, 0]
+    b = (d1.T * d2)[0, 0]
+    c = (d2.T * d2)[0, 0]
+    d = (d1.T * w)[0, 0]
+    e = (d2.T * w)[0, 0]
+    
+    denom = a * c - b * b
+    
+    if abs(denom) < Rational(1, 1000000):
+        # Lines are parallel (already checked above)
+        t = -(d1.T * w)[0, 0] / a if a > 0 else 0
+        closest_on_1 = p1 + t * d1
+        distance = (p2 - closest_on_1).norm()
+    else:
+        t1 = (b * e - c * d) / denom
+        t2 = (a * e - b * d) / denom
+        
+        closest_on_1 = p1 + t1 * d1
+        closest_on_2 = p2 + t2 * d2
+        
+        distance = (closest_on_1 - closest_on_2).norm()
+    
+    # Check if timbers are close enough to intersect
+    max_separation = (timberA.size[0] + timberA.size[1] + 
+                     timberB.size[0] + timberB.size[1]) / 2
+    
+    assert float(distance) < float(max_separation), \
+        f"Timbers do not intersect (closest distance: {float(distance):.4f}m, max allowed: {float(max_separation):.4f}m)"
+    
+    # Auto-select cut faces if not provided
+    # Choose the face that minimizes material removal (face closest to the other timber)
+    if timberA_cut_face is None:
+        # Find which face of timberA is closest to timberB's centerline
+        # Check all 4 faces and pick the one with smallest distance
+        timberA_cut_face = _find_closest_face_to_timber(timberA, timberB)
+    
+    if timberB_cut_face is None:
+        timberB_cut_face = _find_closest_face_to_timber(timberB, timberA)
+    
+    # Get face normals (pointing outward from the timber) in GLOBAL space
+    # get_face_direction returns the direction vector in world coordinates
+    normalA = timberA.get_face_direction(timberA_cut_face)
+    normalB = timberB.get_face_direction(timberB_cut_face)
+    
+    # Verify that the face normals oppose each other (point toward each other)
+    # For a valid cross lap joint, the normals must strictly oppose (dot product < 0)
+    # This ensures the cutting plane can properly separate the two timber volumes
+    normal_dot = (normalA.T * normalB)[0, 0]
+    
+    # The faces must be opposing (normals pointing toward each other)
+    # Perpendicular faces (dot product = 0) are NOT valid for cross lap joints
+    assert normal_dot < 0, \
+        f"Face normals must oppose each other (dot product < 0, got {float(normal_dot):.4f})"
+    
+    # Create the cutting plane by lerping between the two faces
+    # Get the position of each face (center point on the face)
+    # Calculate face center positions
+    faceA_position = _get_face_center_position(timberA, timberA_cut_face)
+    faceB_position = _get_face_center_position(timberB, timberB_cut_face)
+    
+    # The cutting plane position is interpolated based on cut_ratio
+    # cut_ratio = 0: plane at faceA (timberB is cut entirely)
+    # cut_ratio = 0.5: plane halfway between faces
+    # cut_ratio = 1: plane at faceB (timberA is cut entirely)
+    cutting_plane_position = faceA_position * (1 - cut_ratio) + faceB_position * cut_ratio
+    
+    # The cutting plane normal should be interpolated between the two face normals
+    # cut_ratio = 0: normal is normalA (pointing from faceA)
+    # cut_ratio = 1: normal is -normalB (pointing toward faceB from the opposite direction)
+    # Since normalA and normalB oppose each other (normalA · normalB < 0), we interpolate:
+    cutting_plane_normal = normalA * (1 - cut_ratio) - normalB * cut_ratio
+    cutting_plane_normal_normalized = cutting_plane_normal / cutting_plane_normal.norm()
+    
+    # Calculate the offset for the cutting plane
+    # offset = normal · point_on_plane
+    cutting_plane_offset = (cutting_plane_normal_normalized.T * cutting_plane_position)[0, 0]
+    
+    # Create cuts for both timbers
+    cuts_A = []
+    cuts_B = []
+    
+    # TimberA: Cut by (timberB prism) intersected with (region on the timberB side of cutting plane)
+    # The HalfPlane keeps points where normal·P >= offset
+    # We want to keep the region on the timberB side (positive normal direction from A)
+    # So we use the cutting plane as-is
+    
+    if cut_ratio > 0:  # Only cut timberA if cut_ratio > 0
+        # Transform timberB prism to timberA's local coordinates
+        relative_orientation_B_in_A = Orientation(timberA.orientation.matrix.T * timberB.orientation.matrix)
+        timberB_origin_in_A_local = timberA.orientation.matrix.T * (timberB.bottom_position - timberA.bottom_position)
+        
+        # Create timberB prism in timberA's local coordinates (infinite extent)
+        timberB_prism_in_A = Prism(
+            size=timberB.size,
+            orientation=relative_orientation_B_in_A,
+            position=timberB_origin_in_A_local,
+            start_distance=None,  # Infinite
+            end_distance=None     # Infinite
+        )
+        
+        # Transform cutting plane to timberA's local coordinates
+        cutting_plane_normal_in_A = timberA.orientation.matrix.T * cutting_plane_normal_normalized
+        cutting_plane_position_in_A = timberA.orientation.matrix.T * (cutting_plane_position - timberA.bottom_position)
+        cutting_plane_offset_in_A = (cutting_plane_normal_in_A.T * cutting_plane_position_in_A)[0, 0]
+        
+        # Create HalfPlane that keeps the region on the positive side of the plane
+        # (toward timberB from the cutting plane)
+        half_plane_A = HalfPlane(
+            normal=cutting_plane_normal_in_A,
+            offset=cutting_plane_offset_in_A
+        )
+        
+        # TimberA is cut by: (timberB prism) intersected with half_plane
+        # This means: Difference(timberA, Difference(timberB_prism, half_plane))
+        # Which simplifies to: Difference(timberA, timberB_prism ∩ half_plane_positive_region)
+        # The CSG for this is: subtract (timberB_prism AND above_cutting_plane)
+        # Which is: subtract Difference(timberB_prism, NOT(half_plane))
+        # Since HalfPlane keeps >= side, we want to subtract the >= side
+        # So: negative_csg = Difference(timberB_prism, half_plane) keeps the < side
+        # Actually, we want to subtract: timberB_prism ∩ (normal·P >= offset region)
+        # 
+        # Let me think again: we want to remove from timberA the intersection of timberB_prism 
+        # with the region on the timberB side of cutting plane.
+        # The cutting plane normal points from A to B.
+        # HalfPlane(normal, offset) keeps points where normal·P >= offset (positive side)
+        # So we want to subtract: Difference(timberB_prism, NOT(half_plane))
+        # Which is the same as: (timberB_prism) with everything on the negative side removed
+        # That's just: subtract Difference(timberB_prism, inverse_half_plane)
+        
+        # Actually, simpler: subtract (timberB_prism ∩ positive_half_space)
+        # In CSG: we can't directly intersect with HalfPlane
+        # But Difference(A, B) - Difference(A, C) = A ∩ C if B contains C...
+        # 
+        # Even simpler approach: use two cuts
+        # Cut 1: Subtract timberB prism
+        # Cut 2: Add back the negative side using inverse half plane
+        # Actually that's complicated too.
+        #
+        # Cleanest approach: Just use Difference(timberB_prism, inverse_halfplane)
+        # inverse_halfplane keeps points where normal·P < offset
+        # Which is HalfPlane(-normal, -offset) keeps points where -normal·P >= -offset, i.e., normal·P <= offset
+        
+        inverse_half_plane_A = HalfPlane(
+            normal=-cutting_plane_normal_in_A,
+            offset=-cutting_plane_offset_in_A
+        )
+        
+        # Subtract the portion of timberB that's on the positive side of cutting plane
+        negative_csg_A = Difference(
+            base=timberB_prism_in_A,
+            subtract=[inverse_half_plane_A]  # Remove the negative side, keeping positive side
+        )
+        
+        cut_A = CSGCut(
+            timber=timberA,
+            origin=timberA.bottom_position,
+            orientation=timberA.orientation,
+            negative_csg=negative_csg_A,
+            maybe_end_cut=None
+        )
+        cuts_A.append(cut_A)
+    
+    # TimberB: Cut by (timberA prism) intersected with (region on the timberA side of cutting plane)
+    if cut_ratio < 1:  # Only cut timberB if cut_ratio < 1
+        # Transform timberA prism to timberB's local coordinates
+        relative_orientation_A_in_B = Orientation(timberB.orientation.matrix.T * timberA.orientation.matrix)
+        timberA_origin_in_B_local = timberB.orientation.matrix.T * (timberA.bottom_position - timberB.bottom_position)
+        
+        # Create timberA prism in timberB's local coordinates (infinite extent)
+        timberA_prism_in_B = Prism(
+            size=timberA.size,
+            orientation=relative_orientation_A_in_B,
+            position=timberA_origin_in_B_local,
+            start_distance=None,  # Infinite
+            end_distance=None     # Infinite
+        )
+        
+        # Transform cutting plane to timberB's local coordinates
+        cutting_plane_normal_in_B = timberB.orientation.matrix.T * cutting_plane_normal_normalized
+        cutting_plane_position_in_B = timberB.orientation.matrix.T * (cutting_plane_position - timberB.bottom_position)
+        cutting_plane_offset_in_B = (cutting_plane_normal_in_B.T * cutting_plane_position_in_B)[0, 0]
+        
+        # For timberB, we want to subtract the region on the negative side (timberA side) of the plane
+        # So we use the inverse half plane (keeps normal·P <= offset, the negative side)
+        half_plane_B = HalfPlane(
+            normal=cutting_plane_normal_in_B,
+            offset=cutting_plane_offset_in_B
+        )
+        
+        # Subtract the portion of timberA that's on the negative side of cutting plane
+        negative_csg_B = Difference(
+            base=timberA_prism_in_B,
+            subtract=[half_plane_B]  # Remove the positive side, keeping negative side
+        )
+        
+        cut_B = CSGCut(
+            timber=timberB,
+            origin=timberB.bottom_position,
+            orientation=timberB.orientation,
+            negative_csg=negative_csg_B,
+            maybe_end_cut=None
+        )
+        cuts_B.append(cut_B)
+    
+    # Create PartiallyCutTimbers
+    cut_timberA = PartiallyCutTimber(timberA, cuts=cuts_A)
+    cut_timberB = PartiallyCutTimber(timberB, cuts=cuts_B)
+    
+    # Create and return the Joint
+    joint = Joint(
+        partiallyCutTimbers=(cut_timberA, cut_timberB),
+        jointAccessories=()
+    )
+    
+    return joint
 
-    # TODO
-    # assert the 2 infinitely extended timbers overlap
-    # assert that the 2 timbers are not parallel
-    # if timberA/B_cut_face is not provided, choose a face that would minimize the amount of material removed
-    # assert that the normals of timberA_cut_face and timberB_cut_face have dot product in the range (0,1] otherwise the cut would not be valid
-    # pick the cutting plane by lerping the cut faces based on the cut_ratio (so if cut_ratio is 1, the cutface would be timberB_cut_face)
-    # cut timberA by the CSG (timberB prism - cutting plane)
-    # do the same for timberB (timberA prism + cutting plane)
-    pass
 
-
-def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber, extend_housed_timber_to_infinity: bool = False) -> Joint:
+def _get_face_center_position(timber: Timber, face: TimberFace) -> V3:
     """
+    Helper function to calculate the center position of a timber face.
+    
+    Args:
+        timber: The timber object
+        face: The face to get the center position for
+        
+    Returns:
+        3D position vector at the center of the specified face
+    """
+    if face == TimberFace.TOP:
+        return timber.get_top_center_position()
+    elif face == TimberFace.BOTTOM:
+        return timber.get_bottom_center_position()
+    else:
+        # For long faces (LEFT, RIGHT, FORWARD, BACK), center is at mid-length
+        face_center = timber.bottom_position + (timber.length / 2) * timber.length_direction
+        
+        # Offset to the face surface
+        if face == TimberFace.RIGHT:
+            face_center = face_center + (timber.size[0] / 2) * timber.width_direction
+        elif face == TimberFace.LEFT:
+            face_center = face_center - (timber.size[0] / 2) * timber.width_direction
+        elif face == TimberFace.FORWARD:
+            face_center = face_center + (timber.size[1] / 2) * timber.height_direction
+        else:  # BACK
+            face_center = face_center - (timber.size[1] / 2) * timber.height_direction
+        
+        return face_center
+
+
+def _find_closest_face_to_timber(timber: Timber, other_timber: Timber) -> TimberFace:
+    """
+    Helper function to find which face of timber is closest to other_timber's centerline.
+    Returns the face that minimizes material removal for a cross lap joint.
+    Uses the 4 side faces (not the end faces TOP/BOTTOM).
+    """
+    # Get the centerline point of other_timber (midpoint)
+    other_center = other_timber.bottom_position + other_timber.length_direction * (other_timber.length / 2)
+    
+    # Check distance from each side face to the other timber's center
+    # Don't include TOP/BOTTOM as those are the end faces
+    faces = [TimberFace.RIGHT, TimberFace.LEFT, 
+             TimberFace.FORWARD, TimberFace.BACK]
+    
+    min_distance = None
+    closest_face = TimberFace.RIGHT  # Default
+    
+    for face in faces:
+        face_center = _get_face_center_position(timber, face)
+        distance = (face_center - other_center).norm()
+        
+        if min_distance is None or distance < min_distance:
+            min_distance = distance
+            closest_face = face
+    
+    return closest_face
+
+
+def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber, housing_timber_cut_face: Optional[TimberFace] = None, housed_timber_cut_face: Optional[TimberFace] = None) -> Joint:
+    """
+    Creates a basic housed joint (also called housing joint or dado joint) where the 
+    housing_timber is notched to fit the housed_timber. The housed timber fits completely
+    into a notch cut in the housing timber.
+    
+    This is implemented as a cross lap joint with cut_ratio=1, meaning only the housing
+    timber is cut.
+    
+    Args:
+        housing_timber: Timber that will receive the housing cut (gets the groove)
+        housed_timber: Timber that will be housed (fits into the groove, remains uncut)
+        housing_timber_cut_face: Optional face of housing timber to cut. If not provided, automatically chosen.
+        housed_timber_cut_face: Optional face of housed timber (for reference). If not provided, automatically chosen.
+        
+    Returns:
+        Joint object containing both timbers
+        
+    Raises:
+        AssertionError: If timbers don't intersect or are parallel
+        
+    Example:
+        A shelf (housed_timber) fitting into the side of a cabinet (housing_timber).
+        The cabinet side gets a groove cut into it to receive the shelf.
+    """
+    # Use cross lap joint with cut_ratio=1 (only cut housing_timber, not housed_timber)
+    return cut_basic_cross_lap_joint(
+        timberA=housing_timber,
+        timberB=housed_timber,
+        timberA_cut_face=housing_timber_cut_face,
+        timberB_cut_face=housed_timber_cut_face,
+        cut_ratio=Rational(1, 1)  # Cut only timberA (housing timber) completely
+    )
+
+
+def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timber, extend_housed_timber_to_infinity: bool = False) -> Joint:
+    """
+    DEPRECATED: Use cut_basic_house_joint() instead.
+    
     Creates a basic housed joint (also called housing joint or dado joint) where the 
     housing_timber is notched to fit the housed_timber. The housed timber fits completely
     into a notch cut in the housing timber.
