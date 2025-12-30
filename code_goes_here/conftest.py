@@ -98,9 +98,9 @@ def create_standard_horizontal_timber(
     
     # Determine length and width directions based on specified direction
     direction_map = {
-        'x': (Matrix([Rational(1), Rational(0), Rational(0)]), Matrix([Rational(0), Rational(0), Rational(1)])),
-        '+x': (Matrix([Rational(1), Rational(0), Rational(0)]), Matrix([Rational(0), Rational(0), Rational(1)])),
-        '-x': (Matrix([Rational(-1), Rational(0), Rational(0)]), Matrix([Rational(0), Rational(0), Rational(1)])),
+        'x': (Matrix([Rational(1), Rational(0), Rational(0)]), Matrix([Rational(0), Rational(1), Rational(0)])),
+        '+x': (Matrix([Rational(1), Rational(0), Rational(0)]), Matrix([Rational(0), Rational(1), Rational(0)])),
+        '-x': (Matrix([Rational(-1), Rational(0), Rational(0)]), Matrix([Rational(0), Rational(1), Rational(0)])),
         'y': (Matrix([Rational(0), Rational(1), Rational(0)]), Matrix([Rational(1), Rational(0), Rational(0)])),
         '+y': (Matrix([Rational(0), Rational(1), Rational(0)]), Matrix([Rational(1), Rational(0), Rational(0)])),
         '-y': (Matrix([Rational(0), Rational(-1), Rational(0)]), Matrix([Rational(1), Rational(0), Rational(0)])),
