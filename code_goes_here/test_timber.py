@@ -101,13 +101,7 @@ class TestTimber:
     def test_timber_orientation_computation(self):
         """Test that timber orientation is computed correctly."""
         # Create vertical timber facing east
-        timber = timber_from_directions(
-            length=2,  # Use exact integer
-            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
-            bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
-            length_direction=create_vector3d(0, 0, 1),  # Up - exact integers
-            width_direction=create_vector3d(1, 0, 0)     # East - exact integers
-        )
+        timber = create_standard_vertical_timber(height=2, size=(0.1, 0.1), position=(0, 0, 0))
         
         # Check that orientation matrix is reasonable
         matrix = timber.orientation.matrix
@@ -118,13 +112,7 @@ class TestTimber:
     
     def test_get_transform_matrix(self):
         """Test 4x4 transformation matrix generation."""
-        timber = timber_from_directions(
-            length=1,  # Use exact integer
-            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
-            bottom_position=create_vector3d(1, 2, 3),  # Use exact integers
-            length_direction=create_vector3d(0, 0, 1), # Use exact integers
-            width_direction=create_vector3d(1, 0, 0)    # Use exact integers
-        )
+        timber = create_standard_vertical_timber(height=1, size=(0.1, 0.1), position=(1, 2, 3))
         
         transform = timber.get_transform_matrix()
         assert transform.shape == (4, 4)
@@ -378,21 +366,8 @@ class TestEnumsAndDataStructures:
     def test_stickout_with_join_timbers(self):
         """Test that stickout produces correct timber length in join_timbers."""
         # Create two vertical posts 2.5 meters apart
-        post1 = timber_from_directions(
-            bottom_position=create_vector3d(0, 0, 0),
-            length=Rational(2),
-            size=create_vector2d(Rational("0.15"), Rational("0.15")),
-            length_direction=create_vector3d(0, 0, 1),
-            width_direction=create_vector3d(1, 0, 0)
-        )
-        
-        post2 = timber_from_directions(
-            bottom_position=create_vector3d(Rational("2.5"), 0, 0),
-            length=Rational(2),
-            size=create_vector2d(Rational("0.15"), Rational("0.15")),
-            length_direction=create_vector3d(0, 0, 1),
-            width_direction=create_vector3d(1, 0, 0)
-        )
+        post1 = create_standard_vertical_timber(height=2, size=(0.15, 0.15), position=(0, 0, 0))
+        post2 = create_standard_vertical_timber(height=2, size=(0.15, 0.15), position=(2.5, 0, 0))
         
         # Join with asymmetric stickout: 0.1m on post1 side, 0.3m on post2 side
         stickout1 = Rational("0.1")
@@ -417,21 +392,8 @@ class TestEnumsAndDataStructures:
         from giraffe import StickoutReference
         
         # Create two posts 2.0 meters apart
-        post1 = timber_from_directions(
-            bottom_position=create_vector3d(0, 0, 0),
-            length=Rational(2),
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
-            length_direction=create_vector3d(0, 0, 1),
-            width_direction=create_vector3d(1, 0, 0)
-        )
-        
-        post2 = timber_from_directions(
-            bottom_position=create_vector3d(Rational(2), 0, 0),
-            length=Rational(2),
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
-            length_direction=create_vector3d(0, 0, 1),
-            width_direction=create_vector3d(1, 0, 0)
-        )
+        post1 = create_standard_vertical_timber(height=2, size=(0.2, 0.2), position=(0, 0, 0))
+        post2 = create_standard_vertical_timber(height=2, size=(0.2, 0.2), position=(2, 0, 0))
         
         # Try to use INSIDE reference - should assert
         with pytest.raises(AssertionError, match="CENTER_LINE stickout reference"):
