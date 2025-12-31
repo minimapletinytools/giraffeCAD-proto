@@ -16,6 +16,7 @@ from giraffe import (
     cut_basic_miter_joint,
     cut_basic_butt_joint_on_face_aligned_timbers,
     cut_basic_splice_joint_on_aligned_timbers,
+    cut_basic_house_joint_DEPRECATED,
     cut_basic_house_joint,
     FootprintLocation, CutTimber, Stickout, TimberReferenceEnd,
     inches, feet
@@ -483,15 +484,16 @@ def create_oscarshed() -> list[CutTimber]:
     rafter_house_joints = []
     
     for i, rafter in enumerate(rafters, start=1):
+        # TODO switch to not DEPRECATED one
         # Create house joint with back top plate
-        joint_back = cut_basic_house_joint(
+        joint_back = cut_basic_house_joint_DEPRECATED(
             housing_timber=top_plate_back,
             housed_timber=rafter,
             extend_housed_timber_to_infinity=False
         )
         
         # Create house joint with front top plate
-        joint_front = cut_basic_house_joint(
+        joint_front = cut_basic_house_joint_DEPRECATED(
             housing_timber=top_plate_front,
             housed_timber=rafter,
             extend_housed_timber_to_infinity=False
