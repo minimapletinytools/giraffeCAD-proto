@@ -1149,7 +1149,7 @@ class TestWedge:
             position=position,
             base_width=Rational(5),
             tip_width=Rational(1),
-            thickness=Rational(2),
+            height=Rational(2),
             length=Rational(10)
         )
         
@@ -1157,7 +1157,7 @@ class TestWedge:
         assert wedge.position == position
         assert wedge.base_width == Rational(5)
         assert wedge.tip_width == Rational(1)
-        assert wedge.thickness == Rational(2)
+        assert wedge.height == Rational(2)
         assert wedge.length == Rational(10)
     
     def test_wedge_width_property(self):
@@ -1167,7 +1167,7 @@ class TestWedge:
             position=create_vector3d(0, 0, 0),
             base_width=Rational(5),
             tip_width=Rational(1),
-            thickness=Rational(2),
+            height=Rational(2),
             length=Rational(10)
         )
         
@@ -1181,7 +1181,7 @@ class TestWedge:
             position=create_vector3d(0, 0, 0),
             base_width=Rational(5),
             tip_width=Rational(1),
-            thickness=Rational(2),
+            height=Rational(2),
             length=Rational(10)
         )
         
@@ -1296,7 +1296,7 @@ class TestCreateWedgeInTimberEnd:
         self.wedge_spec = WedgeShape(
             base_width=Rational(5),
             tip_width=Rational(1),
-            thickness=Rational(2),
+            height=Rational(2),
             length=Rational(10)
         )
     
@@ -1311,7 +1311,7 @@ class TestCreateWedgeInTimberEnd:
         
         assert wedge.base_width == Rational(5)
         assert wedge.tip_width == Rational(1)
-        assert wedge.thickness == Rational(2)
+        assert wedge.height == Rational(2)
         assert wedge.length == Rational(10)
         assert wedge.width == Rational(5)  # Test width property
         
@@ -1357,13 +1357,13 @@ class TestWedgeShape:
         shape = WedgeShape(
             base_width=Rational(6),
             tip_width=Rational(2),
-            thickness=Rational(3),
+            height=Rational(3),
             length=Rational(12)
         )
         
         assert shape.base_width == Rational(6)
         assert shape.tip_width == Rational(2)
-        assert shape.thickness == Rational(3)
+        assert shape.height == Rational(3)
         assert shape.length == Rational(12)
     
     def test_wedge_shape_is_frozen(self):
@@ -1371,7 +1371,7 @@ class TestWedgeShape:
         shape = WedgeShape(
             base_width=Rational(5),
             tip_width=Rational(1),
-            thickness=Rational(2),
+            height=Rational(2),
             length=Rational(10)
         )
         
