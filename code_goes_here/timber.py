@@ -990,28 +990,28 @@ class WedgeShape:
     """Specification for wedge dimensions."""
     base_width: Numeric # width of the base of the trapezoid in the X axis
     tip_width: Numeric # width of the tip of the trapezoid in the X axis
-    thickness: Numeric # thickness of teh trapezoid in the Y axis
+    height: Numeric # height of the trapezoid in the Y axis
     length: Numeric  # From bottom to top of trapezoid in the Z axis
 
 
 @dataclass(frozen=True)
 class Wedge(JointAccessory):
-    """
+    r"""
     Represents a wedge used in timber joinery (e.g., wedged tenons).
     
     The wedge is stored in local space of a timber. In identity orientation,
     the pointy end of the wedge goes in the length direction of the timber.
     
     The profile of the wedge (trapezoidal shape) is in the Y axis 
-    (thickness in Y). The width of the wedge is in the X axis.
+    (height in Y). The width of the wedge is in the X axis.
     The origin (0,0) is at the bottom center of the longer side of the triangle.
     
     Visual representation (looking at wedge from the side):
          +z
-          _
-         / \\
-        /   \\
-       /_____\\ +x
+          _______
+         / \      \
+        /   \      \  +y
+   -x  /_____\______\ 
           ↑
         origin
     
@@ -1020,14 +1020,14 @@ class Wedge(JointAccessory):
         position: Position of the wedge base center in local timber space (V3)
         base_width: Width at the base (wider end) of the wedge
         tip_width: Width at the tip (narrower end, where triangle is cut)
-        thickness: Thickness of the wedge (in Y axis)
+        height: Height of the wedge (in Y axis)
         length: Length from base to tip
     """
     orientation: Orientation
     position: V3
     base_width: Numeric
     tip_width: Numeric
-    thickness: Numeric
+    height: Numeric
     length: Numeric
     
     @property
@@ -1217,7 +1217,7 @@ def create_wedge_in_timber_end(
         position=wedge_position,
         base_width=shape.base_width,
         tip_width=shape.tip_width,
-        thickness=shape.thickness,
+        height=shape.height,
         length=shape.length
     )
 
