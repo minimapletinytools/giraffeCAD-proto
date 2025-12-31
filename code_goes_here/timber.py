@@ -946,6 +946,96 @@ class JointAccessory:
     """Base class for joint accessories like wedges, drawbores, etc."""
     pass
 
+
+# ============================================================================
+# Joint Accessory Types: Pegs and Wedges
+# ============================================================================
+
+class PegShape(Enum):
+    """Shape of a peg."""
+    SQUARE = "square"
+    ROUND = "round"
+
+
+@dataclass(frozen=True)
+class PegShapeSpec:
+    """Specification for peg dimensions and shape."""
+    size: Numeric
+    shape: PegShape
+
+
+@dataclass(frozen=True)
+class Peg(JointAccessory):
+    """
+    Represents a peg used in timber joinery (e.g., draw bore pegs, komisen).
+    
+    The peg is stored in local space of a timber. In identity orientation, 
+    the peg points in the same direction as the length axis of the timber, 
+    with the insertion end at the bottom.
+    
+    Attributes:
+        orientation: Orientation of the peg in local timber space
+        position: Position of the peg's insertion end in local timber space (V3)
+        size: Size/diameter of the peg (for square pegs, this is the side length)
+        shape: Shape of the peg (SQUARE or ROUND)
+    """
+    orientation: Orientation
+    position: V3
+    size: Numeric
+    shape: PegShape
+
+
+@dataclass(frozen=True)
+class WedgeShape:
+    """Specification for wedge dimensions."""
+    base_width: Numeric # width of the base of the trapezoid in the X axis
+    tip_width: Numeric # width of the tip of the trapezoid in the X axis
+    thickness: Numeric # thickness of teh trapezoid in the Y axis
+    length: Numeric  # From bottom to top of trapezoid in the Z axis
+
+
+@dataclass(frozen=True)
+class Wedge(JointAccessory):
+    """
+    Represents a wedge used in timber joinery (e.g., wedged tenons).
+    
+    The wedge is stored in local space of a timber. In identity orientation,
+    the pointy end of the wedge goes in the length direction of the timber.
+    
+    The profile of the wedge (trapezoidal shape) is in the Y axis 
+    (thickness in Y). The width of the wedge is in the X axis.
+    The origin (0,0) is at the bottom center of the longer side of the triangle.
+    
+    Visual representation (looking at wedge from the side):
+         +z
+          _
+         / \\
+        /   \\
+       /_____\\ +x
+          ↑
+        origin
+    
+    Attributes:
+        orientation: Orientation of the wedge in local timber space
+        position: Position of the wedge base center in local timber space (V3)
+        base_width: Width at the base (wider end) of the wedge
+        tip_width: Width at the tip (narrower end, where triangle is cut)
+        thickness: Thickness of the wedge (in Y axis)
+        length: Length from base to tip
+    """
+    orientation: Orientation
+    position: V3
+    base_width: Numeric
+    tip_width: Numeric
+    thickness: Numeric
+    length: Numeric
+    
+    @property
+    def width(self) -> Numeric:
+        """Alias for base_width for convenience."""
+        return self.base_width
+
+
 @dataclass(frozen=True)
 class Joint:
     partiallyCutTimbers: Tuple[PartiallyCutTimber, ...]
@@ -980,4 +1070,154 @@ class CSGCut(Cut):
     
     def get_negative_csg_local(self) -> MeowMeowCSG:
         return self.negative_csg
+
+
+# ============================================================================
+# Helper Functions for Creating Joint Accessories
+# ============================================================================
+
+def create_peg_going_into_face(
+    timber: Timber,
+    face: TimberReferenceLongFace,
+    distance_from_bottom: Numeric,
+    distance_from_centerline: Numeric,
+    peg_shape: PegShapeSpec
+) -> Peg:
+    """
+    Create a peg that goes into a specified long face of a timber.
+    
+    The peg is created in the local space of the timber, with the insertion end
+    at the timber's surface and pointing inward perpendicular to the face.
+    
+    Args:
+        timber: The timber to insert the peg into
+        face: Which long face the peg enters from (RIGHT, LEFT, FORWARD, or BACK)
+        distance_from_bottom: Distance along the timber's length from the bottom end
+        distance_from_centerline: Distance from the timber's centerline along the face
+        peg_shape: Specification of peg size and shape
+        
+    Returns:
+        Peg object positioned and oriented appropriately in timber's local space
+    """
+    # Get the face direction in local space (timber coordinate system)
+    # In local coords: X = width, Y = height, Z = length
+    face_normal_local = face.to_timber_face().get_direction()
+    
+    # Position the peg on the timber's surface
+    # Start at centerline, then move along length and offset from centerline
+    position_local = create_vector3d(0, 0, distance_from_bottom)
+    
+    # Offset from centerline depends on which face we're on
+    if face == TimberReferenceLongFace.RIGHT:
+        # RIGHT face: offset in +X (width) direction, surface at +width/2
+        position_local = create_vector3d(
+            timber.size[0] / 2,  # At right surface
+            distance_from_centerline,  # Offset in height direction
+            distance_from_bottom
+        )
+        # Peg points inward (-X direction in local space)
+        length_dir = create_vector3d(-1, 0, 0)
+        width_dir = create_vector3d(0, 1, 0)
+        
+    elif face == TimberReferenceLongFace.LEFT:
+        # LEFT face: offset in -X (width) direction
+        position_local = create_vector3d(
+            -timber.size[0] / 2,  # At left surface
+            distance_from_centerline,  # Offset in height direction
+            distance_from_bottom
+        )
+        # Peg points inward (+X direction in local space)
+        length_dir = create_vector3d(1, 0, 0)
+        width_dir = create_vector3d(0, 1, 0)
+        
+    elif face == TimberReferenceLongFace.FORWARD:
+        # FORWARD face: offset in +Y (height) direction
+        position_local = create_vector3d(
+            distance_from_centerline,  # Offset in width direction
+            timber.size[1] / 2,  # At forward surface
+            distance_from_bottom
+        )
+        # Peg points inward (-Y direction in local space)
+        length_dir = create_vector3d(0, -1, 0)
+        width_dir = create_vector3d(1, 0, 0)
+        
+    else:  # BACK
+        # BACK face: offset in -Y (height) direction
+        position_local = create_vector3d(
+            distance_from_centerline,  # Offset in width direction
+            -timber.size[1] / 2,  # At back surface
+            distance_from_bottom
+        )
+        # Peg points inward (+Y direction in local space)
+        length_dir = create_vector3d(0, 1, 0)
+        width_dir = create_vector3d(1, 0, 0)
+    
+    # Compute peg orientation (peg's Z-axis points into the timber)
+    peg_orientation = _compute_timber_orientation(length_dir, width_dir)
+    
+    return Peg(
+        orientation=peg_orientation,
+        position=position_local,
+        size=peg_shape.size,
+        shape=peg_shape.shape
+    )
+
+
+def create_wedge_in_timber_end(
+    timber: Timber,
+    end: TimberReferenceEnd,
+    position: V3,
+    shape: WedgeShape
+) -> Wedge:
+    """
+    Create a wedge at the end of a timber.
+    
+    The wedge is created in the local space of the timber. In identity orientation,
+    the point of the wedge goes in the length direction (Z-axis in local space).
+    
+    Args:
+        timber: The timber to insert the wedge into
+        end: Which end of the timber (TOP or BOTTOM)
+        position: Position in the timber's cross-section (X, Y in local space, Z ignored)
+        shape: Specification of wedge dimensions
+        
+    Returns:
+        Wedge object positioned and oriented appropriately in timber's local space
+    """
+    # Determine wedge position and orientation based on which end
+    if end == TimberReferenceEnd.TOP:
+        # At top end, wedge points downward into timber (-Z in local space)
+        # Position at the top of the timber
+        wedge_position = create_vector3d(
+            position[0],  # X position (cross-section)
+            position[1],  # Y position (cross-section)
+            timber.length  # At the top end
+        )
+        # Wedge points downward
+        length_dir = create_vector3d(0, 0, -1)
+        width_dir = create_vector3d(1, 0, 0)
+        
+    else:  # BOTTOM
+        # At bottom end, wedge points upward into timber (+Z in local space)
+        # Position at the bottom of the timber
+        wedge_position = create_vector3d(
+            position[0],  # X position (cross-section)
+            position[1],  # Y position (cross-section)
+            0  # At the bottom end
+        )
+        # Wedge points upward
+        length_dir = create_vector3d(0, 0, 1)
+        width_dir = create_vector3d(1, 0, 0)
+    
+    # Compute wedge orientation
+    wedge_orientation = _compute_timber_orientation(length_dir, width_dir)
+    
+    return Wedge(
+        orientation=wedge_orientation,
+        position=wedge_position,
+        base_width=shape.base_width,
+        tip_width=shape.tip_width,
+        thickness=shape.thickness,
+        length=shape.length
+    )
 

@@ -1084,3 +1084,298 @@ class TestCutTimber:
         assert isinstance(csg.subtract[0], HalfPlane)
 
 
+# ============================================================================
+# Tests for Peg and Wedge Joint Accessories
+# ============================================================================
+
+class TestPegShape:
+    """Test PegShape enum and PegShapeSpec."""
+    
+    def test_peg_shape_enum(self):
+        """Test PegShape enum values."""
+        assert PegShape.SQUARE.value == "square"
+        assert PegShape.ROUND.value == "round"
+    
+    def test_peg_shape_spec(self):
+        """Test PegShapeSpec creation."""
+        spec = PegShapeSpec(size=Rational(2), shape=PegShape.ROUND)
+        assert spec.size == Rational(2)
+        assert spec.shape == PegShape.ROUND
+
+
+class TestPeg:
+    """Test Peg class."""
+    
+    def test_peg_creation(self):
+        """Test basic Peg creation."""
+        orientation = Orientation.identity()
+        position = create_vector3d(1, 2, 3)
+        
+        peg = Peg(
+            orientation=orientation,
+            position=position,
+            size=Rational(2),
+            shape=PegShape.SQUARE
+        )
+        
+        assert peg.orientation == orientation
+        assert peg.position == position
+        assert peg.size == Rational(2)
+        assert peg.shape == PegShape.SQUARE
+    
+    def test_peg_is_frozen(self):
+        """Test that Peg is immutable."""
+        peg = Peg(
+            orientation=Orientation.identity(),
+            position=create_vector3d(0, 0, 0),
+            size=Rational(2),
+            shape=PegShape.ROUND
+        )
+        
+        with pytest.raises(Exception):  # FrozenInstanceError
+            peg.size = Rational(3)
+
+
+class TestWedge:
+    """Test Wedge class."""
+    
+    def test_wedge_creation(self):
+        """Test basic Wedge creation."""
+        orientation = Orientation.identity()
+        position = create_vector3d(1, 2, 3)
+        
+        wedge = Wedge(
+            orientation=orientation,
+            position=position,
+            base_width=Rational(5),
+            tip_width=Rational(1),
+            thickness=Rational(2),
+            length=Rational(10)
+        )
+        
+        assert wedge.orientation == orientation
+        assert wedge.position == position
+        assert wedge.base_width == Rational(5)
+        assert wedge.tip_width == Rational(1)
+        assert wedge.thickness == Rational(2)
+        assert wedge.length == Rational(10)
+    
+    def test_wedge_width_property(self):
+        """Test that width property is an alias for base_width."""
+        wedge = Wedge(
+            orientation=Orientation.identity(),
+            position=create_vector3d(0, 0, 0),
+            base_width=Rational(5),
+            tip_width=Rational(1),
+            thickness=Rational(2),
+            length=Rational(10)
+        )
+        
+        assert wedge.width == wedge.base_width
+        assert wedge.width == Rational(5)
+    
+    def test_wedge_is_frozen(self):
+        """Test that Wedge is immutable."""
+        wedge = Wedge(
+            orientation=Orientation.identity(),
+            position=create_vector3d(0, 0, 0),
+            base_width=Rational(5),
+            tip_width=Rational(1),
+            thickness=Rational(2),
+            length=Rational(10)
+        )
+        
+        with pytest.raises(Exception):  # FrozenInstanceError
+            wedge.base_width = Rational(6)
+
+
+class TestCreatePegGoingIntoFace:
+    """Test create_peg_going_into_face helper function."""
+    
+    def setup_method(self):
+        """Create a standard vertical timber for testing."""
+        self.timber = timber_from_directions(
+            length=Rational(100),
+            size=create_vector2d(Rational(10), Rational(15)),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),
+            width_direction=create_vector3d(1, 0, 0)
+        )
+        self.peg_spec = PegShapeSpec(size=Rational(2), shape=PegShape.ROUND)
+    
+    def test_peg_into_right_face(self):
+        """Test creating a peg going into the RIGHT face."""
+        peg = create_peg_going_into_face(
+            timber=self.timber,
+            face=TimberReferenceLongFace.RIGHT,
+            distance_from_bottom=Rational(50),
+            distance_from_centerline=Rational(0),
+            peg_shape=self.peg_spec
+        )
+        
+        assert peg.size == Rational(2)
+        assert peg.shape == PegShape.ROUND
+        
+        # Position should be at the right surface (width/2 = 5)
+        assert peg.position[0] == Rational(5)  # X = width/2
+        assert peg.position[1] == Rational(0)  # Y = distance_from_centerline
+        assert peg.position[2] == Rational(50)  # Z = distance_from_bottom
+    
+    def test_peg_into_left_face(self):
+        """Test creating a peg going into the LEFT face."""
+        peg = create_peg_going_into_face(
+            timber=self.timber,
+            face=TimberReferenceLongFace.LEFT,
+            distance_from_bottom=Rational(30),
+            distance_from_centerline=Rational(2),
+            peg_shape=self.peg_spec
+        )
+        
+        # Position should be at the left surface (-width/2 = -5)
+        assert peg.position[0] == Rational(-5)  # X = -width/2
+        assert peg.position[1] == Rational(2)  # Y = distance_from_centerline
+        assert peg.position[2] == Rational(30)  # Z = distance_from_bottom
+    
+    def test_peg_into_forward_face(self):
+        """Test creating a peg going into the FORWARD face."""
+        peg = create_peg_going_into_face(
+            timber=self.timber,
+            face=TimberReferenceLongFace.FORWARD,
+            distance_from_bottom=Rational(40),
+            distance_from_centerline=Rational(-1),
+            peg_shape=self.peg_spec
+        )
+        
+        # Position should be at the forward surface (height/2 = 7.5)
+        assert peg.position[0] == Rational(-1)  # X = distance_from_centerline
+        assert peg.position[1] == Rational(15, 2)  # Y = height/2 = 7.5
+        assert peg.position[2] == Rational(40)  # Z = distance_from_bottom
+    
+    def test_peg_into_back_face(self):
+        """Test creating a peg going into the BACK face."""
+        peg = create_peg_going_into_face(
+            timber=self.timber,
+            face=TimberReferenceLongFace.BACK,
+            distance_from_bottom=Rational(60),
+            distance_from_centerline=Rational(3),
+            peg_shape=self.peg_spec
+        )
+        
+        # Position should be at the back surface (-height/2 = -7.5)
+        assert peg.position[0] == Rational(3)  # X = distance_from_centerline
+        assert peg.position[1] == Rational(-15, 2)  # Y = -height/2 = -7.5
+        assert peg.position[2] == Rational(60)  # Z = distance_from_bottom
+    
+    def test_square_peg(self):
+        """Test creating a square peg."""
+        square_spec = PegShapeSpec(size=Rational(3), shape=PegShape.SQUARE)
+        peg = create_peg_going_into_face(
+            timber=self.timber,
+            face=TimberReferenceLongFace.RIGHT,
+            distance_from_bottom=Rational(50),
+            distance_from_centerline=Rational(0),
+            peg_shape=square_spec
+        )
+        
+        assert peg.shape == PegShape.SQUARE
+        assert peg.size == Rational(3)
+
+
+class TestCreateWedgeInTimberEnd:
+    """Test create_wedge_in_timber_end helper function."""
+    
+    def setup_method(self):
+        """Create a standard vertical timber for testing."""
+        self.timber = timber_from_directions(
+            length=Rational(100),
+            size=create_vector2d(Rational(10), Rational(15)),
+            bottom_position=create_vector3d(0, 0, 0),
+            length_direction=create_vector3d(0, 0, 1),
+            width_direction=create_vector3d(1, 0, 0)
+        )
+        self.wedge_spec = WedgeShape(
+            base_width=Rational(5),
+            tip_width=Rational(1),
+            thickness=Rational(2),
+            length=Rational(10)
+        )
+    
+    def test_wedge_at_top_end(self):
+        """Test creating a wedge at the TOP end."""
+        wedge = create_wedge_in_timber_end(
+            timber=self.timber,
+            end=TimberReferenceEnd.TOP,
+            position=create_vector3d(Rational(2), Rational(3), 0),
+            shape=self.wedge_spec
+        )
+        
+        assert wedge.base_width == Rational(5)
+        assert wedge.tip_width == Rational(1)
+        assert wedge.thickness == Rational(2)
+        assert wedge.length == Rational(10)
+        assert wedge.width == Rational(5)  # Test width property
+        
+        # Position should be at the top end (Z = length)
+        assert wedge.position[0] == Rational(2)  # X from position
+        assert wedge.position[1] == Rational(3)  # Y from position
+        assert wedge.position[2] == Rational(100)  # Z = timber length
+    
+    def test_wedge_at_bottom_end(self):
+        """Test creating a wedge at the BOTTOM end."""
+        wedge = create_wedge_in_timber_end(
+            timber=self.timber,
+            end=TimberReferenceEnd.BOTTOM,
+            position=create_vector3d(Rational(-1), Rational(2), 0),
+            shape=self.wedge_spec
+        )
+        
+        # Position should be at the bottom end (Z = 0)
+        assert wedge.position[0] == Rational(-1)  # X from position
+        assert wedge.position[1] == Rational(2)  # Y from position
+        assert wedge.position[2] == Rational(0)  # Z = 0 (bottom)
+    
+    def test_wedge_at_centerline(self):
+        """Test creating a wedge at the timber centerline."""
+        wedge = create_wedge_in_timber_end(
+            timber=self.timber,
+            end=TimberReferenceEnd.TOP,
+            position=create_vector3d(0, 0, 0),  # Center of cross-section
+            shape=self.wedge_spec
+        )
+        
+        # Position should be at center of top end
+        assert wedge.position[0] == Rational(0)
+        assert wedge.position[1] == Rational(0)
+        assert wedge.position[2] == Rational(100)
+
+
+class TestWedgeShape:
+    """Test WedgeShape specification class."""
+    
+    def test_wedge_shape_creation(self):
+        """Test WedgeShape creation."""
+        shape = WedgeShape(
+            base_width=Rational(6),
+            tip_width=Rational(2),
+            thickness=Rational(3),
+            length=Rational(12)
+        )
+        
+        assert shape.base_width == Rational(6)
+        assert shape.tip_width == Rational(2)
+        assert shape.thickness == Rational(3)
+        assert shape.length == Rational(12)
+    
+    def test_wedge_shape_is_frozen(self):
+        """Test that WedgeShape is immutable."""
+        shape = WedgeShape(
+            base_width=Rational(5),
+            tip_width=Rational(1),
+            thickness=Rational(2),
+            length=Rational(10)
+        )
+        
+        with pytest.raises(Exception):  # FrozenInstanceError
+            shape.base_width = Rational(7)
+
+
