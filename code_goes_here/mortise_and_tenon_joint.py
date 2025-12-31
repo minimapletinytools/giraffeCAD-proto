@@ -3,6 +3,8 @@ GiraffeCAD - Mortise and Tenon Joint Construction Functions
 Contains various mortise and tenon joint implementations
 """
 
+from __future__ import annotations  # Enable deferred annotation evaluation
+
 from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.moothymoth import (
@@ -17,37 +19,452 @@ from code_goes_here.moothymoth import (
 from code_goes_here.construction import (
     _are_directions_perpendicular,
     _are_timbers_face_aligned,
-    _are_timbers_face_orthogonal,
-    _calculate_mortise_position_from_tenon_intersection,
-    _calculate_distance_from_timber_end_to_shoulder_plane
+    _are_timbers_face_orthogonal
 )
+
+# ============================================================================
+# Parameter Classes for Mortise and Tenon Joints
+# ============================================================================
+
+@dataclass(frozen=True)
+class SimplePegParameters:
+    """
+    Parameters for simple pegs in mortise and tenon joints.
+    
+    Attributes:
+        shape: Shape specification for the peg (from PegShape enum)
+        tenon_face: The face on the TENON timber that the pegs will be perpendicular to
+                    (only valid if tenon_rotation is identity)
+        peg_positions: List of (distance_from_shoulder, distance_from_centerline) tuples
+                       - First value: distance along length axis measured from shoulder of tenon
+                       - Second value: distance in perpendicular axis measured from center
+        depth: Depth measured from mortise face where peg goes in (None means through)
+        length: Total length of the peg
+    """
+    shape: PegShape
+    tenon_face: TimberReferenceLongFace
+    peg_positions: List[Tuple[Numeric, Numeric]]
+    depth: Optional[Numeric]
+    length: Numeric
+
+
+@dataclass(frozen=True)
+class WedgeParameters:
+    """
+    Parameters for wedges in mortise and tenon joints.
+    
+    Attributes:
+        shape: Shape specification for the wedge
+        depth: Depth of the wedge cut (may differ from length of wedge)
+        width_axis: Wedges run along this axis. When looking perpendicular to this
+                    and the length axis, you see the trapezoidal "sides" of the wedges
+        positions: Positions from center of timber in the width axis
+        expand_mortise: Amount to fan out bottom of mortise to fit wedges
+                        - 0 means straight sides (default)
+                        - X means expand both sides of mortise bottom by X (total), the shoulder of the mortise remains the original size
+    """
+    shape: WedgeShape
+    depth: Numeric
+    width_axis: Direction3D
+    positions: List[Numeric]
+    expand_mortise: Numeric = Rational(0)
+
 
 # ============================================================================
 # Mortise and Tenon Joint Construction Functions
 # ============================================================================
 
 
-
-
-
-def cut_mortise_and_tenon_joint(mortise_timber: Timber, tenon_timber: Timber,
-                                 tenon_end: TimberReferenceEnd) -> Joint:
+def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
+    tenon_timber: Timber,
+    mortise_timber: Timber,
+    tenon_end: TimberReferenceEnd,
+    size: V2,
+    tenon_length: Numeric,
+    mortise_depth: Optional[Numeric] = None,
+    mortise_shoulder_inset: Numeric = Rational(0),
+    tenon_position: V2 = None,
+    tenon_rotation: Orientation = None,
+    wedge_parameters: Optional[WedgeParameters] = None,
+    peg_parameters: Optional[SimplePegParameters] = None
+) -> Joint:
     """
-    Creates a mortise and tenon joint between two timbers.
+    Generic mortise and tenon joint creation function with support for various options.
+    
+    This is the internal implementation function that handles all mortise and tenon variants.
+    DO NOT call this directly - use the specific wrapper functions instead.
+    
+    Requirements:
+        - Timbers must be face-aligned (orientations related by 90-degree rotations)
     
     Args:
-        mortise_timber: Timber that will receive the mortise cut
         tenon_timber: Timber that will receive the tenon cut
-        tenon_end: Which end of the tenon timber the tenon will be cut from
+        mortise_timber: Timber that will receive the mortise cut
+        tenon_end: Which end of the tenon timber gets the tenon (TOP or BOTTOM)
+        size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
+        tenon_length: Length of tenon extending from mortise face
+        mortise_depth: Depth of mortise (None = through mortise, >= tenon_length)
+        mortise_shoulder_inset: Inset distance from mortise face to shoulder plane (not yet supported, must be 0)
+        tenon_position: Position of tenon in local coordinates of tenon timber (0,0 = centered on centerline)
+        tenon_rotation: Rotation of tenon (default identity, currently must be identity)
+        wedge_parameters: Optional wedge configuration (not yet supported)
+        peg_parameters: Optional peg configuration (not yet supported)
+        
+    Returns:
+        Joint object containing the two PartiallyCutTimbers and any accessories
+        
+    Raises:
+        AssertionError: If unsupported parameters are provided or if timbers are not face-aligned
+    """
+    # Set default tenon_position if not provided (centered)
+    if tenon_position is None:
+        tenon_position = Matrix([Rational(0), Rational(0)])
+    
+    # Set default tenon_rotation if not provided
+    if tenon_rotation is None:
+        tenon_rotation = Orientation.identity()
+    
+    # Assert unsupported features
+    assert wedge_parameters is None, "Wedge parameters not yet supported"
+    assert peg_parameters is None, "Peg parameters not yet supported"
+    assert tenon_rotation.matrix.equals(Orientation.identity().matrix), \
+        "Tenon rotation not yet supported (must be identity)"
+    assert mortise_shoulder_inset == 0, "Mortise shoulder inset not yet supported"
+    
+    # Assert timbers are face-aligned
+    assert _are_timbers_face_aligned(tenon_timber, mortise_timber), \
+        "Timbers must be face-aligned for mortise and tenon joints"
+    
+    # Validate mortise_depth if provided
+    if mortise_depth is not None:
+        assert mortise_depth >= tenon_length, \
+            f"Mortise depth ({mortise_depth}) must be >= tenon length ({tenon_length})"
+    
+    # ========================================================================
+    # Calculate geometric positions in local coordinate system
+    # ========================================================================
+    
+    # Get the direction of the tenon end in world coordinates
+    tenon_end_direction = tenon_timber.get_face_direction(
+        TimberFace.TOP if tenon_end == TimberReferenceEnd.TOP else TimberFace.BOTTOM
+    )
+    
+    # Find which face of the mortise timber receives the mortise
+    mortise_face = mortise_timber.get_closest_oriented_face(-tenon_end_direction)
+    
+    # ========================================================================
+    # Step 1: Determine tenon directional centerline
+    # ========================================================================
+    
+    # Get the tenon end point in world coordinates
+    if tenon_end == TimberReferenceEnd.TOP:
+        tenon_end_point = tenon_timber.get_top_center_position()
+    else:  # BOTTOM
+        tenon_end_point = tenon_timber.get_bottom_center_position()
+    
+    # Apply tenon_position offset to get the actual tenon centerline start point
+    tenon_x_direction = tenon_timber.get_face_direction(TimberFace.RIGHT)
+    tenon_y_direction = tenon_timber.get_face_direction(TimberFace.FORWARD)
+    tenon_x_offset = create_vector3d(tenon_x_direction[0], tenon_x_direction[1], tenon_x_direction[2]) * tenon_position[0]
+    tenon_y_offset = create_vector3d(tenon_y_direction[0], tenon_y_direction[1], tenon_y_direction[2]) * tenon_position[1]
+    tenon_centerline_start = tenon_end_point + tenon_x_offset + tenon_y_offset
+    
+    # Tenon centerline direction (pointing from the tenon end toward the mortise)
+    # The tenon extends OPPOSITE to tenon_end_direction (back into the timber toward the mortise)
+    tenon_centerline_direction = -create_vector3d(
+        tenon_end_direction[0],
+        tenon_end_direction[1],
+        tenon_end_direction[2]
+    )
+    
+    # ========================================================================
+    # Step 2: Calculate mortise face plane
+    # ========================================================================
+    
+    # Get the mortise face normal (pointing outward from mortise timber)
+    mortise_face_direction = mortise_timber.get_face_direction(mortise_face)
+    mortise_face_normal = create_vector3d(
+        mortise_face_direction[0], 
+        mortise_face_direction[1], 
+        mortise_face_direction[2]
+    )
+    
+    # Get the mortise face offset (distance from centerline to face)
+    if mortise_face in [TimberFace.RIGHT, TimberFace.LEFT]:
+        face_offset = mortise_timber.size[0] / 2
+    elif mortise_face in [TimberFace.FORWARD, TimberFace.BACK]:
+        face_offset = mortise_timber.size[1] / 2
+    else:
+        raise ValueError(f"Invalid mortise face: {mortise_face}")
+    
+    # ========================================================================
+    # Step 3: Line-plane intersection
+    # ========================================================================
+    
+    # Check that tenon direction is not parallel to mortise face
+    denominator = tenon_centerline_direction.dot(mortise_face_normal)
+    assert abs(denominator) > EPSILON_GENERIC, \
+        f"Tenon direction is parallel to mortise face (dot product: {denominator})"
+    
+    # We need a point on the mortise face plane. We'll use a point that's:
+    # - On the mortise timber centerline somewhere
+    # - Offset by face_offset in the face normal direction
+    # For simplicity, use the mortise timber's bottom position as the reference
+    mortise_centerline_reference = mortise_timber.bottom_position
+    mortise_face_plane_point = mortise_centerline_reference + mortise_face_normal * face_offset
+    
+    # Calculate intersection parameter t
+    # Line: P = tenon_centerline_start + t * tenon_centerline_direction
+    # Plane: (P - mortise_face_plane_point) · mortise_face_normal = 0
+    # Solving: t = (mortise_face_plane_point - tenon_centerline_start) · mortise_face_normal / denominator
+    t = (mortise_face_plane_point - tenon_centerline_start).dot(mortise_face_normal) / denominator
+    
+    # Assert that intersection is in front of tenon end (t > 0)
+    assert t > 0, \
+        f"Tenon centerline does not intersect mortise face in front of tenon end (t={t})"
+    
+    # Calculate the actual intersection point
+    intersection_point = tenon_centerline_start + tenon_centerline_direction * t
+    
+    # ========================================================================
+    # Step 4: Check if intersection is within timber face bounds
+    # ========================================================================
+    
+    # Transform intersection point to mortise timber's local coordinate system
+    intersection_local = mortise_timber.orientation.matrix.T * (intersection_point - mortise_timber.bottom_position)
+    
+    # Check bounds in the local XY plane (the face is perpendicular to one of these axes)
+    # Determine which local axes define the face bounds
+    half_width = mortise_timber.size[0] / 2
+    half_height = mortise_timber.size[1] / 2
+    
+    # Check if the intersection is within the timber cross-section bounds
+    x_in_bounds = abs(intersection_local[0]) <= half_width
+    y_in_bounds = abs(intersection_local[1]) <= half_height
+    
+    if not (x_in_bounds and y_in_bounds):
+        print(f"Warning: Mortise intersection at local position ({float(intersection_local[0]):.4f}, "
+              f"{float(intersection_local[1]):.4f}, {float(intersection_local[2]):.4f}) "
+              f"is outside timber face bounds (±{float(half_width):.4f}, ±{float(half_height):.4f})")
+    
+    # ========================================================================
+    # Step 5: Calculate positions for mortise and tenon
+    # ========================================================================
+    
+    # Mortise position from bottom: project intersection onto mortise centerline
+    mortise_position_from_bottom = (intersection_point - mortise_timber.bottom_position).dot(mortise_timber.length_direction)
+    
+    # Tenon shoulder distance: the parameter t from line-plane intersection
+    tenon_shoulder_distance = t
+    
+    # ========================================================================
+    # Create mortise cut (CSGCut with Prism)
+    # ========================================================================
+    
+    # Mortise is a rectangular hole cut into the mortise timber
+    # It's positioned in the mortise timber's LOCAL coordinate system
+    
+    # Get the mortise face direction in world coordinates
+    mortise_face_direction = mortise_timber.get_face_direction(mortise_face)
+
+    # Determine mortise depth (if not specified, make it a through mortise)
+    # TODO `(tenon_length + mortise_timber.size[0] + mortise_timber.size[1])` is fine but better to be more precise and use the exact dimension of the mortise timber that the tenon is going through
+    actual_mortise_depth = mortise_depth if mortise_depth is not None else (tenon_length + mortise_timber.size[0] + mortise_timber.size[1])
+    
+    # Create the mortise prism in the mortise timber's LOCAL coordinate system
+    # We create a prism representing the tenon volume
+    
+    # Transform tenon timber's orientation to mortise timber's local coordinates
+    relative_orientation = Orientation(mortise_timber.orientation.matrix.T * tenon_timber.orientation.matrix)
+    
+    # The intersection_point is already the tenon center position in world coordinates
+    # (with tenon_position offset already applied)
+    # Transform it to mortise timber's local coordinates
+    tenon_origin_local = mortise_timber.orientation.matrix.T * (intersection_point - mortise_timber.bottom_position)
+    
+    # Create a prism representing the tenon volume (in mortise timber's local space)
+    from code_goes_here.meowmeowcsg import Prism
+    tenon_prism_in_mortise_local = Prism(
+        size=size,
+        orientation=relative_orientation,
+        position=tenon_origin_local,
+        start_distance=-actual_mortise_depth,  # Extends backward into the mortise
+        end_distance=tenon_length * 2  # Extends forward past the shoulder
+    )
+    
+    # Create the CSGCut for the mortise
+    mortise_cut = CSGCut(
+        timber=mortise_timber,
+        origin=mortise_timber.bottom_position,
+        orientation=mortise_timber.orientation,
+        negative_csg=tenon_prism_in_mortise_local,
+        maybe_end_cut=None
+    )
+    
+    # ========================================================================
+    # Create tenon cut (single CSG cut)
+    # ========================================================================
+    
+    # The tenon is created by:
+    # 1. Creating a prism representing the infinite timber end beyond the shoulder
+    # 2. Subtracting the tenon prism from it
+    # 3. Using the result as a single CSG cut
+    
+    # Calculate the shoulder plane position in world coordinates
+    if tenon_end == TimberReferenceEnd.TOP:
+        shoulder_plane_point = tenon_timber.get_top_center_position() - \
+            tenon_timber.length_direction * tenon_shoulder_distance
+    else:  # BOTTOM
+        shoulder_plane_point = tenon_timber.get_bottom_center_position() + \
+            tenon_timber.length_direction * tenon_shoulder_distance
+    
+    # Apply tenon_position offset to shoulder plane point
+    tenon_x_direction = tenon_timber.get_face_direction(TimberFace.RIGHT)
+    tenon_y_direction = tenon_timber.get_face_direction(TimberFace.FORWARD)
+    tenon_x_offset_vec = create_vector3d(tenon_x_direction[0], tenon_x_direction[1], tenon_x_direction[2]) * tenon_position[0]
+    tenon_y_offset_vec = create_vector3d(tenon_y_direction[0], tenon_y_direction[1], tenon_y_direction[2]) * tenon_position[1]
+    shoulder_plane_point_with_offset = shoulder_plane_point + tenon_x_offset_vec + tenon_y_offset_vec
+    
+    # Convert shoulder plane point to tenon timber's local coordinates
+    shoulder_plane_point_with_offset_local = tenon_timber.orientation.matrix.T * (shoulder_plane_point_with_offset - tenon_timber.bottom_position)
+    
+    # Create infinite prism representing the timber end beyond the shoulder
+    # This extends from the shoulder to infinity in the tenon direction
+    from code_goes_here.meowmeowcsg import Difference, HalfPlane
+    
+    if tenon_end == TimberReferenceEnd.TOP:
+        # For top end, the timber end extends from shoulder to +infinity
+        timber_end_prism = Prism(
+            size=tenon_timber.size,
+            orientation=Orientation.identity(),
+            position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            start_distance=shoulder_plane_point_with_offset_local[2],  # Z coordinate in local space (with offset)
+            end_distance=None  # Infinite
+        )
+    else:  # BOTTOM
+        # For bottom end, the timber end extends from -infinity to shoulder
+        timber_end_prism = Prism(
+            size=tenon_timber.size,
+            orientation=Orientation.identity(),
+            position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            start_distance=None,  # Infinite
+            end_distance=shoulder_plane_point_with_offset_local[2]  # Z coordinate in local space (with offset)
+        )
+    
+    # Create tenon prism in local coordinates (with offset)
+    # The tenon extends from the shoulder plane
+    if tenon_end == TimberReferenceEnd.TOP:
+        tenon_start = shoulder_plane_point_with_offset_local[2]
+        tenon_end_dist = tenon_start + tenon_length
+    else:  # BOTTOM
+        tenon_end_dist = shoulder_plane_point_with_offset_local[2]
+        tenon_start = tenon_end_dist - tenon_length
+    
+    tenon_prism_local = Prism(
+        size=size,
+        orientation=Orientation.identity(),
+        position=Matrix([tenon_position[0], tenon_position[1], Rational(0)]),
+        start_distance=tenon_start,
+        end_distance=tenon_end_dist
+    )
+    
+    # Create shoulder plane half-plane to cut away material beyond the shoulder
+    # The shoulder plane is perpendicular to the timber length direction (Z axis in local coords)
+    if tenon_end == TimberReferenceEnd.TOP:
+        # For top end, we want to keep material below the shoulder (negative Z)
+        # Normal points down (-Z) to keep points where Z <= shoulder_z
+        shoulder_plane_normal = Matrix([Rational(0), Rational(0), Rational(-1)])
+        shoulder_plane_offset = -shoulder_plane_point_with_offset_local[2]
+    else:  # BOTTOM
+        # For bottom end, we want to keep material above the shoulder (positive Z)
+        # Normal points up (+Z) to keep points where Z >= shoulder_z
+        shoulder_plane_normal = Matrix([Rational(0), Rational(0), Rational(1)])
+        shoulder_plane_offset = shoulder_plane_point_with_offset_local[2]
+    
+    shoulder_half_plane = HalfPlane(
+        normal=shoulder_plane_normal,
+        offset=shoulder_plane_offset
+    )
+    
+    # Create the cut CSG: timber_end - tenon - shoulder_plane
+    # This represents everything beyond the shoulder except the tenon itself
+    tenon_cut_csg = Difference(
+        base=timber_end_prism,
+        subtract=[tenon_prism_local, shoulder_half_plane]
+    )
+    
+    # Create a single CSG cut
+    tenon_cut = CSGCut(
+        timber=tenon_timber,
+        origin=tenon_timber.bottom_position,
+        orientation=tenon_timber.orientation,
+        negative_csg=tenon_cut_csg,
+        maybe_end_cut=tenon_end
+    )
+    
+    tenon_cuts = [tenon_cut]
+    
+    # ========================================================================
+    # Create PartiallyCutTimber objects and Joint
+    # ========================================================================
+    
+    mortise_cut_timber = PartiallyCutTimber(mortise_timber, cuts=[mortise_cut])
+    tenon_cut_timber = PartiallyCutTimber(tenon_timber, cuts=tenon_cuts)
+    
+    return Joint(
+        partiallyCutTimbers=(mortise_cut_timber, tenon_cut_timber),
+        jointAccessories=()
+    )
+
+
+
+def cut_simple_mortise_and_tenon(
+    tenon_timber: Timber,
+    mortise_timber: Timber,
+    tenon_end: TimberReferenceEnd,
+    size: V2,
+    tenon_length: Numeric,
+    mortise_depth: Optional[Numeric] = None,
+) -> Joint:
+    """
+    Creates a simple mortise and tenon joint without pegs or wedges.
+    
+    This is the recommended function for basic mortise and tenon joints.
+    
+    Args:
+        tenon_timber: Timber that will receive the tenon cut
+        mortise_timber: Timber that will receive the mortise cut
+        tenon_end: Which end of the tenon timber gets the tenon (TOP or BOTTOM)
+        size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
+        tenon_length: Length of tenon extending from mortise face
+        mortise_depth: Depth of mortise (None = through mortise)
         
     Returns:
         Joint object containing the two PartiallyCutTimbers
         
-    Raises:
-        NotImplementedError: This function is not yet implemented
+    Example:
+        >>> # Create a simple mortise and tenon with 2x2 inch tenon, 3 inches long
+        >>> joint = cut_simple_mortise_and_tenon(
+        ...     tenon_timber=vertical_post,
+        ...     mortise_timber=horizontal_beam,
+        ...     tenon_end=TimberReferenceEnd.TOP,
+        ...     size=Matrix([Rational(2), Rational(2)]),
+        ...     tenon_length=Rational(3),
+        ...     mortise_depth=Rational(4)  # or None for through mortise
+        ... )
     """
-    # TODO: Implement this function
-    raise NotImplementedError("cut_mortise_and_tenon_joint is not yet implemented")
+    return cut_mortise_and_tenon_many_options_do_not_call_me_directly(
+        tenon_timber=tenon_timber,
+        mortise_timber=mortise_timber,
+        tenon_end=tenon_end,
+        size=size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        tenon_rotation=Orientation.identity(),
+        wedge_parameters=None,
+        peg_parameters=None
+    )
+
 
 
 
@@ -80,18 +497,5 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: T
     # TODO: Create the joint (when implemented, use new Joint constructor)
     # joint = Joint(partially_cut_timbers=[...], joint_accessories=[])
     
-    # Compute the mortise face by finding which face of the mortise timber 
-    # aligns with the tenon end face
-    tenon_end_direction = tenon_timber.get_face_direction(TimberFace.TOP if tenon_end == TimberReferenceEnd.TOP else TimberFace.BOTTOM)
-    mortise_face = mortise_timber.get_closest_oriented_face(-tenon_end_direction)
-    
-    # Calculate the correct mortise position based on tenon timber intersection
-    mortise_ref_end, mortise_distance = _calculate_mortise_position_from_tenon_intersection(
-        mortise_timber, tenon_timber, tenon_end
-    )
-    
-    # Calculate tenon shoulder plane distance to position it at the mortise timber face
-    tenon_shoulder_distance = _calculate_distance_from_timber_end_to_shoulder_plane(tenon_timber, mortise_timber, tenon_end)
-    
-    # TODO FINISH
-    raise NotImplementedError("Not implemented")
+    # TODO FINISH - this function is deprecated, use cut_simple_mortise_and_tenon instead
+    raise NotImplementedError("This function is deprecated. Use cut_simple_mortise_and_tenon instead.")

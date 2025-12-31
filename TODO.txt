@@ -128,22 +128,6 @@ create_wedge_in_timber_end(timber, end, position, shape: WedgeShape)
 
 
 
-
-:: 12/24/2025 reorg code notes
-
-
-all core code should live in a "code_goes_here" folder
-tests should exists side by side to code (not in their separate test folder)
-
--timber.py cotains all enums constants and types
--construction.py contains all our timber creation functions
--basic_joints.py contains all basic joint creation functions
--giraffe.py imports all files and rexports them together
-
-don't touch fusion360, rhino, examples, oldcrap folder for now
-
-
-
 :: documentation
 
 -installation
@@ -159,15 +143,15 @@ don't touch fusion360, rhino, examples, oldcrap folder for now
 
 
 :: TODO
-
--consider adding "Thing" base class, that has position and orientation 
--do mortise and tenno joint
--add timber metadata 
 DONE/SORTA-do the big useless test cleanup
+IGNORE-cleanup render utilities, some of them seem unecessary
 
+-do mortise and tenon joint
+-consider adding "Thing" base class, that has position and orientation 
+-add timber metadata 
 -double check floats again, are floats really necessary? I mean they really aren't
   -at least add a warning if floats are passed in.. I don't think we're ever forced to convert to float ever....
--cleanup render utilities, some of them seem unecessary
+-clean up the run_ freecad stuff so it's more consist and easy to switch between examples
 
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
@@ -201,7 +185,6 @@ DONE/SORTA-do the big useless test cleanup
       -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
         -same as draw bore but with komisen peg,
       -tusked mortise and tenon
-
   -corner joints
     -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
       -otherwise calls into mortise_and_tenon above
@@ -209,13 +192,10 @@ DONE/SORTA-do the big useless test cleanup
     -half_lap (special case of mortise and tenon? nah, special case of bridle joint? nah)
     -bridle joint (special case of mortise and tenon? nah)
     -maybe try the fancy  one we used on the shed
-
   -make shed example (just add joints)
-
   -splice_joint
     -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
-  
-  -get rhino rendering working for the following joints ...
+  IGNORE-get rhino rendering working for the following joints ...
   -improve examples
     -create series of examples showcasing each feature
     -create series of more complex examples
@@ -325,6 +305,24 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 
 :: END TODONE
+
+
+
+
+
+:: 12/24/2025 reorg code notes
+
+
+all core code should live in a "code_goes_here" folder
+tests should exists side by side to code (not in their separate test folder)
+
+-timber.py cotains all enums constants and types
+-construction.py contains all our timber creation functions
+-basic_joints.py contains all basic joint creation functions
+-giraffe.py imports all files and rexports them together
+
+don't touch fusion360, rhino, examples, oldcrap folder for now
+
 
 
 ::12/2025 BREP CUTTING OPERATIONS

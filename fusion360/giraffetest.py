@@ -25,6 +25,7 @@ try:
     from examples.sawhorse_example import create_sawhorse
     from examples.oscarshed import create_oscarshed
     from examples.reference.basic_joints_example import create_all_joint_examples
+    from examples.mortise_and_tenon_joint_examples import example_basic_mortise_and_tenon
     from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
     
     # Test that core dependencies are available
@@ -72,11 +73,13 @@ def run(_context: str):
                 'code_goes_here.timber',
                 'code_goes_here.construction',
                 'code_goes_here.basic_joints',
+                'code_goes_here.mortise_and_tenon_joint',
                 'giraffe', 
                 'giraffe_render_fusion360',
                 'examples.sawhorse_example',
                 'examples.oscarshed',
-                'examples.reference.basic_joints_example'
+                'examples.reference.basic_joints_example',
+                'examples.mortise_and_tenon_joint_examples'
             ]
             
             for module_name in modules_to_reload:
@@ -90,6 +93,7 @@ def run(_context: str):
             from examples.sawhorse_example import create_sawhorse
             from examples.oscarshed import create_oscarshed
             from examples.reference.basic_joints_example import create_all_joint_examples
+            from examples.mortise_and_tenon_joint_examples import example_basic_mortise_and_tenon
             from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
             
             print("✓ Module reload complete")
@@ -106,7 +110,7 @@ def run(_context: str):
                 'Choose which example to render:\n\n' +
                 '• YES = Basic Joints Examples (6 joint types)\n' +
                 '• NO = Oscar\'s Shed (timber frame structure)\n' +
-                '• CANCEL = Sawhorse',
+                '• CANCEL = Mortise and Tenon Joint',
                 'GiraffeCAD - Select Example',
                 adsk.core.MessageBoxButtonTypes.YesNoCancelButtonType,
                 adsk.core.MessageBoxIconTypes.QuestionIconType
@@ -121,10 +125,17 @@ def run(_context: str):
                 example_name = "Oscar's Shed"
                 example_func = create_oscarshed
                 prefix = "OscarShed_Timber"
-            else:  # Cancel = Sawhorse
-                example_name = "Sawhorse"
-                example_func = create_sawhorse
-                prefix = "Sawhorse_Timber"
+            else:  # Cancel = Mortise and Tenon
+                example_name = "Mortise and Tenon"
+                
+                # The mortise and tenon example returns a Joint, not a list of CutTimbers
+                # We need to extract the partiallyCutTimbers from it
+                def create_mortise_and_tenon_timbers():
+                    joint = example_basic_mortise_and_tenon()
+                    return list(joint.partiallyCutTimbers)
+                
+                example_func = create_mortise_and_tenon_timbers
+                prefix = "MortiseTenon"
             
             print(f"🦒 GIRAFFETEST: {example_name.upper()} 🦒")
             app.log(f"🦒 GIRAFFETEST: {example_name.upper()} 🦒")
