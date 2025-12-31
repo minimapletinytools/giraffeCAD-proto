@@ -26,10 +26,7 @@ from code_goes_here.construction import (
     _are_directions_parallel,
     _are_timbers_face_parallel,
     _are_timbers_face_orthogonal,
-    _are_timbers_face_aligned,
-    _project_point_on_timber_centerline,
-    _calculate_mortise_position_from_tenon_intersection,
-    _calculate_distance_from_timber_end_to_shoulder_plane
+    _are_timbers_face_aligned
 )
 from code_goes_here.timber import (
     _create_timber_prism_csg_local

@@ -17,9 +17,7 @@ from code_goes_here.moothymoth import (
 from code_goes_here.construction import (
     _are_directions_perpendicular,
     _are_timbers_face_aligned,
-    _are_timbers_face_orthogonal,
-    _calculate_mortise_position_from_tenon_intersection,
-    _calculate_distance_from_timber_end_to_shoulder_plane
+    _are_timbers_face_orthogonal
 )
 
 # ============================================================================

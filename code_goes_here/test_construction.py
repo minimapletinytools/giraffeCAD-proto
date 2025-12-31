@@ -7,7 +7,7 @@ from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.footprint import Footprint
 from giraffe import *
-from giraffe import _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned, _project_point_on_timber_centerline, _calculate_mortise_position_from_tenon_intersection
+from giraffe import _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned
 from .conftest import (
     create_standard_vertical_timber,
     create_standard_horizontal_timber,
@@ -1662,105 +1662,14 @@ class TestHelperFunctions:
         # Test with tolerance parameter (no warning)
         assert _are_timbers_face_aligned(timber1, timber2, tolerance=1e-10)
     
-    def test_project_point_on_timber_centerline(self):
-        """Test _project_point_on_timber_centerline helper function."""
-        # Create a timber along Z-axis
-        timber = timber_from_directions(
-            length=Rational(4),
-            size=create_vector2d(Rational("0.2"), Rational("0.3")),
-            bottom_position=create_vector3d(1, 2, 0),    # Offset from origin
-            length_direction=create_vector3d(0, 0, 1),   # Z-up
-            width_direction=create_vector3d(1, 0, 0)
-        )
-        
-        # Test point directly on the centerline
-        point_on_line = create_vector3d(1, 2, 2)  # 2 units up from bottom
-        t, projected = _project_point_on_timber_centerline(point_on_line, timber)
-        
-        assert abs(t - Rational(2)) < 1e-10  # Should be 2 units along timber
-        assert (projected - point_on_line).norm() < 1e-10  # Should project to itself
-        
-        # Test point off the centerline
-        point_off_line = create_vector3d(3, 5, Rational("1.5"))  # 1.5 units up, but offset in X and Y
-        t, projected = _project_point_on_timber_centerline(point_off_line, timber)
-        
-        assert abs(t - Rational("1.5")) < 1e-10  # Should be 1.5 units along timber
-        expected_projection = create_vector3d(1, 2, Rational("1.5"))  # On centerline at same Z
-        assert (projected - expected_projection).norm() < 1e-10
-        
-        # Test point before timber start (negative t)
-        point_before = create_vector3d(1, 2, -1)  # 1 unit below bottom
-        t, projected = _project_point_on_timber_centerline(point_before, timber)
-        
-        assert abs(t - (-Rational(1))) < 1e-10  # Should be -1 units
-        assert (projected - point_before).norm() < 1e-10
-        
-        # Test point beyond timber end
-        point_beyond = create_vector3d(1, 2, 5)  # 5 units up (beyond length of 4)
-        t, projected = _project_point_on_timber_centerline(point_beyond, timber)
-        
-        assert abs(t - Rational(5)) < 1e-10  # Should be 5 units
-        assert (projected - point_beyond).norm() < 1e-10
+    # COMMENTED OUT: Tests for deleted helper functions
+    # def test_project_point_on_timber_centerline(self):
+    #     """Test _project_point_on_timber_centerline helper function."""
+    #     pass
     
-    def test_calculate_mortise_position_from_tenon_intersection(self):
-        """Test _calculate_mortise_position_from_tenon_intersection helper function."""
-        # Create a vertical mortise timber (post)
-        mortise_timber = timber_from_directions(
-            length=Rational(3),
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
-            bottom_position=create_vector3d(0, 0, 0),
-            length_direction=create_vector3d(0, 0, 1),   # Z-up
-            width_direction=create_vector3d(1, 0, 0)
-        )
-        
-        # Create a horizontal tenon timber (beam) that intersects the post
-        tenon_timber = timber_from_directions(
-            length=Rational(2),
-            size=create_vector2d(Rational("0.15"), Rational("0.25")),
-            bottom_position=create_vector3d(-Rational("0.5"), 0, Rational("1.5")),  # Starts at X=-0.5, intersects post at Z=1.5
-            length_direction=create_vector3d(1, 0, 0),    # X-right
-            width_direction=create_vector3d(0, 0, 1)
-        )
-        
-        # Test with BOTTOM end of tenon timber
-        ref_end, distance = _calculate_mortise_position_from_tenon_intersection(
-            mortise_timber, tenon_timber, TimberReferenceEnd.BOTTOM
-        )
-        
-        # The tenon BOTTOM is at (-0.5, 0, 1.5), which projects to (0, 0, 1.5) on the mortise centerline
-        # Distance from mortise bottom (0, 0, 0) is 1.5
-        # Distance from mortise top (0, 0, 3) is 1.5, so both are equal
-        # Function should choose BOTTOM when distances are equal
-        assert ref_end == TimberReferenceEnd.BOTTOM
-        assert abs(distance - Rational("1.5")) < 1e-10
-        
-        # Test with TOP end of tenon timber  
-        ref_end, distance = _calculate_mortise_position_from_tenon_intersection(
-            mortise_timber, tenon_timber, TimberReferenceEnd.TOP
-        )
-        
-        # The tenon TOP is at (1.5, 0, 1.5), which also projects to (0, 0, 1.5) on the mortise centerline
-        # Same result as above
-        assert ref_end == TimberReferenceEnd.BOTTOM
-        assert abs(distance - Rational("1.5")) < 1e-10
-        
-        # Test with tenon closer to mortise top
-        tenon_timber_high = timber_from_directions(
-            length=Rational(2),
-            size=create_vector2d(Rational("0.15"), Rational("0.25")),
-            bottom_position=create_vector3d(-Rational("0.5"), 0, Rational("2.8")),  # Higher intersection
-            length_direction=create_vector3d(1, 0, 0),
-            width_direction=create_vector3d(0, 0, 1)
-        )
-        
-        ref_end, distance = _calculate_mortise_position_from_tenon_intersection(
-            mortise_timber, tenon_timber_high, TimberReferenceEnd.BOTTOM
-        )
-        
-        # Intersection at Z=2.8, distance from bottom=2.8, distance from top=0.2
-        # Should reference from TOP since it's closer
-        assert ref_end == TimberReferenceEnd.TOP
-        assert abs(distance - Rational("0.2")) < 1e-10
+    # def test_calculate_mortise_position_from_tenon_intersection(self):
+    #     """Test _calculate_mortise_position_from_tenon_intersection helper function."""
+    #     pass
 
 
 
