@@ -503,6 +503,8 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     assert float(distance) < float(max_separation), \
         f"Timbers do not intersect (closest distance: {float(distance):.4f}m, max allowed: {float(max_separation):.4f}m)"
     
+
+    # TODO this is wrong, don't use closest to centeline, instead, find the axis perpendicular to the length axis of both timbers and choose the faces on that axis. Choose face on that axis on timberA that's closest to timberB and then pick the opposite face on timberB.
     # Auto-select cut faces if not provided
     # Choose the face that minimizes material removal (face closest to the other timber)
     if timberA_cut_face is None:
