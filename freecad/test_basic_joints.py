@@ -1,10 +1,12 @@
 """
 Test script for rendering all basic joint examples in FreeCAD.
+
+NOTE: To automatically reload all modules, use run_basic_joints.py instead.
+This allows you to make code changes without restarting FreeCAD.
 """
 
 import sys
 import os
-import importlib
 
 # Add GiraffeCAD to path
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -16,12 +18,8 @@ if parent_dir not in sys.path:
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
-# Import and reload the FreeCAD renderer to bypass cache
-import giraffe_render_freecad
-importlib.reload(giraffe_render_freecad)
+# Import the FreeCAD renderer and examples
 from giraffe_render_freecad import render_multiple_timbers, clear_document
-
-# Import the basic joints examples
 from examples.reference.basic_joints_example import create_all_joint_examples
 
 
