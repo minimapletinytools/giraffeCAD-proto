@@ -12,7 +12,46 @@ this function is very generic and does a bunch of things. in particluar we want 
       -draw bore mortise and tenon
       -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
         -same as draw bore but with komisen peg,
-      -tusked mortise and tenon (explicitly not supported, will be a separate function due to needing to support more angles of insertion)
+      -tusked mortise and tenon 
+
+
+for now, create the super generic 
+
+cut_mortise_and_tenon_many_options_do_not_call_me_directly
+
+then do simple_mortise_and_tenon function that has no pegs or wedges
+
+the cut_mortise_and_tenon_many_options_do_not_call_me_directly function, it should take the following parameters
+
+-tenon timber
+-mortise timber
+-tenon end (of the tenon timber)
+-size (X,Y cross sectional size of tenon in local space of the tenon timber)
+-tenon_length
+-mortise_depth (must be >= to tenon length, if none, then it's a through mortise)
+-tenon_rotation (ccw rotation of tenon, identity by default )
+-wedges parameters (optional)
+-peg parameters (otpional)
+
+
+for implemntation, for now, assert on wedge and peg parameters being none, we will implement them later. also assert tenon_rotation is identity.
+
+
+stub out the peg and wedge praameter classes below though
+
+class SimplePegParameters
+  shape: PegShape
+  tenon_face: TimberLongFace # the face on the TENON timber that the pegs will be perpendicular too, only valid if tenon_rotation is identity
+  peg_positions: [(Numeric, Numeric)] # first is in length axis measured from the shoulder of the tenon, the second is in the perpendicular axis measured from center
+  depth: Optinoal[Numeric] # measured from mortise face where the peg goes in, none means peg goes all the way through to the other side
+  length: length of the peg
+
+class WedgeParameters
+  shape: Wedge Shape
+  depth: Numeric # depth of the wedge cut, note could be different than length of wedge
+  width_axis: Direction3D # wedges run along this axis, so the, so when looking perpendicular to this and the length axis, you see the the trapezoidal "sides" of the wedges
+  positions: [Numeric] # positions from center of the timber in the width axis
+  expand_mortise: Numeric # amount to fan out the bottom of the mortise to fit the wedges, so 0 means straight sides, and X means expand both sides of the mortise bottom by X (total) from straight. 0 by default
 
 
 
