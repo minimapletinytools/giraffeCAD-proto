@@ -14,10 +14,11 @@ this function is very generic and does a bunch of things. in particluar we want 
         -same as draw bore but with komisen peg,
       -tusked mortise and tenon (explicitly not supported, will be a separate function due to needing to support more angles of insertion)
 
-so we need to support the folowing features:
 
 
-PEGS
+:: 12/30/2025 joint accesorry notes
+
+### PEGS
 pegs (could be round or rectangular), rectangular pegs can be inserted at an angle
 class RoundPeg
 class RectangularPeg:
@@ -28,6 +29,66 @@ pegs are always orthogonal to the length axis of the 2 timbers, but they can go 
 
 
 QUESTION how to handle peg orientation. do we allow rotating in all idrections? should we make a separat function for tusk tenon  which may want the tenon running lengthwise with the mrotise timber
+
+ANSWER: most generic version is that peg is defined somewhere in the tenon timber, lets oriented in the length axis by default. and then an orientation is applied...
+
+SOLUTION: make a peg class with helpers...
+
+class Peg:
+  # peg is always stored in local space of a timber, so identity orientation has peg pointing in the same direction as the length axis of the timber (with the insertion end at the bottom)
+  orientation: orientation
+  position: V3
+  size: Numeric
+  shape: square|round 
+
+class PegShape
+  size
+  shape
+
+create_peg_going_into_face(timber: Timber, face: TimberLongFace, distance_from_bot: Numeric, distance_from_centerline: Numeric, peg_shape : PegShape)
+
+
+## wedges
+wedges are little triangle (with tip cut) pieces of wood going into the tenon end to wedge it in place. 
+
+class wedge:
+  # in local space fo the timber, a identity orientation has the point end of the wedge going in the length direction of the timber. 
+  # the profile of the wedge (which looks like a triangle with the tip cut off) in the Y axis. Thus thickness is in the y axis
+  # teh width of the wedge is in the X axis
+  # the 0,0 point of the wedge is at the bottom center of the longer side of the triangle
+
+  +z
+   _
+  / \
+ /   \
+/_____\ +x
+   ↑
+   origin
+
+
+  orientation: ORientation
+  position: V3
+  base_width: Numeric
+  tip_width: numeric
+  thickness: Numeric
+  length: Numeric # from base to tip of cut off triangle
+  def width() # property alias for base_width
+
+
+class WedgeShape:
+  base_width
+  tip_width
+  thickness
+  length
+
+create_wedge_in_timber_end(timber, end, position, shape: WedgeShape)
+
+
+
+
+
+
+
 
 :: 12/24/2025 reorg code notes
 
@@ -60,9 +121,10 @@ don't touch fusion360, rhino, examples, oldcrap folder for now
 
 :: TODO
 
+-consider adding "Thing" base class, that has position and orientation 
 -do mortise and tenno joint
 -add timber metadata 
--do the big useless test cleanup
+DONE/SORTA-do the big useless test cleanup
 
 -double check floats again, are floats really necessary? I mean they really aren't
   -at least add a warning if floats are passed in.. I don't think we're ever forced to convert to float ever....
