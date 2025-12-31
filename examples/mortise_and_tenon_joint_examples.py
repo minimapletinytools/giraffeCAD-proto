@@ -53,7 +53,7 @@ def example_basic_mortise_and_tenon():
     joint = cut_simple_mortise_and_tenon(
         tenon_timber=post,
         mortise_timber=beam,
-        tenon_end=TimberReferenceEnd.TOP,  # Tenon cut on top end of post
+        tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon cut on top end of post
         size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth
