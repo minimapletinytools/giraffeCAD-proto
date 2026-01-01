@@ -146,6 +146,11 @@ create_wedge_in_timber_end(timber, end, position, shape: WedgeShape)
 DONE/SORTA-do the big useless test cleanup
 IGNORE-cleanup render utilities, some of them seem unecessary
 
+-joint rendering
+  -add csg function to accessoiers
+  -clean up accesory rendering in fusino360
+  -add accesory rendering to freecad
+  
 -do mortise and tenon joint
 -consider adding "Thing" base class, that has position and orientation 
 -add timber metadata 
@@ -227,6 +232,7 @@ IGNORE-cleanup render utilities, some of them seem unecessary
       -double notch
     -fancy joints
       -the one where 2 beams butt up against 1 post and have the thing that passes through them
+  -chamfer render support?
 
 
 
