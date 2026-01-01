@@ -518,8 +518,19 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             elif peg_parameters.tenon_face == TimberReferenceLongFace.BACK:
                 peg_pos_local[1] = -tenon_timber.size[1] / 2
             
-            # Calculate peg depth (forward into mortise) and stickout length (backward into tenon)
-            peg_depth = peg_parameters.depth if peg_parameters.depth is not None else mortise_timber.size[2]
+            # Calculate the peg depth into the mortise timber
+            # If not specified, use the dimension of the mortise timber perpendicular to the mortise face
+            if peg_parameters.depth is not None:
+                peg_depth = peg_parameters.depth
+            else:
+                # Determine which dimension based on which face the mortise is on
+                if mortise_face in [TimberFace.RIGHT, TimberFace.LEFT]:
+                    peg_depth = mortise_timber.size[0]  # X dimension
+                elif mortise_face in [TimberFace.FORWARD, TimberFace.BACK]:
+                    peg_depth = mortise_timber.size[1]  # Y dimension
+                else:  # TOP or BOTTOM
+                    assert False, "Invalid mortise face"
+            
             stickout_length = peg_depth * Rational(1, 2)  # Stickout is 0.5 times the depth
             
             # Create peg hole prism in tenon local space
