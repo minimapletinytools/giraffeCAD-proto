@@ -48,6 +48,32 @@ class MeowMeowCSG(ABC):
         """
         pass
 
+    @abstractmethod
+    def contains_point(self, point: V3) -> bool:
+        """
+        Check if a point is contained within the CSG object.
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is inside or on the boundary of the CSG object, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def is_point_on_boundary(self, point: V3) -> bool:
+        """
+        Check if a point is on the boundary of the CSG object.
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is on the boundary of the CSG object, False otherwise
+        """
+        pass
+
 
 @dataclass(frozen=True)
 class HalfPlane(MeowMeowCSG):
@@ -107,6 +133,38 @@ class HalfPlane(MeowMeowCSG):
         
         # Return the origin point on the plane boundary
         return self.normal * self.offset
+
+    def contains_point(self, point: V3) -> bool:
+        """
+        Check if a point is contained within the half-plane.
+        
+        A point P is in the half-plane if (P · normal) >= offset
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is in the half-plane (including boundary), False otherwise
+        """
+        # Compute dot product: point · normal
+        dot_product = (point.T * self.normal)[0, 0]
+        return dot_product >= self.offset
+
+    def is_point_on_boundary(self, point: V3) -> bool:
+        """
+        Check if a point is on the boundary of the half-plane.
+        
+        A point P is on the boundary if (P · normal) == offset
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is on the boundary plane, False otherwise
+        """
+        # Compute dot product: point · normal
+        dot_product = (point.T * self.normal)[0, 0]
+        return dot_product == self.offset
 
 
 @dataclass(frozen=True)
@@ -217,6 +275,117 @@ class Prism(MeowMeowCSG):
         
         return min_point
 
+    def contains_point(self, point: V3) -> bool:
+        """
+        Check if a point is contained within the prism.
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is inside or on the boundary of the prism, False otherwise
+        """
+        # Transform point to local coordinates
+        # Local origin is at self.position
+        local_point = point - self.position
+        
+        # Extract axes from orientation matrix
+        width_dir = Matrix([
+            self.orientation.matrix[0, 0],
+            self.orientation.matrix[1, 0],
+            self.orientation.matrix[2, 0]
+        ])
+        height_dir = Matrix([
+            self.orientation.matrix[0, 1],
+            self.orientation.matrix[1, 1],
+            self.orientation.matrix[2, 1]
+        ])
+        length_dir = Matrix([
+            self.orientation.matrix[0, 2],
+            self.orientation.matrix[1, 2],
+            self.orientation.matrix[2, 2]
+        ])
+        
+        # Project onto local axes
+        x_coord = (local_point.T * width_dir)[0, 0]
+        y_coord = (local_point.T * height_dir)[0, 0]
+        z_coord = (local_point.T * length_dir)[0, 0]
+        
+        # Check bounds in each dimension
+        half_width = self.size[0] / 2
+        half_height = self.size[1] / 2
+        
+        # Check width and height bounds
+        if abs(x_coord) > half_width or abs(y_coord) > half_height:
+            return False
+        
+        # Check length bounds
+        if self.start_distance is not None and z_coord < self.start_distance:
+            return False
+        if self.end_distance is not None and z_coord > self.end_distance:
+            return False
+        
+        return True
+
+    def is_point_on_boundary(self, point: V3) -> bool:
+        """
+        Check if a point is on the boundary of the prism.
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is on the boundary of the prism, False otherwise
+        """
+        # First check if point is contained
+        if not self.contains_point(point):
+            return False
+        
+        # Transform point to local coordinates
+        local_point = point - self.position
+        
+        # Extract axes from orientation matrix
+        width_dir = Matrix([
+            self.orientation.matrix[0, 0],
+            self.orientation.matrix[1, 0],
+            self.orientation.matrix[2, 0]
+        ])
+        height_dir = Matrix([
+            self.orientation.matrix[0, 1],
+            self.orientation.matrix[1, 1],
+            self.orientation.matrix[2, 1]
+        ])
+        length_dir = Matrix([
+            self.orientation.matrix[0, 2],
+            self.orientation.matrix[1, 2],
+            self.orientation.matrix[2, 2]
+        ])
+        
+        # Project onto local axes
+        x_coord = (local_point.T * width_dir)[0, 0]
+        y_coord = (local_point.T * height_dir)[0, 0]
+        z_coord = (local_point.T * length_dir)[0, 0]
+        
+        # Check if on any face
+        half_width = self.size[0] / 2
+        half_height = self.size[1] / 2
+        
+        # On width faces
+        if abs(x_coord) == half_width:
+            return True
+        
+        # On height faces
+        if abs(y_coord) == half_height:
+            return True
+        
+        # On length faces (if finite)
+        if self.start_distance is not None and z_coord == self.start_distance:
+            return True
+        if self.end_distance is not None and z_coord == self.end_distance:
+            return True
+        
+        return False
+
 
 @dataclass(frozen=True)
 class Cylinder(MeowMeowCSG):
@@ -319,6 +488,83 @@ class Cylinder(MeowMeowCSG):
             min_point = min(candidates, key=lambda p: (p.T * direction)[0, 0])
             return min_point
 
+    def contains_point(self, point: V3) -> bool:
+        """
+        Check if a point is contained within the cylinder.
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is inside or on the boundary of the cylinder, False otherwise
+        """
+        # Transform point to local coordinates
+        local_point = point - self.position
+        
+        # Normalize axis
+        axis = self.axis_direction / self.axis_direction.norm()
+        
+        # Project onto axis to get axial coordinate
+        axial_coord = (local_point.T * axis)[0, 0]
+        
+        # Check axial bounds
+        if self.start_distance is not None and axial_coord < self.start_distance:
+            return False
+        if self.end_distance is not None and axial_coord > self.end_distance:
+            return False
+        
+        # Calculate radial distance from axis
+        axial_projection = axis * axial_coord
+        radial_vector = local_point - axial_projection
+        radial_distance = radial_vector.norm()
+        
+        # Check if within radius
+        return radial_distance <= self.radius
+
+    def is_point_on_boundary(self, point: V3) -> bool:
+        """
+        Check if a point is on the boundary of the cylinder.
+        
+        A point is on the boundary if it's either:
+        1. On the cylindrical surface (at radius distance from axis)
+        2. On one of the end caps (if finite)
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is on the boundary of the cylinder, False otherwise
+        """
+        # First check if point is contained
+        if not self.contains_point(point):
+            return False
+        
+        # Transform point to local coordinates
+        local_point = point - self.position
+        
+        # Normalize axis
+        axis = self.axis_direction / self.axis_direction.norm()
+        
+        # Project onto axis to get axial coordinate
+        axial_coord = (local_point.T * axis)[0, 0]
+        
+        # Calculate radial distance from axis
+        axial_projection = axis * axial_coord
+        radial_vector = local_point - axial_projection
+        radial_distance = radial_vector.norm()
+        
+        # On cylindrical surface
+        if radial_distance == self.radius:
+            return True
+        
+        # On end caps (if finite and at the end)
+        if self.start_distance is not None and axial_coord == self.start_distance:
+            return True
+        if self.end_distance is not None and axial_coord == self.end_distance:
+            return True
+        
+        return False
+
 
 @dataclass(frozen=True)
 class Union(MeowMeowCSG):
@@ -364,6 +610,49 @@ class Union(MeowMeowCSG):
         
         return min_point
 
+    def contains_point(self, point: V3) -> bool:
+        """
+        Check if a point is contained within the union.
+        
+        A point is in the union if it's in ANY of the children.
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is in any of the children, False otherwise
+        """
+        return any(child.contains_point(point) for child in self.children)
+
+    def is_point_on_boundary(self, point: V3) -> bool:
+        """
+        Check if a point is on the boundary of the union.
+        
+        A point is on the boundary if it's on the boundary of at least one child
+        and not in the interior of any other child.
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is on the boundary of the union, False otherwise
+        """
+        # Point must be contained in the union
+        if not self.contains_point(point):
+            return False
+        
+        # Check if on boundary of any child and not strictly inside all others
+        on_any_boundary = False
+        for child in self.children:
+            if child.contains_point(point):
+                if child.is_point_on_boundary(point):
+                    on_any_boundary = True
+                else:
+                    # Point is strictly inside this child, so not on union boundary
+                    return False
+        
+        return on_any_boundary
+
 
 @dataclass(frozen=True)
 class Difference(MeowMeowCSG):
@@ -391,6 +680,73 @@ class Difference(MeowMeowCSG):
         (subtracting material doesn't extend the boundary in the negative direction).
         """
         return self.base.minimal_boundary_in_direction(direction)
+
+    def contains_point(self, point: V3) -> bool:
+        """
+        Check if a point is contained within the difference.
+        
+        A point is in the difference if it's in the base and NOT in any of the subtract objects.
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is in base but not in any subtract objects, False otherwise
+        """
+        # Point must be in base
+        if not self.base.contains_point(point):
+            return False
+        
+        # Point must not be in any subtract object
+        return not any(sub.contains_point(point) for sub in self.subtract)
+
+    def is_point_on_boundary(self, point: V3) -> bool:
+        """
+        Check if a point is on the boundary of the difference.
+        
+        A point is on the boundary if:
+        1. It's contained in the difference (base - subtract), AND
+        2. Either:
+           a. It's on the boundary of the base, OR
+           b. It's strictly inside the base but on the boundary of at least one subtract object
+        
+        Note: For case 2b, the point creates a new boundary surface (the "hole" surface).
+        The point must be on the subtract boundary but NOT inside the subtract (i.e., on the
+        surface of the hole facing the remaining material).
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is on the boundary of the difference, False otherwise
+        """
+        # Point must be contained in base
+        if not self.base.contains_point(point):
+            return False
+        
+        # Check if point is in any subtract region (strictly inside, not just boundary)
+        in_subtract_interior = False
+        on_subtract_boundary = False
+        
+        for sub in self.subtract:
+            if sub.contains_point(point):
+                if sub.is_point_on_boundary(point):
+                    on_subtract_boundary = True
+                else:
+                    # Point is strictly inside a subtract object
+                    in_subtract_interior = True
+                    break
+        
+        # If point is strictly inside any subtract, it's not on the difference boundary
+        if in_subtract_interior:
+            return False
+        
+        # If point is on subtract boundary, it's on the difference boundary
+        if on_subtract_boundary:
+            return True
+        
+        # Otherwise, check if it's on the base boundary
+        return self.base.is_point_on_boundary(point)
 
 
 
