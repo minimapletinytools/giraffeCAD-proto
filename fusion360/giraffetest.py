@@ -124,45 +124,68 @@ def run(_context: str):
                 example_name = "Basic Joints"
                 example_func = create_all_joint_examples
                 prefix = "Joint"
+                has_accessories = False
             elif result == adsk.core.DialogResults.DialogNo:
                 example_name = "Oscar's Shed"
                 example_func = create_oscarshed
                 prefix = "OscarShed_Timber"
+                has_accessories = False
             else:  # Cancel = All Mortise and Tenon Examples
                 example_name = "All Mortise and Tenon Examples"
                 example_func = create_all_mortise_and_tenon_examples
                 prefix = "MortiseTenon"
+                has_accessories = True
             
             print(f"🦒 GIRAFFETEST: {example_name.upper()} 🦒")
             app.log(f"🦒 GIRAFFETEST: {example_name.upper()} 🦒")
             print(f"Starting {example_name} generation...")
             
             # Generate the selected example
-            cut_timbers = example_func()
-            print(f"Created structure with {len(cut_timbers)} timbers")
+            if has_accessories:
+                cut_timbers, joint_accessories = example_func(return_accessories=True)
+                print(f"Created structure with {len(cut_timbers)} timbers and {len(joint_accessories)} accessories")
+            else:
+                cut_timbers = example_func()
+                joint_accessories = None
+                print(f"Created structure with {len(cut_timbers)} timbers")
             
             # Clear design first to start fresh
             clear_design()
             
             # Render the timbers in Fusion 360 using three-pass rendering approach  
-            print(f"Starting three-pass rendering of {len(cut_timbers)} {example_name} timbers...")
-            app.log(f"Starting three-pass rendering of {len(cut_timbers)} {example_name} timbers...")
+            if joint_accessories:
+                print(f"Starting rendering of {len(cut_timbers)} {example_name} timbers and {len(joint_accessories)} accessories...")
+                app.log(f"Starting rendering of {len(cut_timbers)} {example_name} timbers and {len(joint_accessories)} accessories...")
+            else:
+                print(f"Starting three-pass rendering of {len(cut_timbers)} {example_name} timbers...")
+                app.log(f"Starting three-pass rendering of {len(cut_timbers)} {example_name} timbers...")
             
             # Render using the new CSG-based rendering system
-            success_count = render_multiple_timbers(cut_timbers, prefix)
+            success_count = render_multiple_timbers(cut_timbers, prefix, joint_accessories)
             
             # Log detailed information
-            app.log(f"{example_name} rendering complete: {success_count}/{len(cut_timbers)} timbers rendered")
+            total_objects = len(cut_timbers) + (len(joint_accessories) if joint_accessories else 0)
+            app.log(f"{example_name} rendering complete: {success_count}/{total_objects} objects rendered")
             
             # Show final summary  
-            print(f"{example_name} rendering complete: {success_count}/{len(cut_timbers)} timbers rendered")
-            ui.messageBox(
-                f'{example_name} rendering complete!\n\n' +
-                f'Successfully rendered {success_count}/{len(cut_timbers)} timbers',
-                'Rendering Complete',
-                adsk.core.MessageBoxButtonTypes.OKButtonType,
-                adsk.core.MessageBoxIconTypes.InformationIconType
-            )
+            print(f"{example_name} rendering complete: {success_count}/{total_objects} objects rendered")
+            if joint_accessories:
+                ui.messageBox(
+                    f'{example_name} rendering complete!\n\n' +
+                    f'Successfully rendered {success_count}/{total_objects} objects\n' +
+                    f'({len(cut_timbers)} timbers + {len(joint_accessories)} accessories)',
+                    'Rendering Complete',
+                    adsk.core.MessageBoxButtonTypes.OKButtonType,
+                    adsk.core.MessageBoxIconTypes.InformationIconType
+                )
+            else:
+                ui.messageBox(
+                    f'{example_name} rendering complete!\n\n' +
+                    f'Successfully rendered {success_count}/{len(cut_timbers)} timbers',
+                    'Rendering Complete',
+                    adsk.core.MessageBoxButtonTypes.OKButtonType,
+                    adsk.core.MessageBoxIconTypes.InformationIconType
+                )
             
         except Exception as rendering_error:
             print(f"❌ Error during rendering: {rendering_error}")

@@ -20,7 +20,7 @@ import traceback
 import time
 from typing import Optional, List, Tuple
 from sympy import Matrix, Float
-from giraffe import CutTimber, Timber
+from giraffe import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
     MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference
@@ -496,7 +496,8 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union, timbe
         print("Failed to render first child of union")
         return None
     
-    # Union with remaining children
+    # Render all remaining children and collect them as tool bodies
+    tools = adsk.core.ObjectCollection.create()
     for i, child in enumerate(union.children[1:], start=1):
         child_body = render_csg_in_local_space(component, child, timber, infinite_extent)
         
@@ -504,15 +505,14 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union, timbe
             print(f"Failed to render union child {i}")
             continue
         
-        # Perform union operation
+        tools.add(child_body)
+    
+    # Perform a single union operation with all tool bodies
+    if tools.count > 0:
         try:
             combine_features = component.features.combineFeatures
             
-            # Create tool collection with the child body
-            tools = adsk.core.ObjectCollection.create()
-            tools.add(child_body)
-            
-            # Create combine input (union operation)
+            # Create combine input (union operation) with all tools at once
             combine_input = combine_features.createInput(result_body, tools)
             combine_input.operation = adsk.fusion.FeatureOperations.JoinFeatureOperation
             combine_input.isKeepToolBodies = False
@@ -525,8 +525,7 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union, timbe
             adsk.doEvents()
             
         except Exception as e:
-            print(f"Error performing union with child {i}: {e}")
-            continue
+            print(f"Error performing union operation: {e}")
     
     return result_body
 
@@ -1003,13 +1002,84 @@ def check_body_extents(body: adsk.fusion.BRepBody, max_allowed_extent: float, co
         return True
 
 
-def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber") -> int:
+def render_peg_at_origin(peg: Peg, component_name: str) -> Optional[adsk.fusion.Occurrence]:
     """
-    Render multiple CutTimber objects in Fusion 360 using a three-pass approach.
+    Render a Peg accessory at the origin in Fusion 360.
+    
+    The peg is created at origin with identity orientation. Transform should be applied later.
+    
+    Args:
+        peg: Peg object with size and shape
+        component_name: Name for the created component
+        
+    Returns:
+        Created Occurrence, or None if creation failed
+    """
+    design = get_active_design()
+    if not design:
+        print("No active design found")
+        return None
+    
+    try:
+        # Create a new component at origin
+        root = design.rootComponent
+        transform = adsk.core.Matrix3D.create()
+        occurrence = root.occurrences.addNewComponent(transform)
+        component = occurrence.component
+        component.name = component_name
+        
+        # Create the peg geometry based on its shape
+        # Create CSG at origin pointing along +Z
+        if peg.shape == PegShape.SQUARE:
+            # Create a square prism peg at origin
+            peg_length = float(peg.size) * 20  # Pegs are typically long relative to their cross-section
+            
+            # Create prism at origin pointing along +Z
+            peg_csg = Prism(
+                size=Matrix([peg.size, peg.size]),
+                start_distance=0,
+                end_distance=peg_length,
+                orientation=Orientation.identity(),
+                position=Matrix([0, 0, 0])
+            )
+            
+        elif peg.shape == PegShape.ROUND:
+            # Create a cylindrical peg at origin
+            peg_length = float(peg.size) * 20
+            peg_csg = Cylinder(
+                radius=peg.size / 2,
+                axis_direction=Matrix([0, 0, 1]),
+                start_distance=0,
+                end_distance=peg_length,
+                position=Matrix([0, 0, 0])
+            )
+        else:
+            print(f"Unknown peg shape: {peg.shape}")
+            return None
+        
+        # Render the peg geometry at origin
+        body = render_csg_in_local_space(component, peg_csg, None, 10000.0)
+        
+        if body is None:
+            print(f"Failed to render peg geometry for {component_name}")
+            return None
+        
+        return occurrence
+        
+    except Exception as e:
+        print(f"Error rendering peg at origin: {e}")
+        traceback.print_exc()
+        return None
+
+
+def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber", joint_accessories: List[Tuple[JointAccessory, Timber]] = None) -> int:
+    """
+    Render multiple CutTimber objects and joint accessories in Fusion 360 using a three-pass approach.
     
     Pass 1: Create all geometry at origin
     Pass 2: Apply CSG operations (cuts) at origin
     Pass 3: Transform all occurrences to final positions
+    Pass 4: Render joint accessories (pegs, wedges, etc.)
     
     This approach is more reliable than transforming each timber immediately after creation,
     as it avoids Fusion 360's asynchronous update issues.
@@ -1022,9 +1092,10 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     Args:
         cut_timbers: List of CutTimber objects to render
         base_name: Base name for the components (used if timber has no name)
+        joint_accessories: Optional list of (JointAccessory, Timber) tuples to render
         
     Returns:
-        Number of successfully rendered timbers
+        Number of successfully rendered timbers and accessories
     """
     app = get_fusion_app()
     
@@ -1165,14 +1236,142 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     time.sleep(0.2)
     adsk.doEvents()
     
+    # PASS 4: Render joint accessories at origin (pegs, wedges, etc.)
+    created_accessories = []  # List of (occurrence, accessory, timber, name) tuples
+    if joint_accessories:
+        print(f"\n=== PASS 4: Creating {len(joint_accessories)} joint accessories at origin ===")
+        if app:
+            app.log(f"=== PASS 4: Creating {len(joint_accessories)} joint accessories at origin ===")
+        
+        for i, (accessory, timber) in enumerate(joint_accessories):
+            try:
+                if isinstance(accessory, Peg):
+                    accessory_name = f"Peg_{i+1}"
+                    print(f"Creating {accessory_name} ({accessory.shape.value}, size={float(accessory.size):.3f}cm)...")
+                    
+                    occurrence = render_peg_at_origin(accessory, accessory_name)
+                    
+                    if occurrence:
+                        created_accessories.append((occurrence, accessory, timber, accessory_name))
+                        print(f"  ✓ Created {accessory_name}")
+                        if app:
+                            app.log(f"  ✓ Created {accessory_name}")
+                    else:
+                        print(f"  ✗ Failed to create {accessory_name}")
+                        if app:
+                            app.log(f"  ✗ Failed to create {accessory_name}")
+                
+                elif isinstance(accessory, Wedge):
+                    print(f"  ⚠ Wedge rendering not yet implemented")
+                    if app:
+                        app.log(f"  ⚠ Wedge rendering not yet implemented")
+                
+                else:
+                    print(f"  ⚠ Unknown accessory type: {type(accessory).__name__}")
+                    if app:
+                        app.log(f"  ⚠ Unknown accessory type: {type(accessory).__name__}")
+                
+            except Exception as e:
+                print(f"  ✗ Error creating accessory {i+1}: {e}")
+                if app:
+                    app.log(f"  ✗ Error creating accessory {i+1}: {e}")
+                traceback.print_exc()
+    
+    # Force Fusion 360 to process all accessory creation
+    time.sleep(0.2)
+    adsk.doEvents()
+    
+    # PASS 5: Transform joint accessories to final positions
+    accessories_transformed = 0
+    if created_accessories:
+        print(f"\n=== PASS 5: Transforming {len(created_accessories)} joint accessories ===")
+        if app:
+            app.log(f"=== PASS 5: Transforming {len(created_accessories)} joint accessories ===")
+        
+        for occurrence, accessory, timber, accessory_name in created_accessories:
+            try:
+                print(f"Transforming {accessory_name}...")
+                
+                if app:
+                    app.log(f"  Transforming {accessory_name}:")
+                    app.log(f"    Peg position (timber local): {[float(x) for x in accessory.position]}")
+                    app.log(f"    Timber position (world): {[float(x) for x in timber.bottom_position]}")
+                
+                # Compute combined position and orientation in SymPy (like timbers do)
+                # Position: P_world = timber_pos + timber_orient * peg_pos
+                peg_pos_in_world = timber.bottom_position + timber.orientation.matrix * accessory.position
+                
+                # Orientation: O_world = timber_orient * peg_orient
+                combined_orientation_matrix = timber.orientation.matrix * accessory.orientation.matrix
+                combined_orientation = Orientation(combined_orientation_matrix)
+                
+                if app:
+                    app.log(f"    Combined position (world): {[float(x) for x in peg_pos_in_world]}")
+                    app.log(f"    Combined orientation matrix:")
+                    for i in range(3):
+                        row = [float(combined_orientation.matrix[i, j]) for j in range(3)]
+                        app.log(f"      [{row[0]:.3f}, {row[1]:.3f}, {row[2]:.3f}]")
+                
+                # Create the final transform matrix (like timbers do)
+                final_transform = create_matrix3d_from_orientation(peg_pos_in_world, combined_orientation)
+                
+                if app:
+                    # Log the resulting transform
+                    tx = final_transform.getCell(0, 3)
+                    ty = final_transform.getCell(1, 3)
+                    tz = final_transform.getCell(2, 3)
+                    app.log(f"    Final transform translation: [{tx:.3f}, {ty:.3f}, {tz:.3f}]")
+                
+                # Apply the transformation using apply_timber_transform pattern
+                success = apply_timber_transform(occurrence, peg_pos_in_world, combined_orientation, accessory_name)
+                
+                if not success:
+                    if app:
+                        app.log(f"    ERROR: apply_timber_transform returned False")
+                    raise RuntimeError(f"Failed to apply transform to {accessory_name}")
+                
+                if app:
+                    actual_transform = occurrence.transform2
+                    actual_tx = actual_transform.getCell(0, 3)
+                    actual_ty = actual_transform.getCell(1, 3)
+                    actual_tz = actual_transform.getCell(2, 3)
+                    app.log(f"    Verified occurrence transform: [{actual_tx:.3f}, {actual_ty:.3f}, {actual_tz:.3f}]")
+                
+                accessories_transformed += 1
+                print(f"  ✓ Transformed {accessory_name}")
+                if app:
+                    app.log(f"  ✓ Transformed {accessory_name}")
+                
+                # Small delay between transforms
+                time.sleep(0.05)
+                adsk.doEvents()
+                
+            except Exception as e:
+                print(f"  ✗ Error transforming {accessory_name}: {e}")
+                if app:
+                    app.log(f"  ✗ Error transforming {accessory_name}: {e}")
+                traceback.print_exc()
+    
+    # Final refresh
+    time.sleep(0.2)
+    adsk.doEvents()
+    
+    accessories_rendered = len(created_accessories)
+    
     # Summary
     print(f"\n=== SUMMARY ===")
     print(f"Created: {len(created_components)}/{len(cut_timbers)} timbers")
-    print(f"Transformed: {transform_success_count}/{len(created_components)} components")
+    print(f"Transformed: {transform_success_count}/{len(created_components)} timber components")
+    if joint_accessories:
+        print(f"Accessories Created: {accessories_rendered}/{len(joint_accessories)}")
+        print(f"Accessories Transformed: {accessories_transformed}/{accessories_rendered}")
     
     if app:
         app.log(f"=== SUMMARY ===")
         app.log(f"Created: {len(created_components)}/{len(cut_timbers)} timbers")
-        app.log(f"Transformed: {transform_success_count}/{len(created_components)} components")
+        app.log(f"Transformed: {transform_success_count}/{len(created_components)} timber components")
+        if joint_accessories:
+            app.log(f"Accessories Created: {accessories_rendered}/{len(joint_accessories)}")
+            app.log(f"Accessories Transformed: {accessories_transformed}/{accessories_rendered}")
     
-    return transform_success_count
+    return transform_success_count + accessories_transformed

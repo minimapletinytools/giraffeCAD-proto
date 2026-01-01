@@ -26,6 +26,8 @@ from code_goes_here.construction import (
 # Parameter Classes for Mortise and Tenon Joints
 # ============================================================================
 
+
+# TODO add tenon bore offset parameter, it could be none | auto | Numeric
 @dataclass(frozen=True)
 class SimplePegParameters:
     """
@@ -126,7 +128,6 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Assert unsupported features
     assert wedge_parameters is None, "Wedge parameters not yet supported"
-    assert peg_parameters is None, "Peg parameters not yet supported"
     assert tenon_rotation.matrix.equals(Orientation.identity().matrix), \
         "Tenon rotation not yet supported (must be identity)"
     assert mortise_shoulder_inset == 0, "Mortise shoulder inset not yet supported"
@@ -434,6 +435,183 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     tenon_cuts = [tenon_cut]
     
     # ========================================================================
+    # Create peg holes and accessories if pegs are specified
+    # ========================================================================
+    
+    joint_accessories = []
+    
+    if peg_parameters is not None:
+        # Assert tenon_rotation is identity (required for peg positioning)
+        assert tenon_rotation.matrix.equals(Orientation.identity().matrix), \
+            "Pegs require tenon_rotation to be identity"
+        
+        # Get peg diameter/size from shape attribute (assume 0.5 inch default for now)
+        # TODO: Extract actual size from shape when shape includes dimensions
+        from code_goes_here.moothymoth import inches as inches_fn
+        peg_size = inches_fn(1, 2)  # Default 0.5 inch diameter converted to meters
+        
+        # Determine the peg direction (perpendicular to tenon_face)
+        peg_face = peg_parameters.tenon_face.to_timber_face()
+        
+        # Determine which axis the peg travels along and offset axes
+        # For simplicity with face-aligned timbers, work directly in local coords
+        if peg_face in [TimberFace.RIGHT, TimberFace.LEFT]:
+            # Peg travels along X axis
+            peg_axis_index = 0
+            offset_axis_index = 1  # Y for distance_from_centerline
+            length_axis_index = 2  # Z for distance_from_shoulder
+            peg_sign = 1 if peg_face == TimberFace.RIGHT else -1
+        elif peg_face in [TimberFace.FORWARD, TimberFace.BACK]:
+            # Peg travels along Y axis
+            peg_axis_index = 1
+            offset_axis_index = 0  # X for distance_from_centerline
+            length_axis_index = 2  # Z for distance_from_shoulder
+            peg_sign = 1 if peg_face == TimberFace.FORWARD else -1
+        else:
+            raise ValueError(f"Invalid peg face: {peg_face}")
+        
+        # Create orientation matrix for peg prism
+        # The peg position is at the timber SURFACE, and the peg extends INTO the timber
+        # So Z-axis (column 2) must point INTO the timber (opposite of surface normal)
+        # IMPORTANT: Must create proper rotation matrices (det = +1), not reflections (det = -1)
+        # Matrix columns form a right-handed coordinate system: col0 = col1 × col2
+        if peg_axis_index == 0:  # Peg through X face
+            if peg_sign == 1:  # RIGHT face (surface at +X)
+                # Peg extends INTO timber in -X direction
+                # Z-axis (col2) = [-1,0,0], Y-axis (col1) = [0,1,0], X-axis (col0) = [0,0,1]
+                peg_orientation_matrix = Matrix([
+                    [0, 0, -1],  # row 0
+                    [0, 1, 0],   # row 1
+                    [1, 0, 0]    # row 2
+                ])
+            else:  # LEFT face (surface at -X)
+                # Peg extends INTO timber in +X direction
+                # Z-axis (col2) = [1,0,0], Y-axis (col1) = [0,1,0], X-axis (col0) = [0,0,-1]
+                peg_orientation_matrix = Matrix([
+                    [0, 0, 1],   # row 0
+                    [0, 1, 0],   # row 1
+                    [-1, 0, 0]   # row 2
+                ])
+        else:  # Peg through Y face
+            if peg_sign == 1:  # FORWARD face (surface at +Y)
+                # Peg extends INTO timber in -Y direction
+                # Z-axis (col2) = [0,-1,0], X-axis (col0) = [1,0,0], Y-axis (col1) = [0,0,1]
+                peg_orientation_matrix = Matrix([
+                    [1, 0, 0],   # row 0
+                    [0, 0, -1],  # row 1
+                    [0, 1, 0]    # row 2
+                ])
+            else:  # BACK face (surface at -Y)
+                # Peg extends INTO timber in +Y direction
+                # Z-axis (col2) = [0,1,0], X-axis (col0) = [1,0,0], Y-axis (col1) = [0,0,-1]
+                peg_orientation_matrix = Matrix([
+                    [1, 0, 0],   # row 0
+                    [0, 0, 1],   # row 1
+                    [0, -1, 0]   # row 2
+                ])
+        
+        peg_orientation = Orientation(peg_orientation_matrix)
+        
+        # Create peg holes for each peg position
+        peg_holes_in_tenon_local = []
+        peg_holes_in_mortise_local = []
+        
+        for distance_from_shoulder, distance_from_centerline in peg_parameters.peg_positions:
+            # Calculate peg insertion point in tenon timber's local space
+            # Start at the tenon position offset, then add the peg-specific offsets
+            peg_pos_local = Matrix([Rational(0), Rational(0), Rational(0)])
+            
+            # Add tenon position offset
+            peg_pos_local[0] = tenon_position[0]
+            peg_pos_local[1] = tenon_position[1]
+            
+            # Add distance from shoulder (along length axis)
+            if tenon_end == TimberReferenceEnd.TOP:
+                peg_pos_local[2] = shoulder_plane_point_with_offset_local[2] + distance_from_shoulder
+            else:  # BOTTOM
+                peg_pos_local[2] = shoulder_plane_point_with_offset_local[2] - distance_from_shoulder
+            
+            # Add distance from centerline (along offset axis)
+            peg_pos_local[offset_axis_index] = peg_pos_local[offset_axis_index] + distance_from_centerline
+            
+            # Move to the tenon face surface (where peg enters)
+            if peg_face == TimberFace.RIGHT:
+                peg_pos_local[0] = tenon_timber.size[0] / 2
+            elif peg_face == TimberFace.LEFT:
+                peg_pos_local[0] = -tenon_timber.size[0] / 2
+            elif peg_face == TimberFace.FORWARD:
+                peg_pos_local[1] = tenon_timber.size[1] / 2
+            elif peg_face == TimberFace.BACK:
+                peg_pos_local[1] = -tenon_timber.size[1] / 2
+            
+            # Create peg hole prism in tenon local space
+            peg_hole_tenon = Prism(
+                size=Matrix([peg_size, peg_size]),
+                orientation=peg_orientation,
+                position=peg_pos_local,
+                start_distance=Rational(0),
+                end_distance=peg_parameters.length
+            )
+            peg_holes_in_tenon_local.append(peg_hole_tenon)
+            
+            # Transform peg position to world space and then to mortise local space
+            peg_pos_world = tenon_timber.bottom_position + tenon_timber.orientation.matrix * peg_pos_local
+            peg_pos_mortise_local = mortise_timber.orientation.matrix.T * (peg_pos_world - mortise_timber.bottom_position)
+            
+            # Transform peg orientation to mortise local space
+            peg_orientation_world = Orientation(tenon_timber.orientation.matrix * peg_orientation.matrix)
+            peg_orientation_mortise = Orientation(mortise_timber.orientation.matrix.T * peg_orientation_world.matrix)
+            
+            # Calculate peg depth
+            peg_depth = peg_parameters.depth if peg_parameters.depth is not None else peg_parameters.length
+            
+            # Create peg hole prism in mortise local space
+            peg_hole_mortise = Prism(
+                size=Matrix([peg_size, peg_size]),
+                orientation=peg_orientation_mortise,
+                position=peg_pos_mortise_local,
+                start_distance=Rational(0),
+                end_distance=peg_depth
+            )
+            peg_holes_in_mortise_local.append(peg_hole_mortise)
+            
+            # Create peg accessory (stored in mortise timber's local space)
+            peg_accessory = Peg(
+                orientation=peg_orientation_mortise,
+                position=peg_pos_mortise_local,
+                size=peg_size,
+                shape=peg_parameters.shape
+            )
+            joint_accessories.append(peg_accessory)
+        
+        # Add peg holes to the existing CSGs using Union
+        if peg_holes_in_tenon_local or peg_holes_in_mortise_local:
+            from code_goes_here.meowmeowcsg import Union
+        
+        if peg_holes_in_tenon_local:
+            # Union peg holes into the negative cut CSG for tenon (single union with all children)
+            tenon_cut_with_pegs_csg = Union(children=[tenon_cut_csg] + peg_holes_in_tenon_local)
+            tenon_cut = CSGCut(
+                timber=tenon_timber,
+                origin=tenon_timber.bottom_position,
+                orientation=tenon_timber.orientation,
+                negative_csg=tenon_cut_with_pegs_csg,
+                maybe_end_cut=tenon_end
+            )
+            tenon_cuts = [tenon_cut]
+        
+        if peg_holes_in_mortise_local:
+            # Union peg holes into the negative cut CSG for mortise (single union with all children)
+            mortise_cut_with_pegs_csg = Union(children=[tenon_prism_in_mortise_local] + peg_holes_in_mortise_local)
+            mortise_cut = CSGCut(
+                timber=mortise_timber,
+                origin=mortise_timber.bottom_position,
+                orientation=mortise_timber.orientation,
+                negative_csg=mortise_cut_with_pegs_csg,
+                maybe_end_cut=None
+            )
+    
+    # ========================================================================
     # Create PartiallyCutTimber objects and Joint
     # ========================================================================
     
@@ -442,12 +620,12 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     return Joint(
         partiallyCutTimbers=(mortise_cut_timber, tenon_cut_timber),
-        jointAccessories=()
+        jointAccessories=tuple(joint_accessories)
     )
 
 
 
-def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
     tenon_timber: Timber,
     mortise_timber: Timber,
     tenon_end: TimberReferenceEnd,
@@ -455,11 +633,12 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
     tenon_position: V2 = None,
+    peg_parameters: Optional[SimplePegParameters] = None,
 ) -> Joint:
     """
-    Creates a simple mortise and tenon joint without pegs or wedges.
+    Creates a mortise and tenon joint with optional pegs.
     
-    This is the recommended function for basic mortise and tenon joints.
+    This is the recommended function for mortise and tenon joints.
     Requires face-aligned and orthogonal timbers.
     
     Args:
@@ -471,24 +650,26 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         mortise_depth: Depth of mortise (None = through mortise)
         tenon_position: Offset of tenon center from timber centerline (X, Y) in tenon timber's local space
                        Default is (0, 0) for centered tenon
+        peg_parameters: Optional parameters for pegs to secure the joint (SimplePegParameters)
         
     Returns:
-        Joint object containing the two PartiallyCutTimbers
+        Joint object containing the two PartiallyCutTimbers and any peg accessories
         
     Raises:
         AssertionError: If timbers are not properly oriented for this joint type
         AssertionError: If tenon size + position exceeds timber cross-section bounds
         
     Example:
-        >>> # Create a simple mortise and tenon with 2x2 inch tenon, 3 inches long
-        >>> joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+        >>> # Create a mortise and tenon with 2x2 inch tenon, 3 inches long, with pegs
+        >>> joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         ...     tenon_timber=vertical_post,
         ...     mortise_timber=horizontal_beam,
         ...     tenon_end=TimberReferenceEnd.TOP,
         ...     size=Matrix([Rational(2), Rational(2)]),
         ...     tenon_length=Rational(3),
         ...     mortise_depth=Rational(4),  # or None for through mortise
-        ...     tenon_position=Matrix([Rational(0), Rational(0)])  # centered
+        ...     tenon_position=Matrix([Rational(0), Rational(0)]),  # centered
+        ...     peg_parameters=SimplePegParameters(...)  # optional pegs
         ... )
     """
     # Default tenon_position to centered (0, 0)
@@ -533,5 +714,5 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_position=tenon_position,
         tenon_rotation=Orientation.identity(),
         wedge_parameters=None,
-        peg_parameters=None
+        peg_parameters=peg_parameters
     )

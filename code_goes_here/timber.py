@@ -941,6 +941,7 @@ class CutTimber:
 class PartiallyCutTimber(CutTimber):
     pass
 
+# TODO rename to just Accessory
 @dataclass(frozen=True)
 class JointAccessory:
     """Base class for joint accessories like wedges, drawbores, etc."""
@@ -964,6 +965,7 @@ class PegShapeSpec:
     shape: PegShape
 
 
+# TODO add a get_local_csg function that returns the CSG of the peg at the origin 
 @dataclass(frozen=True)
 class Peg(JointAccessory):
     """
@@ -994,6 +996,7 @@ class WedgeShape:
     length: Numeric  # From bottom to top of trapezoid in the Z axis
 
 
+# TODO add a get_local_csg function that returns the CSG of the wedge at the origin 
 @dataclass(frozen=True)
 class Wedge(JointAccessory):
     r"""

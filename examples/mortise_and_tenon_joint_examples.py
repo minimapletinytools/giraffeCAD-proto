@@ -5,10 +5,14 @@ Example usage of mortise and tenon joint functions
 from sympy import Matrix, Rational
 from code_goes_here.moothymoth import inches
 from code_goes_here.timber import (
-    Timber, TimberReferenceEnd, TimberFace, timber_from_directions,
-    create_vector3d, V2, CutTimber
+    Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace,
+    PegShape, timber_from_directions,
+    create_vector3d, V2, CutTimber, PartiallyCutTimber
 )
-from code_goes_here.mortise_and_tenon_joint import cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers
+from code_goes_here.mortise_and_tenon_joint import (
+    cut_mortise_and_tenon_joint_on_face_aligned_timbers,
+    SimplePegParameters
+)
 from code_goes_here.construction import create_axis_aligned_timber
 
 
@@ -56,7 +60,7 @@ def example_basic_mortise_and_tenon(position=None):
     mortise_depth = inches(7, 2)  # 3.5" deep mortise (slightly deeper than tenon)
     
     # Create the joint
-    joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon cut on top end of post
@@ -109,7 +113,7 @@ def example_4x6_into_6x8_mortise_and_tenon(position=None):
     mortise_depth = inches(7, 2)  # 3.5" deep mortise
     
     # Create the joint
-    joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -165,7 +169,7 @@ def example_through_tenon_with_6_inch_stickout(position=None):
     mortise_depth = None  # Through mortise (None means it goes all the way through)
     
     # Create the joint
-    joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -221,7 +225,7 @@ def example_full_size_4x4_tenon(position=None):
     mortise_depth = inches(5)  # 5" deep mortise (slightly deeper than tenon)
     
     # Create the joint
-    joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -280,7 +284,7 @@ def example_offset_corner_tenon(position=None):
     tenon_position = Matrix([inches(1), inches(1)])  # Offset to +X, +Y corner
     
     # Create the joint
-    joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -293,43 +297,165 @@ def example_offset_corner_tenon(position=None):
     return joint
 
 
-def create_all_mortise_and_tenon_examples() -> list[CutTimber]:
+def example_mortise_and_tenon_with_pegs(position=None):
     """
-    Create all mortise and tenon joint examples with automatic spacing.
+    Create a mortise and tenon joint with pegs securing the joint.
     
-    Joints will be positioned sequentially starting at the origin with spacing between them.
+    Configuration:
+    - Tenon timber: 4x4 inch vertical post, 4 feet long
+    - Mortise timber: 6x6 inch horizontal beam, 4 feet long
+    - Tenon: 2x2 inch centered tenon
+    - Pegs: Two 1/2 inch square pegs through the tenon face
+    
+    Args:
+        position: Optional offset position (V3) to translate the joint
+    """
+    if position is None:
+        position = create_vector3d(0, 0, 0)
+    
+    timber_length = inches(48)  # 4 feet = 48 inches
+    
+    # Create a vertical post (tenon timber) - 4x4 inches
+    post = create_axis_aligned_timber(
+        bottom_position=position,
+        length=timber_length,
+        size=Matrix([inches(4), inches(4)]),
+        length_direction=TimberFace.TOP,
+        width_direction=TimberFace.RIGHT,
+        name="4x4 Vertical Post"
+    )
+    
+    # Create a horizontal beam (mortise timber) - 6x6 inches
+    beam = create_axis_aligned_timber(
+        bottom_position=create_vector3d(position[0] - timber_length / 2, position[1], position[2]),
+        length=timber_length,
+        size=Matrix([inches(6), inches(6)]),
+        length_direction=TimberFace.RIGHT,
+        width_direction=TimberFace.FORWARD,
+        name="6x6 Horizontal Beam"
+    )
+    
+    # Define tenon dimensions
+    tenon_size = Matrix([inches(2), inches(2)])  # 2" x 2" tenon
+    tenon_length = inches(3)  # 3" long tenon
+    mortise_depth = inches(7, 2)  # 3.5" deep mortise
+    
+    # Define peg parameters
+    # Two pegs through the FORWARD face, offset from the centerline
+    # - First peg: 1" from shoulder, -0.5" from centerline
+    # - Second peg: 2" from shoulder, +0.5" from centerline
+    peg_params = SimplePegParameters(
+        shape=PegShape.SQUARE,
+        tenon_face=TimberReferenceLongFace.FORWARD,
+        # LOLOL 2 pegs...
+        peg_positions=[
+            (inches(1), inches(-1, 2)),  # 1" from shoulder, -0.5" from centerline
+            (inches(2), inches(1, 2))    # 2" from shoulder, +0.5" from centerline
+        ],
+        depth=inches(4),  # 4" deep into mortise timber
+        length=inches(5)  # 5" total peg length
+    )
+    
+    # Create the joint with pegs
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post,
+        mortise_timber=beam,
+        tenon_end=TimberReferenceEnd.BOTTOM,
+        size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        peg_parameters=peg_params
+    )
+    
+    return joint
+
+
+def create_all_mortise_and_tenon_examples(return_accessories: bool = False):
+    """
+    Create mortise and tenon joint examples with automatic spacing.
+    
+    To enable/disable specific examples, just comment/uncomment lines in the EXAMPLES_TO_RENDER list below.
+    Examples will be positioned sequentially starting at the origin with 6 feet spacing.
+    
+    Args:
+        return_accessories: If True, return (timbers, accessories) tuple. If False, return just timbers.
     
     Returns:
-        List of all CutTimber objects for all joints
+        If return_accessories=False: List of all CutTimber objects for the enabled examples
+        If return_accessories=True: Tuple of (List[CutTimber], List[(JointAccessory, Timber)])
     """
     
-    # List of examples to render
+    # ============================================================================
+    # CONFIGURATION: Comment out lines to disable specific examples
+    # 
+    # Example: To render only basic and peg examples:
+    #   EXAMPLES_TO_RENDER = [
+    #       ("Basic M&T (4x4)", example_basic_mortise_and_tenon),
+    #       # ("4x6 into 6x8", example_4x6_into_6x8_mortise_and_tenon),
+    #       # ("Through Tenon", example_through_tenon_with_6_inch_stickout),
+    #       # ("Full Size 4x4", example_full_size_4x4_tenon),
+    #       # ("Offset Corner", example_offset_corner_tenon),
+    #       ("With Pegs", example_mortise_and_tenon_with_pegs),
+    #   ]
+    # Result: Examples will be at x=0" and x=72" (automatically spaced)
+    # ============================================================================
     EXAMPLES_TO_RENDER = [
-        ("Basic 4x4 Mortise and Tenon", example_basic_mortise_and_tenon),
-        ("4x6 into 6x8 Mortise and Tenon", example_4x6_into_6x8_mortise_and_tenon),
-        ("Through Tenon with 6\" Stickout", example_through_tenon_with_6_inch_stickout),
-        ("Full-Size 4x4 Tenon into 6x6", example_full_size_4x4_tenon),
-        ("Offset Corner Tenon (2x2 in 4x4)", example_offset_corner_tenon),
+        #("Basic M&T (4x4)", example_basic_mortise_and_tenon),
+        #("4x6 into 6x8", example_4x6_into_6x8_mortise_and_tenon),
+        #("Through Tenon", example_through_tenon_with_6_inch_stickout),
+        #("Full Size 4x4", example_full_size_4x4_tenon),
+        #("Offset Corner", example_offset_corner_tenon),
+        ("With Pegs", example_mortise_and_tenon_with_pegs),
     ]
     
-    # Spacing between joints (in inches, converted to meters internally)
-    SPACING = inches(72)  # 6 feet = 72 inches between joints
+    # Spacing between examples (in inches)
+    SPACING = inches(72)  # 6 feet
     
-    # Render all enabled joints starting from origin
+    # ============================================================================
+    # Render enabled examples starting from origin
+    # ============================================================================
     all_timbers = []
+    all_accessories = []  # List of (accessory, timber) tuples
     current_position_x = 0
     
-    for joint_name, joint_function in EXAMPLES_TO_RENDER:
-        position = create_vector3d(current_position_x, 0, 0)
-        joint = joint_function(position)
-        all_timbers.extend(joint.partiallyCutTimbers)
+    for example_name, example_function in EXAMPLES_TO_RENDER:
+        joint = example_function()
         
-        print(f"Created {joint_name} at x={float(current_position_x):.1f} inches")
+        # Keep track of translated timbers for this joint
+        translated_timbers = []
+        
+        # Translate timbers to current position
+        for timber in joint.partiallyCutTimbers:
+            new_position = timber.timber.bottom_position + create_vector3d(current_position_x, 0, 0)
+            translated_timber = Timber(
+                name=timber.timber.name,
+                bottom_position=new_position,
+                orientation=timber.timber.orientation,
+                size=timber.timber.size,
+                length=timber.timber.length
+            )
+            all_timbers.append(PartiallyCutTimber(timber=translated_timber, cuts=timber._cuts))
+            translated_timbers.append(translated_timber)
+        
+        # Collect joint accessories (already in timber-relative coordinates)
+        if joint.jointAccessories:
+            for accessory in joint.jointAccessories:
+                # Accessories are stored relative to a timber
+                # For now, we'll associate with the first timber (typically the mortise timber)
+                # TODO: Better timber association logic - track which timber each accessory belongs to
+                if translated_timbers:
+                    associated_timber = translated_timbers[0]
+                    all_accessories.append((accessory, associated_timber))
+        
+        print(f"Created {example_name} at x={float(current_position_x/inches(1)):.1f}\"")
         
         # Move to next position
         current_position_x += SPACING
     
-    return all_timbers
+    if return_accessories:
+        return all_timbers, all_accessories
+    else:
+        return all_timbers
 
 
 if __name__ == "__main__":
@@ -340,6 +466,7 @@ if __name__ == "__main__":
         ("Through Tenon with 6\" Stickout", example_through_tenon_with_6_inch_stickout),
         ("Full-Size 4x4 Tenon into 6x6", example_full_size_4x4_tenon),
         ("Offset Corner Tenon (2x2 in 4x4)", example_offset_corner_tenon),
+        ("Mortise and Tenon with Pegs", example_mortise_and_tenon_with_pegs),
     ]
     
     for example_name, example_func in examples:
