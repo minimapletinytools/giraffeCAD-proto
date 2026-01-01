@@ -451,9 +451,9 @@ class Orientation:
     def up(cls) -> 'Orientation':
         """Facing up (+Z) - 90° rotation around Y axis"""
         matrix = Matrix([
-            [0, 0, 1],
+            [0, 0, -1],
             [0, 1, 0],
-            [-1, 0, 0]
+            [1, 0, 0]
         ])
         return cls(matrix)
     
@@ -461,9 +461,9 @@ class Orientation:
     def down(cls) -> 'Orientation':
         """Facing down (-Z) - -90° rotation around Y axis"""
         matrix = Matrix([
-            [0, 0, -1],
+            [0, 0, 1],
             [0, 1, 0],
-            [1, 0, 0]
+            [-1, 0, 0]
         ])
         return cls(matrix)
     

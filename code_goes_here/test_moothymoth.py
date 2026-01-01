@@ -226,6 +226,98 @@ class TestRotationMatrixProperties:
         assert float(diff.norm()) < 1e-10
 
 
+class TestOrientationDirections:
+    """Test directional orientations by applying them to a unit vector."""
+    
+    def test_identity_direction(self):
+        """Test identity orientation on (1,0,0) gives (1,0,0)."""
+        orient = Orientation.identity()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([1, 0, 0])
+        assert result == expected
+    
+    def test_right_direction(self):
+        """Test right/east orientation on (1,0,0) gives (1,0,0)."""
+        orient = Orientation.right()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([1, 0, 0])  # Facing east = +X
+        assert result == expected
+    
+    def test_east_direction(self):
+        """Test east orientation on (1,0,0) gives (1,0,0)."""
+        orient = Orientation.east()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([1, 0, 0])  # Facing east = +X
+        assert result == expected
+    
+    def test_left_direction(self):
+        """Test left/west orientation on (1,0,0) gives (-1,0,0)."""
+        orient = Orientation.left()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([-1, 0, 0])  # Facing west = -X
+        assert result == expected
+    
+    def test_west_direction(self):
+        """Test west orientation on (1,0,0) gives (-1,0,0)."""
+        orient = Orientation.west()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([-1, 0, 0])  # Facing west = -X
+        assert result == expected
+    
+    def test_forward_direction(self):
+        """Test forward/north orientation on (1,0,0) gives (0,1,0)."""
+        orient = Orientation.forward()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([0, 1, 0])  # Facing north = +Y
+        assert result == expected
+    
+    def test_north_direction(self):
+        """Test north orientation on (1,0,0) gives (0,1,0)."""
+        orient = Orientation.north()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([0, 1, 0])  # Facing north = +Y
+        assert result == expected
+    
+    def test_backward_direction(self):
+        """Test backward/south orientation on (1,0,0) gives (0,-1,0)."""
+        orient = Orientation.backward()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([0, -1, 0])  # Facing south = -Y
+        assert result == expected
+    
+    def test_south_direction(self):
+        """Test south orientation on (1,0,0) gives (0,-1,0)."""
+        orient = Orientation.south()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([0, -1, 0])  # Facing south = -Y
+        assert result == expected
+    
+    def test_up_direction(self):
+        """Test up orientation on (1,0,0) gives (0,0,1)."""
+        orient = Orientation.up()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([0, 0, 1])  # Facing up = +Z
+        assert result == expected
+    
+    def test_down_direction(self):
+        """Test down orientation on (1,0,0) gives (0,0,-1)."""
+        orient = Orientation.down()
+        vector = Matrix([1, 0, 0])
+        result = orient.matrix * vector
+        expected = Matrix([0, 0, -1])  # Facing down = -Z
+        assert result == expected
+
+
 class TestReprAndString:
     """Test string representation."""
     
