@@ -18,7 +18,7 @@ if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
 print("="*70)
-print("GiraffeCAD FreeCAD - Mortise and Tenon Test Launcher")
+print("GiraffeCAD FreeCAD - All Mortise and Tenon Examples Launcher")
 print("="*70)
 print("\nReloading all GiraffeCAD modules...")
 
