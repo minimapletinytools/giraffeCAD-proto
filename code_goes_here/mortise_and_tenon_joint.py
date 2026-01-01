@@ -576,11 +576,15 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             peg_holes_in_mortise_local.append(peg_hole_mortise)
             
             # Create peg accessory (stored in mortise timber's local space)
+            # forward_length: how deep the peg goes into the mortise
+            # stickout_length: how much of the peg remains outside (in the tenon)
             peg_accessory = Peg(
                 orientation=peg_orientation_mortise,
                 position=peg_pos_mortise_local,
                 size=peg_size,
-                shape=peg_parameters.shape
+                shape=peg_parameters.shape,
+                forward_length=peg_depth,
+                stickout_length=peg_parameters.length - peg_depth
             )
             joint_accessories.append(peg_accessory)
         

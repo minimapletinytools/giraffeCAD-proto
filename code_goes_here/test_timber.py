@@ -1089,18 +1089,12 @@ class TestCutTimber:
 # ============================================================================
 
 class TestPegShape:
-    """Test PegShape enum and PegShapeSpec."""
+    """Test PegShape enum."""
     
     def test_peg_shape_enum(self):
         """Test PegShape enum values."""
         assert PegShape.SQUARE.value == "square"
         assert PegShape.ROUND.value == "round"
-    
-    def test_peg_shape_spec(self):
-        """Test PegShapeSpec creation."""
-        spec = PegShapeSpec(size=Rational(2), shape=PegShape.ROUND)
-        assert spec.size == Rational(2)
-        assert spec.shape == PegShape.ROUND
 
 
 class TestPeg:
@@ -1115,13 +1109,17 @@ class TestPeg:
             orientation=orientation,
             position=position,
             size=Rational(2),
-            shape=PegShape.SQUARE
+            shape=PegShape.SQUARE,
+            forward_length=Rational(10),
+            stickout_length=Rational(1)
         )
         
         assert peg.orientation == orientation
         assert peg.position == position
         assert peg.size == Rational(2)
         assert peg.shape == PegShape.SQUARE
+        assert peg.forward_length == Rational(10)
+        assert peg.stickout_length == Rational(1)
     
     def test_peg_is_frozen(self):
         """Test that Peg is immutable."""
@@ -1129,7 +1127,9 @@ class TestPeg:
             orientation=Orientation.identity(),
             position=create_vector3d(0, 0, 0),
             size=Rational(2),
-            shape=PegShape.ROUND
+            shape=PegShape.ROUND,
+            forward_length=Rational(10),
+            stickout_length=Rational(1)
         )
         
         with pytest.raises(Exception):  # FrozenInstanceError
@@ -1201,7 +1201,6 @@ class TestCreatePegGoingIntoFace:
             length_direction=create_vector3d(0, 0, 1),
             width_direction=create_vector3d(1, 0, 0)
         )
-        self.peg_spec = PegShapeSpec(size=Rational(2), shape=PegShape.ROUND)
     
     def test_peg_into_right_face(self):
         """Test creating a peg going into the RIGHT face."""
@@ -1210,11 +1209,16 @@ class TestCreatePegGoingIntoFace:
             face=TimberReferenceLongFace.RIGHT,
             distance_from_bottom=Rational(50),
             distance_from_centerline=Rational(0),
-            peg_shape=self.peg_spec
+            peg_size=Rational(2),
+            peg_shape=PegShape.ROUND,
+            forward_length=Rational(8),
+            stickout_length=Rational(1)
         )
         
         assert peg.size == Rational(2)
         assert peg.shape == PegShape.ROUND
+        assert peg.forward_length == Rational(8)
+        assert peg.stickout_length == Rational(1)
         
         # Position should be at the right surface (width/2 = 5)
         assert peg.position[0] == Rational(5)  # X = width/2
@@ -1228,7 +1232,10 @@ class TestCreatePegGoingIntoFace:
             face=TimberReferenceLongFace.LEFT,
             distance_from_bottom=Rational(30),
             distance_from_centerline=Rational(2),
-            peg_shape=self.peg_spec
+            peg_size=Rational(2),
+            peg_shape=PegShape.ROUND,
+            forward_length=Rational(8),
+            stickout_length=Rational(1)
         )
         
         # Position should be at the left surface (-width/2 = -5)
@@ -1243,7 +1250,10 @@ class TestCreatePegGoingIntoFace:
             face=TimberReferenceLongFace.FORWARD,
             distance_from_bottom=Rational(40),
             distance_from_centerline=Rational(-1),
-            peg_shape=self.peg_spec
+            peg_size=Rational(2),
+            peg_shape=PegShape.ROUND,
+            forward_length=Rational(8),
+            stickout_length=Rational(1)
         )
         
         # Position should be at the forward surface (height/2 = 7.5)
@@ -1258,7 +1268,10 @@ class TestCreatePegGoingIntoFace:
             face=TimberReferenceLongFace.BACK,
             distance_from_bottom=Rational(60),
             distance_from_centerline=Rational(3),
-            peg_shape=self.peg_spec
+            peg_size=Rational(2),
+            peg_shape=PegShape.ROUND,
+            forward_length=Rational(8),
+            stickout_length=Rational(1)
         )
         
         # Position should be at the back surface (-height/2 = -7.5)
@@ -1268,13 +1281,15 @@ class TestCreatePegGoingIntoFace:
     
     def test_square_peg(self):
         """Test creating a square peg."""
-        square_spec = PegShapeSpec(size=Rational(3), shape=PegShape.SQUARE)
         peg = create_peg_going_into_face(
             timber=self.timber,
             face=TimberReferenceLongFace.RIGHT,
             distance_from_bottom=Rational(50),
             distance_from_centerline=Rational(0),
-            peg_shape=square_spec
+            peg_size=Rational(3),
+            peg_shape=PegShape.SQUARE,
+            forward_length=Rational(8),
+            stickout_length=Rational(1)
         )
         
         assert peg.shape == PegShape.SQUARE

@@ -958,13 +958,6 @@ class PegShape(Enum):
     ROUND = "round"
 
 
-@dataclass(frozen=True)
-class PegShapeSpec:
-    """Specification for peg dimensions and shape."""
-    size: Numeric
-    shape: PegShape
-
-
 # TODO add a get_local_csg function that returns the CSG of the peg at the origin 
 @dataclass(frozen=True)
 class Peg(JointAccessory):
@@ -974,6 +967,9 @@ class Peg(JointAccessory):
     The peg is stored in local space of a timber. In identity orientation, 
     the peg points in the same direction as the length axis of the timber, 
     with the insertion end at the bottom.
+
+    By convention, the origin of the peg is on the mortise face that the peg is going into.
+    This is why there are 2 lengths parameters, one for how deep the peg goes past the mortise face, and one for how far the peg sticks out of the mortise face.
     
     Attributes:
         orientation: Orientation of the peg in local timber space
@@ -983,8 +979,16 @@ class Peg(JointAccessory):
     """
     orientation: Orientation
     position: V3
+    # for square pegs, this is the side length
+    # for round pegs, this is the diameter
     size: Numeric
     shape: PegShape
+
+    # how far the peg reaches in the forward direction
+    forward_length: Numeric
+
+    # how far the peg "sticks out" in the back direction
+    stickout_length: Numeric
 
 
 @dataclass(frozen=True)
@@ -1084,7 +1088,10 @@ def create_peg_going_into_face(
     face: TimberReferenceLongFace,
     distance_from_bottom: Numeric,
     distance_from_centerline: Numeric,
-    peg_shape: PegShapeSpec
+    peg_size: Numeric,
+    peg_shape: PegShape,
+    forward_length: Numeric,
+    stickout_length: Numeric
 ) -> Peg:
     """
     Create a peg that goes into a specified long face of a timber.
@@ -1097,7 +1104,10 @@ def create_peg_going_into_face(
         face: Which long face the peg enters from (RIGHT, LEFT, FORWARD, or BACK)
         distance_from_bottom: Distance along the timber's length from the bottom end
         distance_from_centerline: Distance from the timber's centerline along the face
-        peg_shape: Specification of peg size and shape
+        peg_size: Size/diameter of the peg (for square pegs, this is the side length)
+        peg_shape: Shape of the peg (SQUARE or ROUND)
+        forward_length: How far the peg reaches in the forward direction
+        stickout_length: How far the peg sticks out in the back direction
         
     Returns:
         Peg object positioned and oriented appropriately in timber's local space
@@ -1161,8 +1171,10 @@ def create_peg_going_into_face(
     return Peg(
         orientation=peg_orientation,
         position=position_local,
-        size=peg_shape.size,
-        shape=peg_shape.shape
+        size=peg_size,
+        shape=peg_shape,
+        forward_length=forward_length,
+        stickout_length=stickout_length
     )
 
 
