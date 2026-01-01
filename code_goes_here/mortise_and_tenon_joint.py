@@ -540,17 +540,18 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             elif peg_parameters.tenon_face == TimberReferenceLongFace.BACK:
                 peg_pos_local[1] = -tenon_timber.size[1] / 2
             
-            # Calculate peg depth (forward into mortise) and total peg length
+            # Calculate peg depth (forward into mortise) and stickout length (backward into tenon)
             peg_depth = peg_parameters.depth if peg_parameters.depth is not None else mortise_timber.size[2]
-            peg_total_length = peg_depth * Rational(3, 2)  # Total length is 1.5 times the depth
+            stickout_length = peg_depth * Rational(1, 2)  # Stickout is 0.5 times the depth
             
             # Create peg hole prism in tenon local space
+            # The peg position is ON the tenon face, and extends backward into the tenon
             peg_hole_tenon = Prism(
                 size=Matrix([peg_size, peg_size]),
                 orientation=peg_orientation,
                 position=peg_pos_local,
-                start_distance=Rational(0),
-                end_distance=peg_total_length
+                start_distance=-stickout_length,  # Extends back into tenon
+                end_distance=Rational(0)  # Stops at mortise face
             )
             peg_holes_in_tenon_local.append(peg_hole_tenon)
             
@@ -563,19 +564,19 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             peg_orientation_mortise = Orientation(mortise_timber.orientation.matrix.T * peg_orientation_world.matrix)
             
             # Create peg hole prism in mortise local space
+            # The peg position is ON the mortise face, and extends forward into the mortise
             peg_hole_mortise = Prism(
                 size=Matrix([peg_size, peg_size]),
                 orientation=peg_orientation_mortise,
                 position=peg_pos_mortise_local,
-                start_distance=Rational(0),
-                end_distance=peg_depth
+                start_distance=Rational(0),  # Starts at mortise face
+                end_distance=peg_depth  # Extends into mortise
             )
             peg_holes_in_mortise_local.append(peg_hole_mortise)
             
             # Create peg accessory (stored in mortise timber's local space)
             # forward_length: how deep the peg goes into the mortise
             # stickout_length: how much of the peg remains outside (in the tenon)
-            stickout_length = peg_depth * Rational(1, 2)  # Stickout is 0.5 times the depth
             peg_accessory = Peg(
                 orientation=peg_orientation_mortise,
                 position=peg_pos_mortise_local,
