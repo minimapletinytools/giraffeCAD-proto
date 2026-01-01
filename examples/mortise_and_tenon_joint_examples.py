@@ -8,7 +8,7 @@ from code_goes_here.timber import (
     Timber, TimberReferenceEnd, TimberFace, timber_from_directions,
     create_vector3d, V2, CutTimber
 )
-from code_goes_here.mortise_and_tenon_joint import cut_simple_mortise_and_tenon
+from code_goes_here.mortise_and_tenon_joint import cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers
 from code_goes_here.construction import create_axis_aligned_timber
 
 
@@ -56,7 +56,7 @@ def example_basic_mortise_and_tenon(position=None):
     mortise_depth = inches(7, 2)  # 3.5" deep mortise (slightly deeper than tenon)
     
     # Create the joint
-    joint = cut_simple_mortise_and_tenon(
+    joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon cut on top end of post
@@ -109,7 +109,7 @@ def example_4x6_into_6x8_mortise_and_tenon(position=None):
     mortise_depth = inches(7, 2)  # 3.5" deep mortise
     
     # Create the joint
-    joint = cut_simple_mortise_and_tenon(
+    joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -165,7 +165,7 @@ def example_through_tenon_with_6_inch_stickout(position=None):
     mortise_depth = None  # Through mortise (None means it goes all the way through)
     
     # Create the joint
-    joint = cut_simple_mortise_and_tenon(
+    joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -221,7 +221,7 @@ def example_full_size_4x4_tenon(position=None):
     mortise_depth = inches(5)  # 5" deep mortise (slightly deeper than tenon)
     
     # Create the joint
-    joint = cut_simple_mortise_and_tenon(
+    joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,

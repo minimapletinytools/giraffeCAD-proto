@@ -447,7 +447,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
 
 
 
-def cut_simple_mortise_and_tenon(
+def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
     tenon_timber: Timber,
     mortise_timber: Timber,
     tenon_end: TimberReferenceEnd,
@@ -459,6 +459,7 @@ def cut_simple_mortise_and_tenon(
     Creates a simple mortise and tenon joint without pegs or wedges.
     
     This is the recommended function for basic mortise and tenon joints.
+    Requires face-aligned and orthogonal timbers.
     
     Args:
         tenon_timber: Timber that will receive the tenon cut
@@ -471,9 +472,12 @@ def cut_simple_mortise_and_tenon(
     Returns:
         Joint object containing the two PartiallyCutTimbers
         
+    Raises:
+        AssertionError: If timbers are not properly oriented for this joint type
+        
     Example:
         >>> # Create a simple mortise and tenon with 2x2 inch tenon, 3 inches long
-        >>> joint = cut_simple_mortise_and_tenon(
+        >>> joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         ...     tenon_timber=vertical_post,
         ...     mortise_timber=horizontal_beam,
         ...     tenon_end=TimberReferenceEnd.TOP,
@@ -481,37 +485,6 @@ def cut_simple_mortise_and_tenon(
         ...     tenon_length=Rational(3),
         ...     mortise_depth=Rational(4)  # or None for through mortise
         ... )
-    """
-    return cut_mortise_and_tenon_many_options_do_not_call_me_directly(
-        tenon_timber=tenon_timber,
-        mortise_timber=mortise_timber,
-        tenon_end=tenon_end,
-        size=size,
-        tenon_length=tenon_length,
-        mortise_depth=mortise_depth,
-        tenon_rotation=Orientation.identity(),
-        wedge_parameters=None,
-        peg_parameters=None
-    )
-
-
-
-
-def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: Timber, tenon_timber: Timber,
-                                                          tenon_end: TimberReferenceEnd,
-                                                          tenon_thickness: Numeric, tenon_length: Numeric) -> Joint:
-    """
-    Creates a mortise and tenon joint for face-aligned timbers.
-    
-    Args:
-        mortise_timber: Timber that will receive the mortise cut
-        tenon_timber: Timber that will receive the tenon cut
-        tenon_end: Which end of the tenon timber the tenon will be cut from
-        tenon_thickness: Width and height of the tenon
-        tenon_length: Length of the tenon extending from mortise face of the mortise timber
-        
-    Raises:
-        AssertionError: If timbers are not properly oriented for this joint type
     """
     # Verify that the timbers are face-aligned and orthogonal
     # Face-aligned means they share the same coordinate grid alignment  
@@ -523,8 +496,14 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(mortise_timber: T
     assert _are_timbers_face_orthogonal(mortise_timber, tenon_timber), \
         "Timbers must be orthogonal (perpendicular length directions) for this joint type"
     
-    # TODO: Create the joint (when implemented, use new Joint constructor)
-    # joint = Joint(partially_cut_timbers=[...], joint_accessories=[])
-    
-    # TODO FINISH - this function is deprecated, use cut_simple_mortise_and_tenon instead
-    raise NotImplementedError("This function is deprecated. Use cut_simple_mortise_and_tenon instead.")
+    return cut_mortise_and_tenon_many_options_do_not_call_me_directly(
+        tenon_timber=tenon_timber,
+        mortise_timber=mortise_timber,
+        tenon_end=tenon_end,
+        size=size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        tenon_rotation=Orientation.identity(),
+        wedge_parameters=None,
+        peg_parameters=None
+    )

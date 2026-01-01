@@ -14,7 +14,7 @@ from code_goes_here.mortise_and_tenon_joint import (
     SimplePegParameters,
     WedgeParameters,
     cut_mortise_and_tenon_many_options_do_not_call_me_directly,
-    cut_simple_mortise_and_tenon
+    cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers
 )
 from .conftest import (
     create_standard_vertical_timber,
@@ -110,9 +110,9 @@ class TestWedgeParameters:
 # ============================================================================
 
 class TestSimpleMortiseAndTenon:
-    """Test cut_simple_mortise_and_tenon function."""
+    """Test cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers function."""
     
-    def test_cut_simple_mortise_and_tenon_orthogonal_timbers(self):
+    def test_cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers_orthogonal_timbers(self):
         """Test simple mortise and tenon with orthogonal face-aligned timbers."""
         # Create a vertical post (tenon timber) extending upward from origin
         tenon_timber = create_standard_vertical_timber(
@@ -129,7 +129,7 @@ class TestSimpleMortiseAndTenon:
         tenon_length = Rational(4)
         mortise_depth = Rational(5)
         
-        joint = cut_simple_mortise_and_tenon(
+        joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.TOP,
@@ -155,7 +155,7 @@ class TestSimpleMortiseAndTenon:
         # Check that the tenon cut is an end cut
         assert tenon_cut_timber._cuts[0].maybe_end_cut == TimberReferenceEnd.TOP
     
-    def test_cut_simple_mortise_and_tenon_through_mortise(self):
+    def test_cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers_through_mortise(self):
         """Test simple mortise and tenon with through mortise (depth=None)."""
         # Create timbers
         tenon_timber = create_standard_vertical_timber(
@@ -170,7 +170,7 @@ class TestSimpleMortiseAndTenon:
         tenon_size = Matrix([Rational(2), Rational(2)])
         tenon_length = Rational(3)
         
-        joint = cut_simple_mortise_and_tenon(
+        joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.TOP,
@@ -187,7 +187,7 @@ class TestSimpleMortiseAndTenon:
         mortise_cut_timber = joint.partiallyCutTimbers[0]
         assert len(mortise_cut_timber._cuts) >= 1
     
-    def test_cut_simple_mortise_and_tenon_small_tenon(self):
+    def test_cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers_small_tenon(self):
         """Test simple mortise and tenon with small tenon relative to timber."""
         # Create large timbers
         tenon_timber = create_standard_vertical_timber(
@@ -203,7 +203,7 @@ class TestSimpleMortiseAndTenon:
         tenon_length = Rational(3)
         mortise_depth = Rational(4)
         
-        joint = cut_simple_mortise_and_tenon(
+        joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.TOP,
@@ -215,7 +215,7 @@ class TestSimpleMortiseAndTenon:
         assert joint is not None
         assert len(joint.partiallyCutTimbers) == 2
     
-    def test_cut_simple_mortise_and_tenon_bottom_end(self):
+    def test_cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers_bottom_end(self):
         """Test simple mortise and tenon on bottom end of tenon timber."""
         # Create timbers
         tenon_timber = create_standard_vertical_timber(
@@ -230,7 +230,7 @@ class TestSimpleMortiseAndTenon:
         tenon_size = Matrix([Rational(2), Rational(3)])
         tenon_length = Rational(4)
         
-        joint = cut_simple_mortise_and_tenon(
+        joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
@@ -416,7 +416,7 @@ class TestMortiseAndTenonEdgeCases:
         tenon_length = Rational(4)
         mortise_depth = Rational(4)
         
-        joint = cut_simple_mortise_and_tenon(
+        joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.TOP,
@@ -442,7 +442,7 @@ class TestMortiseAndTenonEdgeCases:
         tenon_size = Matrix([Rational(5), Rational(5)])
         tenon_length = Rational(4)
         
-        joint = cut_simple_mortise_and_tenon(
+        joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.TOP,
