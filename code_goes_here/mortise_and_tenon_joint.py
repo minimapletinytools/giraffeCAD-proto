@@ -41,13 +41,13 @@ class SimplePegParameters:
                        - First value: distance along length axis measured from shoulder of tenon
                        - Second value: distance in perpendicular axis measured from center
         depth: Depth measured from mortise face where peg goes in (None means all the way through the mortise timber)
-        length: Total length of the peg
+        size: Peg diameter (for round pegs) or side length (for square pegs)
     """
     shape: PegShape
     tenon_face: TimberReferenceLongFace
     peg_positions: List[Tuple[Numeric, Numeric]]
     depth: Optional[Numeric]
-    length: Numeric
+    size: Numeric
 
 
 @dataclass(frozen=True)
@@ -445,10 +445,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         assert tenon_rotation.matrix.equals(Orientation.identity().matrix), \
             "Pegs require tenon_rotation to be identity"
         
-        # Get peg diameter/size from shape attribute (assume 0.5 inch default for now)
-        # TODO: Extract actual size from shape when shape includes dimensions
-        from code_goes_here.moothymoth import inches as inches_fn
-        peg_size = inches_fn(1, 2)  # Default 0.5 inch diameter converted to meters
+        # Get peg diameter/size from parameters
+        peg_size = peg_parameters.size
         
         # Determine which axis the peg travels along and offset axes
         # For simplicity with face-aligned timbers, work directly in local coords
@@ -542,13 +540,17 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             elif peg_parameters.tenon_face == TimberReferenceLongFace.BACK:
                 peg_pos_local[1] = -tenon_timber.size[1] / 2
             
+            # Calculate peg depth (forward into mortise) and total peg length
+            peg_depth = peg_parameters.depth if peg_parameters.depth is not None else mortise_timber.size[2]
+            peg_total_length = peg_depth * Rational(3, 2)  # Total length is 1.5 times the depth
+            
             # Create peg hole prism in tenon local space
             peg_hole_tenon = Prism(
                 size=Matrix([peg_size, peg_size]),
                 orientation=peg_orientation,
                 position=peg_pos_local,
                 start_distance=Rational(0),
-                end_distance=peg_parameters.length
+                end_distance=peg_total_length
             )
             peg_holes_in_tenon_local.append(peg_hole_tenon)
             
@@ -559,9 +561,6 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             # Transform peg orientation to mortise local space
             peg_orientation_world = Orientation(tenon_timber.orientation.matrix * peg_orientation.matrix)
             peg_orientation_mortise = Orientation(mortise_timber.orientation.matrix.T * peg_orientation_world.matrix)
-            
-            # Calculate peg depth
-            peg_depth = peg_parameters.depth if peg_parameters.depth is not None else peg_parameters.length
             
             # Create peg hole prism in mortise local space
             peg_hole_mortise = Prism(
@@ -576,13 +575,14 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             # Create peg accessory (stored in mortise timber's local space)
             # forward_length: how deep the peg goes into the mortise
             # stickout_length: how much of the peg remains outside (in the tenon)
+            stickout_length = peg_depth * Rational(1, 2)  # Stickout is 0.5 times the depth
             peg_accessory = Peg(
                 orientation=peg_orientation_mortise,
                 position=peg_pos_mortise_local,
                 size=peg_size,
                 shape=peg_parameters.shape,
                 forward_length=peg_depth,
-                stickout_length=peg_parameters.length - peg_depth
+                stickout_length=stickout_length
             )
             joint_accessories.append(peg_accessory)
         
