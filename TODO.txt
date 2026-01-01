@@ -158,12 +158,12 @@ IGNORE-cleanup render utilities, some of them seem unecessary
 
 -moothymoth
   -cleanup all the static ctor stuff, it's confusing
-  -create new set of timebr orientations
+  -create new set of orientation constants for doing timber orientation, ju
     -facing_north/west/east/south
     -pointing_up/down/left/etc
-      -need canonical facing vector fo these, document it!
+      -need canonical facing vector fo these, document it!, always facing +x for up down, otherwise, always facing up.
 
-      
+
 -do mortise and tenon joint
   -fix peg holes in mortise not going all the way through
   -fix default peg size or whatever (maybe jsut udpate eaxmple)
