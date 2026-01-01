@@ -233,6 +233,66 @@ def example_full_size_4x4_tenon(position=None):
     return joint
 
 
+def example_offset_corner_tenon(position=None):
+    """
+    Create a mortise and tenon joint with the tenon offset to one corner of the tenon timber.
+    
+    Configuration:
+    - Tenon timber: 4x4 inch vertical post, 4 feet long
+    - Mortise timber: 6x6 inch horizontal beam, 4 feet long
+    - Tenon: 2x2 inch positioned at the corner (+X, +Y) of the tenon timber
+    
+    Args:
+        position: Optional offset position (V3) to translate the joint
+    """
+    if position is None:
+        position = create_vector3d(0, 0, 0)
+    
+    timber_length = inches(48)  # 4 feet = 48 inches
+    
+    # Create a vertical post (tenon timber) - 4x4 inches
+    post = create_axis_aligned_timber(
+        bottom_position=position,
+        length=timber_length,
+        size=Matrix([inches(4), inches(4)]),
+        length_direction=TimberFace.TOP,
+        width_direction=TimberFace.RIGHT,
+        name="4x4 Vertical Post"
+    )
+    
+    # Create a horizontal beam (mortise timber) - 6x6 inches
+    beam = create_axis_aligned_timber(
+        bottom_position=create_vector3d(position[0] - timber_length / 2, position[1], position[2]),
+        length=timber_length,
+        size=Matrix([inches(6), inches(6)]),
+        length_direction=TimberFace.RIGHT,
+        width_direction=TimberFace.FORWARD,
+        name="6x6 Horizontal Beam"
+    )
+    
+    # Define offset corner tenon dimensions
+    # 2x2 inch tenon positioned at corner (+1, +1) in 4x4 timber
+    # Timber half-size is 2", tenon half-size is 1"
+    # Position at (+1, +1) places tenon bounds at [0, 2] in both X and Y
+    tenon_size = Matrix([inches(2), inches(2)])  # 2" x 2" tenon
+    tenon_length = inches(3)  # 3" long tenon
+    mortise_depth = inches(7, 2)  # 3.5" deep mortise
+    tenon_position = Matrix([inches(1), inches(1)])  # Offset to +X, +Y corner
+    
+    # Create the joint
+    joint = cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post,
+        mortise_timber=beam,
+        tenon_end=TimberReferenceEnd.BOTTOM,
+        size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        tenon_position=tenon_position
+    )
+    
+    return joint
+
+
 def create_all_mortise_and_tenon_examples() -> list[CutTimber]:
     """
     Create all mortise and tenon joint examples with automatic spacing.
@@ -249,6 +309,7 @@ def create_all_mortise_and_tenon_examples() -> list[CutTimber]:
         ("4x6 into 6x8 Mortise and Tenon", example_4x6_into_6x8_mortise_and_tenon),
         ("Through Tenon with 6\" Stickout", example_through_tenon_with_6_inch_stickout),
         ("Full-Size 4x4 Tenon into 6x6", example_full_size_4x4_tenon),
+        ("Offset Corner Tenon (2x2 in 4x4)", example_offset_corner_tenon),
     ]
     
     # Spacing between joints (in inches, converted to meters internally)
@@ -278,6 +339,7 @@ if __name__ == "__main__":
         ("4x6 into 6x8 Mortise and Tenon", example_4x6_into_6x8_mortise_and_tenon),
         ("Through Tenon with 6\" Stickout", example_through_tenon_with_6_inch_stickout),
         ("Full-Size 4x4 Tenon into 6x6", example_full_size_4x4_tenon),
+        ("Offset Corner Tenon (2x2 in 4x4)", example_offset_corner_tenon),
     ]
     
     for example_name, example_func in examples:
