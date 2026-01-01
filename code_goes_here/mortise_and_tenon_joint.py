@@ -40,7 +40,7 @@ class SimplePegParameters:
         peg_positions: List of (distance_from_shoulder, distance_from_centerline) tuples
                        - First value: distance along length axis measured from shoulder of tenon
                        - Second value: distance in perpendicular axis measured from center
-        depth: Depth measured from mortise face where peg goes in (None means through)
+        depth: Depth measured from mortise face where peg goes in (None means all the way through the mortise timber)
         length: Total length of the peg
     """
     shape: PegShape
@@ -450,6 +450,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         from code_goes_here.moothymoth import inches as inches_fn
         peg_size = inches_fn(1, 2)  # Default 0.5 inch diameter converted to meters
         
+        # TODO I don't think you need to convert to TimberFace, just use the TimberReferenceLongFace directly
         # Determine the peg direction (perpendicular to tenon_face)
         peg_face = peg_parameters.tenon_face.to_timber_face()
         
@@ -534,6 +535,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             # Add distance from centerline (along offset axis)
             peg_pos_local[offset_axis_index] = peg_pos_local[offset_axis_index] + distance_from_centerline
             
+            # TODO position the peg on the mortise face
             # Move to the tenon face surface (where peg enters)
             if peg_face == TimberFace.RIGHT:
                 peg_pos_local[0] = tenon_timber.size[0] / 2
