@@ -55,6 +55,15 @@ class WedgeParameters
 
 
 
+
+tests:
+
+-peg forward_length / stickout depth tests
+-peg_depth = none case, ensure it's picking the right axis to use for computing peg depth
+-peg orientation should be perpendicular to tenon timber
+-add test point function t meow meow CSG this will be our main way of checking
+-also add test on boundray function in meowmeow csg
+
 :: 12/30/2025 joint accesorry notes
 
 ### PEGS
@@ -147,6 +156,7 @@ DONE/SORTA-do the big useless test cleanup
 IGNORE-cleanup render utilities, some of them seem unecessary
 
 
+
 -do mortise and tenon joint
   -fix peg holes in mortise not going all the way through
   -fix default peg size or whatever (maybe jsut udpate eaxmple)
@@ -162,6 +172,7 @@ IGNORE-cleanup render utilities, some of them seem unecessary
 -double check floats again, are floats really necessary? I mean they really aren't
   -at least add a warning if floats are passed in.. I don't think we're ever forced to convert to float ever....
 -clean up the run_ freecad stuff so it's more consist and easy to switch between examples
+-clean up moothymoth tests to not use exact euality...
 
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
