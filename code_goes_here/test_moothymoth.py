@@ -44,8 +44,8 @@ class TestOrientation:
         orient2 = Orientation.rotate_left()  # Another 90° CCW around Z
         result = orient1.multiply(orient2)
         
-        # Two 90° rotations should equal 180° rotation (left * left = backward)
-        expected = Orientation.left()  # 180° rotation
+        # Two 90° rotations should equal 180° rotation
+        expected = Orientation(Matrix([[-1, 0, 0], [0, -1, 0], [0, 0, 1]]))  # 180° rotation
         assert simplify(result.matrix - expected.matrix).norm() < 1e-10
     
     def test_multiply_operator(self):
@@ -98,48 +98,6 @@ class TestOrientationConstants:
     def test_identity_is_eye(self):
         """Test identity constant is 3x3 identity matrix."""
         assert Orientation.identity().matrix == Matrix.eye(3)
-    
-    def test_directional_constants_exist(self):
-        """Test all directional constants can be accessed."""
-        constants = ['identity', 'right', 'east', 'left', 'west', 
-                    'forward', 'north', 'backward', 'south', 'up', 'down']
-        
-        for const_name in constants:
-            orientation = getattr(Orientation, const_name)()
-            assert isinstance(orientation, Orientation)
-            assert orientation.matrix.shape == (3, 3)
-    
-    def test_east_west_self_inverses(self):
-        """Test east and west orientations are self-inverses."""
-        east = Orientation.east()
-        west = Orientation.west()
-        identity = Matrix.eye(3)
-        
-        # East is identity, so east * east = identity
-        result_east = east * east
-        assert simplify(result_east.matrix - identity).norm() < 1e-10
-        
-        # West is 180° rotation, so west * west = identity  
-        result_west = west * west
-        assert simplify(result_west.matrix - identity).norm() < 1e-10
-    
-    def test_north_south_are_inverses(self):
-        """Test north and south orientations are inverses."""
-        north = Orientation.north()
-        south = Orientation.south()
-        
-        result = north * south
-        identity = Matrix.eye(3)
-        assert simplify(result.matrix - identity).norm() < 1e-10
-    
-    def test_up_down_are_inverses(self):
-        """Test up and down orientations are inverses."""
-        up = Orientation.up()
-        down = Orientation.down()
-        
-        result = up * down
-        identity = Matrix.eye(3)
-        assert simplify(result.matrix - identity).norm() < 1e-10
     
     def test_rotate_left_right_are_inverses(self):
         """Test rotate_left and rotate_right are inverses."""
@@ -196,8 +154,9 @@ class TestRotationMatrixProperties:
     def test_determinant_is_one(self):
         """Test all orientation matrices have determinant 1."""
         orientations = [
-            Orientation.identity(), Orientation.north(), Orientation.up(),
-            Orientation.rotate_left(), generate_random_orientation()
+            Orientation.identity(),
+            Orientation.rotate_left(), 
+            generate_random_orientation()
         ]
         
         for orientation in orientations:
@@ -224,98 +183,6 @@ class TestRotationMatrixProperties:
         
         diff = simplify(inverse_matrix - transpose_matrix)
         assert float(diff.norm()) < 1e-10
-
-
-class TestOrientationDirections:
-    """Test directional orientations by applying them to a unit vector."""
-    
-    def test_identity_direction(self):
-        """Test identity orientation on (1,0,0) gives (1,0,0)."""
-        orient = Orientation.identity()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([1, 0, 0])
-        assert result == expected
-    
-    def test_right_direction(self):
-        """Test right/east orientation on (1,0,0) gives (1,0,0)."""
-        orient = Orientation.right()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([1, 0, 0])  # Facing east = +X
-        assert result == expected
-    
-    def test_east_direction(self):
-        """Test east orientation on (1,0,0) gives (1,0,0)."""
-        orient = Orientation.east()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([1, 0, 0])  # Facing east = +X
-        assert result == expected
-    
-    def test_left_direction(self):
-        """Test left/west orientation on (1,0,0) gives (-1,0,0)."""
-        orient = Orientation.left()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([-1, 0, 0])  # Facing west = -X
-        assert result == expected
-    
-    def test_west_direction(self):
-        """Test west orientation on (1,0,0) gives (-1,0,0)."""
-        orient = Orientation.west()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([-1, 0, 0])  # Facing west = -X
-        assert result == expected
-    
-    def test_forward_direction(self):
-        """Test forward/north orientation on (1,0,0) gives (0,1,0)."""
-        orient = Orientation.forward()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([0, 1, 0])  # Facing north = +Y
-        assert result == expected
-    
-    def test_north_direction(self):
-        """Test north orientation on (1,0,0) gives (0,1,0)."""
-        orient = Orientation.north()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([0, 1, 0])  # Facing north = +Y
-        assert result == expected
-    
-    def test_backward_direction(self):
-        """Test backward/south orientation on (1,0,0) gives (0,-1,0)."""
-        orient = Orientation.backward()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([0, -1, 0])  # Facing south = -Y
-        assert result == expected
-    
-    def test_south_direction(self):
-        """Test south orientation on (1,0,0) gives (0,-1,0)."""
-        orient = Orientation.south()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([0, -1, 0])  # Facing south = -Y
-        assert result == expected
-    
-    def test_up_direction(self):
-        """Test up orientation on (1,0,0) gives (0,0,1)."""
-        orient = Orientation.up()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([0, 0, 1])  # Facing up = +Z
-        assert result == expected
-    
-    def test_down_direction(self):
-        """Test down orientation on (1,0,0) gives (0,0,-1)."""
-        orient = Orientation.down()
-        vector = Matrix([1, 0, 0])
-        result = orient.matrix * vector
-        expected = Matrix([0, 0, -1])  # Facing down = -Z
-        assert result == expected
 
 
 class TestReprAndString:
