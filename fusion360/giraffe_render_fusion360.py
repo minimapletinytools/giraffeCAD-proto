@@ -1194,54 +1194,12 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     time.sleep(0.1)
     adsk.doEvents()
     
-    # PASS 3: Apply all transforms to move to final positions
-    print(f"\n=== PASS 3: Applying transforms ===")
-    if app:
-        app.log(f"=== PASS 3: Applying transforms to {len(created_components)} components ===")
-    
-    transform_success_count = 0
-    
-    for occurrence, cut_timber, component_name in created_components:
-        try:
-            print(f"Transforming {component_name}...")
-            
-            # Get timber position and orientation
-            position = cut_timber._timber.bottom_position
-            orientation = cut_timber._timber.orientation
-            
-            # Apply the transform
-            success = apply_timber_transform(occurrence, position, orientation, component_name)
-            
-            if success:
-                transform_success_count += 1
-                print(f"  ✓ Transformed {component_name}")
-                if app:
-                    app.log(f"  ✓ Transformed {component_name}")
-            else:
-                print(f"  ✗ Failed to transform {component_name}")
-                if app:
-                    app.log(f"  ✗ Failed to transform {component_name}")
-            
-            # Small delay between transforms to avoid race conditions
-            time.sleep(0.05)
-            adsk.doEvents()
-                    
-        except Exception as e:
-            print(f"  ✗ Error transforming {component_name}: {e}")
-            if app:
-                app.log(f"  ✗ Error transforming {component_name}: {e}")
-            traceback.print_exc()
-    
-    # Final refresh
-    time.sleep(0.2)
-    adsk.doEvents()
-    
-    # PASS 4: Render joint accessories at origin (pegs, wedges, etc.)
+    # PASS 2: Render joint accessories at origin (pegs, wedges, etc.)
     created_accessories = []  # List of (occurrence, accessory, timber, name) tuples
     if joint_accessories:
-        print(f"\n=== PASS 4: Creating {len(joint_accessories)} joint accessories at origin ===")
+        print(f"\n=== PASS 2: Creating {len(joint_accessories)} joint accessories at origin ===")
         if app:
-            app.log(f"=== PASS 4: Creating {len(joint_accessories)} joint accessories at origin ===")
+            app.log(f"=== PASS 2: Creating {len(joint_accessories)} joint accessories at origin ===")
         
         for i, (accessory, timber) in enumerate(joint_accessories):
             try:
@@ -1277,80 +1235,105 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                     app.log(f"  ✗ Error creating accessory {i+1}: {e}")
                 traceback.print_exc()
     
-    # Force Fusion 360 to process all accessory creation
+    # Force Fusion 360 to process all geometry creation
     time.sleep(0.2)
     adsk.doEvents()
     
-    # PASS 5: Transform joint accessories to final positions
+    # PASS 3: Apply all transforms to move to final positions (timbers AND accessories)
+    total_objects = len(created_components) + len(created_accessories)
+    print(f"\n=== PASS 3: Applying transforms to {total_objects} objects ({len(created_components)} timbers, {len(created_accessories)} accessories) ===")
+    if app:
+        app.log(f"=== PASS 3: Applying transforms to {total_objects} objects ({len(created_components)} timbers, {len(created_accessories)} accessories) ===")
+    
+    transform_success_count = 0
     accessories_transformed = 0
-    if created_accessories:
-        print(f"\n=== PASS 5: Transforming {len(created_accessories)} joint accessories ===")
-        if app:
-            app.log(f"=== PASS 5: Transforming {len(created_accessories)} joint accessories ===")
-        
-        for occurrence, accessory, timber, accessory_name in created_accessories:
-            try:
-                print(f"Transforming {accessory_name}...")
-                
+    
+    # First, transform all timbers
+    for occurrence, cut_timber, component_name in created_components:
+        try:
+            print(f"Transforming {component_name}...")
+            
+            # Get timber position and orientation
+            position = cut_timber._timber.bottom_position
+            orientation = cut_timber._timber.orientation
+            
+            # Apply the transform
+            success = apply_timber_transform(occurrence, position, orientation, component_name)
+            
+            if success:
+                transform_success_count += 1
+                print(f"  ✓ Transformed {component_name}")
                 if app:
-                    app.log(f"  Transforming {accessory_name}:")
-                    app.log(f"    Peg position (timber local): {[float(x) for x in accessory.position]}")
-                    app.log(f"    Timber position (world): {[float(x) for x in timber.bottom_position]}")
-                
-                # Compute combined position and orientation in SymPy (like timbers do)
-                # Position: P_world = timber_pos + timber_orient * peg_pos
-                peg_pos_in_world = timber.bottom_position + timber.orientation.matrix * accessory.position
-                
-                # Orientation: O_world = timber_orient * peg_orient
-                combined_orientation_matrix = timber.orientation.matrix * accessory.orientation.matrix
-                combined_orientation = Orientation(combined_orientation_matrix)
-                
+                    app.log(f"  ✓ Transformed {component_name}")
+            else:
+                print(f"  ✗ Failed to transform {component_name}")
                 if app:
-                    app.log(f"    Combined position (world): {[float(x) for x in peg_pos_in_world]}")
-                    app.log(f"    Combined orientation matrix:")
-                    for i in range(3):
-                        row = [float(combined_orientation.matrix[i, j]) for j in range(3)]
-                        app.log(f"      [{row[0]:.3f}, {row[1]:.3f}, {row[2]:.3f}]")
-                
-                # Create the final transform matrix (like timbers do)
-                final_transform = create_matrix3d_from_orientation(peg_pos_in_world, combined_orientation)
-                
+                    app.log(f"  ✗ Failed to transform {component_name}")
+            
+            # Small delay between transforms to avoid race conditions
+            time.sleep(0.05)
+            adsk.doEvents()
+                    
+        except Exception as e:
+            print(f"  ✗ Error transforming {component_name}: {e}")
+            if app:
+                app.log(f"  ✗ Error transforming {component_name}: {e}")
+            traceback.print_exc()
+    
+    # Then, transform all accessories
+    for occurrence, accessory, timber, accessory_name in created_accessories:
+        try:
+            print(f"Transforming {accessory_name}...")
+            
+            if app:
+                app.log(f"  Transforming {accessory_name}:")
+                app.log(f"    Peg position (timber local): {[float(x) for x in accessory.position]}")
+                app.log(f"    Timber position (world): {[float(x) for x in timber.bottom_position]}")
+            
+            # Compute combined position and orientation in SymPy (like timbers do)
+            # Position: P_world = timber_pos + timber_orient * peg_pos
+            peg_pos_in_world = timber.bottom_position + timber.orientation.matrix * accessory.position
+            
+            # Orientation: O_world = timber_orient * peg_orient
+            combined_orientation_matrix = timber.orientation.matrix * accessory.orientation.matrix
+            combined_orientation = Orientation(combined_orientation_matrix)
+            
+            if app:
+                app.log(f"    Combined position (world): {[float(x) for x in peg_pos_in_world]}")
+                app.log(f"    Combined orientation matrix:")
+                for i in range(3):
+                    row = [float(combined_orientation.matrix[i, j]) for j in range(3)]
+                    app.log(f"      [{row[0]:.3f}, {row[1]:.3f}, {row[2]:.3f}]")
+            
+            # Apply the transformation using apply_timber_transform pattern
+            success = apply_timber_transform(occurrence, peg_pos_in_world, combined_orientation, accessory_name)
+            
+            if not success:
                 if app:
-                    # Log the resulting transform
-                    tx = final_transform.getCell(0, 3)
-                    ty = final_transform.getCell(1, 3)
-                    tz = final_transform.getCell(2, 3)
-                    app.log(f"    Final transform translation: [{tx:.3f}, {ty:.3f}, {tz:.3f}]")
-                
-                # Apply the transformation using apply_timber_transform pattern
-                success = apply_timber_transform(occurrence, peg_pos_in_world, combined_orientation, accessory_name)
-                
-                if not success:
-                    if app:
-                        app.log(f"    ERROR: apply_timber_transform returned False")
-                    raise RuntimeError(f"Failed to apply transform to {accessory_name}")
-                
-                if app:
-                    actual_transform = occurrence.transform2
-                    actual_tx = actual_transform.getCell(0, 3)
-                    actual_ty = actual_transform.getCell(1, 3)
-                    actual_tz = actual_transform.getCell(2, 3)
-                    app.log(f"    Verified occurrence transform: [{actual_tx:.3f}, {actual_ty:.3f}, {actual_tz:.3f}]")
-                
-                accessories_transformed += 1
-                print(f"  ✓ Transformed {accessory_name}")
-                if app:
-                    app.log(f"  ✓ Transformed {accessory_name}")
-                
-                # Small delay between transforms
-                time.sleep(0.05)
-                adsk.doEvents()
-                
-            except Exception as e:
-                print(f"  ✗ Error transforming {accessory_name}: {e}")
-                if app:
-                    app.log(f"  ✗ Error transforming {accessory_name}: {e}")
-                traceback.print_exc()
+                    app.log(f"    ERROR: apply_timber_transform returned False")
+                raise RuntimeError(f"Failed to apply transform to {accessory_name}")
+            
+            if app:
+                actual_transform = occurrence.transform2
+                actual_tx = actual_transform.getCell(0, 3)
+                actual_ty = actual_transform.getCell(1, 3)
+                actual_tz = actual_transform.getCell(2, 3)
+                app.log(f"    Verified occurrence transform: [{actual_tx:.3f}, {actual_ty:.3f}, {actual_tz:.3f}]")
+            
+            accessories_transformed += 1
+            print(f"  ✓ Transformed {accessory_name}")
+            if app:
+                app.log(f"  ✓ Transformed {accessory_name}")
+            
+            # Small delay between transforms
+            time.sleep(0.05)
+            adsk.doEvents()
+            
+        except Exception as e:
+            print(f"  ✗ Error transforming {accessory_name}: {e}")
+            if app:
+                app.log(f"  ✗ Error transforming {accessory_name}: {e}")
+            traceback.print_exc()
     
     # Final refresh
     time.sleep(0.2)
