@@ -353,7 +353,7 @@ def example_mortise_and_tenon_with_pegs(position=None):
             (inches(2), inches(1, 2))    # 2" from shoulder, +0.5" from centerline
         ],
         depth=inches(4),  # 4" deep into mortise timber
-        length=inches(5)  # 5" total peg length
+        size=inches(1, 2)  # 0.5" peg diameter/side length
     )
     
     # Create the joint with pegs

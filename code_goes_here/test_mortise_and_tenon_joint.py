@@ -36,14 +36,14 @@ class TestSimplePegParameters:
             tenon_face=TimberReferenceLongFace.RIGHT,
             peg_positions=[(Rational(1), Rational(0)), (Rational(2), Rational(1))],
             depth=Rational(4),
-            length=Rational(6)
+            size=Rational(1, 2)
         )
         
         assert params.shape == PegShape.ROUND
         assert params.tenon_face == TimberReferenceLongFace.RIGHT
         assert len(params.peg_positions) == 2
         assert params.depth == Rational(4)
-        assert params.length == Rational(6)
+        assert params.size == Rational(1, 2)
     
     def test_simple_peg_parameters_with_none_depth(self):
         """Test SimplePegParameters with None depth (through peg)."""
@@ -52,7 +52,7 @@ class TestSimplePegParameters:
             tenon_face=TimberReferenceLongFace.FORWARD,
             peg_positions=[(Rational(2), Rational(0))],
             depth=None,
-            length=Rational(8)
+            size=Rational(1, 2)
         )
         
         assert params.depth is None
@@ -294,7 +294,7 @@ class TestGenericMortiseAndTenon:
             tenon_face=TimberReferenceLongFace.RIGHT,
             peg_positions=[(Rational(1), Rational(0))],
             depth=Rational(4),
-            length=Rational(6)
+            size=Rational(1, 2)
         )
         
         # Should create joint with peg accessories
@@ -486,7 +486,7 @@ class TestPegAccessories:
                 (Rational(2), Rational(0))  # 2 units from shoulder, centered
             ],
             depth=Rational(5),
-            length=Rational(6)
+            size=Rational(1, 2)
         )
         
         # Create joint with peg
@@ -550,7 +550,7 @@ class TestPegAccessories:
             tenon_face=TimberReferenceLongFace.FORWARD,
             peg_positions=[(Rational(2), Rational(0))],
             depth=Rational(5),
-            length=Rational(6)
+            size=Rational(1, 2)
         )
         
         # Create joint with peg
