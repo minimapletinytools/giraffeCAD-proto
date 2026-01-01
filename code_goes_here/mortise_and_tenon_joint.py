@@ -473,39 +473,17 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         if peg_length_axis_index == 0:  # Peg through X face
             if peg_sign == 1:  # RIGHT face (surface at +X)
                 # Peg extends INTO timber in -X direction
-                # Z-axis (col2) = [-1,0,0], Y-axis (col1) = [0,1,0], X-axis (col0) = [0,0,1]
-                peg_orientation_matrix = Matrix([
-                    [0, 0, -1],  # row 0
-                    [0, 1, 0],   # row 1
-                    [1, 0, 0]    # row 2
-                ])
+                peg_orientation = Orientation.left()
             else:  # LEFT face (surface at -X)
                 # Peg extends INTO timber in +X direction
-                # Z-axis (col2) = [1,0,0], Y-axis (col1) = [0,1,0], X-axis (col0) = [0,0,-1]
-                peg_orientation_matrix = Matrix([
-                    [0, 0, 1],   # row 0
-                    [0, 1, 0],   # row 1
-                    [-1, 0, 0]   # row 2
-                ])
+                peg_orientation = Orientation.right()
         else:  # Peg through Y face
             if peg_sign == 1:  # FORWARD face (surface at +Y)
                 # Peg extends INTO timber in -Y direction
-                # Z-axis (col2) = [0,-1,0], X-axis (col0) = [1,0,0], Y-axis (col1) = [0,0,1]
-                peg_orientation_matrix = Matrix([
-                    [1, 0, 0],   # row 0
-                    [0, 0, -1],  # row 1
-                    [0, 1, 0]    # row 2
-                ])
+                peg_orientation = Orientation.backward()
             else:  # BACK face (surface at -Y)
                 # Peg extends INTO timber in +Y direction
-                # Z-axis (col2) = [0,1,0], X-axis (col0) = [1,0,0], Y-axis (col1) = [0,0,-1]
-                peg_orientation_matrix = Matrix([
-                    [1, 0, 0],   # row 0
-                    [0, 0, 1],   # row 1
-                    [0, -1, 0]   # row 2
-                ])
-        
-        peg_orientation = Orientation(peg_orientation_matrix)
+                peg_orientation = Orientation.forward()
         
         # Create peg holes for each peg position
         peg_holes_in_tenon_local = []
