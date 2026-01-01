@@ -156,12 +156,14 @@ IGNORE-cleanup render utilities, some of them seem unecessary
 
 
 
--moothymoth
-  -cleanup all the static ctor stuff, it's confusing
-  -create new set of orientation constants for doing timber orientation, ju
-    -facing_north/west/east/south
-    -pointing_up/down/left/etc
-      -need canonical facing vector fo these, document it!, always facing +x for up down, otherwise, always facing up.
+DONE-moothymoth
+  DONE-cleanup all the static ctor stuff, it's confusing
+  DONE-create new set of orientation constants for doing timber orientation
+    -facing_west/east/north/south (horizontal timbers, top face up, Z-axis rotations)
+    -pointing_up/down (identity and 180° Y rotation)
+    -pointing_forward/backward/left/right (vertical timbers, +X→+Z, Z-axis rotations)
+      -facing_west and pointing_up are both identity orientation
+      -all documented with clear canonical conventions
 
 
 -do mortise and tenon joint

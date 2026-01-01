@@ -185,6 +185,180 @@ class TestRotationMatrixProperties:
         assert float(diff.norm()) < 1e-10
 
 
+class TestTimberOrientations:
+    """Test timber-specific orientation methods."""
+    
+    def test_facing_west_is_identity(self):
+        """Test facing_west is the identity orientation."""
+        orient = Orientation.facing_west()
+        assert orient.matrix == Matrix.eye(3)
+    
+    def test_pointing_up_is_identity(self):
+        """Test pointing_up is also the identity orientation."""
+        orient = Orientation.pointing_up()
+        assert orient.matrix == Matrix.eye(3)
+    
+    def test_facing_west_directions(self):
+        """Test facing_west timber directions (identity)."""
+        orient = Orientation.facing_west()
+        # Length along +X (local)
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([1, 0, 0])
+        # Width along +Y (local)
+        assert orient.matrix * Matrix([0, 1, 0]) == Matrix([0, 1, 0])
+        # Facing +Z (up)
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([0, 0, 1])
+    
+    def test_facing_east_directions(self):
+        """Test facing_east timber directions (180° around Z)."""
+        orient = Orientation.facing_east()
+        # Length along -X (local becomes +X global/east)
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([-1, 0, 0])
+        # Width along -Y (local becomes +Y global/north)
+        assert orient.matrix * Matrix([0, 1, 0]) == Matrix([0, -1, 0])
+        # Facing +Z (up)
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([0, 0, 1])
+    
+    def test_facing_north_directions(self):
+        """Test facing_north timber directions (90° CCW around Z)."""
+        orient = Orientation.facing_north()
+        # Length along +Y (north)  
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([0, 1, 0])
+        # Width along -X (west)
+        assert orient.matrix * Matrix([0, 1, 0]) == Matrix([-1, 0, 0])
+        # Facing +Z (up)
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([0, 0, 1])
+    
+    def test_facing_south_directions(self):
+        """Test facing_south timber directions (90° CW around Z)."""
+        orient = Orientation.facing_south()
+        # Length along -Y (south)
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([0, -1, 0])
+        # Width along +X (east)
+        assert orient.matrix * Matrix([0, 1, 0]) == Matrix([1, 0, 0])
+        # Facing +Z (up)
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([0, 0, 1])
+    
+    def test_pointing_down_directions(self):
+        """Test pointing_down timber directions (180° around Y)."""
+        orient = Orientation.pointing_down()
+        # Length along -X
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([-1, 0, 0])
+        # Width along +Y
+        assert orient.matrix * Matrix([0, 1, 0]) == Matrix([0, 1, 0])
+        # Facing -Z (down)
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([0, 0, -1])
+    
+    def test_pointing_forward_directions(self):
+        """Test pointing_forward: +X points to +Z, facing upward."""
+        orient = Orientation.pointing_forward()
+        # Length should map to +Z (up)
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([0, 0, 1])
+        # Width along +Y
+        assert orient.matrix * Matrix([0, 1, 0]) == Matrix([0, 1, 0])
+        # Facing direction
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([-1, 0, 0])
+    
+    def test_pointing_backward_directions(self):
+        """Test pointing_backward: +X points to +Z, facing upward, rotated 180°."""
+        orient = Orientation.pointing_backward()
+        # Length should map to +Z (up)
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([0, 0, 1])
+        # Width along -Y
+        assert orient.matrix * Matrix([0, 1, 0]) == Matrix([0, -1, 0])
+        # Facing direction
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([1, 0, 0])
+    
+    def test_pointing_left_directions(self):
+        """Test pointing_left: +X points to +Z, facing upward, rotated 90° CCW."""
+        orient = Orientation.pointing_left()
+        # Length should map to +Z (up)
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([0, 0, 1])
+        # Width along -X (west/left)
+        assert orient.matrix * Matrix([0, 1, 0]) == Matrix([-1, 0, 0])
+        # Facing direction maps to [0,-1,0]
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([0, -1, 0])
+    
+    def test_pointing_right_directions(self):
+        """Test pointing_right: +X points to +Z, facing upward, rotated 90° CW."""
+        orient = Orientation.pointing_right()
+        # Length should map to +Z (up)
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([0, 0, 1])
+        # Width along +X (east/right)
+        assert orient.matrix * Matrix([0, 1, 0]) == Matrix([1, 0, 0])
+        # Facing direction maps to [0,1,0]
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([0, 1, 0])
+    
+    def test_horizontal_timbers_all_face_up(self):
+        """Test that all horizontal timber orientations have facing = +Z (up)."""
+        horizontal_orientations = [
+            Orientation.facing_east(),
+            Orientation.facing_west(),
+            Orientation.facing_north(),
+            Orientation.facing_south()
+        ]
+        
+        facing_vector = Matrix([0, 0, 1])  # Original facing direction
+        expected_up = Matrix([0, 0, 1])     # Should always point up
+        
+        for orient in horizontal_orientations:
+            result = orient.matrix * facing_vector
+            assert result == expected_up, f"Failed for orientation: {orient}"
+    
+    def test_all_pointing_verticals_length_points_up(self):
+        """Test that pointing_forward/backward/left/right all have length (+X) pointing to +Z."""
+        vertical_orientations = [
+            Orientation.pointing_forward(),
+            Orientation.pointing_backward(),
+            Orientation.pointing_left(),
+            Orientation.pointing_right()
+        ]
+        
+        length_vector = Matrix([1, 0, 0])  # Length direction
+        expected_up = Matrix([0, 0, 1])     # Should point up (+Z)
+        
+        for orient in vertical_orientations:
+            result = orient.matrix * length_vector
+            assert result == expected_up, f"Failed for orientation: {orient}"
+    
+    def test_all_timber_orientations_are_valid_rotations(self):
+        """Test that all timber orientations are valid rotation matrices."""
+        timber_orientations = [
+            Orientation.facing_east(),
+            Orientation.facing_west(),
+            Orientation.facing_north(),
+            Orientation.facing_south(),
+            Orientation.pointing_up(),
+            Orientation.pointing_down(),
+            Orientation.pointing_forward(),
+            Orientation.pointing_backward(),
+            Orientation.pointing_left(),
+            Orientation.pointing_right()
+        ]
+        
+        for orient in timber_orientations:
+            assert_is_valid_rotation_matrix(orient.matrix)
+    
+    def test_facing_east_is_180_from_west(self):
+        """Test facing_east is 180° rotation from facing_west."""
+        east = Orientation.facing_east()
+        west = Orientation.facing_west()
+        
+        # east * east should give identity (180° + 180° = 360°)
+        result = east * east
+        identity = Matrix.eye(3)
+        assert simplify(result.matrix - identity).norm() < 1e-10
+    
+    def test_facing_north_south_are_90_apart(self):
+        """Test facing_north and facing_south are 90° rotations from west."""
+        north = Orientation.facing_north()
+        south = Orientation.facing_south()
+        
+        # north * north * north * north should be identity (4 * 90° = 360°)
+        result = north * north * north * north
+        identity = Matrix.eye(3)
+        assert simplify(result.matrix - identity).norm() < 1e-10
+
+
 class TestReprAndString:
     """Test string representation."""
     
