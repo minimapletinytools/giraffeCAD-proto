@@ -466,6 +466,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             raise ValueError(f"Invalid peg face: {peg_parameters.tenon_face}")
         
 
+        # TODO use orientation constants instead of this
         # Create orientation matrix for peg prism
         # The peg position is at the timber SURFACE, and the peg extends INTO the timber
         # So Z-axis (column 2) must point INTO the timber (opposite of surface normal)
@@ -515,31 +516,30 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         for distance_from_shoulder, distance_from_centerline in peg_parameters.peg_positions:
             # Calculate peg insertion point in tenon timber's local space
             # Start at the tenon position offset, then add the peg-specific offsets
-            peg_pos_local = Matrix([Rational(0), Rational(0), Rational(0)])
+            peg_pos_on_tenon_face_local = Matrix([Rational(0), Rational(0), Rational(0)])
             
             # Add tenon position offset
-            peg_pos_local[0] = tenon_position[0]
-            peg_pos_local[1] = tenon_position[1]
+            peg_pos_on_tenon_face_local[0] = tenon_position[0]
+            peg_pos_on_tenon_face_local[1] = tenon_position[1]
             
             # Add distance from shoulder (along length axis)
             if tenon_end == TimberReferenceEnd.TOP:
-                peg_pos_local[2] = shoulder_plane_point_with_offset_local[2] + distance_from_shoulder
+                peg_pos_on_tenon_face_local[2] = shoulder_plane_point_with_offset_local[2] + distance_from_shoulder
             else:  # BOTTOM
-                peg_pos_local[2] = shoulder_plane_point_with_offset_local[2] - distance_from_shoulder
+                peg_pos_on_tenon_face_local[2] = shoulder_plane_point_with_offset_local[2] - distance_from_shoulder
             
             # Add distance from centerline (along lateral position axis)
-            peg_pos_local[lateral_position_index] = peg_pos_local[lateral_position_index] + distance_from_centerline
+            peg_pos_on_tenon_face_local[lateral_position_index] = peg_pos_on_tenon_face_local[lateral_position_index] + distance_from_centerline
             
-            # TODO position the peg on the mortise face
             # Move to the tenon face surface (where peg enters)
             if peg_parameters.tenon_face == TimberReferenceLongFace.RIGHT:
-                peg_pos_local[0] = tenon_timber.size[0] / 2
+                peg_pos_on_tenon_face_local[0] = tenon_timber.size[0] / 2
             elif peg_parameters.tenon_face == TimberReferenceLongFace.LEFT:
-                peg_pos_local[0] = -tenon_timber.size[0] / 2
+                peg_pos_on_tenon_face_local[0] = -tenon_timber.size[0] / 2
             elif peg_parameters.tenon_face == TimberReferenceLongFace.FORWARD:
-                peg_pos_local[1] = tenon_timber.size[1] / 2
+                peg_pos_on_tenon_face_local[1] = tenon_timber.size[1] / 2
             elif peg_parameters.tenon_face == TimberReferenceLongFace.BACK:
-                peg_pos_local[1] = -tenon_timber.size[1] / 2
+                peg_pos_on_tenon_face_local[1] = -tenon_timber.size[1] / 2
             
             # Calculate the peg depth into the mortise timber
             # If not specified, use the dimension of the mortise timber perpendicular to the mortise face
@@ -557,19 +557,27 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             stickout_length = peg_depth * Rational(1, 2)  # Stickout is 0.5 times the depth
             
             # Create peg hole prism in tenon local space
-            # The peg position is ON the tenon face, and extends backward into the tenon
+            # The peg position is ON the tenon face, and extends into the tenon
             peg_hole_tenon = Prism(
                 size=Matrix([peg_size, peg_size]),
                 orientation=peg_orientation,
-                position=peg_pos_local,
-                start_distance=-stickout_length,  # Extends back into tenon
+                position=peg_pos_on_tenon_face_local,
+                start_distance=0,
+                # TODO substract distance between tenon face and mortise face to get depth from tenon face
                 end_distance=peg_depth  # Stops at mortise face
             )
             peg_holes_in_tenon_local.append(peg_hole_tenon)
             
             # Transform peg position to world space and then to mortise local space
-            peg_pos_world = tenon_timber.bottom_position + tenon_timber.orientation.matrix * peg_pos_local
-            peg_pos_mortise_local = mortise_timber.orientation.matrix.T * (peg_pos_world - mortise_timber.bottom_position)
+            peg_pos_on_tenon_face_world = tenon_timber.bottom_position + tenon_timber.orientation.matrix * peg_pos_on_tenon_face_local
+
+
+            # TODO 
+            # 1. figure out which face the peg is entering in on the mortise timber
+            # 2. figure out distance between the tenon face and the mortise face that the peg is entering in in the direction of the peg
+            # 3. use the distance to compute the peg_pos_on_mortise_face_local
+
+            peg_pos_on_mortise_face_local = mortise_timber.orientation.matrix.T * (peg_pos_on_tenon_face_world - mortise_timber.bottom_position)
             
             # Transform peg orientation to mortise local space
             peg_orientation_world = Orientation(tenon_timber.orientation.matrix * peg_orientation.matrix)
@@ -580,7 +588,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             peg_hole_mortise = Prism(
                 size=Matrix([peg_size, peg_size]),
                 orientation=peg_orientation_mortise,
-                position=peg_pos_mortise_local,
+                position=peg_pos_on_mortise_face_local,
                 start_distance=Rational(0),  # Starts at mortise face
                 end_distance=peg_depth  # Extends into mortise
             )
@@ -591,7 +599,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             # stickout_length: how much of the peg remains outside (in the tenon)
             peg_accessory = Peg(
                 orientation=peg_orientation_mortise,
-                position=peg_pos_mortise_local,
+                position=peg_pos_on_mortise_face_local,
                 size=peg_size,
                 shape=peg_parameters.shape,
                 forward_length=peg_depth,
