@@ -563,7 +563,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
                 orientation=peg_orientation,
                 position=peg_pos_local,
                 start_distance=-stickout_length,  # Extends back into tenon
-                end_distance=Rational(0)  # Stops at mortise face
+                end_distance=peg_depth  # Stops at mortise face
             )
             peg_holes_in_tenon_local.append(peg_hole_tenon)
             
