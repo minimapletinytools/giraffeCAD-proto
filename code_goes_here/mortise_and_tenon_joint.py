@@ -450,33 +450,29 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         from code_goes_here.moothymoth import inches as inches_fn
         peg_size = inches_fn(1, 2)  # Default 0.5 inch diameter converted to meters
         
-        # TODO I don't think you need to convert to TimberFace, just use the TimberReferenceLongFace directly
-        # Determine the peg direction (perpendicular to tenon_face)
-        peg_face = peg_parameters.tenon_face.to_timber_face()
-        
         # Determine which axis the peg travels along and offset axes
         # For simplicity with face-aligned timbers, work directly in local coords
-        if peg_face in [TimberFace.RIGHT, TimberFace.LEFT]:
+        if peg_parameters.tenon_face in [TimberReferenceLongFace.RIGHT, TimberReferenceLongFace.LEFT]:
             # Peg travels along X axis
-            peg_axis_index = 0
-            offset_axis_index = 1  # Y for distance_from_centerline
-            length_axis_index = 2  # Z for distance_from_shoulder
-            peg_sign = 1 if peg_face == TimberFace.RIGHT else -1
-        elif peg_face in [TimberFace.FORWARD, TimberFace.BACK]:
+            peg_length_axis_index = 0
+            lateral_position_index = 1  # Y for distance_from_centerline
+            shoulder_offset_axis_index = 2  # Z for distance_from_shoulder
+            peg_sign = 1 if peg_parameters.tenon_face == TimberReferenceLongFace.RIGHT else -1
+        elif peg_parameters.tenon_face in [TimberReferenceLongFace.FORWARD, TimberReferenceLongFace.BACK]:
             # Peg travels along Y axis
-            peg_axis_index = 1
-            offset_axis_index = 0  # X for distance_from_centerline
-            length_axis_index = 2  # Z for distance_from_shoulder
-            peg_sign = 1 if peg_face == TimberFace.FORWARD else -1
+            peg_length_axis_index = 1
+            lateral_position_index = 0  # X for distance_from_centerline
+            shoulder_offset_axis_index = 2  # Z for distance_from_shoulder
+            peg_sign = 1 if peg_parameters.tenon_face == TimberReferenceLongFace.FORWARD else -1
         else:
-            raise ValueError(f"Invalid peg face: {peg_face}")
+            raise ValueError(f"Invalid peg face: {peg_parameters.tenon_face}")
         
         # Create orientation matrix for peg prism
         # The peg position is at the timber SURFACE, and the peg extends INTO the timber
         # So Z-axis (column 2) must point INTO the timber (opposite of surface normal)
         # IMPORTANT: Must create proper rotation matrices (det = +1), not reflections (det = -1)
         # Matrix columns form a right-handed coordinate system: col0 = col1 × col2
-        if peg_axis_index == 0:  # Peg through X face
+        if peg_length_axis_index == 0:  # Peg through X face
             if peg_sign == 1:  # RIGHT face (surface at +X)
                 # Peg extends INTO timber in -X direction
                 # Z-axis (col2) = [-1,0,0], Y-axis (col1) = [0,1,0], X-axis (col0) = [0,0,1]
@@ -532,18 +528,18 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             else:  # BOTTOM
                 peg_pos_local[2] = shoulder_plane_point_with_offset_local[2] - distance_from_shoulder
             
-            # Add distance from centerline (along offset axis)
-            peg_pos_local[offset_axis_index] = peg_pos_local[offset_axis_index] + distance_from_centerline
+            # Add distance from centerline (along lateral position axis)
+            peg_pos_local[lateral_position_index] = peg_pos_local[lateral_position_index] + distance_from_centerline
             
             # TODO position the peg on the mortise face
             # Move to the tenon face surface (where peg enters)
-            if peg_face == TimberFace.RIGHT:
+            if peg_parameters.tenon_face == TimberReferenceLongFace.RIGHT:
                 peg_pos_local[0] = tenon_timber.size[0] / 2
-            elif peg_face == TimberFace.LEFT:
+            elif peg_parameters.tenon_face == TimberReferenceLongFace.LEFT:
                 peg_pos_local[0] = -tenon_timber.size[0] / 2
-            elif peg_face == TimberFace.FORWARD:
+            elif peg_parameters.tenon_face == TimberReferenceLongFace.FORWARD:
                 peg_pos_local[1] = tenon_timber.size[1] / 2
-            elif peg_face == TimberFace.BACK:
+            elif peg_parameters.tenon_face == TimberReferenceLongFace.BACK:
                 peg_pos_local[1] = -tenon_timber.size[1] / 2
             
             # Create peg hole prism in tenon local space
