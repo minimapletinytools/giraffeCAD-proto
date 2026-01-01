@@ -219,6 +219,35 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Solving: t = (mortise_face_plane_point - tenon_centerline_start) · mortise_face_normal / denominator
     t = (mortise_face_plane_point - tenon_centerline_start).dot(mortise_face_normal) / denominator
     
+    # ========================================================================
+    # Warning: Check if tenon end might be pointing away from mortise
+    # ========================================================================
+    
+    # Calculate the center of the tenon timber centerline
+    tenon_timber_center = tenon_timber.bottom_position + tenon_timber.length_direction * (tenon_timber.length / 2)
+    
+    # Calculate signed distances from mortise face plane
+    # Positive distance means on the side of the outward normal
+    distance_tenon_end = (tenon_centerline_start - mortise_face_plane_point).dot(mortise_face_normal)
+    distance_tenon_center = (tenon_timber_center - mortise_face_plane_point).dot(mortise_face_normal)
+    
+    # Check if both are on the same side of the plane (same sign)
+    same_side = (distance_tenon_end * distance_tenon_center) > 0
+    
+    # Check if tenon is pointing away from mortise face
+    # The tenon is pointing away if moving along the centerline increases the distance to the plane
+    # This happens when: (tenon is on positive side AND direction is positive) OR (tenon is on negative side AND direction is negative)
+    # Equivalently: distance_tenon_end and dot_product have the same sign
+    dot_product = tenon_centerline_direction.dot(mortise_face_normal)
+    pointing_away = (distance_tenon_end * dot_product) > 0
+    
+    if same_side and pointing_away:
+        print(f"⚠️  Warning: The tenon end seems to be pointing AWAY from the mortise timber.")
+        print(f"    Are you sure you chose the right end of the tenon timber?")
+        print(f"    Tenon end: {tenon_end}, Mortise face: {mortise_face}")
+        print(f"    (Both tenon end and timber center are on the same side of the mortise face,")
+        print(f"     and the tenon is pointing away from the mortise)")
+    
     # Assert that intersection is in front of tenon end (t > 0)
     assert t > 0, \
         f"Tenon centerline does not intersect mortise face in front of tenon end (t={t})"

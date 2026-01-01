@@ -20,20 +20,15 @@ if script_dir not in sys.path:
 
 # Import the FreeCAD renderer and examples
 from giraffe_render_freecad import render_multiple_timbers, clear_document
-from examples.mortise_and_tenon_joint_examples import example_basic_mortise_and_tenon
+from examples.mortise_and_tenon_joint_examples import create_all_mortise_and_tenon_examples
 
 
 def create_mortise_and_tenon_example():
     """
-    Create a basic mortise and tenon joint example.
+    Create all mortise and tenon joint examples with spacing.
     """
-    print("\nCreating basic mortise and tenon joint...")
-    joint = example_basic_mortise_and_tenon()
-    
-    # Extract the cut timbers from the joint
-    all_cut_timbers = []
-    for cut_timber in joint.partiallyCutTimbers:
-        all_cut_timbers.append(cut_timber)
+    print("\nCreating all mortise and tenon joint examples...")
+    all_cut_timbers = create_all_mortise_and_tenon_examples()
     
     return all_cut_timbers
 
@@ -41,10 +36,10 @@ def create_mortise_and_tenon_example():
 def main():
     """Main function."""
     print("="*70)
-    print("GiraffeCAD FreeCAD - Mortise and Tenon Joint Test")
+    print("GiraffeCAD FreeCAD - All Mortise and Tenon Joint Examples")
     print("="*70)
     
-    # Create mortise and tenon example
+    # Create mortise and tenon examples
     cut_timbers = create_mortise_and_tenon_example()
     
     print(f"\nTotal timbers created: {len(cut_timbers)}")
@@ -60,10 +55,12 @@ def main():
     print(f"Rendering Complete!")
     print(f"Successfully rendered {success_count}/{len(cut_timbers)} timbers")
     print("="*70)
-    print("\nConfiguration:")
-    print("  • Vertical post (tenon timber) with bottom at origin")
-    print("  • Horizontal beam (mortise timber) centered at origin along X axis")
-    print("\nCheck the Model tree on the left to see both timbers and their cuts")
+    print("\nExamples rendered (spaced 72 inches apart):")
+    print("  1. Basic 4x4 Mortise and Tenon")
+    print("  2. 4x6 into 6x8 Mortise and Tenon")
+    print("  3. Through Tenon with 6\" Stickout")
+    print("  4. Full-Size 4x4 Tenon into 6x6")
+    print("\nCheck the Model tree on the left to see all timbers and their cuts")
 
 
 # Run the test
