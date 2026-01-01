@@ -57,7 +57,6 @@ class WedgeParameters
 
 
 tests:
-
 -peg forward_length / stickout depth tests
 -peg_depth = none case, ensure it's picking the right axis to use for computing peg depth
 -peg orientation should be perpendicular to tenon timber
@@ -157,6 +156,14 @@ IGNORE-cleanup render utilities, some of them seem unecessary
 
 
 
+-moothymoth
+  -cleanup all the static ctor stuff, it's confusing
+  -create new set of timebr orientations
+    -facing_north/west/east/south
+    -pointing_up/down/left/etc
+      -need canonical facing vector fo these, document it!
+
+      
 -do mortise and tenon joint
   -fix peg holes in mortise not going all the way through
   -fix default peg size or whatever (maybe jsut udpate eaxmple)

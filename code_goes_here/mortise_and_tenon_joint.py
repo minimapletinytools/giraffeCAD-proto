@@ -465,6 +465,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         else:
             raise ValueError(f"Invalid peg face: {peg_parameters.tenon_face}")
         
+
         # Create orientation matrix for peg prism
         # The peg position is at the timber SURFACE, and the peg extends INTO the timber
         # So Z-axis (column 2) must point INTO the timber (opposite of surface normal)
