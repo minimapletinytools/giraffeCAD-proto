@@ -454,6 +454,7 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
     size: V2,
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
+    tenon_position: V2 = None,
 ) -> Joint:
     """
     Creates a simple mortise and tenon joint without pegs or wedges.
@@ -468,12 +469,15 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
         tenon_length: Length of tenon extending from mortise face
         mortise_depth: Depth of mortise (None = through mortise)
+        tenon_position: Offset of tenon center from timber centerline (X, Y) in tenon timber's local space
+                       Default is (0, 0) for centered tenon
         
     Returns:
         Joint object containing the two PartiallyCutTimbers
         
     Raises:
         AssertionError: If timbers are not properly oriented for this joint type
+        AssertionError: If tenon size + position exceeds timber cross-section bounds
         
     Example:
         >>> # Create a simple mortise and tenon with 2x2 inch tenon, 3 inches long
@@ -483,9 +487,14 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         ...     tenon_end=TimberReferenceEnd.TOP,
         ...     size=Matrix([Rational(2), Rational(2)]),
         ...     tenon_length=Rational(3),
-        ...     mortise_depth=Rational(4)  # or None for through mortise
+        ...     mortise_depth=Rational(4),  # or None for through mortise
+        ...     tenon_position=Matrix([Rational(0), Rational(0)])  # centered
         ... )
     """
+    # Default tenon_position to centered (0, 0)
+    if tenon_position is None:
+        tenon_position = Matrix([Rational(0), Rational(0)])
+    
     # Verify that the timbers are face-aligned and orthogonal
     # Face-aligned means they share the same coordinate grid alignment  
     assert _are_timbers_face_aligned(mortise_timber, tenon_timber), \
@@ -496,6 +505,24 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
     assert _are_timbers_face_orthogonal(mortise_timber, tenon_timber), \
         "Timbers must be orthogonal (perpendicular length directions) for this joint type"
     
+    # Verify that tenon size + position doesn't exceed timber cross-section
+    # Tenon bounds: [position - size/2, position + size/2] must be within [-timber_size/2, +timber_size/2]
+    tenon_half_size_x = size[0] / 2
+    tenon_half_size_y = size[1] / 2
+    timber_half_size_x = tenon_timber.size[0] / 2
+    timber_half_size_y = tenon_timber.size[1] / 2
+    
+    tenon_min_x = tenon_position[0] - tenon_half_size_x
+    tenon_max_x = tenon_position[0] + tenon_half_size_x
+    tenon_min_y = tenon_position[1] - tenon_half_size_y
+    tenon_max_y = tenon_position[1] + tenon_half_size_y
+    
+    assert tenon_min_x >= -timber_half_size_x and tenon_max_x <= timber_half_size_x, \
+        f"Tenon extends beyond timber bounds in X: tenon [{float(tenon_min_x):.4f}, {float(tenon_max_x):.4f}] vs timber [{float(-timber_half_size_x):.4f}, {float(timber_half_size_x):.4f}]"
+    
+    assert tenon_min_y >= -timber_half_size_y and tenon_max_y <= timber_half_size_y, \
+        f"Tenon extends beyond timber bounds in Y: tenon [{float(tenon_min_y):.4f}, {float(tenon_max_y):.4f}] vs timber [{float(-timber_half_size_y):.4f}, {float(timber_half_size_y):.4f}]"
+    
     return cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         tenon_timber=tenon_timber,
         mortise_timber=mortise_timber,
@@ -503,6 +530,7 @@ def cut_simple_mortise_and_tenon_joint_on_face_aligned_timbers(
         size=size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
+        tenon_position=tenon_position,
         tenon_rotation=Orientation.identity(),
         wedge_parameters=None,
         peg_parameters=None
