@@ -425,3 +425,366 @@ class TestConstructors:
         assert cylinder.start_distance is None
         assert cylinder.end_distance is None
 
+
+class TestHalfPlaneContainsPoint:
+    """Test HalfPlane contains_point and is_point_on_boundary methods."""
+    
+    def test_halfplane_contains_point_on_positive_side(self):
+        """Test that a point on the positive side is contained."""
+        normal = Matrix([0, 0, 1])
+        offset = Rational(5)
+        halfplane = HalfPlane(normal, offset)
+        
+        # Point at z=10 (above the plane at z=5)
+        point = Matrix([0, 0, 10])
+        assert halfplane.contains_point(point) == True
+    
+    def test_halfplane_contains_point_on_boundary(self):
+        """Test that a point on the boundary is contained."""
+        normal = Matrix([0, 0, 1])
+        offset = Rational(5)
+        halfplane = HalfPlane(normal, offset)
+        
+        # Point at z=5 (on the plane)
+        point = Matrix([1, 2, 5])
+        assert halfplane.contains_point(point) == True
+    
+    def test_halfplane_contains_point_on_negative_side(self):
+        """Test that a point on the negative side is not contained."""
+        normal = Matrix([0, 0, 1])
+        offset = Rational(5)
+        halfplane = HalfPlane(normal, offset)
+        
+        # Point at z=0 (below the plane at z=5)
+        point = Matrix([0, 0, 0])
+        assert halfplane.contains_point(point) == False
+    
+    def test_halfplane_is_point_on_boundary(self):
+        """Test boundary detection."""
+        normal = Matrix([0, 0, 1])
+        offset = Rational(5)
+        halfplane = HalfPlane(normal, offset)
+        
+        # Point on boundary
+        assert halfplane.is_point_on_boundary(Matrix([0, 0, 5])) == True
+        assert halfplane.is_point_on_boundary(Matrix([1, 1, 5])) == True
+        
+        # Point not on boundary
+        assert halfplane.is_point_on_boundary(Matrix([0, 0, 6])) == False
+        assert halfplane.is_point_on_boundary(Matrix([0, 0, 4])) == False
+    
+    def test_halfplane_diagonal_normal(self):
+        """Test half-plane with diagonal normal."""
+        normal = Matrix([1, 1, 1])
+        offset = Rational(0)
+        halfplane = HalfPlane(normal, offset)
+        
+        # Point where x+y+z > 0
+        assert halfplane.contains_point(Matrix([1, 0, 0])) == True
+        assert halfplane.contains_point(Matrix([1, 1, 1])) == True
+        
+        # Point where x+y+z = 0
+        assert halfplane.contains_point(Matrix([0, 0, 0])) == True
+        assert halfplane.is_point_on_boundary(Matrix([0, 0, 0])) == True
+        
+        # Point where x+y+z < 0
+        assert halfplane.contains_point(Matrix([-1, 0, 0])) == False
+
+
+class TestPrismContainsPoint:
+    """Test Prism contains_point and is_point_on_boundary methods."""
+    
+    def test_prism_contains_point_inside(self):
+        """Test that a point inside the prism is contained."""
+        size = Matrix([4, 6])
+        orientation = Orientation()  # Identity orientation
+        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        
+        # Point inside: within ±2 in x, ±3 in y, 0-10 in z
+        point = Matrix([0, 0, 5])
+        assert prism.contains_point(point) == True
+    
+    def test_prism_contains_point_on_face(self):
+        """Test that a point on a face is contained."""
+        size = Matrix([4, 6])
+        orientation = Orientation()  # Identity orientation
+        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        
+        # Point on face (x = 2, which is half-width)
+        point = Matrix([2, 0, 5])
+        assert prism.contains_point(point) == True
+    
+    def test_prism_contains_point_outside(self):
+        """Test that a point outside the prism is not contained."""
+        size = Matrix([4, 6])
+        orientation = Orientation()  # Identity orientation
+        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        
+        # Point outside in x direction
+        point = Matrix([3, 0, 5])
+        assert prism.contains_point(point) == False
+        
+        # Point outside in z direction
+        point = Matrix([0, 0, 11])
+        assert prism.contains_point(point) == False
+    
+    def test_prism_is_point_on_boundary_face(self):
+        """Test boundary detection on prism faces."""
+        size = Matrix([4, 6])
+        orientation = Orientation()  # Identity orientation
+        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        
+        # On width face (x = ±2)
+        assert prism.is_point_on_boundary(Matrix([2, 0, 5])) == True
+        assert prism.is_point_on_boundary(Matrix([-2, 0, 5])) == True
+        
+        # On height face (y = ±3)
+        assert prism.is_point_on_boundary(Matrix([0, 3, 5])) == True
+        assert prism.is_point_on_boundary(Matrix([0, -3, 5])) == True
+        
+        # On end caps (z = 0 or 10)
+        assert prism.is_point_on_boundary(Matrix([0, 0, 0])) == True
+        assert prism.is_point_on_boundary(Matrix([0, 0, 10])) == True
+    
+    def test_prism_is_point_on_boundary_inside(self):
+        """Test that interior points are not on boundary."""
+        size = Matrix([4, 6])
+        orientation = Orientation()  # Identity orientation
+        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        
+        # Interior point
+        assert prism.is_point_on_boundary(Matrix([0, 0, 5])) == False
+    
+    def test_prism_semi_infinite_contains(self):
+        """Test semi-infinite prism containment."""
+        size = Matrix([4, 6])
+        orientation = Orientation()  # Identity orientation
+        prism = Prism(size=size, orientation=orientation, end_distance=10)  # Infinite in negative direction
+        
+        # Point at z = -100 should be contained
+        assert prism.contains_point(Matrix([0, 0, -100])) == True
+        
+        # Point at z = 100 should not be contained
+        assert prism.contains_point(Matrix([0, 0, 100])) == False
+
+
+class TestCylinderContainsPoint:
+    """Test Cylinder contains_point and is_point_on_boundary methods."""
+    
+    def test_cylinder_contains_point_inside(self):
+        """Test that a point inside the cylinder is contained."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=0, end_distance=10)
+        
+        # Point inside: radial distance < 3, z in [0, 10]
+        point = Matrix([1, 1, 5])
+        assert cylinder.contains_point(point) == True
+    
+    def test_cylinder_contains_point_on_surface(self):
+        """Test that a point on the cylindrical surface is contained."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=0, end_distance=10)
+        
+        # Point on surface: radial distance = 3
+        point = Matrix([3, 0, 5])
+        assert cylinder.contains_point(point) == True
+    
+    def test_cylinder_contains_point_outside_radially(self):
+        """Test that a point outside radially is not contained."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=0, end_distance=10)
+        
+        # Point outside: radial distance > 3
+        point = Matrix([4, 0, 5])
+        assert cylinder.contains_point(point) == False
+    
+    def test_cylinder_contains_point_outside_axially(self):
+        """Test that a point outside axially is not contained."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=0, end_distance=10)
+        
+        # Point outside in z direction
+        point = Matrix([0, 0, 11])
+        assert cylinder.contains_point(point) == False
+    
+    def test_cylinder_is_point_on_boundary_surface(self):
+        """Test boundary detection on cylindrical surface."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=0, end_distance=10)
+        
+        # On cylindrical surface (radial distance = 3)
+        assert cylinder.is_point_on_boundary(Matrix([3, 0, 5])) == True
+        assert cylinder.is_point_on_boundary(Matrix([0, 3, 5])) == True
+    
+    def test_cylinder_is_point_on_boundary_end_caps(self):
+        """Test boundary detection on cylinder end caps."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=0, end_distance=10)
+        
+        # On end caps
+        assert cylinder.is_point_on_boundary(Matrix([0, 0, 0])) == True
+        assert cylinder.is_point_on_boundary(Matrix([0, 0, 10])) == True
+        assert cylinder.is_point_on_boundary(Matrix([1, 1, 0])) == True
+    
+    def test_cylinder_is_point_on_boundary_inside(self):
+        """Test that interior points are not on boundary."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, start_distance=0, end_distance=10)
+        
+        # Interior point
+        assert cylinder.is_point_on_boundary(Matrix([0, 0, 5])) == False
+        assert cylinder.is_point_on_boundary(Matrix([1, 0, 5])) == False
+    
+    def test_cylinder_semi_infinite_contains(self):
+        """Test semi-infinite cylinder containment."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, end_distance=10)  # Infinite in negative direction
+        
+        # Point at z = -100 should be contained (if within radius)
+        assert cylinder.contains_point(Matrix([1, 0, -100])) == True
+        
+        # Point at z = 100 should not be contained
+        assert cylinder.contains_point(Matrix([1, 0, 100])) == False
+
+
+class TestUnionContainsPoint:
+    """Test Union contains_point and is_point_on_boundary methods."""
+    
+    def test_union_contains_point_in_first_child(self):
+        """Test that a point in the first child is contained."""
+        size = Matrix([2, 2])
+        orientation = Orientation()  # Identity orientation
+        
+        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
+        
+        union = Union([prism1, prism2])
+        
+        # Point in first prism
+        assert union.contains_point(Matrix([0, 0, 3])) == True
+    
+    def test_union_contains_point_in_second_child(self):
+        """Test that a point in the second child is contained."""
+        size = Matrix([2, 2])
+        orientation = Orientation()  # Identity orientation
+        
+        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
+        
+        union = Union([prism1, prism2])
+        
+        # Point in second prism
+        assert union.contains_point(Matrix([0, 0, 12])) == True
+    
+    def test_union_contains_point_outside_all(self):
+        """Test that a point outside all children is not contained."""
+        size = Matrix([2, 2])
+        orientation = Orientation()  # Identity orientation
+        
+        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
+        
+        union = Union([prism1, prism2])
+        
+        # Point between the two prisms
+        assert union.contains_point(Matrix([0, 0, 7])) == False
+    
+    def test_union_is_point_on_boundary(self):
+        """Test boundary detection for union."""
+        size = Matrix([2, 2])
+        orientation = Orientation()  # Identity orientation
+        
+        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
+        
+        union = Union([prism1, prism2])
+        
+        # Point on boundary of first prism
+        assert union.is_point_on_boundary(Matrix([1, 0, 3])) == True
+        
+        # Point on boundary of second prism
+        assert union.is_point_on_boundary(Matrix([1, 0, 12])) == True
+
+
+class TestDifferenceContainsPoint:
+    """Test Difference contains_point and is_point_on_boundary methods."""
+    
+    def test_difference_contains_point_in_base_not_subtracted(self):
+        """Test that a point in base but not in subtract is contained."""
+        size_base = Matrix([10, 10])
+        size_subtract = Matrix([2, 2])
+        orientation = Orientation()  # Identity orientation
+        
+        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        
+        diff = Difference(base, [subtract])
+        
+        # Point in base but outside subtract region
+        assert diff.contains_point(Matrix([4, 4, 5])) == True
+    
+    def test_difference_contains_point_subtracted(self):
+        """Test that a point in subtract region is not contained."""
+        size_base = Matrix([10, 10])
+        size_subtract = Matrix([2, 2])
+        orientation = Orientation()  # Identity orientation
+        
+        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        
+        diff = Difference(base, [subtract])
+        
+        # Point in subtract region
+        assert diff.contains_point(Matrix([0, 0, 5])) == False
+    
+    def test_difference_contains_point_outside_base(self):
+        """Test that a point outside base is not contained."""
+        size_base = Matrix([10, 10])
+        size_subtract = Matrix([2, 2])
+        orientation = Orientation()  # Identity orientation
+        
+        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        
+        diff = Difference(base, [subtract])
+        
+        # Point outside base
+        assert diff.contains_point(Matrix([10, 10, 5])) == False
+    
+    def test_difference_is_point_on_boundary_base(self):
+        """Test boundary detection on base boundary."""
+        size_base = Matrix([10, 10])
+        size_subtract = Matrix([2, 2])
+        orientation = Orientation()  # Identity orientation
+        
+        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        
+        diff = Difference(base, [subtract])
+        
+        # Point on base boundary (not in subtract region)
+        assert diff.is_point_on_boundary(Matrix([5, 4, 5])) == True
+    
+    def test_difference_is_point_on_boundary_subtract(self):
+        """Test boundary detection on subtract boundary."""
+        size_base = Matrix([10, 10])
+        size_subtract = Matrix([2, 2])
+        orientation = Orientation()  # Identity orientation
+        
+        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        
+        diff = Difference(base, [subtract])
+        
+        # Point on subtract boundary (creates new boundary in difference)
+        # At x=1 (edge of subtract), y=0, z=5
+        assert diff.is_point_on_boundary(Matrix([1, 0, 5])) == True
+
