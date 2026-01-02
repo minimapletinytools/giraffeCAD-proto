@@ -174,7 +174,7 @@ DONE-moothymoth
   -clean up accesory rendering in fusino360
   -add accesory rendering to freecad
 -see if you can fixt he transform issue...  should be able to do as rigid joint with origin
-
+-Make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
 
 -consider adding "Thing" base class, that has position and orientation 
 -add timber metadata 

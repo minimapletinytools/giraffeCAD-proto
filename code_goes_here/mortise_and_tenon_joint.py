@@ -585,76 +585,78 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
                 peg_orientation_world.matrix[2, 2]   # Z-axis column, row 2
             )
             
-            # Find which face of the mortise timber the peg actually intersects
-            # Try all six faces and find the one the peg intersects first (smallest positive t)
-            best_t = None
-            best_intersection = None
+            # Get the tenon face normal (where the peg enters the tenon timber)
+            tenon_face = peg_parameters.tenon_face.to_timber_face()
+            tenon_face_direction = tenon_timber.get_face_direction(tenon_face)
+            tenon_face_normal = create_vector3d(
+                tenon_face_direction[0],
+                tenon_face_direction[1],
+                tenon_face_direction[2]
+            )
             
-            # Check all six faces of the mortise timber
-            for face in [TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FORWARD, TimberFace.BACK, TimberFace.TOP, TimberFace.BOTTOM]:
-                # Skip the mortise face itself (where the tenon enters)
+            # Find which face of the mortise timber the peg enters
+            # Pick the face whose normal has the largest dot product with the tenon face normal
+            best_face = None
+            best_dot_product = -float('inf')
+            
+            for face in [TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FORWARD, TimberFace.BACK]:
+                # Skip the mortise face itself (where the tenon enters) surely it's not this face
                 if face == mortise_face:
                     continue
                 
-                # Get face normal and offset
+                # Get face normal
                 face_direction = mortise_timber.get_face_direction(face)
-                face_normal_temp = create_vector3d(face_direction[0], face_direction[1], face_direction[2])
+                face_normal = create_vector3d(face_direction[0], face_direction[1], face_direction[2])
                 
-                if face in [TimberFace.RIGHT, TimberFace.LEFT]:
-                    face_offset_temp = mortise_timber.size[0] / 2
-                elif face in [TimberFace.FORWARD, TimberFace.BACK]:
-                    face_offset_temp = mortise_timber.size[1] / 2
-                else:  # TOP or BOTTOM
-                    face_offset_temp = mortise_timber.length / 2
+                # Calculate dot product with tenon face normal
+                dot_product_with_tenon_face = tenon_face_normal.dot(face_normal)
                 
-                # Calculate plane point
-                face_plane_point = mortise_timber.bottom_position + face_normal_temp * face_offset_temp
-                
-                # Check if face is pointing away from the peg
-                denominator = peg_direction_world.dot(face_normal_temp)
-                if denominator < EPSILON_GENERIC:
-                    continue  # Skip parallel faces
-                
-                # Calculate intersection parameter t
-                t = (face_plane_point - peg_pos_on_tenon_face_world).dot(face_normal_temp) / denominator
-                
-                # Only consider intersections in front of the peg start (t > 0)
-                if t > EPSILON_GENERIC:
-                    # Check if this is the closest intersection so far
-                    if best_t is None or t < best_t:
-                        # Calculate intersection point
-                        intersection_point = peg_pos_on_tenon_face_world + peg_direction_world * t
-                        
-                        # Verify the intersection is within the face bounds
-                        local_intersection = mortise_timber.orientation.matrix.T * (intersection_point - mortise_timber.bottom_position)
-                        
-                        # Check bounds based on face type
-                        in_bounds = True
-                        if face in [TimberFace.RIGHT, TimberFace.LEFT]:
-                            # Check Y and Z bounds
-                            in_bounds = (abs(local_intersection[1]) <= mortise_timber.size[1] / 2 and
-                                       local_intersection[2] >= 0 and 
-                                       local_intersection[2] <= mortise_timber.length)
-                        elif face in [TimberFace.FORWARD, TimberFace.BACK]:
-                            # Check X and Z bounds
-                            in_bounds = (abs(local_intersection[0]) <= mortise_timber.size[0] / 2 and
-                                       local_intersection[2] >= 0 and
-                                       local_intersection[2] <= mortise_timber.length)
-                        else:  # TOP or BOTTOM
-                            # Check X and Y bounds
-                            in_bounds = (abs(local_intersection[0]) <= mortise_timber.size[0] / 2 and
-                                       abs(local_intersection[1]) <= mortise_timber.size[1] / 2)
-                        
-                        if in_bounds:
-                            best_t = t
-                            best_intersection = intersection_point
+                # Keep track of the face with the largest dot product with tenon face
+                if dot_product_with_tenon_face > best_dot_product:
+                    best_dot_product = dot_product_with_tenon_face
+                    best_face = face
             
-            # Verify we found an intersection
-            assert best_intersection is not None, \
-                f"Peg does not intersect any face of the mortise timber"
+            assert best_face is not None, "Could not find mortise peg entry face"
+            
+            # Now calculate the intersection point on the best face
+            mortise_peg_entry_face = best_face
+            
+            # Get the face normal and offset
+            peg_entry_face_direction = mortise_timber.get_face_direction(mortise_peg_entry_face)
+            peg_entry_face_normal = create_vector3d(
+                peg_entry_face_direction[0],
+                peg_entry_face_direction[1],
+                peg_entry_face_direction[2]
+            )
+            
+            if mortise_peg_entry_face in [TimberFace.RIGHT, TimberFace.LEFT]:
+                peg_entry_face_offset = mortise_timber.size[0] / 2
+            elif mortise_peg_entry_face in [TimberFace.FORWARD, TimberFace.BACK]:
+                peg_entry_face_offset = mortise_timber.size[1] / 2
+            else:  # TOP or BOTTOM
+                peg_entry_face_offset = mortise_timber.length / 2
+            
+            # Calculate the peg entry face plane point
+            peg_entry_face_plane_point = mortise_timber.bottom_position + peg_entry_face_normal * peg_entry_face_offset
+            
+            # Ray-plane intersection to find where peg enters the mortise face
+            # Ray: P = peg_pos_on_tenon_face_world + t * peg_direction_world
+            # Plane: (P - peg_entry_face_plane_point) · peg_entry_face_normal = 0
+            denominator = peg_direction_world.dot(peg_entry_face_normal)
+            
+            # The peg should not be parallel to the entry face
+            assert abs(denominator) > EPSILON_GENERIC, \
+                f"Peg direction is parallel to mortise peg entry face {mortise_peg_entry_face} (dot product: {denominator})"
+            
+            # Calculate intersection parameter t
+            t_peg = (peg_entry_face_plane_point - peg_pos_on_tenon_face_world).dot(peg_entry_face_normal) / denominator
+            
+            
+            # Calculate the intersection point on the mortise peg entry face
+            peg_pos_on_mortise_face_world = peg_pos_on_tenon_face_world + peg_direction_world * t_peg
             
             # Transform the intersection point to mortise timber's local coordinates
-            peg_pos_on_mortise_face_local = mortise_timber.orientation.matrix.T * (best_intersection - mortise_timber.bottom_position)
+            peg_pos_on_mortise_face_local = mortise_timber.orientation.matrix.T * (peg_pos_on_mortise_face_world - mortise_timber.bottom_position)
             
             # Transform peg orientation to mortise local space (peg_orientation_world already calculated above)
             peg_orientation_mortise_local = Orientation(mortise_timber.orientation.matrix.T * peg_orientation_world.matrix)
