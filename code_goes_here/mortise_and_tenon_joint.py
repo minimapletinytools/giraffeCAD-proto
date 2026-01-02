@@ -646,7 +646,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             
             # The peg should not be parallel to the entry face
             assert abs(denominator) > EPSILON_GENERIC, \
-                f"Peg direction is parallel to mortise peg entry face {mortise_peg_entry_face} (dot product: {denominator})"
+                f"Peg direction is parallel to mortise peg entry face {mortise_peg_entry_face} (dot product: {denominator}), pick a different tenon face or direction for the peg"
             
             # Calculate intersection parameter t
             t_peg = (peg_entry_face_plane_point - peg_pos_on_tenon_face_world).dot(peg_entry_face_normal) / denominator

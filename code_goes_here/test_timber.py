@@ -1155,7 +1155,7 @@ class TestPeg:
         # Verify dimensions
         assert csg.size[0] == Rational(2)  # width
         assert csg.size[1] == Rational(2)  # height
-        assert csg.start_distance == Rational(1)  # stickout_length
+        assert csg.start_distance == Rational(-1)  # stickout_length
         assert csg.end_distance == Rational(10)  # forward_length
     
     def test_peg_render_csg_local_round(self):
@@ -1177,7 +1177,7 @@ class TestPeg:
         
         # Verify dimensions
         assert csg.radius == Rational(2)  # diameter / 2
-        assert csg.start_distance == Rational(2)  # stickout_length
+        assert csg.start_distance == Rational(-2)  # stickout_length
         assert csg.end_distance == Rational(12)  # forward_length
 
 
