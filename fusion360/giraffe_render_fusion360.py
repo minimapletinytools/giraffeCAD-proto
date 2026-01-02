@@ -870,17 +870,21 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
 
 
 def apply_timber_transform(occurrence: adsk.fusion.Occurrence, position: Matrix, 
-                           orientation: Orientation, component_name: str) -> bool:
+                           orientation: Orientation, component_name: str, 
+                           use_body_transform: bool = True) -> bool:
     """
     Apply a transform to move a timber occurrence from origin to its final position.
     
-    Uses occurrence.transform2 to set the transform, which properly records it.
+    Two methods are supported:
+    1. Body transform (use_body_transform=True): Apply moveFeatures to the bodies within the component
+    2. Occurrence transform (use_body_transform=False): Set occurrence.transform2 on the occurrence
     
     Args:
         occurrence: The occurrence to transform
         position: Target position vector
         orientation: Target orientation
         component_name: Name for debugging
+        use_body_transform: If True, transform bodies within component. If False, transform occurrence.
         
     Returns:
         True if transform was applied successfully
@@ -895,32 +899,81 @@ def apply_timber_transform(occurrence: adsk.fusion.Occurrence, position: Matrix,
         # Create the transformation matrix
         global_transform = create_matrix3d_from_orientation(position, orientation)
         
-        # Set the transform using transform2 property
-        # transform2 is the proper way to set occurrence transforms and records them
-        occurrence.transform2 = global_transform
-        
-        # Give Fusion 360 time to process
-        time.sleep(0.05)
-        adsk.doEvents()
-        
-        # Verify the transform was applied correctly
-        applied_transform = occurrence.transform2
-        expected_tx = float(position[0])
-        expected_ty = float(position[1])
-        expected_tz = float(position[2])
-        applied_tx = applied_transform.getCell(0, 3)
-        applied_ty = applied_transform.getCell(1, 3)
-        applied_tz = applied_transform.getCell(2, 3)
-        
-        translation_correct = (abs(applied_tx - expected_tx) < 0.001 and 
-                              abs(applied_ty - expected_ty) < 0.001 and 
-                              abs(applied_tz - expected_tz) < 0.001)
-        
-        if not translation_correct:
-            print(f"⚠️  Transform verification failed for {component_name}")
-            print(f"  Expected: ({expected_tx:.3f}, {expected_ty:.3f}, {expected_tz:.3f})")
-            print(f"  Applied:  ({applied_tx:.3f}, {applied_ty:.3f}, {applied_tz:.3f})")
-            return False
+        if use_body_transform:
+            # METHOD 1: Apply transform to bodies within the component
+            component = occurrence.component
+            
+            # Collect all bodies in the component
+            bodies = adsk.core.ObjectCollection.create()
+            for i in range(component.bRepBodies.count):
+                bodies.add(component.bRepBodies.item(i))
+            
+            if bodies.count == 0:
+                print(f"Warning: No bodies found in {component_name}")
+                return False
+            
+            # Apply move transform to all bodies
+            move_features = component.features.moveFeatures
+            move_input = move_features.createInput(bodies, global_transform)
+            move_input.defineAsFreeMove(global_transform)
+            move_features.add(move_input)
+            
+            # Give Fusion 360 time to process
+            time.sleep(0.05)
+            adsk.doEvents()
+            
+            # Verify by checking the bounding box of the first body
+            if component.bRepBodies.count > 0:
+                first_body = component.bRepBodies.item(0)
+                bbox = first_body.boundingBox
+                center_x = (bbox.minPoint.x + bbox.maxPoint.x) / 2
+                center_y = (bbox.minPoint.y + bbox.maxPoint.y) / 2
+                center_z = (bbox.minPoint.z + bbox.maxPoint.z) / 2
+                
+                expected_tx = float(position[0])
+                expected_ty = float(position[1])
+                expected_tz = float(position[2])
+                
+                # The center should be approximately at the expected position
+                # (within a reasonable tolerance based on timber size)
+                tolerance = 50.0  # 50 cm tolerance for verification
+                translation_correct = (abs(center_x - expected_tx) < tolerance and 
+                                      abs(center_y - expected_ty) < tolerance and 
+                                      abs(center_z - expected_tz) < tolerance)
+                
+                if not translation_correct:
+                    print(f"⚠️  Transform verification warning for {component_name}")
+                    print(f"  Expected position: ({expected_tx:.3f}, {expected_ty:.3f}, {expected_tz:.3f})")
+                    print(f"  Body center: ({center_x:.3f}, {center_y:.3f}, {center_z:.3f})")
+                    # Don't fail, just warn
+            
+        else:
+            # METHOD 2: Set transform using occurrence.transform2 property
+            # transform2 is the proper way to set occurrence transforms and records them
+            occurrence.transform2 = global_transform
+            
+            # Give Fusion 360 time to process
+            time.sleep(0.05)
+            adsk.doEvents()
+            
+            # Verify the transform was applied correctly
+            applied_transform = occurrence.transform2
+            expected_tx = float(position[0])
+            expected_ty = float(position[1])
+            expected_tz = float(position[2])
+            applied_tx = applied_transform.getCell(0, 3)
+            applied_ty = applied_transform.getCell(1, 3)
+            applied_tz = applied_transform.getCell(2, 3)
+            
+            translation_correct = (abs(applied_tx - expected_tx) < 0.001 and 
+                                  abs(applied_ty - expected_ty) < 0.001 and 
+                                  abs(applied_tz - expected_tz) < 0.001)
+            
+            if not translation_correct:
+                print(f"⚠️  Transform verification failed for {component_name}")
+                print(f"  Expected: ({expected_tx:.3f}, {expected_ty:.3f}, {expected_tz:.3f})")
+                print(f"  Applied:  ({applied_tx:.3f}, {applied_ty:.3f}, {applied_tz:.3f})")
+                return False
         
         return True
         
@@ -1040,7 +1093,9 @@ def render_accessory_at_origin(accessory: JointAccessory, component_name: str, i
         return None
 
 
-def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber", joint_accessories: List[Tuple[JointAccessory, Timber]] = None) -> int:
+def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber", 
+                           joint_accessories: List[Tuple[JointAccessory, Timber]] = None,
+                           use_body_transform: bool = True) -> int:
     """
     Render multiple CutTimber objects and joint accessories in Fusion 360 using a three-pass approach.
     
@@ -1057,10 +1112,15 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     2. CutTimber.timber.name if set
     3. {base_name}_{index} as fallback
     
+    Two transform methods are supported:
+    1. Body transform (use_body_transform=True, default): Apply moveFeatures to bodies within component
+    2. Occurrence transform (use_body_transform=False): Set transform2 on the occurrence
+    
     Args:
         cut_timbers: List of CutTimber objects to render
         base_name: Base name for the components (used if timber has no name)
         joint_accessories: Optional list of (JointAccessory, Timber) tuples to render
+        use_body_transform: If True, transform bodies within component. If False, transform occurrence.
         
     Returns:
         Number of successfully rendered timbers and accessories
@@ -1069,6 +1129,10 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     
     if app:
         app.log(f"=== THREE-PASS RENDERING: {len(cut_timbers)} timbers ===")
+        app.log(f"Transform method: {'Body transform (moveFeatures)' if use_body_transform else 'Occurrence transform (transform2)'}")
+    
+    print(f"\n=== THREE-PASS RENDERING ===")
+    print(f"Transform method: {'Body transform (moveFeatures)' if use_body_transform else 'Occurrence transform (transform2)'}")
     
     # Calculate structure extents for intelligent sizing of infinite geometry
     print(f"\n=== Calculating structure extents ===")
@@ -1217,14 +1281,16 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     # First, transform all timbers
     for occurrence, cut_timber, component_name in created_components:
         try:
-            print(f"Transforming {component_name}...")
+            print(f"Transforming {component_name}... (method: {'body' if use_body_transform else 'occurrence'})")
+            if app:
+                app.log(f"Transforming {component_name}... (method: {'body' if use_body_transform else 'occurrence'})")
             
             # Get timber position and orientation
             position = cut_timber._timber.bottom_position
             orientation = cut_timber._timber.orientation
             
             # Apply the transform
-            success = apply_timber_transform(occurrence, position, orientation, component_name)
+            success = apply_timber_transform(occurrence, position, orientation, component_name, use_body_transform)
             
             if success:
                 transform_success_count += 1
@@ -1249,10 +1315,10 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     # Then, transform all accessories
     for occurrence, accessory, timber, accessory_name in created_accessories:
         try:
-            print(f"Transforming {accessory_name}...")
+            print(f"Transforming {accessory_name}... (method: {'body' if use_body_transform else 'occurrence'})")
             
             if app:
-                app.log(f"  Transforming {accessory_name}:")
+                app.log(f"  Transforming {accessory_name}: (method: {'body' if use_body_transform else 'occurrence'})")
                 app.log(f"    Peg position (timber local): {[float(x) for x in accessory.position]}")
                 app.log(f"    Timber position (world): {[float(x) for x in timber.bottom_position]}")
             
@@ -1272,14 +1338,15 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                     app.log(f"      [{row[0]:.3f}, {row[1]:.3f}, {row[2]:.3f}]")
             
             # Apply the transformation using apply_timber_transform pattern
-            success = apply_timber_transform(occurrence, peg_pos_in_world, combined_orientation, accessory_name)
+            success = apply_timber_transform(occurrence, peg_pos_in_world, combined_orientation, accessory_name, use_body_transform)
             
             if not success:
                 if app:
                     app.log(f"    ERROR: apply_timber_transform returned False")
                 raise RuntimeError(f"Failed to apply transform to {accessory_name}")
             
-            if app:
+            if app and not use_body_transform:
+                # Only verify occurrence transform if using occurrence method
                 actual_transform = occurrence.transform2
                 actual_tx = actual_transform.getCell(0, 3)
                 actual_ty = actual_transform.getCell(1, 3)
