@@ -560,6 +560,17 @@ class Timber:
             return self.height_direction
         else:  # BACK
             return -self.height_direction
+
+    def get_size_in_face_normal_axis(self, face: TimberFace) -> Numeric:
+        """
+        Get the size of the timber in the direction normal to the specified face.
+        """
+        if face == TimberFace.TOP or face == TimberFace.BOTTOM:
+            return self.length
+        elif face == TimberFace.RIGHT or face == TimberFace.LEFT:
+            return self.size[0]
+        else:  # FORWARD or BACK
+            return self.size[1]
     
     def get_closest_oriented_face(self, target_direction: Direction3D) -> TimberFace:
         """
