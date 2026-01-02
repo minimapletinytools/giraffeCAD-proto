@@ -167,9 +167,8 @@ DONE-moothymoth
 DONE-do mortise and tenon joint
   DONE-fix peg holes in mortise not going all the way through
   DONE-fix default peg size or whatever (maybe jsut udpate eaxmple)
-
--fix peg rendering with wrong sides ticking out...
--joint rendering
+DONE-fix peg rendering with wrong sides ticking out...
+DONE-joint rendering
   DONE-add csg function to accessoiers
   -clean up accesory rendering in fusino360
   

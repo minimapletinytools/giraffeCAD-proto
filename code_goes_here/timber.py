@@ -1050,7 +1050,7 @@ class Peg(JointAccessory):
                 axis_direction=create_vector3d(0, 0, 1),
                 radius=radius,
                 position=create_vector3d(0, 0, 0),
-                start_distance=self.stickout_length,
+                start_distance=-self.stickout_length,
                 end_distance=self.forward_length
             )
 
