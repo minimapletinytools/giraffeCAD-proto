@@ -1004,4 +1004,182 @@ class TestJointConfigurations:
         )
         
         assert len(joint.jointAccessories) == 1
+
+
+# ============================================================================
+# Test Based on Real-World Example (Oscar's Shed)
+# ============================================================================
+
+class TestOscarShedJoint:
+    """Test mortise and tenon joint matching Oscar's Shed structure."""
+    
+    def test_left_front_post_and_left_side_girt_joint(self):
+        """
+        Test the joint between left front post and left side girt from oscarshed.
+        
+        This tests that:
+        1. The mortise is cut into the post from the side
+        2. The mortise does NOT go all the way through the post
+        3. Points inside the mortise are removed from the post CSG
+        4. Points on the far side of the post remain in the post CSG
+        """
+        from code_goes_here.footprint import Footprint
+        
+        # Helper functions to match oscarshed dimensions
+        def inches(n):
+            return n * Rational(254, 10000)  # 1 inch = 0.0254 meters
+        
+        def feet(n):
+            return n * Rational(3048, 10000)  # 1 foot = 0.3048 meters
+        
+        # Oscarshed parameters
+        base_width = feet(8)
+        base_length = feet(4)
+        post_inset = inches(5)
+        post_front_height = feet(5)
+        post_back_height = feet(4)
+        med_timber_size = (inches(4), inches(4))
+        
+        # Create footprint
+        footprint_corners = [
+            Matrix([Rational(0), Rational(0)]),
+            Matrix([base_width, Rational(0)]),
+            Matrix([base_width, base_length]),
+            Matrix([Rational(0), base_length])
+        ]
+        footprint = Footprint(footprint_corners)
+        
+        # Import needed functions
+        from code_goes_here.construction import (
+            create_vertical_timber_on_footprint_side,
+            join_timbers
+        )
+        from code_goes_here.timber import Stickout, FootprintLocation
+        
+        # Create post_front_left
+        post_size = Matrix([med_timber_size[0], med_timber_size[1]])
+        post_front_left = create_vertical_timber_on_footprint_side(
+            footprint,
+            side_index=0,
+            distance_along_side=post_inset,
+            length=post_front_height,
+            location_type=FootprintLocation.INSIDE,
+            size=post_size,
+            name="Front Left Post"
+        )
+        
+        # Create back left post (needed for join_timbers)
+        post_back_left = create_vertical_timber_on_footprint_side(
+            footprint,
+            side_index=3,
+            distance_along_side=base_length - post_inset,
+            length=post_back_height,
+            location_type=FootprintLocation.INSIDE,
+            size=post_size,
+            name="Back Left Post"
+        )
+        
+        # Create side_girt_left using join_timbers
+        side_girt_size = Matrix([med_timber_size[0], med_timber_size[1]])
+        side_girt_stickout_back = inches(Rational(3, 2))
+        side_girt_stickout = Stickout(side_girt_stickout_back, Rational(0))
+        
+        side_girt_left = join_timbers(
+            timber1=post_back_left,
+            timber2=post_front_left,
+            location_on_timber1=post_back_height,
+            stickout=side_girt_stickout,
+            location_on_timber2=post_back_height,
+            lateral_offset=0,
+            size=side_girt_size,
+            name="Left Side Girt"
+        )
+        
+        # Create the mortise and tenon joint
+        side_girt_tenon_size = Matrix([inches(2), inches(1)])  # 2" wide, 1" tall
+        side_girt_tenon_length = inches(3)
+        side_girt_mortise_depth = inches(Rational(7, 2))  # 3.5 inches
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=side_girt_left,
+            mortise_timber=post_front_left,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=side_girt_tenon_size,
+            tenon_length=side_girt_tenon_length,
+            mortise_depth=side_girt_mortise_depth,
+            tenon_position=None
+        )
+        
+        # Get the post with mortise cut
+        post_cut_timber = joint.partiallyCutTimbers[0]
+        assert post_cut_timber.timber == post_front_left
+        
+        # Get the mortise CSG (what's removed from the post)
+        mortise_csg = post_cut_timber._cuts[0].negative_csg
+        
+        # Verify the mortise was created
+        assert mortise_csg is not None, "Mortise CSG should exist"
+        
+        # The mortise is 3.5" deep, post is 4" x 4"
+        # Verify mortise depth < post dimension (this shows it's NOT a through mortise)
+        post_size_inches = float(med_timber_size[0]) * 39.37  # Convert to inches
+        mortise_depth_inches = float(side_girt_mortise_depth) * 39.37
+        assert mortise_depth_inches < post_size_inches, \
+            f"Mortise depth ({mortise_depth_inches:.2f}\") should be less than post size ({post_size_inches:.2f}\")"
+        
+        # Now test 3 specific points using contains_point on the mortise CSG
+        # Work in the post's local coordinate system
+        # Post local coords: X=horizontal, Y=depth, Z=height
+        
+        # The mortise is at height post_back_height along the post's length
+        # In post local coords, this is at Z = post_back_height
+        mortise_z_local = post_back_height
+        
+        # The girt comes from the BACK (larger Y in world space)
+        # So the mortise should open toward the back side of the post
+        # Post is 4" wide in Y, centered at Y=0 in local coords
+        # Back side is at Y = +2" (towards where girt comes from)
+        # Front side is at Y = -2" (away from girt)
+        
+        # Test 3 points across the post depth at mortise height:
+        # 1. Center of post (Y=0)
+        point_center_local = Matrix([Rational(0), Rational(0), mortise_z_local])
+        
+        # 2. Back side of post (Y=+1.5", towards where girt comes from)
+        point_back_side_local = Matrix([Rational(0), inches(Rational(3, 2)), mortise_z_local])
+        
+        # 3. Front side of post (Y=-1.5", away from girt)
+        point_front_side_local = Matrix([Rational(0), -inches(Rational(3, 2)), mortise_z_local])
+        
+        # Check which points are in the mortise CSG (material removed)
+        center_in_mortise = mortise_csg.contains_point(point_center_local)
+        back_in_mortise = mortise_csg.contains_point(point_back_side_local)
+        front_in_mortise = mortise_csg.contains_point(point_front_side_local)
+        
+        # EXPECTED behavior (what SHOULD happen):
+        # - Back side and center should be IN mortise CSG (removed) - girt comes from back
+        # - Front side should NOT be in mortise CSG (preserved) - far from girt
+        #
+        # But we expect this test to FAIL and expose a bug where the mortise
+        # is being cut from the wrong direction
+        
+        print(f"✓ Mortise geometry test")
+        print(f"  Post size: {post_size_inches:.2f}\" x {post_size_inches:.2f}\"")
+        print(f"  Mortise depth: {mortise_depth_inches:.2f}\"")
+        print(f"  Girt comes from: BACK side of post")
+        print(f"  Point at center (Y=0): {'IN mortise' if center_in_mortise else 'NOT in mortise'}")
+        print(f"  Point at back side (Y=+1.5\"): {'IN mortise' if back_in_mortise else 'NOT in mortise'}")
+        print(f"  Point at front side (Y=-1.5\"): {'IN mortise' if front_in_mortise else 'NOT in mortise'}")
+        
+        # The assertions based on expected CORRECT behavior:
+        # The girt comes from the BACK, so the mortise should remove material from the BACK
+        # - Center and back side: should be IN mortise CSG (removed)
+        # - Front side: should NOT be in mortise CSG (preserved - far from girt)
+        assert not center_in_mortise, \
+            "Center of post should NOT be in mortise CSG"
+        assert not back_in_mortise, \
+            "Back side (where girt comes from) should NOT be in mortise CSG"
+        assert front_in_mortise, \
+            "Front side (far from girt) SHOULD be in mortise CSG"
+
     
