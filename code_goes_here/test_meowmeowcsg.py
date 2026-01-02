@@ -5,10 +5,10 @@ This module contains tests for the CSG primitives and operations.
 """
 
 import pytest
-from sympy import Matrix, Rational, simplify
+from sympy import Matrix, Rational, simplify, sqrt
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
-    HalfPlane, Prism, Cylinder, Union, Difference
+    HalfPlane, Prism, Cylinder, Union, Difference, ConvexPolygonExtrusion
 )
 from .conftest import assert_is_valid_rotation_matrix
 
@@ -787,4 +787,339 @@ class TestDifferenceContainsPoint:
         # Point on subtract boundary (creates new boundary in difference)
         # At x=1 (edge of subtract), y=0, z=5
         assert diff.is_point_on_boundary(Matrix([1, 0, 5])) == True
+
+
+class TestConvexPolygonExtrusion:
+    """Test ConvexPolygonExtrusion class."""
+    
+    def test_constructor_square(self):
+        """Test creating a square extrusion."""
+        # Square with corners at (±1, ±1)
+        points = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        length = Rational(10)
+        orientation = Orientation()  # Identity orientation
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        assert extrusion.points == points
+        assert extrusion.length == length
+        assert extrusion.orientation == orientation
+    
+    def test_is_valid_enough_points(self):
+        """Test that is_valid requires at least 3 points."""
+        # Triangle (valid)
+        points_valid = [
+            Matrix([0, 0]),
+            Matrix([1, 0]),
+            Matrix([0, 1])
+        ]
+        length = Rational(5)
+        orientation = Orientation()
+        
+        extrusion_valid = ConvexPolygonExtrusion(points=points_valid, length=length, orientation=orientation)
+        assert extrusion_valid.is_valid() == True
+        
+        # Only 2 points (invalid)
+        points_invalid = [
+            Matrix([0, 0]),
+            Matrix([1, 0])
+        ]
+        extrusion_invalid = ConvexPolygonExtrusion(points=points_invalid, length=length, orientation=orientation)
+        assert extrusion_invalid.is_valid() == False
+    
+    def test_is_valid_positive_length(self):
+        """Test that is_valid requires positive length."""
+        points = [
+            Matrix([0, 0]),
+            Matrix([1, 0]),
+            Matrix([0, 1])
+        ]
+        orientation = Orientation()
+        
+        # Positive length (valid)
+        extrusion_valid = ConvexPolygonExtrusion(points=points, length=Rational(5), orientation=orientation)
+        assert extrusion_valid.is_valid() == True
+        
+        # Zero length (invalid)
+        extrusion_zero = ConvexPolygonExtrusion(points=points, length=0, orientation=orientation)
+        assert extrusion_zero.is_valid() == False
+        
+        # Negative length (invalid)
+        extrusion_negative = ConvexPolygonExtrusion(points=points, length=-5, orientation=orientation)
+        assert extrusion_negative.is_valid() == False
+    
+    def test_is_valid_convex_polygon(self):
+        """Test that is_valid accepts convex polygons."""
+        orientation = Orientation()
+        
+        # Convex square (counter-clockwise)
+        points_ccw = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        extrusion_ccw = ConvexPolygonExtrusion(points=points_ccw, length=Rational(5), orientation=orientation)
+        assert extrusion_ccw.is_valid() == True
+        
+        # Convex square (clockwise)
+        points_cw = [
+            Matrix([1, 1]),
+            Matrix([1, -1]),
+            Matrix([-1, -1]),
+            Matrix([-1, 1])
+        ]
+        extrusion_cw = ConvexPolygonExtrusion(points=points_cw, length=Rational(5), orientation=orientation)
+        assert extrusion_cw.is_valid() == True
+        
+        # Convex hexagon
+        points_hex = [
+            Matrix([2, 0]),
+            Matrix([1, sqrt(3)]),
+            Matrix([-1, sqrt(3)]),
+            Matrix([-2, 0]),
+            Matrix([-1, -sqrt(3)]),
+            Matrix([1, -sqrt(3)])
+        ]
+        extrusion_hex = ConvexPolygonExtrusion(points=points_hex, length=Rational(5), orientation=orientation)
+        assert extrusion_hex.is_valid() == True
+    
+    def test_is_valid_non_convex_polygon(self):
+        """Test that is_valid rejects non-convex (concave) polygons."""
+        orientation = Orientation()
+        
+        # Non-convex polygon (indented square - concave)
+        # Makes an arrow shape pointing right
+        points_concave = [
+            Matrix([0, 2]),
+            Matrix([2, 0]),
+            Matrix([0, -2]),
+            Matrix([1, 0])  # This point makes it concave
+        ]
+        extrusion_concave = ConvexPolygonExtrusion(points=points_concave, length=Rational(5), orientation=orientation)
+        assert extrusion_concave.is_valid() == False
+    
+    def test_is_valid_collinear_points(self):
+        """Test that is_valid rejects collinear points."""
+        orientation = Orientation()
+        
+        # All points on a line
+        points_collinear = [
+            Matrix([0, 0]),
+            Matrix([1, 0]),
+            Matrix([2, 0])
+        ]
+        extrusion_collinear = ConvexPolygonExtrusion(points=points_collinear, length=Rational(5), orientation=orientation)
+        assert extrusion_collinear.is_valid() == False
+    
+    def test_contains_point_inside_square(self):
+        """Test that a point inside a square extrusion is contained."""
+        # Unit square centered at origin
+        points = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Point inside
+        assert extrusion.contains_point(Matrix([0, 0, 5])) == True
+    
+    def test_contains_point_on_face_square(self):
+        """Test that a point on a face is contained."""
+        points = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Point on top face (z = length)
+        assert extrusion.contains_point(Matrix([0, 0, 10])) == True
+        
+        # Point on bottom face (z = 0)
+        assert extrusion.contains_point(Matrix([0, 0, 0])) == True
+    
+    def test_contains_point_outside_square(self):
+        """Test that a point outside is not contained."""
+        points = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Outside in XY plane
+        assert extrusion.contains_point(Matrix([2, 0, 5])) == False
+        
+        # Outside in Z direction
+        assert extrusion.contains_point(Matrix([0, 0, 11])) == False
+        assert extrusion.contains_point(Matrix([0, 0, -1])) == False
+    
+    def test_contains_point_triangle(self):
+        """Test containment for a triangular extrusion."""
+        # Right triangle with vertices at origin, (1,0), (0,1)
+        points = [
+            Matrix([0, 0]),
+            Matrix([1, 0]),
+            Matrix([0, 1])
+        ]
+        length = Rational(5)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Point inside triangle
+        assert extrusion.contains_point(Matrix([Rational(1, 4), Rational(1, 4), Rational(5, 2)])) == True
+        
+        # Point outside triangle but in XY bounding box
+        assert extrusion.contains_point(Matrix([Rational(3, 4), Rational(3, 4), Rational(5, 2)])) == False
+    
+    def test_is_point_on_boundary_top_bottom(self):
+        """Test boundary detection on top and bottom faces."""
+        points = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # On bottom face (z = 0)
+        assert extrusion.is_point_on_boundary(Matrix([0, 0, 0])) == True
+        
+        # On top face (z = length)
+        assert extrusion.is_point_on_boundary(Matrix([0, 0, 10])) == True
+    
+    def test_is_point_on_boundary_side_face(self):
+        """Test boundary detection on side faces."""
+        points = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # On edge at x=1 (right edge)
+        assert extrusion.is_point_on_boundary(Matrix([1, 0, 5])) == True
+        
+        # On edge at y=-1 (bottom edge)
+        assert extrusion.is_point_on_boundary(Matrix([0, -1, 5])) == True
+    
+    def test_is_point_on_boundary_inside(self):
+        """Test that interior points are not on boundary."""
+        points = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Interior point
+        assert extrusion.is_point_on_boundary(Matrix([0, 0, 5])) == False
+    
+    def test_minimal_boundary_in_direction_x(self):
+        """Test minimal boundary in X direction."""
+        points = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Minimal in +X direction should be at x=-1
+        direction = Matrix([1, 0, 0])
+        boundary = extrusion.minimal_boundary_in_direction(direction)
+        
+        assert boundary[0] == -1
+    
+    def test_minimal_boundary_in_direction_z(self):
+        """Test minimal boundary in Z direction."""
+        points = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Minimal in +Z direction should be at z=0
+        direction = Matrix([0, 0, 1])
+        boundary = extrusion.minimal_boundary_in_direction(direction)
+        
+        assert boundary[2] == 0
+    
+    def test_minimal_boundary_in_direction_diagonal(self):
+        """Test minimal boundary in diagonal direction."""
+        points = [
+            Matrix([1, 1]),
+            Matrix([-1, 1]),
+            Matrix([-1, -1]),
+            Matrix([1, -1])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Minimal in (1, 1, 1) direction
+        direction = Matrix([1, 1, 1])
+        boundary = extrusion.minimal_boundary_in_direction(direction)
+        
+        # Should be at corner (-1, -1, 0)
+        assert boundary[0] == -1
+        assert boundary[1] == -1
+        assert boundary[2] == 0
+    
+    def test_repr(self):
+        """Test string representation."""
+        points = [
+            Matrix([0, 0]),
+            Matrix([1, 0]),
+            Matrix([0, 1])
+        ]
+        length = Rational(5)
+        orientation = Orientation()
+        
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        repr_str = repr(extrusion)
+        assert "ConvexPolygonExtrusion" in repr_str
+        assert "3 points" in repr_str
+        assert "5" in repr_str
 

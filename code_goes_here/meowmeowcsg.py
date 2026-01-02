@@ -751,3 +751,196 @@ class Difference(MeowMeowCSG):
 
 
 
+
+
+@dataclass(frozen=True)
+class ConvexPolygonExtrusion(MeowMeowCSG):
+    """
+    An extruded Convex Polygon shape.
+    
+    """
+    # list of ordered (x,y) points in the polygon with the last point connecting to the first point
+    # must be convex!!
+    points: List[V2] 
+    # length of the extrusion along the +Z axis
+    length: Numeric 
+    orientation: Orientation
+    position: V3 = field(default_factory=lambda: Matrix([0, 0, 0]))  # Position in global coordinates
+
+    def __repr__(self) -> str:
+        return (f"ConvexPolygonExtrusion({len(self.points)} points, "
+                f"length={self.length}, position={self.position.T})")
+    
+    def is_valid(self) -> bool:
+        """
+        Check if the ConvexPolygonExtrusion is valid
+        
+        Checks:
+        1. At least 3 points
+        2. Positive length
+        3. Polygon is convex (all turns go the same direction)
+        
+        Returns:
+            True if valid, False otherwise
+        """
+        if len(self.points) < 3 or self.length <= 0:
+            return False
+        
+        # Check convexity: all cross products of consecutive edges should have the same sign
+        # For a convex polygon, as we traverse the vertices, we should always turn the same way
+        n = len(self.points)
+        
+        # Compute 2D cross product for each triplet of consecutive points
+        def cross_product(i):
+            p0, p1, p2 = self.points[i], self.points[(i + 1) % n], self.points[(i + 2) % n]
+            edge1, edge2 = p1 - p0, p2 - p1
+            return edge1[0] * edge2[1] - edge1[1] * edge2[0]
+        
+        # Generate all cross products and filter out zeros (collinear points)
+        cross_products = [cross_product(i) for i in range(n)]
+        non_zero_crosses = [cp for cp in cross_products if cp != 0]
+        
+        # Reject if all collinear, otherwise check all turns go the same direction
+        return (len(non_zero_crosses) > 0 and 
+                (all(cp > 0 for cp in non_zero_crosses) or 
+                 all(cp < 0 for cp in non_zero_crosses)))
+
+    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
+        """
+        Get the minimal boundary point of the extruded polygon in the given direction.
+        
+        We check all vertices at both the start (z=0) and end (z=length) faces
+        and return the one with minimum dot product with the direction.
+        
+        Args:
+            direction: Direction to minimize along
+            
+        Returns:
+            Point on the boundary with minimum dot product with direction
+        """
+        min_dot = None
+        min_point = None
+        
+        # Check all vertices at both z=0 and z=length
+        for z_offset in [0, self.length]:
+            for point_2d in self.points:
+                # Create 3D point in local coordinates, then transform to global
+                point_local = Matrix([point_2d[0], point_2d[1], z_offset])
+                point_global = self.position + self.orientation.matrix * point_local
+                
+                dot = (point_global.T * direction)[0, 0]
+                if min_dot is None or dot < min_dot:
+                    min_dot = dot
+                    min_point = point_global
+        
+        return min_point
+
+    def contains_point(self, point: V3) -> bool:
+        """
+        Check if a point is contained within the extruded polygon.
+        
+        A point is inside if:
+        1. Its Z coordinate (in local space) is between 0 and length
+        2. Its XY coordinates (in local space) are inside the convex polygon
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is inside or on the boundary, False otherwise
+        """
+        # Transform point to local coordinates
+        local_point = point - self.position
+        local_coords = self.orientation.invert().matrix * local_point
+        
+        x_coord = local_coords[0]
+        y_coord = local_coords[1]
+        z_coord = local_coords[2]
+        
+        # Check Z bounds
+        if z_coord < 0 or z_coord > self.length:
+            return False
+        
+        # Check if (x_coord, y_coord) is inside the convex polygon
+        # For a convex polygon, a point is inside if it's on the correct side
+        # of all edges
+        point_2d = Matrix([x_coord, y_coord])
+        
+        for i in range(len(self.points)):
+            p1 = self.points[i]
+            p2 = self.points[(i + 1) % len(self.points)]
+            
+            # Edge vector from p1 to p2
+            edge = p2 - p1
+            
+            # Vector from p1 to test point
+            to_point = point_2d - p1
+            
+            # Cross product in 2D: edge × to_point
+            # If polygon vertices are ordered counter-clockwise, 
+            # cross product should be >= 0 for point to be inside
+            cross = edge[0] * to_point[1] - edge[1] * to_point[0]
+            
+            if cross < 0:
+                return False
+        
+        return True
+
+    def is_point_on_boundary(self, point: V3) -> bool:
+        """
+        Check if a point is on the boundary of the extruded polygon.
+        
+        A point is on the boundary if it's contained and either:
+        1. On the top or bottom face (z = 0 or z = length)
+        2. On one of the side faces (on an edge of the polygon)
+        
+        Args:
+            point: Point to test (3x1 Matrix)
+            
+        Returns:
+            True if the point is on the boundary, False otherwise
+        """
+        # First check if point is contained
+        if not self.contains_point(point):
+            return False
+        
+        # Transform point to local coordinates
+        local_point = point - self.position
+        local_coords = self.orientation.invert().matrix * local_point
+        
+        x_coord = local_coords[0]
+        y_coord = local_coords[1]
+        z_coord = local_coords[2]
+        
+        # Check if on top or bottom face
+        if z_coord == 0 or z_coord == self.length:
+            return True
+        
+        # Check if on any edge of the polygon (side face)
+        point_2d = Matrix([x_coord, y_coord])
+        
+        for i in range(len(self.points)):
+            p1 = self.points[i]
+            p2 = self.points[(i + 1) % len(self.points)]
+            
+            # Check if point is on the line segment from p1 to p2
+            # Use parametric form: p = p1 + t*(p2-p1), where 0 <= t <= 1
+            edge = p2 - p1
+            to_point = point_2d - p1
+            
+            # If edge is zero-length, skip it
+            edge_length_sq = edge[0]**2 + edge[1]**2
+            if edge_length_sq == 0:
+                continue
+            
+            # Project to_point onto edge
+            t = (to_point[0] * edge[0] + to_point[1] * edge[1]) / edge_length_sq
+            
+            # Check if projection is on the segment and point is on the line
+            if 0 <= t <= 1:
+                closest_point = p1 + edge * t
+                distance_sq = (point_2d[0] - closest_point[0])**2 + (point_2d[1] - closest_point[1])**2
+                if distance_sq == 0:
+                    return True
+        
+        return False
