@@ -19,7 +19,7 @@ from giraffe import (
     cut_basic_house_joint_DEPRECATED,
     cut_basic_house_joint,
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
-    FootprintLocation, CutTimber, PartiallyCutTimber, Stickout, TimberReferenceEnd,
+    FootprintLocation, CutTimber, Stickout, TimberReferenceEnd,
     SimplePegParameters, PegShape, TimberReferenceLongFace,
     inches, feet, Rational, Matrix
 )
@@ -485,17 +485,17 @@ def create_oscarshed():
     
     # The left piece gets cuts from joint and splice
     front_girt_left_cuts = []
-    front_girt_left_cuts.extend(joint_front_girt_left.partiallyCutTimbers[1]._cuts)  # Tenon cuts
-    front_girt_left_cuts.extend(front_girt_splice_joint.partiallyCutTimbers[0]._cuts)  # Splice cuts
+    front_girt_left_cuts.extend(joint_front_girt_left.cut_timbers[1]._cuts)  # Tenon cuts
+    front_girt_left_cuts.extend(front_girt_splice_joint.cut_timbers[0]._cuts)  # Splice cuts
     
     # The right piece gets cuts from joint and splice
     front_girt_right_cuts = []
-    front_girt_right_cuts.extend(joint_front_girt_right.partiallyCutTimbers[1]._cuts)  # Tenon cuts
-    front_girt_right_cuts.extend(front_girt_splice_joint.partiallyCutTimbers[1]._cuts)  # Splice cuts
+    front_girt_right_cuts.extend(joint_front_girt_right.cut_timbers[1]._cuts)  # Tenon cuts
+    front_girt_right_cuts.extend(front_girt_splice_joint.cut_timbers[1]._cuts)  # Splice cuts
     
-    # Create PartiallyCutTimbers for the split pieces with all their cuts
-    pct_front_girt_left = PartiallyCutTimber(front_girt_left, cuts=front_girt_left_cuts)
-    pct_front_girt_right = PartiallyCutTimber(front_girt_right, cuts=front_girt_right_cuts)
+    # Create CutTimbers for the split pieces with all their cuts
+    pct_front_girt_left = CutTimber(front_girt_left, cuts=front_girt_left_cuts)
+    pct_front_girt_right = CutTimber(front_girt_right, cuts=front_girt_right_cuts)
     
     # Collect joint accessories (pegs) for rendering
     front_girt_accessories = []
@@ -677,7 +677,7 @@ def create_oscarshed():
     
     # Add mudsills (with miter joints applied)
     # Each mudsill participates in 2 joints (one at each end)
-    # We need to collect all cuts for each mudsill and create a single PartiallyCutTimber
+    # We need to collect all cuts for each mudsill and create a single CutTimber
     
     # Collect cuts for each mudsill from the corner joints and mortise joints
     
@@ -688,37 +688,37 @@ def create_oscarshed():
     # joint_corner_3: Back TOP, Left BOTTOM
     
     # Also collect mortise cuts from post joints
-    # For mortise and tenon joints: partiallyCutTimbers[0] is the mortise timber (mudsill)
+    # For mortise and tenon joints: cut_timbers[0] is the mortise timber (mudsill)
     
     mudsill_front_cuts = [
-        joint_corner_0.partiallyCutTimbers[0]._cuts[0],  # Miter at corner 0
-        joint_corner_1.partiallyCutTimbers[0]._cuts[0],  # Miter at corner 1
-        joint_post_front_left.partiallyCutTimbers[0]._cuts[0],   # Mortise for front-left post
-        joint_post_front_right.partiallyCutTimbers[0]._cuts[0],  # Mortise for front-right post
+        joint_corner_0.cut_timbers[0]._cuts[0],  # Miter at corner 0
+        joint_corner_1.cut_timbers[0]._cuts[0],  # Miter at corner 1
+        joint_post_front_left.cut_timbers[0]._cuts[0],   # Mortise for front-left post
+        joint_post_front_right.cut_timbers[0]._cuts[0],  # Mortise for front-right post
     ]
     
     mudsill_right_cuts = [
-        joint_corner_1.partiallyCutTimbers[1]._cuts[0],  # Miter at corner 1
-        joint_corner_2.partiallyCutTimbers[0]._cuts[0],  # Miter at corner 2
+        joint_corner_1.cut_timbers[1]._cuts[0],  # Miter at corner 1
+        joint_corner_2.cut_timbers[0]._cuts[0],  # Miter at corner 2
     ]
     
     mudsill_back_cuts = [
-        joint_corner_2.partiallyCutTimbers[1]._cuts[0],  # Miter at corner 2
-        joint_corner_3.partiallyCutTimbers[0]._cuts[0],  # Miter at corner 3
-        joint_post_back_right.partiallyCutTimbers[0]._cuts[0],   # Mortise for back-right post
-        joint_post_back_left.partiallyCutTimbers[0]._cuts[0],    # Mortise for back-left post
+        joint_corner_2.cut_timbers[1]._cuts[0],  # Miter at corner 2
+        joint_corner_3.cut_timbers[0]._cuts[0],  # Miter at corner 3
+        joint_post_back_right.cut_timbers[0]._cuts[0],   # Mortise for back-right post
+        joint_post_back_left.cut_timbers[0]._cuts[0],    # Mortise for back-left post
     ]
     
     mudsill_left_cuts = [
-        joint_corner_0.partiallyCutTimbers[1]._cuts[0],  # Miter at corner 0
-        joint_corner_3.partiallyCutTimbers[1]._cuts[0],  # Miter at corner 3
+        joint_corner_0.cut_timbers[1]._cuts[0],  # Miter at corner 0
+        joint_corner_3.cut_timbers[1]._cuts[0],  # Miter at corner 3
     ]
     
-    # Create PartiallyCutTimbers for each mudsill with all cuts at construction
-    pct_mudsill_front = PartiallyCutTimber(mudsill_front, cuts=mudsill_front_cuts)
-    pct_mudsill_right = PartiallyCutTimber(mudsill_right, cuts=mudsill_right_cuts)
-    pct_mudsill_back = PartiallyCutTimber(mudsill_back, cuts=mudsill_back_cuts)
-    pct_mudsill_left = PartiallyCutTimber(mudsill_left, cuts=mudsill_left_cuts)
+    # Create CutTimbers for each mudsill with all cuts at construction
+    pct_mudsill_front = CutTimber(mudsill_front, cuts=mudsill_front_cuts)
+    pct_mudsill_right = CutTimber(mudsill_right, cuts=mudsill_right_cuts)
+    pct_mudsill_back = CutTimber(mudsill_back, cuts=mudsill_back_cuts)
+    pct_mudsill_left = CutTimber(mudsill_left, cuts=mudsill_left_cuts)
     
     # Add the mudsills with all their cuts
     cut_timbers.append(pct_mudsill_front)
@@ -727,35 +727,35 @@ def create_oscarshed():
     cut_timbers.append(pct_mudsill_left)
     
     # Add posts with joint cuts
-    # For mortise and tenon joints: partiallyCutTimbers[0] is the mortise timber (for girt joints)
-    # For mortise and tenon joints: partiallyCutTimbers[1] is the tenon timber (for post-to-mudsill)
-    # For butt joints: partiallyCutTimbers[1] is the cut timber (post)
+    # For mortise and tenon joints: cut_timbers[0] is the mortise timber (for girt joints)
+    # For mortise and tenon joints: cut_timbers[1] is the tenon timber (for post-to-mudsill)
+    # For butt joints: cut_timbers[1] is the cut timber (post)
     
     # Front left post: has tenon into mudsill + mortise for front girt + mortise for side girt
     post_front_left_cuts = []
-    post_front_left_cuts.extend(joint_post_front_left.partiallyCutTimbers[1]._cuts)  # Tenon into mudsill
-    post_front_left_cuts.extend(joint_front_girt_left.partiallyCutTimbers[0]._cuts)  # Mortise for front girt
-    post_front_left_cuts.extend(joint_side_girt_left.partiallyCutTimbers[0]._cuts)   # Mortise for side girt
-    pct_post_front_left = PartiallyCutTimber(post_front_left, cuts=post_front_left_cuts)
+    post_front_left_cuts.extend(joint_post_front_left.cut_timbers[1]._cuts)  # Tenon into mudsill
+    post_front_left_cuts.extend(joint_front_girt_left.cut_timbers[0]._cuts)  # Mortise for front girt
+    post_front_left_cuts.extend(joint_side_girt_left.cut_timbers[0]._cuts)   # Mortise for side girt
+    pct_post_front_left = CutTimber(post_front_left, cuts=post_front_left_cuts)
     
     # Front right post: has tenon into mudsill + mortise for front girt + mortise for side girt
     post_front_right_cuts = []
-    post_front_right_cuts.extend(joint_post_front_right.partiallyCutTimbers[1]._cuts)  # Tenon into mudsill
-    post_front_right_cuts.extend(joint_front_girt_right.partiallyCutTimbers[0]._cuts)  # Mortise for front girt
-    post_front_right_cuts.extend(joint_side_girt_right.partiallyCutTimbers[0]._cuts)   # Mortise for side girt
-    pct_post_front_right = PartiallyCutTimber(post_front_right, cuts=post_front_right_cuts)
+    post_front_right_cuts.extend(joint_post_front_right.cut_timbers[1]._cuts)  # Tenon into mudsill
+    post_front_right_cuts.extend(joint_front_girt_right.cut_timbers[0]._cuts)  # Mortise for front girt
+    post_front_right_cuts.extend(joint_side_girt_right.cut_timbers[0]._cuts)   # Mortise for side girt
+    pct_post_front_right = CutTimber(post_front_right, cuts=post_front_right_cuts)
     
     # Add all posts
     cut_timbers.append(pct_post_front_left)       # Front left post with all cuts
     cut_timbers.append(pct_post_front_right)      # Front right post with all cuts
-    cut_timbers.append(joint_post_back_right.partiallyCutTimbers[1])      # Corner post with M&T
-    cut_timbers.append(joint_post_back_middle_right.partiallyCutTimbers[1])  # Middle post with butt joint
-    cut_timbers.append(joint_post_back_middle_left.partiallyCutTimbers[1])   # Middle post with butt joint
-    cut_timbers.append(joint_post_back_left.partiallyCutTimbers[1])       # Corner post with M&T
+    cut_timbers.append(joint_post_back_right.cut_timbers[1])      # Corner post with M&T
+    cut_timbers.append(joint_post_back_middle_right.cut_timbers[1])  # Middle post with butt joint
+    cut_timbers.append(joint_post_back_middle_left.cut_timbers[1])   # Middle post with butt joint
+    cut_timbers.append(joint_post_back_left.cut_timbers[1])       # Corner post with M&T
     
     # Add side girts (with mortise & tenon joints at front ends)
-    cut_timbers.append(joint_side_girt_left.partiallyCutTimbers[1])  # Left side girt with tenon cuts
-    cut_timbers.append(joint_side_girt_right.partiallyCutTimbers[1])  # Right side girt with tenon cuts
+    cut_timbers.append(joint_side_girt_left.cut_timbers[1])  # Left side girt with tenon cuts
+    cut_timbers.append(joint_side_girt_right.cut_timbers[1])  # Right side girt with tenon cuts
     
     # Add front girt pieces (with mortise & tenon joints at ends and splice joint in middle)
     cut_timbers.append(pct_front_girt_left)  # Left piece with tenon + splice cuts
@@ -767,14 +767,14 @@ def create_oscarshed():
     top_plate_front_cuts = []
     
     for joint_back, joint_front in rafter_house_joints:
-        # joint_back.partiallyCutTimbers[0] is the housing timber (top_plate_back)
-        # joint_front.partiallyCutTimbers[0] is the housing timber (top_plate_front)
-        top_plate_back_cuts.extend(joint_back.partiallyCutTimbers[0]._cuts)
-        top_plate_front_cuts.extend(joint_front.partiallyCutTimbers[0]._cuts)
+        # joint_back.cut_timbers[0] is the housing timber (top_plate_back)
+        # joint_front.cut_timbers[0] is the housing timber (top_plate_front)
+        top_plate_back_cuts.extend(joint_back.cut_timbers[0]._cuts)
+        top_plate_front_cuts.extend(joint_front.cut_timbers[0]._cuts)
     
-    # Create PartiallyCutTimbers for top plates with all cuts
-    pct_top_plate_back = PartiallyCutTimber(top_plate_back, cuts=top_plate_back_cuts)
-    pct_top_plate_front = PartiallyCutTimber(top_plate_front, cuts=top_plate_front_cuts)
+    # Create CutTimbers for top plates with all cuts
+    pct_top_plate_back = CutTimber(top_plate_back, cuts=top_plate_back_cuts)
+    pct_top_plate_front = CutTimber(top_plate_front, cuts=top_plate_front_cuts)
     
     cut_timbers.append(pct_top_plate_back)
     cut_timbers.append(pct_top_plate_front)

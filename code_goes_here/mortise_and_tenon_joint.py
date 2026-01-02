@@ -113,7 +113,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         peg_parameters: Optional peg configuration (not yet supported)
         
     Returns:
-        Joint object containing the two PartiallyCutTimbers and any accessories
+        Joint object containing the two CutTimbers and any accessories
         
     Raises:
         AssertionError: If unsupported parameters are provided or if timbers are not face-aligned
@@ -712,14 +712,14 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             )
     
     # ========================================================================
-    # Create PartiallyCutTimber objects and Joint
+    # Create CutTimber objects and Joint
     # ========================================================================
     
-    mortise_cut_timber = PartiallyCutTimber(mortise_timber, cuts=[mortise_cut])
-    tenon_cut_timber = PartiallyCutTimber(tenon_timber, cuts=tenon_cuts)
+    mortise_cut_timber = CutTimber(mortise_timber, cuts=[mortise_cut])
+    tenon_cut_timber = CutTimber(tenon_timber, cuts=tenon_cuts)
     
     return Joint(
-        partiallyCutTimbers=(mortise_cut_timber, tenon_cut_timber),
+        cut_timbers=(mortise_cut_timber, tenon_cut_timber),
         jointAccessories=tuple(joint_accessories)
     )
 
@@ -753,7 +753,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         peg_parameters: Optional parameters for pegs to secure the joint (SimplePegParameters)
         
     Returns:
-        Joint object containing the two PartiallyCutTimbers and any peg accessories
+        Joint object containing the two CutTimbers and any peg accessories
         
     Raises:
         AssertionError: If timbers are not properly oriented for this joint type

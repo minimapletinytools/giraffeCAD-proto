@@ -42,8 +42,8 @@ class TestMiterJoint:
         joint = cut_basic_miter_joint(timberA, TimberReferenceEnd.TOP, timberB, TimberReferenceEnd.TOP)
         
         # Get the cuts
-        cutA = joint.partiallyCutTimbers[0]._cuts[0]
-        cutB = joint.partiallyCutTimbers[1]._cuts[0]
+        cutA = joint.cut_timbers[0]._cuts[0]
+        cutB = joint.cut_timbers[1]._cuts[0]
         
         # Check that both cuts are end cuts
         assert cutA.maybe_end_cut == TimberReferenceEnd.TOP
@@ -169,8 +169,8 @@ class TestMiterJoint:
         
         # Test that the two cut timbers DO NOT intersect
         # Get the CSGs for both timbers with cuts applied
-        cut_timberA = joint.partiallyCutTimbers[0]
-        cut_timberB = joint.partiallyCutTimbers[1]
+        cut_timberA = joint.cut_timbers[0]
+        cut_timberB = joint.cut_timbers[1]
         
         # Render the timbers without cuts first (just the basic prisms)
         prismA = cut_timberA.render_timber_without_cuts_csg_local()
@@ -254,10 +254,10 @@ class TestButtJoint:
         
         # Verify joint structure
         assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
+        assert len(joint.cut_timbers) == 2
         
-        receiving_cut_timber = joint.partiallyCutTimbers[0]
-        butt_cut_timber = joint.partiallyCutTimbers[1]
+        receiving_cut_timber = joint.cut_timbers[0]
+        butt_cut_timber = joint.cut_timbers[1]
         
         # Verify receiving timber has no cuts
         assert len(receiving_cut_timber._cuts) == 0, "Receiving timber should have no cuts"
@@ -349,10 +349,10 @@ class TestButtJoint:
         joint = cut_basic_butt_joint_on_face_aligned_timbers(receiving, butt, TimberReferenceEnd.BOTTOM)
         
         assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
+        assert len(joint.cut_timbers) == 2
         
-        receiving_cut_timber = joint.partiallyCutTimbers[0]
-        butt_cut_timber = joint.partiallyCutTimbers[1]
+        receiving_cut_timber = joint.cut_timbers[0]
+        butt_cut_timber = joint.cut_timbers[1]
         
         # Verify receiving has no cuts
         assert len(receiving_cut_timber._cuts) == 0
@@ -404,11 +404,11 @@ class TestButtJoint:
         joint = cut_basic_butt_joint_on_face_aligned_timbers(receiving, butt, TimberReferenceEnd.TOP)
         
         # Verify receiving timber has no cuts
-        receiving_cut = joint.partiallyCutTimbers[0]
+        receiving_cut = joint.cut_timbers[0]
         assert len(receiving_cut._cuts) == 0, "Receiving timber should never have cuts in a butt joint"
         
         # Verify only butt timber has a cut
-        butt_cut = joint.partiallyCutTimbers[1]
+        butt_cut = joint.cut_timbers[1]
         assert len(butt_cut._cuts) == 1, "Butt timber should have exactly one cut"
     
     def test_butt_into_long_face_of_receiving(self):
@@ -431,7 +431,7 @@ class TestButtJoint:
         
         assert joint is not None
         
-        butt_cut_timber = joint.partiallyCutTimbers[1]
+        butt_cut_timber = joint.cut_timbers[1]
         assert len(butt_cut_timber._cuts) == 1
         
         cut = butt_cut_timber._cuts[0]
@@ -478,10 +478,10 @@ class TestSpliceJoint:
         
         # Verify joint structure
         assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
+        assert len(joint.cut_timbers) == 2
         
-        cutA = joint.partiallyCutTimbers[0]._cuts[0]
-        cutB = joint.partiallyCutTimbers[1]._cuts[0]
+        cutA = joint.cut_timbers[0]._cuts[0]
+        cutB = joint.cut_timbers[1]._cuts[0]
         
         # Verify both cuts are end cuts
         assert cutA.maybe_end_cut == TimberReferenceEnd.TOP
@@ -533,7 +533,7 @@ class TestSpliceJoint:
         )
         
         # Verify the splice occurred at the specified point
-        cutA = joint.partiallyCutTimbers[0]._cuts[0]
+        cutA = joint.cut_timbers[0]._cuts[0]
         
         assert cutA.origin[0] == Rational(0)
         assert cutA.origin[1] == Rational(0)
@@ -567,10 +567,10 @@ class TestSpliceJoint:
         )
         
         assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
+        assert len(joint.cut_timbers) == 2
         
         # Verify the splice point is between the two timbers
-        cutA = joint.partiallyCutTimbers[0]._cuts[0]
+        cutA = joint.cut_timbers[0]._cuts[0]
         
         # Should be at the midpoint between x=60 and x=40 = x=50
         assert cutA.origin[0] == Rational(50)
@@ -636,10 +636,10 @@ class TestHouseJoint:
         
         # Verify joint structure
         assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
+        assert len(joint.cut_timbers) == 2
         
-        housing_cut_timber = joint.partiallyCutTimbers[0]
-        housed_cut_timber = joint.partiallyCutTimbers[1]
+        housing_cut_timber = joint.cut_timbers[0]
+        housed_cut_timber = joint.cut_timbers[1]
         
         # Housing timber should have one CSG cut
         assert len(housing_cut_timber._cuts) == 1
@@ -681,10 +681,10 @@ class TestHouseJoint:
         
         # Verify joint structure
         assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
+        assert len(joint.cut_timbers) == 2
         
-        housing_cut_timber = joint.partiallyCutTimbers[0]
-        housed_cut_timber = joint.partiallyCutTimbers[1]
+        housing_cut_timber = joint.cut_timbers[0]
+        housed_cut_timber = joint.cut_timbers[1]
         
         # Housing timber should have one CSG cut with finite prism
         assert len(housing_cut_timber._cuts) == 1
@@ -724,7 +724,7 @@ class TestHouseJoint:
         )
         
         # Get the housing timber with its cut
-        housing_cut_timber = joint.partiallyCutTimbers[0]
+        housing_cut_timber = joint.cut_timbers[0]
         cut = housing_cut_timber._cuts[0]
         
         assert isinstance(cut, CSGCut), "Cut should be a CSGCut"

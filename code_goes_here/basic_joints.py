@@ -36,7 +36,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
         timberB_end: Which end of timberB to cut (TOP or BOTTOM)
         
     Returns:
-        Joint object containing the two PartiallyCutTimbers
+        Joint object containing the two CutTimbers
         
     Raises:
         ValueError: If the timbers are parallel or if they don't intersect
@@ -171,13 +171,13 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
         maybe_end_cut=timberB_end
     )
     
-    # Create PartiallyCutTimbers with cuts passed at construction
-    cut_timberA = PartiallyCutTimber(timberA, cuts=[cutA])
-    cut_timberB = PartiallyCutTimber(timberB, cuts=[cutB])
+    # Create CutTimbers with cuts passed at construction
+    cut_timberA = CutTimber(timberA, cuts=[cutA])
+    cut_timberB = CutTimber(timberB, cuts=[cutB])
     
     # Create and return the Joint with all data at construction
     joint = Joint(
-        partiallyCutTimbers=(cut_timberA, cut_timberB),
+        cut_timbers=(cut_timberA, cut_timberB),
         jointAccessories=()
     )
     
@@ -262,15 +262,15 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
         maybe_end_cut=butt_end
     )
     
-    # Create PartiallyCutTimber for the butt timber with cut passed at construction
-    cut_butt = PartiallyCutTimber(butt_timber, cuts=[cut])
+    # Create CutTimber for the butt timber with cut passed at construction
+    cut_butt = CutTimber(butt_timber, cuts=[cut])
     
-    # Create PartiallyCutTimber for the receiving timber (no cuts)
-    cut_receiving = PartiallyCutTimber(receiving_timber, cuts=[])
+    # Create CutTimber for the receiving timber (no cuts)
+    cut_receiving = CutTimber(receiving_timber, cuts=[])
     
     # Create and return the Joint with all data at construction
     joint = Joint(
-        partiallyCutTimbers=(cut_receiving, cut_butt),
+        cut_timbers=(cut_receiving, cut_butt),
         jointAccessories=()
     )
     
@@ -292,7 +292,7 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
                      If provided but not on timberA's centerline, it will be projected onto it.
 
     Returns:
-        Joint object containing the two PartiallyCutTimbers
+        Joint object containing the two CutTimbers
 
     Raises:
         ValueError: If the timbers are not parallel (aligned)
@@ -424,13 +424,13 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
         maybe_end_cut=timberB_end
     )
     
-    # Create PartiallyCutTimbers with cuts passed at construction
-    cut_timberA = PartiallyCutTimber(timberA, cuts=[cutA])
-    cut_timberB = PartiallyCutTimber(timberB, cuts=[cutB])
+    # Create CutTimbers with cuts passed at construction
+    cut_timberA = CutTimber(timberA, cuts=[cutA])
+    cut_timberB = CutTimber(timberB, cuts=[cutB])
     
     # Create and return the Joint with all data at construction
     joint = Joint(
-        partiallyCutTimbers=(cut_timberA, cut_timberB),
+        cut_timbers=(cut_timberA, cut_timberB),
         jointAccessories=()
     )
     
@@ -451,7 +451,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         
 
     Returns:
-        Joint object containing the two PartiallyCutTimbers
+        Joint object containing the two CutTimbers
 
     Raises:
         AssertionError: If timbers don't intersect, are parallel, or face normals are invalid
@@ -680,13 +680,13 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         )
         cuts_B.append(cut_B)
     
-    # Create PartiallyCutTimbers
-    cut_timberA = PartiallyCutTimber(timberA, cuts=cuts_A)
-    cut_timberB = PartiallyCutTimber(timberB, cuts=cuts_B)
+    # Create CutTimbers
+    cut_timberA = CutTimber(timberA, cuts=cuts_A)
+    cut_timberB = CutTimber(timberB, cuts=cuts_B)
     
     # Create and return the Joint
     joint = Joint(
-        partiallyCutTimbers=(cut_timberA, cut_timberB),
+        cut_timbers=(cut_timberA, cut_timberB),
         jointAccessories=()
     )
     
@@ -914,15 +914,15 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
         maybe_end_cut=None  # Not an end cut
     )
     
-    # Create PartiallyCutTimber for the housing timber (with cut)
-    cut_housing = PartiallyCutTimber(housing_timber, cuts=[cut])
+    # Create CutTimber for the housing timber (with cut)
+    cut_housing = CutTimber(housing_timber, cuts=[cut])
     
-    # Create PartiallyCutTimber for the housed timber (no cuts)
-    cut_housed = PartiallyCutTimber(housed_timber, cuts=[])
+    # Create CutTimber for the housed timber (no cuts)
+    cut_housed = CutTimber(housed_timber, cuts=[])
     
     # Create and return the Joint
     joint = Joint(
-        partiallyCutTimbers=(cut_housing, cut_housed),
+        cut_timbers=(cut_housing, cut_housed),
         jointAccessories=()
     )
     

@@ -73,7 +73,7 @@ def cut_lapped_gooseneck_joint(
                         perpendicular to the gooseneck_timber_face
     
     Returns:
-        Joint object containing the two PartiallyCutTimbers with the gooseneck cuts applied
+        Joint object containing the two CutTimbers with the gooseneck cuts applied
     
     Raises:
         ValueError: If the parameters are invalid or the timbers are not properly positioned
