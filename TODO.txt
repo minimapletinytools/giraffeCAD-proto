@@ -55,16 +55,22 @@ DONE-mortise hole calculation is incorrect please fix
 -rewrite all joint tests, they are all kinda messed up tbh
 
 -add more features to mortise and tenon joint
-  -probbaly add offset mortise peg param
+  -add offset mortise peg param (so that it tightens the joint up)
   -support non face aligned cases
-  -clean up the function it's awful....
+    -clean up the mortise shoulder calculation shit wtf or maybe yo uneed it for non face aligned cases?
   -extract out peg creation stuff, it will be useful in other places
     -basically, just figure out the start point and direction of the peg... it will return to you a tuple of prisms to substract from the mortise and tenon timber, and a peg accessory
 
 -add extrude polygon csg rendering to fusino 360
 
+-add Frame class to timber.py 
+  -add a check_no_floats method that checks that all the contents of the frame are using sympy rationals, NO FLOATS
+  -assert on the check_no_floats method in the ctor to ensure no floats are in the frame
+  -update all examples to output frames
+  -update fusino360 and freecad to take a frame object
+  -get rid of PartiallyCutTimber class while you're at it
+
 -cleanup
-  -add a ALLOW_FLOATS global boolean, and add some asserts if there are floats if this boolean is false (which it should be)
   -make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
   DONE-clean up moothymoth tests to not use exact euality...
 
