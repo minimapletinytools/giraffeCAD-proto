@@ -1005,3 +1005,116 @@ class TestJointConfigurations:
         
         assert len(joint.jointAccessories) == 1
 
+
+# ============================================================================
+# Tests for Tenon Centerline Point Containment
+# ============================================================================
+
+class TestTenonCenterlineContainment:
+    """Test point containment along the tenon centerline in timber CSGs."""
+    
+    def test_t_joint_centerline_points(self):
+        """
+        Test a 3x3 post into 3x3 beam T-joint with specific depth requirements.
+        
+        Configuration:
+        - 3x3 post (tenon timber) going vertically into horizontal 3x3 beam (mortise timber)
+        - Tenon: 1x1, length 2 inches
+        - Mortise: depth 2.5 inches
+        
+        Test points along tenon centerline from shoulder:
+        - At 0 (shoulder) and 1.5": IN tenon timber CSG, NOT in mortise timber CSG
+        - At 2.25": neither in mortise nor tenon timber CSG (gap between tenon end and mortise bottom)
+        - At 3": IN mortise timber CSG, NOT in tenon timber CSG
+        """
+        # Create 3x3 vertical post (tenon timber)
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(3, 3), position=(0, 0, 0)
+        )
+        
+        # Create 3x3 horizontal beam (mortise timber) - T-joint configuration
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(3, 3), position=(0, 0, 50)
+        )
+        
+        # Create joint with 1x1 tenon, length 2, mortise depth 2.5
+        tenon_size = Matrix([Rational(1), Rational(1)])
+        tenon_length = Rational(2)
+        mortise_depth = Rational(5, 2)  # 2.5
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=tenon_size,
+            tenon_length=tenon_length,
+            mortise_depth=mortise_depth
+        )
+        
+        # Get the cut timbers
+        mortise_cut_timber = joint.partiallyCutTimbers[0]
+        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        
+        # Get the CSGs representing the final timber shapes
+        # For tenon timber: original timber minus cuts
+        tenon_timber_csg = tenon_cut_timber.render_timber_with_cuts_csg_local()
+        mortise_timber_csg = mortise_cut_timber.render_timber_with_cuts_csg_local()
+        
+        # The mortise timber is 3x3 centered at z=50, so bottom face is at z=48.5
+        # The tenon enters from below, so shoulder is at z=48.5
+        # Tenon extends from z=48.5 to z=48.5+2=50.5
+        # Mortise hole extends from bottom face (z=48.5) upward with depth 2.5 to z=51
+        # "Into the joint" means from shoulder (z=48.5) upward in +Z direction
+        
+        shoulder_z = Rational(97, 2)  # 48.5
+        
+        # Test point 1: At the shoulder (z=48.5)
+        point_at_shoulder_world = Matrix([Rational(0), Rational(0), shoulder_z])
+        point_at_shoulder_tenon_local = transform_point_to_local(point_at_shoulder_world, tenon_timber)
+        point_at_shoulder_mortise_local = transform_point_to_local(point_at_shoulder_world, mortise_timber)
+        
+        # At the shoulder, we're at the base of the tenon - should be in tenon timber
+        assert tenon_timber_csg.contains_point(point_at_shoulder_tenon_local), \
+            "Point at shoulder should be IN tenon timber CSG"
+        # Not in mortise timber because the mortise hole is here
+        assert not mortise_timber_csg.contains_point(point_at_shoulder_mortise_local), \
+            "Point at shoulder should NOT be in mortise timber CSG"
+        
+        # Test point 2: At 1.5 inches into the joint (z = 48.5 + 1.5 = 50)
+        point_at_1_5_world = Matrix([Rational(0), Rational(0), shoulder_z + Rational(3, 2)])
+        point_at_1_5_tenon_local = transform_point_to_local(point_at_1_5_world, tenon_timber)
+        point_at_1_5_mortise_local = transform_point_to_local(point_at_1_5_world, mortise_timber)
+        
+        # At 1.5", within tenon length (2"), should be in tenon timber
+        assert tenon_timber_csg.contains_point(point_at_1_5_tenon_local), \
+            "Point at 1.5 inches should be IN tenon timber CSG"
+        # Not in mortise timber because the tenon fills this space
+        assert not mortise_timber_csg.contains_point(point_at_1_5_mortise_local), \
+            "Point at 1.5 inches should NOT be in mortise timber CSG"
+        
+        # Test point 3: At 2.25 inches into the joint (z = 48.5 + 2.25 = 50.75)
+        # This is past the tenon length (2) but within mortise depth (2.5)
+        point_at_2_25_world = Matrix([Rational(0), Rational(0), shoulder_z + Rational(9, 4)])
+        point_at_2_25_tenon_local = transform_point_to_local(point_at_2_25_world, tenon_timber)
+        point_at_2_25_mortise_local = transform_point_to_local(point_at_2_25_world, mortise_timber)
+        
+        # Past tenon length, so not in tenon timber
+        assert not tenon_timber_csg.contains_point(point_at_2_25_tenon_local), \
+            "Point at 2.25 inches should NOT be in tenon timber CSG"
+        # In the mortise hole (past tenon but within mortise depth), so not in mortise timber
+        assert not mortise_timber_csg.contains_point(point_at_2_25_mortise_local), \
+            "Point at 2.25 inches should NOT be in mortise timber CSG"
+        
+        # Test point 4: At 3 inches into the joint (z = 48.5 + 3 = 51.5)
+        # This is past the mortise depth (2.5), so in solid mortise timber
+        point_at_3_world = Matrix([Rational(0), Rational(0), shoulder_z + Rational(3)])
+        point_at_3_tenon_local = transform_point_to_local(point_at_3_world, tenon_timber)
+        point_at_3_mortise_local = transform_point_to_local(point_at_3_world, mortise_timber)
+        
+        # Not in tenon timber (far past tenon length)
+        assert not tenon_timber_csg.contains_point(point_at_3_tenon_local), \
+            "Point at 3 inches should NOT be in tenon timber CSG"
+        # In solid mortise timber (past mortise depth)
+        assert mortise_timber_csg.contains_point(point_at_3_mortise_local), \
+            "Point at 3 inches should be IN mortise timber CSG"
+
