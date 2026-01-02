@@ -46,8 +46,8 @@ class SimplePegParameters:
     shape: PegShape
     tenon_face: TimberReferenceLongFace
     peg_positions: List[Tuple[Numeric, Numeric]]
-    depth: Optional[Numeric]
     size: Numeric
+    depth: Optional[Numeric] = None
 
 
 @dataclass(frozen=True)
