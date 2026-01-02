@@ -11,7 +11,17 @@ tests:
 -peg orientation should be perpendicular to tenon timber
 -add test point function t meow meow CSG this will be our main way of checking
 -also add test on boundray function in meowmeow csg
+-test points in peg hole do not line in timber/mortise csg
+-test points in peg hole do lie on the peg CSG
 
+
+joint tests:
+-basic splice joint
+  - test point on the splice line on the center line lies on both timbers csgs
+
+-miter joint
+  -test point on the miter plan lines on both timber csgs
+  -test point away from the miter line and see that in only lies on one of the timbers
 
 
 
@@ -36,9 +46,12 @@ tests:
 DONE-see if you can fix the transform issue in fusion360...  should be able to do as rigid joint with origin
   FAIL-in fusion 360, hwen transforming occurences (components) to their final position.. rather than setting transform2. instead can you create a rigid joint with the global origin to set the position instead. 
   DONE-just do the body move way...
-
+DONE-freecad
+  DONE-clean up the run_ freecad stuff so it's more consist and easy to switch between examples
+  DONE-add accesory rendering to freecad
 
 -update oscar shed to use mortise and tenon joint
+
 -add more features to mortise and tenon joint
   -make sure it works for non face aligned cases
   -probbaly add offset mortise peg param
@@ -52,9 +65,7 @@ DONE-see if you can fix the transform issue in fusion360...  should be able to d
   -make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
   -clean up moothymoth tests to not use exact euality...
 
--freecad
-  -clean up the run_ freecad stuff so it's more consist and easy to switch between examples
-  -add accesory rendering to freecad
+
 
 -add basic extrude profiles to CSG
 
