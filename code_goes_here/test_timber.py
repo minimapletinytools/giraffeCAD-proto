@@ -330,6 +330,32 @@ class TestTimber:
         assert pos_bottom[1] == 2
         assert pos_bottom[2] == 3  # 3.0 + 0.0
 
+    def test_get_size_in_face_normal_axis(self):
+        """Test get_size_in_face_normal_axis method returns correct dimensions for each face."""
+        # Create a timber with distinct dimensions:
+        # length = 10, width (size[0]) = 0.2, height (size[1]) = 0.3
+        timber = timber_from_directions(
+            length=Rational(10),
+            size=create_vector2d(Rational("0.2"), Rational("0.3")),
+            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
+            length_direction=create_vector3d(Rational(0), Rational(0), Rational(1)),  # Up (Z-axis)
+            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))     # East (X-axis)
+        )
+        
+        # TOP and BOTTOM faces are perpendicular to the length direction (Z-axis)
+        # So they should return the length
+        assert timber.get_size_in_face_normal_axis(TimberFace.TOP) == Rational(10)
+        assert timber.get_size_in_face_normal_axis(TimberFace.BOTTOM) == Rational(10)
+        
+        # RIGHT and LEFT faces are perpendicular to the width direction (X-axis)
+        # So they should return the width (size[0])
+        assert timber.get_size_in_face_normal_axis(TimberFace.RIGHT) == Rational("0.2")
+        assert timber.get_size_in_face_normal_axis(TimberFace.LEFT) == Rational("0.2")
+        
+        # FORWARD and BACK faces are perpendicular to the height direction (Y-axis)
+        # So they should return the height (size[1])
+        assert timber.get_size_in_face_normal_axis(TimberFace.FORWARD) == Rational("0.3")
+        assert timber.get_size_in_face_normal_axis(TimberFace.BACK) == Rational("0.3")
 
 
 class TestEnumsAndDataStructures:
