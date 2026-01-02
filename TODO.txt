@@ -50,13 +50,14 @@ DONE-freecad
   DONE-add accesory rendering to freecad
 DONE-add basic extrude profiles to CSG
 DONE-update oscar shed to use mortise and tenon joint
+DONE-mortise hole calculation is incorrect please fix
 
--mortise hole calculation is incorrect please fix
+-rewrite all joint tests, they are all kinda messed up tbh
 
 -add more features to mortise and tenon joint
   -probbaly add offset mortise peg param
   -support non face aligned cases
-  
+  -clean up the function it's awful....
   -extract out peg creation stuff, it will be useful in other places
     -basically, just figure out the start point and direction of the peg... it will return to you a tuple of prisms to substract from the mortise and tenon timber, and a peg accessory
 
@@ -67,11 +68,9 @@ DONE-update oscar shed to use mortise and tenon joint
   -make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
   DONE-clean up moothymoth tests to not use exact euality...
 
-
 -DECISION TIME
   -consider adding "Thing" base class, that has position and orientation 
-  -add timber metadata 
-
+  -add timber metadata (move name in metadata?)
 
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
@@ -118,6 +117,7 @@ DONE-update oscar shed to use mortise and tenon joint
     -maybe try the fancy  one we used on the shed
   -make shed example (just add joints)
   -splice_joint
+    -gooseneck joint 
     -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
   IGNORE-get rhino rendering working for the following joints ...
   -improve examples
