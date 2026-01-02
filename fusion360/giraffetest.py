@@ -129,7 +129,7 @@ def run(_context: str):
                 example_name = "Oscar's Shed"
                 example_func = create_oscarshed
                 prefix = "OscarShed_Timber"
-                has_accessories = False
+                has_accessories = True  # Oscar's Shed now has pegs on front girt
             else:  # Cancel = All Mortise and Tenon Examples
                 example_name = "All Mortise and Tenon Examples"
                 example_func = create_all_mortise_and_tenon_examples
@@ -142,7 +142,12 @@ def run(_context: str):
             
             # Generate the selected example
             if has_accessories:
-                cut_timbers, joint_accessories = example_func(return_accessories=True)
+                if example_name == "Oscar's Shed":
+                    # Oscar's Shed always returns (timbers, accessories)
+                    cut_timbers, joint_accessories = example_func()
+                else:
+                    # Mortise & Tenon examples use return_accessories parameter
+                    cut_timbers, joint_accessories = example_func(return_accessories=True)
                 print(f"Created structure with {len(cut_timbers)} timbers and {len(joint_accessories)} accessories")
             else:
                 cut_timbers = example_func()
