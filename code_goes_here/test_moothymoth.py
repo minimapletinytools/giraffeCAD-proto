@@ -371,6 +371,173 @@ class TestTimberOrientations:
         assert simplify(result.matrix - identity) == Matrix.zeros(3, 3)
 
 
+class TestFlipOrientation:
+    """Test cases for flip method."""
+    
+    def test_flip_no_flips(self):
+        """Test flip with no flips returns the same orientation."""
+        orientation = Orientation.facing_north()
+        flipped = orientation.flip()
+        
+        # With no flips, should be identical
+        assert flipped.matrix == orientation.matrix
+    
+    def test_flip_flip_x(self):
+        """Test flip with flip_x negates the first row."""
+        orientation = Orientation.identity()
+        flipped = orientation.flip(flip_x=True)
+        
+        # Should negate first row (x-axis basis vector)
+        expected = Matrix([
+            [-1, 0, 0],  # First row negated
+            [0, 1, 0],
+            [0, 0, 1]
+        ])
+        assert flipped.matrix == expected
+    
+    def test_flip_flip_y(self):
+        """Test flip with flip_y negates the first column."""
+        orientation = Orientation.identity()
+        flipped = orientation.flip(flip_y=True)
+        
+        # Should negate first column
+        expected = Matrix([
+            [-1, 0, 0],  # First column negated
+            [0, 1, 0],
+            [0, 0, 1]
+        ])
+        assert flipped.matrix == expected
+    
+    def test_flip_flip_z(self):
+        """Test flip with flip_z negates the third column."""
+        orientation = Orientation.identity()
+        flipped = orientation.flip(flip_z=True)
+        
+        # Should negate third column (z-axis)
+        expected = Matrix([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, -1]  # Third column negated
+        ])
+        assert flipped.matrix == expected
+    
+    def test_flip_flip_x_and_y(self):
+        """Test flip with both flip_x and flip_y."""
+        orientation = Orientation.identity()
+        flipped = orientation.flip(flip_x=True, flip_y=True)
+        
+        # Should negate first row and first column
+        # For identity: flip_x negates row 0, flip_y negates column 0
+        # Starting: [[1,0,0], [0,1,0], [0,0,1]]
+        # After flip_x: [[-1,0,0], [0,1,0], [0,0,1]]
+        # After flip_y: [[1,0,0], [0,1,0], [0,0,1]] (negates first column of the result)
+        expected = Matrix([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1]
+        ])
+        assert flipped.matrix == expected
+    
+    def test_flip_flip_all(self):
+        """Test flip with all axes flipped."""
+        orientation = Orientation.identity()
+        flipped = orientation.flip(flip_x=True, flip_y=True, flip_z=True)
+        
+        # Identity after all flips
+        expected = Matrix([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, -1]
+        ])
+        assert flipped.matrix == expected
+    
+    def test_flip_non_identity(self):
+        """Test flip on a non-identity orientation."""
+        # Start with facing_north (90° CCW rotation around Z)
+        orientation = Orientation.facing_north()
+        # Matrix is [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
+        
+        flipped = orientation.flip(flip_x=True)
+        
+        # Should negate first row
+        expected = Matrix([
+            [0, 1, 0],   # First row negated
+            [1, 0, 0],
+            [0, 0, 1]
+        ])
+        assert flipped.matrix == expected
+    
+    def test_flip_pointing_up(self):
+        """Test flip on a vertical orientation."""
+        orientation = Orientation.pointing_up()  # Identity
+        flipped = orientation.flip(flip_z=True)
+        
+        # Should negate third column
+        expected = Matrix([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, -1]
+        ])
+        assert flipped.matrix == expected
+    
+    def test_flip_double_flip_x(self):
+        """Test that flipping X twice returns the original."""
+        orientation = Orientation.facing_north()
+        flipped_once = orientation.flip(flip_x=True)
+        flipped_twice = flipped_once.flip(flip_x=True)
+        
+        # Double flip should return to original
+        assert flipped_twice.matrix == orientation.matrix
+    
+    def test_flip_double_flip_y(self):
+        """Test that flipping Y twice returns the original."""
+        orientation = Orientation.facing_east()
+        flipped_once = orientation.flip(flip_y=True)
+        flipped_twice = flipped_once.flip(flip_y=True)
+        
+        # Double flip should return to original
+        assert flipped_twice.matrix == orientation.matrix
+    
+    def test_flip_double_flip_z(self):
+        """Test that flipping Z twice returns the original."""
+        orientation = Orientation.facing_south()
+        flipped_once = orientation.flip(flip_z=True)
+        flipped_twice = flipped_once.flip(flip_z=True)
+        
+        # Double flip should return to original
+        assert flipped_twice.matrix == orientation.matrix
+    
+    def test_flip_with_random_orientation(self):
+        """Test flip preserves orientation properties on random matrices."""
+        orientation = generate_random_orientation()
+        flipped = orientation.flip(flip_x=True, flip_z=True)
+        
+        # The flipped matrix should still be a valid rotation matrix
+        # Note: flipping may change determinant, so we just verify it's orthogonal
+        matrix = flipped.matrix
+        product = simplify(matrix * matrix.T)
+        identity = Matrix.eye(3)
+        
+        diff = product - identity
+        # Check orthogonality
+        for i in range(3):
+            for j in range(3):
+                assert abs(float(diff[i, j])) < 1e-10
+    
+    def test_flip_immutability(self):
+        """Test that flip doesn't modify the original orientation."""
+        orientation = Orientation.facing_north()
+        original_matrix = orientation.matrix.copy()
+        
+        # Call flip
+        flipped = orientation.flip(flip_x=True, flip_y=True, flip_z=True)
+        
+        # Original should be unchanged
+        assert orientation.matrix == original_matrix
+        # Flipped should be different
+        assert flipped.matrix != original_matrix
+
+
 class TestReprAndString:
     """Test string representation."""
     
