@@ -13,8 +13,8 @@ NOTE: Prism positioning follows the Timber convention:
 - So a prism at position=(0,0,0) with size=[1,1] spans X=[-0.5,0.5], Y=[-0.5,0.5]
 """
 
-from sympy import Matrix, eye
-from code_goes_here.meowmeowcsg import Prism, HalfPlane, Difference, Union
+from sympy import Matrix, eye, Rational, sqrt
+from code_goes_here.meowmeowcsg import Prism, HalfPlane, Difference, Union, ConvexPolygonExtrusion
 from code_goes_here.moothymoth import Orientation
 
 
@@ -149,6 +149,40 @@ def example_union_of_cubes():
     return result
 
 
+def example_hexagon_extrusion():
+    """
+    Regular hexagon extruded to 1m height, centered at origin.
+    
+    The hexagon has a radius of 0.5m (distance from center to vertices).
+    Vertices are positioned at 60-degree intervals starting from the positive X-axis.
+    Extruded from Z=0 to Z=1.
+    
+    Returns:
+        ConvexPolygonExtrusion CSG object
+    """
+    # Create regular hexagon with radius 0.5m
+    # Vertices at angles: 0°, 60°, 120°, 180°, 240°, 300°
+    radius = Rational(1, 2)  # 0.5 meters
+    
+    hexagon_points = [
+        Matrix([radius, 0]),                           # 0°
+        Matrix([radius/2, radius * sqrt(3)/2]),        # 60°
+        Matrix([-radius/2, radius * sqrt(3)/2]),       # 120°
+        Matrix([-radius, 0]),                          # 180°
+        Matrix([-radius/2, -radius * sqrt(3)/2]),      # 240°
+        Matrix([radius/2, -radius * sqrt(3)/2])        # 300°
+    ]
+    
+    hexagon = ConvexPolygonExtrusion(
+        points=hexagon_points,
+        length=1,  # 1 meter tall
+        position=Matrix([0, 0, 0]),  # Bottom face at Z=0
+        orientation=Orientation(eye(3))  # Identity orientation
+    )
+    
+    return hexagon
+
+
 # Dictionary for easy example selection
 EXAMPLES = {
     'cube_cutout': {
@@ -170,6 +204,11 @@ EXAMPLES = {
         'name': 'Union of Two Cubes',
         'description': 'Two 1x1x1 cubes joined edge-to-edge along X-axis',
         'function': example_union_of_cubes
+    },
+    'hexagon_extrusion': {
+        'name': 'Hexagon Extrusion',
+        'description': 'Regular hexagon (0.5m radius) extruded to 1m height',
+        'function': example_hexagon_extrusion
     }
 }
 

@@ -36,7 +36,7 @@ from examples.test_MeowMeowCSG_examples import EXAMPLES, get_example
 # ============================================================================
 # CONFIGURATION: Change this to test different examples
 # ============================================================================
-EXAMPLE_TO_RENDER = 'halfplane_cut'  # Options: 'cube_cutout', 'halfplane_cut', 'positioned_cube', 'union_cubes'
+EXAMPLE_TO_RENDER = 'hexagon_extrusion'  # Options: 'cube_cutout', 'halfplane_cut', 'positioned_cube', 'union_cubes', 'hexagon_extrusion'
 
 
 def render_csg_example(example_key: str):

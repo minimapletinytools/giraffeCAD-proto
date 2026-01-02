@@ -52,7 +52,7 @@ from sympy import Matrix
 from giraffe import CutTimber, Timber
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
-    MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference
+    MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference, ConvexPolygonExtrusion
 )
 from code_goes_here.rendering_utils import (
     calculate_structure_extents,
@@ -371,6 +371,56 @@ def create_cylinder_shape(cylinder: Cylinder) -> 'Part.Shape':
         return None
 
 
+def create_convex_polygon_extrusion_shape(extrusion: ConvexPolygonExtrusion) -> 'Part.Shape':
+    """
+    Create a FreeCAD shape from a ConvexPolygonExtrusion CSG.
+    
+    The polygon is extruded along the +Z axis from z=0 to z=length,
+    then the orientation and position are applied.
+    
+    Args:
+        extrusion: ConvexPolygonExtrusion CSG object
+        
+    Returns:
+        Part.Shape representing the extruded polygon
+    """
+    try:
+        # Convert 2D points to FreeCAD Vectors (in mm)
+        # Points are in the XY plane (Z=0)
+        points_2d = [
+            Vector(distance_to_mm(pt[0]), distance_to_mm(pt[1]), 0.0)
+            for pt in extrusion.points
+        ]
+        
+        # Close the polygon by adding the first point at the end
+        polygon_wire = Part.makePolygon(points_2d + [points_2d[0]])
+        
+        # Create a face from the polygon
+        polygon_face = Part.Face(polygon_wire)
+        
+        # Extrude the face along Z axis
+        length_mm = distance_to_mm(extrusion.length)
+        extrusion_vector = Vector(0, 0, length_mm)
+        solid = polygon_face.extrude(extrusion_vector)
+        
+        # Apply the extrusion's orientation and position if not at origin with identity orientation
+        from sympy import Matrix, eye
+        is_identity = (extrusion.orientation.matrix == eye(3))
+        is_at_origin = (extrusion.position == Matrix([0, 0, 0]))
+        
+        if not is_identity or not is_at_origin:
+            # Apply the extrusion's orientation and position
+            extrusion_placement = create_placement_from_orientation(extrusion.position, extrusion.orientation)
+            solid.Placement = extrusion_placement.multiply(solid.Placement)
+        
+        return solid
+        
+    except Exception as e:
+        print(f"Error creating convex polygon extrusion: {e}")
+        traceback.print_exc()
+        return None
+
+
 def render_csg_shape(csg: MeowMeowCSG, timber: Optional[Timber] = None, 
                      infinite_extent: float = 10000.0) -> Optional['Part.Shape']:
     """
@@ -392,6 +442,9 @@ def render_csg_shape(csg: MeowMeowCSG, timber: Optional[Timber] = None,
     
     elif isinstance(csg, Cylinder):
         return create_cylinder_shape(csg)
+    
+    elif isinstance(csg, ConvexPolygonExtrusion):
+        return create_convex_polygon_extrusion_shape(csg)
     
     elif isinstance(csg, HalfPlane):
         # HalfPlane is typically used for cutting operations, not standalone rendering
