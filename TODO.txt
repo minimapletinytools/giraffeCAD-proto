@@ -9,10 +9,9 @@ tests:
 -peg forward_length / stickout depth tests
 -peg_depth = none case, ensure it's picking the right axis to use for computing peg depth
 -peg orientation should be perpendicular to tenon timber
--add test point function t meow meow CSG this will be our main way of checking
--also add test on boundray function in meowmeow csg
 -test points in peg hole do not line in timber/mortise csg
 -test points in peg hole do lie on the peg CSG
+-test mortise depth and tenon depth using CSG test functions
 
 
 joint tests:
@@ -50,8 +49,9 @@ DONE-freecad
   DONE-clean up the run_ freecad stuff so it's more consist and easy to switch between examples
   DONE-add accesory rendering to freecad
 DONE-add basic extrude profiles to CSG
+DONE-update oscar shed to use mortise and tenon joint
 
--update oscar shed to use mortise and tenon joint
+-mortise hole calculation is incorrect please fix
 
 -add more features to mortise and tenon joint
   -probbaly add offset mortise peg param
@@ -108,7 +108,7 @@ DONE-add basic extrude profiles to CSG
       -non face aligned mortise and tenon joints... (maybe at least 1 axis should be face aligned...)
       -support tenon_rotation
       -support mortise_shoulder
-      
+
   -corner joints
     -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
       -otherwise calls into mortise_and_tenon above

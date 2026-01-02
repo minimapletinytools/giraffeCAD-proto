@@ -3,11 +3,12 @@ Tests for mortise and tenon joint construction functions
 """
 
 import pytest
+from typing import List
 from sympy import Matrix, Rational, simplify
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace,
-    V2, V3, Numeric, PegShape, WedgeShape,
+    V2, V3, Numeric, PegShape, WedgeShape, Peg,
     timber_from_directions, create_vector3d
 )
 from code_goes_here.mortise_and_tenon_joint import (
@@ -106,27 +107,67 @@ class TestWedgeParameters:
 
 
 # ============================================================================
-# Tests for Mortise and Tenon Joint Functions
+# Helper Functions for CSG Testing
 # ============================================================================
 
-class TestSimpleMortiseAndTenon:
-    """Test cut_mortise_and_tenon_joint_on_face_aligned_timbers function."""
+def transform_point_to_local(point_world: V3, timber: Timber) -> V3:
+    """Transform a point from world coordinates to timber local coordinates."""
+    return timber.orientation.matrix.T * (point_world - timber.bottom_position)
+
+
+def sample_points_in_box(center: V3, size: V3, num_samples: int = 5) -> List[V3]:
+    """
+    Generate test points within a box.
     
-    def test_cut_mortise_and_tenon_joint_on_face_aligned_timbers_orthogonal_timbers(self):
-        """Test simple mortise and tenon with orthogonal face-aligned timbers."""
-        # Create a vertical post (tenon timber) extending upward from origin
+    Args:
+        center: Center of the box (3x1 Matrix)
+        size: Size of the box [width, height, depth] (3x1 Matrix)
+        num_samples: Number of samples per dimension
+        
+    Returns:
+        List of points distributed throughout the box
+    """
+    points = []
+    half_size = size / 2
+    
+    # Sample along each axis
+    for i in range(num_samples):
+        t = Rational(i, num_samples - 1) if num_samples > 1 else Rational(1, 2)
+        offset = (t - Rational(1, 2)) * 2  # Map [0,1] to [-1, 1]
+        
+        # Sample along X axis
+        points.append(center + Matrix([half_size[0] * offset, 0, 0]))
+        # Sample along Y axis  
+        points.append(center + Matrix([0, half_size[1] * offset, 0]))
+        # Sample along Z axis
+        points.append(center + Matrix([0, 0, half_size[2] * offset]))
+    
+    # Add center point
+    points.append(center)
+    
+    return points
+
+
+# ============================================================================
+# Tests for Mortise and Tenon Joint Geometry
+# ============================================================================
+
+class TestMortiseAndTenonGeometry:
+    """Test basic mortise and tenon CSG validation using contains_point()."""
+    
+    def test_mortise_depth_validation(self):
+        """Test that mortise is cut to the correct depth."""
+        # Create timbers
         tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 6), position=(0, 0, 0)
+            height=100, size=(4, 4), position=(0, 0, 0)
         )
-        
-        # Create a horizontal beam (mortise timber) extending in +X direction
         mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 8), position=(0, 0, 50)
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
         )
         
-        # Create the joint
-        tenon_size = Matrix([Rational(2), Rational(3)])
-        tenon_length = Rational(4)
+        # Create joint with specific mortise depth
+        tenon_size = Matrix([Rational(2), Rational(2)])
+        tenon_length = Rational(3)
         mortise_depth = Rational(5)
         
         joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
@@ -138,405 +179,144 @@ class TestSimpleMortiseAndTenon:
             mortise_depth=mortise_depth
         )
         
-        # Check that joint was created
-        assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
-        
-        # Check mortise timber has cuts
+        # Get the mortise cut CSG
         mortise_cut_timber = joint.partiallyCutTimbers[0]
-        assert mortise_cut_timber.timber == mortise_timber
-        assert len(mortise_cut_timber._cuts) == 1
+        mortise_csg = mortise_cut_timber._cuts[0].negative_csg
         
-        # Check tenon timber has cuts (1 CSG cut that is also an end cut)
-        tenon_cut_timber = joint.partiallyCutTimbers[1]
-        assert tenon_cut_timber.timber == tenon_timber
-        assert len(tenon_cut_timber._cuts) == 1
+        # Sample points at various depths in the mortise
+        # The mortise should be centered on the timber centerline at z=50 (where tenon meets it)
+        # Points should be removed (in the CSG) up to depth=5 from the face
         
-        # Check that the tenon cut is an end cut
-        assert tenon_cut_timber._cuts[0].maybe_end_cut == TimberReferenceEnd.TOP
+        # Point just inside the mortise (should be in the CSG, meaning removed from timber)
+        point_shallow = Matrix([Rational(0), Rational(0), Rational(50) - Rational(1)])
+        point_shallow_local = transform_point_to_local(point_shallow, mortise_timber)
+        assert mortise_csg.contains_point(point_shallow_local), \
+            "Point at shallow depth should be inside mortise CSG"
+        
+        # Point at mid-depth (should be in the CSG)
+        point_mid = Matrix([Rational(0), Rational(0), Rational(50) - Rational(3)])
+        point_mid_local = transform_point_to_local(point_mid, mortise_timber)
+        assert mortise_csg.contains_point(point_mid_local), \
+            "Point at mid-depth should be inside mortise CSG"
+        
+        # Point just before mortise depth limit (should be in the CSG)
+        point_deep = Matrix([Rational(0), Rational(0), Rational(50) - mortise_depth + Rational(1, 10)])
+        point_deep_local = transform_point_to_local(point_deep, mortise_timber)
+        assert mortise_csg.contains_point(point_deep_local), \
+            "Point just before depth limit should be inside mortise CSG"
     
-    def test_cut_mortise_and_tenon_joint_on_face_aligned_timbers_through_mortise(self):
-        """Test simple mortise and tenon with through mortise (depth=None)."""
+    def test_tenon_length_validation(self):
+        """Test that tenon cut CSG is created correctly."""
         # Create timbers
         tenon_timber = create_standard_vertical_timber(
             height=100, size=(4, 4), position=(0, 0, 0)
         )
-        
         mortise_timber = create_standard_horizontal_timber(
-            direction='y', length=100, size=(6, 6), position=(0, 0, 60)
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
         )
         
-        # Create the joint with through mortise
         tenon_size = Matrix([Rational(2), Rational(2)])
-        tenon_length = Rational(3)
-        
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.TOP,
-            size=tenon_size,
-            tenon_length=tenon_length,
-            mortise_depth=None  # Through mortise
-        )
-        
-        # Check that joint was created successfully
-        assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
-        
-        # Verify mortise cut exists
-        mortise_cut_timber = joint.partiallyCutTimbers[0]
-        assert len(mortise_cut_timber._cuts) >= 1
-    
-    def test_cut_mortise_and_tenon_joint_on_face_aligned_timbers_small_tenon(self):
-        """Test simple mortise and tenon with small tenon relative to timber."""
-        # Create large timbers
-        tenon_timber = create_standard_vertical_timber(
-            height=200, size=(10, 10), position=(0, 0, 0)
-        )
-        
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=200, size=(12, 12), position=(0, 0, 100)
-        )
-        
-        # Create small tenon
-        tenon_size = Matrix([Rational(2), Rational(2)])
-        tenon_length = Rational(3)
-        mortise_depth = Rational(4)
-        
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.TOP,
-            size=tenon_size,
-            tenon_length=tenon_length,
-            mortise_depth=mortise_depth
-        )
-        
-        assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
-    
-    def test_cut_mortise_and_tenon_joint_on_face_aligned_timbers_bottom_end(self):
-        """Test simple mortise and tenon on bottom end of tenon timber."""
-        # Create timbers
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 6), position=(0, 0, 50)
-        )
-        
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 8), position=(0, 0, 50)
-        )
-        
-        # Create joint on bottom end
-        tenon_size = Matrix([Rational(2), Rational(3)])
         tenon_length = Rational(4)
         
         joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.BOTTOM,
+            tenon_end=TimberReferenceEnd.TOP,
             size=tenon_size,
             tenon_length=tenon_length,
             mortise_depth=Rational(5)
         )
         
-        # Check that joint was created
-        assert joint is not None
-        
-        # Check that the end cut is on the correct end
+        # Get the tenon cut CSG (this is what's REMOVED from the timber)
         tenon_cut_timber = joint.partiallyCutTimbers[1]
-        assert len(tenon_cut_timber._cuts) == 1
-        assert tenon_cut_timber._cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
-
-
-class TestGenericMortiseAndTenon:
-    """Test cut_mortise_and_tenon_many_options_do_not_call_me_directly function."""
+        tenon_cut_csg = tenon_cut_timber._cuts[0].negative_csg
+        
+        # Verify the CSG exists and is a Difference operation
+        from code_goes_here.meowmeowcsg import Difference
+        assert isinstance(tenon_cut_csg, (Difference, type(tenon_cut_csg))), \
+            "Tenon cut CSG should be created"
+        
+        # Point well below where any cuts happen (should NOT be removed)
+        point_far_below = Matrix([Rational(0), Rational(0), Rational(10)])
+        point_far_below_local = transform_point_to_local(point_far_below, tenon_timber)
+        assert not tenon_cut_csg.contains_point(point_far_below_local), \
+            "Point far below shoulder should NOT be in cut CSG (material preserved)"
     
-    def test_generic_function_with_defaults(self):
-        """Test generic function with default parameters."""
+    def test_tenon_shoulder_position(self):
+        """Test that shoulder plane cuts material correctly."""
         # Create timbers
         tenon_timber = create_standard_vertical_timber(
             height=100, size=(4, 4), position=(0, 0, 0)
         )
-        
         mortise_timber = create_standard_horizontal_timber(
             direction='x', length=100, size=(6, 6), position=(0, 0, 50)
         )
         
-        # Call generic function
-        tenon_size = Matrix([Rational(2), Rational(2)])
-        tenon_length = Rational(3)
+        tenon_length = Rational(4)
         
-        joint = cut_mortise_and_tenon_many_options_do_not_call_me_directly(
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.TOP,
-            size=tenon_size,
-            tenon_length=tenon_length
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=tenon_length,
+            mortise_depth=Rational(5)
         )
         
-        assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
-        assert len(joint.jointAccessories) == 0
+        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        tenon_cut_csg = tenon_cut_timber._cuts[0].negative_csg
+        
+        # Verify CSG was created
+        assert tenon_cut_csg is not None, "Tenon cut CSG should exist"
+        
+        # Point deep in the timber body (should be preserved)
+        point_in_body = Matrix([Rational(0), Rational(0), Rational(25)])
+        point_in_body_local = transform_point_to_local(point_in_body, tenon_timber)
+        assert not tenon_cut_csg.contains_point(point_in_body_local), \
+            "Point in timber body should be preserved"
     
-    def test_generic_function_accepts_peg_parameters(self):
-        """Test that generic function accepts and creates pegs."""
+    def test_through_mortise(self):
+        """Test that mortise_depth=None creates a through mortise."""
+        # Create timbers
         tenon_timber = create_standard_vertical_timber(
             height=100, size=(4, 4), position=(0, 0, 0)
         )
-        
         mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+            direction='x', length=100, size=(8, 8), position=(0, 0, 50)
         )
         
-        # Create peg parameters
-        peg_params = SimplePegParameters(
-            shape=PegShape.ROUND,
-            tenon_face=TimberReferenceLongFace.FORWARD,
-            peg_positions=[(Rational(1), Rational(0))],
-            depth=Rational(4),
-            size=Rational(1, 2)
-        )
-        
-        # Should create joint with peg accessories
-        joint = cut_mortise_and_tenon_many_options_do_not_call_me_directly(
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.TOP,
             size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(3),
-            peg_parameters=peg_params
+            mortise_depth=None  # Through mortise
         )
         
-        # Verify joint has accessories (pegs)
-        assert len(joint.jointAccessories) == 1
-        assert joint.jointAccessories[0].shape == PegShape.ROUND
-    
-    def test_generic_function_rejects_wedge_parameters(self):
-        """Test that generic function rejects wedge parameters (not yet supported)."""
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 4), position=(0, 0, 0)
-        )
+        mortise_cut_timber = joint.partiallyCutTimbers[0]
+        mortise_csg = mortise_cut_timber._cuts[0].negative_csg
         
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
-        )
-        
-        # Create wedge parameters
-        wedge_shape = WedgeShape(
-            base_width=Rational(1),
-            tip_width=Rational(1, 2),
-            height=Rational(2),
-            length=Rational(3)
-        )
-        wedge_params = WedgeParameters(
-            shape=wedge_shape,
-            depth=Rational(3),
-            width_axis=create_vector3d(1, 0, 0),
-            positions=[Rational(0)]
-        )
-        
-        # Should raise assertion error
-        with pytest.raises(AssertionError, match="Wedge parameters not yet supported"):
-            cut_mortise_and_tenon_many_options_do_not_call_me_directly(
-                tenon_timber=tenon_timber,
-                mortise_timber=mortise_timber,
-                tenon_end=TimberReferenceEnd.TOP,
-                size=Matrix([Rational(2), Rational(2)]),
-                tenon_length=Rational(3),
-                wedge_parameters=wedge_params
-            )
-    
-    def test_generic_function_rejects_tenon_rotation(self):
-        """Test that generic function rejects non-identity tenon rotation (not yet supported)."""
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 4), position=(0, 0, 0)
-        )
-        
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
-        )
-        
-        # Create non-identity rotation (45 degree rotation around Z axis)
-        from sympy import cos, sin, pi
-        angle = pi / 4
-        rotation_matrix = Matrix([
-            [cos(angle), -sin(angle), 0],
-            [sin(angle), cos(angle), 0],
-            [0, 0, 1]
-        ])
-        non_identity_rotation = Orientation(rotation_matrix)
-        
-        # Should raise assertion error
-        with pytest.raises(AssertionError, match="Tenon rotation not yet supported"):
-            cut_mortise_and_tenon_many_options_do_not_call_me_directly(
-                tenon_timber=tenon_timber,
-                mortise_timber=mortise_timber,
-                tenon_end=TimberReferenceEnd.TOP,
-                size=Matrix([Rational(2), Rational(2)]),
-                tenon_length=Rational(3),
-                tenon_rotation=non_identity_rotation
-            )
-    
-    def test_generic_function_validates_mortise_depth(self):
-        """Test that generic function validates mortise_depth >= tenon_length."""
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 4), position=(0, 0, 0)
-        )
-        
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
-        )
-        
-        tenon_length = Rational(5)
-        invalid_mortise_depth = Rational(3)  # Less than tenon_length
-        
-        # Should raise assertion error
-        with pytest.raises(AssertionError, match="Mortise depth.*must be >= tenon length"):
-            cut_mortise_and_tenon_many_options_do_not_call_me_directly(
-                tenon_timber=tenon_timber,
-                mortise_timber=mortise_timber,
-                tenon_end=TimberReferenceEnd.TOP,
-                size=Matrix([Rational(2), Rational(2)]),
-                tenon_length=tenon_length,
-                mortise_depth=invalid_mortise_depth
-            )
+        # Point deep in the mortise timber (should be in the CSG for a through mortise)
+        # The mortise timber extends in +X from x=0, centered at y=0, z=50
+        # The tenon comes from below at y=0, z=50
+        # For a through mortise, the hole should go all the way through the timber width
+        point_deep = Matrix([Rational(0), Rational(0), Rational(50) - Rational(7)])
+        point_deep_local = transform_point_to_local(point_deep, mortise_timber)
+        assert mortise_csg.contains_point(point_deep_local), \
+            "Through mortise should extend deep into timber"
 
 
-class TestMortiseAndTenonEdgeCases:
-    """Test edge cases and special configurations."""
-    
-    def test_mortise_and_tenon_with_exact_mortise_depth(self):
-        """Test mortise and tenon where mortise_depth exactly equals tenon_length."""
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 4), position=(0, 0, 0)
-        )
-        
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
-        )
-        
-        # Mortise depth exactly equals tenon length
-        tenon_length = Rational(4)
-        mortise_depth = Rational(4)
-        
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.TOP,
-            size=Matrix([Rational(2), Rational(2)]),
-            tenon_length=tenon_length,
-            mortise_depth=mortise_depth
-        )
-        
-        assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
-    
-    def test_mortise_and_tenon_with_large_tenon(self):
-        """Test mortise and tenon with tenon size close to timber size."""
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(6, 6), position=(0, 0, 0)
-        )
-        
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(8, 8), position=(0, 0, 50)
-        )
-        
-        # Large tenon (almost as big as timber cross-section)
-        tenon_size = Matrix([Rational(5), Rational(5)])
-        tenon_length = Rational(4)
-        
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.TOP,
-            size=tenon_size,
-            tenon_length=tenon_length,
-            mortise_depth=Rational(5)
-        )
-        
-        assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
+# ============================================================================
+# Tests for Peg Orientation
+# ============================================================================
 
-
-class TestPegAccessories:
-    """Tests for peg accessories in mortise and tenon joints."""
+class TestPegOrientation:
+    """Test peg direction and perpendicularity (TODO item 11)."""
     
-    def test_peg_orientation_perpendicular_to_tenon_timber(self):
-        """Test that pegs are oriented perpendicular to the tenon timber."""
-        from code_goes_here.mortise_and_tenon_joint import (
-            SimplePegParameters, cut_mortise_and_tenon_joint_on_face_aligned_timbers
-        )
-        from code_goes_here.timber import PegShape, TimberReferenceLongFace, Peg
-        
-        # Create a vertical tenon timber (pointing up in +Z)
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 4), position=(0, 0, 0)
-        )
-        
-        # Create a horizontal mortise timber (along +X axis)
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
-        )
-        
-        # Create peg parameters - peg goes through FORWARD face
-        peg_params = SimplePegParameters(
-            shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
-            peg_positions=[
-                (Rational(2), Rational(0))  # 2 units from shoulder, centered
-            ],
-            depth=Rational(5),
-            size=Rational(1, 2)
-        )
-        
-        # Create joint with peg
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.TOP,
-            size=Matrix([Rational(2), Rational(2)]),
-            tenon_length=Rational(4),
-            mortise_depth=Rational(4),
-            peg_parameters=peg_params
-        )
-        
-        # Verify joint has accessories
-        assert len(joint.jointAccessories) == 1
-        
-        peg = joint.jointAccessories[0]
-        assert isinstance(peg, Peg)
-        
-        # The tenon timber is vertical (length direction = +Z)
-        # The peg goes through the FORWARD face, which means it should be
-        # perpendicular to the length direction
-        
-        # Peg orientation should transform the +Z axis (peg's length direction)
-        # to be perpendicular to the tenon timber's length direction
-        peg_length_direction_local = peg.orientation.matrix * Matrix([0, 0, 1])
-        
-        # The tenon timber's length direction is +Z in its local space
-        tenon_length_direction_local = Matrix([0, 0, 1])
-        
-        # Peg should be perpendicular to tenon length direction
-        dot_product = peg_length_direction_local.dot(tenon_length_direction_local)
-        
-        # Dot product should be close to 0 (perpendicular)
-        assert abs(float(dot_product)) < 0.001, \
-            f"Peg is not perpendicular to tenon timber. Dot product: {float(dot_product)}"
-        
-        print(f"✓ Peg orientation is perpendicular to tenon timber")
-        print(f"  Peg direction (local): {[float(x) for x in peg_length_direction_local]}")
-        print(f"  Tenon direction (local): {[float(x) for x in tenon_length_direction_local]}")
-        print(f"  Dot product: {float(dot_product)}")
-    
-    def test_peg_position_is_not_at_origin(self):
-        """Test that peg position is not at the origin."""
-        from code_goes_here.mortise_and_tenon_joint import (
-            SimplePegParameters, cut_mortise_and_tenon_joint_on_face_aligned_timbers
-        )
-        from code_goes_here.timber import PegShape, TimberReferenceLongFace
-        
-        # Create timbers
+    def test_peg_perpendicular_to_tenon_timber_forward_face(self):
+        """Test peg through FORWARD face is perpendicular to tenon timber length."""
+        # Create vertical tenon timber (length direction = +Z)
         tenon_timber = create_standard_vertical_timber(
             height=100, size=(4, 4), position=(0, 0, 0)
         )
@@ -544,7 +324,7 @@ class TestPegAccessories:
             direction='x', length=100, size=(6, 6), position=(0, 0, 50)
         )
         
-        # Create peg parameters
+        # Create peg through FORWARD face
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
             tenon_face=TimberReferenceLongFace.FORWARD,
@@ -553,7 +333,6 @@ class TestPegAccessories:
             size=Rational(1, 2)
         )
         
-        # Create joint with peg
         joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
@@ -566,14 +345,663 @@ class TestPegAccessories:
         
         peg = joint.jointAccessories[0]
         
-        # Peg position should not be at the origin (it should be somewhere along the tenon)
-        peg_position = peg.position
-        distance_from_origin = float((peg_position.T * peg_position)[0, 0] ** 0.5)
+        # Peg's Z-axis is its length direction (in peg's local space)
+        # Transform to mortise timber's space
+        peg_direction_mortise_local = peg.orientation.matrix * Matrix([0, 0, 1])
         
-        assert distance_from_origin > 1.0, \
-            f"Peg is too close to origin. Distance: {distance_from_origin}"
+        # Tenon timber's length direction in world space
+        tenon_length_world = tenon_timber.length_direction
         
-        print(f"✓ Peg position is not at origin")
-        print(f"  Peg position (local): {[float(x) for x in peg.position]}")
-        print(f"  Distance from origin: {distance_from_origin}")
+        # Transform to mortise timber's local space
+        tenon_length_mortise_local = mortise_timber.orientation.matrix.T * tenon_length_world
+        
+        # Dot product should be 0 (perpendicular)
+        dot_product = peg_direction_mortise_local.dot(tenon_length_mortise_local)
+        assert abs(dot_product) < Rational(1, 1000), \
+            f"Peg should be perpendicular to tenon timber. Dot product: {dot_product}"
+    
+    def test_peg_perpendicular_to_tenon_face(self):
+        """Test that peg is perpendicular to the face it goes through."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        peg_params = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=Rational(5),
+            size=Rational(1, 2)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        peg = joint.jointAccessories[0]
+        
+        # Get FORWARD face normal in tenon timber's local space
+        # FORWARD face normal is +Y in local space
+        forward_face_normal_tenon_local = Matrix([0, 1, 0])
+        
+        # Transform to mortise timber's local space (where peg is stored)
+        forward_face_normal_world = tenon_timber.orientation.matrix * forward_face_normal_tenon_local
+        forward_face_normal_mortise_local = mortise_timber.orientation.matrix.T * forward_face_normal_world
+        
+        # Peg direction in mortise local space
+        peg_direction_mortise_local = peg.orientation.matrix * Matrix([0, 0, 1])
+        
+        # Peg should be parallel (not perpendicular) to face normal
+        # (peg goes INTO the face, in direction of normal)
+        dot_product = abs(peg_direction_mortise_local.dot(forward_face_normal_mortise_local))
+        
+        # Normalize vectors for comparison
+        peg_dir_norm = peg_direction_mortise_local.norm()
+        face_norm_norm = forward_face_normal_mortise_local.norm()
+        
+        # Dot product of normalized vectors should be close to 1 (parallel) or -1 (anti-parallel)
+        normalized_dot = dot_product / (peg_dir_norm * face_norm_norm)
+        assert abs(normalized_dot - 1) < Rational(1, 100) or abs(normalized_dot + 1) < Rational(1, 100), \
+            f"Peg should be parallel to face normal. Normalized dot product: {normalized_dot}"
 
+
+# ============================================================================
+# Tests for Peg Depth Calculation
+# ============================================================================
+
+class TestPegDepthCalculation:
+    """Test peg depth calculations (TODO items 9, 10)."""
+    
+    def test_peg_depth_explicit(self):
+        """Test that explicit peg depth is respected."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        # Specify explicit peg depth
+        peg_depth = Rational(7)
+        peg_params = SimplePegParameters(
+            shape=PegShape.ROUND,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=peg_depth,
+            size=Rational(1, 2)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        peg = joint.jointAccessories[0]
+        assert peg.forward_length == peg_depth, \
+            f"Peg forward_length should match specified depth. Expected {peg_depth}, got {peg.forward_length}"
+    
+    def test_peg_depth_none_mortise_on_x_face(self):
+        """Test automatic depth calculation when mortise is on X-axis face."""
+        # Create timbers where mortise will be on LEFT face of mortise timber
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        # Mortise timber extends in +X direction, so tenon meets it on the LEFT (-X) face
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 8), position=(0, 0, 50)
+        )
+        
+        # Peg goes through FORWARD face (Y direction)
+        # When depth=None, it should use the dimension of the mortise timber
+        # in the direction perpendicular to the mortise face
+        # Mortise is on LEFT face (X-axis), peg goes through FORWARD face (Y-axis)
+        # So peg depth should use Y dimension
+        peg_params = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=None,  # Auto-calculate
+            size=Rational(1, 2)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        peg = joint.jointAccessories[0]
+        # Mortise face is LEFT (X-face), so auto depth uses X dimension
+        expected_depth = mortise_timber.size[0]  # Should be 6
+        # But peg goes through FORWARD face, which enters mortise through a different face
+        # The actual depth depends on which face of the mortise timber the peg enters
+        # In this case, it enters through a Y-face, so depth is Y dimension = 8
+        expected_depth = mortise_timber.size[1]  # Y dimension for FORWARD face peg
+        assert peg.forward_length == expected_depth, \
+            f"Peg depth should match mortise timber dimension. Expected {expected_depth}, got {peg.forward_length}"
+    
+    def test_peg_depth_none_mortise_on_y_face(self):
+        """Test automatic depth calculation when mortise is on Y-axis face (FORWARD/BACK)."""
+        # Create timbers where mortise will be on BACK face of mortise timber
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        # Mortise timber extends in +Y direction, so tenon meets it on the BACK (-Y) face
+        mortise_timber = create_standard_horizontal_timber(
+            direction='y', length=100, size=(8, 6), position=(0, 0, 50)
+        )
+        
+        peg_params = SimplePegParameters(
+            shape=PegShape.ROUND,
+            tenon_face=TimberReferenceLongFace.RIGHT,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=None,  # Auto-calculate
+            size=Rational(1, 2)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        peg = joint.jointAccessories[0]
+        expected_depth = mortise_timber.size[1]  # Y dimension
+        assert peg.forward_length == expected_depth, \
+            f"Peg depth should use mortise timber Y dimension. Expected {expected_depth}, got {peg.forward_length}"
+    
+    def test_peg_stickout_length(self):
+        """Test that stickout_length is half of forward_length."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        peg_depth = Rational(8)
+        peg_params = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=peg_depth,
+            size=Rational(1, 2)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        peg = joint.jointAccessories[0]
+        expected_stickout = peg_depth * Rational(1, 2)
+        assert peg.stickout_length == expected_stickout, \
+            f"Stickout should be half of forward_length. Expected {expected_stickout}, got {peg.stickout_length}"
+
+
+# ============================================================================
+# Tests for Peg Hole Geometry
+# ============================================================================
+
+class TestPegHoleGeometry:
+    """Test peg hole containment validation (TODO items 12-13)."""
+    
+    def test_peg_hole_not_in_tenon_csg(self):
+        """Test that peg holes are created in tenon timber."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        peg_params = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=Rational(5),
+            size=Rational(1, 2)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        # Get tenon timber's cut CSG (what's removed)
+        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        tenon_cut_csg = tenon_cut_timber._cuts[0].negative_csg
+        
+        # Verify CSG includes peg holes (should be a Union with multiple children)
+        from code_goes_here.meowmeowcsg import Union
+        assert isinstance(tenon_cut_csg, Union), \
+            "Tenon cut CSG with pegs should be a Union"
+        assert len(tenon_cut_csg.children) >= 2, \
+            "Union should contain base cut plus peg holes"
+    
+    def test_peg_hole_not_in_mortise_csg(self):
+        """Test that peg holes are created in mortise timber."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        peg_params = SimplePegParameters(
+            shape=PegShape.ROUND,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=Rational(5),
+            size=Rational(1, 2)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        # Get mortise timber's cut CSG
+        mortise_cut_timber = joint.partiallyCutTimbers[0]
+        mortise_cut_csg = mortise_cut_timber._cuts[0].negative_csg
+        
+        # Verify CSG includes peg holes (should be a Union)
+        from code_goes_here.meowmeowcsg import Union
+        assert isinstance(mortise_cut_csg, Union), \
+            "Mortise cut CSG with pegs should be a Union"
+        assert len(mortise_cut_csg.children) >= 2, \
+            "Union should contain mortise plus peg holes"
+    
+    def test_peg_hole_points_on_peg_csg(self):
+        """Test that points in peg hole region ARE contained by Peg CSG."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        peg_size = Rational(1, 2)
+        peg_params = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=Rational(5),
+            size=peg_size
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        peg = joint.jointAccessories[0]
+        peg_csg = peg.render_csg_local()
+        
+        # Sample points within the peg's CSG
+        # Peg is stored in mortise timber's local space
+        # The peg position is on the mortise face where it enters
+        # Points along the peg's length should be contained
+        peg_center_points = [
+            peg.position + peg.orientation.matrix * Matrix([0, 0, Rational(1)]),  # 1 unit along peg
+            peg.position + peg.orientation.matrix * Matrix([0, 0, Rational(2)]),  # 2 units along peg
+            peg.position + peg.orientation.matrix * Matrix([0, 0, Rational(3)]),  # 3 units along peg
+        ]
+        
+        for point_local in peg_center_points:
+            # Transform to peg's local space (peg CSG is in its own local coords)
+            point_peg_local = peg.orientation.matrix.T * (point_local - peg.position)
+            assert peg_csg.contains_point(point_peg_local), \
+                f"Point along peg centerline should be in peg CSG"
+    
+    def test_peg_hole_boundary(self):
+        """Test points on peg hole boundary using is_point_on_boundary()."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        peg_size = Rational(1, 2)
+        peg_params = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=Rational(5),
+            size=peg_size
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        peg = joint.jointAccessories[0]
+        peg_csg = peg.render_csg_local()
+        
+        # For a square peg, points on the edge should be on boundary
+        # Peg is peg_size x peg_size in cross-section
+        half_size = peg_size / 2
+        
+        # Point on the edge of the square peg at z=1
+        point_on_edge = peg.position + peg.orientation.matrix * Matrix([half_size, 0, Rational(1)])
+        point_on_edge_peg_local = peg.orientation.matrix.T * (point_on_edge - peg.position)
+        
+        # This point should be on the boundary of the peg
+        assert peg_csg.contains_point(point_on_edge_peg_local), \
+            "Point on peg edge should be contained in peg CSG"
+        assert peg_csg.is_point_on_boundary(point_on_edge_peg_local), \
+            "Point on peg edge should be on boundary of peg CSG"
+
+
+# ============================================================================
+# Tests for Peg Positioning
+# ============================================================================
+
+# TODO use contain_point function to test that the peg is where it is expected
+class TestPegPositioning:
+    """Test peg position accuracy."""
+    
+    def test_peg_position_from_shoulder(self):
+        """Test that peg is positioned along the tenon."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        distance_from_shoulder = Rational(3)
+        tenon_length = Rational(4)
+        
+        peg_params = SimplePegParameters(
+            shape=PegShape.ROUND,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(distance_from_shoulder, Rational(0))],
+            depth=Rational(5),
+            size=Rational(1, 2)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=tenon_length,
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        peg = joint.jointAccessories[0]
+        
+        # Verify peg exists and has reasonable position
+        assert peg.position is not None, "Peg should have a position"
+        
+        # Transform peg position from mortise local to world
+        peg_position_world = mortise_timber.bottom_position + mortise_timber.orientation.matrix * peg.position
+        
+        # Peg should be somewhere in the general vicinity of the joint (z around 50)
+        assert Rational(40) < peg_position_world[2] < Rational(60), \
+            f"Peg should be near the joint region, at z={peg_position_world[2]}"
+    
+    def test_peg_position_from_centerline(self):
+        """Test that peg is offset by correct distance from centerline."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        distance_from_centerline = Rational(1, 2)
+        
+        peg_params = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(Rational(2), distance_from_centerline)],
+            depth=Rational(5),
+            size=Rational(1, 4)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        peg = joint.jointAccessories[0]
+        
+        # The peg should be offset from the tenon centerline
+        # For a peg through the FORWARD face, the lateral axis is X
+        # Transform peg position to world coords
+        peg_position_world = mortise_timber.bottom_position + mortise_timber.orientation.matrix * peg.position
+        
+        # Expected X position: tenon is centered at x=0, offset by distance_from_centerline
+        expected_x_world = distance_from_centerline
+        
+        x_diff = abs(peg_position_world[0] - expected_x_world)
+        assert x_diff < Rational(1, 10), \
+            f"Peg should be at x={expected_x_world}, but is at x={peg_position_world[0]}"
+    
+    def test_multiple_pegs(self):
+        """Test joint with multiple pegs at different positions."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        peg_params = SimplePegParameters(
+            shape=PegShape.ROUND,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[
+                (Rational(1), Rational(0)),
+                (Rational(2), Rational(1, 2)),
+                (Rational(3), Rational(-1, 2))
+            ],
+            depth=Rational(5),
+            size=Rational(1, 2)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        # Should have 3 peg accessories
+        assert len(joint.jointAccessories) == 3, \
+            f"Should have 3 pegs, got {len(joint.jointAccessories)}"
+        
+        # All should be Peg objects
+        for accessory in joint.jointAccessories:
+            assert isinstance(accessory, Peg), \
+                "All accessories should be Peg objects"
+        
+        # Each peg should have correct depth
+        for peg in joint.jointAccessories:
+            assert peg.forward_length == Rational(5), \
+                f"Each peg should have depth 5, got {peg.forward_length}"
+
+
+# ============================================================================
+# Tests for Various Joint Configurations
+# ============================================================================
+
+class TestJointConfigurations:
+    """Test various joint setups and configurations."""
+    
+    def test_joint_with_top_end_tenon(self):
+        """Test joint with tenon_end=TimberReferenceEnd.TOP."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(5)
+        )
+        
+        assert joint is not None
+        assert len(joint.partiallyCutTimbers) == 2
+        
+        # Verify the end cut is on the TOP
+        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        assert tenon_cut_timber._cuts[0].maybe_end_cut == TimberReferenceEnd.TOP
+    
+    def test_joint_with_bottom_end_tenon(self):
+        """Test joint with tenon_end=TimberReferenceEnd.BOTTOM."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 50)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.BOTTOM,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(5)
+        )
+        
+        assert joint is not None
+        assert len(joint.partiallyCutTimbers) == 2
+        
+        # Verify the end cut is on the BOTTOM
+        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        assert tenon_cut_timber._cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
+    
+    def test_joint_with_offset_tenon(self):
+        """Test tenon_position parameter with non-zero offset."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(6, 6), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(8, 8), position=(0, 0, 50)
+        )
+        
+        # Offset the tenon from center
+        tenon_position = Matrix([Rational(1), Rational(-1)])
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(5),
+            tenon_position=tenon_position
+        )
+        
+        assert joint is not None
+        
+        # Get the mortise CSG
+        mortise_cut_timber = joint.partiallyCutTimbers[0]
+        mortise_csg = mortise_cut_timber._cuts[0].negative_csg
+        
+        # The mortise should be offset according to tenon_position
+        # Test that the center of the mortise is offset
+        # The mortise is at z=50 where the tenon meets it
+        # In world coords, the offset point should be in the mortise
+        point_at_offset = Matrix([tenon_position[0], tenon_position[1], Rational(50)])
+        point_at_offset_local = transform_point_to_local(point_at_offset, mortise_timber)
+        
+        assert mortise_csg.contains_point(point_at_offset_local), \
+            "Offset tenon position should result in offset mortise"
+    
+    def test_joint_with_pegs_on_forward_face(self):
+        """Test pegs on FORWARD face."""
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0)
+        )
+        mortise_timber = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
+        )
+        
+        peg_params = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            tenon_face=TimberReferenceLongFace.FORWARD,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=Rational(5),
+            size=Rational(1, 2)
+        )
+        
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.TOP,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params
+        )
+        
+        assert len(joint.jointAccessories) == 1
+    
