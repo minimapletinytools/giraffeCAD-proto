@@ -95,6 +95,28 @@ class TimberFace(Enum):
         return (self_in_x and (other_in_y or other_in_z)) or \
                (self_in_y and (other_in_x or other_in_z)) or \
                (self_in_z and (other_in_x or other_in_y))
+    
+    def get_opposite_face(self) -> 'TimberFace':
+        """
+        Get the opposite face (the face on the opposite side of the timber).
+        
+        Opposite pairs:
+        - TOP <-> BOTTOM
+        - RIGHT <-> LEFT
+        - FORWARD <-> BACK
+        """
+        if self == TimberFace.TOP:
+            return TimberFace.BOTTOM
+        elif self == TimberFace.BOTTOM:
+            return TimberFace.TOP
+        elif self == TimberFace.RIGHT:
+            return TimberFace.LEFT
+        elif self == TimberFace.LEFT:
+            return TimberFace.RIGHT
+        elif self == TimberFace.FORWARD:
+            return TimberFace.BACK
+        else:  # BACK
+            return TimberFace.FORWARD
 
 class TimberReferenceEnd(Enum):
     TOP = 1
