@@ -304,7 +304,6 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Create the mortise prism in the mortise timber's LOCAL coordinate system
     # We create a prism representing the tenon volume
     
-    # Transform tenon timber's orientation to mortise timber's local coordinates
     relative_orientation = Orientation(mortise_timber.orientation.matrix.T * tenon_timber.orientation.matrix)
     
     # The intersection_point is already the tenon center position in world coordinates
@@ -318,8 +317,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         size=size,
         orientation=relative_orientation,
         position=tenon_origin_local,
-        start_distance=-actual_mortise_depth,  # Extends backward into the mortise
-        end_distance=tenon_length * 2  # Extends forward past the shoulder
+        start_distance= -actual_mortise_depth if tenon_end == TimberReferenceEnd.BOTTOM else 0,
+        end_distance= actual_mortise_depth if tenon_end == TimberReferenceEnd.TOP else 0
     )
     
     # Create the CSGCut for the mortise
