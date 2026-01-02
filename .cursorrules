@@ -33,7 +33,10 @@ python3 -m pytest tests/test_giraffe.py::TestFootprint -v
 
 ## Coding Philosophy
 
-- simplicity and clarity over performance!
+- simplicity over performance!
+    - the code should be easily understandtable.
+- clarity over conciseness!
+    - the API can be a little verbose so that what's happening is explicit from the surface!
 - apart from during its initial construction, avoid using data in a mutable way
 - after construction, always treat data as if it's immutable
 - python is a bit of an implementation detail, I would have preferred to hav ewritten this in a functional language

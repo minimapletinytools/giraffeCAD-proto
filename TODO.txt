@@ -1,5 +1,7 @@
 
 
+
+
 :: 1/1/2026 tests update notes
 
 
@@ -54,7 +56,7 @@ DONE-see if you can fix the transform issue in fusion360...  should be able to d
   -clean up the run_ freecad stuff so it's more consist and easy to switch between examples
   -add accesory rendering to freecad
 
-
+-add basic extrude profiles to CSG
 
 -DECISION TIME
   -consider adding "Thing" base class, that has position and orientation 
