@@ -49,25 +49,24 @@ DONE-see if you can fix the transform issue in fusion360...  should be able to d
 DONE-freecad
   DONE-clean up the run_ freecad stuff so it's more consist and easy to switch between examples
   DONE-add accesory rendering to freecad
+DONE-add basic extrude profiles to CSG
 
 -update oscar shed to use mortise and tenon joint
 
 -add more features to mortise and tenon joint
-  -make sure it works for non face aligned cases
   -probbaly add offset mortise peg param
+  -support non face aligned cases
+  
   -extract out peg creation stuff, it will be useful in other places
     -basically, just figure out the start point and direction of the peg... it will return to you a tuple of prisms to substract from the mortise and tenon timber, and a peg accessory
 
-
+-add extrude polygon csg rendering to fusino 360
 
 -cleanup
   -add a ALLOW_FLOATS global boolean, and add some asserts if there are floats if this boolean is false (which it should be)
   -make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
   DONE-clean up moothymoth tests to not use exact euality...
 
-
-
--add basic extrude profiles to CSG
 
 -DECISION TIME
   -consider adding "Thing" base class, that has position and orientation 
@@ -98,14 +97,18 @@ DONE-freecad
   -butt joints
     -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
       DONE-mortise and tenon
-      -through mortise and tenon
+      DONE-draw bore mortise and tenon
+      DONE-through mortise and tenon
       -wedged mortise and tenon
       -wedged through mortise and tenon
       -fox wedge mortise and tenon
-      DONE-draw bore mortise and tenon
       -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
         -same as draw bore but with komisen peg,
       -tusked mortise and tenon
+      -non face aligned mortise and tenon joints... (maybe at least 1 axis should be face aligned...)
+      -support tenon_rotation
+      -support mortise_shoulder
+      
   -corner joints
     -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
       -otherwise calls into mortise_and_tenon above
