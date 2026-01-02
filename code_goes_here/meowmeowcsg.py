@@ -192,7 +192,8 @@ class Prism(MeowMeowCSG):
         size: Cross-section dimensions [width, height] (2x1 Matrix)
         orientation: Orientation matrix defining the prism's coordinate system
         position: Position of the prism origin in global coordinates (3x1 Matrix, default: origin)
-        start_distance: Distance from position along Z-axis to start of prism (None = infinite)
+        start_distance: Distance from position along Z-axis to start of prism (None = 
+        -infinite)
         end_distance: Distance from position along Z-axis to end of prism (None = infinite)
     """
     size: V2
@@ -406,7 +407,7 @@ class Cylinder(MeowMeowCSG):
         axis_direction: Direction of the cylinder's axis (3x1 Matrix)
         radius: Radius of the cylinder
         position: Position of the cylinder origin in global coordinates (3x1 Matrix, default: origin)
-        start_distance: Distance from position to start of cylinder (None = infinite)
+        start_distance: Distance from position to start of cylinder (None = -infinite)
         end_distance: Distance from position to end of cylinder (None = infinite)
     """
     axis_direction: Direction3D  # direction of the cylinder's axis, which is the +Z local axis
