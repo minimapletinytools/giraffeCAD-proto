@@ -7,7 +7,7 @@ from code_goes_here.moothymoth import inches
 from code_goes_here.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace,
     PegShape, timber_from_directions,
-    create_vector3d, V2, CutTimber, PartiallyCutTimber
+    create_vector3d, V2, CutTimber
 )
 from code_goes_here.mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
@@ -425,7 +425,7 @@ def create_all_mortise_and_tenon_examples(return_accessories: bool = False):
         translated_timbers = []
         
         # Translate timbers to current position
-        for timber in joint.partiallyCutTimbers:
+        for timber in joint.cut_timbers:
             new_position = timber.timber.bottom_position + create_vector3d(current_position_x, 0, 0)
             translated_timber = Timber(
                 name=timber.timber.name,
@@ -434,7 +434,7 @@ def create_all_mortise_and_tenon_examples(return_accessories: bool = False):
                 size=timber.timber.size,
                 length=timber.timber.length
             )
-            all_timbers.append(PartiallyCutTimber(timber=translated_timber, cuts=timber._cuts))
+            all_timbers.append(CutTimber(timber=translated_timber, cuts=timber._cuts))
             translated_timbers.append(translated_timber)
         
         # Collect joint accessories (already in timber-relative coordinates)
@@ -475,10 +475,10 @@ if __name__ == "__main__":
         print('='*60)
         
         joint = example_func()
-        print(f"✅ Created joint with {len(joint.partiallyCutTimbers)} timbers")
+        print(f"✅ Created joint with {len(joint.cut_timbers)} timbers")
         
         # Display timber details
-        for i, cut_timber in enumerate(joint.partiallyCutTimbers):
+        for i, cut_timber in enumerate(joint.cut_timbers):
             timber = cut_timber._timber
             print(f"\n  Timber {i+1}: {timber.name}")
             print(f"    Position: ({float(timber.bottom_position[0]):.1f}, {float(timber.bottom_position[1]):.1f}, {float(timber.bottom_position[2]):.1f})")

@@ -971,9 +971,6 @@ class CutTimber:
         from .meowmeowcsg import Difference
         return Difference(starting_csg, negative_csgs)
 
-# TODO get rid of this, not really useful...
-class PartiallyCutTimber(CutTimber):
-    pass
 
 # TODO rename to just Accessory
 @dataclass(frozen=True)
@@ -1152,8 +1149,115 @@ class Wedge(JointAccessory):
 
 @dataclass(frozen=True)
 class Joint:
-    partiallyCutTimbers: Tuple[PartiallyCutTimber, ...]
+    cut_timbers: Tuple[CutTimber, ...]
     jointAccessories: Tuple[JointAccessory, ...] = ()
+
+
+@dataclass(frozen=True)
+class Frame:
+    """
+    Represents a complete timber frame structure with all cut timbers and accessories.
+    
+    In traditional timber framing, a 'frame' is the complete structure ready for raising.
+    This class encapsulates all the timbers that have been cut with their joints,
+    plus any accessories like pegs, wedges, or drawbores.
+    
+    Attributes:
+        cut_timbers: List of CutTimber objects representing all timbers in the frame
+        accessories: List of (accessory, timber) tuples for joint accessories
+        name: Optional name for this frame (e.g., "Oscar's Shed", "Main Frame")
+    """
+    cut_timbers: List[CutTimber]
+    accessories: List[Tuple[JointAccessory, Timber]] = field(default_factory=list)
+    name: Optional[str] = None
+    
+    def __post_init__(self):
+        """Validate that the frame contains no floating point numbers."""
+        self._check_no_floats()
+    
+    def _check_no_floats(self):
+        """
+        Check that all numeric values in the frame use SymPy Rationals, not floats.
+        
+        Raises:
+            AssertionError: If any float values are found in the frame
+        """
+        # Check all cut timbers
+        for cut_timber in self.cut_timbers:
+            timber = cut_timber.timber
+            self._check_timber_no_floats(timber)
+            
+            # Check all cuts on this timber
+            for cut in cut_timber._cuts:
+                self._check_cut_no_floats(cut)
+        
+        # Check all accessories
+        for accessory, timber in self.accessories:
+            self._check_accessory_no_floats(accessory)
+            self._check_timber_no_floats(timber)
+    
+    def _check_timber_no_floats(self, timber: Timber):
+        """Check a single timber for float values."""
+        self._check_numeric_value(timber.length, f"Timber '{timber.name}' length")
+        self._check_vector(timber.size, f"Timber '{timber.name}' size")
+        self._check_vector(timber.bottom_position, f"Timber '{timber.name}' bottom_position")
+        # Note: orientation.matrix is checked as part of the matrix
+        self._check_matrix(timber.orientation.matrix, f"Timber '{timber.name}' orientation")
+    
+    def _check_accessory_no_floats(self, accessory: JointAccessory):
+        """Check an accessory for float values."""
+        if isinstance(accessory, Peg):
+            self._check_vector(accessory.position, f"Peg position")
+            self._check_numeric_value(accessory.size, f"Peg size")
+            self._check_numeric_value(accessory.forward_length, f"Peg forward_length")
+            self._check_numeric_value(accessory.stickout_length, f"Peg stickout_length")
+            self._check_matrix(accessory.orientation.matrix, f"Peg orientation")
+        elif isinstance(accessory, Wedge):
+            self._check_vector(accessory.position, f"Wedge position")
+            self._check_numeric_value(accessory.base_width, f"Wedge base_width")
+            self._check_numeric_value(accessory.tip_width, f"Wedge tip_width")
+            self._check_numeric_value(accessory.height, f"Wedge height")
+            self._check_numeric_value(accessory.length, f"Wedge length")
+            self._check_matrix(accessory.orientation.matrix, f"Wedge orientation")
+    
+    def _check_cut_no_floats(self, cut: Cut):
+        """Check a cut for float values."""
+        if isinstance(cut, HalfPlaneCut):
+            half_plane = cut.half_plane
+            self._check_vector(half_plane.normal, "HalfPlaneCut normal")
+            self._check_numeric_value(half_plane.offset, "HalfPlaneCut offset")
+        elif isinstance(cut, CSGCut):
+            # CSGCut contains arbitrary CSG - would need recursive checking
+            # For now, we'll skip deep CSG validation
+            pass
+    
+    def _check_numeric_value(self, value: Numeric, description: str):
+        """Check that a numeric value is not a float."""
+        if isinstance(value, float):
+            raise AssertionError(
+                f"Float detected in Frame: {description} = {value}. "
+                f"All numeric values must use SymPy Rational, not float."
+            )
+        # Also check if it's a SymPy expression containing floats
+        if isinstance(value, Expr):
+            # Check if any atoms in the expression are floats
+            if any(isinstance(atom, float) or (hasattr(atom, 'is_Float') and atom.is_Float) 
+                   for atom in value.atoms()):
+                raise AssertionError(
+                    f"Float detected in Frame: {description} contains float in expression {value}. "
+                    f"All numeric values must use SymPy Rational, not float."
+                )
+    
+    def _check_vector(self, vec: Matrix, description: str):
+        """Check that all elements in a vector are not floats."""
+        for i in range(vec.rows):
+            self._check_numeric_value(vec[i], f"{description}[{i}]")
+    
+    def _check_matrix(self, mat: Matrix, description: str):
+        """Check that all elements in a matrix are not floats."""
+        for i in range(mat.rows):
+            for j in range(mat.cols):
+                self._check_numeric_value(mat[i, j], f"{description}[{i},{j}]")
 
 
 # ============================================================================

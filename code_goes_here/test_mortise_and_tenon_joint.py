@@ -178,7 +178,7 @@ class TestMortiseAndTenonGeometry:
         )
         
         # Get the tenon cut CSG (this is what's REMOVED from the timber)
-        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        tenon_cut_timber = joint.cut_timbers[1]
         tenon_cut_csg = tenon_cut_timber._cuts[0].negative_csg
         
         # Verify the CSG exists and is a Difference operation
@@ -213,7 +213,7 @@ class TestMortiseAndTenonGeometry:
             mortise_depth=Rational(5)
         )
         
-        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        tenon_cut_timber = joint.cut_timbers[1]
         tenon_cut_csg = tenon_cut_timber._cuts[0].negative_csg
         
         # Verify CSG was created
@@ -269,8 +269,8 @@ class TestMortiseAndTenonGeometry:
         )
         
         # Get the cut timbers
-        mortise_cut_timber = joint.partiallyCutTimbers[0]
-        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        mortise_cut_timber = joint.cut_timbers[0]
+        tenon_cut_timber = joint.cut_timbers[1]
         
         # Get the CSGs representing the final timber shapes
         # For tenon timber: original timber minus cuts
@@ -632,7 +632,7 @@ class TestPegHoleGeometry:
         )
         
         # Get tenon timber's cut CSG (what's removed)
-        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        tenon_cut_timber = joint.cut_timbers[1]
         tenon_cut_csg = tenon_cut_timber._cuts[0].negative_csg
         
         # Verify CSG includes peg holes (should be a Union with multiple children)
@@ -670,7 +670,7 @@ class TestPegHoleGeometry:
         )
         
         # Get mortise timber's cut CSG
-        mortise_cut_timber = joint.partiallyCutTimbers[0]
+        mortise_cut_timber = joint.cut_timbers[0]
         mortise_cut_csg = mortise_cut_timber._cuts[0].negative_csg
         
         # Verify CSG includes peg holes (should be a Union)
@@ -938,10 +938,10 @@ class TestJointConfigurations:
         )
         
         assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
+        assert len(joint.cut_timbers) == 2
         
         # Verify the end cut is on the TOP
-        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        tenon_cut_timber = joint.cut_timbers[1]
         assert tenon_cut_timber._cuts[0].maybe_end_cut == TimberReferenceEnd.TOP
     
     def test_joint_with_bottom_end_tenon(self):
@@ -963,10 +963,10 @@ class TestJointConfigurations:
         )
         
         assert joint is not None
-        assert len(joint.partiallyCutTimbers) == 2
+        assert len(joint.cut_timbers) == 2
         
         # Verify the end cut is on the BOTTOM
-        tenon_cut_timber = joint.partiallyCutTimbers[1]
+        tenon_cut_timber = joint.cut_timbers[1]
         assert tenon_cut_timber._cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
     
     def test_joint_with_offset_tenon(self):
@@ -994,7 +994,7 @@ class TestJointConfigurations:
         assert joint is not None
         
         # Get the mortise CSG
-        mortise_cut_timber = joint.partiallyCutTimbers[0]
+        mortise_cut_timber = joint.cut_timbers[0]
         mortise_csg = mortise_cut_timber._cuts[0].negative_csg
         
         # The mortise should be offset according to tenon_position
