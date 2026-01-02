@@ -971,6 +971,7 @@ class CutTimber:
         from .meowmeowcsg import Difference
         return Difference(starting_csg, negative_csgs)
 
+# TODO get rid of this, not really useful...
 class PartiallyCutTimber(CutTimber):
     pass
 
