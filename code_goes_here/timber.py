@@ -943,9 +943,21 @@ class PartiallyCutTimber(CutTimber):
 
 # TODO rename to just Accessory
 @dataclass(frozen=True)
-class JointAccessory:
+class JointAccessory(ABC):
     """Base class for joint accessories like wedges, drawbores, etc."""
-    pass
+    
+    @abstractmethod
+    def render_csg_local(self) -> MeowMeowCSG:
+        """
+        Generate CSG representation of the accessory in local space.
+        
+        The local space is defined by the accessory's orientation and position,
+        where the CSG is generated at the origin with identity orientation.
+        
+        Returns:
+            MeowMeowCSG: The CSG representation of the accessory in local space
+        """
+        pass
 
 
 # ============================================================================
@@ -989,6 +1001,36 @@ class Peg(JointAccessory):
 
     # how far the peg "sticks out" in the back direction
     stickout_length: Numeric
+    
+    def render_csg_local(self) -> MeowMeowCSG:
+        """
+        Generate CSG representation of the peg in local space.
+        
+        The peg is centered at the origin with identity orientation,
+        extending from -stickout_length to forward_length along the Z axis.
+        
+        Returns:
+            MeowMeowCSG: The CSG representation of the peg
+        """
+        if self.shape == PegShape.SQUARE:
+            # Square peg - use Prism with square cross-section
+            return Prism(
+                size=create_vector2d(self.size, self.size),
+                orientation=Orientation.identity(),
+                position=create_vector3d(0, 0, 0),
+                start_distance=self.stickout_length,
+                end_distance=self.forward_length
+            )
+        else:  # PegShape.ROUND
+            # Round peg - use Cylinder
+            radius = self.size / 2
+            return Cylinder(
+                axis_direction=create_vector3d(0, 0, 1),
+                radius=radius,
+                position=create_vector3d(0, 0, 0),
+                start_distance=self.stickout_length,
+                end_distance=self.forward_length
+            )
 
 
 @dataclass(frozen=True)
@@ -1041,6 +1083,37 @@ class Wedge(JointAccessory):
     def width(self) -> Numeric:
         """Alias for base_width for convenience."""
         return self.base_width
+    
+    def render_csg_local(self) -> MeowMeowCSG:
+        """
+        Generate CSG representation of the wedge in local space.
+        
+        The wedge is created using CSG operations with half-planes to form
+        a trapezoidal prism. The base is at z=0 and extends to z=length.
+        The wedge tapers from base_width to tip_width in the X direction,
+        and has a trapezoidal profile in the YZ plane.
+        
+        For now, this creates a simplified bounding box representation.
+        TODO: Implement proper trapezoidal shape using half-plane intersections.
+        
+        Returns:
+            MeowMeowCSG: The CSG representation of the wedge
+        """
+        # Create a rectangular prism bounding box
+        # The origin is at the bottom center of the base (z=0, y=0, x=0)
+        # The prism extends from z=0 to z=length
+        # Width (x): centered, so from -base_width/2 to +base_width/2
+        # Height (y): from 0 to height
+        
+        # For Prism, position is the center of the cross-section at the reference point
+        # The cross-section is centered in XY, so position should be at the center
+        return Prism(
+            size=create_vector2d(self.base_width, self.height),
+            orientation=Orientation.identity(),
+            position=create_vector3d(0, self.height / 2, 0),
+            start_distance=0,
+            end_distance=self.length
+        )
 
 
 @dataclass(frozen=True)

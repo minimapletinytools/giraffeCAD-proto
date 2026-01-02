@@ -1134,6 +1134,51 @@ class TestPeg:
         
         with pytest.raises(Exception):  # FrozenInstanceError
             peg.size = Rational(3)
+    
+    def test_peg_render_csg_local_square(self):
+        """Test rendering square peg CSG in local space."""
+        peg = Peg(
+            orientation=Orientation.identity(),
+            position=create_vector3d(0, 0, 0),
+            size=Rational(2),
+            shape=PegShape.SQUARE,
+            forward_length=Rational(10),
+            stickout_length=Rational(1)
+        )
+        
+        csg = peg.render_csg_local()
+        
+        # Should return a Prism
+        from .meowmeowcsg import Prism
+        assert isinstance(csg, Prism)
+        
+        # Verify dimensions
+        assert csg.size[0] == Rational(2)  # width
+        assert csg.size[1] == Rational(2)  # height
+        assert csg.start_distance == Rational(1)  # stickout_length
+        assert csg.end_distance == Rational(10)  # forward_length
+    
+    def test_peg_render_csg_local_round(self):
+        """Test rendering round peg CSG in local space."""
+        peg = Peg(
+            orientation=Orientation.identity(),
+            position=create_vector3d(0, 0, 0),
+            size=Rational(4),
+            shape=PegShape.ROUND,
+            forward_length=Rational(12),
+            stickout_length=Rational(2)
+        )
+        
+        csg = peg.render_csg_local()
+        
+        # Should return a Cylinder
+        from .meowmeowcsg import Cylinder
+        assert isinstance(csg, Cylinder)
+        
+        # Verify dimensions
+        assert csg.radius == Rational(2)  # diameter / 2
+        assert csg.start_distance == Rational(2)  # stickout_length
+        assert csg.end_distance == Rational(12)  # forward_length
 
 
 class TestWedge:
@@ -1187,6 +1232,29 @@ class TestWedge:
         
         with pytest.raises(Exception):  # FrozenInstanceError
             wedge.base_width = Rational(6)
+    
+    def test_wedge_render_csg_local(self):
+        """Test rendering wedge CSG in local space."""
+        wedge = Wedge(
+            orientation=Orientation.identity(),
+            position=create_vector3d(0, 0, 0),
+            base_width=Rational(5),
+            tip_width=Rational(1),
+            height=Rational(2),
+            length=Rational(10)
+        )
+        
+        csg = wedge.render_csg_local()
+        
+        # Should return a Prism (simplified bounding box for now)
+        from .meowmeowcsg import Prism
+        assert isinstance(csg, Prism)
+        
+        # Verify dimensions match the base dimensions
+        assert csg.size[0] == Rational(5)  # base_width
+        assert csg.size[1] == Rational(2)  # height
+        assert csg.start_distance == 0
+        assert csg.end_distance == Rational(10)  # length
 
 
 class TestCreatePegGoingIntoFace:

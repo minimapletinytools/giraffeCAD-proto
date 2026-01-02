@@ -63,6 +63,9 @@ tests:
 -add test point function t meow meow CSG this will be our main way of checking
 -also add test on boundray function in meowmeow csg
 
+:: 1/1/2026 tests update notes
+
+
 :: 12/30/2025 joint accesorry notes
 
 ### PEGS
@@ -153,9 +156,6 @@ create_wedge_in_timber_end(timber, end, position, shape: WedgeShape)
 :: TODO
 DONE/SORTA-do the big useless test cleanup
 IGNORE-cleanup render utilities, some of them seem unecessary
-
-
-
 DONE-moothymoth
   DONE-cleanup all the static ctor stuff, it's confusing
   DONE-create new set of orientation constants for doing timber orientation
