@@ -291,7 +291,7 @@ class TestGenericMortiseAndTenon:
         # Create peg parameters
         peg_params = SimplePegParameters(
             shape=PegShape.ROUND,
-            tenon_face=TimberReferenceLongFace.RIGHT,
+            tenon_face=TimberReferenceLongFace.FORWARD,
             peg_positions=[(Rational(1), Rational(0))],
             depth=Rational(4),
             size=Rational(1, 2)

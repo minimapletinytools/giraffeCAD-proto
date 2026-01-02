@@ -25,12 +25,12 @@ from examples.mortise_and_tenon_joint_examples import create_all_mortise_and_ten
 
 def create_mortise_and_tenon_example():
     """
-    Create all mortise and tenon joint examples with spacing.
+    Create all mortise and tenon joint examples with spacing, including accessories.
     """
     print("\nCreating all mortise and tenon joint examples...")
-    all_cut_timbers = create_all_mortise_and_tenon_examples()
+    all_cut_timbers, all_accessories = create_all_mortise_and_tenon_examples(return_accessories=True)
     
-    return all_cut_timbers
+    return all_cut_timbers, all_accessories
 
 
 def main():
@@ -39,28 +39,27 @@ def main():
     print("GiraffeCAD FreeCAD - All Mortise and Tenon Joint Examples")
     print("="*70)
     
-    # Create mortise and tenon examples
-    cut_timbers = create_mortise_and_tenon_example()
+    # Create mortise and tenon examples (including accessories like pegs)
+    cut_timbers, accessories = create_mortise_and_tenon_example()
     
     print(f"\nTotal timbers created: {len(cut_timbers)}")
+    print(f"Total accessories (pegs/wedges): {len(accessories)}")
     
     # Clear and render
     print("\nClearing FreeCAD document...")
     clear_document()
     
-    print("\nRendering timbers in FreeCAD...")
-    success_count = render_multiple_timbers(cut_timbers)
+    print("\nRendering timbers and accessories in FreeCAD...")
+    success_count = render_multiple_timbers(cut_timbers, joint_accessories=accessories)
     
     print("\n" + "="*70)
     print(f"Rendering Complete!")
     print(f"Successfully rendered {success_count}/{len(cut_timbers)} timbers")
+    print(f"Successfully rendered {len(accessories)} accessories")
     print("="*70)
-    print("\nExamples rendered (spaced 72 inches apart):")
-    print("  1. Basic 4x4 Mortise and Tenon")
-    print("  2. 4x6 into 6x8 Mortise and Tenon")
-    print("  3. Through Tenon with 6\" Stickout")
-    print("  4. Full-Size 4x4 Tenon into 6x6")
-    print("\nCheck the Model tree on the left to see all timbers and their cuts")
+    print("\nExamples rendered (configured in examples file):")
+    print("  - Mortise and tenon joints with pegs")
+    print("\nCheck the Model tree on the left to see all timbers, cuts, and accessories")
 
 
 # Run the test

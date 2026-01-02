@@ -50,6 +50,7 @@ except ImportError:
 # GiraffeCAD imports
 from sympy import Matrix
 from giraffe import CutTimber, Timber
+from code_goes_here.timber import JointAccessory, Peg, Wedge, PegShape
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
     MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference, ConvexPolygonExtrusion
@@ -644,10 +645,49 @@ def render_difference(difference: Difference, timber: Optional[Timber] = None,
     return base_shape
 
 
+def render_accessory_at_origin(accessory: JointAccessory, component_name: str, 
+                               infinite_extent: float = 10000.0) -> Optional['Part.Shape']:
+    """
+    Render a JointAccessory at the origin in FreeCAD using its CSG representation.
+    
+    The accessory is created at origin with identity orientation. Transform should be applied later.
+    
+    Args:
+        accessory: JointAccessory object (Peg, Wedge, etc.)
+        component_name: Name for the component (for error messages)
+        infinite_extent: Extent for infinite geometry (in meters)
+        
+    Returns:
+        Part.Shape or None if rendering failed
+    """
+    try:
+        # Get the CSG representation from the accessory
+        accessory_csg = accessory.render_csg_local()
+        
+        # Render the CSG to a shape
+        shape = render_csg_shape(
+            csg=accessory_csg,
+            timber=None,  # Accessory CSG is already in local space
+            infinite_extent=infinite_extent
+        )
+        
+        if shape is None:
+            print(f"Failed to render accessory geometry for {component_name}")
+            return None
+        
+        return shape
+        
+    except Exception as e:
+        print(f"Error rendering accessory at origin: {e}")
+        traceback.print_exc()
+        return None
+
+
 def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber", 
+                           joint_accessories: Optional[List[Tuple[JointAccessory, Timber]]] = None,
                            doc: Optional['FreeCAD.Document'] = None) -> int:
     """
-    Render multiple CutTimber objects in FreeCAD.
+    Render multiple CutTimber objects and optional joint accessories in FreeCAD.
     
     Component names are automatically determined from:
     1. CutTimber.name if set
@@ -657,10 +697,11 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     Args:
         cut_timbers: List of CutTimber objects to render
         base_name: Base name for the objects (used if timber has no name)
+        joint_accessories: Optional list of (JointAccessory, Timber) tuples to render
         doc: Optional FreeCAD document to render into (creates/uses active if None)
         
     Returns:
-        Number of successfully rendered timbers
+        Number of successfully rendered timbers (does not include accessories)
     """
     if doc is None:
         doc = get_active_document()
@@ -720,6 +761,67 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
         except Exception as e:
             print(f"  ✗ {component_name} - {e}")
             traceback.print_exc()
+    
+    # Render joint accessories if provided
+    accessory_count = 0
+    if joint_accessories:
+        print(f"\n=== Rendering {len(joint_accessories)} accessories ===")
+        
+        for i, (accessory, timber) in enumerate(joint_accessories):
+            try:
+                # Determine accessory name based on type
+                if isinstance(accessory, Peg):
+                    accessory_name = f"Peg_{i+1}"
+                    shape_str = accessory.shape.value
+                    size_mm = distance_to_mm(accessory.size)
+                    print(f"Creating {accessory_name} ({shape_str}, size={size_mm:.1f}mm)...")
+                elif isinstance(accessory, Wedge):
+                    accessory_name = f"Wedge_{i+1}"
+                    width_mm = distance_to_mm(accessory.base_width)
+                    height_mm = distance_to_mm(accessory.height)
+                    print(f"Creating {accessory_name} (width={width_mm:.1f}mm, height={height_mm:.1f}mm)...")
+                else:
+                    accessory_name = f"Accessory_{i+1}"
+                    print(f"Creating {accessory_name} ({type(accessory).__name__})...")
+                
+                # Render the accessory at origin using its CSG representation
+                shape = render_accessory_at_origin(accessory, accessory_name, infinite_geometry_extent)
+                
+                if shape is not None:
+                    # Add to document
+                    obj = doc.addObject("Part::Feature", accessory_name)
+                    obj.Shape = shape
+                    
+                    # Transform accessory from local timber space to global space
+                    # accessory.position and accessory.orientation are in timber's local space
+                    # Convert position from timber local space to global space
+                    accessory_pos_global = timber.bottom_position + timber.orientation.matrix * accessory.position
+                    
+                    # Combine orientations: global = timber_orientation * accessory_orientation
+                    combined_orientation_matrix = timber.orientation.matrix * accessory.orientation.matrix
+                    combined_orientation = Orientation(combined_orientation_matrix)
+                    
+                    # Create global placement
+                    global_placement = create_placement_from_orientation(accessory_pos_global, combined_orientation)
+                    
+                    # Compose placements: global * local
+                    # The shape already has local centering placement applied (e.g., for prism cross-section centering)
+                    local_placement = shape.Placement
+                    obj.Placement = global_placement.multiply(local_placement)
+                    
+                    # Recompute to update bounding box
+                    doc.recompute()
+                    
+                    accessory_count += 1
+                    print(f"  ✓ {accessory_name}")
+                else:
+                    print(f"  ✗ {accessory_name} - failed to create shape")
+                    
+            except Exception as e:
+                print(f"  ✗ Error creating accessory {i+1}: {e}")
+                traceback.print_exc()
+        
+        print(f"\n=== Complete: {accessory_count}/{len(joint_accessories)} accessories ===")
     
     # Recompute document to update display
     doc.recompute()
