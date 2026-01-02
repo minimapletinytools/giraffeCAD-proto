@@ -1,43 +1,45 @@
-# FreeCAD Test Scripts
+# FreeCAD Example Scripts
 
-This directory contains test scripts for rendering GiraffeCAD models in FreeCAD.
+This directory contains example scripts for rendering GiraffeCAD models in FreeCAD.
 
-## Quick Start - Use the Launchers
+## Quick Start
 
-For the best development experience, use the **launcher macros** which automatically reload all modules:
-
-### Mortise and Tenon Test
+### Main Examples Runner (Recommended)
 ```python
-# In FreeCAD: Macro → Macros → run_mortise_and_tenon.py → Execute
+# In FreeCAD: Macro → Macros → run_examples.py → Execute
 ```
 
-### Basic Joints Test
+The main runner provides access to **all examples** including CSG tests with automatic module reloading.
+
+### Alternative: Standalone CSG Test
 ```python
-# In FreeCAD: Macro → Macros → run_basic_joints.py → Execute
+# In FreeCAD: Macro → Macros → test_csg.py → Execute
 ```
 
-## Why Use Launchers?
+You can also run CSG tests standalone, but it's easier to use `run_examples.py` with `EXAMPLE_TO_RENDER = 'csg'`.
 
-The launcher scripts (`run_*.py`) provide automatic module reloading:
+## Why Use These Scripts?
+
+Both scripts provide automatic module reloading:
 
 ✅ **No FreeCAD restart needed** - Make code changes and re-run the macro  
-✅ **Reloads all modules** - GiraffeCAD modules, renderers, examples, and test scripts  
+✅ **Reloads all modules** - GiraffeCAD modules, renderers, and examples  
 ✅ **Saves development time** - Instant feedback on code changes
 
-### Without Launchers
+### Without Module Reloading
 ❌ Must restart FreeCAD after every code change  
 ❌ Python module caching prevents updates from being picked up  
 ❌ Slow development cycle
 
 ## File Structure
 
-### Launcher Scripts (Use These!)
-- **`run_mortise_and_tenon.py`** - Launcher for mortise & tenon test (with module reload)
-- **`run_basic_joints.py`** - Launcher for basic joints test (with module reload)
-
-### Test Scripts (Called by Launchers)
-- **`test_mortise_and_tenon.py`** - Mortise & tenon rendering logic
-- **`test_basic_joints.py`** - Basic joints rendering logic
+### Example Scripts
+- **`run_examples.py`** - Main examples runner with module reload (USE THIS!)
+  - Basic joints examples
+  - Mortise and tenon examples
+  - Oscar's Shed (complete structure)
+  - CSG operation tests
+- **`test_csg.py`** - Standalone CSG tests (optional, can also run via `run_examples.py`)
 
 ### Renderer
 - **`giraffe_render_freecad.py`** - FreeCAD rendering engine for GiraffeCAD
@@ -49,26 +51,77 @@ The launcher scripts (`run_*.py`) provide automatic module reloading:
 1. Open FreeCAD
 2. Go to **Macro → Macros...**
 3. Navigate to this directory (`freecad/`)
-4. Select `run_mortise_and_tenon.py` or `run_basic_joints.py`
+4. Select `run_examples.py`
 5. Click **Execute**
+
+**Choosing Which Example to Render:**
+- Edit `run_examples.py`
+- Change the `EXAMPLE_TO_RENDER` variable at the top:
+  - `'basic_joints'` - All basic joint types
+  - `'mortise_and_tenon'` - Mortise and tenon joints with pegs
+  - `'oscar_shed'` - Complete 8ft x 4ft timber frame shed
+  - `'csg'` - CSG operation tests (also edit `CSG_EXAMPLE_TO_RENDER` for specific test)
 
 **Making Changes:**
 - Edit your code in any GiraffeCAD module
-- Re-run the same launcher macro in FreeCAD
+- Re-run the same macro in FreeCAD
 - Changes are automatically reloaded!
 
 ### Method 2: Command Line
 
 ```bash
 # From the freecad/ directory
-freecad run_mortise_and_tenon.py
+freecad run_examples.py
 # or
-freecad run_basic_joints.py
+freecad test_csg.py
 ```
+
+## Available Examples
+
+### 1. Basic Joints (`basic_joints`)
+Demonstrates all basic joint types:
+- Miter Joint (67°)
+- Miter Joint (Face Aligned)
+- Butt Joint
+- Splice Joint
+- House Joint
+
+Examples are spaced 2m apart along the X axis.
+
+### 2. Mortise and Tenon (`mortise_and_tenon`)
+Shows mortise and tenon joints with accessories:
+- Various tenon sizes and configurations
+- Pegs (square and round)
+- Through mortises
+- Offset tenons
+
+Configure which variants to render in `examples/mortise_and_tenon_joint_examples.py`.
+
+### 3. Oscar's Shed (`oscar_shed`)
+Complete timber frame structure (8ft x 4ft):
+- 4 mudsills with miter joints at corners
+- 6 posts with mortise & tenon joints
+- Side girts
+- Front girt with mortise & tenon joints (including pegs) and splice joint
+- Top plates with rafter pockets
+- 3 joists
+- 5 rafters
+
+### 4. CSG Tests (`csg`)
+Simple geometric tests for CSG operations:
+- `'cube_cutout'` - Box with a smaller box cut out
+- `'halfplane_cut'` - Box cut by a half-plane
+- `'positioned_cube'` - Box positioned away from origin
+- `'union_cubes'` - Two boxes unioned together
+- `'hexagon_extrusion'` - Hexagonal prism
+
+Edit `CSG_EXAMPLE_TO_RENDER` in `run_examples.py` to choose which test to run.
+
+**Alternative:** You can also run `test_csg.py` standalone with its own `EXAMPLE_TO_RENDER` variable.
 
 ## What Gets Reloaded
 
-The launcher scripts reload modules in dependency order:
+The scripts reload modules in dependency order:
 
 1. `code_goes_here.moothymoth` - Core math/orientation
 2. `code_goes_here.footprint` - 2D footprints
@@ -79,8 +132,7 @@ The launcher scripts reload modules in dependency order:
 7. `code_goes_here.mortise_and_tenon_joint` - Mortise & tenon functions
 8. `giraffe` - Main API module
 9. `giraffe_render_freecad` - FreeCAD renderer
-10. `examples.*` - Example modules
-11. `test_*` - The test script itself
+10. `examples.*` - All example modules
 
 ## Troubleshooting
 
@@ -94,13 +146,17 @@ The launcher scripts reload modules in dependency order:
 
 **FreeCAD Crashes:**
 - Some changes (like dataclass structure changes) may still require a FreeCAD restart
-- For most code changes, the launcher should work fine
+- For most code changes, the module reload should work fine
+
+**Wrong Example Rendering:**
+- Check the `EXAMPLE_TO_RENDER` variable at the top of `run_examples.py`
+- Available options are printed if you specify an invalid example
 
 ## Output Example
 
 ```
 ======================================================================
-GiraffeCAD FreeCAD - Mortise and Tenon Test Launcher
+GiraffeCAD FreeCAD - Examples Runner
 ======================================================================
 
 Reloading all GiraffeCAD modules...
@@ -109,15 +165,34 @@ Reloading all GiraffeCAD modules...
   ✓ Reloaded code_goes_here.construction
   ✓ Reloaded code_goes_here.mortise_and_tenon_joint
   ✓ Reloaded giraffe_render_freecad
-  ✓ Reloaded examples.mortise_and_tenon_joint_examples
-  ✓ Reloaded test_mortise_and_tenon
+  ✓ Reloaded examples.oscarshed
 
-Module reload complete. Running test...
+Module reload complete.
 
-Creating basic mortise and tenon joint...
-Total timbers created: 2
+Running example: oscar_shed
+
+============================================================
+GiraffeCAD FreeCAD - Oscar's Shed
+============================================================
+
+Creating Oscar's Shed structure...
+Total timbers created: 24
 
 Rendering timbers in FreeCAD...
-Successfully rendered 2/2 timbers
+Successfully rendered 24/24 timbers
+
+============================================================
+Rendering Complete!
+Successfully rendered 24/24 timbers
+============================================================
 ```
 
+## Tips
+
+- Use **View → Standard Views** to change perspective
+- Press **V** then **0** to view from front
+- Press **V** then **2** to view from top
+- Use middle mouse button to rotate view
+- Use scroll wheel to zoom
+- Check the **Model tree** on the left to see all components
+- Individual timbers and cuts are organized in the tree for easy inspection

@@ -24,12 +24,37 @@ if parent_dir not in sys.path:
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
-# Import and reload the FreeCAD renderer to bypass cache
-import giraffe_render_freecad
-importlib.reload(giraffe_render_freecad)
-from giraffe_render_freecad import render_csg_shape, clear_document, get_active_document
+print("="*70)
+print("GiraffeCAD FreeCAD - CSG Test")
+print("="*70)
+print("\nReloading all GiraffeCAD modules...")
 
-# Import CSG test examples
+# List of modules to reload in dependency order
+modules_to_reload = [
+    'code_goes_here.moothymoth',
+    'code_goes_here.footprint',
+    'code_goes_here.meowmeowcsg',
+    'code_goes_here.timber',
+    'code_goes_here.construction',
+    'giraffe',
+    'giraffe_render_freecad',
+    'examples.test_MeowMeowCSG_examples',
+]
+
+for module_name in modules_to_reload:
+    if module_name in sys.modules:
+        try:
+            importlib.reload(sys.modules[module_name])
+            print(f"  ✓ Reloaded {module_name}")
+        except Exception as e:
+            print(f"  ⚠ Error reloading {module_name}: {e}")
+    else:
+        print(f"  - {module_name} not loaded yet")
+
+print("\nModule reload complete.\n")
+
+# Import after reloading
+from giraffe_render_freecad import render_csg_shape, clear_document, get_active_document
 from examples.test_MeowMeowCSG_examples import EXAMPLES, get_example
 
 
@@ -46,10 +71,6 @@ def render_csg_example(example_key: str):
     Args:
         example_key: Key from EXAMPLES dictionary
     """
-    print("=" * 60)
-    print("GiraffeCAD FreeCAD - CSG Test")
-    print("=" * 60)
-    
     # Get example info
     if example_key not in EXAMPLES:
         print(f"ERROR: Unknown example '{example_key}'")
