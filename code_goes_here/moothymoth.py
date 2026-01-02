@@ -378,6 +378,19 @@ class Orientation:
         For rotation matrices, the inverse is the transpose.
         """
         return Orientation(self.matrix.T)
+
+    def flip(self, flip_x: bool = False, flip_y: bool = False, flip_z: bool = False) -> 'Orientation':
+        """
+        Return the orientation with the given axes flipped.
+        """
+        new_matrix = self.matrix.copy()
+        if flip_x:
+            new_matrix[0, :] = -new_matrix[0, :]
+        if flip_y:
+            new_matrix[:, 0] = -new_matrix[:, 0]
+        if flip_z:
+            new_matrix[:, 2] = -new_matrix[:, 2]
+        return Orientation(new_matrix)
     
     def __mul__(self, other: 'Orientation') -> 'Orientation':
         """Allow using * operator for multiplication"""
