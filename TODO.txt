@@ -164,24 +164,26 @@ DONE-moothymoth
     -pointing_forward/backward/left/right (vertical timbers, +X→+Z, Z-axis rotations)
       -facing_west and pointing_up are both identity orientation
       -all documented with clear canonical conventions
+DONE-do mortise and tenon joint
+  DONE-fix peg holes in mortise not going all the way through
+  DONE-fix default peg size or whatever (maybe jsut udpate eaxmple)
 
-
--do mortise and tenon joint
-  -fix peg holes in mortise not going all the way through
-  -fix default peg size or whatever (maybe jsut udpate eaxmple)
+-fix peg rendering with wrong sides ticking out...
 -joint rendering
-  -add csg function to accessoiers
+  DONE-add csg function to accessoiers
   -clean up accesory rendering in fusino360
-  -add accesory rendering to freecad
--see if you can fixt he transform issue...  should be able to do as rigid joint with origin
--Make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
+  
+-see if you can fix the transform issue in fusion360...  should be able to do as rigid joint with origin
+-make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
+-clean up moothymoth tests to not use exact euality...
+
 
 -consider adding "Thing" base class, that has position and orientation 
 -add timber metadata 
--double check floats again, are floats really necessary? I mean they really aren't
-  -at least add a warning if floats are passed in.. I don't think we're ever forced to convert to float ever....
+-add a ALLOW_FLOATS global boolean, and add some asserts if there are floats if this boolean is false (which it should be)
 -clean up the run_ freecad stuff so it's more consist and easy to switch between examples
--clean up moothymoth tests to not use exact euality...
+-add accesory rendering to freecad
+
 
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
