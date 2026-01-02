@@ -1040,7 +1040,7 @@ class Peg(JointAccessory):
                 size=create_vector2d(self.size, self.size),
                 orientation=Orientation.identity(),
                 position=create_vector3d(0, 0, 0),
-                start_distance=self.stickout_length,
+                start_distance=-self.stickout_length,
                 end_distance=self.forward_length
             )
         else:  # PegShape.ROUND

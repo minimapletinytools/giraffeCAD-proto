@@ -1002,72 +1002,40 @@ def check_body_extents(body: adsk.fusion.BRepBody, max_allowed_extent: float, co
         return True
 
 
-def render_peg_at_origin(peg: Peg, component_name: str) -> Optional[adsk.fusion.Occurrence]:
+def render_accessory_at_origin(accessory: JointAccessory, component_name: str, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.Occurrence]:
     """
-    Render a Peg accessory at the origin in Fusion 360.
+    Render a JointAccessory at the origin in Fusion 360 using its CSG representation.
     
-    The peg is created at origin with identity orientation. Transform should be applied later.
+    The accessory is created at origin with identity orientation. Transform should be applied later.
     
     Args:
-        peg: Peg object with size and shape
+        accessory: JointAccessory object (Peg, Wedge, etc.)
         component_name: Name for the created component
+        infinite_extent: Extent to use for infinite geometry (in cm)
         
     Returns:
         Created Occurrence, or None if creation failed
     """
-    design = get_active_design()
-    if not design:
-        print("No active design found")
-        return None
-    
     try:
-        # Create a new component at origin
-        root = design.rootComponent
-        transform = adsk.core.Matrix3D.create()
-        occurrence = root.occurrences.addNewComponent(transform)
-        component = occurrence.component
-        component.name = component_name
+        # Get the CSG representation from the accessory
+        accessory_csg = accessory.render_csg_local()
         
-        # Create the peg geometry based on its shape
-        # Create CSG at origin pointing along +Z
-        if peg.shape == PegShape.SQUARE:
-            # Create a square prism peg at origin
-            peg_length = float(peg.size) * 20  # Pegs are typically long relative to their cross-section
-            
-            # Create prism at origin pointing along +Z
-            peg_csg = Prism(
-                size=Matrix([peg.size, peg.size]),
-                start_distance=0,
-                end_distance=peg_length,
-                orientation=Orientation.identity(),
-                position=Matrix([0, 0, 0])
-            )
-            
-        elif peg.shape == PegShape.ROUND:
-            # Create a cylindrical peg at origin
-            peg_length = float(peg.size) * 20
-            peg_csg = Cylinder(
-                radius=peg.size / 2,
-                axis_direction=Matrix([0, 0, 1]),
-                start_distance=0,
-                end_distance=peg_length,
-                position=Matrix([0, 0, 0])
-            )
-        else:
-            print(f"Unknown peg shape: {peg.shape}")
-            return None
+        # Render using the standard CSG rendering pipeline
+        occurrence = render_meowmeowcsg_component_at_origin(
+            csg=accessory_csg,
+            component_name=component_name,
+            timber=None,  # No timber needed for accessories
+            infinite_extent=infinite_extent
+        )
         
-        # Render the peg geometry at origin
-        body = render_csg_in_local_space(component, peg_csg, None, 10000.0)
-        
-        if body is None:
-            print(f"Failed to render peg geometry for {component_name}")
+        if occurrence is None:
+            print(f"Failed to render accessory geometry for {component_name}")
             return None
         
         return occurrence
         
     except Exception as e:
-        print(f"Error rendering peg at origin: {e}")
+        print(f"Error rendering accessory at origin: {e}")
         traceback.print_exc()
         return None
 
@@ -1203,31 +1171,29 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
         
         for i, (accessory, timber) in enumerate(joint_accessories):
             try:
+                # Determine accessory name based on type
                 if isinstance(accessory, Peg):
                     accessory_name = f"Peg_{i+1}"
                     print(f"Creating {accessory_name} ({accessory.shape.value}, size={float(accessory.size):.3f}cm)...")
-                    
-                    occurrence = render_peg_at_origin(accessory, accessory_name)
-                    
-                    if occurrence:
-                        created_accessories.append((occurrence, accessory, timber, accessory_name))
-                        print(f"  ✓ Created {accessory_name}")
-                        if app:
-                            app.log(f"  ✓ Created {accessory_name}")
-                    else:
-                        print(f"  ✗ Failed to create {accessory_name}")
-                        if app:
-                            app.log(f"  ✗ Failed to create {accessory_name}")
-                
                 elif isinstance(accessory, Wedge):
-                    print(f"  ⚠ Wedge rendering not yet implemented")
-                    if app:
-                        app.log(f"  ⚠ Wedge rendering not yet implemented")
-                
+                    accessory_name = f"Wedge_{i+1}"
+                    print(f"Creating {accessory_name} (width={float(accessory.base_width):.3f}cm, height={float(accessory.height):.3f}cm)...")
                 else:
-                    print(f"  ⚠ Unknown accessory type: {type(accessory).__name__}")
+                    accessory_name = f"Accessory_{i+1}"
+                    print(f"Creating {accessory_name} ({type(accessory).__name__})...")
+                
+                # Render the accessory using its CSG representation
+                occurrence = render_accessory_at_origin(accessory, accessory_name, infinite_geometry_extent)
+                
+                if occurrence:
+                    created_accessories.append((occurrence, accessory, timber, accessory_name))
+                    print(f"  ✓ Created {accessory_name}")
                     if app:
-                        app.log(f"  ⚠ Unknown accessory type: {type(accessory).__name__}")
+                        app.log(f"  ✓ Created {accessory_name}")
+                else:
+                    print(f"  ✗ Failed to create {accessory_name}")
+                    if app:
+                        app.log(f"  ✗ Failed to create {accessory_name}")
                 
             except Exception as e:
                 print(f"  ✗ Error creating accessory {i+1}: {e}")
