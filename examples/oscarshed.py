@@ -18,8 +18,9 @@ from giraffe import (
     cut_basic_splice_joint_on_aligned_timbers,
     cut_basic_house_joint_DEPRECATED,
     cut_basic_house_joint,
+    cut_mortise_and_tenon_joint_on_face_aligned_timbers,
     FootprintLocation, CutTimber, Stickout, TimberReferenceEnd,
-    inches, feet
+    inches, feet, Rational, Matrix
 )
 from code_goes_here.footprint import Footprint
 
@@ -34,7 +35,7 @@ base_width = feet(8)      # Long dimension (X direction)
 base_length = feet(4)     # Short dimension (Y direction)
 
 # Post parameters
-post_inset = inches(Rational(5, 2))      # 2.5 inches inset from corners on long side
+post_inset = inches(5)      # 3 inch inset from corners (2 inches is half the width of a 4x4 post so 2+3=5)
 post_back_height = feet(4)    # Height of back posts
 post_front_height = feet(5)   # Height of front posts
 
@@ -222,24 +223,67 @@ def create_oscarshed() -> list[CutTimber]:
     )
 
     # ============================================================================
-    # Create butt joints where posts meet mudsills
+    # Create mortise and tenon joints where corner posts meet mudsills
     # ============================================================================
-    # Each post's bottom end butts into the appropriate mudsill (which remains uncut)
+    # Each corner post's bottom end has a tenon that goes into the mudsill
+    # Tenon size: 1x2 inches (2" along X axis, 1" along Y axis)
+    # Tenon offset: 1" towards center (for clearance from miter joints)
+    # Tenon length: 2 inches
+    # Mortise depth: 3 inches (through mortise since mudsill is 4" deep)
     
-    # Front-left post butts into front mudsill
-    joint_post_front_left = cut_basic_butt_joint_on_face_aligned_timbers(
-        mudsill_front, post_front_left, TimberReferenceEnd.BOTTOM
+    tenon_size = Matrix([inches(2), inches(1)])  # 2" along X (mudsill direction), 1" along Y
+    tenon_length = inches(2)
+    mortise_depth = inches(3)
+    
+    # Front-left post (left side, offset +1" towards center/right)
+    tenon_offset_left = Matrix([inches(1), Rational(0)])  # +1" in X
+    joint_post_front_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post_front_left,
+        mortise_timber=mudsill_front,
+        tenon_end=TimberReferenceEnd.BOTTOM,
+        size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        tenon_position=tenon_offset_left
     )
     
-    # Front-right post butts into front mudsill
-    joint_post_front_right = cut_basic_butt_joint_on_face_aligned_timbers(
-        mudsill_front, post_front_right, TimberReferenceEnd.BOTTOM
+    # Front-right post (right side, offset -1" towards center/left)
+    tenon_offset_right = Matrix([inches(-1), Rational(0)])  # -1" in X
+    joint_post_front_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post_front_right,
+        mortise_timber=mudsill_front,
+        tenon_end=TimberReferenceEnd.BOTTOM,
+        size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        tenon_position=tenon_offset_right
     )
     
-    # Back-right post butts into back mudsill
-    joint_post_back_right = cut_basic_butt_joint_on_face_aligned_timbers(
-        mudsill_back, post_back_right, TimberReferenceEnd.BOTTOM
+    # Back-right post (right side, offset -1" towards center/left)
+    joint_post_back_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post_back_right,
+        mortise_timber=mudsill_back,
+        tenon_end=TimberReferenceEnd.BOTTOM,
+        size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        tenon_position=tenon_offset_left
     )
+    
+    # Back-left post (left side, offset +1" towards center/right)
+    joint_post_back_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post_back_left,
+        mortise_timber=mudsill_back,
+        tenon_end=TimberReferenceEnd.BOTTOM,
+        size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        tenon_position=tenon_offset_right
+    )
+    
+    # ============================================================================
+    # Middle posts still use butt joints
+    # ============================================================================
     
     # Back middle-right post butts into back mudsill
     joint_post_back_middle_right = cut_basic_butt_joint_on_face_aligned_timbers(
@@ -249,11 +293,6 @@ def create_oscarshed() -> list[CutTimber]:
     # Back middle-left post butts into back mudsill
     joint_post_back_middle_left = cut_basic_butt_joint_on_face_aligned_timbers(
         mudsill_back, post_back_middle_left, TimberReferenceEnd.BOTTOM
-    )
-    
-    # Back-left post butts into back mudsill
-    joint_post_back_left = cut_basic_butt_joint_on_face_aligned_timbers(
-        mudsill_back, post_back_left, TimberReferenceEnd.BOTTOM
     )
 
     # ============================================================================
@@ -511,33 +550,40 @@ def create_oscarshed() -> list[CutTimber]:
     # Each mudsill participates in 2 joints (one at each end)
     # We need to collect all cuts for each mudsill and create a single PartiallyCutTimber
     
-    # Collect cuts for each mudsill from the corner joints
+    # Collect cuts for each mudsill from the corner joints and mortise joints
     from giraffe import PartiallyCutTimber
     
-    # Collect cuts from corner joints
+    # Collect cuts from corner miter joints
     # joint_corner_0: Front BOTTOM, Left TOP
     # joint_corner_1: Front TOP, Right BOTTOM
     # joint_corner_2: Right TOP, Back BOTTOM
     # joint_corner_3: Back TOP, Left BOTTOM
     
+    # Also collect mortise cuts from post joints
+    # For mortise and tenon joints: partiallyCutTimbers[0] is the mortise timber (mudsill)
+    
     mudsill_front_cuts = [
-        joint_corner_0.partiallyCutTimbers[0]._cuts[0],  # From corner 0
-        joint_corner_1.partiallyCutTimbers[0]._cuts[0],  # From corner 1
+        joint_corner_0.partiallyCutTimbers[0]._cuts[0],  # Miter at corner 0
+        joint_corner_1.partiallyCutTimbers[0]._cuts[0],  # Miter at corner 1
+        joint_post_front_left.partiallyCutTimbers[0]._cuts[0],   # Mortise for front-left post
+        joint_post_front_right.partiallyCutTimbers[0]._cuts[0],  # Mortise for front-right post
     ]
     
     mudsill_right_cuts = [
-        joint_corner_1.partiallyCutTimbers[1]._cuts[0],  # From corner 1
-        joint_corner_2.partiallyCutTimbers[0]._cuts[0],  # From corner 2
+        joint_corner_1.partiallyCutTimbers[1]._cuts[0],  # Miter at corner 1
+        joint_corner_2.partiallyCutTimbers[0]._cuts[0],  # Miter at corner 2
     ]
     
     mudsill_back_cuts = [
-        joint_corner_2.partiallyCutTimbers[1]._cuts[0],  # From corner 2
-        joint_corner_3.partiallyCutTimbers[0]._cuts[0],  # From corner 3
+        joint_corner_2.partiallyCutTimbers[1]._cuts[0],  # Miter at corner 2
+        joint_corner_3.partiallyCutTimbers[0]._cuts[0],  # Miter at corner 3
+        joint_post_back_right.partiallyCutTimbers[0]._cuts[0],   # Mortise for back-right post
+        joint_post_back_left.partiallyCutTimbers[0]._cuts[0],    # Mortise for back-left post
     ]
     
     mudsill_left_cuts = [
-        joint_corner_0.partiallyCutTimbers[1]._cuts[0],  # From corner 0
-        joint_corner_3.partiallyCutTimbers[1]._cuts[0],  # From corner 3
+        joint_corner_0.partiallyCutTimbers[1]._cuts[0],  # Miter at corner 0
+        joint_corner_3.partiallyCutTimbers[1]._cuts[0],  # Miter at corner 3
     ]
     
     # Create PartiallyCutTimbers for each mudsill with all cuts at construction
@@ -552,15 +598,15 @@ def create_oscarshed() -> list[CutTimber]:
     cut_timbers.append(pct_mudsill_back)
     cut_timbers.append(pct_mudsill_left)
     
-    # Add posts with butt joint cuts
-    # Note: post is partiallyCutTimbers[1] (index 1) in each butt joint
-    # (index 0 is the receiving mudsill which remains uncut)
-    cut_timbers.append(joint_post_front_left.partiallyCutTimbers[1])
-    cut_timbers.append(joint_post_front_right.partiallyCutTimbers[1])
-    cut_timbers.append(joint_post_back_right.partiallyCutTimbers[1])
-    cut_timbers.append(joint_post_back_middle_right.partiallyCutTimbers[1])
-    cut_timbers.append(joint_post_back_middle_left.partiallyCutTimbers[1])
-    cut_timbers.append(joint_post_back_left.partiallyCutTimbers[1])
+    # Add posts with joint cuts
+    # For mortise and tenon joints: partiallyCutTimbers[1] is the tenon timber (post)
+    # For butt joints: partiallyCutTimbers[1] is the cut timber (post)
+    cut_timbers.append(joint_post_front_left.partiallyCutTimbers[1])      # Corner post with M&T
+    cut_timbers.append(joint_post_front_right.partiallyCutTimbers[1])     # Corner post with M&T
+    cut_timbers.append(joint_post_back_right.partiallyCutTimbers[1])      # Corner post with M&T
+    cut_timbers.append(joint_post_back_middle_right.partiallyCutTimbers[1])  # Middle post with butt joint
+    cut_timbers.append(joint_post_back_middle_left.partiallyCutTimbers[1])   # Middle post with butt joint
+    cut_timbers.append(joint_post_back_left.partiallyCutTimbers[1])       # Corner post with M&T
     
     # Add side girts
     cut_timbers.append(CutTimber(side_girt_left))
