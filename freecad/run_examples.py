@@ -173,22 +173,24 @@ def render_oscar_shed():
     print("GiraffeCAD FreeCAD - Oscar's Shed")
     print("="*60)
     
-    # Create Oscar's Shed
+    # Create Oscar's Shed (including accessories like pegs)
     print("\nCreating Oscar's Shed structure...")
-    cut_timbers = create_oscarshed()
+    cut_timbers, accessories = create_oscarshed()
     
     print(f"Total timbers created: {len(cut_timbers)}")
+    print(f"Total accessories (pegs): {len(accessories)}")
     
     # Clear and render
     print("\nClearing FreeCAD document...")
     clear_document()
     
-    print("\nRendering timbers in FreeCAD...")
-    success_count = render_multiple_timbers(cut_timbers)
+    print("\nRendering timbers and accessories in FreeCAD...")
+    success_count = render_multiple_timbers(cut_timbers, joint_accessories=accessories)
     
     print("\n" + "="*60)
     print(f"Rendering Complete!")
     print(f"Successfully rendered {success_count}/{len(cut_timbers)} timbers")
+    print(f"Successfully rendered {len(accessories)} accessories")
     print("="*60)
     print("\nOscar's Shed: 8ft x 4ft timber frame structure")
     print("Check the Model tree on the left to see all components:")

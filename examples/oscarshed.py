@@ -47,16 +47,14 @@ med_timber_size = (inches(4), inches(4))                   # 4" x 4"
 big_timber_size = (inches(6), inches(4))                   # 6" vertical x 4" depth
 
 
-def create_oscarshed(return_accessories: bool = False):
+def create_oscarshed():
     """
     Create Oscar's Shed structure.
     
-    Args:
-        return_accessories: If True, return (timbers, accessories) tuple. If False, return just timbers.
-    
     Returns:
-        If return_accessories=False: List[CutTimber] - List of CutTimber objects representing the complete shed
-        If return_accessories=True: Tuple[List[CutTimber], List[(JointAccessory, Timber)]]
+        Tuple[List[CutTimber], List[(JointAccessory, Timber)]]:
+            - List of CutTimber objects representing the complete shed
+            - List of (accessory, timber) tuples for joint accessories like pegs
     """
     # Note: Dimensions are already in meters from dimensional helpers
     
@@ -735,10 +733,7 @@ def create_oscarshed(return_accessories: bool = False):
     for rafter in rafters:
         cut_timbers.append(CutTimber(rafter))
     
-    if return_accessories:
-        return cut_timbers, front_girt_accessories
-    else:
-        return cut_timbers
+    return cut_timbers, front_girt_accessories
 
 
 # ============================================================================
@@ -749,11 +744,15 @@ if __name__ == "__main__":
     print(f"Creating Oscar's Shed: 8 ft x 4 ft")
     print(f"  ({float(base_width):.3f} m x {float(base_length):.3f} m)")
     
-    cut_timbers = create_oscarshed()
+    cut_timbers, accessories = create_oscarshed()
     
-    print(f"\nCreated {len(cut_timbers)} timbers:")
+    print(f"\nCreated {len(cut_timbers)} timbers and {len(accessories)} accessories:")
     for ct in cut_timbers:
         print(f"  - {ct.timber.name}")
+    if accessories:
+        print(f"\nAccessories:")
+        for acc, timber in accessories:
+            print(f"  - {type(acc).__name__} on {timber.name}")
     
     # ============================================================================
     # Summary
