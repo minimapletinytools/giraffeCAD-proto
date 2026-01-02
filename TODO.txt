@@ -1,59 +1,6 @@
-:: 12/29/2025 mortise and tenon notes
 
 
-
-this function is very generic and does a bunch of things. in particluar we want the following variants which will all call into this function;
-
-      -mortise and tenon
-      -through mortise and tenon
-      -wedged mortise and tenon
-      -wedged through mortise and tenon
-      -fox wedge mortise and tenon
-      -draw bore mortise and tenon
-      -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
-        -same as draw bore but with komisen peg,
-      -tusked mortise and tenon 
-
-
-for now, create the super generic 
-
-cut_mortise_and_tenon_many_options_do_not_call_me_directly
-
-then do simple_mortise_and_tenon function that has no pegs or wedges
-
-the cut_mortise_and_tenon_many_options_do_not_call_me_directly function, it should take the following parameters
-
--tenon timber
--mortise timber
--tenon end (of the tenon timber)
--size (X,Y cross sectional size of tenon in local space of the tenon timber)
--tenon_length
--mortise_depth (must be >= to tenon length, if none, then it's a through mortise)
--tenon_rotation (ccw rotation of tenon, identity by default )
--wedges parameters (optional)
--peg parameters (otpional)
-
-
-for implemntation, for now, assert on wedge and peg parameters being none, we will implement them later. also assert tenon_rotation is identity.
-
-
-stub out the peg and wedge praameter classes below though
-
-class SimplePegParameters
-  shape: PegShape
-  tenon_face: TimberLongFace # the face on the TENON timber that the pegs will be perpendicular too, only valid if tenon_rotation is identity
-  peg_positions: [(Numeric, Numeric)] # first is in length axis measured from the shoulder of the tenon, the second is in the perpendicular axis measured from center
-  depth: Optinoal[Numeric] # measured from mortise face where the peg goes in, none means peg goes all the way through to the other side
-  length: length of the peg
-
-class WedgeParameters
-  shape: Wedge Shape
-  depth: Numeric # depth of the wedge cut, note could be different than length of wedge
-  width_axis: Direction3D # wedges run along this axis, so the, so when looking perpendicular to this and the length axis, you see the the trapezoidal "sides" of the wedges
-  positions: [Numeric] # positions from center of the timber in the width axis
-  expand_mortise: Numeric # amount to fan out the bottom of the mortise to fit the wedges, so 0 means straight sides, and X means expand both sides of the mortise bottom by X (total) from straight. 0 by default
-
-
+:: 1/1/2026 tests update notes
 
 
 tests:
@@ -63,7 +10,229 @@ tests:
 -add test point function t meow meow CSG this will be our main way of checking
 -also add test on boundray function in meowmeow csg
 
-:: 1/1/2026 tests update notes
+
+
+
+
+
+:: documentation
+
+-installation
+-quick start 
+-simple reference
+  -simple examples of how to use each method with default parameters (axis aligned, face parallel only)
+  -ALWAYS use Sympy types
+-terminology
+  -detailed examples explaing all cnocepts
+-advanced reference
+  -detailed examples outlining every parameter
+-appendix shit
+
+
+:: TODO
+
+DONE-see if you can fix the transform issue in fusion360...  should be able to do as rigid joint with origin
+  FAIL-in fusion 360, hwen transforming occurences (components) to their final position.. rather than setting transform2. instead can you create a rigid joint with the global origin to set the position instead. 
+  DONE-just do the body move way...
+
+
+-update oscar shed to use mortise and tenon joint
+-add more features to mortise and tenon joint
+  -make sure it works for non face aligned cases
+  -probbaly add offset mortise peg param
+  -extract out peg creation stuff, it will be useful in other places
+    -basically, just figure out the start point and direction of the peg... it will return to you a tuple of prisms to substract from the mortise and tenon timber, and a peg accessory
+
+
+
+-cleanup
+  -add a ALLOW_FLOATS global boolean, and add some asserts if there are floats if this boolean is false (which it should be)
+  -make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
+  -clean up moothymoth tests to not use exact euality...
+
+-freecad
+  -clean up the run_ freecad stuff so it's more consist and easy to switch between examples
+  -add accesory rendering to freecad
+
+
+
+-DECISION TIME
+  -consider adding "Thing" base class, that has position and orientation 
+  -add timber metadata 
+
+
+-M1 (reward is reimburse H2D LOL)
+  DONE-address TODOS in join_timbers
+  DONE-create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
+  DONE-consider making a better way to store TimberWithJoints and joints class etc...
+    DONE-fix tenon joint class
+    DONE-add resultant length function after applying joints computerLength(timebr, [joints])
+      -get fusino 360 to render just at the rusultant length 
+  DONE-add helper render functions
+    DONE-extend timbers so joint can be diffed out of it (rather than bool in a long timber, just use an extra long timber when creating the original timber)
+    DONE-generic boolean geometry classes
+    DONE-use boolean geometery to create negative of tenon cutout timber - (timber - tenon - shoulderplane)
+      FAIL-calll this method tenon cutter :D
+  DONE-simple joints
+    DONE-basic_corner_joint
+    DONE-basic_butt_joint
+    DONE-basic_splice_joint
+    DONE-basic_miter_joint
+  DONE-cross_joints
+    DONE-basic_house_joint
+    DONE-basic_cross_lap_joint
+
+  -butt joints
+    -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
+      DONE-mortise and tenon
+      -through mortise and tenon
+      -wedged mortise and tenon
+      -wedged through mortise and tenon
+      -fox wedge mortise and tenon
+      DONE-draw bore mortise and tenon
+      -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
+        -same as draw bore but with komisen peg,
+      -tusked mortise and tenon
+  -corner joints
+    -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
+      -otherwise calls into mortise_and_tenon above
+      -also needs to convert the mortise into an "end cut"
+    -half_lap (special case of mortise and tenon? nah, special case of bridle joint? nah)
+    -bridle joint (special case of mortise and tenon? nah)
+    -maybe try the fancy  one we used on the shed
+  -make shed example (just add joints)
+  -splice_joint
+    -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
+  IGNORE-get rhino rendering working for the following joints ...
+  -improve examples
+    -create series of examples showcasing each feature
+    -create series of more complex examples
+    -create test runner for examples so the exmaples are also tests :O
+    -agent prompt examples
+  -template project
+  -update docs
+    -cleanup README
+      -clean up venv/makefile/setup nonsense so its simpler...
+    -cleanup comments in code and delete morenotes.md
+    -generate docs
+    - you need a better way to specify timber lenghts... most of the time you don't really care? It should be determined by the joint in most cases.
+      - so I guess joints will resize the timber, even tusk tenon joints take a tusk length parameter, tenon joints have a tenon depth parameter etc.. 
+      - i think this is how it already is, update the README to explain this
+    - move joint section from morenotes into concepts.md and then delete morenotes
+
+-M2
+  -IFC rendering?
+  -add panel/board support 
+  -update shed example to include panels
+  -more joints
+    -splice joints
+      -TODO 
+    -end joints
+      -mortise and tenon end joint (calls mortise and tenon but positions the tenon in away from the end)
+      -half lap
+    -cross joints
+      -single notch
+      -double notch
+    -fancy joints
+      -the one where 2 beams butt up against 1 post and have the thing that passes through them
+  -chamfer render support?
+
+
+
+
+-M3 
+  -assembly solver thing :D (or at least define assembly vectors)
+
+
+
+
+
+
+:: FUTURE shit
+-should I make a "block" class that parents "Timber" and then make a "board" class?
+-should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
+- add nominal_size sup port for square and line rule desgins
+- make really awesome examples that showcase each parameter of each function
+
+
+
+:: TODONE
+DONE/SORTA-do the big useless test cleanup
+IGNORE-cleanup render utilities, some of them seem unecessary
+DONE-moothymoth
+  DONE-cleanup all the static ctor stuff, it's confusing
+  DONE-create new set of orientation constants for doing timber orientation
+    -facing_west/east/north/south (horizontal timbers, top face up, Z-axis rotations)
+    -pointing_up/down (identity and 180° Y rotation)
+    -pointing_forward/backward/left/right (vertical timbers, +X→+Z, Z-axis rotations)
+      -facing_west and pointing_up are both identity orientation
+      -all documented with clear canonical conventions
+DONE-do mortise and tenon joint
+  DONE-fix peg holes in mortise not going all the way through
+  DONE-fix default peg size or whatever (maybe jsut udpate eaxmple)
+DONE-fix peg rendering with wrong sides ticking out...
+DONE-joint rendering
+  DONE-add csg function to accessoiers
+  -clean up accesory rendering in fusino360
+  
+DONE-add units construction
+DONE-sympy stuff
+  DONE-fix fuzzy equal comparison function to use the .equals function. If it returns None then you probbaly do need epsilon test thingy...
+  DONE/IGNORE-ask if we can add assumptions anywhere
+  DONE-keep geometries as geometries for as data for as possible before converting to expression
+DONE-make sure freecad rendering works
+DONE-make sure oscar shed rafter pocket works
+IGNORE-add some more tests for cross lap joint
+DONE-address TODOs is smiple mrotise and sitance 
+IGNORE-remove LongEdge 
+DONE-update tests to not use floats ever (maybe have a couple float tests in a separate file though)
+DONE-rework joint classes
+DONE-maybe split griaffe sad :(
+DONE-rename "End joint" it's not what you think it's actulaly a splice joint, I think you should call them corner joints instead?
+DONE-fix name usage consistence, name should nto be in CutTimebr just use timber name
+  -also add name to ctor of timber init function
+DONE-check for mutabel data 
+DONE-remove mutable position/name stuff from examples and oscarshed
+DONE-update all warnings to use warning.warn
+DONE-prefix timber methods with _in_local_space (meaning orientation and translation not applied)
+DONE-cleanup the epsilon constant stuff (when to use flot vs rational for this?? think baotu ti ab it...)
+DONE-change giraffe to use render_timber_with_cuts_csg rather than do it itself
+DONE-fix the venv stuff in readme, aeither add venv or get rid of it from readme.
+DONE-maybe get rid of corner joint
+DONE-fix prism cut rendering stuff for housing join,t noe of the transforms is wrong or fusino 360 is busted
+  -specifically, when cutting teh housed timber from the housing timber, the housed timber prism isn't getting positioned right. Is this happening in fusion 360 (probbaly) or in giraffe code?
+    -it's definitely a fusion 360 issue
+
+DONE-rename FootprintLocation to footprint location Type
+DONE- getInside/OutsideFace(timber, footprint)
+DNOE- getFacingFace(tiber, direction)
+IGNORE- create readme
+DONE- cleaunp morenotes (maybe delete it, all comments should be in code)
+DONE- start working on docs
+DONE- axis aligned timbers
+DONE- rename face aligned to face parallel timebers
+DONE- 2 faces can be oriented (same normals) or opposing (opposite normals)
+DONE-rename "width vector" to "plus_x_width_vector" or "plus_x_width_vector_of_created_timber"
+DONE-add helper asserts that does symbolic check if ratinoal otherwise fuzzy
+  -check_parallel,perpendicular
+DONE- note down default orientation of timbers when created in vertical and horizontal position
+  - when laying horizontal, the orientation should always be consistent such that either the width or height of the timber runs in the Z axis direction
+DONE/IGNORE- update timber join functions to only care about timber axis vs faces (X/widhth axis, and Y/height axis)
+
+IGNORE- update timebr sizing notes so its really clear which size is which axis
+DONE- decide on default orientation for horizontal timebrs
+DONE- decide on default orinatiton for vertical timebrs on footprint
+IGNORE- update join_timber to  only take axis to align with up/down rather tha face (I guess you can add a flip180 optional parameter....)
+IGNORE- cerate join_timebr_raw that takes a raw face normal 
+IGNORE- you need a better system for determining timber orientation after each timber creation operation, have sensible defaults 
+  IGNORE- when joining 2 vertical timberss top face always faces up by default
+  IGNORE- when joniing 2 horizontal timbers, top face laways faces?
+  IGNORE- can you throw in a footprint to control which side top fac faces??
+
+
+
+:: END TODONE
+
 
 
 :: 12/30/2025 joint accesorry notes
@@ -136,77 +305,12 @@ create_wedge_in_timber_end(timber, end, position, shape: WedgeShape)
 
 
 
+:: 12/29/2025 mortise and tenon notes
 
 
 
-:: documentation
+this function is very generic and does a bunch of things. in particluar we want the following variants which will all call into this function;
 
--installation
--quick start 
--simple reference
-  -simple examples of how to use each method with default parameters (axis aligned, face parallel only)
-  -ALWAYS use Sympy types
--terminology
-  -detailed examples explaing all cnocepts
--advanced reference
-  -detailed examples outlining every parameter
--appendix shit
-
-
-:: TODO
-DONE/SORTA-do the big useless test cleanup
-IGNORE-cleanup render utilities, some of them seem unecessary
-DONE-moothymoth
-  DONE-cleanup all the static ctor stuff, it's confusing
-  DONE-create new set of orientation constants for doing timber orientation
-    -facing_west/east/north/south (horizontal timbers, top face up, Z-axis rotations)
-    -pointing_up/down (identity and 180° Y rotation)
-    -pointing_forward/backward/left/right (vertical timbers, +X→+Z, Z-axis rotations)
-      -facing_west and pointing_up are both identity orientation
-      -all documented with clear canonical conventions
-DONE-do mortise and tenon joint
-  DONE-fix peg holes in mortise not going all the way through
-  DONE-fix default peg size or whatever (maybe jsut udpate eaxmple)
-DONE-fix peg rendering with wrong sides ticking out...
-DONE-joint rendering
-  DONE-add csg function to accessoiers
-  -clean up accesory rendering in fusino360
-  
--see if you can fix the transform issue in fusion360...  should be able to do as rigid joint with origin
--make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
--clean up moothymoth tests to not use exact euality...
-
-
--consider adding "Thing" base class, that has position and orientation 
--add timber metadata 
--add a ALLOW_FLOATS global boolean, and add some asserts if there are floats if this boolean is false (which it should be)
--clean up the run_ freecad stuff so it's more consist and easy to switch between examples
--add accesory rendering to freecad
-
-
--M1 (reward is reimburse H2D LOL)
-  DONE-address TODOS in join_timbers
-  DONE-create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
-  DONE-consider making a better way to store TimberWithJoints and joints class etc...
-    DONE-fix tenon joint class
-    DONE-add resultant length function after applying joints computerLength(timebr, [joints])
-      -get fusino 360 to render just at the rusultant length 
-  DONE-add helper render functions
-    DONE-extend timbers so joint can be diffed out of it (rather than bool in a long timber, just use an extra long timber when creating the original timber)
-    DONE-generic boolean geometry classes
-    DONE-use boolean geometery to create negative of tenon cutout timber - (timber - tenon - shoulderplane)
-      FAIL-calll this method tenon cutter :D
-  DONE-simple joints
-    DONE-basic_corner_joint
-    DONE-basic_butt_joint
-    DONE-basic_splice_joint
-    DONE-basic_miter_joint
-  DONE-cross_joints
-    DONE-basic_house_joint
-    DONE-basic_cross_lap_joint
-
-  -butt joints
-    -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
       -mortise and tenon
       -through mortise and tenon
       -wedged mortise and tenon
@@ -215,129 +319,46 @@ DONE-joint rendering
       -draw bore mortise and tenon
       -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
         -same as draw bore but with komisen peg,
-      -tusked mortise and tenon
-  -corner joints
-    -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
-      -otherwise calls into mortise_and_tenon above
-      -also needs to convert the mortise into an "end cut"
-    -half_lap (special case of mortise and tenon? nah, special case of bridle joint? nah)
-    -bridle joint (special case of mortise and tenon? nah)
-    -maybe try the fancy  one we used on the shed
-  -make shed example (just add joints)
-  -splice_joint
-    -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
-  IGNORE-get rhino rendering working for the following joints ...
-  -improve examples
-    -create series of examples showcasing each feature
-    -create series of more complex examples
-    -create test runner for examples so the exmaples are also tests :O
-    -agent prompt examples
-  -template project
-  -update docs
-    -cleanup README
-      -clean up venv/makefile/setup nonsense so its simpler...
-    -cleanup comments in code and delete morenotes.md
-    -generate docs
-    - you need a better way to specify timber lenghts... most of the time you don't really care? It should be determined by the joint in most cases.
-      - so I guess joints will resize the timber, even tusk tenon joints take a tusk length parameter, tenon joints have a tenon depth parameter etc.. 
-      - i think this is how it already is, update the README to explain this
-    - move joint section from morenotes into concepts.md and then delete morenotes
-
--M2
-  -IFC rendering?
-  -add panel/board support 
-  -update shed example to include panels
-  -more joints
-    -splice joints
-      -TODO 
-    -end joints
-      -mortise and tenon end joint (calls mortise and tenon but positions the tenon in away from the end)
-      -half lap
-    -cross joints
-      -single notch
-      -double notch
-    -fancy joints
-      -the one where 2 beams butt up against 1 post and have the thing that passes through them
-  -chamfer render support?
+      -tusked mortise and tenon 
 
 
+for now, create the super generic 
+
+cut_mortise_and_tenon_many_options_do_not_call_me_directly
+
+then do simple_mortise_and_tenon function that has no pegs or wedges
+
+the cut_mortise_and_tenon_many_options_do_not_call_me_directly function, it should take the following parameters
+
+-tenon timber
+-mortise timber
+-tenon end (of the tenon timber)
+-size (X,Y cross sectional size of tenon in local space of the tenon timber)
+-tenon_length
+-mortise_depth (must be >= to tenon length, if none, then it's a through mortise)
+-tenon_rotation (ccw rotation of tenon, identity by default )
+-wedges parameters (optional)
+-peg parameters (otpional)
 
 
--M3 
-  -assembly solver thing :D (or at least define assembly vectors)
+for implemntation, for now, assert on wedge and peg parameters being none, we will implement them later. also assert tenon_rotation is identity.
 
 
+stub out the peg and wedge praameter classes below though
 
+class SimplePegParameters
+  shape: PegShape
+  tenon_face: TimberLongFace # the face on the TENON timber that the pegs will be perpendicular too, only valid if tenon_rotation is identity
+  peg_positions: [(Numeric, Numeric)] # first is in length axis measured from the shoulder of the tenon, the second is in the perpendicular axis measured from center
+  depth: Optinoal[Numeric] # measured from mortise face where the peg goes in, none means peg goes all the way through to the other side
+  length: length of the peg
 
-
-
-:: FUTURE shit
--should I make a "block" class that parents "Timber" and then make a "board" class?
--should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
-- add nominal_size sup port for square and line rule desgins
-- make really awesome examples that showcase each parameter of each function
-
-
-
-:: TODONE
-DONE-add units construction
-DONE-sympy stuff
-  DONE-fix fuzzy equal comparison function to use the .equals function. If it returns None then you probbaly do need epsilon test thingy...
-  DONE/IGNORE-ask if we can add assumptions anywhere
-  DONE-keep geometries as geometries for as data for as possible before converting to expression
-DONE-make sure freecad rendering works
-DONE-make sure oscar shed rafter pocket works
-IGNORE-add some more tests for cross lap joint
-DONE-address TODOs is smiple mrotise and sitance 
-IGNORE-remove LongEdge 
-DONE-update tests to not use floats ever (maybe have a couple float tests in a separate file though)
-DONE-rework joint classes
-DONE-maybe split griaffe sad :(
-DONE-rename "End joint" it's not what you think it's actulaly a splice joint, I think you should call them corner joints instead?
-DONE-fix name usage consistence, name should nto be in CutTimebr just use timber name
-  -also add name to ctor of timber init function
-DONE-check for mutabel data 
-DONE-remove mutable position/name stuff from examples and oscarshed
-DONE-update all warnings to use warning.warn
-DONE-prefix timber methods with _in_local_space (meaning orientation and translation not applied)
-DONE-cleanup the epsilon constant stuff (when to use flot vs rational for this?? think baotu ti ab it...)
-DONE-change giraffe to use render_timber_with_cuts_csg rather than do it itself
-DONE-fix the venv stuff in readme, aeither add venv or get rid of it from readme.
-DONE-maybe get rid of corner joint
-DONE-fix prism cut rendering stuff for housing join,t noe of the transforms is wrong or fusino 360 is busted
-  -specifically, when cutting teh housed timber from the housing timber, the housed timber prism isn't getting positioned right. Is this happening in fusion 360 (probbaly) or in giraffe code?
-    -it's definitely a fusion 360 issue
-
-DONE-rename FootprintLocation to footprint location Type
-DONE- getInside/OutsideFace(timber, footprint)
-DNOE- getFacingFace(tiber, direction)
-IGNORE- create readme
-DONE- cleaunp morenotes (maybe delete it, all comments should be in code)
-DONE- start working on docs
-DONE- axis aligned timbers
-DONE- rename face aligned to face parallel timebers
-DONE- 2 faces can be oriented (same normals) or opposing (opposite normals)
-DONE-rename "width vector" to "plus_x_width_vector" or "plus_x_width_vector_of_created_timber"
-DONE-add helper asserts that does symbolic check if ratinoal otherwise fuzzy
-  -check_parallel,perpendicular
-DONE- note down default orientation of timbers when created in vertical and horizontal position
-  - when laying horizontal, the orientation should always be consistent such that either the width or height of the timber runs in the Z axis direction
-DONE/IGNORE- update timber join functions to only care about timber axis vs faces (X/widhth axis, and Y/height axis)
-
-IGNORE- update timebr sizing notes so its really clear which size is which axis
-DONE- decide on default orientation for horizontal timebrs
-DONE- decide on default orinatiton for vertical timebrs on footprint
-IGNORE- update join_timber to  only take axis to align with up/down rather tha face (I guess you can add a flip180 optional parameter....)
-IGNORE- cerate join_timebr_raw that takes a raw face normal 
-IGNORE- you need a better system for determining timber orientation after each timber creation operation, have sensible defaults 
-  IGNORE- when joining 2 vertical timberss top face always faces up by default
-  IGNORE- when joniing 2 horizontal timbers, top face laways faces?
-  IGNORE- can you throw in a footprint to control which side top fac faces??
-
-
-
-:: END TODONE
-
+class WedgeParameters
+  shape: Wedge Shape
+  depth: Numeric # depth of the wedge cut, note could be different than length of wedge
+  width_axis: Direction3D # wedges run along this axis, so the, so when looking perpendicular to this and the length axis, you see the the trapezoidal "sides" of the wedges
+  positions: [Numeric] # positions from center of the timber in the width axis
+  expand_mortise: Numeric # amount to fan out the bottom of the mortise to fit the wedges, so 0 means straight sides, and X means expand both sides of the mortise bottom by X (total) from straight. 0 by default
 
 
 
