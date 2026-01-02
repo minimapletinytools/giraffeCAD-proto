@@ -442,7 +442,7 @@ def create_oscarshed():
     # Mortise depth: 3 inches
     # Peg: 5/8" square peg, 1 inch from shoulder, centered
     
-    front_girt_tenon_size = Matrix([inches(1), inches(2)])  # 1" horizontal, 2" vertical
+    front_girt_tenon_size = Matrix([inches(2), inches(1)])
     front_girt_tenon_length = inches(3)
     front_girt_mortise_depth = inches(3.5)
     

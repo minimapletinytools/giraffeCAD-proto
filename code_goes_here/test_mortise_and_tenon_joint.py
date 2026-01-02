@@ -1135,26 +1135,61 @@ class TestOscarShedJoint:
         # In post local coords, this is at Z = post_back_height
         mortise_z_local = post_back_height
         
-        # The girt comes from the BACK (larger Y in world space)
-        # So the mortise should open toward the back side of the post
-        # Post is 4" wide in Y, centered at Y=0 in local coords
-        # Back side is at Y = +2" (towards where girt comes from)
-        # Front side is at Y = -2" (away from girt)
+        # The girt comes from the BACK at a 45° angle (connecting two posts diagonally)
+        # So the mortise extends diagonally through the post
+        # The mortise starts at the back-left edge (X=-2", Y=+2") and extends:
+        # - Inward in +X direction by 3.5"
+        # - Has a 2" x 1" cross-section oriented at 45°
         
-        # Test 3 points across the post depth at mortise height:
-        # 1. Center of post (Y=0)
-        point_center_local = Matrix([Rational(0), Rational(0), mortise_z_local])
+        # Test points along the mortise centerline (at the entry face, X=-2"):
+        # The mortise position is at [-2", +2", 48"], which is the back-left corner
         
-        # 2. Back side of post (Y=+1.5", towards where girt comes from)
-        point_back_side_local = Matrix([Rational(0), inches(Rational(3, 2)), mortise_z_local])
+        # 1. At the mortise entry point (where the tenon enters)
+        point_at_entry = Matrix([-inches(2), inches(2), mortise_z_local])
         
-        # 3. Front side of post (Y=-1.5", away from girt)
-        point_front_side_local = Matrix([Rational(0), -inches(Rational(3, 2)), mortise_z_local])
+        # 2. Deeper into the mortise (1.5" inward in +X direction)
+        point_inside_mortise = Matrix([-inches(Rational(1, 2)), inches(2), mortise_z_local])
+        
+        # 3. Beyond the mortise depth (front side of post, should be preserved)
+        point_beyond_mortise = Matrix([inches(Rational(3, 2)), inches(2), mortise_z_local])
+        
+        # The mortise extends in the direction the tenon points (diagonally at 45°)
+        # NOT straight in the +X direction!
+        # Let's test points along the actual mortise direction
+        
+        # Get the mortise prism details
+        from sympy import sqrt
+        print(f"\nDEBUG: Mortise prism info:")
+        print(f"  Position: {mortise_csg.position.T}")
+        print(f"  Orientation Z (direction): {mortise_csg.orientation.matrix[:, 2].T}")
+        print(f"  Size: {mortise_csg.size.T}")
+        print(f"  Start: {mortise_csg.start_distance}, End: {mortise_csg.end_distance}")
+        
+        # The tenon points in direction [-sqrt(2)/2, sqrt(2)/2, 0] in mortise local space
+        # This is 45° angle: moving -X and +Y equally
+        # So to go 1.5" deep, we move 1.5" * [-sqrt(2)/2, sqrt(2)/2, 0]
+        
+        depth_to_test = inches(Rational(3, 2))  # 1.5"
+        direction = Matrix([-sqrt(2)/2, sqrt(2)/2, Rational(0)])
+        
+        # Point at shoulder (entry)
+        point_at_entry = mortise_csg.position
+        
+        # Point 1.5" along the mortise direction
+        point_inside_mortise = mortise_csg.position + direction * depth_to_test
+        
+        # Point 3.5" along (at the far end)
+        point_at_mortise_bottom = mortise_csg.position + direction * side_girt_mortise_depth
+
+        point_at_back_side = mortise_csg.position + direction * post_back_height
+
         
         # Check which points are in the mortise CSG (material removed)
-        center_in_mortise = mortise_csg.contains_point(point_center_local)
-        back_in_mortise = mortise_csg.contains_point(point_back_side_local)
-        front_in_mortise = mortise_csg.contains_point(point_front_side_local)
+        entry_in_mortise = mortise_csg.contains_point(point_at_entry)
+        inside_in_mortise = mortise_csg.contains_point(point_inside_mortise)
+        bottom_in_mortise = mortise_csg.contains_point(point_at_mortise_bottom)
+        back_side_in_mortise = mortise_csg.contains_point(point_at_back_side)
+        
         
         # EXPECTED behavior (what SHOULD happen):
         # - Back side and center should be IN mortise CSG (removed) - girt comes from back
@@ -1166,20 +1201,25 @@ class TestOscarShedJoint:
         print(f"✓ Mortise geometry test")
         print(f"  Post size: {post_size_inches:.2f}\" x {post_size_inches:.2f}\"")
         print(f"  Mortise depth: {mortise_depth_inches:.2f}\"")
-        print(f"  Girt comes from: BACK side of post")
-        print(f"  Point at center (Y=0): {'IN mortise' if center_in_mortise else 'NOT in mortise'}")
-        print(f"  Point at back side (Y=+1.5\"): {'IN mortise' if back_in_mortise else 'NOT in mortise'}")
-        print(f"  Point at front side (Y=-1.5\"): {'IN mortise' if front_in_mortise else 'NOT in mortise'}")
+        print(f"  Mortise starts at shoulder: {mortise_csg.position.T}")
+        print(f"  Mortise extends diagonally (45° angle) by 3.5\"")
+        print(f"  Point at entry (shoulder): {'IN mortise' if entry_in_mortise else 'NOT in mortise'}")
+        print(f"  Point inside (1.5\" deep): {'IN mortise' if inside_in_mortise else 'NOT in mortise'}")
+        print(f"  Point at far end (3.5\" deep): {'IN mortise' if bottom_in_mortise else 'NOT in mortise'}")
+        print(f"  Point at back side (4\" deep): {'IN mortise' if back_side_in_mortise else 'NOT in mortise'}")
         
         # The assertions based on expected CORRECT behavior:
-        # The girt comes from the BACK, so the mortise should remove material from the BACK
-        # - Center and back side: should be IN mortise CSG (removed)
-        # - Front side: should NOT be in mortise CSG (preserved - far from girt)
-        assert not center_in_mortise, \
-            "Center of post should NOT be in mortise CSG"
-        assert not back_in_mortise, \
-            "Back side (where girt comes from) should NOT be in mortise CSG"
-        assert front_in_mortise, \
-            "Front side (far from girt) SHOULD be in mortise CSG"
+        # The mortise extends 3.5" in the direction the tenon points (45° diagonal)
+        # - Entry point at shoulder: should be IN or ON BOUNDARY
+        # - Point 1.5" deep: should be IN mortise CSG (removed)
+        # - Point at far end (3.5" deep): should be IN or ON BOUNDARY
+        assert entry_in_mortise, \
+            "Entry point (shoulder) should be IN mortise CSG"
+        assert inside_in_mortise, \
+            "Point inside mortise (1.5\" deep along tenon direction) should be IN mortise CSG (material removed)"
+        assert bottom_in_mortise, \
+            "Point at mortise depth (3.5\" deep) should be IN mortise CSG"
+        assert not back_side_in_mortise, \
+            "Point at back side (4\" deep) should NOT be IN mortise CSG (material removed)"
 
     
