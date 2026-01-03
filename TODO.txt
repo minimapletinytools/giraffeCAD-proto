@@ -149,7 +149,7 @@ DONE-add Frame class to timber.py
   -more joints
     -splice joints
       -TODO 
-    -end joints
+    -coner joints
       -mortise and tenon end joint (calls mortise and tenon but positions the tenon in away from the end)
       -half lap
     -cross joints
@@ -157,13 +157,11 @@ DONE-add Frame class to timber.py
       -double notch
     -fancy joints
       -the one where 2 beams butt up against 1 post and have the thing that passes through them
+  -add screw joint
   -chamfer render support?
-
-
-
-
--M3 
-  -assembly solver thing :D (or at least define assembly vectors)
+  -add stl support for joint accessories so you can use framing hardware
+  -define assembly directions for each joint (does this go in meta data?)
+  -assembly solver thing :D (lol no) 
 
 
 
