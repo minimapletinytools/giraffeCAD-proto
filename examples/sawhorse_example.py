@@ -15,12 +15,12 @@ bottom_length = inches(48)
 top_beam_length = inches(100)
 top_beam_surface_position = inches(50)
 
-def create_sawhorse() -> list[CutTimber]:
+def create_sawhorse() -> Frame:
     """
     Create a complete sawhorse structure with joints.
     
     Returns:
-        list[CutTimber]: List of CutTimber objects representing the complete sawhorse
+        Frame: Frame object containing all cut timbers for the complete sawhorse
     """
     # define footprint
     footprint = Footprint(
@@ -220,22 +220,25 @@ def create_sawhorse() -> list[CutTimber]:
         elif timber == beam:
             cut_beam.joints.extend(cuts)
 
-    # Return all cut timbers
-    return [
-        cut_left_mudsill,
-        cut_right_mudsill,
-        cut_beam,
-        cut_left_post,
-        cut_right_post,
-        cut_stretcher
-    ]
+    # Return all cut timbers in a Frame
+    return Frame(
+        cut_timbers=[
+            cut_left_mudsill,
+            cut_right_mudsill,
+            cut_beam,
+            cut_left_post,
+            cut_right_post,
+            cut_stretcher
+        ],
+        name="Sawhorse"
+    )
 
 def main():
-    """Main function that creates and returns the sawhorse cut timbers."""
-    cut_timbers = create_sawhorse()
+    """Main function that creates and returns the sawhorse frame."""
+    frame = create_sawhorse()
     
-    print(f"Created sawhorse with {len(cut_timbers)} timbers:")
-    for i, cut_timber in enumerate(cut_timbers):
+    print(f"Created sawhorse with {len(frame.cut_timbers)} timbers:")
+    for i, cut_timber in enumerate(frame.cut_timbers):
         timber = cut_timber.timber
         print(f"  {i+1}. Timber: {timber.name} "
               f"length={timber.length:.3f}m, "
@@ -243,8 +246,8 @@ def main():
               f"joints={len(cut_timber.joints)}, "
               f"position={timber.bottom_position}")
     
-    return cut_timbers
+    return frame
 
 if __name__ == "__main__":
-    timbers = main()
-    print(f"\nReturned {len(timbers)} cut timbers ready for rendering or further processing.")
+    frame = main()
+    print(f"\nReturned Frame '{frame.name}' with {len(frame.cut_timbers)} cut timbers ready for rendering or further processing.")

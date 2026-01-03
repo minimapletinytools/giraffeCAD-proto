@@ -7,7 +7,7 @@ from code_goes_here.moothymoth import inches
 from code_goes_here.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace,
     PegShape, timber_from_directions,
-    create_vector3d, V2, CutTimber
+    create_vector3d, V2, CutTimber, Frame
 )
 from code_goes_here.mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
@@ -370,19 +370,15 @@ def example_mortise_and_tenon_with_pegs(position=None):
     return joint
 
 
-def create_all_mortise_and_tenon_examples(return_accessories: bool = False):
+def create_all_mortise_and_tenon_examples():
     """
     Create mortise and tenon joint examples with automatic spacing.
     
     To enable/disable specific examples, just comment/uncomment lines in the EXAMPLES_TO_RENDER list below.
     Examples will be positioned sequentially starting at the origin with 6 feet spacing.
     
-    Args:
-        return_accessories: If True, return (timbers, accessories) tuple. If False, return just timbers.
-    
     Returns:
-        If return_accessories=False: List of all CutTimber objects for the enabled examples
-        If return_accessories=True: Tuple of (List[CutTimber], List[(JointAccessory, Timber)])
+        Frame: Frame object containing all cut timbers and accessories for the examples
     """
     
     # ============================================================================
@@ -452,10 +448,11 @@ def create_all_mortise_and_tenon_examples(return_accessories: bool = False):
         # Move to next position
         current_position_x += SPACING
     
-    if return_accessories:
-        return all_timbers, all_accessories
-    else:
-        return all_timbers
+    return Frame(
+        cut_timbers=all_timbers,
+        accessories=all_accessories,
+        name="M&T Examples"
+    )
 
 
 if __name__ == "__main__":

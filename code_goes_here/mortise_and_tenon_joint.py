@@ -225,7 +225,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # ========================================================================
     
     # Calculate the center of the tenon timber centerline
-    tenon_timber_center = tenon_timber.bottom_position + tenon_timber.length_direction * (tenon_timber.length / 2)
+    tenon_timber_center = tenon_timber.bottom_position + tenon_timber.length_direction * (tenon_timber.length / Rational(2))
     
     # Calculate signed distances from mortise face plane
     # Positive distance means on the side of the outward normal

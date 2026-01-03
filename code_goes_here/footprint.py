@@ -3,7 +3,7 @@ Footprint class for GiraffeCAD - Represents the 2D footprint of a structure
 """
 
 from typing import List, Tuple
-from sympy import Matrix
+from sympy import Matrix, Rational
 from dataclasses import dataclass
 from .moothymoth import zero_test
 
@@ -292,12 +292,13 @@ class Footprint:
         dy = end[1] - start[1]
         
         # Normalize the direction
-        length = (dx * dx + dy * dy) ** 0.5
+        from sympy import sqrt
+        length = sqrt(dx * dx + dy * dy)
         if zero_test(length):
             raise ValueError(f"Side {side_index} has zero length")
         
-        dx /= length
-        dy /= length
+        dx = dx / length
+        dy = dy / length
         
         # Calculate perpendicular vector (left perpendicular in 2D)
         # For direction (dx, dy), left perpendicular is (-dy, dx)
@@ -306,8 +307,8 @@ class Footprint:
         
         # Test if this perpendicular points inward by checking if a point
         # slightly offset in this direction is inside the polygon
-        midpoint_x = (start[0] + end[0]) / 2
-        midpoint_y = (start[1] + end[1]) / 2
+        midpoint_x = (start[0] + end[0]) / Rational(2)
+        midpoint_y = (start[1] + end[1]) / Rational(2)
         
         # Create a test point offset slightly in the perpendicular direction
         offset = 0.001  # Small offset for testing

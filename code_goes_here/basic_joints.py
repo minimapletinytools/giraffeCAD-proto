@@ -230,17 +230,18 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
         face_center = receiving_timber.get_bottom_center_position()
     else:
         # For long faces (LEFT, RIGHT, FORWARD, BACK), center is at mid-length
-        face_center = receiving_timber.bottom_position + (receiving_timber.length / 2) * receiving_timber.length_direction
+        from sympy import Rational
+        face_center = receiving_timber.bottom_position + (receiving_timber.length / Rational(2)) * receiving_timber.length_direction
         
         # Offset to the face surface
         if receiving_face == TimberFace.RIGHT:
-            face_center = face_center + (receiving_timber.size[0] / 2) * receiving_timber.width_direction
+            face_center = face_center + (receiving_timber.size[0] / Rational(2)) * receiving_timber.width_direction
         elif receiving_face == TimberFace.LEFT:
-            face_center = face_center - (receiving_timber.size[0] / 2) * receiving_timber.width_direction
+            face_center = face_center - (receiving_timber.size[0] / Rational(2)) * receiving_timber.width_direction
         elif receiving_face == TimberFace.FORWARD:
-            face_center = face_center + (receiving_timber.size[1] / 2) * receiving_timber.height_direction
+            face_center = face_center + (receiving_timber.size[1] / Rational(2)) * receiving_timber.height_direction
         else:  # BACK
-            face_center = face_center - (receiving_timber.size[1] / 2) * receiving_timber.height_direction
+            face_center = face_center - (receiving_timber.size[1] / Rational(2)) * receiving_timber.height_direction
     
     # The cutting plane is at the receiving face, with normal pointing INWARD
     # (toward the receiving timber body). This ensures we remove material on the
@@ -353,7 +354,8 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
     
     # Approximate overlap check: centerlines should be close
     max_dimension = max(timberA.size[0], timberA.size[1], timberB.size[0], timberB.size[1])
-    if centerline_distance > max_dimension / 2:
+    from sympy import Rational
+    if centerline_distance > max_dimension / Rational(2):
         warnings.warn(f"Timber cross sections may not overlap (centerline distance: {float(centerline_distance)}). Check joint geometry.")
     
     # Create the splice plane perpendicular to the length direction
@@ -710,17 +712,18 @@ def _get_face_center_position(timber: Timber, face: TimberFace) -> V3:
         return timber.get_bottom_center_position()
     else:
         # For long faces (LEFT, RIGHT, FORWARD, BACK), center is at mid-length
-        face_center = timber.bottom_position + (timber.length / 2) * timber.length_direction
+        from sympy import Rational
+        face_center = timber.bottom_position + (timber.length / Rational(2)) * timber.length_direction
         
         # Offset to the face surface
         if face == TimberFace.RIGHT:
-            face_center = face_center + (timber.size[0] / 2) * timber.width_direction
+            face_center = face_center + (timber.size[0] / Rational(2)) * timber.width_direction
         elif face == TimberFace.LEFT:
-            face_center = face_center - (timber.size[0] / 2) * timber.width_direction
+            face_center = face_center - (timber.size[0] / Rational(2)) * timber.width_direction
         elif face == TimberFace.FORWARD:
-            face_center = face_center + (timber.size[1] / 2) * timber.height_direction
+            face_center = face_center + (timber.size[1] / Rational(2)) * timber.height_direction
         else:  # BACK
-            face_center = face_center - (timber.size[1] / 2) * timber.height_direction
+            face_center = face_center - (timber.size[1] / Rational(2)) * timber.height_direction
         
         return face_center
 
@@ -732,7 +735,8 @@ def _find_closest_face_to_timber(timber: Timber, other_timber: Timber) -> Timber
     Uses the 4 side faces (not the end faces TOP/BOTTOM).
     """
     # Get the centerline point of other_timber (midpoint)
-    other_center = other_timber.bottom_position + other_timber.length_direction * (other_timber.length / 2)
+    from sympy import Rational
+    other_center = other_timber.bottom_position + other_timber.length_direction * (other_timber.length / Rational(2))
     
     # Check distance from each side face to the other timber's center
     # Don't include TOP/BOTTOM as those are the end faces

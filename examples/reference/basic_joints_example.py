@@ -74,7 +74,7 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     # Create miter joint at the ends that meet at position
     joint = cut_basic_miter_joint(timberA, TimberReferenceEnd.TOP, timberB, TimberReferenceEnd.TOP)
     
-    return joint.cut_timbers
+    return list(joint.cut_timbers)
 
 
 def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
@@ -115,7 +115,7 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
         timberB, TimberReferenceEnd.TOP
     )
     
-    return joint.cut_timbers
+    return list(joint.cut_timbers)
 
 
 def make_butt_joint_example(position: V3) -> list[CutTimber]:
@@ -157,7 +157,7 @@ def make_butt_joint_example(position: V3) -> list[CutTimber]:
         TimberReferenceEnd.TOP
     )
     
-    return joint.cut_timbers
+    return list(joint.cut_timbers)
 
 
 def make_splice_joint_example(position: V3) -> list[CutTimber]:
@@ -199,7 +199,7 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
         splice_point=position  # Meet at the specified position
     )
     
-    return joint.cut_timbers
+    return list(joint.cut_timbers)
 
 
 def make_house_joint_example(position: V3) -> list[CutTimber]:
@@ -245,7 +245,7 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
     # Create house joint
     joint = cut_basic_house_joint(housing_timber, housed_timber)
     
-    return joint.cut_timbers
+    return list(joint.cut_timbers)
 
 
 def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
@@ -298,10 +298,10 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
         timberB_cut_face=TimberFace.BACK
     )
     
-    return joint.cut_timbers
+    return list(joint.cut_timbers)
 
 
-def create_all_joint_examples() -> list[CutTimber]:
+def create_all_joint_examples() -> Frame:
     """
     Create joint examples with automatic spacing starting from the origin.
     
@@ -309,7 +309,7 @@ def create_all_joint_examples() -> list[CutTimber]:
     Joints will be positioned sequentially starting at the origin with 2m spacing.
     
     Returns:
-        List of all CutTimber objects for the enabled joints
+        Frame: Frame object containing all cut timbers for the enabled joints
     """
     
     # ============================================================================
@@ -353,7 +353,10 @@ def create_all_joint_examples() -> list[CutTimber]:
         # Move to next position
         current_position_x += SPACING
     
-    return all_timbers
+    return Frame(
+        cut_timbers=all_timbers,
+        name="Basic Joints Examples"
+    )
 
 
 # ============================================================================
@@ -369,15 +372,15 @@ if __name__ == "__main__":
     print()
     
     # Create all examples
-    all_cut_timbers = create_all_joint_examples()
+    frame = create_all_joint_examples()
     
     print()
     print("="*70)
-    print(f"Total timbers created: {len(all_cut_timbers)}")
+    print(f"Total timbers created: {len(frame.cut_timbers)}")
     print("="*70)
     
     # Print summary of each timber
-    for i, cut_timber in enumerate(all_cut_timbers):
+    for i, cut_timber in enumerate(frame.cut_timbers):
         timber = cut_timber.timber
         num_cuts = len(cut_timber._cuts)
         print(f"{i+1:2d}. {timber.name:30s} | Cuts: {num_cuts} | Length: {float(timber.length):.2f}m")

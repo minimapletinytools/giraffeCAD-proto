@@ -153,8 +153,9 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
     else:  # CENTER
         # Position so center of bottom face is on the boundary corner
         # Offset by half dimensions in both directions
-        offset_x = -timber_width/2 * outgoing_dir_normalized[0] - timber_depth/2 * (-outgoing_dir_normalized[1])
-        offset_y = -timber_width/2 * outgoing_dir_normalized[1] - timber_depth/2 * outgoing_dir_normalized[0]
+        from sympy import Rational
+        offset_x = -timber_width/Rational(2) * outgoing_dir_normalized[0] - timber_depth/Rational(2) * (-outgoing_dir_normalized[1])
+        offset_y = -timber_width/Rational(2) * outgoing_dir_normalized[1] - timber_depth/Rational(2) * outgoing_dir_normalized[0]
         bottom_position = create_vector3d(corner_x + offset_x, corner_y + offset_y, 0)
     
     return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)
@@ -243,8 +244,9 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
         # Center of that edge is at the point
         # Post extends inside (in direction of inward normal)
         # Offset the center by half depth in the inward direction
-        bottom_position = create_vector3d(point_x + inward_x * timber_depth / 2, 
-                                         point_y + inward_y * timber_depth / 2, 
+        from sympy import Rational
+        bottom_position = create_vector3d(point_x + inward_x * timber_depth / Rational(2), 
+                                         point_y + inward_y * timber_depth / Rational(2), 
                                          0)
         
     else:  # OUTSIDE
@@ -252,8 +254,9 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
         # Center of that edge is at the point
         # Post extends outside (opposite of inward normal)
         # Offset the center by half depth in the outward direction
-        bottom_position = create_vector3d(point_x - inward_x * timber_depth / 2, 
-                                         point_y - inward_y * timber_depth / 2, 
+        from sympy import Rational
+        bottom_position = create_vector3d(point_x - inward_x * timber_depth / Rational(2), 
+                                         point_y - inward_y * timber_depth / Rational(2), 
                                          0)
     
     return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)
@@ -319,11 +322,13 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     if location_type == FootprintLocation.INSIDE:
         # Position so one edge lies on the boundary side, timber extends inward
         # Move the centerline inward by half the timber height (perpendicular dimension)
-        bottom_position = bottom_position + inward_normal * (timber_height / 2)
+        from sympy import Rational
+        bottom_position = bottom_position + inward_normal * (timber_height / Rational(2))
     elif location_type == FootprintLocation.OUTSIDE:
         # Position so one edge lies on the boundary side, timber extends outward
         # Move the centerline outward by half the timber height (perpendicular dimension)
-        bottom_position = bottom_position - inward_normal * (timber_height / 2)
+        from sympy import Rational
+        bottom_position = bottom_position - inward_normal * (timber_height / Rational(2))
     # For CENTER, no offset needed - centerline is already on the boundary side
     
     return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)

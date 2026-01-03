@@ -49,7 +49,7 @@ except ImportError:
 
 # GiraffeCAD imports
 from sympy import Matrix
-from giraffe import CutTimber, Timber
+from giraffe import CutTimber, Timber, Frame
 from code_goes_here.timber import JointAccessory, Peg, Wedge, PegShape
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
@@ -681,6 +681,27 @@ def render_accessory_at_origin(accessory: JointAccessory, component_name: str,
         print(f"Error rendering accessory at origin: {e}")
         traceback.print_exc()
         return None
+
+
+def render_frame(frame: Frame, base_name: str = None, doc: Optional['FreeCAD.Document'] = None) -> int:
+    """
+    Render a complete Frame in FreeCAD.
+    
+    Args:
+        frame: Frame object containing cut timbers and accessories
+        base_name: Optional base name override (defaults to frame.name or "Timber")
+        doc: Optional FreeCAD document (creates new if not provided)
+    
+    Returns:
+        Number of objects created
+    """
+    name = base_name if base_name is not None else (frame.name or "Timber")
+    return render_multiple_timbers(
+        cut_timbers=frame.cut_timbers,
+        joint_accessories=frame.accessories,
+        base_name=name,
+        doc=doc
+    )
 
 
 def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber", 
