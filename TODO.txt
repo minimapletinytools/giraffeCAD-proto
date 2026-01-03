@@ -66,6 +66,8 @@ DONE-add Frame class to timber.py
     -clean up the mortise shoulder calculation shit wtf or maybe yo uneed it for non face aligned cases?
   -extract out peg creation stuff, it will be useful in other places
     -basically, just figure out the start point and direction of the peg... it will return to you a tuple of prisms to substract from the mortise and tenon timber, and a peg accessory
+  -add additinoal mortise timbers to mortise tenon joint.. so you can do the thing like the stacked joint on the back post of oscarshed
+    -actually better to do this as a house joint and 2 separate mortise and tenon joints. the second mortise and tenon joint will be awkard but it works so why not
 
 -add extrude polygon csg rendering to fusino 360
 
@@ -104,8 +106,7 @@ DONE-add Frame class to timber.py
       DONE-mortise and tenon
       DONE-draw bore mortise and tenon
       DONE-through mortise and tenon
-      -wedged mortise and tenon
-      -wedged through mortise and tenon
+      -end wedged mortise and tenon
       -fox wedge mortise and tenon
       -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
         -same as draw bore but with komisen peg,
@@ -113,6 +114,7 @@ DONE-add Frame class to timber.py
       -non face aligned mortise and tenon joints... (maybe at least 1 axis should be face aligned...)
       -support tenon_rotation
       -support mortise_shoulder
+    -sidewedged dovetail mortise and tenon joint (this method is its own method)
 
   -corner joints
     -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
@@ -121,10 +123,13 @@ DONE-add Frame class to timber.py
     -half_lap (special case of mortise and tenon? nah, special case of bridle joint? nah)
     -bridle joint (special case of mortise and tenon? nah)
     -maybe try the fancy  one we used on the shed
-  -make shed example (just add joints)
+
   -splice_joint
     -gooseneck joint 
     -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
+
+  -make shed example (just add joints)
+
   IGNORE-get rhino rendering working for the following joints ...
   -improve examples
     -create series of examples showcasing each feature
@@ -153,7 +158,6 @@ DONE-add Frame class to timber.py
       -mortise and tenon end joint (calls mortise and tenon but positions the tenon in away from the end)
       -half lap
     -cross joints
-      -single notch
       -double notch
     -fancy joints
       -the one where 2 beams butt up against 1 post and have the thing that passes through them
