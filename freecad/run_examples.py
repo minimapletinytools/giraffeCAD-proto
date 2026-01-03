@@ -38,9 +38,9 @@ if script_dir not in sys.path:
 # CONFIGURATION: Change this to render different examples
 # ============================================================================
 #EXAMPLE_TO_RENDER = 'basic_joints' 
-#EXAMPLE_TO_RENDER = 'oscar_shed'
+EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
-EXAMPLE_TO_RENDER = 'csg'
+#EXAMPLE_TO_RENDER = 'csg'
 
 # CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
 CSG_EXAMPLE_TO_RENDER = 'hexagon_extrusion'  # Options: 'cube_cutout', 'halfplane_cut', 'positioned_cube', 'union_cubes', 'hexagon_extrusion'
@@ -89,29 +89,29 @@ def render_basic_joints():
     
     Includes: miter joints, butt joints, splice joints, and house joints.
     """
-    from giraffe_render_freecad import render_multiple_timbers, clear_document
+    from giraffe_render_freecad import render_frame, clear_document
     from examples.reference.basic_joints_example import create_all_joint_examples
     
     print("="*60)
     print("GiraffeCAD FreeCAD - All Basic Joints")
     print("="*60)
     
-    # Create all joint examples
+    # Create all joint examples (returns Frame object)
     print("\nCreating all joint examples...")
-    cut_timbers = create_all_joint_examples()
+    frame = create_all_joint_examples()
     
-    print(f"Total timbers created: {len(cut_timbers)}")
+    print(f"Total timbers created: {len(frame.cut_timbers)}")
     
     # Clear and render
     print("\nClearing FreeCAD document...")
     clear_document()
     
     print("\nRendering timbers in FreeCAD...")
-    success_count = render_multiple_timbers(cut_timbers)
+    success_count = render_frame(frame)
     
     print("\n" + "="*60)
     print(f"Rendering Complete!")
-    print(f"Successfully rendered {success_count}/{len(cut_timbers)} timbers")
+    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
     print("="*60)
     print("\nJoints are spaced 2m apart along the X axis")
     print("Check the Model tree on the left to see all joint components")
@@ -129,26 +129,26 @@ def render_mortise_and_tenon():
     
     Includes various mortise and tenon configurations with accessories like pegs.
     """
-    from giraffe_render_freecad import render_multiple_timbers, clear_document
+    from giraffe_render_freecad import render_frame, clear_document
     from examples.mortise_and_tenon_joint_examples import create_all_mortise_and_tenon_examples
     
     print("="*70)
     print("GiraffeCAD FreeCAD - Mortise and Tenon Joint Examples")
     print("="*70)
     
-    # Create mortise and tenon examples (including accessories like pegs)
+    # Create mortise and tenon examples (returns Frame object)
     print("\nCreating all mortise and tenon joint examples...")
-    cut_timbers, accessories = create_all_mortise_and_tenon_examples(return_accessories=True)
+    frame = create_all_mortise_and_tenon_examples()
     
-    print(f"Total timbers created: {len(cut_timbers)}")
-    print(f"Total accessories (pegs/wedges): {len(accessories)}")
+    print(f"Total timbers created: {len(frame.cut_timbers)}")
+    print(f"Total accessories (pegs/wedges): {len(frame.accessories)}")
     
     # Clear and render
     print("\nClearing FreeCAD document...")
     clear_document()
     
     print("\nRendering timbers and accessories in FreeCAD...")
-    success_count = render_multiple_timbers(cut_timbers, joint_accessories=accessories)
+    success_count = render_frame(frame)
     
     print("\n" + "="*70)
     print(f"Rendering Complete!")
@@ -166,31 +166,31 @@ def render_oscar_shed():
     
     An 8ft x 4ft shed with mudsills, posts, girts, top plates, joists, and rafters.
     """
-    from giraffe_render_freecad import render_multiple_timbers, clear_document
+    from giraffe_render_freecad import render_frame, clear_document
     from examples.oscarshed import create_oscarshed
     
     print("="*60)
     print("GiraffeCAD FreeCAD - Oscar's Shed")
     print("="*60)
     
-    # Create Oscar's Shed (including accessories like pegs)
+    # Create Oscar's Shed (returns Frame object)
     print("\nCreating Oscar's Shed structure...")
-    cut_timbers, accessories = create_oscarshed()
+    frame = create_oscarshed()
     
-    print(f"Total timbers created: {len(cut_timbers)}")
-    print(f"Total accessories (pegs): {len(accessories)}")
+    print(f"Total timbers created: {len(frame.cut_timbers)}")
+    print(f"Total accessories (pegs): {len(frame.accessories)}")
     
     # Clear and render
     print("\nClearing FreeCAD document...")
     clear_document()
     
     print("\nRendering timbers and accessories in FreeCAD...")
-    success_count = render_multiple_timbers(cut_timbers, joint_accessories=accessories)
+    success_count = render_frame(frame)
     
     print("\n" + "="*60)
     print(f"Rendering Complete!")
-    print(f"Successfully rendered {success_count}/{len(cut_timbers)} timbers")
-    print(f"Successfully rendered {len(accessories)} accessories")
+    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
+    print(f"Successfully rendered {len(frame.accessories)} accessories")
     print("="*60)
     print("\nOscar's Shed: 8ft x 4ft timber frame structure")
     print("Check the Model tree on the left to see all components:")

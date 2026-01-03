@@ -51,6 +51,12 @@ DONE-freecad
 DONE-add basic extrude profiles to CSG
 DONE-update oscar shed to use mortise and tenon joint
 DONE-mortise hole calculation is incorrect please fix
+DONE-add Frame class to timber.py 
+  -add a check_no_floats method that checks that all the contents of the frame are using sympy rationals, NO FLOATS
+  -assert on the check_no_floats method in the ctor to ensure no floats are in the frame
+  -update all examples to output frames
+  -update fusino360 and freecad to take a frame object
+  -get rid of PartiallyCutTimber class while you're at it
 
 -rewrite all joint tests, they are all kinda messed up tbh
 
@@ -63,12 +69,6 @@ DONE-mortise hole calculation is incorrect please fix
 
 -add extrude polygon csg rendering to fusino 360
 
--add Frame class to timber.py 
-  -add a check_no_floats method that checks that all the contents of the frame are using sympy rationals, NO FLOATS
-  -assert on the check_no_floats method in the ctor to ensure no floats are in the frame
-  -update all examples to output frames
-  -update fusino360 and freecad to take a frame object
-  -get rid of PartiallyCutTimber class while you're at it
 
 -cleanup
   -make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...

@@ -1141,7 +1141,7 @@ class Wedge(JointAccessory):
         return Prism(
             size=create_vector2d(self.base_width, self.height),
             orientation=Orientation.identity(),
-            position=create_vector3d(0, self.height / 2, 0),
+            position=create_vector3d(0, self.height / Rational(2), 0),
             start_distance=0,
             end_distance=self.length
         )
@@ -1335,7 +1335,7 @@ def create_peg_going_into_face(
     if face == TimberReferenceLongFace.RIGHT:
         # RIGHT face: offset in +X (width) direction, surface at +width/2
         position_local = create_vector3d(
-            timber.size[0] / 2,  # At right surface
+            timber.size[0] / Rational(2),  # At right surface
             distance_from_centerline,  # Offset in height direction
             distance_from_bottom
         )
@@ -1346,7 +1346,7 @@ def create_peg_going_into_face(
     elif face == TimberReferenceLongFace.LEFT:
         # LEFT face: offset in -X (width) direction
         position_local = create_vector3d(
-            -timber.size[0] / 2,  # At left surface
+            -timber.size[0] / Rational(2),  # At left surface
             distance_from_centerline,  # Offset in height direction
             distance_from_bottom
         )
@@ -1358,7 +1358,7 @@ def create_peg_going_into_face(
         # FORWARD face: offset in +Y (height) direction
         position_local = create_vector3d(
             distance_from_centerline,  # Offset in width direction
-            timber.size[1] / 2,  # At forward surface
+            timber.size[1] / Rational(2),  # At forward surface
             distance_from_bottom
         )
         # Peg points inward (-Y direction in local space)
@@ -1369,7 +1369,7 @@ def create_peg_going_into_face(
         # BACK face: offset in -Y (height) direction
         position_local = create_vector3d(
             distance_from_centerline,  # Offset in width direction
-            -timber.size[1] / 2,  # At back surface
+            -timber.size[1] / Rational(2),  # At back surface
             distance_from_bottom
         )
         # Peg points inward (+Y direction in local space)

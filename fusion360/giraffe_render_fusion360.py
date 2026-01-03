@@ -20,7 +20,7 @@ import traceback
 import time
 from typing import Optional, List, Tuple
 from sympy import Matrix, Float
-from giraffe import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge
+from giraffe import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge, Frame
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
     MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference
@@ -1091,6 +1091,27 @@ def render_accessory_at_origin(accessory: JointAccessory, component_name: str, i
         print(f"Error rendering accessory at origin: {e}")
         traceback.print_exc()
         return None
+
+
+def render_frame(frame: Frame, base_name: str = None, use_body_transform: bool = True) -> int:
+    """
+    Render a complete Frame in Fusion 360.
+    
+    Args:
+        frame: Frame object containing cut timbers and accessories
+        base_name: Optional base name override (defaults to frame.name or "Timber")
+        use_body_transform: Whether to use body transform method
+    
+    Returns:
+        Number of components created
+    """
+    name = base_name if base_name is not None else (frame.name or "Timber")
+    return render_multiple_timbers(
+        cut_timbers=frame.cut_timbers,
+        joint_accessories=frame.accessories,
+        base_name=name,
+        use_body_transform=use_body_transform
+    )
 
 
 def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber", 

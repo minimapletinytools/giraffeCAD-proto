@@ -24,6 +24,7 @@ from giraffe import (
     inches, feet, Rational, Matrix
 )
 from code_goes_here.footprint import Footprint
+from code_goes_here.timber import Frame
 
 # ============================================================================
 # PARAMETERS - Modify these to adjust the shed design
@@ -52,9 +53,7 @@ def create_oscarshed():
     Create Oscar's Shed structure.
     
     Returns:
-        Tuple[List[CutTimber], List[(JointAccessory, Timber)]]:
-            - List of CutTimber objects representing the complete shed
-            - List of (accessory, timber) tuples for joint accessories like pegs
+        Frame: Frame object containing all cut timbers and accessories for the complete shed
     """
     # Note: Dimensions are already in meters from dimensional helpers
     
@@ -555,13 +554,13 @@ def create_oscarshed():
     # Calculate spacing: 3 joists with 4 equal gaps (left side, 2 between joists, right side)
     num_joists = 3
     num_gaps = 4
-    gap_spacing = (base_width - num_joists * joist_width) / num_gaps
+    gap_spacing = (base_width - num_joists * joist_width) / Rational(num_gaps)
     
     # Joist positions along X axis (from left edge, which is where mudsills start)
     joist_positions_along_mudsill = [
-        gap_spacing + joist_width / 2,                      # Joist 1
-        2 * gap_spacing + 1.5 * joist_width,                # Joist 2
-        3 * gap_spacing + 2.5 * joist_width                 # Joist 3
+        gap_spacing + joist_width / Rational(2),                      # Joist 1
+        Rational(2) * gap_spacing + Rational(3, 2) * joist_width,     # Joist 2
+        Rational(3) * gap_spacing + Rational(5, 2) * joist_width      # Joist 3
     ]
     
     # No stickout on joists (flush with mudsills)
@@ -573,7 +572,7 @@ def create_oscarshed():
     # To align tops: joist_offset = (mudsill_height - joist_height) / 2
     mudsill_height = big_timber_size[0]  # 6" vertical
     joist_height = med_timber_size[0]    # 4" vertical
-    joist_vertical_offset = (mudsill_height - joist_height) / 2  # = 1"
+    joist_vertical_offset = (mudsill_height - joist_height) / Rational(2)  # = 1"
     
     # Create the 3 joists
     joists = []
@@ -610,12 +609,12 @@ def create_oscarshed():
     # With 5 rafters, there are 4 gaps between centerlines
     
     num_rafters = 5
-    rafter_centerline_spacing = (top_plate_front.length - rafter_width) / (num_rafters-1)
+    rafter_centerline_spacing = (top_plate_front.length - rafter_width) / Rational(num_rafters-1)
     
     # Rafter positions along the top plates (X axis)
     rafter_positions_along_top_plate = []
     for i in range(num_rafters):
-        position = rafter_width / 2 + i * rafter_centerline_spacing
+        position = rafter_width / Rational(2) + i * rafter_centerline_spacing
         rafter_positions_along_top_plate.append(position)
     
     # Rafters have 12" stickout and are offset upwards by 3 inches from top plate centerlines
@@ -790,7 +789,11 @@ def create_oscarshed():
     # Combine all accessories (pegs from front girt and side girts)
     all_accessories = front_girt_accessories + side_girt_accessories
     
-    return cut_timbers, all_accessories
+    return Frame(
+        cut_timbers=cut_timbers,
+        accessories=all_accessories,
+        name="Oscar's Shed"
+    )
 
 
 # ============================================================================
@@ -801,14 +804,14 @@ if __name__ == "__main__":
     print(f"Creating Oscar's Shed: 8 ft x 4 ft")
     print(f"  ({float(base_width):.3f} m x {float(base_length):.3f} m)")
     
-    cut_timbers, accessories = create_oscarshed()
+    frame = create_oscarshed()
     
-    print(f"\nCreated {len(cut_timbers)} timbers and {len(accessories)} accessories:")
-    for ct in cut_timbers:
+    print(f"\nCreated {len(frame.cut_timbers)} timbers and {len(frame.accessories)} accessories:")
+    for ct in frame.cut_timbers:
         print(f"  - {ct.timber.name}")
-    if accessories:
+    if frame.accessories:
         print(f"\nAccessories:")
-        for acc, timber in accessories:
+        for acc, timber in frame.accessories:
             print(f"  - {type(acc).__name__} on {timber.name}")
     
     # ============================================================================

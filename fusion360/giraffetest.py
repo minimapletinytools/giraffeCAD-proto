@@ -28,7 +28,7 @@ try:
     from examples.reference.basic_joints_example import create_all_joint_examples
     # Import just one function from mortise_and_tenon_joint_examples to test module accessibility
     from examples.mortise_and_tenon_joint_examples import example_basic_mortise_and_tenon
-    from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
+    from giraffe_render_fusion360 import get_active_design, clear_design, render_frame
     
     # Test that core dependencies are available
     import sympy
@@ -97,7 +97,7 @@ def run(_context: str):
             from examples.oscarshed import create_oscarshed
             from examples.reference.basic_joints_example import create_all_joint_examples
             from examples.mortise_and_tenon_joint_examples import create_all_mortise_and_tenon_examples
-            from giraffe_render_fusion360 import get_active_design, clear_design, render_multiple_timbers
+            from giraffe_render_fusion360 import get_active_design, clear_design, render_frame
             
             print("✓ Module reload complete")
             app.log("Module reload complete")
@@ -140,18 +140,14 @@ def run(_context: str):
             app.log(f"🦒 GIRAFFETEST: {example_name.upper()} 🦒")
             print(f"Starting {example_name} generation...")
             
-            # Generate the selected example
-            if has_accessories:
-                if example_name == "Oscar's Shed":
-                    # Oscar's Shed always returns (timbers, accessories)
-                    cut_timbers, joint_accessories = example_func()
-                else:
-                    # Mortise & Tenon examples use return_accessories parameter
-                    cut_timbers, joint_accessories = example_func(return_accessories=True)
+            # Generate the selected example (all now return Frame objects)
+            frame = example_func()
+            cut_timbers = frame.cut_timbers
+            joint_accessories = frame.accessories if frame.accessories else None
+            
+            if joint_accessories:
                 print(f"Created structure with {len(cut_timbers)} timbers and {len(joint_accessories)} accessories")
             else:
-                cut_timbers = example_func()
-                joint_accessories = None
                 print(f"Created structure with {len(cut_timbers)} timbers")
             
             # Clear design first to start fresh
@@ -166,7 +162,7 @@ def run(_context: str):
                 app.log(f"Starting three-pass rendering of {len(cut_timbers)} {example_name} timbers...")
             
             # Render using the new CSG-based rendering system
-            success_count = render_multiple_timbers(cut_timbers, prefix, joint_accessories)
+            success_count = render_frame(frame, prefix)
             
             # Log detailed information
             total_objects = len(cut_timbers) + (len(joint_accessories) if joint_accessories else 0)

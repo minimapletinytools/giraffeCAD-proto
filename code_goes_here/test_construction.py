@@ -292,8 +292,7 @@ class TestTimberCreation:
         )
         # Timber should extend inward (in +Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) inside the footprint
-        # Note: get_inward_normal returns floats, so the result is Float
-        assert timber_inside.bottom_position[1] == Float(timber_height / 2)
+        assert timber_inside.bottom_position[1] == timber_height / Rational(2)
         assert timber_inside.bottom_position[0] == 0  # X unchanged
         assert timber_inside.bottom_position[2] == 0  # Z at ground
         
@@ -304,7 +303,7 @@ class TestTimberCreation:
         # Timber should extend outward (in -Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) outside the footprint
         # Note: get_inward_normal returns floats, so the result is Float
-        assert timber_outside.bottom_position[1] == Float(-timber_height / 2)
+        assert timber_outside.bottom_position[1] == -timber_height / Rational(2)
         assert timber_outside.bottom_position[0] == 0  # X unchanged
         assert timber_outside.bottom_position[2] == 0  # Z at ground
         
@@ -338,7 +337,7 @@ class TestTimberCreation:
         )
         # Timber should extend inward (in -X direction)
         # Use timber_height (size[1]) as it's the dimension perpendicular to boundary
-        assert timber_inside_right.bottom_position[0] == Float(Rational(2) - timber_height / 2)
+        assert timber_inside_right.bottom_position[0] == Rational(2) - timber_height / Rational(2)
         assert timber_inside_right.bottom_position[1] == Rational(0)  # Y unchanged
         
         timber_outside_right = create_horizontal_timber_on_footprint(
@@ -346,7 +345,7 @@ class TestTimberCreation:
         )
         # Timber should extend outward (in +X direction)
         # Use timber_height (size[1]) as it's the dimension perpendicular to boundary
-        assert timber_outside_right.bottom_position[0] == Float(Rational(2) + timber_height / 2)
+        assert timber_outside_right.bottom_position[0] == Rational(2) + timber_height / Rational(2)
         assert timber_outside_right.bottom_position[1] == Rational(0)  # Y unchanged
         
         timber_center_right = create_horizontal_timber_on_footprint(

@@ -19,7 +19,7 @@ parent_dir = os.path.dirname(script_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from giraffe import CutTimber, Timber
+from giraffe import CutTimber, Timber, Frame
 from sympy import Matrix
 
 
@@ -174,6 +174,27 @@ def render_cut_timber(cut_timber: CutTimber, name: Optional[str] = None, layer: 
     # For now, just render the base timber
     # TODO: Apply mortise and tenon cuts
     return render_timber(cut_timber.timber, name, layer)
+
+
+def render_frame(frame: Frame, base_name: str = None, layer: Optional[str] = "GiraffeCAD") -> int:
+    """
+    Render a complete Frame in Rhino.
+    
+    Args:
+        frame: Frame object containing cut timbers and accessories
+        base_name: Optional base name override (defaults to frame.name or "Timber")
+        layer: Optional layer name to place all timbers on
+    
+    Returns:
+        Number of objects created
+    """
+    name = base_name if base_name is not None else (frame.name or "Timber")
+    # Note: Rhino renderer doesn't currently support accessories
+    return render_multiple_timbers(
+        cut_timbers=frame.cut_timbers,
+        base_name=name,
+        layer=layer
+    )
 
 
 def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber", 
