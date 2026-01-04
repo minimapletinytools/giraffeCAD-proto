@@ -5,12 +5,309 @@ This module contains tests for the CSG primitives and operations.
 """
 
 import pytest
-from sympy import Matrix, Rational, simplify, sqrt
+from sympy import Matrix, Rational, simplify, sqrt, cos, sin, pi
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
     HalfPlane, Prism, Cylinder, Union, Difference, ConvexPolygonExtrusion
 )
 from .conftest import assert_is_valid_rotation_matrix
+import random
+
+
+# ============================================================================
+# Helper Functions for Random Shape Generation and Boundary Point Testing
+# ============================================================================
+
+def generate_random_prism():
+    """Generate a random prism with random size, orientation, position, and distances."""
+    size = Matrix([Rational(random.randint(2, 10)), Rational(random.randint(2, 10))])
+    orientation = Orientation()  # Identity orientation for simplicity
+    position = Matrix([Rational(random.randint(-50, 50)), 
+                      Rational(random.randint(-50, 50)), 
+                      Rational(random.randint(-50, 50))])
+    start_dist = Rational(random.randint(0, 10))
+    end_dist = Rational(random.randint(15, 30))
+    
+    return Prism(size=size, orientation=orientation, position=position,
+                start_distance=start_dist, end_distance=end_dist)
+
+
+def generate_random_cylinder():
+    """Generate a random cylinder with random axis, radius, position, and distances."""
+    # Use simple axis directions for predictability
+    axes = [Matrix([1, 0, 0]), Matrix([0, 1, 0]), Matrix([0, 0, 1])]
+    axis = random.choice(axes)
+    radius = Rational(random.randint(2, 8))
+    position = Matrix([Rational(random.randint(-50, 50)), 
+                      Rational(random.randint(-50, 50)), 
+                      Rational(random.randint(-50, 50))])
+    start_dist = Rational(random.randint(0, 10))
+    end_dist = Rational(random.randint(15, 30))
+    
+    return Cylinder(axis_direction=axis, radius=radius, position=position,
+                   start_distance=start_dist, end_distance=end_dist)
+
+
+def generate_random_halfplane():
+    """Generate a random half-plane with random normal and offset."""
+    # Use simple normalized normals for predictability
+    normals = [Matrix([1, 0, 0]), Matrix([0, 1, 0]), Matrix([0, 0, 1]),
+               Matrix([1, 1, 0]) / sqrt(2), Matrix([1, 0, 1]) / sqrt(2)]
+    normal = random.choice(normals)
+    offset = Rational(random.randint(-20, 20))
+    
+    return HalfPlane(normal=normal, offset=offset)
+
+
+def generate_random_convex_polygon_extrusion():
+    """Generate a random extruded convex polygon with 3-6 vertices."""
+    num_vertices = random.randint(3, 6)
+    
+    # Generate a regular polygon for simplicity and guaranteed convexity
+    radius = Rational(random.randint(3, 8))
+    vertices = []
+    for i in range(num_vertices):
+        angle = 2 * pi * i / num_vertices
+        x = radius * cos(angle)
+        y = radius * sin(angle)
+        vertices.append(Matrix([x, y]))
+    
+    length = Rational(random.randint(10, 25))
+    orientation = Orientation()  # Identity for simplicity
+    position = Matrix([Rational(random.randint(-30, 30)), 
+                      Rational(random.randint(-30, 30)), 
+                      Rational(random.randint(-30, 30))])
+    
+    return ConvexPolygonExtrusion(points=vertices, length=length, 
+                                  orientation=orientation, position=position)
+
+
+def generate_prism_boundary_points(prism):
+    """Generate points on the boundary of a prism: corners, edge midpoints, face centers."""
+    points = []
+    hw = prism.size[0] / 2  # half width
+    hh = prism.size[1] / 2  # half height
+    
+    # Extract orientation axes
+    width_dir = Matrix([prism.orientation.matrix[0, 0],
+                       prism.orientation.matrix[1, 0],
+                       prism.orientation.matrix[2, 0]])
+    height_dir = Matrix([prism.orientation.matrix[0, 1],
+                        prism.orientation.matrix[1, 1],
+                        prism.orientation.matrix[2, 1]])
+    length_dir = Matrix([prism.orientation.matrix[0, 2],
+                        prism.orientation.matrix[1, 2],
+                        prism.orientation.matrix[2, 2]])
+    
+    # 8 corners (if finite)
+    if prism.start_distance is not None and prism.end_distance is not None:
+        for z in [prism.start_distance, prism.end_distance]:
+            for x_sign in [-1, 1]:
+                for y_sign in [-1, 1]:
+                    point = (prism.position + 
+                            width_dir * (x_sign * hw) + 
+                            height_dir * (y_sign * hh) + 
+                            length_dir * z)
+                    points.append(point)
+    
+    # 6 face centers (if finite)
+    if prism.start_distance is not None and prism.end_distance is not None:
+        z_mid = (prism.start_distance + prism.end_distance) / 2
+        # Top and bottom faces
+        points.append(prism.position + length_dir * prism.start_distance)
+        points.append(prism.position + length_dir * prism.end_distance)
+        # Side faces
+        points.append(prism.position + width_dir * hw + length_dir * z_mid)
+        points.append(prism.position + width_dir * (-hw) + length_dir * z_mid)
+        points.append(prism.position + height_dir * hh + length_dir * z_mid)
+        points.append(prism.position + height_dir * (-hh) + length_dir * z_mid)
+    
+    return points
+
+
+def generate_prism_non_boundary_points(prism):
+    """Generate points NOT on the boundary of a prism: center and far-away point."""
+    points = []
+    
+    # Center point (if finite)
+    if prism.start_distance is not None and prism.end_distance is not None:
+        length_dir = Matrix([prism.orientation.matrix[0, 2],
+                            prism.orientation.matrix[1, 2],
+                            prism.orientation.matrix[2, 2]])
+        z_mid = (prism.start_distance + prism.end_distance) / 2
+        points.append(prism.position + length_dir * z_mid)
+    
+    # Far-away point
+    points.append(prism.position + Matrix([Rational(1000), Rational(1000), Rational(1000)]))
+    
+    return points
+
+
+def generate_cylinder_boundary_points(cylinder):
+    """Generate points on cylinder boundary: caps, surface, and round edges."""
+    points = []
+    
+    # Normalize axis
+    axis = cylinder.axis_direction / cylinder.axis_direction.norm()
+    
+    # Find perpendicular vectors for constructing points on circles
+    if abs(axis[0]) < Rational(1, 2):
+        perp1 = Matrix([1, 0, 0])
+    else:
+        perp1 = Matrix([0, 1, 0])
+    
+    perp1 = perp1 - axis * (perp1.T * axis)[0, 0]
+    perp1 = perp1 / perp1.norm()
+    perp2 = axis.cross(perp1)
+    perp2 = perp2 / perp2.norm()
+    
+    # Cap centers (if finite)
+    if cylinder.start_distance is not None:
+        points.append(cylinder.position + axis * cylinder.start_distance)
+    if cylinder.end_distance is not None:
+        points.append(cylinder.position + axis * cylinder.end_distance)
+    
+    # Points on cap circumferences (round edges) - 8 points per cap
+    for angle_frac in [0, Rational(1, 4), Rational(1, 2), Rational(3, 4)]:
+        angle = 2 * pi * angle_frac
+        radial = cylinder.radius * (perp1 * cos(angle) + perp2 * sin(angle))
+        
+        if cylinder.start_distance is not None:
+            points.append(cylinder.position + axis * cylinder.start_distance + radial)
+        if cylinder.end_distance is not None:
+            points.append(cylinder.position + axis * cylinder.end_distance + radial)
+    
+    # Points on cylindrical surface (if finite)
+    if cylinder.start_distance is not None and cylinder.end_distance is not None:
+        z_mid = (cylinder.start_distance + cylinder.end_distance) / 2
+        for angle_frac in [0, Rational(1, 4), Rational(1, 2), Rational(3, 4)]:
+            angle = 2 * pi * angle_frac
+            radial = cylinder.radius * (perp1 * cos(angle) + perp2 * sin(angle))
+            points.append(cylinder.position + axis * z_mid + radial)
+    
+    return points
+
+
+def generate_cylinder_non_boundary_points(cylinder):
+    """Generate points NOT on cylinder boundary: center and far-away point."""
+    points = []
+    
+    # Center point (if finite)
+    if cylinder.start_distance is not None and cylinder.end_distance is not None:
+        axis = cylinder.axis_direction / cylinder.axis_direction.norm()
+        z_mid = (cylinder.start_distance + cylinder.end_distance) / 2
+        points.append(cylinder.position + axis * z_mid)
+    
+    # Far-away point
+    points.append(cylinder.position + Matrix([Rational(1000), Rational(1000), Rational(1000)]))
+    
+    return points
+
+
+def generate_halfplane_boundary_points(halfplane):
+    """Generate points on the half-plane boundary."""
+    points = []
+    
+    # Plane origin
+    points.append(halfplane.normal * halfplane.offset)
+    
+    # Find two perpendicular vectors in the plane
+    normal = halfplane.normal / halfplane.normal.norm()
+    if abs(normal[0]) < Rational(1, 2):
+        perp1 = Matrix([1, 0, 0])
+    else:
+        perp1 = Matrix([0, 1, 0])
+    
+    perp1 = perp1 - normal * (perp1.T * normal)[0, 0]
+    perp1 = perp1 / perp1.norm()
+    perp2 = normal.cross(perp1)
+    perp2 = perp2 / perp2.norm()
+    
+    # Random points on the plane
+    plane_origin = halfplane.normal * halfplane.offset
+    for i in range(5):
+        offset_x = Rational(random.randint(-20, 20))
+        offset_y = Rational(random.randint(-20, 20))
+        points.append(plane_origin + perp1 * offset_x + perp2 * offset_y)
+    
+    return points
+
+
+def generate_halfplane_non_boundary_points(halfplane):
+    """Generate points NOT on half-plane boundary: points on both sides of plane."""
+    points = []
+    normal_normalized = halfplane.normal / halfplane.normal.norm()
+    plane_origin = halfplane.normal * halfplane.offset
+    
+    # Point on positive side (in direction of normal, inside half-plane)
+    points.append(plane_origin + normal_normalized * Rational(10))
+    
+    # Point on negative side (opposite to normal, outside half-plane)
+    points.append(plane_origin - normal_normalized * Rational(10))
+    
+    return points
+
+
+def generate_convex_polygon_boundary_points(extrusion):
+    """Generate points on convex polygon extrusion boundary: vertices, edges, faces."""
+    points = []
+    
+    # All vertices at z=0 and z=length
+    for vertex_2d in extrusion.points:
+        # Bottom (z=0)
+        point_local = Matrix([vertex_2d[0], vertex_2d[1], 0])
+        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        points.append(point_global)
+        
+        # Top (z=length)
+        point_local = Matrix([vertex_2d[0], vertex_2d[1], extrusion.length])
+        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        points.append(point_global)
+    
+    # Face centers on top and bottom
+    if len(extrusion.points) > 0:
+        # Calculate centroid
+        centroid_x = sum(p[0] for p in extrusion.points) / len(extrusion.points)
+        centroid_y = sum(p[1] for p in extrusion.points) / len(extrusion.points)
+        
+        # Bottom face center
+        point_local = Matrix([centroid_x, centroid_y, 0])
+        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        points.append(point_global)
+        
+        # Top face center
+        point_local = Matrix([centroid_x, centroid_y, extrusion.length])
+        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        points.append(point_global)
+    
+    # Edge midpoints (on vertical edges)
+    for vertex_2d in extrusion.points:
+        z_mid = extrusion.length / 2
+        point_local = Matrix([vertex_2d[0], vertex_2d[1], z_mid])
+        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        points.append(point_global)
+    
+    return points
+
+
+def generate_convex_polygon_non_boundary_points(extrusion):
+    """Generate points NOT on convex polygon boundary: interior and far-away points."""
+    points = []
+    
+    # Interior point at mid-height
+    if len(extrusion.points) > 0:
+        centroid_x = sum(p[0] for p in extrusion.points) / len(extrusion.points)
+        centroid_y = sum(p[1] for p in extrusion.points) / len(extrusion.points)
+        z_mid = extrusion.length / 2
+        
+        point_local = Matrix([centroid_x, centroid_y, z_mid])
+        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        points.append(point_global)
+    
+    # Far-away point
+    points.append(extrusion.position + Matrix([Rational(1000), Rational(1000), Rational(1000)]))
+    
+    return points
 
 
 class TestConstructors:
@@ -784,4 +1081,437 @@ class TestConvexPolygonExtrusion:
         assert "ConvexPolygonExtrusion" in repr_str
         assert "3 points" in repr_str
         assert "5" in repr_str
+
+
+class TestBoundaryDetectionComprehensive:
+    """Comprehensive tests for is_point_on_boundary across all CSG shapes."""
+    
+    # ========================================================================
+    # Prism Boundary Tests
+    # ========================================================================
+    
+    def test_prism_all_corners_on_boundary(self):
+        """Test that all 8 corners of a finite prism are on the boundary."""
+        size = Matrix([Rational(4), Rational(6)])
+        orientation = Orientation()
+        prism = Prism(size=size, orientation=orientation, start_distance=Rational(0), end_distance=Rational(10))
+        
+        # Generate all 8 corners
+        hw, hh = Rational(2), Rational(3)
+        corners = []
+        for z in [Rational(0), Rational(10)]:
+            for x in [-hw, hw]:
+                for y in [-hh, hh]:
+                    corners.append(Matrix([x, y, z]))
+        
+        # All corners should be on boundary
+        for corner in corners:
+            assert prism.is_point_on_boundary(corner) == True, \
+                f"Corner {corner.T} should be on boundary"
+    
+    def test_prism_edge_points_on_boundary(self):
+        """Test that points along prism edges are on the boundary."""
+        size = Matrix([Rational(4), Rational(6)])
+        orientation = Orientation()
+        prism = Prism(size=size, orientation=orientation, start_distance=Rational(0), end_distance=Rational(10))
+        
+        hw, hh = Rational(2), Rational(3)
+        
+        # Test edge midpoints (12 edges)
+        # 4 edges on bottom face
+        assert prism.is_point_on_boundary(Matrix([0, hh, 0])) == True
+        assert prism.is_point_on_boundary(Matrix([0, -hh, 0])) == True
+        assert prism.is_point_on_boundary(Matrix([hw, 0, 0])) == True
+        assert prism.is_point_on_boundary(Matrix([-hw, 0, 0])) == True
+        
+        # 4 edges on top face
+        assert prism.is_point_on_boundary(Matrix([0, hh, 10])) == True
+        assert prism.is_point_on_boundary(Matrix([0, -hh, 10])) == True
+        assert prism.is_point_on_boundary(Matrix([hw, 0, 10])) == True
+        assert prism.is_point_on_boundary(Matrix([-hw, 0, 10])) == True
+        
+        # 4 vertical edges
+        assert prism.is_point_on_boundary(Matrix([hw, hh, 5])) == True
+        assert prism.is_point_on_boundary(Matrix([hw, -hh, 5])) == True
+        assert prism.is_point_on_boundary(Matrix([-hw, hh, 5])) == True
+        assert prism.is_point_on_boundary(Matrix([-hw, -hh, 5])) == True
+    
+    def test_prism_face_centers_on_boundary(self):
+        """Test that face centers are on the boundary."""
+        size = Matrix([Rational(4), Rational(6)])
+        orientation = Orientation()
+        prism = Prism(size=size, orientation=orientation, start_distance=Rational(0), end_distance=Rational(10))
+        
+        hw, hh = Rational(2), Rational(3)
+        
+        # 6 face centers
+        assert prism.is_point_on_boundary(Matrix([0, 0, 0])) == True  # Bottom
+        assert prism.is_point_on_boundary(Matrix([0, 0, 10])) == True  # Top
+        assert prism.is_point_on_boundary(Matrix([hw, 0, 5])) == True  # Right
+        assert prism.is_point_on_boundary(Matrix([-hw, 0, 5])) == True  # Left
+        assert prism.is_point_on_boundary(Matrix([0, hh, 5])) == True  # Front
+        assert prism.is_point_on_boundary(Matrix([0, -hh, 5])) == True  # Back
+    
+    def test_prism_interior_not_on_boundary(self):
+        """Test that interior points are NOT on the boundary."""
+        size = Matrix([Rational(4), Rational(6)])
+        orientation = Orientation()
+        prism = Prism(size=size, orientation=orientation, start_distance=Rational(0), end_distance=Rational(10))
+        
+        # Center point should not be on boundary
+        assert prism.is_point_on_boundary(Matrix([0, 0, 5])) == False
+        
+        # Other interior points
+        assert prism.is_point_on_boundary(Matrix([Rational(1), Rational(1), Rational(5)])) == False
+    
+    def test_prism_exterior_not_on_boundary(self):
+        """Test that exterior points are NOT on the boundary."""
+        size = Matrix([Rational(4), Rational(6)])
+        orientation = Orientation()
+        prism = Prism(size=size, orientation=orientation, start_distance=Rational(0), end_distance=Rational(10))
+        
+        # Far-away point
+        assert prism.is_point_on_boundary(Matrix([100, 100, 100])) == False
+        
+        # Just outside the prism
+        assert prism.is_point_on_boundary(Matrix([3, 0, 5])) == False
+        assert prism.is_point_on_boundary(Matrix([0, 4, 5])) == False
+        assert prism.is_point_on_boundary(Matrix([0, 0, 11])) == False
+    
+    # ========================================================================
+    # Cylinder Boundary Tests
+    # ========================================================================
+    
+    def test_cylinder_cap_centers_on_boundary(self):
+        """Test that cylinder cap centers are on the boundary."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, 
+                           start_distance=Rational(0), end_distance=Rational(10))
+        
+        # Bottom cap center
+        assert cylinder.is_point_on_boundary(Matrix([0, 0, 0])) == True
+        
+        # Top cap center
+        assert cylinder.is_point_on_boundary(Matrix([0, 0, 10])) == True
+    
+    def test_cylinder_cap_circumference_on_boundary(self):
+        """Test that points on cap circumferences are on the boundary."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, 
+                           start_distance=Rational(0), end_distance=Rational(10))
+        
+        # Points on bottom cap circumference
+        assert cylinder.is_point_on_boundary(Matrix([3, 0, 0])) == True
+        assert cylinder.is_point_on_boundary(Matrix([0, 3, 0])) == True
+        assert cylinder.is_point_on_boundary(Matrix([-3, 0, 0])) == True
+        assert cylinder.is_point_on_boundary(Matrix([0, -3, 0])) == True
+        
+        # Points on top cap circumference
+        assert cylinder.is_point_on_boundary(Matrix([3, 0, 10])) == True
+        assert cylinder.is_point_on_boundary(Matrix([0, 3, 10])) == True
+        assert cylinder.is_point_on_boundary(Matrix([-3, 0, 10])) == True
+        assert cylinder.is_point_on_boundary(Matrix([0, -3, 10])) == True
+    
+    def test_cylinder_surface_points_on_boundary(self):
+        """Test that points on the cylindrical surface are on the boundary."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, 
+                           start_distance=Rational(0), end_distance=Rational(10))
+        
+        # Points on cylindrical surface at mid-height
+        assert cylinder.is_point_on_boundary(Matrix([3, 0, 5])) == True
+        assert cylinder.is_point_on_boundary(Matrix([0, 3, 5])) == True
+        assert cylinder.is_point_on_boundary(Matrix([-3, 0, 5])) == True
+        assert cylinder.is_point_on_boundary(Matrix([0, -3, 5])) == True
+    
+    def test_cylinder_round_edges_on_boundary(self):
+        """Test that points on round edges (cap circumferences) are on boundary."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, 
+                           start_distance=Rational(0), end_distance=Rational(10))
+        
+        # Points on the round edge at bottom
+        assert cylinder.is_point_on_boundary(Matrix([3, 0, 0])) == True
+        
+        # Points on the round edge at top
+        assert cylinder.is_point_on_boundary(Matrix([3, 0, 10])) == True
+    
+    def test_cylinder_interior_not_on_boundary(self):
+        """Test that interior points are NOT on the boundary."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, 
+                           start_distance=Rational(0), end_distance=Rational(10))
+        
+        # Center point
+        assert cylinder.is_point_on_boundary(Matrix([0, 0, 5])) == False
+        
+        # Interior point not on axis
+        assert cylinder.is_point_on_boundary(Matrix([1, 1, 5])) == False
+    
+    def test_cylinder_exterior_not_on_boundary(self):
+        """Test that exterior points are NOT on the boundary."""
+        axis = Matrix([0, 0, 1])
+        radius = Rational(3)
+        cylinder = Cylinder(axis_direction=axis, radius=radius, 
+                           start_distance=Rational(0), end_distance=Rational(10))
+        
+        # Far-away point
+        assert cylinder.is_point_on_boundary(Matrix([100, 100, 100])) == False
+        
+        # Just outside radially
+        assert cylinder.is_point_on_boundary(Matrix([4, 0, 5])) == False
+        
+        # Just outside axially
+        assert cylinder.is_point_on_boundary(Matrix([0, 0, 11])) == False
+    
+    # ========================================================================
+    # HalfPlane Boundary Tests
+    # ========================================================================
+    
+    def test_halfplane_origin_on_boundary(self):
+        """Test that the plane origin is on the boundary."""
+        normal = Matrix([0, 0, 1])
+        offset = Rational(5)
+        halfplane = HalfPlane(normal=normal, offset=offset)
+        
+        # Plane origin (normal * offset)
+        assert halfplane.is_point_on_boundary(Matrix([0, 0, 5])) == True
+    
+    def test_halfplane_random_plane_points_on_boundary(self):
+        """Test that random points on the plane are on the boundary."""
+        normal = Matrix([0, 0, 1])
+        offset = Rational(5)
+        halfplane = HalfPlane(normal=normal, offset=offset)
+        
+        # Points on the plane (z = 5)
+        assert halfplane.is_point_on_boundary(Matrix([10, 20, 5])) == True
+        assert halfplane.is_point_on_boundary(Matrix([-15, 7, 5])) == True
+        assert halfplane.is_point_on_boundary(Matrix([0, 0, 5])) == True
+        assert halfplane.is_point_on_boundary(Matrix([100, -50, 5])) == True
+    
+    def test_halfplane_positive_side_not_on_boundary(self):
+        """Test that points on the positive side (inside) are NOT on boundary."""
+        normal = Matrix([0, 0, 1])
+        offset = Rational(5)
+        halfplane = HalfPlane(normal=normal, offset=offset)
+        
+        # Points above the plane (z > 5) are inside but not on boundary
+        assert halfplane.is_point_on_boundary(Matrix([0, 0, 6])) == False
+        assert halfplane.is_point_on_boundary(Matrix([0, 0, 10])) == False
+        assert halfplane.is_point_on_boundary(Matrix([5, 5, 20])) == False
+    
+    def test_halfplane_negative_side_not_on_boundary(self):
+        """Test that points on the negative side (outside) are NOT on boundary."""
+        normal = Matrix([0, 0, 1])
+        offset = Rational(5)
+        halfplane = HalfPlane(normal=normal, offset=offset)
+        
+        # Points below the plane (z < 5) are outside and not on boundary
+        assert halfplane.is_point_on_boundary(Matrix([0, 0, 4])) == False
+        assert halfplane.is_point_on_boundary(Matrix([0, 0, 0])) == False
+        assert halfplane.is_point_on_boundary(Matrix([5, 5, -10])) == False
+    
+    # ========================================================================
+    # ConvexPolygonExtrusion Boundary Tests
+    # ========================================================================
+    
+    def test_convex_polygon_vertices_on_boundary(self):
+        """Test that all vertices at both ends are on the boundary."""
+        points = [
+            Matrix([2, 0]),
+            Matrix([0, 2]),
+            Matrix([-2, 0]),
+            Matrix([0, -2])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Vertices at z=0
+        assert extrusion.is_point_on_boundary(Matrix([2, 0, 0])) == True
+        assert extrusion.is_point_on_boundary(Matrix([0, 2, 0])) == True
+        assert extrusion.is_point_on_boundary(Matrix([-2, 0, 0])) == True
+        assert extrusion.is_point_on_boundary(Matrix([0, -2, 0])) == True
+        
+        # Vertices at z=length
+        assert extrusion.is_point_on_boundary(Matrix([2, 0, 10])) == True
+        assert extrusion.is_point_on_boundary(Matrix([0, 2, 10])) == True
+        assert extrusion.is_point_on_boundary(Matrix([-2, 0, 10])) == True
+        assert extrusion.is_point_on_boundary(Matrix([0, -2, 10])) == True
+    
+    def test_convex_polygon_edge_points_on_boundary(self):
+        """Test that points along vertical edges are on the boundary."""
+        points = [
+            Matrix([2, 0]),
+            Matrix([0, 2]),
+            Matrix([-2, 0]),
+            Matrix([0, -2])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Points along vertical edges at mid-height
+        assert extrusion.is_point_on_boundary(Matrix([2, 0, 5])) == True
+        assert extrusion.is_point_on_boundary(Matrix([0, 2, 5])) == True
+        assert extrusion.is_point_on_boundary(Matrix([-2, 0, 5])) == True
+        assert extrusion.is_point_on_boundary(Matrix([0, -2, 5])) == True
+    
+    def test_convex_polygon_face_points_on_boundary(self):
+        """Test that points on top/bottom faces are on the boundary."""
+        points = [
+            Matrix([2, 0]),
+            Matrix([0, 2]),
+            Matrix([-2, 0]),
+            Matrix([0, -2])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Points on bottom face (z=0)
+        assert extrusion.is_point_on_boundary(Matrix([0, 0, 0])) == True
+        assert extrusion.is_point_on_boundary(Matrix([1, 0, 0])) == True
+        assert extrusion.is_point_on_boundary(Matrix([0, 1, 0])) == True
+        
+        # Points on top face (z=length)
+        assert extrusion.is_point_on_boundary(Matrix([0, 0, 10])) == True
+        assert extrusion.is_point_on_boundary(Matrix([1, 0, 10])) == True
+        assert extrusion.is_point_on_boundary(Matrix([0, 1, 10])) == True
+    
+    def test_convex_polygon_interior_not_on_boundary(self):
+        """Test that interior points are NOT on the boundary."""
+        points = [
+            Matrix([2, 0]),
+            Matrix([0, 2]),
+            Matrix([-2, 0]),
+            Matrix([0, -2])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Interior point at mid-height
+        assert extrusion.is_point_on_boundary(Matrix([0, 0, 5])) == False
+        assert extrusion.is_point_on_boundary(Matrix([Rational(1, 2), Rational(1, 2), 5])) == False
+    
+    def test_convex_polygon_exterior_not_on_boundary(self):
+        """Test that exterior points are NOT on the boundary."""
+        points = [
+            Matrix([2, 0]),
+            Matrix([0, 2]),
+            Matrix([-2, 0]),
+            Matrix([0, -2])
+        ]
+        length = Rational(10)
+        orientation = Orientation()
+        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        
+        # Far-away point
+        assert extrusion.is_point_on_boundary(Matrix([100, 100, 100])) == False
+        
+        # Just outside the polygon
+        assert extrusion.is_point_on_boundary(Matrix([3, 0, 5])) == False
+        assert extrusion.is_point_on_boundary(Matrix([0, 0, 11])) == False
+    
+    # ========================================================================
+    # Random Shape Tests
+    # ========================================================================
+    
+    def test_random_prisms_boundary_points(self):
+        """Test boundary detection on 25 random prisms."""
+        random.seed(42)  # For reproducibility
+        
+        for i in range(25):
+            prism = generate_random_prism()
+            
+            # Get boundary points
+            boundary_points = generate_prism_boundary_points(prism)
+            
+            # All boundary points should be on boundary
+            for point in boundary_points:
+                assert prism.is_point_on_boundary(point) == True, \
+                    f"Prism {i}: Point {point.T} should be on boundary"
+            
+            # Get non-boundary points
+            non_boundary_points = generate_prism_non_boundary_points(prism)
+            
+            # Non-boundary points should NOT be on boundary
+            for point in non_boundary_points:
+                assert prism.is_point_on_boundary(point) == False, \
+                    f"Prism {i}: Point {point.T} should NOT be on boundary"
+    
+    def test_random_cylinders_boundary_points(self):
+        """Test boundary detection on 25 random cylinders."""
+        random.seed(43)  # For reproducibility
+        
+        for i in range(25):
+            cylinder = generate_random_cylinder()
+            
+            # Get boundary points
+            boundary_points = generate_cylinder_boundary_points(cylinder)
+            
+            # All boundary points should be on boundary
+            for point in boundary_points:
+                assert cylinder.is_point_on_boundary(point) == True, \
+                    f"Cylinder {i}: Point {point.T} should be on boundary"
+            
+            # Get non-boundary points
+            non_boundary_points = generate_cylinder_non_boundary_points(cylinder)
+            
+            # Non-boundary points should NOT be on boundary
+            for point in non_boundary_points:
+                assert cylinder.is_point_on_boundary(point) == False, \
+                    f"Cylinder {i}: Point {point.T} should NOT be on boundary"
+    
+    def test_random_halfplanes_boundary_points(self):
+        """Test boundary detection on 25 random half-planes."""
+        random.seed(44)  # For reproducibility
+        
+        for i in range(25):
+            halfplane = generate_random_halfplane()
+            
+            # Get boundary points
+            boundary_points = generate_halfplane_boundary_points(halfplane)
+            
+            # All boundary points should be on boundary
+            for point in boundary_points:
+                assert halfplane.is_point_on_boundary(point) == True, \
+                    f"HalfPlane {i}: Point {point.T} should be on boundary"
+            
+            # Get non-boundary points - these are NOT on boundary
+            non_boundary_points = generate_halfplane_non_boundary_points(halfplane)
+            
+            # Non-boundary points should NOT be on boundary
+            for point in non_boundary_points:
+                assert halfplane.is_point_on_boundary(point) == False, \
+                    f"HalfPlane {i}: Point {point.T} should NOT be on boundary"
+    
+    def test_random_convex_polygons_boundary_points(self):
+        """Test boundary detection on 25 random convex polygon extrusions."""
+        random.seed(45)  # For reproducibility
+        
+        for i in range(25):
+            extrusion = generate_random_convex_polygon_extrusion()
+            
+            # Get boundary points
+            boundary_points = generate_convex_polygon_boundary_points(extrusion)
+            
+            # All boundary points should be on boundary
+            for point in boundary_points:
+                assert extrusion.is_point_on_boundary(point) == True, \
+                    f"ConvexPolygon {i}: Point {point.T} should be on boundary"
+            
+            # Get non-boundary points
+            non_boundary_points = generate_convex_polygon_non_boundary_points(extrusion)
+            
+            # Non-boundary points should NOT be on boundary
+            for point in non_boundary_points:
+                assert extrusion.is_point_on_boundary(point) == False, \
+                    f"ConvexPolygon {i}: Point {point.T} should NOT be on boundary"
 
