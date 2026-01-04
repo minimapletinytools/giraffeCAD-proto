@@ -350,7 +350,7 @@ def create_oscarshed():
     # Peg parameters: 5/8" square peg, 1" from shoulder, on centerline
     side_girt_peg_params_left = SimplePegParameters(
         shape=PegShape.SQUARE,
-        tenon_face=TimberReferenceLongFace.FORWARD,
+        tenon_face=TimberReferenceLongFace.FRONT,
         peg_positions=[(inches(1), Rational(0))],  # 1" from shoulder, centered
         size=inches(Rational(5, 8)),  # 5/8" square
         depth=inches(Rational(7, 2))  
@@ -454,7 +454,7 @@ def create_oscarshed():
     # Peg parameters: 5/8" square peg, 1" from shoulder, on centerline
     front_girt_peg_params = SimplePegParameters(
         shape=PegShape.SQUARE,
-        tenon_face=TimberReferenceLongFace.FORWARD,
+        tenon_face=TimberReferenceLongFace.FRONT,
         peg_positions=[(inches(1), Rational(0))],  # 1" from shoulder, centered
         size=inches(Rational(5, 8)),  # 5/8" square
         depth=inches(Rational(7, 2))  

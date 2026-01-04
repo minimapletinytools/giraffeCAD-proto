@@ -165,7 +165,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Apply tenon_position offset to get the actual tenon centerline start point
     tenon_x_direction = tenon_timber.get_face_direction(TimberFace.RIGHT)
-    tenon_y_direction = tenon_timber.get_face_direction(TimberFace.FORWARD)
+    tenon_y_direction = tenon_timber.get_face_direction(TimberFace.FRONT)
     tenon_x_offset = create_vector3d(tenon_x_direction[0], tenon_x_direction[1], tenon_x_direction[2]) * tenon_position[0]
     tenon_y_offset = create_vector3d(tenon_y_direction[0], tenon_y_direction[1], tenon_y_direction[2]) * tenon_position[1]
     tenon_centerline_start = tenon_end_point + tenon_x_offset + tenon_y_offset
@@ -193,7 +193,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Get the mortise face offset (distance from centerline to face)
     if mortise_face in [TimberFace.RIGHT, TimberFace.LEFT]:
         face_offset = mortise_timber.size[0] / 2
-    elif mortise_face in [TimberFace.FORWARD, TimberFace.BACK]:
+    elif mortise_face in [TimberFace.FRONT, TimberFace.BACK]:
         face_offset = mortise_timber.size[1] / 2
     else:
         raise ValueError(f"Invalid mortise face: {mortise_face}")
@@ -349,7 +349,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Apply tenon_position offset to shoulder plane point
     tenon_x_direction = tenon_timber.get_face_direction(TimberFace.RIGHT)
-    tenon_y_direction = tenon_timber.get_face_direction(TimberFace.FORWARD)
+    tenon_y_direction = tenon_timber.get_face_direction(TimberFace.FRONT)
     tenon_x_offset_vec = create_vector3d(tenon_x_direction[0], tenon_x_direction[1], tenon_x_direction[2]) * tenon_position[0]
     tenon_y_offset_vec = create_vector3d(tenon_y_direction[0], tenon_y_direction[1], tenon_y_direction[2]) * tenon_position[1]
     shoulder_plane_point_with_offset = shoulder_plane_point + tenon_x_offset_vec + tenon_y_offset_vec
@@ -455,12 +455,12 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             lateral_position_index = 1  # Y for distance_from_centerline
             shoulder_offset_axis_index = 2  # Z for distance_from_shoulder
             peg_sign = 1 if peg_parameters.tenon_face == TimberReferenceLongFace.RIGHT else -1
-        elif peg_parameters.tenon_face in [TimberReferenceLongFace.FORWARD, TimberReferenceLongFace.BACK]:
+        elif peg_parameters.tenon_face in [TimberReferenceLongFace.FRONT, TimberReferenceLongFace.BACK]:
             # Peg travels along Y axis
             peg_length_axis_index = 1
             lateral_position_index = 0  # X for distance_from_centerline
             shoulder_offset_axis_index = 2  # Z for distance_from_shoulder
-            peg_sign = 1 if peg_parameters.tenon_face == TimberReferenceLongFace.FORWARD else -1
+            peg_sign = 1 if peg_parameters.tenon_face == TimberReferenceLongFace.FRONT else -1
         else:
             raise ValueError(f"Invalid peg face: {peg_parameters.tenon_face}")
         
@@ -490,7 +490,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
                     [-1, 0, 0]   # row 2
                 ])
         else:  # Peg through Y face
-            if peg_sign == 1:  # FORWARD face (surface at +Y)
+            if peg_sign == 1:  # FRONT face (surface at +Y)
                 # Peg extends INTO timber in -Y direction
                 # Z-axis (col2) = [0,-1,0], X-axis (col0) = [1,0,0], Y-axis (col1) = [0,0,1]
                 peg_orientation_matrix = Matrix([
@@ -536,7 +536,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
                 peg_pos_on_tenon_face_local[0] = tenon_timber.size[0] / 2
             elif peg_parameters.tenon_face == TimberReferenceLongFace.LEFT:
                 peg_pos_on_tenon_face_local[0] = -tenon_timber.size[0] / 2
-            elif peg_parameters.tenon_face == TimberReferenceLongFace.FORWARD:
+            elif peg_parameters.tenon_face == TimberReferenceLongFace.FRONT:
                 peg_pos_on_tenon_face_local[1] = tenon_timber.size[1] / 2
             elif peg_parameters.tenon_face == TimberReferenceLongFace.BACK:
                 peg_pos_on_tenon_face_local[1] = -tenon_timber.size[1] / 2
@@ -549,7 +549,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
                 # Determine which dimension based on which face the mortise is on
                 if mortise_face in [TimberFace.RIGHT, TimberFace.LEFT]:
                     peg_depth = mortise_timber.size[0]  # X dimension
-                elif mortise_face in [TimberFace.FORWARD, TimberFace.BACK]:
+                elif mortise_face in [TimberFace.FRONT, TimberFace.BACK]:
                     peg_depth = mortise_timber.size[1]  # Y dimension
                 else:  # TOP or BOTTOM
                     assert False, "Invalid mortise face"
@@ -598,7 +598,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             best_face = None
             best_dot_product = -float('inf')
             
-            for face in [TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FORWARD, TimberFace.BACK]:
+            for face in [TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FRONT, TimberFace.BACK]:
                 # Skip the mortise face itself (where the tenon enters) surely it's not this face
                 if face == mortise_face:
                     continue
@@ -630,7 +630,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             
             if mortise_peg_entry_face in [TimberFace.RIGHT, TimberFace.LEFT]:
                 peg_entry_face_offset = mortise_timber.size[0] / 2
-            elif mortise_peg_entry_face in [TimberFace.FORWARD, TimberFace.BACK]:
+            elif mortise_peg_entry_face in [TimberFace.FRONT, TimberFace.BACK]:
                 peg_entry_face_offset = mortise_timber.size[1] / 2
             else:  # TOP or BOTTOM
                 peg_entry_face_offset = mortise_timber.length / 2
