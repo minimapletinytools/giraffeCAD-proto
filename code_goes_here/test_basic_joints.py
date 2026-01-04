@@ -59,18 +59,18 @@ class TestMiterJoint:
             timberB: Second timber in the joint
         """
         # Get the end position of the cut on timberA (in global coordinates)
-        end_position_A_global = joint.cut_timbers[0]._cuts[0].get_end_position()
+        end_position_A_global = timberA.get_centerline_position_from_bottom(-3)
         
         # Get the end position of the cut on timberB (in global coordinates)
-        end_position_B_global = joint.cut_timbers[1]._cuts[0].get_end_position()
-
-        print("Meow meow meow")
-        print(end_position_A_global)
-        print(end_position_B_global)
+        end_position_B_global = timberB.get_centerline_position_from_bottom(-3)
         
-        # TODO can not finish because get_end_position is broken
-        # TODO see that end_position_A_global is NOT in cut timberA but is in cut timberB
-        # TODO see that end_position_B_global is NOT in cut timberB but is in cut timberA
+        # see that end_position_A_global is NOT in cut timberA but is in cut timberB
+        assert not joint.cut_timbers[0].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(end_position_A_global))
+        assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(end_position_A_global))
+        # see that end_position_B_global is NOT in cut timberB but is in cut timberA
+        assert not joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(end_position_B_global))
+        assert joint.cut_timbers[0].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(end_position_B_global))
+
 
     @staticmethod
     def get_timber_bottom_position_after_cutting_local(timber: CutTimber) -> V3:
@@ -398,7 +398,7 @@ class TestSpliceJoint:
                 timberA, TimberReferenceEnd.TOP,
                 timberB, TimberReferenceEnd.BOTTOM
             )
-    
+    # TODO DELETE as get_end_position is probably broken
     def test_splice_joint_get_end_position(self):
         """
         Test that get_end_position returns the correct position for splice joint cuts.
@@ -410,12 +410,12 @@ class TestSpliceJoint:
         # Bottom at (0, 0, 0), top at (0, 0, 10)
         timberA = create_standard_vertical_timber(height=10, size=(4, 4), position=(0, 0, 0))
         
-        # Create timberB with length 20 at default orientation/position
-        # Bottom at (0, 0, 0), top at (0, 0, 20)
+        # Create timberB with length 10 at default orientation/position
+        # Bottom at (0, 0, 0), top at (0, 0, 10)
         timberB = create_standard_vertical_timber(height=10, size=(4, 4), position=(0, 0, 0))
         
         # Create basic splice joint between timberA TOP and timberB BOT
-        # The splice point should be at the midpoint: (0+10)/2 = 5 in Z
+        # The splice point should be at the midpoint: (10+0)/2 = 5 in Z
         joint = cut_basic_splice_joint_on_aligned_timbers(
             timberA, TimberReferenceEnd.TOP,
             timberB, TimberReferenceEnd.BOTTOM

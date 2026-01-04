@@ -822,10 +822,10 @@ class TestCutTimber:
         # End distance is the timber's length
         assert csg.end_distance == 80
         
-        # In LOCAL coordinates, the prism is always axis-aligned (identity orientation)
-        # The timber's orientation transforms from local to global coordinates
+        # The prism uses the timber's orientation to properly represent timbers in any direction
+        # This allows CSG operations to work correctly for horizontal, vertical, and diagonal timbers
         from code_goes_here.moothymoth import Orientation
-        assert simplify(csg.orientation.matrix - Orientation.identity().matrix).norm() == 0
+        assert simplify(csg.orientation.matrix - timber.orientation.matrix).norm() == 0
     
     def test_render_timber_without_cuts_no_end_cuts(self):
         """Test render_timber_without_cuts_csg with no end cuts."""

@@ -497,7 +497,7 @@ class Timber:
             self.orientation.matrix[2, 1]
         ])
     
-    # TODO DELETE or rename to get_centerline_position_from_bottom_local
+    # TODO DELETE or rename to get_centerline_position_from_bottom_global
     def get_centerline_position_from_bottom(self, distance: Numeric) -> V3:
         """
         Get the 3D position at a specific point along the timber's centerline, measured from the bottom.
@@ -510,7 +510,7 @@ class Timber:
         """
         return self.bottom_position + self.length_direction * distance
     
-    # TODO DELETE or rename to get_centerline_position_from_top_local
+    # TODO DELETE or rename to get_centerline_position_from_top_global
     def get_centerline_position_from_top(self, distance: Numeric) -> V3:
         """
         Get the 3D position at a specific point along the timber's centerline, measured from the top.
@@ -523,7 +523,7 @@ class Timber:
         """
         return self.bottom_position + self.length_direction * (self.length - distance)
     
-    # TODO DELETE or rename to get_bottom_center_position_local
+    # TODO DELETE or rename to get_bottom_center_position_global
     def get_bottom_center_position(self) -> V3:
         """
         Get the 3D position of the center of the bottom cross-section of the timber.
@@ -533,7 +533,7 @@ class Timber:
         """
         return self.bottom_position
     
-    # TODO DELETE or rename to get_top_center_position_local
+    # TODO DELETE or rename to get_top_center_position_global
     def get_top_center_position(self) -> V3:
         """
         Get the 3D position of the center of the top cross-section of the timber.
@@ -790,16 +790,16 @@ class Cut(ABC):
     # you can only have an end cut on one end of the timber, you can't have an end cut on both ends at once (maybe we should support this?)
     maybe_end_cut: Optional[TimberReferenceEnd]
 
+    # TODO DELETE... this is not that useful and probably still broken
     # TODO rename to get_end_position_global
-    # TODO this is broken
     # get the "end" position of the cut on the centerline of the timber
     # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
     def get_end_position(self) -> V3:
         """
         Determine the end position of the cut by finding where the cut intersects the timber's centerline.
         
-        For HalfPlaneCut: The end position is where the half-plane intersects the timber's centerline.
-        For CSGCut: This is computed by finding the minimal boundary of the cut timber.
+        This is computed by finding the minimal boundary of the cut timber in the appropriate direction,
+        then projecting that point onto the timber's centerline.
         
         The returned point is on the timber's centerline at the distance where the cut boundary is located.
         
@@ -812,47 +812,6 @@ class Cut(ABC):
         if self.maybe_end_cut is None:
             raise ValueError("get_end_position can only be called on end cuts (maybe_end_cut must be set)")
         
-        # For HalfPlaneCut, we can compute the end position directly from the half-plane
-        # by finding where it intersects the timber's centerline
-        if isinstance(self, HalfPlaneCut):
-            # The half-plane is defined by: normal · (point - origin) >= 0
-            # The timber's centerline is: bottom_position + t * length_direction (for t >= 0)
-            # We want to find where the plane intersects the centerline:
-            # normal · (bottom_position + t * length_direction - origin) = 0
-            # Solving for t: t = (normal · (origin - bottom_position)) / (normal · length_direction)
-            
-            # Convert origin from global to match timber coordinates
-            # The half_plane is in LOCAL coordinates (relative to timber.bottom_position)
-            # So origin is already in the right coordinate system
-            from .meowmeowcsg import HalfPlane
-            half_plane = self.half_plane
-            
-            # The half-plane normal in global coordinates
-            normal_global = self.timber.orientation.matrix * half_plane.normal
-            
-            # The plane offset gives us a point on the plane: origin_on_plane = normal * offset
-            # In local coordinates (relative to timber.bottom_position)
-            origin_on_plane_local = half_plane.normal * half_plane.offset
-            origin_on_plane_global = self.timber.bottom_position + self.timber.orientation.matrix * origin_on_plane_local
-            
-            # Find where the plane intersects the timber's centerline
-            # Centerline: bottom_position + t * length_direction
-            # Plane: normal_global · (point - origin_on_plane_global) = 0
-            # Substitute: normal_global · (bottom_position + t * length_direction - origin_on_plane_global) = 0
-            # Solve for t: t = normal_global · (origin_on_plane_global - bottom_position) / (normal_global · length_direction)
-            
-            numerator = (normal_global.T * (origin_on_plane_global - self.timber.bottom_position))[0, 0]
-            denominator = (normal_global.T * self.timber.length_direction)[0, 0]
-            
-            if denominator == 0:
-                raise ValueError("Cut plane is parallel to timber length direction - no intersection")
-            
-            t = numerator / denominator
-            end_position = self.timber.bottom_position + self.timber.length_direction * t
-            
-            return end_position
-        
-        # For CSGCut or other cut types, use the boundary-finding approach
         # Get the negative CSG representing the cut volume (in LOCAL coordinates)
         negative_csg = self.get_negative_csg_local()
         
@@ -881,15 +840,18 @@ class Cut(ABC):
         else:
             raise ValueError(f"Invalid end cut: {self.maybe_end_cut}")
 
-        # For other CSG types, use minimal_boundary_in_direction
-        boundary_point = cut_result.minimal_boundary_in_direction(search_direction)
+        # Use minimal_boundary_in_direction to find the boundary
+        # The boundary_point is in LOCAL coordinates (relative to timber.bottom_position)
+        # because the prism is created with position=(0,0,0) in local space
+        boundary_point_local = cut_result.minimal_boundary_in_direction(search_direction)
         
         # Project the boundary point onto the timber's centerline to get the end position
-        # The end position is at: bottom_position + length_direction * distance
-        # where distance = (boundary_point - bottom_position) · length_direction / |length_direction|^2
+        # The centerline in local coordinates is along length_direction from origin
+        # distance = boundary_point_local · length_direction / |length_direction|^2
         length_dir_norm = normalize_vector(self.timber.length_direction)
-        distance_along_centerline = ((boundary_point - self.timber.bottom_position).T * length_dir_norm)[0, 0]
+        distance_along_centerline = (boundary_point_local.T * length_dir_norm)[0, 0]
         
+        # Convert to global coordinates
         end_position = self.timber.bottom_position + length_dir_norm * distance_along_centerline
         
         return end_position
@@ -940,9 +902,11 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     end_distance = None if has_top_cut else timber.length
     
     # Create a prism representing the timber in local coordinates
+    # The prism needs to use the timber's orientation to properly represent
+    # timbers in any direction (horizontal, vertical, diagonal, etc.)
     return Prism(
         size=timber.size,
-        orientation=Orientation.identity(),
+        orientation=timber.orientation,
         start_distance=start_distance,
         end_distance=end_distance
     )

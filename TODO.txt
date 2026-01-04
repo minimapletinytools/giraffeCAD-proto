@@ -60,11 +60,15 @@ DONE-add Frame class to timber.py
 
 
 -rewrite all joint tests, they are all kinda messed up tbh
-  -miter joints
+  DONE-miter joints
     -uncomment test when get_end_position is fixed
-  -buttj oints
+  -just delete get_end_position and the minimal_boundary thing.
+  -splice joints
+    -delete test relying on get_end_position
+  -buttjoints
     -fix nearest_point_on_face_to_point_global and uncomment the test
-  -fix get_end_position in cut class
+  -house joint
+    -add test using contains_point
 
 
 -add back post joints to oscar shed

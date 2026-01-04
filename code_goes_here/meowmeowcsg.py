@@ -703,14 +703,101 @@ class Difference(MeowMeowCSG):
     def __repr__(self) -> str:
         return f"Difference(base={self.base}, subtract={len(self.subtract)} objects)"
     
+    # TODO this is probably still broken
     def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
         """
         Get the minimal boundary point of the difference in the given direction.
         
-        For a difference operation, the minimal boundary is determined by the base object
-        (subtracting material doesn't extend the boundary in the negative direction).
+        For a difference operation (base - subtract), the minimal boundary can be:
+        1. On the original base boundary (if not removed by subtraction)
+        2. On a new boundary created by the subtraction (e.g., a cut plane)
+        
+        We check all potential boundaries and return the most minimal one.
+        
+        For Prism - HalfPlane specifically, we:
+        1. Check all corners of the prism that remain after subtraction
+        2. Check points on the half-plane boundary that intersect the prism
         """
-        return self.base.minimal_boundary_in_direction(direction)
+        from sympy import simplify
+        
+        min_point = None
+        min_dot = None
+        
+        # Strategy: Check a set of candidate points on the difference surface
+        # and find the one with minimum dot product with the direction
+        
+        # 1. Check if base's minimal boundary is still valid (not removed)
+        try:
+            base_boundary = self.base.minimal_boundary_in_direction(direction)
+            if self.contains_point(base_boundary):
+                min_point = base_boundary
+                min_dot = simplify((min_point.T * direction)[0, 0])
+        except ValueError:
+            # Base doesn't have a minimal boundary in this direction
+            pass
+        
+        # 2. For Prism base, check all corners (some may have been removed by subtraction)
+        if isinstance(self.base, Prism):
+            # Generate all 8 corners (or 4 corners for semi-infinite prisms)
+            width = self.base.size[0]
+            height = self.base.size[1]
+            
+            # Half-dimensions from center
+            hw = width / 2
+            hh = height / 2
+            
+            # Local offsets for the 4 corners of the cross-section
+            corner_offsets = [
+                Matrix([hw, hh]),
+                Matrix([hw, -hh]),
+                Matrix([-hw, hh]),
+                Matrix([-hw, -hh])
+            ]
+            
+            # Check corners at both ends (if finite)
+            z_values = []
+            if self.base.start_distance is not None:
+                z_values.append(self.base.start_distance)
+            if self.base.end_distance is not None:
+                z_values.append(self.base.end_distance)
+            
+            for z in z_values:
+                for offset in corner_offsets:
+                    # Corner in local coordinates
+                    corner_local = Matrix([offset[0], offset[1], z])
+                    # Transform to global coordinates
+                    corner_global = self.base.position + self.base.orientation.matrix * corner_local
+                    
+                    # Check if this corner is in the difference (not removed by subtraction)
+                    if self.contains_point(corner_global):
+                        dot = simplify((corner_global.T * direction)[0, 0])
+                        if min_dot is None or dot < min_dot:
+                            min_point = corner_global
+                            min_dot = dot
+        
+        # 3. For HalfPlane subtract, check if the plane intersects the base
+        # and find points on that intersection
+        for sub in self.subtract:
+            if isinstance(sub, HalfPlane):
+                # For HalfPlane, we need to find points on the plane that are in the base
+                # and have minimal dot product with the direction
+                
+                # Try to get a point on the plane
+                # The plane is defined by: normal · point >= offset
+                # A point on the boundary is: point = normal * offset
+                point_on_plane = sub.normal * sub.offset
+                
+                # Check if this specific point is on the difference boundary
+                if self.base.contains_point(point_on_plane) and self.is_point_on_boundary(point_on_plane):
+                    dot = simplify((point_on_plane.T * direction)[0, 0])
+                    if min_dot is None or dot < min_dot:
+                        min_point = point_on_plane
+                        min_dot = dot
+        
+        if min_point is None:
+            raise ValueError("Could not find minimal boundary for difference in the given direction")
+        
+        return min_point
 
     def contains_point(self, point: V3) -> bool:
         """
