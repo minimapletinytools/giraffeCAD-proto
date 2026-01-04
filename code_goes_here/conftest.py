@@ -280,6 +280,74 @@ def assert_rational_equal(actual, expected, msg: str = ""):
 
 
 # ============================================================================
+# Timber Geometry Helpers
+# ============================================================================
+
+class TimberGeometryHelpers:
+    """Helper methods for timber geometry calculations in tests."""
+    
+    @staticmethod
+    def nearest_point_on_face_to_point_global(timber: Timber, face: 'TimberFace', global_point: V3) -> V3:
+        """
+        Find the nearest point on a face of a timber to a global point.
+        
+        This method projects the global point onto the plane containing the specified face
+        of the timber. All computations are done in global space.
+
+        Args:
+            timber: The timber to find the nearest point on
+            face: The face of the timber to find the nearest point on
+            global_point: The point in global space to find the nearest point to
+            
+        Returns:
+            The nearest point on the face of the timber in global space
+            
+        Example:
+            >>> timber = create_standard_horizontal_timber('x', 100, (6, 6), (0, 0, 0))
+            >>> point = create_vector3d(10, 20, 5)
+            >>> nearest = TimberGeometryHelpers.nearest_point_on_face_to_point_global(
+            ...     timber, TimberFace.TOP, point)
+        """
+        from giraffe import TimberFace
+        
+        # Get the face normal in global space
+        face_normal = timber.get_face_direction(face)
+        
+        # Get a reference point on the face (center of the face)
+        if face == TimberFace.TOP:
+            point_on_face = timber.get_top_center_position()
+        elif face == TimberFace.BOTTOM:
+            point_on_face = timber.get_bottom_center_position()
+        elif face == TimberFace.RIGHT:
+            # Center of right face: bottom_position + half_width * width_direction
+            half_width = timber.size[0] / 2
+            point_on_face = timber.bottom_position + timber.width_direction * half_width
+        elif face == TimberFace.LEFT:
+            # Center of left face: bottom_position - half_width * width_direction
+            half_width = timber.size[0] / 2
+            point_on_face = timber.bottom_position - timber.width_direction * half_width
+        elif face == TimberFace.FRONT:
+            # Center of front face: bottom_position + half_height * height_direction
+            half_height = timber.size[1] / 2
+            point_on_face = timber.bottom_position + timber.height_direction * half_height
+        else:  # TimberFace.BACK
+            # Center of back face: bottom_position - half_height * height_direction
+            half_height = timber.size[1] / 2
+            point_on_face = timber.bottom_position - timber.height_direction * half_height
+        
+        # Calculate the signed distance from global_point to the plane
+        # distance = (global_point - point_on_face) · face_normal
+        vec_to_point = global_point - point_on_face
+        distance = (vec_to_point.T * face_normal)[0, 0]
+        
+        # Project the point onto the face plane
+        # nearest_point = global_point - distance * face_normal
+        nearest_point = global_point - face_normal * distance
+        
+        return nearest_point
+
+
+# ============================================================================
 # Test Data Generators
 # ============================================================================
 
