@@ -23,8 +23,8 @@ from .conftest import (
 class TestMiterJoint:
     """Test cut_basic_miter_joint function."""
 
-    @classmethod
-    def assert_miter_joint_normals_are_opposite(cls, joint, timberA, timberB):
+    @staticmethod
+    def assert_miter_joint_normals_are_opposite(joint, timberA, timberB):
         """
         Helper function to assert that miter joint cut normals are opposite in global space.
         
@@ -44,8 +44,8 @@ class TestMiterJoint:
         # For a miter joint, the normals should be opposite in global space
         assert normal_A_global.equals(-normal_B_global), "Normals should be opposite in global space"
     
-    @classmethod
-    def assert_miter_joint_end_positions_on_boundaries(cls, joint, timberA, timberB):
+    @staticmethod
+    def assert_miter_joint_end_positions_on_boundaries(joint, timberA, timberB):
         """
         Helper function to assert that the end positions of both cut timbers are on the 
         boundaries of both half planes.
@@ -72,8 +72,8 @@ class TestMiterJoint:
         # TODO see that end_position_A_global is NOT in cut timberA but is in cut timberB
         # TODO see that end_position_B_global is NOT in cut timberB but is in cut timberA
 
-    @classmethod
-    def get_timber_bottom_position_after_cutting_local(cls, timber: CutTimber) -> V3:
+    @staticmethod
+    def get_timber_bottom_position_after_cutting_local(timber: CutTimber) -> V3:
         prism = timber._extended_timber_without_cuts_csg_local()
         assert isinstance(prism, Prism)
         return prism.get_bottom_position()

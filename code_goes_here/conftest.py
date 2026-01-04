@@ -286,6 +286,7 @@ def assert_rational_equal(actual, expected, msg: str = ""):
 class TimberGeometryHelpers:
     """Helper methods for timber geometry calculations in tests."""
     
+    # TODO DELETE NOT CORRECT BROKEN
     @staticmethod
     def nearest_point_on_face_to_point_global(timber: Timber, face: 'TimberFace', global_point: V3) -> V3:
         """
