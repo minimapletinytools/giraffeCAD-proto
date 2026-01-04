@@ -1,31 +1,6 @@
 
 
 
-
-:: 1/1/2026 tests update notes
-
-
-tests:
--peg forward_length / stickout depth tests
--peg_depth = none case, ensure it's picking the right axis to use for computing peg depth
--peg orientation should be perpendicular to tenon timber
--test points in peg hole do not line in timber/mortise csg
--test points in peg hole do lie on the peg CSG
--test mortise depth and tenon depth using CSG test functions
-
-
-joint tests:
--basic splice joint
-  - test point on the splice line on the center line lies on both timbers csgs
-
--miter joint
-  -test point on the miter plan lines on both timber csgs
-  -test point away from the miter line and see that in only lies on one of the timbers
-
-
-
-
-
 :: documentation
 
 -installation
@@ -57,18 +32,36 @@ DONE-add Frame class to timber.py
   -update all examples to output frames
   -update fusino360 and freecad to take a frame object
   -get rid of PartiallyCutTimber class while you're at it
-
-
--rewrite all joint tests, they are all kinda messed up tbh
+DONE-rewrite all joint tests, they are all kinda messed up tbh
   DONE-miter joints
     -uncomment test when get_end_position is fixed
-  -just delete get_end_position and the minimal_boundary thing.
-  -splice joints
+  DONE-just delete get_end_position and the minimal_boundary thing.
+  DONE-splice joints
     -delete test relying on get_end_position
+  DONE-house joint
+    -add test using contains_point
+  DONE-cut_basic_cross_lap_joint
+    -TODO
+
+  
+
+
+
+
+-improve tests
+  -fix is_point_on_boundary, it's not working... maybe add some tests for it...
   -buttjoints
     -fix nearest_point_on_face_to_point_global and uncomment the test
-  -house joint
-    -add test using contains_point
+  -mortise and tenon joint
+    -RIP
+    -peg forward_length / stickout depth tests
+    -peg_depth = none case, ensure it's picking the right axis to use for computing peg depth
+    -peg orientation should be perpendicular to tenon timber
+    -test points in peg hole do not line in timber/mortise csg
+    -test points in peg hole do lie on the peg CSG
+    -test mortise depth and tenon depth using CSG test functions
+
+  
 
 
 -add back post joints to oscar shed

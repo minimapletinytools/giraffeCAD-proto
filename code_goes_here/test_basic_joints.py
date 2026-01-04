@@ -404,9 +404,6 @@ class TestHouseJoint:
         housing_timber = create_centered_horizontal_timber(direction='x', length=100, size=(10, 10), zoffset=1)
         housed_timber = create_centered_horizontal_timber(direction='y', length=100, size=(10, 10), zoffset=-1)
 
-        print("housing_timber", housing_timber)
-        print("housed_timber", housed_timber)
-
         joint = cut_basic_house_joint(housing_timber, housed_timber)
         assert joint is not None
         assert len(joint.cut_timbers) == 2
@@ -421,8 +418,6 @@ class TestHouseJoint:
         # test that the origin point lies in the housed timber but not the housing timber
         origin = create_vector3d(Rational(0), Rational(0), Rational(0))
         assert not joint.cut_timbers[0].render_timber_with_cuts_csg_local().contains_point(housing_timber.global_to_local(origin))
-        
-        # why is this not working?
         assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(housed_timber.global_to_local(origin))
         
 
@@ -505,4 +500,47 @@ class TestHouseJoint:
         dot = simplify((housed_length_dir_in_housing_local.T * prism_length_dir_in_housing_local)[0, 0])
         assert abs(dot) == 1, \
             f"Cut prism length direction should be exactly parallel to housed timber length direction. Dot product: {dot}"
+    
+
+
+class TestCrossLapJoint:
+    """Test cut_basic_house_joint function."""
+    
+    def test_basic_cross_lap_joint_perpendicular_timbers(self):
+        """Test that a cross lap joint between two perpendicular timbers is created correctly."""
+
+
+        # create 2 timbers in an X shape
+        timberA = create_centered_horizontal_timber(direction='x', length=100, size=(10, 10), zoffset=1)
+        timberB = create_centered_horizontal_timber(direction='y', length=100, size=(10, 10), zoffset=-1)
+
+        joint = cut_basic_cross_lap_joint(timberA, timberB)
+
+        assert joint is not None
+        assert len(joint.cut_timbers) == 2
+        assert joint.cut_timbers[0].timber == timberA
+        assert joint.cut_timbers[1].timber == timberB
+        assert len(joint.cut_timbers[0]._cuts) == 1
+        assert len(joint.cut_timbers[1]._cuts) == 1
+        assert joint.cut_timbers[0]._cuts[0].maybe_end_cut is None
+        assert joint.cut_timbers[1]._cuts[0].maybe_end_cut is None
+
+        # test that the origin point lies on the boundary of both timbers
+        origin = create_vector3d(Rational(0), Rational(0), Rational(0))
+        assert joint.cut_timbers[0].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
+        assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
+
+        # TODO enable this when you fix is_point_on_boundary
+        #assert joint.cut_timbers[0].render_timber_with_cuts_csg_local().is_point_on_boundary(timberA.global_to_local(origin))
+        #assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().is_point_on_boundary(timberB.global_to_local(origin))
+
+        # above origin
+        origin = create_vector3d(Rational(0), Rational(0), Rational(1))
+        assert joint.cut_timbers[0].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
+        assert not joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
+
+        # below origin
+        origin = create_vector3d(Rational(0), Rational(0), Rational(-1))
+        assert not joint.cut_timbers[0].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
+        assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
         
