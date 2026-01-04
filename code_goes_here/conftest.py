@@ -1,4 +1,6 @@
 """
+TODO rename this file to something cute
+
 Shared test utilities and fixtures for GiraffeCAD test suite.
 
 This module contains:
@@ -45,7 +47,8 @@ def create_standard_vertical_timber(
     name: str = "test_timber"
 ) -> Timber:
     """
-    Create a standard vertical timber for testing.
+    Create a standard vertical timber for testing. The timber has its bottom point at the origin by default and extends upward in the +Z direction.
+    The width of the timber is in the X direction and the height is in the Y direction.
     
     Args:
         height: Length of timber (default 100)
@@ -79,7 +82,8 @@ def create_standard_horizontal_timber(
     name: str = "test_timber"
 ) -> Timber:
     """
-    Create a standard horizontal timber for testing.
+    Create a standard horizontal timber for testing. The timber has its bottom point at the origin by default and extends in the `direction` direction.
+    The width of the timber is in the Z axis, so a 4x6 timber has the 4 size in the Z axis and the 6 size in either the X or Y axis.
     
     Args:
         direction: 'x', 'y', '+x', '-x', '+y', '-y'
@@ -117,7 +121,37 @@ def create_standard_horizontal_timber(
         name=name
     )
 
+def create_centered_horizontal_timber(
+    direction='x',
+    length=100,
+    size: Optional[Tuple] = None,
+    name: str = "test_timber"
+) -> Timber:
+    """
+    Create a centered horizontal timber for testing. The timber has its bottom point at the origin by default and extends in the `direction` direction.
+    The width of the timber is in the Z axis, so a 4x6 timber has the 4 size in the Z axis and the 6 size in either the X or Y axis.
+    """
+    
+    # compute position based on direction
+    if direction == 'x' or direction == '+x':
+        position = (Rational(-length/2), Rational(0), Rational(0))
+    elif direction == 'y' or direction == '+y':
+        position = (Rational(0), Rational(-length/2), Rational(0))
+    elif direction == '-x':
+        position = (Rational(length/2), Rational(0), Rational(0))
+    elif direction == '-y':
+        position = (Rational(0), Rational(length/2), Rational(0))
+    else:
+        raise ValueError(f"Invalid direction: {direction}")
 
+    return create_standard_horizontal_timber(
+        direction=direction,
+        length=length,
+        size=size,
+        position=position)
+
+
+# TODO DELETE
 def create_4x4_inch_timber(
     length,
     position: Optional[Tuple] = None,

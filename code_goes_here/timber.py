@@ -536,6 +536,47 @@ class Timber:
         """
         return self.bottom_position + self.length_direction * self.length
     
+    def global_to_local(self, global_point: V3) -> V3:
+        """
+        Convert a point from global world coordinates to timber-local coordinates.
+        
+        In the timber's local coordinate system:
+        - Origin is at the bottom_position (center of bottom face)
+        - Local X-axis is the width_direction
+        - Local Y-axis is the height_direction
+        - Local Z-axis is the length_direction
+        
+        Args:
+            global_point: A point in global world coordinates
+            
+        Returns:
+            The same point in timber-local coordinates
+        """
+        # Translate to timber's origin, then rotate to local frame
+        # local = R^T * (global - bottom_position)
+        translated = global_point - self.bottom_position
+        return self.orientation.matrix.T * translated
+    
+    def local_to_global(self, local_point: V3) -> V3:
+        """
+        Convert a point from timber-local coordinates to global world coordinates.
+        
+        In the timber's local coordinate system:
+        - Origin is at the bottom_position (center of bottom face)
+        - Local X-axis is the width_direction
+        - Local Y-axis is the height_direction
+        - Local Z-axis is the length_direction
+        
+        Args:
+            local_point: A point in timber-local coordinates
+            
+        Returns:
+            The same point in global world coordinates
+        """
+        # Rotate to global frame, then translate to timber's position
+        # global = R * local + bottom_position
+        return self.orientation.matrix * local_point + self.bottom_position
+    
     # TODO overload this method so it can take TimberReferenceEnd as an argument, or allow TimberReferenceEnd to auto cast into TimberFace
     def get_face_direction(self, face: TimberFace) -> Direction3D:
         """
@@ -853,8 +894,11 @@ class CutTimber:
             timber: The timber to be cut
             cuts: Optional list of cuts to apply (default: empty list)
         """
+
+        # TODO get rid of _ in front of names
         self._timber = timber
         self._cuts = cuts if cuts is not None else []
+
         self.joints = []  # List of joints this timber participates in
     
     @property

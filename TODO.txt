@@ -77,7 +77,8 @@ DONE-add Frame class to timber.py
 
 -cleanup
   -make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
-  -rename BACK to BACKWARD (DONE: renamed FORWARD to FRONT instead for consistency)
+  -use global_to_local and local_to_global helpers (or implement Thing classs....)
+  DONE-rename BACK to BACKWARD (DONE: renamed FORWARD to FRONT instead for consistency)
   DONE-clean up moothymoth tests to not use exact euality...
 
 -DECISION TIME
