@@ -201,6 +201,36 @@ class Prism(MeowMeowCSG):
     position: V3 = field(default_factory=lambda: Matrix([0, 0, 0]))  # Position in global coordinates
     start_distance: Optional[Numeric] = None  # None means infinite in negative direction
     end_distance: Optional[Numeric] = None    # None means infinite in positive direction
+
+    def get_bottom_position(self) -> V3:
+        """
+        Get the position of the bottom of the prism (at start_distance).
+        Only valid for prisms with finite start_distance.
+        
+        Returns:
+            The 3D position at the bottom of the prism
+            
+        Raises:
+            ValueError: If start_distance is None (infinite prism)
+        """
+        if self.start_distance is None:
+            raise ValueError("Cannot get bottom position of infinite prism (start_distance is None)")
+        return self.position - self.orientation.matrix * Matrix([0, 0, self.start_distance])
+    
+    def get_top_position(self) -> V3:
+        """
+        Get the position of the top of the prism (at end_distance).
+        Only valid for prisms with finite end_distance.
+        
+        Returns:
+            The 3D position at the top of the prism
+            
+        Raises:
+            ValueError: If end_distance is None (infinite prism)
+        """
+        if self.end_distance is None:
+            raise ValueError("Cannot get top position of infinite prism (end_distance is None)")
+        return self.position + self.orientation.matrix * Matrix([0, 0, self.end_distance])
     
     def __repr__(self) -> str:
         return (f"Prism(size={self.size.T}, orientation={self.orientation}, "

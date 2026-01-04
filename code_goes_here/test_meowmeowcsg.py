@@ -426,6 +426,88 @@ class TestConstructors:
         assert cylinder.end_distance is None
 
 
+class TestPrismPositionMethods:
+    """Test Prism get_bottom_position and get_top_position methods."""
+    
+    def test_get_bottom_position_finite_prism(self):
+        """Test get_bottom_position on a finite prism."""
+        # Create a prism with identity orientation
+        size = Matrix([4, 6])
+        orientation = Orientation()  # Identity orientation
+        position = Matrix([10, 20, 30])
+        start_distance = Rational(5)
+        end_distance = Rational(15)
+        prism = Prism(size=size, orientation=orientation, position=position, 
+                     start_distance=start_distance, end_distance=end_distance)
+        
+        # Bottom position should be position - (0, 0, start_distance) in local frame
+        # With identity orientation, this is position - Matrix([0, 0, start_distance])
+        bottom = prism.get_bottom_position()
+        expected_bottom = Matrix([10, 20, 25])  # 30 - 5 = 25
+        assert bottom.equals(expected_bottom), f"Expected {expected_bottom.T}, got {bottom.T}"
+    
+    def test_get_top_position_finite_prism(self):
+        """Test get_top_position on a finite prism."""
+        # Create a prism with identity orientation
+        size = Matrix([4, 6])
+        orientation = Orientation()  # Identity orientation
+        position = Matrix([10, 20, 30])
+        start_distance = Rational(5)
+        end_distance = Rational(15)
+        prism = Prism(size=size, orientation=orientation, position=position, 
+                     start_distance=start_distance, end_distance=end_distance)
+        
+        # Top position should be position + (0, 0, end_distance) in local frame
+        # With identity orientation, this is position + Matrix([0, 0, end_distance])
+        top = prism.get_top_position()
+        expected_top = Matrix([10, 20, 45])  # 30 + 15 = 45
+        assert top.equals(expected_top), f"Expected {expected_top.T}, got {top.T}"
+    
+    def test_get_bottom_position_rotated_prism(self):
+        """Test get_bottom_position on a rotated prism."""
+        # Create a prism with a specific rotation
+        # Rotation matrix: local X -> global Z, local Y -> global Y, local Z -> global X
+        # This is: [[0, 0, 1], [0, 1, 0], [1, 0, 0]]
+        size = Matrix([4, 6])
+        rotation = Matrix([
+            [0, 0, 1],   # X column: local X maps to global Z
+            [0, 1, 0],   # Y column: local Y maps to global Y  
+            [1, 0, 0]    # Z column: local Z maps to global X
+        ])
+        orientation = Orientation(rotation)
+        position = Matrix([10, 20, 30])
+        start_distance = Rational(5)
+        end_distance = Rational(15)
+        prism = Prism(size=size, orientation=orientation, position=position,
+                     start_distance=start_distance, end_distance=end_distance)
+        
+        # With this rotation: local Z becomes global X
+        # So bottom should be position - rotation * [0, 0, 5]
+        # rotation * [0, 0, 5] = 5 * (third column) = 5 * [1, 0, 0] = [5, 0, 0]
+        # position - [5, 0, 0] = [10, 20, 30] - [5, 0, 0] = [5, 20, 30]
+        bottom = prism.get_bottom_position()
+        expected_bottom = Matrix([5, 20, 30])
+        assert bottom.equals(expected_bottom), f"Expected {expected_bottom.T}, got {bottom.T}"
+    
+    def test_get_bottom_position_infinite_prism_raises_error(self):
+        """Test that get_bottom_position raises error for infinite prism."""
+        size = Matrix([4, 6])
+        orientation = Orientation()
+        prism = Prism(size=size, orientation=orientation, start_distance=None, end_distance=10)
+        
+        with pytest.raises(ValueError, match="infinite prism"):
+            prism.get_bottom_position()
+    
+    def test_get_top_position_infinite_prism_raises_error(self):
+        """Test that get_top_position raises error for infinite prism."""
+        size = Matrix([4, 6])
+        orientation = Orientation()
+        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=None)
+        
+        with pytest.raises(ValueError, match="infinite prism"):
+            prism.get_top_position()
+
+
 class TestHalfPlaneContainsPoint:
     """Test HalfPlane contains_point and is_point_on_boundary methods."""
     
