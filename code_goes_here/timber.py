@@ -461,6 +461,7 @@ class Timber:
     orientation: Orientation
     name: Optional[str] = None
     
+    # TODO rename to get_length_direction_global and convert to class method
     @property
     def length_direction(self) -> Direction3D:
         """Get the length direction vector from the orientation matrix"""
@@ -472,6 +473,7 @@ class Timber:
             self.orientation.matrix[2, 2]
         ])
     
+    # TODO rename to get_width_direction_global and convert to class method
     @property
     def width_direction(self) -> Direction3D:
         """Get the face direction vector from the orientation matrix"""
@@ -483,6 +485,7 @@ class Timber:
             self.orientation.matrix[2, 0]
         ])
     
+    # TODO rename to get_height_direction_global and convert to class method
     @property
     def height_direction(self) -> Direction3D:
         """Get the height direction vector from the orientation matrix"""
@@ -494,6 +497,7 @@ class Timber:
             self.orientation.matrix[2, 1]
         ])
     
+    # TODO DELETE or rename to get_centerline_position_from_bottom_local
     def get_centerline_position_from_bottom(self, distance: Numeric) -> V3:
         """
         Get the 3D position at a specific point along the timber's centerline, measured from the bottom.
@@ -506,6 +510,7 @@ class Timber:
         """
         return self.bottom_position + self.length_direction * distance
     
+    # TODO DELETE or rename to get_centerline_position_from_top_local
     def get_centerline_position_from_top(self, distance: Numeric) -> V3:
         """
         Get the 3D position at a specific point along the timber's centerline, measured from the top.
@@ -518,6 +523,7 @@ class Timber:
         """
         return self.bottom_position + self.length_direction * (self.length - distance)
     
+    # TODO DELETE or rename to get_bottom_center_position_local
     def get_bottom_center_position(self) -> V3:
         """
         Get the 3D position of the center of the bottom cross-section of the timber.
@@ -527,6 +533,7 @@ class Timber:
         """
         return self.bottom_position
     
+    # TODO DELETE or rename to get_top_center_position_local
     def get_top_center_position(self) -> V3:
         """
         Get the 3D position of the center of the top cross-section of the timber.
@@ -621,6 +628,7 @@ class Timber:
         # global_direction = R * local_direction
         return self.orientation.matrix * local_direction
     
+    # TODO rename to get_face_direction_global
     # TODO overload this method so it can take TimberReferenceEnd as an argument, or allow TimberReferenceEnd to auto cast into TimberFace
     def get_face_direction(self, face: TimberFace) -> Direction3D:
         """
@@ -656,6 +664,7 @@ class Timber:
         else:  # FRONT or BACK
             return self.size[1]
     
+    # TODO rename get_closest_oriented_face_from_global_direction
     def get_closest_oriented_face(self, target_direction: Direction3D) -> TimberFace:
         """
         Find which face of this timber best aligns with the target direction.
@@ -684,6 +693,7 @@ class Timber:
         return best_face 
     
     # UNTESTED
+    # TODO rename to get_inside_face_from_footprint
     def get_inside_face(self, footprint: Footprint) -> TimberFace:
         """
         Get the inside face of this timber relative to the footprint.
@@ -716,6 +726,7 @@ class Timber:
         return self.get_closest_oriented_face(inward_normal)
 
     # UNTESTED
+    # TODO rename to get_outside_face_from_footprint
     def get_outside_face(self, footprint: Footprint) -> TimberFace:
         """
         Get the outside face of this timber relative to the footprint.
@@ -779,6 +790,7 @@ class Cut(ABC):
     # you can only have an end cut on one end of the timber, you can't have an end cut on both ends at once (maybe we should support this?)
     maybe_end_cut: Optional[TimberReferenceEnd]
 
+    # TODO rename to get_end_position_global
     # get the "end" position of the cut on the centerline of the timber
     # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
     def get_end_position(self) -> V3:
