@@ -4,6 +4,7 @@ Built using the GiraffeCAD API
 """
 
 from sympy import Rational
+from dataclasses import replace
 import sys
 sys.path.append('..')
 
@@ -354,12 +355,10 @@ def create_oscarshed():
         size=inches(Rational(5, 8)),  # 5/8" square
         depth=inches(Rational(7, 2))  
     )
-    side_girt_peg_params_right = SimplePegParameters(
-        shape=PegShape.SQUARE,
-        tenon_face=TimberReferenceLongFace.BACK,
-        peg_positions=[(inches(1), Rational(0))],  # 1" from shoulder, centered
-        size=inches(Rational(5, 8)),  # 5/8" square
-        depth=inches(Rational(7, 2))  
+    # Create right side params by replacing just the tenon_face
+    side_girt_peg_params_right = replace(
+        side_girt_peg_params_left,
+        tenon_face=TimberReferenceLongFace.BACK
     )
     
     # Left side girt TOP end meets front left post

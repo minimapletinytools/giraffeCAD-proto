@@ -58,7 +58,10 @@ DONE-add Frame class to timber.py
   -update fusino360 and freecad to take a frame object
   -get rid of PartiallyCutTimber class while you're at it
 
+
 -rewrite all joint tests, they are all kinda messed up tbh
+-add back post joints to oscar shed
+
 
 -add more features to mortise and tenon joint
   -add offset mortise peg param (so that it tightens the joint up)
@@ -74,6 +77,7 @@ DONE-add Frame class to timber.py
 
 -cleanup
   -make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
+  -rename BACK to BACKWARD
   DONE-clean up moothymoth tests to not use exact euality...
 
 -DECISION TIME
