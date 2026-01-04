@@ -530,9 +530,8 @@ class TestCrossLapJoint:
         assert joint.cut_timbers[0].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
         assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
 
-        # TODO enable this when you fix is_point_on_boundary
-        #assert joint.cut_timbers[0].render_timber_with_cuts_csg_local().is_point_on_boundary(timberA.global_to_local(origin))
-        #assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().is_point_on_boundary(timberB.global_to_local(origin))
+        assert joint.cut_timbers[0].render_timber_with_cuts_csg_local().is_point_on_boundary(timberA.global_to_local(origin))
+        assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().is_point_on_boundary(timberB.global_to_local(origin))
 
         # above origin
         origin = create_vector3d(Rational(0), Rational(0), Rational(1))

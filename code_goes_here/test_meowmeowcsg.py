@@ -731,6 +731,60 @@ class TestUnionContainsPoint:
         
         # Point on boundary of second prism
         assert union.is_point_on_boundary(Matrix([1, 0, 12])) == True
+    
+    def test_union_is_point_on_boundary_interior(self):
+        """Test that interior points are not on boundary."""
+        size = Matrix([4, 4])
+        orientation = Orientation()
+        
+        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        prism2 = Prism(size=size, orientation=orientation, start_distance=5, end_distance=15)
+        
+        union = Union([prism1, prism2])
+        
+        # Point strictly inside first prism (not on boundary)
+        assert union.is_point_on_boundary(Matrix([0, 0, 3])) == False
+        
+        # Point strictly inside second prism (not on boundary)
+        assert union.is_point_on_boundary(Matrix([0, 0, 12])) == False
+    
+    def test_union_is_point_on_boundary_overlapping(self):
+        """Test boundary detection when prisms overlap."""
+        size = Matrix([4, 4])
+        orientation = Orientation()
+        
+        # Two overlapping prisms
+        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        prism2 = Prism(size=size, orientation=orientation, start_distance=5, end_distance=15)
+        
+        union = Union([prism1, prism2])
+        
+        # Point on outer boundary of union (on prism1 face, not inside prism2)
+        assert union.is_point_on_boundary(Matrix([2, 0, 3])) == True
+        
+        # Point on outer boundary of union (on prism2 face, not inside prism1)
+        assert union.is_point_on_boundary(Matrix([2, 0, 12])) == True
+        
+        # Point in overlap region is NOT on boundary (it's interior to the union)
+        # At z=5, this is inside prism1 and on the start face of prism2
+        # Since it's strictly inside prism1, it's not on the union boundary
+        assert union.is_point_on_boundary(Matrix([0, 0, 5])) == False
+    
+    def test_union_is_point_on_boundary_outside(self):
+        """Test that points outside all children are not on boundary."""
+        size = Matrix([2, 2])
+        orientation = Orientation()
+        
+        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
+        
+        union = Union([prism1, prism2])
+        
+        # Point between the two prisms (not on boundary)
+        assert union.is_point_on_boundary(Matrix([0, 0, 7])) == False
+        
+        # Point far outside
+        assert union.is_point_on_boundary(Matrix([10, 10, 10])) == False
 
 
 class TestDifferenceContainsPoint:
@@ -806,6 +860,128 @@ class TestDifferenceContainsPoint:
         # Point on subtract boundary (creates new boundary in difference)
         # At x=1 (edge of subtract), y=0, z=5
         assert diff.is_point_on_boundary(Matrix([1, 0, 5])) == True
+    
+    def test_difference_is_point_on_boundary_interior(self):
+        """Test that interior points are not on boundary."""
+        size_base = Matrix([10, 10])
+        size_subtract = Matrix([2, 2])
+        orientation = Orientation()
+        
+        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        
+        diff = Difference(base, [subtract])
+        
+        # Point in base but not on boundary (not near subtract)
+        assert diff.is_point_on_boundary(Matrix([4, 4, 5])) == False
+    
+    def test_difference_is_point_on_boundary_strictly_inside_subtract(self):
+        """Test that points strictly inside subtract are not contained or on boundary."""
+        size_base = Matrix([10, 10])
+        size_subtract = Matrix([4, 4])
+        orientation = Orientation()
+        
+        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        
+        diff = Difference(base, [subtract])
+        
+        # Point strictly inside subtract (not on subtract boundary)
+        point = Matrix([Rational(1, 2), Rational(1, 2), 5])
+        assert diff.contains_point(point) == False
+        assert diff.is_point_on_boundary(point) == False
+    
+    def test_difference_contains_point_on_subtract_boundary(self):
+        """Test that points on subtract boundary are contained in the difference."""
+        size_base = Matrix([10, 10])
+        size_subtract = Matrix([4, 4])
+        orientation = Orientation()
+        
+        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        
+        diff = Difference(base, [subtract])
+        
+        # Point on subtract boundary should be contained (forms the cut surface)
+        point = Matrix([2, 0, 5])  # On width face of subtract
+        assert diff.contains_point(point) == True
+        assert diff.is_point_on_boundary(point) == True
+    
+    def test_difference_with_halfplane_boundary(self):
+        """Test boundary detection when subtracting with a half-plane."""
+        size_base = Matrix([10, 10])
+        orientation = Orientation()
+        
+        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        # Half-plane at z=5, normal pointing in +z direction
+        half_plane = HalfPlane(normal=Matrix([0, 0, 1]), offset=5)
+        
+        diff = Difference(base, [half_plane])
+        
+        # Point on half-plane boundary (z=5) should be on difference boundary
+        assert diff.is_point_on_boundary(Matrix([0, 0, 5])) == True
+        assert diff.is_point_on_boundary(Matrix([3, 3, 5])) == True
+        
+        # Point strictly below plane (inside difference) should not be on boundary
+        assert diff.is_point_on_boundary(Matrix([0, 0, 3])) == False
+        
+        # Point strictly above plane (removed by difference) should not be contained
+        assert diff.contains_point(Matrix([0, 0, 7])) == False
+    
+    def test_difference_multiple_subtracts(self):
+        """Test boundary detection with multiple subtract objects."""
+        size_base = Matrix([10, 10])
+        orientation = Orientation()
+        
+        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        # Two small prisms to subtract
+        subtract1 = Prism(size=Matrix([2, 2]), orientation=orientation, 
+                         position=Matrix([2, 2, 0]), start_distance=2, end_distance=8)
+        subtract2 = Prism(size=Matrix([2, 2]), orientation=orientation,
+                         position=Matrix([-2, -2, 0]), start_distance=2, end_distance=8)
+        
+        diff = Difference(base, [subtract1, subtract2])
+        
+        # Points on subtract1 boundary
+        assert diff.is_point_on_boundary(Matrix([3, 2, 5])) == True
+        
+        # Points on subtract2 boundary
+        assert diff.is_point_on_boundary(Matrix([-1, -2, 5])) == True
+        
+        # Point on base boundary (not near subtracts)
+        assert diff.is_point_on_boundary(Matrix([5, 0, 0])) == True
+    
+    def test_difference_nested_differences(self):
+        """Test boundary detection with nested difference operations."""
+        orientation = Orientation()
+        
+        # Create base prism
+        base = Prism(size=Matrix([10, 10]), orientation=orientation, 
+                    start_distance=0, end_distance=10)
+        
+        # Create a subtract prism at the center
+        subtract_inner = Prism(size=Matrix([2, 2]), orientation=orientation,
+                              start_distance=3, end_distance=7)
+        
+        # Create a nested difference (prism with hole in center)
+        inner_diff = Difference(base, [subtract_inner])
+        
+        # Now subtract another prism from a different location
+        # Place it off to the side so it doesn't overlap with subtract_inner
+        subtract_outer = Prism(size=Matrix([2, 2]), orientation=orientation,
+                              position=Matrix([4, 0, 0]), start_distance=1, end_distance=9)
+        
+        outer_diff = Difference(inner_diff, [subtract_outer])
+        
+        # Point on inner subtract boundary (the central hole)
+        # This should still be on boundary in outer_diff
+        assert outer_diff.is_point_on_boundary(Matrix([1, 0, 5])) == True
+        
+        # Point on outer subtract boundary (the side hole)
+        assert outer_diff.is_point_on_boundary(Matrix([5, 0, 5])) == True
+        
+        # Point in the remaining material (not on any boundary)
+        assert outer_diff.is_point_on_boundary(Matrix([Rational(-7, 2), 0, 5])) == False
 
 
 class TestConvexPolygonExtrusion:
