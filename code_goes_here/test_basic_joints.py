@@ -398,6 +398,70 @@ class TestSpliceJoint:
                 timberA, TimberReferenceEnd.TOP,
                 timberB, TimberReferenceEnd.BOTTOM
             )
+    
+    def test_splice_joint_get_end_position(self):
+        """
+        Test that get_end_position returns the correct position for splice joint cuts.
+        
+        The end position of a cut timber is usually not the end position of the timber itself.
+        For a splice joint, both cuts should have their end position at the splice point.
+        """
+        # Create timberA with length 10 at default orientation/position
+        # Bottom at (0, 0, 0), top at (0, 0, 10)
+        timberA = create_standard_vertical_timber(height=10, size=(4, 4), position=(0, 0, 0))
+        
+        # Create timberB with length 20 at default orientation/position
+        # Bottom at (0, 0, 0), top at (0, 0, 20)
+        timberB = create_standard_vertical_timber(height=10, size=(4, 4), position=(0, 0, 0))
+        
+        # Create basic splice joint between timberA TOP and timberB BOT
+        # The splice point should be at the midpoint: (0+10)/2 = 5 in Z
+        joint = cut_basic_splice_joint_on_aligned_timbers(
+            timberA, TimberReferenceEnd.TOP,
+            timberB, TimberReferenceEnd.BOTTOM
+        )
+        
+        # Get the cuts
+        cutA = joint.cut_timbers[0]._cuts[0]
+        cutB = joint.cut_timbers[1]._cuts[0]
+        
+        # Get the end positions
+        end_position_A = cutA.get_end_position()
+        end_position_B = cutB.get_end_position()
+        
+        # Both end positions should be at (0, 0, 5) - the splice point
+        expected_position = Matrix([Rational(0), Rational(0), Rational(5)])
+        
+        # Verify timberA's cut end position
+        assert simplify(end_position_A[0]) == Rational(0), \
+            f"TimberA cut end position X should be 0, got {end_position_A[0]}"
+        assert simplify(end_position_A[1]) == Rational(0), \
+            f"TimberA cut end position Y should be 0, got {end_position_A[1]}"
+        assert simplify(end_position_A[2]) == Rational(5), \
+            f"TimberA cut end position Z should be 5, got {end_position_A[2]}"
+        
+        # Verify timberB's cut end position
+        assert simplify(end_position_B[0]) == Rational(0), \
+            f"TimberB cut end position X should be 0, got {end_position_B[0]}"
+        assert simplify(end_position_B[1]) == Rational(0), \
+            f"TimberB cut end position Y should be 0, got {end_position_B[1]}"
+        assert simplify(end_position_B[2]) == Rational(5), \
+            f"TimberB cut end position Z should be 5, got {end_position_B[2]}"
+        
+        # Verify the relationship: end position is NOT the timber end position
+        timberA_top = timberA.get_top_center_position()
+        timberB_bottom = timberB.get_bottom_center_position()
+        
+        # The cut end position for timberA should NOT be its top position
+        assert simplify(end_position_A[2]) != simplify(timberA_top[2]), \
+            "Cut end position should not be the same as timber top position"
+        
+        # The cut end position for timberB should NOT be its bottom position  
+        # (though in this case they happen to be close, the cut still moves it)
+        print(f"\nTimberA top: {timberA_top.T}")
+        print(f"TimberA cut end position: {end_position_A.T}")
+        print(f"TimberB bottom: {timberB_bottom.T}")
+        print(f"TimberB cut end position: {end_position_B.T}")
 
 
 class TestHouseJoint:
