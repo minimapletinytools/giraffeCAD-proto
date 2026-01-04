@@ -840,7 +840,7 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     # timbers in any direction (horizontal, vertical, diagonal, etc.)
     return Prism(
         size=timber.size,
-        orientation=timber.orientation,
+        orientation=Orientation.identity(),
         start_distance=start_distance,
         end_distance=end_distance
     )
@@ -892,9 +892,7 @@ class CutTimber:
     def render_timber_with_cuts_csg_local(self) -> MeowMeowCSG:
         """
         Returns a CSG representation of the timber with all cuts applied.
-        
-        Uses LOCAL coordinates (relative to timber.bottom_position).
-        All cuts on this timber are also in LOCAL coordinates.
+
         
         Returns:
             Difference CSG representing the timber with all cuts subtracted

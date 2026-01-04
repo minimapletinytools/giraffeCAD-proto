@@ -423,7 +423,7 @@ class TestHouseJoint:
         assert not joint.cut_timbers[0].render_timber_with_cuts_csg_local().contains_point(housing_timber.global_to_local(origin))
         
         # why is this not working?
-        #assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(housed_timber.global_to_local(origin))
+        assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(housed_timber.global_to_local(origin))
         
 
 

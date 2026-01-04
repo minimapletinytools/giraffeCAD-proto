@@ -125,6 +125,7 @@ def create_centered_horizontal_timber(
     direction='x',
     length=100,
     size: Optional[Tuple] = None,
+    zoffset = 0,
     name: str = "test_timber"
 ) -> Timber:
     """
@@ -134,13 +135,13 @@ def create_centered_horizontal_timber(
     
     # compute position based on direction
     if direction == 'x' or direction == '+x':
-        position = (Rational(-length/2), Rational(0), Rational(0))
+        position = (Rational(-length/2), Rational(0), Rational(zoffset))
     elif direction == 'y' or direction == '+y':
-        position = (Rational(0), Rational(-length/2), Rational(0))
+        position = (Rational(0), Rational(-length/2), Rational(zoffset))
     elif direction == '-x':
-        position = (Rational(length/2), Rational(0), Rational(0))
+        position = (Rational(length/2), Rational(0), Rational(zoffset))
     elif direction == '-y':
-        position = (Rational(0), Rational(length/2), Rational(0))
+        position = (Rational(0), Rational(length/2), Rational(zoffset))
     else:
         raise ValueError(f"Invalid direction: {direction}")
 
@@ -426,10 +427,6 @@ class MockCut:
         self.maybe_end_cut = maybe_end_cut
         self.origin = Matrix([0, 0, 0])
         self.orientation = Orientation()
-    
-    def get_end_position(self) -> V3:
-        """Get the end position of the cut."""
-        return self._end_position
     
     def get_negative_csg(self):
         """Get the negative CSG (not implemented for mock)."""
