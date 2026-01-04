@@ -27,27 +27,6 @@ class MeowMeowCSG(ABC):
         pass
 
 
-    # ALL IMPLEMENTATIONS ARE UNTESTED LOL
-    @abstractmethod
-    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
-        """
-        Get the minimal boundary of the CSG in the given direction.
-        
-        Returns a point on the CSG boundary that is minimal (most negative) along the given direction.
-        In other words, finds the point P on the CSG surface where P·direction is minimized.
-        
-        Args:
-            direction: Direction vector to minimize along (does not need to be normalized)
-            
-        Returns:
-            A point on the CSG boundary that is minimal in the given direction
-            This may return any point, rather than the origin point projected onto the boundary like you'd expect :(
-            
-        Raises:
-            ValueError: If the CSG is infinite/unbounded in the negative direction
-        """
-        pass
-
     @abstractmethod
     def contains_point(self, point: V3) -> bool:
         """
@@ -96,44 +75,6 @@ class HalfPlane(MeowMeowCSG):
     def __repr__(self) -> str:
         return f"HalfPlane(normal={self.normal.T}, offset={self.offset})"
     
-    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
-        """
-        Get the minimal boundary point of the half-plane in the given direction.
-        
-        For a half-plane, there is only a minimal boundary when the direction is exactly
-        opposite (anti-parallel) to the normal vector. In all other cases, the half-plane
-        is unbounded in that direction.
-        
-        Args:
-            direction: Direction to minimize along
-            
-        Returns:
-            Point at offset distance along normal (when direction is opposite to normal)
-            
-        Raises:
-            ValueError: If direction is not exactly opposite to the normal
-        """
-        # Normalize both vectors for comparison
-        dir_norm = direction.norm()
-        if dir_norm == 0:
-            raise ValueError("Direction vector cannot be zero")
-        dir_normalized = direction / dir_norm
-        
-        normal_norm = self.normal.norm()
-        normal_normalized = self.normal / normal_norm
-        
-        # Check if direction is exactly opposite to normal (anti-parallel)
-        # direction should equal -k * normal for some positive k
-        # Equivalently: dir_normalized should equal -normal_normalized
-        diff = dir_normalized + normal_normalized
-        
-        # Check if the difference is zero (within tolerance for symbolic computation)
-        if diff.norm() > Rational(1, 10000):
-            raise ValueError("HalfPlane is unbounded except in the direction exactly opposite to its normal")
-        
-        # Return the origin point on the plane boundary
-        return self.normal * self.offset
-
     def contains_point(self, point: V3) -> bool:
         """
         Check if a point is contained within the half-plane.
@@ -236,76 +177,6 @@ class Prism(MeowMeowCSG):
         return (f"Prism(size={self.size.T}, orientation={self.orientation}, "
                 f"position={self.position.T}, start={self.start_distance}, end={self.end_distance})")
     
-    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
-        """
-        Get the minimal boundary point of the prism in the given direction.
-        
-        For a finite prism, we check all 8 corners and return the one with minimum dot product
-        with the direction. For semi-infinite prisms, we only raise an error if querying in the
-        infinite direction.
-        """
-        # If infinite in both directions, always unbounded
-        if self.start_distance is None and self.end_distance is None:
-            raise ValueError("Cannot compute minimal boundary for prism that is infinite in both directions")
-        
-        # Extract axes from orientation matrix
-        # X-axis (width direction) is first column
-        # Y-axis (height direction) is second column
-        # Z-axis (length/axis direction) is third column
-        width_dir = Matrix([
-            self.orientation.matrix[0, 0],
-            self.orientation.matrix[1, 0],
-            self.orientation.matrix[2, 0]
-        ])
-        height_dir = Matrix([
-            self.orientation.matrix[0, 1],
-            self.orientation.matrix[1, 1],
-            self.orientation.matrix[2, 1]
-        ])
-        length_dir = Matrix([
-            self.orientation.matrix[0, 2],
-            self.orientation.matrix[1, 2],
-            self.orientation.matrix[2, 2]
-        ])
-        
-        # Check if we're querying in an infinite direction
-        axis_component = (direction.T * length_dir)[0, 0]
-        
-        if self.start_distance is None and axis_component < 0:
-            raise ValueError("Cannot compute minimal boundary for prism that is infinite in negative direction")
-        if self.end_distance is None and axis_component > 0:
-            raise ValueError("Cannot compute minimal boundary for prism that is infinite in positive direction")
-        
-        # Half dimensions
-        half_width = self.size[0] / 2
-        half_height = self.size[1] / 2
-        
-        # Generate corners from the finite end(s)
-        min_dot = None
-        min_point = None
-        
-        # Determine which ends to check
-        ends_to_check = []
-        if self.start_distance is not None:
-            ends_to_check.append(self.start_distance)
-        if self.end_distance is not None:
-            ends_to_check.append(self.end_distance)
-        
-        for distance in ends_to_check:
-            for w_sign in [-1, 1]:
-                for h_sign in [-1, 1]:
-                    corner = (self.position + 
-                             length_dir * distance + 
-                             width_dir * (w_sign * half_width) + 
-                             height_dir * (h_sign * half_height))
-                    
-                    dot = (corner.T * direction)[0, 0]
-                    if min_dot is None or dot < min_dot:
-                        min_dot = dot
-                        min_point = corner
-        
-        return min_point
-
     def contains_point(self, point: V3) -> bool:
         """
         Check if a point is contained within the prism.
@@ -452,73 +323,6 @@ class Cylinder(MeowMeowCSG):
                 f"position={self.position.T}, "
                 f"start={self.start_distance}, end={self.end_distance})")
     
-    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
-        """
-        Get the minimal boundary point of the cylinder in the given direction.
-        
-        For a finite cylinder, we find the point on the surface with minimum dot product
-        with the direction vector. For semi-infinite cylinders, we only raise an error if 
-        querying in the infinite direction.
-        """
-        # If infinite in both directions, always unbounded
-        if self.start_distance is None and self.end_distance is None:
-            raise ValueError("Cannot compute minimal boundary for cylinder that is infinite in both directions")
-        
-        # Normalize axis
-        axis = self.axis_direction / self.axis_direction.norm()
-        
-        # Check if we're querying in an infinite direction
-        axis_component = (direction.T * axis)[0, 0]
-        
-        if self.start_distance is None and axis_component < 0:
-            raise ValueError("Cannot compute minimal boundary for cylinder that is infinite in negative direction")
-        if self.end_distance is None and axis_component > 0:
-            raise ValueError("Cannot compute minimal boundary for cylinder that is infinite in positive direction")
-        
-        # Decompose direction into parallel and perpendicular components to axis
-        dir_parallel = axis_component * axis
-        dir_perp = direction - dir_parallel
-        
-        # For the radial component, the minimal point on the circular cross-section
-        # is in the opposite direction of dir_perp
-        dir_perp_norm = dir_perp.norm()
-        
-        if dir_perp_norm == 0:
-            # Direction is parallel to axis, minimal point is anywhere on the appropriate circle
-            # Choose an arbitrary point on the circle
-            if abs(axis[0]) < Rational(1, 2):
-                perpendicular = Matrix([1, 0, 0])
-            else:
-                perpendicular = Matrix([0, 1, 0])
-            
-            radial = axis.cross(perpendicular)
-            radial = radial / radial.norm()
-            
-            # Check the finite end cap(s)
-            candidates = []
-            if self.start_distance is not None:
-                candidates.append(self.position + axis * self.start_distance + radial * self.radius)
-            if self.end_distance is not None:
-                candidates.append(self.position + axis * self.end_distance + radial * self.radius)
-            
-            # Return the one with minimum dot product
-            min_point = min(candidates, key=lambda p: (p.T * direction)[0, 0])
-            return min_point
-        else:
-            # Minimal radial point is opposite to perpendicular component
-            radial_dir = -dir_perp / dir_perp_norm
-            
-            # Check points on the finite end cap(s) at the minimal radial position
-            candidates = []
-            if self.start_distance is not None:
-                candidates.append(self.position + axis * self.start_distance + radial_dir * self.radius)
-            if self.end_distance is not None:
-                candidates.append(self.position + axis * self.end_distance + radial_dir * self.radius)
-            
-            # Return the one with minimum dot product
-            min_point = min(candidates, key=lambda p: (p.T * direction)[0, 0])
-            return min_point
-
     def contains_point(self, point: V3) -> bool:
         """
         Check if a point is contained within the cylinder.
@@ -612,35 +416,6 @@ class Union(MeowMeowCSG):
     def __repr__(self) -> str:
         return f"Union({len(self.children)} children)"
     
-    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
-        """
-        Get the minimal boundary point of the union in the given direction.
-        
-        For a union, the minimal boundary is the minimum of all children's minimal boundaries.
-        """
-        if not self.children:
-            raise ValueError("Cannot compute minimal boundary for empty union")
-        
-        min_dot = None
-        min_point = None
-        
-        for child in self.children:
-            try:
-                point = child.minimal_boundary_in_direction(direction)
-                dot = (point.T * direction)[0, 0]
-                
-                if min_dot is None or dot < min_dot:
-                    min_dot = dot
-                    min_point = point
-            except ValueError:
-                # Child is unbounded in this direction, skip it
-                continue
-        
-        if min_point is None:
-            raise ValueError("All children of union are unbounded in the given direction")
-        
-        return min_point
-
     def contains_point(self, point: V3) -> bool:
         """
         Check if a point is contained within the union.
@@ -703,102 +478,6 @@ class Difference(MeowMeowCSG):
     def __repr__(self) -> str:
         return f"Difference(base={self.base}, subtract={len(self.subtract)} objects)"
     
-    # TODO this is probably still broken
-    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
-        """
-        Get the minimal boundary point of the difference in the given direction.
-        
-        For a difference operation (base - subtract), the minimal boundary can be:
-        1. On the original base boundary (if not removed by subtraction)
-        2. On a new boundary created by the subtraction (e.g., a cut plane)
-        
-        We check all potential boundaries and return the most minimal one.
-        
-        For Prism - HalfPlane specifically, we:
-        1. Check all corners of the prism that remain after subtraction
-        2. Check points on the half-plane boundary that intersect the prism
-        """
-        from sympy import simplify
-        
-        min_point = None
-        min_dot = None
-        
-        # Strategy: Check a set of candidate points on the difference surface
-        # and find the one with minimum dot product with the direction
-        
-        # 1. Check if base's minimal boundary is still valid (not removed)
-        try:
-            base_boundary = self.base.minimal_boundary_in_direction(direction)
-            if self.contains_point(base_boundary):
-                min_point = base_boundary
-                min_dot = simplify((min_point.T * direction)[0, 0])
-        except ValueError:
-            # Base doesn't have a minimal boundary in this direction
-            pass
-        
-        # 2. For Prism base, check all corners (some may have been removed by subtraction)
-        if isinstance(self.base, Prism):
-            # Generate all 8 corners (or 4 corners for semi-infinite prisms)
-            width = self.base.size[0]
-            height = self.base.size[1]
-            
-            # Half-dimensions from center
-            hw = width / 2
-            hh = height / 2
-            
-            # Local offsets for the 4 corners of the cross-section
-            corner_offsets = [
-                Matrix([hw, hh]),
-                Matrix([hw, -hh]),
-                Matrix([-hw, hh]),
-                Matrix([-hw, -hh])
-            ]
-            
-            # Check corners at both ends (if finite)
-            z_values = []
-            if self.base.start_distance is not None:
-                z_values.append(self.base.start_distance)
-            if self.base.end_distance is not None:
-                z_values.append(self.base.end_distance)
-            
-            for z in z_values:
-                for offset in corner_offsets:
-                    # Corner in local coordinates
-                    corner_local = Matrix([offset[0], offset[1], z])
-                    # Transform to global coordinates
-                    corner_global = self.base.position + self.base.orientation.matrix * corner_local
-                    
-                    # Check if this corner is in the difference (not removed by subtraction)
-                    if self.contains_point(corner_global):
-                        dot = simplify((corner_global.T * direction)[0, 0])
-                        if min_dot is None or dot < min_dot:
-                            min_point = corner_global
-                            min_dot = dot
-        
-        # 3. For HalfPlane subtract, check if the plane intersects the base
-        # and find points on that intersection
-        for sub in self.subtract:
-            if isinstance(sub, HalfPlane):
-                # For HalfPlane, we need to find points on the plane that are in the base
-                # and have minimal dot product with the direction
-                
-                # Try to get a point on the plane
-                # The plane is defined by: normal · point >= offset
-                # A point on the boundary is: point = normal * offset
-                point_on_plane = sub.normal * sub.offset
-                
-                # Check if this specific point is on the difference boundary
-                if self.base.contains_point(point_on_plane) and self.is_point_on_boundary(point_on_plane):
-                    dot = simplify((point_on_plane.T * direction)[0, 0])
-                    if min_dot is None or dot < min_dot:
-                        min_point = point_on_plane
-                        min_dot = dot
-        
-        if min_point is None:
-            raise ValueError("Could not find minimal boundary for difference in the given direction")
-        
-        return min_point
-
     def contains_point(self, point: V3) -> bool:
         """
         Check if a point is contained within the difference.
@@ -921,36 +600,6 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
         return (len(non_zero_crosses) > 0 and 
                 (all(cp > 0 for cp in non_zero_crosses) or 
                  all(cp < 0 for cp in non_zero_crosses)))
-
-    def minimal_boundary_in_direction(self, direction: Direction3D) -> V3:
-        """
-        Get the minimal boundary point of the extruded polygon in the given direction.
-        
-        We check all vertices at both the start (z=0) and end (z=length) faces
-        and return the one with minimum dot product with the direction.
-        
-        Args:
-            direction: Direction to minimize along
-            
-        Returns:
-            Point on the boundary with minimum dot product with direction
-        """
-        min_dot = None
-        min_point = None
-        
-        # Check all vertices at both z=0 and z=length
-        for z_offset in [0, self.length]:
-            for point_2d in self.points:
-                # Create 3D point in local coordinates, then transform to global
-                point_local = Matrix([point_2d[0], point_2d[1], z_offset])
-                point_global = self.position + self.orientation.matrix * point_local
-                
-                dot = (point_global.T * direction)[0, 0]
-                if min_dot is None or dot < min_dot:
-                    min_dot = dot
-                    min_point = point_global
-        
-        return min_point
 
     def contains_point(self, point: V3) -> bool:
         """
