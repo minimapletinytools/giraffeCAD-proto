@@ -3,9 +3,7 @@ Tests for GiraffeCAD timber framing system
 """
 
 import pytest
-from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
-from code_goes_here.moothymoth import Orientation
-from code_goes_here.footprint import Footprint
+from sympy import Matrix, sqrt, simplify, Abs, Float, Rational, pi
 from giraffe import *
 from giraffe import _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned
 from .conftest import (
@@ -43,11 +41,14 @@ class TestMiterJoint:
         # check that the two cuts are half plane cuts and the planes are opposite
         assert isinstance(joint.cut_timbers[0]._cuts[0], HalfPlaneCut)
         assert isinstance(joint.cut_timbers[1]._cuts[0], HalfPlaneCut)
-        print(joint.cut_timbers[0]._cuts[0].half_plane.normal)
-        print(joint.cut_timbers[1]._cuts[0].half_plane.normal)
 
-        # TODO convert normals to global space and check if they are opposite
-        assert joint.cut_timbers[0]._cuts[0].half_plane.normal.equals(joint.cut_timbers[1]._cuts[0].half_plane.normal)
+        # Convert normals to global space and check if they are opposite
+        normal_A_local = joint.cut_timbers[0]._cuts[0].half_plane.normal
+        normal_B_local = joint.cut_timbers[1]._cuts[0].half_plane.normal
+        normal_A_global = timberA.local_direction_to_global(normal_A_local)
+        normal_B_global = timberB.local_direction_to_global(normal_B_local)
+        # For a miter joint, the normals should be opposite in global space
+        assert normal_A_global.equals(-normal_B_global), "Normals should be opposite in global space"
 
         # check that the bottom point of timberA is contained on the boundary of both half plane
         bottom_point_global = timberA.bottom_position
@@ -69,6 +70,18 @@ class TestMiterJoint:
         bottom_point_A_after_cutting_local_B = timberB.global_to_local(bottom_point_A_after_cutting_global)
         assert not joint.cut_timbers[0]._cuts[0].half_plane.contains_point(bottom_point_A_after_cutting_local_A)
         assert joint.cut_timbers[1]._cuts[0].half_plane.contains_point(bottom_point_A_after_cutting_local_B)
+
+    def test_basic_miter_joint_on_various_angles(self): 
+        angles_to_test = [ i * pi / 180 for i in range(1, 179) ]
+
+        # TODO repeat the above tests for each angle
+
+    def test_basic_miter_joint_on_parallel_timbers(self):
+        timberA = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        timberB = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        timberC = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+
+        # TODO test that creating miter joint between A and B and B and C raises an error
 
 
         

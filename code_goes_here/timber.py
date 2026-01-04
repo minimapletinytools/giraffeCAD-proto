@@ -577,6 +577,50 @@ class Timber:
         # global = R * local + bottom_position
         return self.orientation.matrix * local_point + self.bottom_position
     
+    def global_direction_to_local(self, global_direction: Direction3D) -> Direction3D:
+        """
+        Convert a direction vector from global world coordinates to timber-local coordinates.
+        
+        Direction vectors are transformed differently from points - they are not affected by
+        translation, only by rotation.
+        
+        In the timber's local coordinate system:
+        - Local X-axis is the width_direction
+        - Local Y-axis is the height_direction
+        - Local Z-axis is the length_direction
+        
+        Args:
+            global_direction: A direction vector in global world coordinates
+            
+        Returns:
+            The same direction vector in timber-local coordinates
+        """
+        # Direction vectors only need rotation (no translation)
+        # local_direction = R^T * global_direction
+        return self.orientation.matrix.T * global_direction
+    
+    def local_direction_to_global(self, local_direction: Direction3D) -> Direction3D:
+        """
+        Convert a direction vector from timber-local coordinates to global world coordinates.
+        
+        Direction vectors are transformed differently from points - they are not affected by
+        translation, only by rotation.
+        
+        In the timber's local coordinate system:
+        - Local X-axis is the width_direction
+        - Local Y-axis is the height_direction
+        - Local Z-axis is the length_direction
+        
+        Args:
+            local_direction: A direction vector in timber-local coordinates
+            
+        Returns:
+            The same direction vector in global world coordinates
+        """
+        # Direction vectors only need rotation (no translation)
+        # global_direction = R * local_direction
+        return self.orientation.matrix * local_direction
+    
     # TODO overload this method so it can take TimberReferenceEnd as an argument, or allow TimberReferenceEnd to auto cast into TimberFace
     def get_face_direction(self, face: TimberFace) -> Direction3D:
         """
