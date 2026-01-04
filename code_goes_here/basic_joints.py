@@ -210,6 +210,10 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     assert _are_timbers_face_aligned(receiving_timber, butt_timber), \
         "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
     
+    # Check that timbers are not parallel (butt joints require timbers to be at an angle)
+    assert not construction_parallel_check(receiving_timber.length_direction, butt_timber.length_direction), \
+        "Timbers cannot be parallel for a butt joint"
+    
     # Get the direction of the butt end (pointing outward from the timber)
     if butt_end == TimberReferenceEnd.TOP:
         butt_direction = butt_timber.length_direction

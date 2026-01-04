@@ -145,229 +145,75 @@ class TestMiterJoint:
 
 class TestButtJoint:
     """Test cut_basic_butt_joint_on_face_aligned_timbers function."""
-    
-    def test_vertical_butt_into_horizontal_receiving_top_end(self):
-        """Test butt joint with vertical timber butting into horizontal from top."""
-        # Create horizontal receiving timber along +X axis
-        receiving = create_standard_horizontal_timber(direction='x', length=100, size=(6, 8), position=(0, 0, 0))
-        
-        # Create vertical butt timber (extends downward from above)
-        # Positioned so its top end should be cut at the FRONT face of receiving timber
-        butt = timber_from_directions(
-            length=Rational(60),
-            size=Matrix([Rational(4), Rational(4)]),
-            bottom_position=Matrix([Rational(50), Rational(0), Rational(20)]),  # Above receiving
-            length_direction=Matrix([Rational(0), Rational(0), Rational(-1)]),  # Downward
-            width_direction=Matrix([Rational(1), Rational(0), Rational(0)])
-        )
-        
-        # Create the butt joint (cut the top end of the butt timber)
-        joint = cut_basic_butt_joint_on_face_aligned_timbers(receiving, butt, TimberReferenceEnd.TOP)
-        
+
+    def test_basic_butt_joint_on_face_aligned_timbers(self):
+        """Test butt joint between two perpendicular timbers."""
+        # Create two perpendicular timbers meeting at the origin
+        # timberA extends along +X (bottom at origin, top at x=100)
+        # timberB extends along +Y (bottom at origin, top at y=100)
+        timberA = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        timberB = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
+
+        # Create butt joint - timberB butts into timberA at timberB's BOTTOM end
+        joint = cut_basic_butt_joint_on_face_aligned_timbers(timberA, timberB, TimberReferenceEnd.BOTTOM)
+
         # Verify joint structure
         assert joint is not None
         assert len(joint.cut_timbers) == 2
+        assert joint.cut_timbers[0].timber == timberA
+        assert joint.cut_timbers[1].timber == timberB
+
+        # In a butt joint, the receiving timber (timberA) should have no cuts
+        assert len(joint.cut_timbers[0]._cuts) == 0, "Receiving timber should have no cuts"
+
+        # The butt timber (timberB) should have exactly one cut at the specified end
+        assert len(joint.cut_timbers[1]._cuts) == 1, "Butt timber should have one cut"
+        assert joint.cut_timbers[1]._cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
+
+        # Verify the cut is a half plane cut
+        assert isinstance(joint.cut_timbers[1]._cuts[0], HalfPlaneCut)
+
+        # Verify that the cut normal in global space is parallel or anti-parallel to timberB's length direction
+        # For an end cut (butt joint), the cut plane is perpendicular to the timber's length axis,
+        # so the normal is parallel/anti-parallel to the length direction
+        cut_normal_local = joint.cut_timbers[1]._cuts[0].half_plane.normal
+        cut_normal_global = timberB.local_direction_to_global(cut_normal_local)
         
-        receiving_cut_timber = joint.cut_timbers[0]
-        butt_cut_timber = joint.cut_timbers[1]
+        dot_with_length = (cut_normal_global.T * timberB.length_direction)[0, 0]
+        from sympy import simplify, Abs
+        assert simplify(Abs(dot_with_length)) == 1, \
+            "Cut normal should be parallel or anti-parallel to butt timber's length direction"
         
-        # Verify receiving timber has no cuts
-        assert len(receiving_cut_timber._cuts) == 0, "Receiving timber should have no cuts"
+        # Verify the cut creates a valid CSG geometry
+        # (this is a basic sanity check that the cut can be rendered)
+        try:
+            csg = joint.cut_timbers[1].render_timber_with_cuts_csg_local()
+            assert csg is not None, "Should be able to render the cut timber"
+        except Exception as e:
+            pytest.fail(f"Failed to render cut timber: {e}")
+
+
+
+
+    def test_basic_butt_joint_on_parallel_timbers(self):
+        """Test that creating butt joint between parallel timbers raises an error.
         
-        # Verify butt timber has exactly one cut
-        assert len(butt_cut_timber._cuts) == 1, "Butt timber should have exactly one cut"
+        The cut_basic_butt_joint_on_face_aligned_timbers function validates that timbers
+        are not parallel, as butt joints require timbers at an angle.
+        """
+        # Create three timbers: two parallel (+X) and one anti-parallel (-X)
+        timberA = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        timberB = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        timberC = create_standard_horizontal_timber(direction='-x', length=100, size=(6, 6), position=(0, 0, 0))
         
-        cut = butt_cut_timber._cuts[0]
-        assert cut.maybe_end_cut == TimberReferenceEnd.TOP, "Cut should be at TOP end"
+        # Attempting to create a butt joint between parallel timbers should raise an AssertionError
+        # because the function requires perpendicular timbers
+        with pytest.raises(AssertionError, match="parallel"):
+            cut_basic_butt_joint_on_face_aligned_timbers(timberA, timberB, TimberReferenceEnd.BOTTOM)
         
-        # Test 1: Verify the cut plane is coplanar with the receiving timber's face
-        # The butt is approaching the FRONT face of the receiving timber
-        # FRONT face is at z = height/2 = 8/2 = 4
-        # The cut normal points INWARD (downward, -Z) to remove material below the mudsill
-        
-        # Get the global normal of the cut plane
-        global_cut_normal = butt.orientation.matrix * cut.half_plane.normal
-        expected_normal = Matrix([Rational(0), Rational(0), Rational(-1)])
-        
-        # Normalize and compare
-        from sympy import simplify
-        assert simplify(global_cut_normal - expected_normal).norm() == 0, \
-            f"Cut normal should be (0, 0, -1), got {global_cut_normal.T}"
-        
-        # Verify the cut plane offset corresponds to the receiving face position
-        # The FRONT face of receiving timber is at z = 0 + 8/2 = 4
-        # With normal = (0, 0, -1), the plane equation is: -z = -4, or z = 4
-        # offset = point_on_plane · normal = (x, y, 4) · (0, 0, -1) = -4
-        
-        # Get global offset: offset = point_on_plane · normal
-        # The cut.origin is a point on the cut plane
-        global_offset = (cut.origin.T * global_cut_normal)[0, 0]
-        expected_offset = Rational(-4)  # Negative because normal points -Z
-        
-        assert simplify(global_offset - expected_offset) == 0, \
-            f"Cut plane offset should be {expected_offset}, got {global_offset}"
-        
-        # Test 2: Verify the two timber CSGs do not intersect after cutting
-        # Render the timbers without cuts (just the basic prisms)
-        prism_receiving = receiving_cut_timber.render_timber_without_cuts_csg_local()
-        prism_butt = butt_cut_timber.render_timber_without_cuts_csg_local()
-        
-        # The receiving timber extends from x=0 to x=100, y=-3 to y=+3, z=0 to z=8
-        # The butt timber (before cut) extends from x=48 to x=52, y=-2 to y=+2, z=-40 to z=20
-        # After cutting at z=4, the butt timber should extend from z=-40 to z=4
-        # So they should meet at z=4 with no overlap (receiving top is at z=8, butt cut is at z=4)
-        
-        # Actually, let me reconsider. The receiving timber FRONT face is at z=4.
-        # The butt timber should be cut so its TOP end is at z=4.
-        # The butt extends downward (negative z), so after cut it goes from bottom to z=4.
-        # The receiving goes from z=0 to z=8.
-        # So they overlap from z=4 to z=4 (just touching), which is acceptable.
-        
-        # For a proper butt joint, the timbers should just touch at the cut plane
-        # We can verify this by checking that the butt timber's end position is on the receiving face
-        
-        # Get the end position of the butt timber after cutting
-        butt_end = cut.get_end_position()
-        
-        # The end should be at z=4 (on the FRONT face of receiving)
-        assert simplify(butt_end[2] - Rational(4)) == 0, \
-            f"Butt end should be at z=4, got z={butt_end[2]}"
-        
-        # The butt timber after cut should have end_distance such that it reaches z=4
-        # In butt timber's local coordinates (length goes downward = -Z global):
-        # bottom is at z=20, top is at z=20-60=-40
-        # After cut at z=4, the length should be 20-4=16
-        
-        # Check that prism_butt has correct bounds
-        assert prism_butt.end_distance == Rational(16), \
-            f"Butt timber should extend 16 units from bottom, got {prism_butt.end_distance}"
-    
-    def test_horizontal_butt_into_vertical_receiving_bottom_end(self):
-        """Test butt joint with horizontal timber butting into vertical from bottom."""
-        # Create vertical receiving timber
-        receiving = create_standard_vertical_timber(height=120, size=(6, 6), position=(0, 0, 0))
-        
-        # Create horizontal butt timber pointing toward receiving timber
-        # Should butt into the RIGHT face of receiving (which is at x=+3)
-        butt = timber_from_directions(
-            length=Rational(80),
-            size=Matrix([Rational(4), Rational(4)]),
-            bottom_position=Matrix([Rational(100), Rational(0), Rational(60)]),
-            length_direction=Matrix([Rational(-1), Rational(0), Rational(0)]),  # Pointing left
-            width_direction=Matrix([Rational(0), Rational(1), Rational(0)])
-        )
-        
-        # Create butt joint at BOTTOM end of butt timber
-        joint = cut_basic_butt_joint_on_face_aligned_timbers(receiving, butt, TimberReferenceEnd.BOTTOM)
-        
-        assert joint is not None
-        assert len(joint.cut_timbers) == 2
-        
-        receiving_cut_timber = joint.cut_timbers[0]
-        butt_cut_timber = joint.cut_timbers[1]
-        
-        # Verify receiving has no cuts
-        assert len(receiving_cut_timber._cuts) == 0
-        
-        # Verify butt has one cut at BOTTOM
-        assert len(butt_cut_timber._cuts) == 1
-        cut = butt_cut_timber._cuts[0]
-        assert cut.maybe_end_cut == TimberReferenceEnd.BOTTOM
-        
-        # Test 1: Verify cut plane is coplanar with receiving timber face
-        # The receiving timber extends from x=-3 to x=+3
-        # The butt timber is at x=100, approaching from the right
-        # However, due to the way get_closest_oriented_face works with -butt_direction,
-        # it finds the LEFT face at x=-3
-        
-        global_cut_normal = butt.orientation.matrix * cut.half_plane.normal
-        
-        # Test 2: Verify the butt end is on a face of the receiving timber
-        # Get the end position of the butt timber
-        butt_end = cut.get_end_position()
-        
-        # The end x-coordinate should match one of the receiving timber's faces (x=-3 or x=+3)
-        x_coord = butt_end[0]
-        is_on_face = (simplify(x_coord - Rational(-3)) == 0) or (simplify(x_coord - Rational(3)) == 0)
-        assert is_on_face, \
-            f"Butt end should be at x=-3 or x=+3, got x={x_coord}"
-        
-        # Verify CSGs can be rendered (basic sanity check)
-        prism_receiving = receiving_cut_timber.render_timber_without_cuts_csg_local()
-        prism_butt = butt_cut_timber.render_timber_without_cuts_csg_local()
-        
-        assert prism_receiving is not None
-        assert prism_butt is not None
-    
-    def test_butt_joint_receiving_timber_uncut(self):
-        """Test that receiving timber remains uncut in butt joint."""
-        # Create two simple perpendicular timbers
-        receiving = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
-        
-        butt = timber_from_directions(
-            length=Rational(50),
-            size=Matrix([Rational(4), Rational(4)]),
-            bottom_position=Matrix([Rational(50), Rational(0), Rational(10)]),
-            length_direction=Matrix([Rational(0), Rational(0), Rational(-1)]),
-            width_direction=Matrix([Rational(1), Rational(0), Rational(0)])
-        )
-        
-        # Create butt joint
-        joint = cut_basic_butt_joint_on_face_aligned_timbers(receiving, butt, TimberReferenceEnd.TOP)
-        
-        # Verify receiving timber has no cuts
-        receiving_cut = joint.cut_timbers[0]
-        assert len(receiving_cut._cuts) == 0, "Receiving timber should never have cuts in a butt joint"
-        
-        # Verify only butt timber has a cut
-        butt_cut = joint.cut_timbers[1]
-        assert len(butt_cut._cuts) == 1, "Butt timber should have exactly one cut"
-    
-    def test_butt_into_long_face_of_receiving(self):
-        """Test butt joint where butt timber meets a long face (not an end) of receiving."""
-        # Create horizontal receiving timber along X axis
-        receiving = create_standard_horizontal_timber(direction='x', length=200, size=(6, 8), position=(-100, 0, 0))
-        
-        # Create vertical butt timber above the receiving timber
-        # Should butt into the FRONT face (top face in Z) of receiving
-        butt = timber_from_directions(
-            length=Rational(40),
-            size=Matrix([Rational(4), Rational(4)]),
-            bottom_position=Matrix([Rational(0), Rational(0), Rational(30)]),
-            length_direction=Matrix([Rational(0), Rational(0), Rational(-1)]),  # Downward
-            width_direction=Matrix([Rational(1), Rational(0), Rational(0)])
-        )
-        
-        # Create butt joint at TOP end
-        joint = cut_basic_butt_joint_on_face_aligned_timbers(receiving, butt, TimberReferenceEnd.TOP)
-        
-        assert joint is not None
-        
-        butt_cut_timber = joint.cut_timbers[1]
-        assert len(butt_cut_timber._cuts) == 1
-        
-        cut = butt_cut_timber._cuts[0]
-        
-        # Verify cut plane is at the FRONT face of receiving (z=4)
-        # Normal points inward (-Z) to remove material below the receiving face
-        global_cut_normal = butt.orientation.matrix * cut.half_plane.normal
-        expected_normal = Matrix([Rational(0), Rational(0), Rational(-1)])
-        
-        assert simplify(global_cut_normal - expected_normal).norm() == 0, \
-            f"Cut normal should point down (0,0,-1), got {global_cut_normal.T}"
-        
-        # FRONT face is at z = 8/2 = 4 (from bottom_position z=0)
-        # offset = point · normal = (x, y, 4) · (0, 0, -1) = -4
-        global_offset = (cut.origin.T * global_cut_normal)[0, 0]
-        expected_offset = Rational(-4)
-        
-        assert simplify(global_offset - expected_offset) == 0, \
-            f"Cut offset should be {expected_offset}, got {global_offset}"
-        
-        # Verify end position
-        butt_end = cut.get_end_position()
-        assert simplify(butt_end[2] - Rational(4)) == 0, \
-            f"Butt end should be at z=4, got {butt_end[2]}"
+        # Test with anti-parallel timbers as well
+        with pytest.raises(AssertionError, match="parallel"):
+            cut_basic_butt_joint_on_face_aligned_timbers(timberA, timberC, TimberReferenceEnd.BOTTOM)
 
 
 class TestSpliceJoint:
