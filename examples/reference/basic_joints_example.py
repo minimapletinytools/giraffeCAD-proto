@@ -287,14 +287,14 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
     )
     
     # Create cross lap joint with cut_ratio=0.5 (each timber cut halfway)
-    # The function will auto-select FORWARD face of timberA (+Z) and BACK face of timberB (-Z)
+    # The function will auto-select FRONT face of timberA (+Z) and BACK face of timberB (-Z)
     # which oppose each other (dot product = -1 < 0)
     joint = cut_basic_cross_lap_joint(
         timberA, timberB,
         cut_ratio=Rational(1, 2),
         # these are coplanar timbers so it can not infer which side to cut
         # (you can determine which face is which by deriving from the length and width direction... or just ask the AI to help you figure it out)
-        timberA_cut_face=TimberFace.FORWARD,
+        timberA_cut_face=TimberFace.FRONT,
         timberB_cut_face=TimberFace.BACK
     )
     

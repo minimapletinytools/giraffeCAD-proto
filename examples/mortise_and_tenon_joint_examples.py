@@ -51,7 +51,7 @@ def example_basic_mortise_and_tenon(position=None):
         length=timber_length,
         size=timber_size,
         length_direction=TimberFace.RIGHT,  # Points in +X direction
-        width_direction=TimberFace.FORWARD,  # Width in +Y direction
+        width_direction=TimberFace.FRONT,  # Width in +Y direction
         name="Horizontal Beam"
     )
     
@@ -104,7 +104,7 @@ def example_4x6_into_6x8_mortise_and_tenon(position=None):
         length=timber_length,
         size=Matrix([inches(6), inches(8)]),  # 6" x 8"
         length_direction=TimberFace.RIGHT,
-        width_direction=TimberFace.FORWARD,
+        width_direction=TimberFace.FRONT,
         name="6x8 Horizontal Beam"
     )
     
@@ -158,7 +158,7 @@ def example_through_tenon_with_6_inch_stickout(position=None):
         length=timber_length,
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
-        width_direction=TimberFace.FORWARD,
+        width_direction=TimberFace.FRONT,
         name="6x6 Horizontal Beam"
     )
     
@@ -215,7 +215,7 @@ def example_full_size_4x4_tenon(position=None):
         length=timber_length,
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
-        width_direction=TimberFace.FORWARD,
+        width_direction=TimberFace.FRONT,
         name="6x6 Horizontal Beam"
     )
     
@@ -270,7 +270,7 @@ def example_offset_corner_tenon(position=None):
         length=timber_length,
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
-        width_direction=TimberFace.FORWARD,
+        width_direction=TimberFace.FRONT,
         name="6x6 Horizontal Beam"
     )
     
@@ -331,7 +331,7 @@ def example_mortise_and_tenon_with_pegs(position=None):
         length=timber_length,
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
-        width_direction=TimberFace.FORWARD,
+        width_direction=TimberFace.FRONT,
         name="6x6 Horizontal Beam"
     )
     
@@ -341,12 +341,12 @@ def example_mortise_and_tenon_with_pegs(position=None):
     mortise_depth = inches(7, 2)  # 3.5" deep mortise
     
     # Define peg parameters
-    # Two pegs through the FORWARD face, offset from the centerline
+    # Two pegs through the FRONT face, offset from the centerline
     # - First peg: 1" from shoulder, -0.5" from centerline
     # - Second peg: 2" from shoulder, +0.5" from centerline
     peg_params = SimplePegParameters(
         shape=PegShape.SQUARE,
-        tenon_face=TimberReferenceLongFace.FORWARD,
+        tenon_face=TimberReferenceLongFace.FRONT,
         # LOLOL 2 pegs...
         peg_positions=[
             (inches(1), inches(-1, 2)),  # 1" from shoulder, -0.5" from centerline

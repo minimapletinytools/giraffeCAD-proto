@@ -50,7 +50,7 @@ class TestSimplePegParameters:
         """Test SimplePegParameters with None depth (through peg)."""
         params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=None,
             size=Rational(1, 2)
@@ -346,7 +346,7 @@ class TestPegOrientation:
     """Test peg direction and perpendicularity (TODO item 11)."""
     
     def test_peg_perpendicular_to_tenon_timber_forward_face(self):
-        """Test peg through FORWARD face is perpendicular to tenon timber length."""
+        """Test peg through FRONT face is perpendicular to tenon timber length."""
         # Create vertical tenon timber (length direction = +Z)
         tenon_timber = create_standard_vertical_timber(
             height=100, size=(4, 4), position=(0, 0, 0)
@@ -355,10 +355,10 @@ class TestPegOrientation:
             direction='x', length=100, size=(6, 6), position=(0, 0, 50)
         )
         
-        # Create peg through FORWARD face
+        # Create peg through FRONT face
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=Rational(5),
             size=Rational(1, 2)
@@ -402,7 +402,7 @@ class TestPegOrientation:
         
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=Rational(5),
             size=Rational(1, 2)
@@ -420,8 +420,8 @@ class TestPegOrientation:
         
         peg = joint.jointAccessories[0]
         
-        # Get FORWARD face normal in tenon timber's local space
-        # FORWARD face normal is +Y in local space
+        # Get FRONT face normal in tenon timber's local space
+        # FRONT face normal is +Y in local space
         forward_face_normal_tenon_local = Matrix([0, 1, 0])
         
         # Transform to mortise timber's local space (where peg is stored)
@@ -465,7 +465,7 @@ class TestPegDepthCalculation:
         peg_depth = Rational(7)
         peg_params = SimplePegParameters(
             shape=PegShape.ROUND,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=peg_depth,
             size=Rational(1, 2)
@@ -496,14 +496,14 @@ class TestPegDepthCalculation:
             direction='x', length=100, size=(6, 8), position=(0, 0, 50)
         )
         
-        # Peg goes through FORWARD face (Y direction)
+        # Peg goes through FRONT face (Y direction)
         # When depth=None, it should use the dimension of the mortise timber
         # in the direction perpendicular to the mortise face
-        # Mortise is on LEFT face (X-axis), peg goes through FORWARD face (Y-axis)
+        # Mortise is on LEFT face (X-axis), peg goes through FRONT face (Y-axis)
         # So peg depth should use Y dimension
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=None,  # Auto-calculate
             size=Rational(1, 2)
@@ -522,15 +522,15 @@ class TestPegDepthCalculation:
         peg = joint.jointAccessories[0]
         # Mortise face is LEFT (X-face), so auto depth uses X dimension
         expected_depth = mortise_timber.size[0]  # Should be 6
-        # But peg goes through FORWARD face, which enters mortise through a different face
+        # But peg goes through FRONT face, which enters mortise through a different face
         # The actual depth depends on which face of the mortise timber the peg enters
         # In this case, it enters through a Y-face, so depth is Y dimension = 8
-        expected_depth = mortise_timber.size[1]  # Y dimension for FORWARD face peg
+        expected_depth = mortise_timber.size[1]  # Y dimension for FRONT face peg
         assert peg.forward_length == expected_depth, \
             f"Peg depth should match mortise timber dimension. Expected {expected_depth}, got {peg.forward_length}"
     
     def test_peg_depth_none_mortise_on_y_face(self):
-        """Test automatic depth calculation when mortise is on Y-axis face (FORWARD/BACK)."""
+        """Test automatic depth calculation when mortise is on Y-axis face (FRONT/BACK)."""
         # Create timbers where mortise will be on BACK face of mortise timber
         tenon_timber = create_standard_vertical_timber(
             height=100, size=(4, 4), position=(0, 0, 0)
@@ -575,7 +575,7 @@ class TestPegDepthCalculation:
         peg_depth = Rational(8)
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=peg_depth,
             size=Rational(1, 2)
@@ -615,7 +615,7 @@ class TestPegHoleGeometry:
         
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=Rational(5),
             size=Rational(1, 2)
@@ -653,7 +653,7 @@ class TestPegHoleGeometry:
         
         peg_params = SimplePegParameters(
             shape=PegShape.ROUND,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=Rational(5),
             size=Rational(1, 2)
@@ -692,7 +692,7 @@ class TestPegHoleGeometry:
         peg_size = Rational(1, 2)
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=Rational(5),
             size=peg_size
@@ -739,7 +739,7 @@ class TestPegHoleGeometry:
         peg_size = Rational(1, 2)
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=Rational(5),
             size=peg_size
@@ -795,7 +795,7 @@ class TestPegPositioning:
         
         peg_params = SimplePegParameters(
             shape=PegShape.ROUND,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(distance_from_shoulder, Rational(0))],
             depth=Rational(5),
             size=Rational(1, 2)
@@ -836,7 +836,7 @@ class TestPegPositioning:
         
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), distance_from_centerline)],
             depth=Rational(5),
             size=Rational(1, 4)
@@ -855,7 +855,7 @@ class TestPegPositioning:
         peg = joint.jointAccessories[0]
         
         # The peg should be offset from the tenon centerline
-        # For a peg through the FORWARD face, the lateral axis is X
+        # For a peg through the FRONT face, the lateral axis is X
         # Transform peg position to world coords
         peg_position_world = mortise_timber.bottom_position + mortise_timber.orientation.matrix * peg.position
         
@@ -877,7 +877,7 @@ class TestPegPositioning:
         
         peg_params = SimplePegParameters(
             shape=PegShape.ROUND,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[
                 (Rational(1), Rational(0)),
                 (Rational(2), Rational(1, 2)),
@@ -1008,7 +1008,7 @@ class TestJointConfigurations:
             "Offset tenon position should result in offset mortise"
     
     def test_joint_with_pegs_on_forward_face(self):
-        """Test pegs on FORWARD face."""
+        """Test pegs on FRONT face."""
         tenon_timber = create_standard_vertical_timber(
             height=100, size=(4, 4), position=(0, 0, 0)
         )
@@ -1018,7 +1018,7 @@ class TestJointConfigurations:
         
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FORWARD,
+            tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=Rational(5),
             size=Rational(1, 2)

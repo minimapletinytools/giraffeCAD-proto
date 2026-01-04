@@ -48,8 +48,7 @@ class TimberFace(Enum):
     TOP = 1 # the face vector with normal vector in the +Z axis direction
     BOTTOM = 2 # the face vector with normal vector in the -Z axis direction
     RIGHT = 3 # the face vector with normal vector in the +X axis direction
-    # TODO Seriously? Forward instead of Front?
-    FORWARD = 4 # the face vector with normal vector in the +Y axis direction
+    FRONT = 4 # the face vector with normal vector in the +Y axis direction
     LEFT = 5 # the face vector with normal vector in the -X axis direction
     BACK = 6 # the face vector with normal vector in the -Y axis direction
     
@@ -63,7 +62,7 @@ class TimberFace(Enum):
             return create_vector3d(1, 0, 0)
         elif self == TimberFace.LEFT:
             return create_vector3d(-1, 0, 0)
-        elif self == TimberFace.FORWARD:
+        elif self == TimberFace.FRONT:
             return create_vector3d(0, 1, 0)
         else:  # BACK
             return create_vector3d(0, -1, 0)
@@ -73,13 +72,13 @@ class TimberFace(Enum):
         Check if two faces are perpendicular to each other.
         
         Perpendicular face pairs (orthogonal axes):
-        - X-axis faces (RIGHT, LEFT) <-> Y-axis faces (FORWARD, BACK)
+        - X-axis faces (RIGHT, LEFT) <-> Y-axis faces (FRONT, BACK)
         - X-axis faces (RIGHT, LEFT) <-> Z-axis faces (TOP, BOTTOM)
-        - Y-axis faces (FORWARD, BACK) <-> Z-axis faces (TOP, BOTTOM)
+        - Y-axis faces (FRONT, BACK) <-> Z-axis faces (TOP, BOTTOM)
         """
         # Define axis groups
         x_faces = {TimberFace.RIGHT, TimberFace.LEFT}
-        y_faces = {TimberFace.FORWARD, TimberFace.BACK}
+        y_faces = {TimberFace.FRONT, TimberFace.BACK}
         z_faces = {TimberFace.TOP, TimberFace.BOTTOM}
         
         # Two faces are perpendicular if they are on different axes
@@ -103,7 +102,7 @@ class TimberFace(Enum):
         Opposite pairs:
         - TOP <-> BOTTOM
         - RIGHT <-> LEFT
-        - FORWARD <-> BACK
+        - FRONT <-> BACK
         """
         if self == TimberFace.TOP:
             return TimberFace.BOTTOM
@@ -113,10 +112,10 @@ class TimberFace(Enum):
             return TimberFace.LEFT
         elif self == TimberFace.LEFT:
             return TimberFace.RIGHT
-        elif self == TimberFace.FORWARD:
+        elif self == TimberFace.FRONT:
             return TimberFace.BACK
         else:  # BACK
-            return TimberFace.FORWARD
+            return TimberFace.FRONT
 
 class TimberReferenceEnd(Enum):
     TOP = 1
@@ -124,7 +123,7 @@ class TimberReferenceEnd(Enum):
 
 class TimberReferenceLongFace(Enum):
     RIGHT = 3
-    FORWARD = 4
+    FRONT = 4
     LEFT = 5
     BACK = 6
     
@@ -137,20 +136,20 @@ class TimberReferenceLongFace(Enum):
         Check if two long faces are perpendicular to each other.
         
         Perpendicular face pairs:
-        - RIGHT <-> FORWARD, RIGHT <-> BACK
-        - LEFT <-> FORWARD, LEFT <-> BACK
+        - RIGHT <-> FRONT, RIGHT <-> BACK
+        - LEFT <-> FRONT, LEFT <-> BACK
         """
         return self.to_timber_face().is_perpendicular(other.to_timber_face())
 
 class TimberReferenceLongEdge(Enum):
-    RIGHT_FORWARD = 7
-    FORWARD_LEFT = 8
+    RIGHT_FRONT = 7
+    FRONT_LEFT = 8
     LEFT_BACK = 9
     BACK_RIGHT = 10
-    FORWARD_RIGHT = 11
+    FRONT_RIGHT = 11
     RIGHT_BACK = 12
     BACK_LEFT = 13
-    LEFT_FORWARD = 14
+    LEFT_FRONT = 14
 
 class StickoutReference(Enum):
     """
@@ -211,22 +210,22 @@ class DistanceFromLongEdge:
         f1 = self.face1.face
         f2 = self.face2.face
         
-        if f1 == TimberReferenceLongFace.RIGHT and f2 == TimberReferenceLongFace.FORWARD:
-            return TimberReferenceLongEdge.RIGHT_FORWARD
-        elif f1 == TimberReferenceLongFace.FORWARD and f2 == TimberReferenceLongFace.LEFT:
-            return TimberReferenceLongEdge.FORWARD_LEFT
+        if f1 == TimberReferenceLongFace.RIGHT and f2 == TimberReferenceLongFace.FRONT:
+            return TimberReferenceLongEdge.RIGHT_FRONT
+        elif f1 == TimberReferenceLongFace.FRONT and f2 == TimberReferenceLongFace.LEFT:
+            return TimberReferenceLongEdge.FRONT_LEFT
         elif f1 == TimberReferenceLongFace.LEFT and f2 == TimberReferenceLongFace.BACK:
             return TimberReferenceLongEdge.LEFT_BACK
         elif f1 == TimberReferenceLongFace.BACK and f2 == TimberReferenceLongFace.RIGHT:
             return TimberReferenceLongEdge.BACK_RIGHT
-        elif f1 == TimberReferenceLongFace.FORWARD and f2 == TimberReferenceLongFace.RIGHT:
-            return TimberReferenceLongEdge.FORWARD_RIGHT
+        elif f1 == TimberReferenceLongFace.FRONT and f2 == TimberReferenceLongFace.RIGHT:
+            return TimberReferenceLongEdge.FRONT_RIGHT
         elif f1 == TimberReferenceLongFace.RIGHT and f2 == TimberReferenceLongFace.BACK:
             return TimberReferenceLongEdge.RIGHT_BACK
         elif f1 == TimberReferenceLongFace.BACK and f2 == TimberReferenceLongFace.LEFT:
             return TimberReferenceLongEdge.BACK_LEFT
-        elif f1 == TimberReferenceLongFace.LEFT and f2 == TimberReferenceLongFace.FORWARD:
-            return TimberReferenceLongEdge.LEFT_FORWARD
+        elif f1 == TimberReferenceLongFace.LEFT and f2 == TimberReferenceLongFace.FRONT:
+            return TimberReferenceLongEdge.LEFT_FRONT
         else:
             raise ValueError(f"Invalid faces: {f1} and {f2}")
     
@@ -556,7 +555,7 @@ class Timber:
             return self.width_direction
         elif face == TimberFace.LEFT:
             return -self.width_direction
-        elif face == TimberFace.FORWARD:
+        elif face == TimberFace.FRONT:
             return self.height_direction
         else:  # BACK
             return -self.height_direction
@@ -569,7 +568,7 @@ class Timber:
             return self.length
         elif face == TimberFace.RIGHT or face == TimberFace.LEFT:
             return self.size[0]
-        else:  # FORWARD or BACK
+        else:  # FRONT or BACK
             return self.size[1]
     
     def get_closest_oriented_face(self, target_direction: Direction3D) -> TimberFace:
@@ -585,7 +584,7 @@ class Timber:
             The TimberFace that best aligns with the target direction
         """
         faces = [TimberFace.TOP, TimberFace.BOTTOM, TimberFace.RIGHT, 
-                TimberFace.LEFT, TimberFace.FORWARD, TimberFace.BACK]
+                TimberFace.LEFT, TimberFace.FRONT, TimberFace.BACK]
         
         best_face = faces[0]
         best_alignment = target_direction.dot(self.get_face_direction(faces[0]))
@@ -1312,7 +1311,7 @@ def create_peg_going_into_face(
     
     Args:
         timber: The timber to insert the peg into
-        face: Which long face the peg enters from (RIGHT, LEFT, FORWARD, or BACK)
+        face: Which long face the peg enters from (RIGHT, LEFT, FRONT, or BACK)
         distance_from_bottom: Distance along the timber's length from the bottom end
         distance_from_centerline: Distance from the timber's centerline along the face
         peg_size: Size/diameter of the peg (for square pegs, this is the side length)
@@ -1354,8 +1353,8 @@ def create_peg_going_into_face(
         length_dir = create_vector3d(1, 0, 0)
         width_dir = create_vector3d(0, 1, 0)
         
-    elif face == TimberReferenceLongFace.FORWARD:
-        # FORWARD face: offset in +Y (height) direction
+    elif face == TimberReferenceLongFace.FRONT:
+        # FRONT face: offset in +Y (height) direction
         position_local = create_vector3d(
             distance_from_centerline,  # Offset in width direction
             timber.size[1] / Rational(2),  # At forward surface

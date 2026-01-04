@@ -229,7 +229,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     elif receiving_face == TimberFace.BOTTOM:
         face_center = receiving_timber.get_bottom_center_position()
     else:
-        # For long faces (LEFT, RIGHT, FORWARD, BACK), center is at mid-length
+        # For long faces (LEFT, RIGHT, FRONT, BACK), center is at mid-length
         from sympy import Rational
         face_center = receiving_timber.bottom_position + (receiving_timber.length / Rational(2)) * receiving_timber.length_direction
         
@@ -238,7 +238,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
             face_center = face_center + (receiving_timber.size[0] / Rational(2)) * receiving_timber.width_direction
         elif receiving_face == TimberFace.LEFT:
             face_center = face_center - (receiving_timber.size[0] / Rational(2)) * receiving_timber.width_direction
-        elif receiving_face == TimberFace.FORWARD:
+        elif receiving_face == TimberFace.FRONT:
             face_center = face_center + (receiving_timber.size[1] / Rational(2)) * receiving_timber.height_direction
         else:  # BACK
             face_center = face_center - (receiving_timber.size[1] / Rational(2)) * receiving_timber.height_direction
@@ -711,7 +711,7 @@ def _get_face_center_position(timber: Timber, face: TimberFace) -> V3:
     elif face == TimberFace.BOTTOM:
         return timber.get_bottom_center_position()
     else:
-        # For long faces (LEFT, RIGHT, FORWARD, BACK), center is at mid-length
+        # For long faces (LEFT, RIGHT, FRONT, BACK), center is at mid-length
         from sympy import Rational
         face_center = timber.bottom_position + (timber.length / Rational(2)) * timber.length_direction
         
@@ -720,7 +720,7 @@ def _get_face_center_position(timber: Timber, face: TimberFace) -> V3:
             face_center = face_center + (timber.size[0] / Rational(2)) * timber.width_direction
         elif face == TimberFace.LEFT:
             face_center = face_center - (timber.size[0] / Rational(2)) * timber.width_direction
-        elif face == TimberFace.FORWARD:
+        elif face == TimberFace.FRONT:
             face_center = face_center + (timber.size[1] / Rational(2)) * timber.height_direction
         else:  # BACK
             face_center = face_center - (timber.size[1] / Rational(2)) * timber.height_direction
@@ -741,7 +741,7 @@ def _find_closest_face_to_timber(timber: Timber, other_timber: Timber) -> Timber
     # Check distance from each side face to the other timber's center
     # Don't include TOP/BOTTOM as those are the end faces
     faces = [TimberFace.RIGHT, TimberFace.LEFT, 
-             TimberFace.FORWARD, TimberFace.BACK]
+             TimberFace.FRONT, TimberFace.BACK]
     
     min_distance = None
     closest_face = TimberFace.RIGHT  # Default

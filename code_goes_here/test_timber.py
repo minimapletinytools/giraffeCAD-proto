@@ -352,9 +352,9 @@ class TestTimber:
         assert timber.get_size_in_face_normal_axis(TimberFace.RIGHT) == Rational("0.2")
         assert timber.get_size_in_face_normal_axis(TimberFace.LEFT) == Rational("0.2")
         
-        # FORWARD and BACK faces are perpendicular to the height direction (Y-axis)
+        # FRONT and BACK faces are perpendicular to the height direction (Y-axis)
         # So they should return the height (size[1])
-        assert timber.get_size_in_face_normal_axis(TimberFace.FORWARD) == Rational("0.3")
+        assert timber.get_size_in_face_normal_axis(TimberFace.FRONT) == Rational("0.3")
         assert timber.get_size_in_face_normal_axis(TimberFace.BACK) == Rational("0.3")
 
 
@@ -372,7 +372,7 @@ class TestEnumsAndDataStructures:
         assert TimberFace.TOP.value == 1
         assert TimberFace.BOTTOM.value == 2
         assert TimberFace.RIGHT.value == 3
-        assert TimberFace.FORWARD.value == 4
+        assert TimberFace.FRONT.value == 4
         assert TimberFace.LEFT.value == 5
         assert TimberFace.BACK.value == 6
 
@@ -528,12 +528,12 @@ class TestEnumsAndDataStructures:
     def test_timber_face_is_perpendicular(self):
         """Test TimberFace.is_perpendicular() method."""
         # Test X-axis faces perpendicular to Y-axis faces
-        assert TimberFace.RIGHT.is_perpendicular(TimberFace.FORWARD)
+        assert TimberFace.RIGHT.is_perpendicular(TimberFace.FRONT)
         assert TimberFace.RIGHT.is_perpendicular(TimberFace.BACK)
-        assert TimberFace.LEFT.is_perpendicular(TimberFace.FORWARD)
+        assert TimberFace.LEFT.is_perpendicular(TimberFace.FRONT)
         assert TimberFace.LEFT.is_perpendicular(TimberFace.BACK)
-        assert TimberFace.FORWARD.is_perpendicular(TimberFace.RIGHT)
-        assert TimberFace.FORWARD.is_perpendicular(TimberFace.LEFT)
+        assert TimberFace.FRONT.is_perpendicular(TimberFace.RIGHT)
+        assert TimberFace.FRONT.is_perpendicular(TimberFace.LEFT)
         assert TimberFace.BACK.is_perpendicular(TimberFace.RIGHT)
         assert TimberFace.BACK.is_perpendicular(TimberFace.LEFT)
         
@@ -548,27 +548,27 @@ class TestEnumsAndDataStructures:
         assert TimberFace.BOTTOM.is_perpendicular(TimberFace.LEFT)
         
         # Test Y-axis faces perpendicular to Z-axis faces
-        assert TimberFace.FORWARD.is_perpendicular(TimberFace.TOP)
-        assert TimberFace.FORWARD.is_perpendicular(TimberFace.BOTTOM)
+        assert TimberFace.FRONT.is_perpendicular(TimberFace.TOP)
+        assert TimberFace.FRONT.is_perpendicular(TimberFace.BOTTOM)
         assert TimberFace.BACK.is_perpendicular(TimberFace.TOP)
         assert TimberFace.BACK.is_perpendicular(TimberFace.BOTTOM)
-        assert TimberFace.TOP.is_perpendicular(TimberFace.FORWARD)
+        assert TimberFace.TOP.is_perpendicular(TimberFace.FRONT)
         assert TimberFace.TOP.is_perpendicular(TimberFace.BACK)
-        assert TimberFace.BOTTOM.is_perpendicular(TimberFace.FORWARD)
+        assert TimberFace.BOTTOM.is_perpendicular(TimberFace.FRONT)
         assert TimberFace.BOTTOM.is_perpendicular(TimberFace.BACK)
         
         # Test non-perpendicular pairs (opposite faces on same axis)
         assert not TimberFace.RIGHT.is_perpendicular(TimberFace.LEFT)
         assert not TimberFace.LEFT.is_perpendicular(TimberFace.RIGHT)
-        assert not TimberFace.FORWARD.is_perpendicular(TimberFace.BACK)
-        assert not TimberFace.BACK.is_perpendicular(TimberFace.FORWARD)
+        assert not TimberFace.FRONT.is_perpendicular(TimberFace.BACK)
+        assert not TimberFace.BACK.is_perpendicular(TimberFace.FRONT)
         assert not TimberFace.TOP.is_perpendicular(TimberFace.BOTTOM)
         assert not TimberFace.BOTTOM.is_perpendicular(TimberFace.TOP)
         
         # Test same face (not perpendicular to itself)
         assert not TimberFace.RIGHT.is_perpendicular(TimberFace.RIGHT)
         assert not TimberFace.LEFT.is_perpendicular(TimberFace.LEFT)
-        assert not TimberFace.FORWARD.is_perpendicular(TimberFace.FORWARD)
+        assert not TimberFace.FRONT.is_perpendicular(TimberFace.FRONT)
         assert not TimberFace.BACK.is_perpendicular(TimberFace.BACK)
         assert not TimberFace.TOP.is_perpendicular(TimberFace.TOP)
         assert not TimberFace.BOTTOM.is_perpendicular(TimberFace.BOTTOM)
@@ -576,32 +576,32 @@ class TestEnumsAndDataStructures:
     def test_timber_reference_long_face_to_timber_face(self):
         """Test TimberReferenceLongFace.to_timber_face() method."""
         assert TimberReferenceLongFace.RIGHT.to_timber_face() == TimberFace.RIGHT
-        assert TimberReferenceLongFace.FORWARD.to_timber_face() == TimberFace.FORWARD
+        assert TimberReferenceLongFace.FRONT.to_timber_face() == TimberFace.FRONT
         assert TimberReferenceLongFace.LEFT.to_timber_face() == TimberFace.LEFT
         assert TimberReferenceLongFace.BACK.to_timber_face() == TimberFace.BACK
     
     def test_timber_reference_long_face_is_perpendicular(self):
         """Test TimberReferenceLongFace.is_perpendicular() method."""
         # Test perpendicular pairs
-        assert TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.FORWARD)
+        assert TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.FRONT)
         assert TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.BACK)
-        assert TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.FORWARD)
+        assert TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.FRONT)
         assert TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.BACK)
-        assert TimberReferenceLongFace.FORWARD.is_perpendicular(TimberReferenceLongFace.RIGHT)
-        assert TimberReferenceLongFace.FORWARD.is_perpendicular(TimberReferenceLongFace.LEFT)
+        assert TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.RIGHT)
+        assert TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.LEFT)
         assert TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.RIGHT)
         assert TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.LEFT)
         
         # Test non-perpendicular pairs (opposite faces)
         assert not TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.LEFT)
         assert not TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.RIGHT)
-        assert not TimberReferenceLongFace.FORWARD.is_perpendicular(TimberReferenceLongFace.BACK)
-        assert not TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.FORWARD)
+        assert not TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.BACK)
+        assert not TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.FRONT)
         
         # Test same face (not perpendicular to itself)
         assert not TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.RIGHT)
         assert not TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.LEFT)
-        assert not TimberReferenceLongFace.FORWARD.is_perpendicular(TimberReferenceLongFace.FORWARD)
+        assert not TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.FRONT)
         assert not TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.BACK)
     
     def test_distance_from_long_edge_is_valid(self):
@@ -609,7 +609,7 @@ class TestEnumsAndDataStructures:
         # Valid cases - perpendicular faces
         valid_edge1 = DistanceFromLongEdge(
             face1=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.FORWARD, distance=Rational(2))
+            face2=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(2))
         )
         assert valid_edge1.is_valid()
         
@@ -620,7 +620,7 @@ class TestEnumsAndDataStructures:
         assert valid_edge2.is_valid()
         
         valid_edge3 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FORWARD, distance=Rational(1)),
+            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(2))
         )
         assert valid_edge3.is_valid()
@@ -633,7 +633,7 @@ class TestEnumsAndDataStructures:
         assert not invalid_edge1.is_valid()
         
         invalid_edge2 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FORWARD, distance=Rational(1)),
+            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberReferenceLongFace.BACK, distance=Rational(2))
         )
         assert not invalid_edge2.is_valid()
@@ -649,19 +649,19 @@ class TestEnumsAndDataStructures:
         """Test DistanceFromLongEdge.get_long_edge() method."""
         # Test all 8 valid combinations
         
-        # RIGHT + FORWARD -> RIGHT_FORWARD
+        # RIGHT + FRONT -> RIGHT_FRONT
         edge1 = DistanceFromLongEdge(
             face1=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.FORWARD, distance=Rational(2))
+            face2=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(2))
         )
-        assert edge1.get_long_edge() == TimberReferenceLongEdge.RIGHT_FORWARD
+        assert edge1.get_long_edge() == TimberReferenceLongEdge.RIGHT_FRONT
         
-        # FORWARD + LEFT -> FORWARD_LEFT
+        # FRONT + LEFT -> FRONT_LEFT
         edge2 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FORWARD, distance=Rational(1)),
+            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(2))
         )
-        assert edge2.get_long_edge() == TimberReferenceLongEdge.FORWARD_LEFT
+        assert edge2.get_long_edge() == TimberReferenceLongEdge.FRONT_LEFT
         
         # LEFT + BACK -> LEFT_BACK
         edge3 = DistanceFromLongEdge(
@@ -677,12 +677,12 @@ class TestEnumsAndDataStructures:
         )
         assert edge4.get_long_edge() == TimberReferenceLongEdge.BACK_RIGHT
         
-        # FORWARD + RIGHT -> FORWARD_RIGHT
+        # FRONT + RIGHT -> FRONT_RIGHT
         edge5 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FORWARD, distance=Rational(1)),
+            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(2))
         )
-        assert edge5.get_long_edge() == TimberReferenceLongEdge.FORWARD_RIGHT
+        assert edge5.get_long_edge() == TimberReferenceLongEdge.FRONT_RIGHT
         
         # RIGHT + BACK -> RIGHT_BACK
         edge6 = DistanceFromLongEdge(
@@ -698,12 +698,12 @@ class TestEnumsAndDataStructures:
         )
         assert edge7.get_long_edge() == TimberReferenceLongEdge.BACK_LEFT
         
-        # LEFT + FORWARD -> LEFT_FORWARD
+        # LEFT + FRONT -> LEFT_FRONT
         edge8 = DistanceFromLongEdge(
             face1=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.FORWARD, distance=Rational(2))
+            face2=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(2))
         )
-        assert edge8.get_long_edge() == TimberReferenceLongEdge.LEFT_FORWARD
+        assert edge8.get_long_edge() == TimberReferenceLongEdge.LEFT_FRONT
     
     def test_distance_from_long_edge_get_long_edge_invalid(self):
         """Test DistanceFromLongEdge.get_long_edge() with invalid face combinations."""
@@ -1338,10 +1338,10 @@ class TestCreatePegGoingIntoFace:
         assert peg.position[2] == Rational(30)  # Z = distance_from_bottom
     
     def test_peg_into_forward_face(self):
-        """Test creating a peg going into the FORWARD face."""
+        """Test creating a peg going into the FRONT face."""
         peg = create_peg_going_into_face(
             timber=self.timber,
-            face=TimberReferenceLongFace.FORWARD,
+            face=TimberReferenceLongFace.FRONT,
             distance_from_bottom=Rational(40),
             distance_from_centerline=Rational(-1),
             peg_size=Rational(2),

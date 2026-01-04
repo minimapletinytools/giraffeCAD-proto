@@ -240,7 +240,7 @@ class TestButtJoint:
         receiving = create_standard_horizontal_timber(direction='x', length=100, size=(6, 8), position=(0, 0, 0))
         
         # Create vertical butt timber (extends downward from above)
-        # Positioned so its top end should be cut at the FORWARD face of receiving timber
+        # Positioned so its top end should be cut at the FRONT face of receiving timber
         butt = timber_from_directions(
             length=Rational(60),
             size=Matrix([Rational(4), Rational(4)]),
@@ -269,8 +269,8 @@ class TestButtJoint:
         assert cut.maybe_end_cut == TimberReferenceEnd.TOP, "Cut should be at TOP end"
         
         # Test 1: Verify the cut plane is coplanar with the receiving timber's face
-        # The butt is approaching the FORWARD face of the receiving timber
-        # FORWARD face is at z = height/2 = 8/2 = 4
+        # The butt is approaching the FRONT face of the receiving timber
+        # FRONT face is at z = height/2 = 8/2 = 4
         # The cut normal points INWARD (downward, -Z) to remove material below the mudsill
         
         # Get the global normal of the cut plane
@@ -283,7 +283,7 @@ class TestButtJoint:
             f"Cut normal should be (0, 0, -1), got {global_cut_normal.T}"
         
         # Verify the cut plane offset corresponds to the receiving face position
-        # The FORWARD face of receiving timber is at z = 0 + 8/2 = 4
+        # The FRONT face of receiving timber is at z = 0 + 8/2 = 4
         # With normal = (0, 0, -1), the plane equation is: -z = -4, or z = 4
         # offset = point_on_plane · normal = (x, y, 4) · (0, 0, -1) = -4
         
@@ -305,7 +305,7 @@ class TestButtJoint:
         # After cutting at z=4, the butt timber should extend from z=-40 to z=4
         # So they should meet at z=4 with no overlap (receiving top is at z=8, butt cut is at z=4)
         
-        # Actually, let me reconsider. The receiving timber FORWARD face is at z=4.
+        # Actually, let me reconsider. The receiving timber FRONT face is at z=4.
         # The butt timber should be cut so its TOP end is at z=4.
         # The butt extends downward (negative z), so after cut it goes from bottom to z=4.
         # The receiving goes from z=0 to z=8.
@@ -317,7 +317,7 @@ class TestButtJoint:
         # Get the end position of the butt timber after cutting
         butt_end = cut.get_end_position()
         
-        # The end should be at z=4 (on the FORWARD face of receiving)
+        # The end should be at z=4 (on the FRONT face of receiving)
         assert simplify(butt_end[2] - Rational(4)) == 0, \
             f"Butt end should be at z=4, got z={butt_end[2]}"
         
@@ -417,7 +417,7 @@ class TestButtJoint:
         receiving = create_standard_horizontal_timber(direction='x', length=200, size=(6, 8), position=(-100, 0, 0))
         
         # Create vertical butt timber above the receiving timber
-        # Should butt into the FORWARD face (top face in Z) of receiving
+        # Should butt into the FRONT face (top face in Z) of receiving
         butt = timber_from_directions(
             length=Rational(40),
             size=Matrix([Rational(4), Rational(4)]),
@@ -436,7 +436,7 @@ class TestButtJoint:
         
         cut = butt_cut_timber._cuts[0]
         
-        # Verify cut plane is at the FORWARD face of receiving (z=4)
+        # Verify cut plane is at the FRONT face of receiving (z=4)
         # Normal points inward (-Z) to remove material below the receiving face
         global_cut_normal = butt.orientation.matrix * cut.half_plane.normal
         expected_normal = Matrix([Rational(0), Rational(0), Rational(-1)])
@@ -444,7 +444,7 @@ class TestButtJoint:
         assert simplify(global_cut_normal - expected_normal).norm() == 0, \
             f"Cut normal should point down (0,0,-1), got {global_cut_normal.T}"
         
-        # FORWARD face is at z = 8/2 = 4 (from bottom_position z=0)
+        # FRONT face is at z = 8/2 = 4 (from bottom_position z=0)
         # offset = point · normal = (x, y, 4) · (0, 0, -1) = -4
         global_offset = (cut.origin.T * global_cut_normal)[0, 0]
         expected_offset = Rational(-4)
@@ -627,10 +627,10 @@ class TestHouseJoint:
         )
         
         # Create house joint
-        # Explicitly specify opposing faces: housing.FORWARD (+Z) vs housed.BACK (-Z)
+        # Explicitly specify opposing faces: housing.FRONT (+Z) vs housed.BACK (-Z)
         joint = cut_basic_house_joint(
             housing_timber, housed_timber,
-            housing_timber_cut_face=TimberFace.FORWARD,
+            housing_timber_cut_face=TimberFace.FRONT,
             housed_timber_cut_face=TimberFace.BACK
         )
         
@@ -672,10 +672,10 @@ class TestHouseJoint:
         )
         
         # Create house joint (now always uses infinite extent for the cut)
-        # Explicitly specify opposing faces: housing.FORWARD (+Z) vs housed.BACK (-Z)
+        # Explicitly specify opposing faces: housing.FRONT (+Z) vs housed.BACK (-Z)
         joint = cut_basic_house_joint(
             housing_timber, housed_timber,
-            housing_timber_cut_face=TimberFace.FORWARD,
+            housing_timber_cut_face=TimberFace.FRONT,
             housed_timber_cut_face=TimberFace.BACK
         )
         
@@ -716,10 +716,10 @@ class TestHouseJoint:
         )
         
         # Create the housed joint
-        # Explicitly specify opposing faces: housing.FORWARD (+Y) vs housed.LEFT (-Y)
+        # Explicitly specify opposing faces: housing.FRONT (+Y) vs housed.LEFT (-Y)
         joint = cut_basic_house_joint(
             housing_timber, housed_timber,
-            housing_timber_cut_face=TimberFace.FORWARD,
+            housing_timber_cut_face=TimberFace.FRONT,
             housed_timber_cut_face=TimberFace.LEFT
         )
         

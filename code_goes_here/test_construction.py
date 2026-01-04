@@ -73,7 +73,7 @@ class TestTimberCreation:
         # Test with length in +Y direction (default width should be +X)
         timber2 = create_axis_aligned_timber(
             position, 3, size,
-            TimberFace.FORWARD  # Length in +Y
+            TimberFace.FRONT  # Length in +Y
             # width_direction not provided - should default to RIGHT (+X)
         )
         
@@ -99,7 +99,7 @@ class TestTimberCreation:
         timber = create_axis_aligned_timber(
             position, 3, size,
             TimberFace.RIGHT,    # Length in +X
-            TimberFace.FORWARD   # Explicit width in +Y (not the default +Z)
+            TimberFace.FRONT   # Explicit width in +Y (not the default +Z)
         )
         
         assert timber.length_direction[0] == 1  # Length in +X
@@ -399,7 +399,7 @@ class TestHelperFunctions:
         left = TimberFace.LEFT.get_direction()
         assert left[0] == -Rational(1)
         
-        forward = TimberFace.FORWARD.get_direction()
+        front = TimberFace.FRONT.get_direction()
         assert forward[1] == Rational(1)
         
         back = TimberFace.BACK.get_direction()
@@ -980,7 +980,7 @@ class TestHelperFunctions:
         # Note: CORRECTED timber coordinate system:
         # - TOP/BOTTOM faces are along length_direction (Z-axis)
         # - RIGHT/LEFT faces are along width_direction (X-axis)  
-        # - FORWARD/BACK faces are along height_direction (Y-axis)
+        # - FRONT/BACK faces are along height_direction (Y-axis)
 
         # Target pointing in +Z (length direction) should align with TOP face
         target_length_pos = create_vector3d(0, 0, 1)
@@ -1002,10 +1002,10 @@ class TestHelperFunctions:
         aligned_face = timber.get_closest_oriented_face(target_face_neg)
         assert aligned_face == TimberFace.LEFT
 
-        # Target pointing in +Y (height direction) should align with FORWARD face
+        # Target pointing in +Y (height direction) should align with FRONT face
         target_height_pos = create_vector3d(0, 1, 0)
         aligned_face = timber.get_closest_oriented_face(target_height_pos)
-        assert aligned_face == TimberFace.FORWARD
+        assert aligned_face == TimberFace.FRONT
 
         # Target pointing in -Y (negative height direction) should align with BACK face
         target_height_neg = create_vector3d(0, -1, 0)
@@ -1029,7 +1029,7 @@ class TestHelperFunctions:
         # BOTTOM face points in -Z direction (negative length_direction)
         # RIGHT face points in +Y direction (width_direction)
         # LEFT face points in -Y direction (negative width_direction)
-        # FORWARD face points in -X direction (height_direction)
+        # FRONT face points in -X direction (height_direction)
         # BACK face points in +X direction (negative height_direction)
 
         # Target pointing in +Y direction should align with RIGHT face
@@ -1042,10 +1042,10 @@ class TestHelperFunctions:
         aligned_face = timber.get_closest_oriented_face(target_y_neg)
         assert aligned_face == TimberFace.LEFT
 
-        # Target pointing in -X direction should align with FORWARD face
+        # Target pointing in -X direction should align with FRONT face
         target_x_neg = create_vector3d(-1, 0, 0)
         aligned_face = timber.get_closest_oriented_face(target_x_neg)
-        assert aligned_face == TimberFace.FORWARD
+        assert aligned_face == TimberFace.FRONT
 
         # Target pointing in +X direction should align with BACK face
         target_x_pos = create_vector3d(1, 0, 0)
@@ -1070,7 +1070,7 @@ class TestHelperFunctions:
         # BOTTOM face points in -X direction (negative length_direction)
         # RIGHT face points in +Z direction (width_direction)
         # LEFT face points in -Z direction (negative width_direction)
-        # FORWARD face points in -Y direction (height_direction)  
+        # FRONT face points in -Y direction (height_direction)  
         # BACK face points in +Y direction (negative height_direction)
         
         # Target pointing in +Z should align with RIGHT face
@@ -1140,9 +1140,9 @@ class TestHelperFunctions:
         left_dir = timber.get_face_direction(TimberFace.LEFT)
         assert left_dir == -timber.width_direction
         
-        # FORWARD should be the height direction
-        forward_dir = timber.get_face_direction(TimberFace.FORWARD)
-        assert forward_dir == timber.height_direction
+        # FRONT should be the height direction
+        front_dir = timber.get_face_direction(TimberFace.FRONT)
+        assert front_dir == timber.height_direction
         
         # BACK should be the negative height direction
         back_dir = timber.get_face_direction(TimberFace.BACK)
