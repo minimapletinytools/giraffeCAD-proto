@@ -347,9 +347,16 @@ def create_oscarshed():
     side_girt_mortise_depth = inches(3.5)
     
     # Peg parameters: 5/8" square peg, 1" from shoulder, on centerline
-    side_girt_peg_params = SimplePegParameters(
+    side_girt_peg_params_left = SimplePegParameters(
         shape=PegShape.SQUARE,
         tenon_face=TimberReferenceLongFace.FORWARD,
+        peg_positions=[(inches(1), Rational(0))],  # 1" from shoulder, centered
+        size=inches(Rational(5, 8)),  # 5/8" square
+        depth=inches(Rational(7, 2))  
+    )
+    side_girt_peg_params_right = SimplePegParameters(
+        shape=PegShape.SQUARE,
+        tenon_face=TimberReferenceLongFace.BACK,
         peg_positions=[(inches(1), Rational(0))],  # 1" from shoulder, centered
         size=inches(Rational(5, 8)),  # 5/8" square
         depth=inches(Rational(7, 2))  
@@ -364,7 +371,7 @@ def create_oscarshed():
         tenon_length=side_girt_tenon_length,
         mortise_depth=side_girt_mortise_depth,
         tenon_position=None,  # Centered
-        peg_parameters=side_girt_peg_params
+        peg_parameters=side_girt_peg_params_left
     )
     
     # Right side girt TOP end meets front right post
@@ -376,7 +383,7 @@ def create_oscarshed():
         tenon_length=side_girt_tenon_length,
         mortise_depth=side_girt_mortise_depth,
         tenon_position=None,  # Centered
-        peg_parameters=side_girt_peg_params
+        peg_parameters=side_girt_peg_params_right
     )
     
     # Collect joint accessories (pegs) for rendering
