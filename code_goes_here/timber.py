@@ -791,17 +791,15 @@ class Cut(ABC):
     maybe_end_cut: Optional[TimberReferenceEnd]
 
     # TODO rename to get_end_position_global
+    # TODO this is broken
     # get the "end" position of the cut on the centerline of the timber
     # the "end" position should be the minimal (as in closest to the other end) such point on the centerline of the timber such that the entire timber lies on one side of the orthogonal plane (to the centerline) through the end position
     def get_end_position(self) -> V3:
         """
-        Determine the end position of the cut by finding where the cut intersects the timber.
+        Determine the end position of the cut by finding where the cut intersects the timber's centerline.
         
-        This is computed by:
-        1. Getting the negative CSG (the cut volume)
-        2. Intersecting it with the timber's finite prism (to constrain the cut to the timber bounds)
-        3. Finding the minimal boundary of this intersection
-        4. Projecting onto the timber's centerline
+        For HalfPlaneCut: The end position is where the half-plane intersects the timber's centerline.
+        For CSGCut: This is computed by finding the minimal boundary of the cut timber.
         
         The returned point is on the timber's centerline at the distance where the cut boundary is located.
         
@@ -814,78 +812,87 @@ class Cut(ABC):
         if self.maybe_end_cut is None:
             raise ValueError("get_end_position can only be called on end cuts (maybe_end_cut must be set)")
         
+        # For HalfPlaneCut, we can compute the end position directly from the half-plane
+        # by finding where it intersects the timber's centerline
+        if isinstance(self, HalfPlaneCut):
+            # The half-plane is defined by: normal · (point - origin) >= 0
+            # The timber's centerline is: bottom_position + t * length_direction (for t >= 0)
+            # We want to find where the plane intersects the centerline:
+            # normal · (bottom_position + t * length_direction - origin) = 0
+            # Solving for t: t = (normal · (origin - bottom_position)) / (normal · length_direction)
+            
+            # Convert origin from global to match timber coordinates
+            # The half_plane is in LOCAL coordinates (relative to timber.bottom_position)
+            # So origin is already in the right coordinate system
+            from .meowmeowcsg import HalfPlane
+            half_plane = self.half_plane
+            
+            # The half-plane normal in global coordinates
+            normal_global = self.timber.orientation.matrix * half_plane.normal
+            
+            # The plane offset gives us a point on the plane: origin_on_plane = normal * offset
+            # In local coordinates (relative to timber.bottom_position)
+            origin_on_plane_local = half_plane.normal * half_plane.offset
+            origin_on_plane_global = self.timber.bottom_position + self.timber.orientation.matrix * origin_on_plane_local
+            
+            # Find where the plane intersects the timber's centerline
+            # Centerline: bottom_position + t * length_direction
+            # Plane: normal_global · (point - origin_on_plane_global) = 0
+            # Substitute: normal_global · (bottom_position + t * length_direction - origin_on_plane_global) = 0
+            # Solve for t: t = normal_global · (origin_on_plane_global - bottom_position) / (normal_global · length_direction)
+            
+            numerator = (normal_global.T * (origin_on_plane_global - self.timber.bottom_position))[0, 0]
+            denominator = (normal_global.T * self.timber.length_direction)[0, 0]
+            
+            if denominator == 0:
+                raise ValueError("Cut plane is parallel to timber length direction - no intersection")
+            
+            t = numerator / denominator
+            end_position = self.timber.bottom_position + self.timber.length_direction * t
+            
+            return end_position
+        
+        # For CSGCut or other cut types, use the boundary-finding approach
         # Get the negative CSG representing the cut volume (in LOCAL coordinates)
         negative_csg = self.get_negative_csg_local()
         
-        # Get the timber prism in LOCAL coordinates (semi-infinite at this end since we pass [self])
-        timber_prism = _create_timber_prism_csg_local(self.timber, [self])
+        # Get the timber prism in LOCAL coordinates as a FINITE prism (pass empty list)
+        # We need finite bounds to be able to find where the cut boundary is
+        timber_prism = _create_timber_prism_csg_local(self.timber, [])
         
         # The timber with the cut applied: timber - cut_volume
         from .meowmeowcsg import Difference, HalfPlane
         cut_result = Difference(timber_prism, [negative_csg])
         
         # Determine the search direction based on which end is being cut
-        # Search direction is in the timber's LOCAL coordinate system
-        # In local coords, the timber's length direction is the Z-axis (third column of orientation matrix)
-        # But since we're working in the timber's local space where it's axis-aligned,
-        # we use the GLOBAL length_direction as the search direction in the LOCAL CSG space
+        # minimal_boundary_in_direction finds the point with minimum dot product with the direction.
+        # For a TOP cut, we want to find the boundary near the top, so we search in -length_direction
+        # (this finds the point furthest in +length_direction, i.e., closest to the top).
+        # For a BOTTOM cut, we want to find the boundary near the bottom, so we search in +length_direction
+        # (this finds the point furthest in -length_direction, i.e., closest to the bottom).
         if self.maybe_end_cut == TimberReferenceEnd.TOP:
-            # For top end cuts, find the point closest to bottom (minimum distance along length)
-            # To minimize the distance, search in the +length_direction
-            search_direction = self.timber.length_direction
-        elif self.maybe_end_cut == TimberReferenceEnd.BOTTOM:
-            # For bottom end cuts, find the point closest to top (maximum distance along length)
-            # To maximize the distance, search in the -length_direction
+            # For top end cuts, find where the cut boundary is (near the top)
+            # Search in -length_direction to find the maximum point along length_direction
             search_direction = -self.timber.length_direction
+        elif self.maybe_end_cut == TimberReferenceEnd.BOTTOM:
+            # For bottom end cuts, find where the cut boundary is (near the bottom)
+            # Search in +length_direction to find the minimum point along length_direction
+            search_direction = self.timber.length_direction
         else:
             raise ValueError(f"Invalid end cut: {self.maybe_end_cut}")
+
+        # For other CSG types, use minimal_boundary_in_direction
+        boundary_point = cut_result.minimal_boundary_in_direction(search_direction)
         
-        # For HalfPlane cuts, we can directly compute the intersection with the centerline
-        # rather than using minimal_boundary_in_direction (which only works for certain directions)
-        if isinstance(negative_csg, HalfPlane):
-            # HalfPlane is in LOCAL coordinates (oriented basis) relative to timber.bottom_position
-            # In the timber's LOCAL coordinate system:
-            # - The centerline is along the Z-axis: P_local(t) = (0, 0, t)
-            # - The length direction is (0, 0, 1) in local coordinates
-            # The half-plane is: local_normal · P_local >= local_offset
-            # At the boundary: local_normal · P_local = local_offset
-            # Substituting: local_normal · (0, 0, t) = local_offset
-            # This gives: local_normal[2] * t = local_offset
-            # Solving for t: t = local_offset / local_normal[2]
-            
-            local_normal = negative_csg.normal
-            local_offset = negative_csg.offset
-            
-            # In local coordinates, the timber's length direction is the Z-axis
-            local_z_axis = create_vector3d(0, 0, 1)
-            
-            if construction_perpendicular_check(local_normal, local_z_axis):
-                # Plane is parallel to the timber - no unique intersection
-                raise ValueError("Cut plane is parallel to timber centerline")
-            
-            # Distance along centerline in local coordinates (along Z-axis)
-            normal_z_component = local_normal[2, 0]
-            t = local_offset / normal_z_component
-            
-            # Convert back to global coordinates
-            # In global coords: end_position = bottom_position + t * length_direction
-            length_dir_norm = normalize_vector(self.timber.length_direction)
-            end_position = self.timber.bottom_position + length_dir_norm * t
-            
-            return end_position
-        else:
-            # For other CSG types, use minimal_boundary_in_direction
-            boundary_point = cut_result.minimal_boundary_in_direction(search_direction)
-            
-            # Project the boundary point onto the timber's centerline to get the end position
-            # The end position is at: bottom_position + length_direction * distance
-            # where distance = (boundary_point - bottom_position) · length_direction / |length_direction|^2
-            length_dir_norm = normalize_vector(self.timber.length_direction)
-            distance_along_centerline = ((boundary_point - self.timber.bottom_position).T * length_dir_norm)[0, 0]
-            
-            end_position = self.timber.bottom_position + length_dir_norm * distance_along_centerline
-            
-            return end_position
+        # Project the boundary point onto the timber's centerline to get the end position
+        # The end position is at: bottom_position + length_direction * distance
+        # where distance = (boundary_point - bottom_position) · length_direction / |length_direction|^2
+        length_dir_norm = normalize_vector(self.timber.length_direction)
+        distance_along_centerline = ((boundary_point - self.timber.bottom_position).T * length_dir_norm)[0, 0]
+        
+        end_position = self.timber.bottom_position + length_dir_norm * distance_along_centerline
+        
+        return end_position
 
     # returns the negative CSG of the cut (the part of the timber that is removed by the cut)
     # in LOCAL coordinates (relative to timber.bottom_position)
