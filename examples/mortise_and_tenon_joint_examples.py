@@ -433,15 +433,21 @@ def create_all_mortise_and_tenon_examples():
             all_timbers.append(CutTimber(timber=translated_timber, cuts=timber._cuts))
             translated_timbers.append(translated_timber)
         
-        # Collect joint accessories (already in timber-relative coordinates)
+        # Collect joint accessories (already in global coordinates)
         if joint.jointAccessories:
             for accessory in joint.jointAccessories:
-                # Accessories are stored relative to a timber
-                # For now, we'll associate with the first timber (typically the mortise timber)
-                # TODO: Better timber association logic - track which timber each accessory belongs to
-                if translated_timbers:
-                    associated_timber = translated_timbers[0]
-                    all_accessories.append((accessory, associated_timber))
+                # Accessories are stored in global space, so they need to be translated
+                # to match the translated position of the joint
+                translation_offset = create_vector3d(current_position_x, 0, 0)
+                translated_accessory = Peg(
+                    orientation=accessory.orientation,
+                    position=accessory.position + translation_offset,
+                    size=accessory.size,
+                    shape=accessory.shape,
+                    forward_length=accessory.forward_length,
+                    stickout_length=accessory.stickout_length
+                )
+                all_accessories.append(translated_accessory)
         
         print(f"Created {example_name} at x={float(current_position_x/inches(1)):.1f}\"")
         

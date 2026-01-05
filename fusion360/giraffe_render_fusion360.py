@@ -1115,7 +1115,7 @@ def render_frame(frame: Frame, base_name: str = None, use_body_transform: bool =
 
 
 def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber", 
-                           joint_accessories: List[Tuple[JointAccessory, Timber]] = None,
+                           joint_accessories: List[JointAccessory] = None,
                            use_body_transform: bool = True) -> int:
     """
     Render multiple CutTimber objects and joint accessories in Fusion 360 using a three-pass approach.
@@ -1248,13 +1248,13 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     adsk.doEvents()
     
     # PASS 2: Render joint accessories at origin (pegs, wedges, etc.)
-    created_accessories = []  # List of (occurrence, accessory, timber, name) tuples
+    created_accessories = []  # List of (occurrence, accessory, name) tuples
     if joint_accessories:
         print(f"\n=== PASS 2: Creating {len(joint_accessories)} joint accessories at origin ===")
         if app:
             app.log(f"=== PASS 2: Creating {len(joint_accessories)} joint accessories at origin ===")
         
-        for i, (accessory, timber) in enumerate(joint_accessories):
+        for i, accessory in enumerate(joint_accessories):
             try:
                 # Determine accessory name based on type
                 if isinstance(accessory, Peg):
@@ -1271,7 +1271,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                 occurrence = render_accessory_at_origin(accessory, accessory_name, infinite_geometry_extent)
                 
                 if occurrence:
-                    created_accessories.append((occurrence, accessory, timber, accessory_name))
+                    created_accessories.append((occurrence, accessory, accessory_name))
                     print(f"  ✓ Created {accessory_name}")
                     if app:
                         app.log(f"  ✓ Created {accessory_name}")
@@ -1334,32 +1334,21 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             traceback.print_exc()
     
     # Then, transform all accessories
-    for occurrence, accessory, timber, accessory_name in created_accessories:
+    for occurrence, accessory, accessory_name in created_accessories:
         try:
             print(f"Transforming {accessory_name}... (method: {'body' if use_body_transform else 'occurrence'})")
             
             if app:
                 app.log(f"  Transforming {accessory_name}: (method: {'body' if use_body_transform else 'occurrence'})")
-                app.log(f"    Peg position (timber local): {[float(x) for x in accessory.position]}")
-                app.log(f"    Timber position (world): {[float(x) for x in timber.bottom_position]}")
-            
-            # Compute combined position and orientation in SymPy (like timbers do)
-            # Position: P_world = timber_pos + timber_orient * peg_pos
-            peg_pos_in_world = timber.bottom_position + timber.orientation.matrix * accessory.position
-            
-            # Orientation: O_world = timber_orient * peg_orient
-            combined_orientation_matrix = timber.orientation.matrix * accessory.orientation.matrix
-            combined_orientation = Orientation(combined_orientation_matrix)
-            
-            if app:
-                app.log(f"    Combined position (world): {[float(x) for x in peg_pos_in_world]}")
-                app.log(f"    Combined orientation matrix:")
+                app.log(f"    Accessory position (global): {[float(x) for x in accessory.position]}")
+                app.log(f"    Accessory orientation matrix:")
                 for i in range(3):
-                    row = [float(combined_orientation.matrix[i, j]) for j in range(3)]
+                    row = [float(accessory.orientation.matrix[i, j]) for j in range(3)]
                     app.log(f"      [{row[0]:.3f}, {row[1]:.3f}, {row[2]:.3f}]")
             
-            # Apply the transformation using apply_timber_transform pattern
-            success = apply_timber_transform(occurrence, peg_pos_in_world, combined_orientation, accessory_name, use_body_transform)
+            # Accessory position and orientation are already in global space
+            # Use them directly without transformation
+            success = apply_timber_transform(occurrence, accessory.position, accessory.orientation, accessory_name, use_body_transform)
             
             if not success:
                 if app:

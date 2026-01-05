@@ -386,13 +386,12 @@ def create_oscarshed():
     )
     
     # Collect joint accessories (pegs) for rendering
+    # Accessories are already in global space, so just collect them
     side_girt_accessories = []
     if joint_side_girt_left.jointAccessories:
-        for accessory in joint_side_girt_left.jointAccessories:
-            side_girt_accessories.append((accessory, post_front_left))
+        side_girt_accessories.extend(joint_side_girt_left.jointAccessories)
     if joint_side_girt_right.jointAccessories:
-        for accessory in joint_side_girt_right.jointAccessories:
-            side_girt_accessories.append((accessory, post_front_right))
+        side_girt_accessories.extend(joint_side_girt_right.jointAccessories)
 
     # ============================================================================
     # Create front girt (running left to right along the long dimension)
@@ -503,13 +502,12 @@ def create_oscarshed():
     pct_front_girt_right = CutTimber(front_girt_right, cuts=front_girt_right_cuts)
     
     # Collect joint accessories (pegs) for rendering
+    # Accessories are already in global space, so just collect them
     front_girt_accessories = []
     if joint_front_girt_left.jointAccessories:
-        for accessory in joint_front_girt_left.jointAccessories:
-            front_girt_accessories.append((accessory, post_front_left))
+        front_girt_accessories.extend(joint_front_girt_left.jointAccessories)
     if joint_front_girt_right.jointAccessories:
-        for accessory in joint_front_girt_right.jointAccessories:
-            front_girt_accessories.append((accessory, post_front_right))
+        front_girt_accessories.extend(joint_front_girt_right.jointAccessories)
 
     # ============================================================================
     # Create top plates (running left to right on top of posts)
@@ -817,8 +815,8 @@ if __name__ == "__main__":
         print(f"  - {ct.timber.name}")
     if frame.accessories:
         print(f"\nAccessories:")
-        for acc, timber in frame.accessories:
-            print(f"  - {type(acc).__name__} on {timber.name}")
+        for acc in frame.accessories:
+            print(f"  - {type(acc).__name__}")
     
     # ============================================================================
     # Summary
