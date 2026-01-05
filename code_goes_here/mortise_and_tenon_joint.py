@@ -113,7 +113,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         peg_parameters: Optional peg configuration (not yet supported)
         
     Returns:
-        Joint object containing the two CutTimbers and any accessories
+        Joint object containing the two CutTimbers and any accessories (in global space)
         
     Raises:
         AssertionError: If unsupported parameters are provided or if timbers are not face-aligned
@@ -435,6 +435,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # ========================================================================
     # Create peg holes and accessories if pegs are specified
+    # Note: Peg holes are created in timber local space, but accessories
+    # are stored in global space for direct rendering without transformation
     # ========================================================================
     
     joint_accessories = []
@@ -671,16 +673,21 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             )
             peg_holes_in_mortise_local.append(peg_hole_mortise)
             
-            # Create peg accessory (stored in mortise timber's local space)
+            # Create peg accessory in global space
+            # Internal calculations were done in mortise local space for clarity,
+            # but the final accessory is stored in global space
+            
+            # Transform peg position from mortise local space to global space
+            peg_pos_global = mortise_timber.bottom_position + mortise_timber.orientation.matrix * peg_pos_on_mortise_face_local
+            
+            # Transform peg orientation from mortise local space to global space
+            peg_orientation_global = Orientation(mortise_timber.orientation.matrix * peg_orientation_mortise_local.matrix)
+            
             # forward_length: how deep the peg goes into the mortise
             # stickout_length: how much of the peg remains outside (in the tenon)
             peg_accessory = Peg(
-
-
-                # TODO WRONG this should just be in global space omg
-                orientation=peg_orientation_mortise_local,
-                position=peg_pos_on_mortise_face_local,
-                
+                orientation=peg_orientation_global,
+                position=peg_pos_global,
                 size=peg_size,
                 shape=peg_parameters.shape,
                 forward_length=peg_depth,
@@ -757,7 +764,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         peg_parameters: Optional parameters for pegs to secure the joint (SimplePegParameters)
         
     Returns:
-        Joint object containing the two CutTimbers and any peg accessories
+        Joint object containing the two CutTimbers and any peg accessories (in global space)
         
     Raises:
         AssertionError: If timbers are not properly oriented for this joint type

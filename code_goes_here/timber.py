@@ -947,18 +947,20 @@ class Peg(JointAccessory):
     """
     Represents a peg used in timber joinery (e.g., draw bore pegs, komisen).
     
-    The peg is stored in local space of a timber. In identity orientation, 
-    the peg points in the same direction as the length axis of the timber, 
-    with the insertion end at the bottom.
+    The peg is stored in GLOBAL SPACE with absolute position and orientation.
+    In identity orientation, the peg points in the +Z direction,
+    with the insertion end at the origin.
 
     By convention, the origin of the peg is on the mortise face that the peg is going into.
     This is why there are 2 lengths parameters, one for how deep the peg goes past the mortise face, and one for how far the peg sticks out of the mortise face.
     
     Attributes:
-        orientation: Orientation of the peg in local timber space
-        position: Position of the peg's insertion end in local timber space (V3)
+        orientation: Orientation of the peg in global space
+        position: Position of the peg's insertion point in global space (V3)
         size: Size/diameter of the peg (for square pegs, this is the side length)
         shape: Shape of the peg (SQUARE or ROUND)
+        forward_length: How far the peg reaches in the forward direction (into the mortise)
+        stickout_length: How far the peg "sticks out" in the back direction (outside the mortise)
     """
     orientation: Orientation
     position: V3
@@ -1104,11 +1106,11 @@ class Frame:
     
     Attributes:
         cut_timbers: List of CutTimber objects representing all timbers in the frame
-        accessories: List of (accessory, timber) tuples for joint accessories
+        accessories: List of JointAccessory objects (already in global space)
         name: Optional name for this frame (e.g., "Oscar's Shed", "Main Frame")
     """
     cut_timbers: List[CutTimber]
-    accessories: List[Tuple[JointAccessory, Timber]] = field(default_factory=list)
+    accessories: List[JointAccessory] = field(default_factory=list)
     name: Optional[str] = None
     
     def __post_init__(self):
@@ -1132,9 +1134,8 @@ class Frame:
                 self._check_cut_no_floats(cut)
         
         # Check all accessories
-        for accessory, timber in self.accessories:
+        for accessory in self.accessories:
             self._check_accessory_no_floats(accessory)
-            self._check_timber_no_floats(timber)
     
     def _check_timber_no_floats(self, timber: Timber):
         """Check a single timber for float values."""

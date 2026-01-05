@@ -705,7 +705,7 @@ def render_frame(frame: Frame, base_name: str = None, doc: Optional['FreeCAD.Doc
 
 
 def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timber", 
-                           joint_accessories: Optional[List[Tuple[JointAccessory, Timber]]] = None,
+                           joint_accessories: Optional[List[JointAccessory]] = None,
                            doc: Optional['FreeCAD.Document'] = None) -> int:
     """
     Render multiple CutTimber objects and optional joint accessories in FreeCAD.
@@ -718,7 +718,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     Args:
         cut_timbers: List of CutTimber objects to render
         base_name: Base name for the objects (used if timber has no name)
-        joint_accessories: Optional list of (JointAccessory, Timber) tuples to render
+        joint_accessories: Optional list of JointAccessory objects to render (in global space)
         doc: Optional FreeCAD document to render into (creates/uses active if None)
         
     Returns:
@@ -788,7 +788,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     if joint_accessories:
         print(f"\n=== Rendering {len(joint_accessories)} accessories ===")
         
-        for i, (accessory, timber) in enumerate(joint_accessories):
+        for i, accessory in enumerate(joint_accessories):
             try:
                 # Determine accessory name based on type
                 if isinstance(accessory, Peg):
@@ -813,17 +813,9 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                     obj = doc.addObject("Part::Feature", accessory_name)
                     obj.Shape = shape
                     
-                    # Transform accessory from local timber space to global space
-                    # accessory.position and accessory.orientation are in timber's local space
-                    # Convert position from timber local space to global space
-                    accessory_pos_global = timber.bottom_position + timber.orientation.matrix * accessory.position
-                    
-                    # Combine orientations: global = timber_orientation * accessory_orientation
-                    combined_orientation_matrix = timber.orientation.matrix * accessory.orientation.matrix
-                    combined_orientation = Orientation(combined_orientation_matrix)
-                    
-                    # Create global placement
-                    global_placement = create_placement_from_orientation(accessory_pos_global, combined_orientation)
+                    # Accessory position and orientation are already in global space
+                    # Simply use them directly to create the global placement
+                    global_placement = create_placement_from_orientation(accessory.position, accessory.orientation)
                     
                     # Compose placements: global * local
                     # The shape already has local centering placement applied (e.g., for prism cross-section centering)
