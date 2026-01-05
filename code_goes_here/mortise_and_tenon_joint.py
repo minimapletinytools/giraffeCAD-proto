@@ -675,8 +675,12 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             # forward_length: how deep the peg goes into the mortise
             # stickout_length: how much of the peg remains outside (in the tenon)
             peg_accessory = Peg(
+
+
+                # TODO WRONG this should just be in global space omg
                 orientation=peg_orientation_mortise_local,
                 position=peg_pos_on_mortise_face_local,
+                
                 size=peg_size,
                 shape=peg_parameters.shape,
                 forward_length=peg_depth,
