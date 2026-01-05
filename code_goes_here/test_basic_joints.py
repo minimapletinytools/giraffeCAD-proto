@@ -11,8 +11,7 @@ from .helperonis import (
     create_standard_horizontal_timber,
     create_centered_horizontal_timber,
     assert_is_valid_rotation_matrix,
-    assert_vectors_perpendicular,
-    TimberGeometryHelpers
+    assert_vectors_perpendicular
 )
 
 
@@ -226,13 +225,12 @@ class TestButtJoint:
         except Exception as e:
             pytest.fail(f"Failed to render cut timber: {e}")
 
-        # TODO enable after fixing nearest_point_on_face_to_point_global
-        # TODO not sure if it should be FRONT or BACK face
-        # test that the point on the face of timberA where the butt meets is on the boundary of timberB after cutting
-        #nearest_point_on_face_to_point_global = TimberGeometryHelpers.nearest_point_on_face_to_point_global(timberA, TimberFace.BACK, create_vector3d(Rational(0), Rational(0), Rational(0)))
-        #nearest_point_on_face_to_point_local = timberB.global_to_local(nearest_point_on_face_to_point_global)
-        #assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(nearest_point_on_face_to_point_local)
+        # pick a point that's on the boundary of the butt joint
+        joint_point_global = create_vector3d(Rational(0), Rational(3), Rational(0))
 
+        assert joint.cut_timbers[0].render_timber_with_cuts_csg_local().is_point_on_boundary(timberA.global_to_local(joint_point_global))
+        assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().is_point_on_boundary(timberB.global_to_local(joint_point_global))
+        
 
 
 
