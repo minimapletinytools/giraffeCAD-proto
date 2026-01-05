@@ -50,8 +50,8 @@ DONE-rewrite all joint tests, they are all kinda messed up tbh
 
 -improve tests
   DONE-fix is_point_on_boundary, it's not working... maybe add some tests for it...
-  -buttjoints
-    -fix nearest_point_on_face_to_point_global and uncomment the test
+  DONE-buttjoints
+    IGNORE-fix nearest_point_on_face_to_point_global and uncomment the test
   -mortise and tenon joint
     -RIP
     -peg forward_length / stickout depth tests
