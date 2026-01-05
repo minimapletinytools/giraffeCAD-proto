@@ -63,7 +63,7 @@ DONE-rewrite all joint tests, they are all kinda messed up tbh
 
   
 
-
+-add a Frame.from_joints function, it sohuld also take a list of timbers as well. Uses referential equality to test for same timbers. Also checks for same name, and if same name but different reference, check for deep equality and warn if they are the same also warn on same names
 -add back post joints to oscar shed
 
 
