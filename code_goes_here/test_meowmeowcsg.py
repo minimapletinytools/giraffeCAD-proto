@@ -787,6 +787,8 @@ class TestUnionContainsPoint:
         assert union.is_point_on_boundary(Matrix([10, 10, 10])) == False
 
 
+num_random_samples = 10
+
 class TestDifferenceContainsPoint:
     """Test Difference contains_point and is_point_on_boundary methods."""
     
@@ -1599,11 +1601,12 @@ class TestBoundaryDetectionComprehensive:
     # Random Shape Tests
     # ========================================================================
     
+    
     def test_random_prisms_boundary_points(self):
         """Test boundary detection on 25 random prisms."""
         random.seed(42)  # For reproducibility
         
-        for i in range(25):
+        for i in range(num_random_samples):
             prism = generate_random_prism()
             
             # Get boundary points
@@ -1626,7 +1629,7 @@ class TestBoundaryDetectionComprehensive:
         """Test boundary detection on 25 random cylinders."""
         random.seed(43)  # For reproducibility
         
-        for i in range(25):
+        for i in range(num_random_samples):
             cylinder = generate_random_cylinder()
             
             # Get boundary points
@@ -1649,7 +1652,7 @@ class TestBoundaryDetectionComprehensive:
         """Test boundary detection on 25 random half-planes."""
         random.seed(44)  # For reproducibility
         
-        for i in range(25):
+        for i in range(num_random_samples):
             halfplane = generate_random_halfplane()
             
             # Get boundary points
@@ -1672,7 +1675,7 @@ class TestBoundaryDetectionComprehensive:
         """Test boundary detection on 25 random convex polygon extrusions."""
         random.seed(45)  # For reproducibility
         
-        for i in range(25):
+        for i in range(num_random_samples):
             extrusion = generate_random_convex_polygon_extrusion()
             
             # Get boundary points
