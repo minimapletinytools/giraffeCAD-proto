@@ -78,6 +78,8 @@ class TestMiterJoint:
         assert isinstance(prism, Prism)
         return prism.get_bottom_position()
 
+
+    # 🐪
     def test_basic_miter_joint_on_orthoganal_timbers(self):
         """Test basic miter joint on face-aligned timbers."""
         # Create two orthognal timbers meeting at the origin
@@ -122,6 +124,7 @@ class TestMiterJoint:
         assert not joint.cut_timbers[0]._cuts[0].half_plane.contains_point(bottom_point_A_after_cutting_local_A)
         assert joint.cut_timbers[1]._cuts[0].half_plane.contains_point(bottom_point_A_after_cutting_local_B)
 
+    # 🐪
     def test_basic_miter_joint_on_various_angles(self): 
         """Test miter joints with timbers at 90-degree angle in various orientations."""
         # Note: cut_basic_miter_joint_on_face_aligned_timbers requires perpendicular timbers (90-degree angle)
@@ -157,6 +160,7 @@ class TestMiterJoint:
             # Verify end positions are on boundaries of both half planes
             self.assert_miter_joint_end_positions_on_boundaries(joint, timberA, timberB)
 
+    # 🐪
     def test_basic_miter_joint_on_parallel_timbers(self):
         """Test that creating miter joint between parallel timbers raises an error."""
         # Create three timbers: two parallel (+X) and one anti-parallel (-X)
@@ -179,6 +183,7 @@ class TestMiterJoint:
 class TestButtJoint:
     """Test cut_basic_butt_joint_on_face_aligned_timbers function."""
 
+    # 🐪
     def test_basic_butt_joint_on_face_aligned_timbers(self):
         """Test butt joint between two perpendicular timbers."""
         # Create two perpendicular timbers meeting at the origin
@@ -234,6 +239,7 @@ class TestButtJoint:
 
 
 
+    # 🐪
     def test_basic_butt_joint_on_parallel_timbers(self):
         """Test that creating butt joint between parallel timbers raises an error.
         
@@ -257,7 +263,8 @@ class TestButtJoint:
 
 class TestSpliceJoint:
     """Test cut_basic_splice_joint_on_aligned_timbers function."""
-    
+        
+        # 🐪
     def test_basic_splice_joint_same_orientation(self):
         """Test basic splice joint with two aligned timbers with same orientation."""
         # Create two timbers aligned along the X axis
@@ -306,6 +313,7 @@ class TestSpliceJoint:
         assert simplify(global_normalA + global_normalB).norm() == 0, \
             f"Normals should be opposite! A={global_normalA.T}, B={global_normalB.T}"
         
+    # 🐪
     def test_splice_joint_with_custom_point(self):
         """Test splice joint with explicitly specified splice point."""
         # Create two timbers along Z axis
@@ -328,6 +336,7 @@ class TestSpliceJoint:
         assert cutA.origin[1] == Rational(0)
         assert cutA.origin[2] == Rational(120)
         
+    # 🐪
     def test_splice_joint_opposite_orientation(self):
         """Test splice joint with two aligned timbers with opposite orientations."""
         # TimberA points in +X direction
@@ -364,6 +373,7 @@ class TestSpliceJoint:
         # Should be at the midpoint between x=60 and x=40 = x=50
         assert cutA.origin[0] == Rational(50)
         
+    # 🐪
     def test_splice_joint_non_aligned_timbers_raises_error(self):
         """Test that non-aligned (non-parallel) timbers raise a ValueError."""
         # Create two perpendicular timbers
@@ -394,6 +404,7 @@ class TestSpliceJoint:
 class TestHouseJoint:
     """Test cut_basic_house_joint function."""
     
+    # 🐪
     def test_basic_house_joint_perpendicular_timbers(self):
         """Test that a house joint between two perpendicular timbers is created correctly."""
 
@@ -418,7 +429,6 @@ class TestHouseJoint:
         assert not joint.cut_timbers[0].render_timber_with_cuts_csg_local().contains_point(housing_timber.global_to_local(origin))
         assert joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(housed_timber.global_to_local(origin))
         
-
 
     def test_house_joint_prism_matches_housed_timber_global_space(self):
         """
@@ -502,8 +512,7 @@ class TestHouseJoint:
 
 
 class TestCrossLapJoint:
-    """Test cut_basic_house_joint function."""
-    
+    # 🐪
     def test_basic_cross_lap_joint_perpendicular_timbers(self):
         """Test that a cross lap joint between two perpendicular timbers is created correctly."""
 

@@ -112,6 +112,8 @@ python3 -m pytest code_goes_here/test_moothymoth.py -v
 python3 -m pytest code_goes_here/ --cov=code_goes_here --cov-report=html
 ```
 
+Tests flagged with # 🐪 have been hand reviewed, the rest are AI slop
+
 ### Automatic Testing (Recommended for Development)
 
 For continuous development, you can have tests run automatically whenever you save changes to your code:
