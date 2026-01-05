@@ -6,7 +6,7 @@ import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational, pi
 from giraffe import *
 from giraffe import _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned
-from .conftest import (
+from .helperonis import (
     create_standard_vertical_timber,
     create_standard_horizontal_timber,
     create_centered_horizontal_timber,

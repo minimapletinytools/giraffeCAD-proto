@@ -10,7 +10,7 @@ from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
     HalfPlane, Prism, Cylinder, Union, Difference, ConvexPolygonExtrusion
 )
-from .conftest import assert_is_valid_rotation_matrix
+from .helperonis import assert_is_valid_rotation_matrix
 import random
 
 
