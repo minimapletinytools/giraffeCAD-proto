@@ -20,7 +20,7 @@ from code_goes_here.mortise_and_tenon_joint import (
 from .helperonis import (
     create_standard_vertical_timber,
     create_standard_horizontal_timber,
-    assert_vectors_perpendicular
+    assert_vectors_parallel
 )
 
 
@@ -115,7 +115,7 @@ class TestPegStuff:
         peg = joint.jointAccessories[0]
         
         # check that the peg is orthogonal to get_face_direction(TimberFace.FRONT)
-        assert_vectors_perpendicular(peg.orientation.matrix[:, 2], tenon_timber.get_face_direction(TimberFace.FRONT))
+        assert_vectors_parallel(peg.orientation.matrix[:, 2], tenon_timber.get_face_direction(TimberFace.FRONT))
         f"Peg forward_length should match specified depth. Expected {peg_depth}, got {peg.forward_length}"
         assert peg.stickout_length == peg_depth * Rational(1, 2), \
             f"Peg stickout_length should be half of forward_length by default. Expected {peg_depth * Rational(1, 2)}, got {peg.stickout_length}"
@@ -206,7 +206,7 @@ class TestPegStuff:
         shoulder_plane_x_global = mortise_timber_x_size / Rational(2)
 
         
-        distance_from_shoulder = Rational(4)
+        distance_from_shoulder = Rational(10)
         tenon_length = Rational(4)
         
         peg_params = SimplePegParameters(
@@ -237,6 +237,7 @@ class TestPegStuff:
         print(peg_position_world)
         
         # TODO uncomment once you fix peg positioning...
+        # TODO this is all weird because of the timber position is not the T you expect...
         #assert peg_position_world[0] == shoulder_plane_x_global - distance_from_shoulder
     
     
