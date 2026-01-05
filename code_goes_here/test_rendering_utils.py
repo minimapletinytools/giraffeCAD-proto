@@ -13,7 +13,7 @@ from .rendering_utils import (
     calculate_timber_corners,
     calculate_structure_extents
 )
-from .conftest import create_standard_vertical_timber, create_standard_horizontal_timber
+from .helperonis import create_standard_vertical_timber, create_standard_horizontal_timber
 
 
 def test_sympy_to_float():

@@ -8,7 +8,7 @@ import pytest
 from sympy import Matrix
 from code_goes_here.footprint import Footprint, _segment_to_segment_distance
 from giraffe import create_vector2d
-from .conftest import create_test_footprint
+from .helperonis import create_test_footprint
 
 
 class TestFootprint:
