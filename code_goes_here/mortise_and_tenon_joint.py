@@ -40,14 +40,16 @@ class SimplePegParameters:
         peg_positions: List of (distance_from_shoulder, distance_from_centerline) tuples
                        - First value: distance along length axis measured from shoulder of tenon
                        - Second value: distance in perpendicular axis measured from center
-        depth: Depth measured from mortise face where peg goes in (None means all the way through the mortise timber)
         size: Peg diameter (for round pegs) or side length (for square pegs)
+        depth: Depth measured from mortise face where peg goes in (None means all the way through the mortise timber)
+        tenon_hole_offset: Offset distance of the hole in the tenon towards the shoulder so that the peg tightens the joint up. You should usually set this to 1-2mm
     """
     shape: PegShape
     tenon_face: TimberReferenceLongFace
     peg_positions: List[Tuple[Numeric, Numeric]]
     size: Numeric
     depth: Optional[Numeric] = None
+    tenon_hole_offset: Numeric = Rational(0)
 
 
 @dataclass(frozen=True)
@@ -517,10 +519,11 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             peg_pos_on_tenon_face_local[1] = tenon_position[1]
             
             # Add distance from shoulder (along length axis)
+            # Also apply tenon_hole_offset to shift the hole towards the shoulder (tightens joint)
             if tenon_end == TimberReferenceEnd.TOP:
-                peg_pos_on_tenon_face_local[2] = shoulder_plane_point_with_offset_local[2] + distance_from_shoulder
+                peg_pos_on_tenon_face_local[2] = shoulder_plane_point_with_offset_local[2] + distance_from_shoulder - peg_parameters.tenon_hole_offset
             else:  # BOTTOM
-                peg_pos_on_tenon_face_local[2] = shoulder_plane_point_with_offset_local[2] - distance_from_shoulder
+                peg_pos_on_tenon_face_local[2] = shoulder_plane_point_with_offset_local[2] - distance_from_shoulder + peg_parameters.tenon_hole_offset
             
             # Add distance from centerline (along lateral position axis)
             peg_pos_on_tenon_face_local[lateral_position_index] = peg_pos_on_tenon_face_local[lateral_position_index] + distance_from_centerline
