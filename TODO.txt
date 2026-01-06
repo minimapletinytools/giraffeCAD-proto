@@ -53,7 +53,7 @@ DONE-rewrite all joint tests, they are all kinda messed up tbh
   DONE-buttjoints
     IGNORE-fix nearest_point_on_face_to_point_global and uncomment the test
   -mortise and tenon joint
-    -fix the T shape orientatin, it's all fucked up right now 
+    DONE-fix the T shape orientatin, it's all fucked up right now 
     -peg forward_length / stickout depth tests
     -peg_depth = none case, ensure it's picking the right axis to use for computing peg depth
     -peg orientation should be perpendicular to tenon timber
