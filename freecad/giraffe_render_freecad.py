@@ -749,6 +749,27 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
         else:
             component_name = f"{base_name}_{i}"
         
+        # #region agent log
+        import json
+        import datetime
+        try:
+            with open('/Users/peter.lu/kitchen/faucet/giraffeCAD-proto/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({
+                    'location': 'giraffe_render_freecad.py:754',
+                    'message': 'Rendering cut timber in FreeCAD',
+                    'data': {
+                        'index': i,
+                        'component_name': component_name,
+                        'timber_name': cut_timber._timber.name if hasattr(cut_timber._timber, 'name') else 'unnamed',
+                        'cuts_count': len(cut_timber._cuts)
+                    },
+                    'timestamp': int(datetime.datetime.now().timestamp() * 1000),
+                    'sessionId': 'debug-session',
+                    'hypothesisId': 'H2'
+                }) + '\n')
+        except: pass
+        # #endregion
+        
         try:
             # Get the timber with cuts applied in LOCAL coordinates
             csg = cut_timber.render_timber_with_cuts_csg_local()

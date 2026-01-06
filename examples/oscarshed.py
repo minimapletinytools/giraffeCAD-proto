@@ -490,12 +490,12 @@ def create_oscarshed():
     
     # The left piece gets cuts from joint and splice
     front_girt_left_cuts = []
-    front_girt_left_cuts.extend(joint_front_girt_left.cut_timbers[1]._cuts)  # Tenon cuts
+    front_girt_left_cuts.extend(joint_front_girt_left.cut_timbers[0]._cuts)  # Tenon cuts
     front_girt_left_cuts.extend(front_girt_splice_joint.cut_timbers[0]._cuts)  # Splice cuts
     
     # The right piece gets cuts from joint and splice
     front_girt_right_cuts = []
-    front_girt_right_cuts.extend(joint_front_girt_right.cut_timbers[1]._cuts)  # Tenon cuts
+    front_girt_right_cuts.extend(joint_front_girt_right.cut_timbers[0]._cuts)  # Tenon cuts
     front_girt_right_cuts.extend(front_girt_splice_joint.cut_timbers[1]._cuts)  # Splice cuts
     
     # Create CutTimbers for the split pieces with all their cuts
@@ -692,13 +692,36 @@ def create_oscarshed():
     # joint_corner_3: Back TOP, Left BOTTOM
     
     # Also collect mortise cuts from post joints
-    # For mortise and tenon joints: cut_timbers[0] is the mortise timber (mudsill)
+    # For mortise and tenon joints: cut_timbers[0] is the TENON timber, cut_timbers[1] is the MORTISE timber
+    
+    # #region agent log
+    import json
+    import datetime
+    try:
+        with open('/Users/peter.lu/kitchen/faucet/giraffeCAD-proto/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({
+                'location': 'oscarshed.py:699',
+                'message': 'Collecting mudsill cuts from mortise-tenon joints',
+                'data': {
+                    'extracting_from': 'cut_timbers[1]',
+                    'expecting': 'mortise_cuts_for_mudsill',
+                    'joint_post_front_left_ct0_timber': joint_post_front_left.cut_timbers[0]._timber.name if hasattr(joint_post_front_left.cut_timbers[0]._timber, 'name') else 'unnamed',
+                    'joint_post_front_left_ct1_timber': joint_post_front_left.cut_timbers[1]._timber.name if hasattr(joint_post_front_left.cut_timbers[1]._timber, 'name') else 'unnamed',
+                    'ct0_cuts_count': len(joint_post_front_left.cut_timbers[0]._cuts),
+                    'ct1_cuts_count': len(joint_post_front_left.cut_timbers[1]._cuts)
+                },
+                'timestamp': int(datetime.datetime.now().timestamp() * 1000),
+                'sessionId': 'debug-session',
+                'hypothesisId': 'H1_H3'
+            }) + '\n')
+    except: pass
+    # #endregion
     
     mudsill_front_cuts = [
         joint_corner_0.cut_timbers[0]._cuts[0],  # Miter at corner 0
         joint_corner_1.cut_timbers[0]._cuts[0],  # Miter at corner 1
-        joint_post_front_left.cut_timbers[0]._cuts[0],   # Mortise for front-left post
-        joint_post_front_right.cut_timbers[0]._cuts[0],  # Mortise for front-right post
+        joint_post_front_left.cut_timbers[1]._cuts[0],   # Mortise for front-left post
+        joint_post_front_right.cut_timbers[1]._cuts[0],  # Mortise for front-right post
     ]
     
     mudsill_right_cuts = [
@@ -709,8 +732,8 @@ def create_oscarshed():
     mudsill_back_cuts = [
         joint_corner_2.cut_timbers[1]._cuts[0],  # Miter at corner 2
         joint_corner_3.cut_timbers[0]._cuts[0],  # Miter at corner 3
-        joint_post_back_right.cut_timbers[0]._cuts[0],   # Mortise for back-right post
-        joint_post_back_left.cut_timbers[0]._cuts[0],    # Mortise for back-left post
+        joint_post_back_right.cut_timbers[1]._cuts[0],   # Mortise for back-right post
+        joint_post_back_left.cut_timbers[1]._cuts[0],    # Mortise for back-left post
     ]
     
     mudsill_left_cuts = [
@@ -731,35 +754,83 @@ def create_oscarshed():
     cut_timbers.append(pct_mudsill_left)
     
     # Add posts with joint cuts
-    # For mortise and tenon joints: cut_timbers[0] is the mortise timber (for girt joints)
-    # For mortise and tenon joints: cut_timbers[1] is the tenon timber (for post-to-mudsill)
+    # For mortise and tenon joints: cut_timbers[0] is the TENON timber, cut_timbers[1] is the MORTISE timber
     # For butt joints: cut_timbers[1] is the cut timber (post)
     
     # Front left post: has tenon into mudsill + mortise for front girt + mortise for side girt
     post_front_left_cuts = []
-    post_front_left_cuts.extend(joint_post_front_left.cut_timbers[1]._cuts)  # Tenon into mudsill
-    post_front_left_cuts.extend(joint_front_girt_left.cut_timbers[0]._cuts)  # Mortise for front girt
-    post_front_left_cuts.extend(joint_side_girt_left.cut_timbers[0]._cuts)   # Mortise for side girt
+    # #region agent log
+    import json
+    import datetime
+    try:
+        with open('/Users/peter.lu/kitchen/faucet/giraffeCAD-proto/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({
+                'location': 'oscarshed.py:739',
+                'message': 'Collecting post cuts from multiple joints',
+                'data': {
+                    'post_name': 'post_front_left',
+                    'from_mudsill_joint_extracting_from': 'cut_timbers[0]',
+                    'from_mudsill_joint_expecting': 'tenon_cuts_for_post',
+                    'mudsill_joint_ct0_timber': joint_post_front_left.cut_timbers[0]._timber.name,
+                    'mudsill_joint_ct1_timber': joint_post_front_left.cut_timbers[1]._timber.name,
+                    'from_girt_joints_extracting_from': 'cut_timbers[1]',
+                    'from_girt_joints_expecting': 'mortise_cuts_for_post',
+                    'front_girt_joint_ct0_timber': joint_front_girt_left.cut_timbers[0]._timber.name,
+                    'front_girt_joint_ct1_timber': joint_front_girt_left.cut_timbers[1]._timber.name,
+                    'side_girt_joint_ct0_timber': joint_side_girt_left.cut_timbers[0]._timber.name,
+                    'side_girt_joint_ct1_timber': joint_side_girt_left.cut_timbers[1]._timber.name
+                },
+                'timestamp': int(datetime.datetime.now().timestamp() * 1000),
+                'sessionId': 'debug-session',
+                'hypothesisId': 'H1_H3_H4'
+            }) + '\n')
+    except: pass
+    # #endregion
+    post_front_left_cuts.extend(joint_post_front_left.cut_timbers[0]._cuts)  # Tenon into mudsill
+    post_front_left_cuts.extend(joint_front_girt_left.cut_timbers[1]._cuts)  # Mortise for front girt
+    post_front_left_cuts.extend(joint_side_girt_left.cut_timbers[1]._cuts)   # Mortise for side girt
     pct_post_front_left = CutTimber(post_front_left, cuts=post_front_left_cuts)
     
     # Front right post: has tenon into mudsill + mortise for front girt + mortise for side girt
     post_front_right_cuts = []
-    post_front_right_cuts.extend(joint_post_front_right.cut_timbers[1]._cuts)  # Tenon into mudsill
-    post_front_right_cuts.extend(joint_front_girt_right.cut_timbers[0]._cuts)  # Mortise for front girt
-    post_front_right_cuts.extend(joint_side_girt_right.cut_timbers[0]._cuts)   # Mortise for side girt
+    post_front_right_cuts.extend(joint_post_front_right.cut_timbers[0]._cuts)  # Tenon into mudsill
+    post_front_right_cuts.extend(joint_front_girt_right.cut_timbers[1]._cuts)  # Mortise for front girt
+    post_front_right_cuts.extend(joint_side_girt_right.cut_timbers[1]._cuts)   # Mortise for side girt
     pct_post_front_right = CutTimber(post_front_right, cuts=post_front_right_cuts)
     
     # Add all posts
     cut_timbers.append(pct_post_front_left)       # Front left post with all cuts
     cut_timbers.append(pct_post_front_right)      # Front right post with all cuts
-    cut_timbers.append(joint_post_back_right.cut_timbers[1])      # Corner post with M&T
+    cut_timbers.append(joint_post_back_right.cut_timbers[0])      # Corner post with M&T (tenon timber)
     cut_timbers.append(joint_post_back_middle_right.cut_timbers[1])  # Middle post with butt joint
     cut_timbers.append(joint_post_back_middle_left.cut_timbers[1])   # Middle post with butt joint
-    cut_timbers.append(joint_post_back_left.cut_timbers[1])       # Corner post with M&T
+    cut_timbers.append(joint_post_back_left.cut_timbers[0])       # Corner post with M&T (tenon timber)
     
     # Add side girts (with mortise & tenon joints at front ends)
-    cut_timbers.append(joint_side_girt_left.cut_timbers[1])  # Left side girt with tenon cuts
-    cut_timbers.append(joint_side_girt_right.cut_timbers[1])  # Right side girt with tenon cuts
+    # #region agent log
+    import json
+    import datetime
+    try:
+        with open('/Users/peter.lu/kitchen/faucet/giraffeCAD-proto/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({
+                'location': 'oscarshed.py:760',
+                'message': 'Adding girts to cut_timbers list',
+                'data': {
+                    'extracting_from': 'cut_timbers[0]',
+                    'expecting': 'tenon_timber_girts',
+                    'side_girt_left_ct0_timber': joint_side_girt_left.cut_timbers[0]._timber.name,
+                    'side_girt_left_ct1_timber': joint_side_girt_left.cut_timbers[1]._timber.name,
+                    'side_girt_right_ct0_timber': joint_side_girt_right.cut_timbers[0]._timber.name,
+                    'side_girt_right_ct1_timber': joint_side_girt_right.cut_timbers[1]._timber.name
+                },
+                'timestamp': int(datetime.datetime.now().timestamp() * 1000),
+                'sessionId': 'debug-session',
+                'hypothesisId': 'H1_H3'
+            }) + '\n')
+    except: pass
+    # #endregion
+    cut_timbers.append(joint_side_girt_left.cut_timbers[0])  # Left side girt with tenon cuts
+    cut_timbers.append(joint_side_girt_right.cut_timbers[0])  # Right side girt with tenon cuts
     
     # Add front girt pieces (with mortise & tenon joints at ends and splice joint in middle)
     cut_timbers.append(pct_front_girt_left)  # Left piece with tenon + splice cuts
