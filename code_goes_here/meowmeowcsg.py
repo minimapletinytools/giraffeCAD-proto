@@ -483,23 +483,31 @@ class Difference(MeowMeowCSG):
         Check if a point is contained within the difference.
         
         A point is in the difference if it's in the base and NOT strictly inside any subtract object.
-        Points on the boundary of subtract objects are included (they form the new boundary surface).
+        Special case: if a point is on the boundary of both base and subtract, it's excluded.
         
         Args:
             point: Point to test (3x1 Matrix)
             
         Returns:
-            True if the point is in base but not strictly inside any subtract objects, False otherwise
+            True if the point is in base but not in any subtract objects, False otherwise
         """
         # Point must be in base
         if not self.base.contains_point(point):
             return False
         
+        # Check if on base boundary
+        on_base_boundary = self.base.is_point_on_boundary(point)
+        
         # Point must not be strictly inside any subtract object
-        # Points on the boundary of subtract objects are OK (they form the cut surface)
+        # Also, if point is on boundary of both base and subtract, exclude it
         for sub in self.subtract:
-            if sub.contains_point(point) and not sub.is_point_on_boundary(point):
-                return False  # Point is strictly inside a subtract object
+            if sub.contains_point(point):
+                if not sub.is_point_on_boundary(point):
+                    # Point is strictly inside a subtract object
+                    return False
+                elif on_base_boundary:
+                    # Point is on boundary of both base and subtract - exclude it
+                    return False
         
         return True
 
