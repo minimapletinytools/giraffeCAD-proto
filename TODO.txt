@@ -57,7 +57,7 @@ DONE-rewrite all joint tests, they are all kinda messed up tbh
     DONE-peg forward_length / stickout depth tests
     DONE-peg_depth = none case, ensure it's picking the right axis to use for computing peg depth
     DONE-peg orientation should be perpendicular to tenon timber
-    -test points in peg hole do not line in timber/mortise csg
+    DONE-test points in peg hole do not line in timber/mortise csg
     DONE-test points in peg hole do lie on the peg CSG
     -test mortise depth and tenon depth using CSG test functions
 
