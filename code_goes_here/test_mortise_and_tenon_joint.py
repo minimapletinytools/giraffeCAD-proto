@@ -129,6 +129,13 @@ class TestPegStuff:
             mortise_depth=Rational(4),
             peg_parameters=peg_params
         )
+
+        assert joint.cut_timbers[0].timber == tenon_timber
+        assert joint.cut_timbers[1].timber == mortise_timber
+        assert len(joint.cut_timbers[0]._cuts) == 1
+        assert len(joint.cut_timbers[1]._cuts) == 1
+        assert joint.cut_timbers[0]._cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
+        assert joint.cut_timbers[1]._cuts[0].maybe_end_cut == None
         
         peg = joint.jointAccessories[0]
         
@@ -138,8 +145,6 @@ class TestPegStuff:
         assert peg.stickout_length == peg_depth * Rational(1, 2), \
             f"Peg stickout_length should be half of forward_length by default. Expected {peg_depth * Rational(1, 2)}, got {peg.stickout_length}"
 
-
-        
         # Get tenon timber's cut CSG (what's removed)
         tenon_cut_timber = joint.cut_timbers[1]
         tenon_cut_csg = tenon_cut_timber._cuts[0].negative_csg
@@ -161,7 +166,7 @@ class TestPegStuff:
             shape=PegShape.SQUARE,
             tenon_face=TimberReferenceLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
-            depth=Rational(5),
+            depth=None,
             size=peg_size
         )
         
@@ -198,6 +203,9 @@ class TestPegStuff:
         # Point on the edge of the square peg at z=1
         point_on_edge = peg.position + peg.orientation.matrix * Matrix([half_size, 0, Rational(1)])
         point_on_edge_peg_local = peg.orientation.matrix.T * (point_on_edge - peg.position)
+
+        # see that the peg total length is equal to 1.5 times the mortise width
+        assert peg.forward_length + peg.stickout_length == Rational(3, 2) * mortise_timber.size[0]
         
         # This point should be on the boundary of the peg
         assert peg_csg.contains_point(point_on_edge_peg_local), \
@@ -205,6 +213,11 @@ class TestPegStuff:
         assert peg_csg.is_point_on_boundary(point_on_edge_peg_local), \
             "Point on peg edge should be on boundary of peg CSG"
 
+        
+        point = peg.position
+        assert not joint.cut_timbers[0].render_timber_with_cuts_csg_local().contains_point(tenon_timber.global_to_local(point))
+        assert not joint.cut_timbers[1].render_timber_with_cuts_csg_local().contains_point(mortise_timber.global_to_local(point))
+        
     
     def test_peg_position_from_shoulder(self, simple_T_configuration):
         """Test that peg is positioned along the tenon."""

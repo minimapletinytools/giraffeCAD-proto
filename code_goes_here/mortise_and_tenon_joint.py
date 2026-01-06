@@ -730,7 +730,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     tenon_cut_timber = CutTimber(tenon_timber, cuts=tenon_cuts)
     
     return Joint(
-        cut_timbers=(mortise_cut_timber, tenon_cut_timber),
+        cut_timbers=(tenon_cut_timber, mortise_cut_timber),
         jointAccessories=tuple(joint_accessories)
     )
 
