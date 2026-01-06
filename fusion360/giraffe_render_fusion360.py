@@ -1189,6 +1189,27 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
         else:
             component_name = f"{base_name}_{i}"
         
+        # #region agent log
+        import json
+        import datetime
+        try:
+            with open('/Users/peter.lu/kitchen/faucet/giraffeCAD-proto/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({
+                    'location': 'giraffe_render_fusion360.py:1200',
+                    'message': 'Rendering cut timber in Fusion360',
+                    'data': {
+                        'index': i,
+                        'component_name': component_name,
+                        'timber_name': cut_timber._timber.name if hasattr(cut_timber._timber, 'name') else 'unnamed',
+                        'cuts_count': len(cut_timber._cuts)
+                    },
+                    'timestamp': int(datetime.datetime.now().timestamp() * 1000),
+                    'sessionId': 'debug-session',
+                    'hypothesisId': 'H2'
+                }) + '\n')
+        except: pass
+        # #endregion
+        
         try:
             print(f"Creating {component_name}...")
             if app:
