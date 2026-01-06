@@ -20,9 +20,32 @@ from code_goes_here.mortise_and_tenon_joint import (
 from .helperonis import (
     create_standard_vertical_timber,
     create_standard_horizontal_timber,
+    create_centered_horizontal_timber,
     assert_vectors_parallel
 )
 
+# ============================================================================
+# Test Fixtures
+# ============================================================================
+
+@pytest.fixture
+def simple_T_configuration():
+    """
+    Creates a simple T-configuration with a vertical tenon timber 
+    and a horizontal mortise timber centered at the top.
+    
+    Returns:
+        tuple: (tenon_timber, mortise_timber)
+            - tenon_timber: Vertical 4x4 timber, height 100, at origin
+            - mortise_timber: Horizontal 6x6 timber, length 100, along x-axis
+    """
+    tenon_timber = create_standard_vertical_timber(
+        height=100, size=(4, 4), position=(0, 0, 0)
+    )
+    mortise_timber = create_centered_horizontal_timber(
+        direction='x', length=100, size=(6, 6)
+    )
+    return (tenon_timber, mortise_timber)
 
 
 # ============================================================================
@@ -84,14 +107,9 @@ class TestMortiseAndTenonGeometry:
 
 class TestPegStuff:
     # 🐪
-    def test_simple_peg_basic_stuff(self):
+    def test_simple_peg_basic_stuff(self, simple_T_configuration):
         """Test that peg is perpendicular to the face it goes through."""
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 4), position=(0, 0, 0)
-        )
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
-        )
+        tenon_timber, mortise_timber = simple_T_configuration
         
         peg_depth = Rational(7)
         peg_params = SimplePegParameters(
@@ -105,7 +123,7 @@ class TestPegStuff:
         joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.TOP,
+            tenon_end=TimberReferenceEnd.BOTTOM,
             size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
@@ -134,14 +152,9 @@ class TestPegStuff:
             "Union should contain base cut plus peg holes"
 
     # 🐪
-    def test_peg_geometry(self):
+    def test_peg_geometry(self, simple_T_configuration):
         """Test points on peg hole boundary using is_point_on_boundary()."""
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 4), position=(0, 0, 0)
-        )
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
-        )
+        tenon_timber, mortise_timber = simple_T_configuration
         
         peg_size = Rational(1, 2)
         peg_params = SimplePegParameters(
@@ -155,7 +168,7 @@ class TestPegStuff:
         joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.TOP,
+            tenon_end=TimberReferenceEnd.BOTTOM,
             size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
@@ -193,16 +206,11 @@ class TestPegStuff:
             "Point on peg edge should be on boundary of peg CSG"
 
     
-    def test_peg_position_from_shoulder(self):
+    def test_peg_position_from_shoulder(self, simple_T_configuration):
         """Test that peg is positioned along the tenon."""
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 4), position=(0, 0, 0)
-        )
+        tenon_timber, mortise_timber = simple_T_configuration
 
         mortise_timber_x_size = Rational(6)
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, mortise_timber_x_size), position=(0, 0, 50)
-        )
         shoulder_plane_x_global = mortise_timber_x_size / Rational(2)
 
         
@@ -220,7 +228,7 @@ class TestPegStuff:
         joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.TOP,
+            tenon_end=TimberReferenceEnd.BOTTOM,
             size=Matrix([Rational(2), Rational(2)]),
             tenon_length=tenon_length,
             mortise_depth=Rational(4),
@@ -242,14 +250,9 @@ class TestPegStuff:
     
     
     # 🐪
-    def test_multiple_pegs(self):
+    def test_multiple_pegs(self, simple_T_configuration):
         """Test joint with multiple pegs at different positions."""
-        tenon_timber = create_standard_vertical_timber(
-            height=100, size=(4, 4), position=(0, 0, 0)
-        )
-        mortise_timber = create_standard_horizontal_timber(
-            direction='x', length=100, size=(6, 6), position=(0, 0, 50)
-        )
+        tenon_timber, mortise_timber = simple_T_configuration
         
         peg_params = SimplePegParameters(
             shape=PegShape.ROUND,
@@ -266,7 +269,7 @@ class TestPegStuff:
         joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.TOP,
+            tenon_end=TimberReferenceEnd.BOTTOM,
             size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
