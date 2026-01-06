@@ -984,6 +984,60 @@ class TestDifferenceContainsPoint:
         
         # Point in the remaining material (not on any boundary)
         assert outer_diff.is_point_on_boundary(Matrix([Rational(-7, 2), 0, 5])) == False
+    
+    def test_difference_shape_minus_itself_should_be_empty(self):
+        """Test that subtracting a shape from itself results in an empty shape.
+        
+        This test demonstrates a bug: when you subtract a shape from itself,
+        the result should contain NO points (not even boundary points).
+        Currently, this fails for points on the boundary.
+        """
+        orientation = Orientation()
+        
+        # Create a prism
+        prism = Prism(size=Matrix([10, 10]), orientation=orientation,
+                     start_distance=Rational(0), end_distance=Rational(10))
+        
+        # Subtract the prism from itself
+        empty_diff = Difference(prism, [prism])
+        
+        # Test interior points - should NOT be contained
+        interior_points = [
+            Matrix([0, 0, 5]),           # Center
+            Matrix([1, 1, 5]),           # Off-center interior
+            Matrix([Rational(-2), 2, 3]) # Another interior point
+        ]
+        
+        for point in interior_points:
+            assert empty_diff.contains_point(point) == False, \
+                f"Interior point {point.T} should NOT be in empty difference"
+        
+        # Test boundary points - should NOT be contained (THIS WILL FAIL)
+        boundary_points = [
+            Matrix([5, 0, 5]),     # On width face
+            Matrix([0, 5, 5]),     # On height face
+            Matrix([0, 0, 0]),     # On bottom face
+            Matrix([0, 0, 10]),    # On top face
+            Matrix([5, 5, 0]),     # Corner on bottom
+            Matrix([5, 5, 10]),    # Corner on top
+        ]
+        
+        for point in boundary_points:
+            # This assertion is EXPECTED TO FAIL - that's the bug we're testing for
+            assert empty_diff.contains_point(point) == False, \
+                f"Boundary point {point.T} should NOT be in empty difference"
+        
+        # Test exterior points - should NOT be contained
+        exterior_points = [
+            Matrix([20, 0, 5]),      # Outside in x
+            Matrix([0, 20, 5]),      # Outside in y
+            Matrix([0, 0, 20]),      # Outside in z
+            Matrix([100, 100, 100])  # Far away
+        ]
+        
+        for point in exterior_points:
+            assert empty_diff.contains_point(point) == False, \
+                f"Exterior point {point.T} should NOT be in empty difference"
 
 
 class TestConvexPolygonExtrusion:

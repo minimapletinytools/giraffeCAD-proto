@@ -215,8 +215,8 @@ class TestPegStuff:
 
         
         
-        # TODO this is failing for 0/1 because it lands right on the surface of the mortise and tenon timbers (respectively) and the CSG Difference contains point function doesn't account for that...
-        for i in range(2,5):
+        
+        for i in range(0,10):
             # Test that a point inside the peg hole is NOT contained in the timber CSGs
             point_in_peg_hole = peg.position + peg.orientation.matrix * Matrix([0, 0, Rational(i)])
             point_in_peg_hole_tenon_local = tenon_timber.global_to_local(point_in_peg_hole)
