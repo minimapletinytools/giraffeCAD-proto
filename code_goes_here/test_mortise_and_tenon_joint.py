@@ -112,10 +112,13 @@ class TestPegStuff:
         tenon_timber, mortise_timber = simple_T_configuration
         
         peg_depth = Rational(7)
+        distance_from_shoulder = Rational(2)
+        mortise_timber_x_size = mortise_timber.size[0]
+        shoulder_plane_x_global = mortise_timber_x_size / Rational(2)
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
             tenon_face=TimberReferenceLongFace.FRONT,
-            peg_positions=[(Rational(2), Rational(0))],
+            peg_positions=[(distance_from_shoulder, Rational(0))],
             depth=peg_depth,
             size=Rational(1, 2)
         )
@@ -144,6 +147,9 @@ class TestPegStuff:
         f"Peg forward_length should match specified depth. Expected {peg_depth}, got {peg.forward_length}"
         assert peg.stickout_length == peg_depth * Rational(1, 2), \
             f"Peg stickout_length should be half of forward_length by default. Expected {peg_depth * Rational(1, 2)}, got {peg.stickout_length}"
+
+        # check that the peg is positioned at the correct distance from the shoulder
+        assert peg.position[2] == shoulder_plane_x_global - distance_from_shoulder
 
         # Get tenon timber's cut CSG (what's removed)
         tenon_cut_timber = joint.cut_timbers[1]
@@ -230,47 +236,6 @@ class TestPegStuff:
             assert not mortise_csg.contains_point(point_in_peg_hole_mortise_local), \
                 "Point inside peg hole should not be contained in mortise timber"
             
-    
-    def test_peg_position_from_shoulder(self, simple_T_configuration):
-        """Test that peg is positioned along the tenon."""
-        tenon_timber, mortise_timber = simple_T_configuration
-
-        mortise_timber_x_size = Rational(6)
-        shoulder_plane_x_global = mortise_timber_x_size / Rational(2)
-
-        
-        distance_from_shoulder = Rational(10)
-        tenon_length = Rational(4)
-        
-        peg_params = SimplePegParameters(
-            shape=PegShape.ROUND,
-            tenon_face=TimberReferenceLongFace.FRONT,
-            peg_positions=[(distance_from_shoulder, Rational(0))],
-            depth=Rational(5),
-            size=Rational(1, 2)
-        )
-        
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.BOTTOM,
-            size=Matrix([Rational(2), Rational(2)]),
-            tenon_length=tenon_length,
-            mortise_depth=Rational(4),
-            peg_parameters=peg_params
-        )
-        
-        peg = joint.jointAccessories[0]
-        
-        # Verify peg exists and has reasonable position
-        assert peg.position is not None, "Peg should have a position"
-        
-        # Transform peg position from mortise local to world
-        peg_position_world = peg.position
-        
-        # TODO uncomment once you fix peg positioning...
-        # TODO this is all weird because of the timber position is not the T you expect...
-        assert peg_position_world[2] == shoulder_plane_x_global - distance_from_shoulder
     
     
     # 🐪
