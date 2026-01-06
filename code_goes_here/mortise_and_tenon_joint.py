@@ -166,17 +166,13 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Apply tenon_position offset to get the actual tenon centerline start point
     tenon_x_direction = tenon_timber.get_face_direction(TimberFace.RIGHT)
     tenon_y_direction = tenon_timber.get_face_direction(TimberFace.FRONT)
-    tenon_x_offset = create_vector3d(tenon_x_direction[0], tenon_x_direction[1], tenon_x_direction[2]) * tenon_position[0]
-    tenon_y_offset = create_vector3d(tenon_y_direction[0], tenon_y_direction[1], tenon_y_direction[2]) * tenon_position[1]
+    tenon_x_offset = tenon_x_direction * tenon_position[0]
+    tenon_y_offset = tenon_y_direction * tenon_position[1]
     tenon_centerline_start = tenon_end_point + tenon_x_offset + tenon_y_offset
     
     # Tenon centerline direction (pointing from the tenon end toward the mortise)
     # The tenon extends OPPOSITE to tenon_end_direction (back into the timber toward the mortise)
-    tenon_centerline_direction = -create_vector3d(
-        tenon_end_direction[0],
-        tenon_end_direction[1],
-        tenon_end_direction[2]
-    )
+    tenon_centerline_direction = -tenon_end_direction
     
     # ========================================================================
     # Step 2: Calculate mortise face plane
@@ -184,11 +180,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Get the mortise face normal (pointing outward from mortise timber)
     mortise_face_direction = mortise_timber.get_face_direction(mortise_face)
-    mortise_face_normal = create_vector3d(
-        mortise_face_direction[0], 
-        mortise_face_direction[1], 
-        mortise_face_direction[2]
-    )
+    mortise_face_normal = mortise_face_direction
     
     # Get the mortise face offset (distance from centerline to face)
     if mortise_face in [TimberFace.RIGHT, TimberFace.LEFT]:
@@ -350,8 +342,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Apply tenon_position offset to shoulder plane point
     tenon_x_direction = tenon_timber.get_face_direction(TimberFace.RIGHT)
     tenon_y_direction = tenon_timber.get_face_direction(TimberFace.FRONT)
-    tenon_x_offset_vec = create_vector3d(tenon_x_direction[0], tenon_x_direction[1], tenon_x_direction[2]) * tenon_position[0]
-    tenon_y_offset_vec = create_vector3d(tenon_y_direction[0], tenon_y_direction[1], tenon_y_direction[2]) * tenon_position[1]
+    tenon_x_offset_vec = tenon_x_direction * tenon_position[0]
+    tenon_y_offset_vec = tenon_y_direction * tenon_position[1]
     shoulder_plane_point_with_offset = shoulder_plane_point + tenon_x_offset_vec + tenon_y_offset_vec
     
     # Convert shoulder plane point to tenon timber's local coordinates
@@ -580,20 +572,12 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             peg_orientation_world = Orientation(tenon_timber.orientation.matrix * peg_orientation_tenon_local.matrix)
 
             # the Z axis of the peg orientation in world space (the direction the peg points in)
-            peg_direction_world = create_vector3d(
-                peg_orientation_world.matrix[0, 2],  # Z-axis column, row 0
-                peg_orientation_world.matrix[1, 2],  # Z-axis column, row 1
-                peg_orientation_world.matrix[2, 2]   # Z-axis column, row 2
-            )
+            peg_direction_world = peg_orientation_world.matrix[:, 2]
             
             # Get the tenon face normal (where the peg enters the tenon timber)
             tenon_face = peg_parameters.tenon_face.to_timber_face()
             tenon_face_direction = tenon_timber.get_face_direction(tenon_face)
-            tenon_face_normal = create_vector3d(
-                tenon_face_direction[0],
-                tenon_face_direction[1],
-                tenon_face_direction[2]
-            )
+            tenon_face_normal = tenon_face_direction
             
             # Find which face of the mortise timber the peg enters
             # Pick the face whose normal has the largest dot product with the tenon face normal
@@ -607,7 +591,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
                 
                 # Get face normal
                 face_direction = mortise_timber.get_face_direction(face)
-                face_normal = create_vector3d(face_direction[0], face_direction[1], face_direction[2])
+                face_normal = face_direction
                 
                 # Calculate dot product with tenon face normal
                 dot_product_with_tenon_face = tenon_face_normal.dot(face_normal)
@@ -624,11 +608,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             
             # Get the face normal and offset
             peg_entry_face_direction = mortise_timber.get_face_direction(mortise_peg_entry_face)
-            peg_entry_face_normal = create_vector3d(
-                peg_entry_face_direction[0],
-                peg_entry_face_direction[1],
-                peg_entry_face_direction[2]
-            )
+            peg_entry_face_normal = peg_entry_face_direction
             
             if mortise_peg_entry_face in [TimberFace.RIGHT, TimberFace.LEFT]:
                 peg_entry_face_offset = mortise_timber.size[0] / 2
