@@ -336,3 +336,53 @@ class TestPegStuff:
         for peg in joint.jointAccessories:
             assert peg.forward_length == Rational(5), \
                 f"Each peg should have depth 5, got {peg.forward_length}"
+    
+    # 🐪
+    def test_peg_with_tenon_hole_offset(self, simple_T_configuration):
+        """Test that tenon_hole_offset shifts the peg hole in the tenon towards the shoulder."""
+        tenon_timber, mortise_timber = simple_T_configuration
+        
+        distance_from_shoulder = Rational(2)
+        offset = Rational(1, 4)  # 0.25 units offset
+        
+        # Create joint with offset
+        peg_params_with_offset = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            tenon_face=TimberReferenceLongFace.FRONT,
+            peg_positions=[(distance_from_shoulder, Rational(0))],
+            depth=Rational(5),
+            size=Rational(1, 2),
+            tenon_hole_offset=offset
+        )
+        
+        joint_with_offset = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.BOTTOM,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params_with_offset
+        )
+        
+        # Create joint without offset for comparison
+        peg_params_no_offset = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            tenon_face=TimberReferenceLongFace.FRONT,
+            peg_positions=[(distance_from_shoulder, Rational(0))],
+            depth=Rational(5),
+            size=Rational(1, 2),
+            tenon_hole_offset=Rational(0)
+        )
+        
+        joint_no_offset = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.BOTTOM,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params_no_offset
+        )
+        
+        # TODO test actual stuff here

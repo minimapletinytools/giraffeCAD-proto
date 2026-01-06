@@ -78,6 +78,7 @@
     -create series of more complex examples
     -create test runner for examples so the exmaples are also tests :O
     -agent prompt examples
+    -make sawhores example nice (eh, maybe you need to wedged dovetail mortise and tenons... or nuki joints or whatever)
   -template project
   -update docs
     -cleanup README
