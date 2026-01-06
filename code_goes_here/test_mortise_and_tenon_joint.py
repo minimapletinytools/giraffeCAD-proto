@@ -242,11 +242,10 @@ class TestPegStuff:
         
         # Transform peg position from mortise local to world
         peg_position_world = peg.position
-        print(peg_position_world)
         
         # TODO uncomment once you fix peg positioning...
         # TODO this is all weird because of the timber position is not the T you expect...
-        #assert peg_position_world[0] == shoulder_plane_x_global - distance_from_shoulder
+        assert peg_position_world[2] == shoulder_plane_x_global - distance_from_shoulder
     
     
     # 🐪
