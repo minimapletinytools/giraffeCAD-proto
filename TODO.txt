@@ -17,6 +17,142 @@
 
 :: TODO
 
+
+
+-DECISION TIME
+  -consider adding "Thing" base class, that has position and orientation 
+  -add timber metadata (move name in metadata?)
+  -add a Frame.from_joints function, it sohuld also take a list of timbers as well. Uses referential equality to test for same timbers. Also checks for same name, and if same name but different reference, check for deep equality and warn if they are the same also warn on same names
+
+
+-add back post joints to oscar shed
+
+
+-allow extrude polygon to extrude in both directions
+-add extrude polygon csg rendering to fusino 360
+
+-delete rhino for now
+
+
+-cleanup
+  DONE-make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
+  -use global_to_local and local_to_global helpers (or implement Thing classs....)
+  DONE-rename BACK to BACKWARD (DONE: renamed FORWARD to FRONT instead for consistency)
+  DONE-clean up moothymoth tests to not use exact euality...
+
+-M1 (reward is reimburse H2D LOL)
+  DONE-address TODOS in join_timbers
+  DONE-create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
+  DONE-consider making a better way to store TimberWithJoints and joints class etc...
+    DONE-fix tenon joint class
+    DONE-add resultant length function after applying joints computerLength(timebr, [joints])
+      -get fusino 360 to render just at the rusultant length 
+  DONE-add helper render functions
+    DONE-extend timbers so joint can be diffed out of it (rather than bool in a long timber, just use an extra long timber when creating the original timber)
+    DONE-generic boolean geometry classes
+    DONE-use boolean geometery to create negative of tenon cutout timber - (timber - tenon - shoulderplane)
+      FAIL-calll this method tenon cutter :D
+  DONE-simple joints
+    DONE-basic_corner_joint
+    DONE-basic_butt_joint
+    DONE-basic_splice_joint
+    DONE-basic_miter_joint
+  DONE-cross_joints
+    DONE-basic_house_joint
+    DONE-basic_cross_lap_joint
+
+  -butt joints
+    -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
+      DONE-mortise and tenon
+      DONE-draw bore mortise and tenon
+      DONE-through mortise and tenon
+      -add offset mortise peg param (so that it tightens the joint up)
+    
+  -corner joints
+    -maybe try the fancy  one we used on the shed  Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)
+
+  -splice_joint
+    -gooseneck joint 
+    -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
+
+  -make shed example (just add joints)
+
+  IGNORE-get rhino rendering working for the following joints ...
+  -improve examples
+    -create series of examples showcasing each feature
+    -create series of more complex examples
+    -create test runner for examples so the exmaples are also tests :O
+    -agent prompt examples
+  -template project
+  -update docs
+    -cleanup README
+      -clean up venv/makefile/setup nonsense so its simpler...
+    -cleanup comments in code and delete morenotes.md
+    -generate docs
+    - you need a better way to specify timber lenghts... most of the time you don't really care? It should be determined by the joint in most cases.
+      - so I guess joints will resize the timber, even tusk tenon joints take a tusk length parameter, tenon joints have a tenon depth parameter etc.. 
+      - i think this is how it already is, update the README to explain this
+    - move joint section from morenotes into concepts.md and then delete morenotes
+
+-M1.5
+  -add more features to mortise and tenon joint
+    -extract out peg creation stuff, it will be useful in other places
+      -basically, just figure out the start point and direction of the peg... it will return to you a tuple of prisms to substract from the mortise and tenon timber, and a peg accessory
+    -support non face aligned cases
+      -clean up the mortise shoulder calculation shit wtf or maybe yo uneed it for non face aligned cases?
+    -end wedged mortise and tenon
+    -fox wedge mortise and tenon
+    -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
+      -same as draw bore but with komisen peg,
+    -tusked mortise and tenon
+    -support tenon_rotation
+    -support mortise_shoulder
+    IGNORE-add additinoal mortise timbers to mortise tenon joint.. so you can do the thing like the stacked joint on the back post of oscarshed
+      -actually better to do this as a house joint and 2 separate mortise and tenon joints. the second mortise and tenon joint will be awkard but it works so why not
+    -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
+      -otherwise calls into mortise_and_tenon above
+      -also needs to convert the mortise into an "end cut"
+  -basic joints, or maybe move these to "lap joints" file?
+    -half_lap (use same code as cross lap joint?)
+    -bridle joint (special case of mortise and tenon? nah)
+  -sidewedged dovetail mortise and tenon joint (this method is its own method)
+  -a few more fancy ones from here https://architizer.com/blog/inspiration/industry/japanese-art-of-wood-joinery/
+
+-M2
+  -IFC rendering?
+  -add panel/board support 
+  -update shed example to include panels
+  -more joints
+    -splice joints
+      -TODO 
+    -coner joints
+      -mortise and tenon end joint (calls mortise and tenon but positions the tenon in away from the end)
+      -half lap
+    -cross joints
+      -double notch
+    -fancy joints
+      -the one where 2 beams butt up against 1 post and have the thing that passes through them
+  -add screw joint
+  -chamfer render support?
+  -add stl support for joint accessories so you can use framing hardware
+  -define assembly directions for each joint (does this go in meta data?)
+  -assembly solver thing :D (lol no) 
+
+
+
+
+
+
+:: FUTURE shit
+-should I make a "block" class that parents "Timber" and then make a "board" class?
+-should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
+- add nominal_size sup port for square and line rule desgins
+- make really awesome examples that showcase each parameter of each function
+
+
+
+:: TODONE
+
 DONE-see if you can fix the transform issue in fusion360...  should be able to do as rigid joint with origin
   FAIL-in fusion 360, hwen transforming occurences (components) to their final position.. rather than setting transform2. instead can you create a rigid joint with the global origin to set the position instead. 
   DONE-just do the body move way...
@@ -57,134 +193,6 @@ DONE-improve tests
     DONE-test mortise depth and tenon depth using CSG test functions
 
   
-
--add a Frame.from_joints function, it sohuld also take a list of timbers as well. Uses referential equality to test for same timbers. Also checks for same name, and if same name but different reference, check for deep equality and warn if they are the same also warn on same names
--add back post joints to oscar shed
-
-
--add more features to mortise and tenon joint
-  -add offset mortise peg param (so that it tightens the joint up)
-  -support non face aligned cases
-    -clean up the mortise shoulder calculation shit wtf or maybe yo uneed it for non face aligned cases?
-  -extract out peg creation stuff, it will be useful in other places
-    -basically, just figure out the start point and direction of the peg... it will return to you a tuple of prisms to substract from the mortise and tenon timber, and a peg accessory
-  -add additinoal mortise timbers to mortise tenon joint.. so you can do the thing like the stacked joint on the back post of oscarshed
-    -actually better to do this as a house joint and 2 separate mortise and tenon joints. the second mortise and tenon joint will be awkard but it works so why not
-
--add extrude polygon csg rendering to fusino 360
-
-
--cleanup
-  -make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
-  -use global_to_local and local_to_global helpers (or implement Thing classs....)
-  DONE-rename BACK to BACKWARD (DONE: renamed FORWARD to FRONT instead for consistency)
-  DONE-clean up moothymoth tests to not use exact euality...
-
--DECISION TIME
-  -consider adding "Thing" base class, that has position and orientation 
-  -add timber metadata (move name in metadata?)
-
--M1 (reward is reimburse H2D LOL)
-  DONE-address TODOS in join_timbers
-  DONE-create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
-  DONE-consider making a better way to store TimberWithJoints and joints class etc...
-    DONE-fix tenon joint class
-    DONE-add resultant length function after applying joints computerLength(timebr, [joints])
-      -get fusino 360 to render just at the rusultant length 
-  DONE-add helper render functions
-    DONE-extend timbers so joint can be diffed out of it (rather than bool in a long timber, just use an extra long timber when creating the original timber)
-    DONE-generic boolean geometry classes
-    DONE-use boolean geometery to create negative of tenon cutout timber - (timber - tenon - shoulderplane)
-      FAIL-calll this method tenon cutter :D
-  DONE-simple joints
-    DONE-basic_corner_joint
-    DONE-basic_butt_joint
-    DONE-basic_splice_joint
-    DONE-basic_miter_joint
-  DONE-cross_joints
-    DONE-basic_house_joint
-    DONE-basic_cross_lap_joint
-
-  -butt joints
-    -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
-      DONE-mortise and tenon
-      DONE-draw bore mortise and tenon
-      DONE-through mortise and tenon
-      -end wedged mortise and tenon
-      -fox wedge mortise and tenon
-      -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
-        -same as draw bore but with komisen peg,
-      -tusked mortise and tenon
-      -non face aligned mortise and tenon joints... (maybe at least 1 axis should be face aligned...)
-      -support tenon_rotation
-      -support mortise_shoulder
-    -sidewedged dovetail mortise and tenon joint (this method is its own method)
-
-  -corner joints
-    -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
-      -otherwise calls into mortise_and_tenon above
-      -also needs to convert the mortise into an "end cut"
-    -half_lap (special case of mortise and tenon? nah, special case of bridle joint? nah)
-    -bridle joint (special case of mortise and tenon? nah)
-    -maybe try the fancy  one we used on the shed
-
-  -splice_joint
-    -gooseneck joint 
-    -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
-
-  -make shed example (just add joints)
-
-  IGNORE-get rhino rendering working for the following joints ...
-  -improve examples
-    -create series of examples showcasing each feature
-    -create series of more complex examples
-    -create test runner for examples so the exmaples are also tests :O
-    -agent prompt examples
-  -template project
-  -update docs
-    -cleanup README
-      -clean up venv/makefile/setup nonsense so its simpler...
-    -cleanup comments in code and delete morenotes.md
-    -generate docs
-    - you need a better way to specify timber lenghts... most of the time you don't really care? It should be determined by the joint in most cases.
-      - so I guess joints will resize the timber, even tusk tenon joints take a tusk length parameter, tenon joints have a tenon depth parameter etc.. 
-      - i think this is how it already is, update the README to explain this
-    - move joint section from morenotes into concepts.md and then delete morenotes
-
--M2
-  -IFC rendering?
-  -add panel/board support 
-  -update shed example to include panels
-  -more joints
-    -splice joints
-      -TODO 
-    -coner joints
-      -mortise and tenon end joint (calls mortise and tenon but positions the tenon in away from the end)
-      -half lap
-    -cross joints
-      -double notch
-    -fancy joints
-      -the one where 2 beams butt up against 1 post and have the thing that passes through them
-  -add screw joint
-  -chamfer render support?
-  -add stl support for joint accessories so you can use framing hardware
-  -define assembly directions for each joint (does this go in meta data?)
-  -assembly solver thing :D (lol no) 
-
-
-
-
-
-
-:: FUTURE shit
--should I make a "block" class that parents "Timber" and then make a "board" class?
--should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
-- add nominal_size sup port for square and line rule desgins
-- make really awesome examples that showcase each parameter of each function
-
-
-
-:: TODONE
 DONE/SORTA-do the big useless test cleanup
 IGNORE-cleanup render utilities, some of them seem unecessary
 DONE-moothymoth
