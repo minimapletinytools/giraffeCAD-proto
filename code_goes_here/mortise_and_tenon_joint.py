@@ -433,7 +433,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # are stored in global space for direct rendering without transformation
     # ========================================================================
     
-    joint_accessories = []
+    joint_accessories = {}
     
     if peg_parameters is not None:
         # Assert tenon_rotation is identity (required for peg positioning)
@@ -509,7 +509,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         peg_holes_in_tenon_local = []
         peg_holes_in_mortise_local = []
         
-        for distance_from_shoulder, distance_from_centerline in peg_parameters.peg_positions:
+        for peg_idx, (distance_from_shoulder, distance_from_centerline) in enumerate(peg_parameters.peg_positions):
             # Calculate peg insertion point in tenon timber's local space
             # Start at the tenon position offset, then add the peg-specific offsets
             peg_pos_on_tenon_face_local = Matrix([Rational(0), Rational(0), Rational(0)])
@@ -681,7 +681,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
                 forward_length=peg_depth,
                 stickout_length=stickout_length
             )
-            joint_accessories.append(peg_accessory)
+            joint_accessories[f"peg_{peg_idx}"] = peg_accessory
         
         # Add peg holes to the existing CSGs using Union
         if peg_holes_in_tenon_local or peg_holes_in_mortise_local:
@@ -742,8 +742,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # #endregion
     
     return Joint(
-        cut_timbers=(tenon_cut_timber, mortise_cut_timber),
-        jointAccessories=tuple(joint_accessories)
+        cut_timbers={"tenon_timber": tenon_cut_timber, "mortise_timber": mortise_cut_timber},
+        jointAccessories=joint_accessories
     )
 
 

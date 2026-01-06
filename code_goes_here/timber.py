@@ -14,7 +14,7 @@ from .moothymoth import (
 from .footprint import Footprint
 from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUnion, Difference as CSGDifference
 from enum import Enum
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
@@ -1091,8 +1091,8 @@ class Wedge(JointAccessory):
 
 @dataclass(frozen=True)
 class Joint:
-    cut_timbers: Tuple[CutTimber, ...]
-    jointAccessories: Tuple[JointAccessory, ...] = ()
+    cut_timbers: Dict[str, CutTimber]
+    jointAccessories: Dict[str, JointAccessory] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

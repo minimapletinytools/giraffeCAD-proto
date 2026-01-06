@@ -18,7 +18,7 @@
 :: TODO
 
 
--change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can reference joint pieces by name rather than index
+DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can reference joint pieces by name rather than index
 -DECISION TIME
   -consider adding "Thing" base class, that has position and orientation 
   -add timber metadata (move name in metadata?)

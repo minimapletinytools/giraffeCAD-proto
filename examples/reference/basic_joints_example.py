@@ -74,7 +74,7 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     # Create miter joint at the ends that meet at position
     joint = cut_basic_miter_joint(timberA, TimberReferenceEnd.TOP, timberB, TimberReferenceEnd.TOP)
     
-    return list(joint.cut_timbers)
+    return list(joint.cut_timbers.values())
 
 
 def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
@@ -115,7 +115,7 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
         timberB, TimberReferenceEnd.TOP
     )
     
-    return list(joint.cut_timbers)
+    return list(joint.cut_timbers.values())
 
 
 def make_butt_joint_example(position: V3) -> list[CutTimber]:
@@ -157,7 +157,7 @@ def make_butt_joint_example(position: V3) -> list[CutTimber]:
         TimberReferenceEnd.TOP
     )
     
-    return list(joint.cut_timbers)
+    return list(joint.cut_timbers.values())
 
 
 def make_splice_joint_example(position: V3) -> list[CutTimber]:
@@ -199,7 +199,7 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
         splice_point=position  # Meet at the specified position
     )
     
-    return list(joint.cut_timbers)
+    return list(joint.cut_timbers.values())
 
 
 def make_house_joint_example(position: V3) -> list[CutTimber]:
@@ -245,7 +245,7 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
     # Create house joint
     joint = cut_basic_house_joint(housing_timber, housed_timber)
     
-    return list(joint.cut_timbers)
+    return list(joint.cut_timbers.values())
 
 
 def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
@@ -298,7 +298,7 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
         timberB_cut_face=TimberFace.BACK
     )
     
-    return list(joint.cut_timbers)
+    return list(joint.cut_timbers.values())
 
 
 def create_all_joint_examples() -> Frame:
