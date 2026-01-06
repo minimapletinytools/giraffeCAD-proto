@@ -353,8 +353,7 @@ def create_oscarshed():
         tenon_face=TimberReferenceLongFace.FRONT,
         peg_positions=[(inches(1), Rational(0))],  # 1" from shoulder, centered
         size=inches(Rational(5, 8)),  # 5/8" square
-        depth=inches(Rational(7, 2)),
-        tenon_hole_offset=inches(Rational(1, 16))
+        depth=inches(Rational(7, 2))  
     )
     # Create right side params by replacing just the tenon_face
     side_girt_peg_params_right = replace(
