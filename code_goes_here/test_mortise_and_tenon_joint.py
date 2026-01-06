@@ -96,7 +96,41 @@ def sample_points_in_box(center: V3, size: V3, num_samples: int = 5) -> List[V3]
 # ============================================================================
 
 class TestMortiseAndTenonGeometry:
-    pass
+    
+    # 🐪
+    def test_mortise_tenon_centerline_containment(self, simple_T_configuration):
+        """
+        Test points along the tenon centerline to verify correct joint geometry.
+        
+        Measuring from the shoulder of the joint along the centerline of the tenon timber, we expect:
+        - Points in [0,4] should be in tenon but not mortise (tenon part)
+        - Points in (4,5) should be in neither (gap between tenon and mortise  depth)
+        - Points in [5,6] should be in neither (inside the mortise hole)
+        
+        This tests that the tenon length and mortise depth are correctly implemented.
+        """
+        tenon_timber, mortise_timber = simple_T_configuration
+        
+        mortise_depth = Rational(5)
+        tenon_length = Rational(4)
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            tenon_timber=tenon_timber,
+            mortise_timber=mortise_timber,
+            tenon_end=TimberReferenceEnd.BOTTOM,
+            size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=tenon_length,
+            mortise_depth=mortise_depth
+        )
+        
+        # Get the CSGs for the cut timbers (these are the REMAINING material after cuts)
+        tenon_csg = joint.cut_timbers[0].render_timber_with_cuts_csg_local()
+        mortise_csg = joint.cut_timbers[1].render_timber_with_cuts_csg_local()
+        
+        # Verify basic tenon geometry: tenon should exist from z=0 upward
+        # Test that center points are in the tenon at the bottom
+        for z in [Rational(0), Rational(1), Rational(2), Rational(3)]:
+            # TODO finish me. need to find shoulder plane and offset from there
+            pass
     
 
 
