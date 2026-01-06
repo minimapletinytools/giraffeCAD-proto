@@ -177,8 +177,8 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     
     # Create and return the Joint with all data at construction
     joint = Joint(
-        cut_timbers=(cut_timberA, cut_timberB),
-        jointAccessories=()
+        cut_timbers={"timberA": cut_timberA, "timberB": cut_timberB},
+        jointAccessories={}
     )
     
     return joint
@@ -275,8 +275,8 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     
     # Create and return the Joint with all data at construction
     joint = Joint(
-        cut_timbers=(cut_receiving, cut_butt),
-        jointAccessories=()
+        cut_timbers={"receiving_timber": cut_receiving, "butt_timber": cut_butt},
+        jointAccessories={}
     )
     
     return joint
@@ -436,8 +436,8 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
     
     # Create and return the Joint with all data at construction
     joint = Joint(
-        cut_timbers=(cut_timberA, cut_timberB),
-        jointAccessories=()
+        cut_timbers={"timberA": cut_timberA, "timberB": cut_timberB},
+        jointAccessories={}
     )
     
     return joint
@@ -692,8 +692,8 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     
     # Create and return the Joint
     joint = Joint(
-        cut_timbers=(cut_timberA, cut_timberB),
-        jointAccessories=()
+        cut_timbers={"timberA": cut_timberA, "timberB": cut_timberB},
+        jointAccessories={}
     )
     
     return joint
@@ -930,8 +930,8 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     
     # Create and return the Joint
     joint = Joint(
-        cut_timbers=(cut_housing, cut_housed),
-        jointAccessories=()
+        cut_timbers={"housing_timber": cut_housing, "housed_timber": cut_housed},
+        jointAccessories={}
     )
     
     return joint

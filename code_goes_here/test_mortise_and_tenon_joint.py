@@ -122,8 +122,8 @@ class TestMortiseAndTenonGeometry:
         )
         
         # Get the CSGs for the cut timbers (these are the REMAINING material after cuts)
-        tenon_csg = joint.cut_timbers[0].render_timber_with_cuts_csg_local()
-        mortise_csg = joint.cut_timbers[1].render_timber_with_cuts_csg_local()
+        tenon_csg = joint.cut_timbers["tenon_timber"].render_timber_with_cuts_csg_local()
+        mortise_csg = joint.cut_timbers["mortise_timber"].render_timber_with_cuts_csg_local()
 
         joint_shoulder_global = create_vector3d(Rational(0), Rational(0), Rational(3))
         
@@ -191,14 +191,14 @@ class TestPegStuff:
             peg_parameters=peg_params
         )
 
-        assert joint.cut_timbers[0].timber == tenon_timber
-        assert joint.cut_timbers[1].timber == mortise_timber
-        assert len(joint.cut_timbers[0]._cuts) == 1
-        assert len(joint.cut_timbers[1]._cuts) == 1
-        assert joint.cut_timbers[0]._cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
-        assert joint.cut_timbers[1]._cuts[0].maybe_end_cut == None
+        assert joint.cut_timbers["tenon_timber"].timber == tenon_timber
+        assert joint.cut_timbers["mortise_timber"].timber == mortise_timber
+        assert len(joint.cut_timbers["tenon_timber"]._cuts) == 1
+        assert len(joint.cut_timbers["mortise_timber"]._cuts) == 1
+        assert joint.cut_timbers["tenon_timber"]._cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
+        assert joint.cut_timbers["mortise_timber"]._cuts[0].maybe_end_cut == None
         
-        peg = joint.jointAccessories[0]
+        peg = joint.jointAccessories["peg_0"]
         
         # check that the peg is orthogonal to get_face_direction(TimberFace.FRONT)
         assert_vectors_parallel(peg.orientation.matrix[:, 2], tenon_timber.get_face_direction(TimberFace.FRONT))
@@ -210,7 +210,7 @@ class TestPegStuff:
         assert peg.position[2] == shoulder_plane_x_global - distance_from_shoulder
 
         # Get tenon timber's cut CSG (what's removed)
-        tenon_cut_timber = joint.cut_timbers[1]
+        tenon_cut_timber = joint.cut_timbers["mortise_timber"]
         tenon_cut_csg = tenon_cut_timber._cuts[0].negative_csg
         
         # Verify CSG includes peg holes (should be a Union with multiple children)
@@ -244,7 +244,7 @@ class TestPegStuff:
             peg_parameters=peg_params
         )
         
-        peg = joint.jointAccessories[0]
+        peg = joint.jointAccessories["peg_0"]
         peg_csg = peg.render_csg_local()
 
         # Sample points within the peg's CSG
@@ -286,8 +286,8 @@ class TestPegStuff:
             point_in_peg_hole_tenon_local = tenon_timber.global_to_local(point_in_peg_hole)
             point_in_peg_hole_mortise_local = mortise_timber.global_to_local(point_in_peg_hole)
             
-            tenon_csg = joint.cut_timbers[0].render_timber_with_cuts_csg_local()
-            mortise_csg = joint.cut_timbers[1].render_timber_with_cuts_csg_local()
+            tenon_csg = joint.cut_timbers["tenon_timber"].render_timber_with_cuts_csg_local()
+            mortise_csg = joint.cut_timbers["mortise_timber"].render_timber_with_cuts_csg_local()
             
             assert not tenon_csg.contains_point(point_in_peg_hole_tenon_local), \
                 "Point inside peg hole should not be contained in tenon timber"
@@ -328,12 +328,12 @@ class TestPegStuff:
             f"Should have 3 pegs, got {len(joint.jointAccessories)}"
         
         # All should be Peg objects
-        for accessory in joint.jointAccessories:
+        for accessory in joint.jointAccessories.values():
             assert isinstance(accessory, Peg), \
                 "All accessories should be Peg objects"
         
         # Each peg should have correct depth
-        for peg in joint.jointAccessories:
+        for peg in joint.jointAccessories.values():
             assert peg.forward_length == Rational(5), \
                 f"Each peg should have depth 5, got {peg.forward_length}"
     
