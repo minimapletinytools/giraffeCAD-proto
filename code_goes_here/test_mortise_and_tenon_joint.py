@@ -97,7 +97,6 @@ def sample_points_in_box(center: V3, size: V3, num_samples: int = 5) -> List[V3]
 
 class TestMortiseAndTenonGeometry:
     
-    # 🐪
     def test_mortise_tenon_centerline_containment(self, simple_T_configuration):
         """
         Test points along the tenon centerline to verify correct joint geometry.
@@ -125,12 +124,37 @@ class TestMortiseAndTenonGeometry:
         # Get the CSGs for the cut timbers (these are the REMAINING material after cuts)
         tenon_csg = joint.cut_timbers[0].render_timber_with_cuts_csg_local()
         mortise_csg = joint.cut_timbers[1].render_timber_with_cuts_csg_local()
+
+        joint_shoulder_global = create_vector3d(Rational(0), Rational(0), Rational(3))
         
         # Verify basic tenon geometry: tenon should exist from z=0 upward
         # Test that center points are in the tenon at the bottom
         for z in [Rational(0), Rational(1), Rational(2), Rational(3)]:
-            # TODO finish me. need to find shoulder plane and offset from there
-            pass
+            point_global = joint_shoulder_global - create_vector3d(Rational(0), Rational(0), z)
+            point_tenon_local = tenon_timber.global_to_local(point_global)
+            point_mortise_local = mortise_timber.global_to_local(point_global)
+            assert tenon_csg.contains_point(point_tenon_local), \
+                f"Point at z={z} should be in tenon centerline"
+            assert not mortise_csg.contains_point(point_mortise_local), \
+                f"Point at z={z} should not be in mortise centerline"
+        
+        for z in [Rational(4.2), Rational(4.8)]:
+            point_global = joint_shoulder_global - create_vector3d(Rational(0), Rational(0), z)
+            point_tenon_local = tenon_timber.global_to_local(point_global)
+            point_mortise_local = mortise_timber.global_to_local(point_global)
+            assert not tenon_csg.contains_point(point_tenon_local), \
+                f"Point at z={z} should not be in tenon centerline"
+            assert not mortise_csg.contains_point(point_mortise_local), \
+                f"Point at z={z} should not be in mortise centerline"
+        
+        for z in [Rational(5), Rational(6)]:
+            point_global = joint_shoulder_global - create_vector3d(Rational(0), Rational(0), z)
+            point_tenon_local = tenon_timber.global_to_local(point_global)
+            point_mortise_local = mortise_timber.global_to_local(point_global)
+            assert not tenon_csg.contains_point(point_tenon_local), \
+                f"Point at z={z} should not be in tenon centerline"
+            assert mortise_csg.contains_point(point_mortise_local), \
+                f"Point at z={z} should be in mortise centerline"
     
 
 
