@@ -21,7 +21,7 @@ from giraffe import (
     cut_basic_house_joint,
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
     FootprintLocation, CutTimber, Stickout, TimberReferenceEnd,
-    SimplePegParameters, PegShape, TimberReferenceLongFace,
+    SimplePegParameters, PegShape, TimberReferenceLongFace, TimberFace,
     inches, feet, Rational, Matrix
 )
 from code_goes_here.footprint import Footprint
@@ -39,7 +39,9 @@ base_length = feet(4)     # Short dimension (Y direction)
 
 # Post parameters
 post_inset = inches(5)      # 3 inch inset from corners (2 inches is half the width of a 4x4 post so 2+3=5)
-post_back_height = feet(4)    # Height of back posts
+
+# erhm, look too hard about these measurements. The actual height of the posts gets determined by joints. These #s are just here for initial placement of the posts.
+post_back_height = feet(4)   # Height of back posts
 post_front_height = feet(5)   # Height of front posts
 
 # Timber size definitions using dimensional helpers
@@ -591,15 +593,14 @@ def create_oscarshed():
         name="Front Top Plate"
     )
     
-    # Back top plate (connects left back post to right back post)
-    # Sits on top of the back posts
+    
     top_plate_back = join_timbers(
         timber1=post_back_left,        # Left back post (timber1)
         timber2=post_back_right,       # Right back post (timber2)
-        location_on_timber1=post_back_height,    # At top of back post
+        location_on_timber1=post_back_height+inches(3),    # At top of back post + 3 inches to raise the back beam 2 inches above bottom of side girts
         stickout=top_plate_stickout,   # 1 foot stickout on both sides
-        location_on_timber2=post_back_height,    # Same height on right post
-        lateral_offset=0,       # No lateral offset
+        location_on_timber2=post_back_height+inches(3),   
+        lateral_offset=0,
         size=top_plate_size,
         orientation_width_vector=create_vector3d(0, 0, 1),
         name="Back Top Plate"
@@ -633,6 +634,59 @@ def create_oscarshed():
         size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
+        tenon_position=None  # Centered
+    )
+
+    # ============================================================================
+    # Create housing joints between side girts and back top plate (back beam)
+    # ============================================================================
+    # The side girts are the housing timber (receiving the housed timber)
+    # The back top plate is the housed timber (fitting into the pockets)
+    
+    joint_back_beam_left_housing = cut_basic_house_joint_DEPRECATED(
+        housing_timber=side_girt_left,
+        housed_timber=top_plate_back,
+        extend_housed_timber_to_infinity=False
+    )
+    
+    joint_back_beam_right_housing = cut_basic_house_joint_DEPRECATED(
+        housing_timber=side_girt_right,
+        housed_timber=top_plate_back,
+        extend_housed_timber_to_infinity=False
+    )
+
+    # ============================================================================
+    # Create mortise and tenon joints between back corner posts and back top plate
+    # ============================================================================
+    # Back corner posts have tenons at their TOP end that go into the back beam (back top plate)
+    # Tenon size: 1" × 1.5" (1.5" side to side, 1" front to back)
+    # Tenon length: 2.5 inches
+    # Mortise depth: 2.5 inches
+    # No peg
+    
+    corner_post_to_beam_tenon_size = Matrix([inches(Rational(3, 2)), inches(1)])  # 1" front to back, 1.5" side to side
+    corner_post_to_beam_tenon_length = inches(Rational(5, 2))  # 2.5 inches
+    corner_post_to_beam_mortise_depth = inches(Rational(5, 2))  # 2.5 inches
+    
+    # Back left corner post TOP end meets back top plate
+    joint_back_left_post_to_beam = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post_back_left,
+        mortise_timber=top_plate_back,
+        tenon_end=TimberReferenceEnd.TOP,
+        size=corner_post_to_beam_tenon_size,
+        tenon_length=corner_post_to_beam_tenon_length,
+        mortise_depth=corner_post_to_beam_mortise_depth,
+        tenon_position=None  # Centered
+    )
+    
+    # Back right corner post TOP end meets back top plate
+    joint_back_right_post_to_beam = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post_back_right,
+        mortise_timber=top_plate_back,
+        tenon_end=TimberReferenceEnd.TOP,
+        size=corner_post_to_beam_tenon_size,
+        tenon_length=corner_post_to_beam_tenon_length,
+        mortise_depth=corner_post_to_beam_mortise_depth,
         tenon_position=None  # Centered
     )
 
@@ -888,15 +942,17 @@ def create_oscarshed():
     post_front_right_cuts.extend(joint_side_girt_right.cut_timbers["mortise_timber"]._cuts)   # Mortise for side girt
     pct_post_front_right = CutTimber(post_front_right, cuts=post_front_right_cuts)
     
-    # Back corner posts: have tenon into mudsill (BOTTOM) + tenon into side girt (TOP)
+    # Back corner posts: have tenon into mudsill (BOTTOM) + tenon into side girt (TOP) + tenon into back top plate (TOP)
     post_back_right_cuts = []
     post_back_right_cuts.extend(joint_post_back_right.cut_timbers["tenon_timber"]._cuts)  # Tenon into mudsill (BOTTOM)
     post_back_right_cuts.extend(joint_side_girt_right_back.cut_timbers["tenon_timber"]._cuts)  # Tenon into side girt (TOP)
+    post_back_right_cuts.extend(joint_back_right_post_to_beam.cut_timbers["tenon_timber"]._cuts)  # Tenon into back top plate (TOP)
     pct_post_back_right = CutTimber(post_back_right, cuts=post_back_right_cuts)
     
     post_back_left_cuts = []
     post_back_left_cuts.extend(joint_post_back_left.cut_timbers["tenon_timber"]._cuts)  # Tenon into mudsill (BOTTOM)
     post_back_left_cuts.extend(joint_side_girt_left_back.cut_timbers["tenon_timber"]._cuts)  # Tenon into side girt (TOP)
+    post_back_left_cuts.extend(joint_back_left_post_to_beam.cut_timbers["tenon_timber"]._cuts)  # Tenon into back top plate (TOP)
     pct_post_back_left = CutTimber(post_back_left, cuts=post_back_left_cuts)
     
     # Back middle posts: have tenons at both ends (BOTTOM into mudsill, TOP into top plate)
@@ -918,21 +974,29 @@ def create_oscarshed():
     cut_timbers.append(pct_post_back_middle_left)   # Middle post with M&T at both ends
     cut_timbers.append(pct_post_back_left)        # Back left corner post with all cuts
     
-    # Add side girts (with mortise & tenon joints at both back and front ends)
-    # Left side girt: has mortise at back end (BOTTOM) for back post tenon, tenon at front end (TOP) into front post
+    # Add side girts (with multiple joints)
+    # Left side girt has:
+    #   - Mortise at back end (BOTTOM) for back post tenon
+    #   - Tenon at front end (TOP) into front post
+    #   - Housing pocket for back beam
     side_girt_left_cuts = []
     side_girt_left_cuts.extend(joint_side_girt_left_back.cut_timbers["mortise_timber"]._cuts)  # Mortise for back post tenon (BOTTOM)
     side_girt_left_cuts.extend(joint_side_girt_left.cut_timbers["tenon_timber"]._cuts)  # Tenon into front post (TOP)
+    side_girt_left_cuts.extend(joint_back_beam_left_housing.cut_timbers["housing_timber"]._cuts)  # Housing pocket for back beam
     pct_side_girt_left = CutTimber(side_girt_left, cuts=side_girt_left_cuts)
     
-    # Right side girt: has mortise at back end (BOTTOM) for back post tenon, tenon at front end (TOP) into front post
+    # Right side girt has:
+    #   - Mortise at back end (BOTTOM) for back post tenon
+    #   - Tenon at front end (TOP) into front post
+    #   - Housing pocket for back beam
     side_girt_right_cuts = []
     side_girt_right_cuts.extend(joint_side_girt_right_back.cut_timbers["mortise_timber"]._cuts)  # Mortise for back post tenon (BOTTOM)
     side_girt_right_cuts.extend(joint_side_girt_right.cut_timbers["tenon_timber"]._cuts)  # Tenon into front post (TOP)
+    side_girt_right_cuts.extend(joint_back_beam_right_housing.cut_timbers["housing_timber"]._cuts)  # Housing pocket for back beam
     pct_side_girt_right = CutTimber(side_girt_right, cuts=side_girt_right_cuts)
     
-    cut_timbers.append(pct_side_girt_left)  # Left side girt with mortise at back, tenon at front
-    cut_timbers.append(pct_side_girt_right)  # Right side girt with mortise at back, tenon at front
+    cut_timbers.append(pct_side_girt_left)  # Left side girt with all cuts
+    cut_timbers.append(pct_side_girt_right)  # Right side girt with all cuts
     
     # Add front girt pieces (with mortise & tenon joints at ends and splice joint in middle)
     cut_timbers.append(pct_front_girt_left)  # Left piece with tenon + splice cuts
@@ -952,6 +1016,14 @@ def create_oscarshed():
     # Add mortise cuts from middle posts into back top plate
     top_plate_back_cuts.extend(joint_back_middle_right_to_top_plate.cut_timbers["mortise_timber"]._cuts)
     top_plate_back_cuts.extend(joint_back_middle_left_to_top_plate.cut_timbers["mortise_timber"]._cuts)
+    
+    # Add housing cuts from side girts (back beam is housed in the side girts)
+    top_plate_back_cuts.extend(joint_back_beam_left_housing.cut_timbers["housed_timber"]._cuts)
+    top_plate_back_cuts.extend(joint_back_beam_right_housing.cut_timbers["housed_timber"]._cuts)
+    
+    # Add mortise cuts from back corner posts into back top plate
+    top_plate_back_cuts.extend(joint_back_left_post_to_beam.cut_timbers["mortise_timber"]._cuts)
+    top_plate_back_cuts.extend(joint_back_right_post_to_beam.cut_timbers["mortise_timber"]._cuts)
     
     # Create CutTimbers for top plates with all cuts
     pct_top_plate_back = CutTimber(top_plate_back, cuts=top_plate_back_cuts)
