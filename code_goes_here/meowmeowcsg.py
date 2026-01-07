@@ -140,8 +140,8 @@ class Prism(MeowMeowCSG):
     size: V2
     orientation: Orientation
     position: V3 = field(default_factory=lambda: Matrix([0, 0, 0]))  # Position in global coordinates
-    start_distance: Optional[Numeric] = None  # None means infinite in negative direction
-    end_distance: Optional[Numeric] = None    # None means infinite in positive direction
+    start_distance: Optional[Numeric] = None  # starting distance of the prism in the direction of the +Z axis. None means infinite in negative direction
+    end_distance: Optional[Numeric] = None    # ending distance of the prism in the direction of the +Z axis. None means infinite in positive direction
 
     def get_bottom_position(self) -> V3:
         """
@@ -566,20 +566,65 @@ class Difference(MeowMeowCSG):
 @dataclass(frozen=True)
 class ConvexPolygonExtrusion(MeowMeowCSG):
     """
-    An extruded Convex Polygon shape.
+    An extruded Convex Polygon shape, optionally infinite in one or both ends.
     
+    The extrusion is defined by:
+    - A list of ordered (x,y) points in the polygon (must be convex!)
+    - An orientation (rotation matrix defining the local coordinate system)
+    - A position (translation from origin)
+    - Start and end distances along the local Z-axis from the position
+    
+    The polygon is in the local XY plane at the position, and the extrusion extends
+    out in -z by start_distance and +z by end_distance.
+    
+    Use None for start_distance or end_distance to make the extrusion infinite in that direction.
+    
+    Args:
+        points: List of ordered (x,y) points in the polygon (last connects to first, must be convex)
+        orientation: Orientation matrix defining the extrusion's coordinate system
+        position: Position of the extrusion origin in global coordinates (3x1 Matrix, default: origin)
+        start_distance: Distance from position along Z-axis to start of extrusion (None = -infinite)
+        end_distance: Distance from position along Z-axis to end of extrusion (None = infinite)
     """
-    # list of ordered (x,y) points in the polygon with the last point connecting to the first point
-    # must be convex!!
     points: List[V2] 
-    # length of the extrusion along the +Z axis
-    length: Numeric 
     orientation: Orientation
     position: V3 = field(default_factory=lambda: Matrix([0, 0, 0]))  # Position in global coordinates
+    start_distance: Optional[Numeric] = None  # starting distance in the direction of the -Z axis. None means infinite in negative direction
+    end_distance: Optional[Numeric] = None    # ending distance in the direction of the +Z axis. None means infinite in positive direction
+
+    def get_bottom_position(self) -> V3:
+        """
+        Get the position of the bottom of the extrusion (at start_distance).
+        Only valid for extrusions with finite start_distance.
+        
+        Returns:
+            The 3D position at the bottom of the extrusion
+            
+        Raises:
+            ValueError: If start_distance is None (infinite extrusion)
+        """
+        if self.start_distance is None:
+            raise ValueError("Cannot get bottom position of infinite extrusion (start_distance is None)")
+        return self.position - self.orientation.matrix * Matrix([0, 0, self.start_distance])
+    
+    def get_top_position(self) -> V3:
+        """
+        Get the position of the top of the extrusion (at end_distance).
+        Only valid for extrusions with finite end_distance.
+        
+        Returns:
+            The 3D position at the top of the extrusion
+            
+        Raises:
+            ValueError: If end_distance is None (infinite extrusion)
+        """
+        if self.end_distance is None:
+            raise ValueError("Cannot get top position of infinite extrusion (end_distance is None)")
+        return self.position + self.orientation.matrix * Matrix([0, 0, self.end_distance])
 
     def __repr__(self) -> str:
         return (f"ConvexPolygonExtrusion({len(self.points)} points, "
-                f"length={self.length}, position={self.position.T})")
+                f"position={self.position.T}, start={self.start_distance}, end={self.end_distance})")
     
     def is_valid(self) -> bool:
         """
@@ -587,14 +632,19 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
         
         Checks:
         1. At least 3 points
-        2. Positive length
+        2. Valid distance configuration (if both finite, end > start)
         3. Polygon is convex (all turns go the same direction)
         
         Returns:
             True if valid, False otherwise
         """
-        if len(self.points) < 3 or self.length <= 0:
+        if len(self.points) < 3:
             return False
+        
+        # Check distance configuration
+        if self.start_distance is not None and self.end_distance is not None:
+            if self.end_distance <= self.start_distance:
+                return False
         
         # Check convexity: all cross products of consecutive edges should have the same sign
         # For a convex polygon, as we traverse the vertices, we should always turn the same way
@@ -620,7 +670,7 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
         Check if a point is contained within the extruded polygon.
         
         A point is inside if:
-        1. Its Z coordinate (in local space) is between 0 and length
+        1. Its Z coordinate (in local space) is between start_distance and end_distance
         2. Its XY coordinates (in local space) are inside the convex polygon
         
         Args:
@@ -638,7 +688,9 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
         z_coord = local_coords[2]
         
         # Check Z bounds
-        if z_coord < 0 or z_coord > self.length:
+        if self.start_distance is not None and z_coord < self.start_distance:
+            return False
+        if self.end_distance is not None and z_coord > self.end_distance:
             return False
         
         # Check if (x_coord, y_coord) is inside the convex polygon
@@ -671,7 +723,7 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
         Check if a point is on the boundary of the extruded polygon.
         
         A point is on the boundary if it's contained and either:
-        1. On the top or bottom face (z = 0 or z = length)
+        1. On the top or bottom face (z = start_distance or z = end_distance, if finite)
         2. On one of the side faces (on an edge of the polygon)
         
         Args:
@@ -692,8 +744,10 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
         y_coord = local_coords[1]
         z_coord = local_coords[2]
         
-        # Check if on top or bottom face
-        if z_coord == 0 or z_coord == self.length:
+        # Check if on top or bottom face (if finite)
+        if self.start_distance is not None and z_coord == self.start_distance:
+            return True
+        if self.end_distance is not None and z_coord == self.end_distance:
             return True
         
         # Check if on any edge of the polygon (side face)

@@ -17,14 +17,14 @@
 
 :: TODO
 
-
+DONE-allow extrude polygon to extrude in both directions
 DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can reference joint pieces by name rather than index
 -DECISION TIME
   -consider adding "Thing" base class, that has position and orientation 
   -add timber metadata (move name in metadata?)
   -add a Frame.from_joints function, it sohuld also take a list of timbers as well. Uses referential equality to test for same timbers. Also checks for same name, and if same name but different reference, check for deep equality and warn if they are the same also warn on same names
 -add back post joints to oscar shed
--allow extrude polygon to extrude in both directions
+
 -add extrude polygon csg rendering to fusino 360
 -delete rhino for now
 

@@ -175,8 +175,9 @@ def example_hexagon_extrusion():
     
     hexagon = ConvexPolygonExtrusion(
         points=hexagon_points,
-        length=1,  # 1 meter tall
-        position=Matrix([0, 0, 0]),  # Bottom face at Z=0
+        start_distance=0,  # Start at Z=0
+        end_distance=1,    # End at Z=1 (1 meter tall)
+        position=Matrix([0, 0, 0]),
         orientation=Orientation(eye(3))  # Identity orientation
     )
     
