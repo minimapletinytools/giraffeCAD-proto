@@ -73,6 +73,8 @@ timber_cross_section_size_from_faces(
 DONE-allow extrude polygon to extrude in both directions
 DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can reference joint pieces by name rather than index
 DONE-add back post joints to oscar shed
+DONE-delete rhino for now
+
 -3 major features
   -timber metadata
   -measure functions
@@ -84,7 +86,6 @@ DONE-add back post joints to oscar shed
   -peg positioning
   -finding the shoulder point/shoulder plane
 -add extrude polygon csg rendering to fusino 360
-DONE-delete rhino for now
 
 
 
@@ -110,12 +111,12 @@ DONE-delete rhino for now
     DONE-basic_cross_lap_joint
 
   -butt joints
-    -mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
+    DONE-mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
       DONE-mortise and tenon
       DONE-draw bore mortise and tenon
       DONE-through mortise and tenon
-      -add offset mortise peg param (so that it tightens the joint up)
-    
+      DONE-add offset mortise peg param (so that it tightens the joint up)
+    -dovetail lap joint (for the floor joists)
   -corner joints
     -maybe try the fancy  one we used on the shed  Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)
 
