@@ -46,9 +46,9 @@ post_front_height = feet(5)   # Height of front posts
 
 # Timber size definitions using dimensional helpers
 # Format: (vertical dimension, horizontal depth)
-small_timber_size = (inches(4), inches(Rational(5, 2)))   # 4" vertical x 2.5" depth
-med_timber_size = (inches(4), inches(4))                   # 4" x 4"
-big_timber_size = (inches(6), inches(4))                   # 6" vertical x 4" depth
+small_timber_size = create_vector2d(inches(4), inches(Rational(5, 2)))   # 4" vertical x 2.5" depth
+med_timber_size = create_vector2d(inches(4), inches(4))                   # 4" x 4"
+big_timber_size = create_vector2d(inches(6), inches(4))                   # 6" vertical x 4" depth
 
 
 def create_oscarshed():
@@ -77,7 +77,7 @@ def create_oscarshed():
     # Create mudsills on all 4 sides (INSIDE the footprint)
     # ============================================================================
     
-    mudsill_size = create_vector2d(big_timber_size[0], big_timber_size[1])
+    mudsill_size = big_timber_size
 
     # Front mudsill (corner 0 to corner 1) - along X axis
     # Length is automatically calculated from boundary side
@@ -141,7 +141,7 @@ def create_oscarshed():
     # ============================================================================
 
     # Post size: 4" x 4" (med_timber_size)
-    post_size = create_vector2d(med_timber_size[0], med_timber_size[1])
+    post_size = med_timber_size
     
     # Front-left post (on front boundary side, inset from left corner)
     # Side 0 goes from corner 0 (front-left) to corner 1 (front-right)
@@ -325,7 +325,7 @@ def create_oscarshed():
     # Create side girts (running from back to front along the short dimension)
     # ============================================================================
     
-    side_girt_size = create_vector2d(med_timber_size[0], med_timber_size[1])
+    side_girt_size = med_timber_size
 
     # Side girt stickout: 5 inches on back side, 0 on front side
     side_girt_stickout_back = inches(5)  # 5 inches
@@ -456,7 +456,7 @@ def create_oscarshed():
     # Create front girt (running left to right along the long dimension)
     # ============================================================================
     
-    front_girt_size = create_vector2d(med_timber_size[0], med_timber_size[1])
+    front_girt_size = med_timber_size
     
     # Front girt is positioned 2 inches below the side girts
     # Side girts attach to front posts at post_back_height
@@ -574,7 +574,7 @@ def create_oscarshed():
     # ============================================================================
     
     # Top plate size: 6" x 4" (same as mudsills, 6" vertical)
-    top_plate_size = create_vector2d(big_timber_size[0], big_timber_size[1])
+    top_plate_size = big_timber_size
     
     # Top plate stickout: 1 foot on each side (symmetric)
     top_plate_stickout = Stickout.symmetric(feet(1))
@@ -695,7 +695,7 @@ def create_oscarshed():
     # ============================================================================
     
     # Joist size: 4" x 4"
-    joist_size = create_vector2d(med_timber_size[0], med_timber_size[1])
+    joist_size = med_timber_size
     joist_width = med_timber_size[0]
     
     # Calculate spacing: 3 joists with 4 equal gaps (left side, 2 between joists, right side)
@@ -746,7 +746,7 @@ def create_oscarshed():
     # ============================================================================
     
     # Rafter size: 4" x 4"
-    rafter_size = create_vector2d(med_timber_size[0], med_timber_size[1])
+    rafter_size = med_timber_size
     rafter_width = med_timber_size[0]  # Width of rafter (for spacing calculation)
     
     # Calculate positions for 5 rafters with outer faces flush with ends of top plates

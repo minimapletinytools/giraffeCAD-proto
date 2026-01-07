@@ -2,15 +2,12 @@
 
 A library for programmatic timber frame CAD design. It can integrate with my CAD applications or output to IFC format.
 
-Giraffe is written as an **agent friendly** library meaning it was designed to be easily understood and used by agents. 
+Giraffe is written as an **AI friendly** library meaning it was designed to be easily understood and used by AI agents. 
 
 ## Integrations and formats
 
 - **Fusion 360** - Full CSG support with feature-based modeling
 - **FreeCAD** - Full CSG support with direct shape creation
-- **Rhino** - Basic geometry support (WIP)
-- **Blender** - Planned
-- **IFC file format** - Planned
 
 ## Quick Start
 
@@ -74,13 +71,9 @@ make setup
 
 ### Note on CAD Integrations
 
-The virtual environment is **only for local development and testing**. When using Giraffe with CAD applications, those programs use their own Python environments:
+CAD applications ship with their own Python environments use their own Python environments. This is why dependencies are also vendored in `fusion360/libs/` for CAD environments. The venv setup does not affect CAD integrations.
 
-- **Fusion 360**: Uses embedded Python with bundled libraries in `fusion360/libs/`
-- **Rhino**: Uses RhinoPython environment
-- **Local testing**: Uses your venv
-
-This is why dependencies are also vendored in `fusion360/libs/` for CAD environments. The venv setup does not affect CAD integrations.
+TODO what about FreeCAD?
 
 ## Running Tests
 
