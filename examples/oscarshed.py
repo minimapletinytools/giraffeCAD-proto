@@ -325,9 +325,9 @@ def create_oscarshed():
     
     side_girt_size = create_vector2d(med_timber_size[0], med_timber_size[1])
 
-    # Side girt stickout: 1.5 inches on back side, 0 on front side
-    side_girt_stickout_back = inches(Rational(3, 2))  # 1.5 inches
-    side_girt_stickout = Stickout(side_girt_stickout_back, Rational(0))  # Asymmetric: 1.5" on back, 0 on front
+    # Side girt stickout: 5 inches on back side, 0 on front side
+    side_girt_stickout_back = inches(5)  # 5 inches
+    side_girt_stickout = Stickout(side_girt_stickout_back, Rational(0))  # Asymmetric: 5" on back, 0 on front
     
     
     # Left side girt (connects back-left post to front-left post)
@@ -336,7 +336,7 @@ def create_oscarshed():
         timber1=post_back_left,        # Back post (timber1)
         timber2=post_front_left,       # Front post (timber2)
         location_on_timber1=post_back_height,   # At top of back post
-        stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
+        stickout=side_girt_stickout,   # 5" stickout on back, none on front
         location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0,       # No lateral offset
         size=side_girt_size,
@@ -348,11 +348,46 @@ def create_oscarshed():
         timber1=post_back_right,       # Back post (timber1)
         timber2=post_front_right,      # Front post (timber2)
         location_on_timber1=post_back_height,   # At top of back post
-        stickout=side_girt_stickout,   # 1.5" stickout on back, none on front
+        stickout=side_girt_stickout,   # 5" stickout on back, none on front
         location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0,       # No lateral offset
         size=side_girt_size,
         name="Right Side Girt"
+    )
+
+    # ============================================================================
+    # Create mortise and tenon joints where side girts meet back corner posts
+    # ============================================================================
+    # Back corner posts have tenons on top that go into mortises in the side girts
+    # Tenon size: 1.5" x 3" (3" dimension goes from back to front along girt length)
+    # Tenon length: 4.5 inches (through mortise)
+    # Mortise depth: 4.5 inches
+    # No peg
+    
+    side_girt_back_tenon_size = Matrix([inches(Rational(3, 2)), inches(3)])  # 1.5" x 3"
+    side_girt_back_tenon_length = inches(Rational(9, 2))  # 4.5 inches
+    side_girt_back_mortise_depth = inches(Rational(9, 2))  # 4.5 inches (through mortise)
+    
+    # Back left post TOP end meets left side girt BOTTOM end
+    joint_side_girt_left_back = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post_back_left,
+        mortise_timber=side_girt_left,
+        tenon_end=TimberReferenceEnd.TOP,
+        size=side_girt_back_tenon_size,
+        tenon_length=side_girt_back_tenon_length,
+        mortise_depth=side_girt_back_mortise_depth,
+        tenon_position=None  # Centered
+    )
+    
+    # Back right post TOP end meets right side girt BOTTOM end
+    joint_side_girt_right_back = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post_back_right,
+        mortise_timber=side_girt_right,
+        tenon_end=TimberReferenceEnd.TOP,
+        size=side_girt_back_tenon_size,
+        tenon_length=side_girt_back_tenon_length,
+        mortise_depth=side_girt_back_mortise_depth,
+        tenon_position=None  # Centered
     )
 
     # ============================================================================
@@ -853,6 +888,17 @@ def create_oscarshed():
     post_front_right_cuts.extend(joint_side_girt_right.cut_timbers["mortise_timber"]._cuts)   # Mortise for side girt
     pct_post_front_right = CutTimber(post_front_right, cuts=post_front_right_cuts)
     
+    # Back corner posts: have tenon into mudsill (BOTTOM) + tenon into side girt (TOP)
+    post_back_right_cuts = []
+    post_back_right_cuts.extend(joint_post_back_right.cut_timbers["tenon_timber"]._cuts)  # Tenon into mudsill (BOTTOM)
+    post_back_right_cuts.extend(joint_side_girt_right_back.cut_timbers["tenon_timber"]._cuts)  # Tenon into side girt (TOP)
+    pct_post_back_right = CutTimber(post_back_right, cuts=post_back_right_cuts)
+    
+    post_back_left_cuts = []
+    post_back_left_cuts.extend(joint_post_back_left.cut_timbers["tenon_timber"]._cuts)  # Tenon into mudsill (BOTTOM)
+    post_back_left_cuts.extend(joint_side_girt_left_back.cut_timbers["tenon_timber"]._cuts)  # Tenon into side girt (TOP)
+    pct_post_back_left = CutTimber(post_back_left, cuts=post_back_left_cuts)
+    
     # Back middle posts: have tenons at both ends (BOTTOM into mudsill, TOP into top plate)
     post_back_middle_right_cuts = []
     post_back_middle_right_cuts.extend(joint_post_back_middle_right.cut_timbers["tenon_timber"]._cuts)  # Tenon into mudsill (BOTTOM)
@@ -867,36 +913,26 @@ def create_oscarshed():
     # Add all posts
     cut_timbers.append(pct_post_front_left)       # Front left post with all cuts
     cut_timbers.append(pct_post_front_right)      # Front right post with all cuts
-    cut_timbers.append(joint_post_back_right.cut_timbers["tenon_timber"])      # Corner post with M&T (tenon timber)
+    cut_timbers.append(pct_post_back_right)       # Back right corner post with all cuts
     cut_timbers.append(pct_post_back_middle_right)  # Middle post with M&T at both ends
     cut_timbers.append(pct_post_back_middle_left)   # Middle post with M&T at both ends
-    cut_timbers.append(joint_post_back_left.cut_timbers["tenon_timber"])       # Corner post with M&T (tenon timber)
+    cut_timbers.append(pct_post_back_left)        # Back left corner post with all cuts
     
-    # Add side girts (with mortise & tenon joints at front ends)
-    # #region agent log
-    import json
-    import datetime
-    try:
-        with open('/Users/peter.lu/kitchen/faucet/giraffeCAD-proto/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({
-                'location': 'oscarshed.py:760',
-                'message': 'Adding girts to cut_timbers list',
-                'data': {
-                    'extracting_from': 'cut_timbers[0]',
-                    'expecting': 'tenon_timber_girts',
-                    'side_girt_left_ct0_timber': joint_side_girt_left.cut_timbers["tenon_timber"]._timber.name,
-                    'side_girt_left_ct1_timber': joint_side_girt_left.cut_timbers["mortise_timber"]._timber.name,
-                    'side_girt_right_ct0_timber': joint_side_girt_right.cut_timbers["tenon_timber"]._timber.name,
-                    'side_girt_right_ct1_timber': joint_side_girt_right.cut_timbers["mortise_timber"]._timber.name
-                },
-                'timestamp': int(datetime.datetime.now().timestamp() * 1000),
-                'sessionId': 'debug-session',
-                'hypothesisId': 'H1_H3'
-            }) + '\n')
-    except: pass
-    # #endregion
-    cut_timbers.append(joint_side_girt_left.cut_timbers["tenon_timber"])  # Left side girt with tenon cuts
-    cut_timbers.append(joint_side_girt_right.cut_timbers["tenon_timber"])  # Right side girt with tenon cuts
+    # Add side girts (with mortise & tenon joints at both back and front ends)
+    # Left side girt: has mortise at back end (BOTTOM) for back post tenon, tenon at front end (TOP) into front post
+    side_girt_left_cuts = []
+    side_girt_left_cuts.extend(joint_side_girt_left_back.cut_timbers["mortise_timber"]._cuts)  # Mortise for back post tenon (BOTTOM)
+    side_girt_left_cuts.extend(joint_side_girt_left.cut_timbers["tenon_timber"]._cuts)  # Tenon into front post (TOP)
+    pct_side_girt_left = CutTimber(side_girt_left, cuts=side_girt_left_cuts)
+    
+    # Right side girt: has mortise at back end (BOTTOM) for back post tenon, tenon at front end (TOP) into front post
+    side_girt_right_cuts = []
+    side_girt_right_cuts.extend(joint_side_girt_right_back.cut_timbers["mortise_timber"]._cuts)  # Mortise for back post tenon (BOTTOM)
+    side_girt_right_cuts.extend(joint_side_girt_right.cut_timbers["tenon_timber"]._cuts)  # Tenon into front post (TOP)
+    pct_side_girt_right = CutTimber(side_girt_right, cuts=side_girt_right_cuts)
+    
+    cut_timbers.append(pct_side_girt_left)  # Left side girt with mortise at back, tenon at front
+    cut_timbers.append(pct_side_girt_right)  # Right side girt with mortise at back, tenon at front
     
     # Add front girt pieces (with mortise & tenon joints at ends and splice joint in middle)
     cut_timbers.append(pct_front_girt_left)  # Left piece with tenon + splice cuts
@@ -974,7 +1010,7 @@ if __name__ == "__main__":
     print(f"  - Back posts: 4 posts, {post_back_height} ft tall (uniformly spaced)")
     print(f"  - Post inset: {post_inset} ft from corners (outer posts only)")
     print(f"Side Girts: 2 (running from back to front)")
-    print(f"  - Stickout: 1.5 inches on back, 0 on front")
+    print(f"  - Stickout: 5 inches on back, 0 on front")
     print(f"Front Girt: 1 (running left to right, spliced in middle)")
     print(f"  - Position: 2 inches below side girts")
     print(f"  - Stickout: 1.5 inches on both sides (symmetric)")
