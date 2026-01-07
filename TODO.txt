@@ -1,4 +1,57 @@
+:: 1/6/2026 metadata
 
+-timber metadata 
+  -move name into metadata?
+  -parent folder (for organization)
+  -material
+  -reference face(s)
+
+-joint metadata
+  -assembly order
+  -assembly DOF
+    -by combining order and DOF you can validate if it's possible to assemble
+
+
+:: 1/6/2026 timber/board
+
+class hierarchy could look like this:
+
+-thingy
+  -block
+    -timber
+    -board
+
+-block has faces, but no concept of end/long face
+-boards are lie really big stubby timbers, 
+  -they have short edges instead of long edges lol.
+  -they have sides instead of ends
+-boards and timbers have different metadata
+-obv, boards and timbers have different joint methods, although their implementations might ultimately be the same and you can use conversion functions if you want to put a timber joint on a board say
+
+:: 1/8/2026 reference dimension helper classes
+
+general structure looks like this:
+
+measure_from_some_feature(
+  timber_to_reference,
+  timber_to_mark,
+  reference_feature,
+  measurement_relative_to_reference_feature
+) -> measurement_in_timber_to_mark_local_space
+
+
+# we want a version of the above function that also takes a reference_feature_on_timber_to_mark that the measurement gets converted to, assuming it makes sense, in particular that the measurement in both cases share the same basis
+
+
+timber_cross_section_size_from_faces(
+    timber_to_reference,
+    timber_to_mark, 
+    x_face: Optional[Face]
+    y_face: Optional[Face]
+    size: (Numeric, Numeric)
+) -> size_in_timber_to_mark_xy_local_space
+# so (x,y) would have x in the x_face axis and/or y in the y_face axis of timber_to_reference
+# only valid if these faces align with the xy axis of timber_to_mark
 
 
 :: documentation
@@ -11,7 +64,7 @@
 -terminology
   -detailed examples explaing all cnocepts
 -advanced reference
-  -detailed examples outlining every parameter
+  -detailed examples outlining every parameter (generate from python files)
 -appendix shit
 
 
@@ -19,12 +72,15 @@
 
 DONE-allow extrude polygon to extrude in both directions
 DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can reference joint pieces by name rather than index
--DECISION TIME
-  -consider adding "Thing" base class, that has position and orientation 
-  -add timber metadata (move name in metadata?)
-  -add a Frame.from_joints function, it sohuld also take a list of timbers as well. Uses referential equality to test for same timbers. Also checks for same name, and if same name but different reference, check for deep equality and warn if they are the same also warn on same names
--add back post joints to oscar shed
+-3 major features
+  -timber metadata
+  -measure functions
+  -class hierarchy
 
+-add back post joints to oscar shed
+-pull out parts of mortise and tenon function, maybe move to joint_helpers.py in particular
+  -peg positioning
+  -finding the shoulder point/shoulder plane
 -add extrude polygon csg rendering to fusino 360
 -delete rhino for now
 
@@ -70,6 +126,11 @@ DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can refer
     -gooseneck joint 
     -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
 
+
+
+  -decorative cuts
+    -basically joints with 1 timber
+    -you'll need to add curve CSG D:
   -make shed example (just add joints)
 
   IGNORE-get rhino rendering working for the following joints ...
@@ -265,6 +326,29 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 :: END TODONE
 
+:: 1/9/2026 vscode extension 3js viewer
+
+https://chatgpt.com/share/695e878b-da08-800c-a658-6913d1b54ee0
+
+Main challenge:
+
+- allow metadata to be attached to CSG... we want to do this per face which is tricky... as we don't have a good way to identify features in our CSG geometry.... I guess you mainly want "surfaces as result of this difference" or perhaps "surfaces with this normal at this position"
+
+so the next step is acutally to do a CSG expansion
+
+-allow contains_point and boundary to return none, as we will add shapes that can't easily be computed
+-allow metadata to be defined on CSG primitives (HARD)
+  -primitives define surfaces
+  -surfaces must be "preserved" through unions and differences
+  -come up with examples to see if this covers our use cases:
+    -prism -> timber
+    -diff prism -> tenon
+    -half plane cut -> shoulder plane
+  -would be cool to also mark edges and vertices
+-I think the above is doable without embedding info in the meshes, you would just need to have a set of filters (and bounding volumes) to check if some edge/tri matches some feature and we can do this using normals and boundary checks etc
+-add MeowMeowCSGMesh class and add to_csg_mesh function 
+  -hard part, as we also need to add metadata to the mesh
+  -I think metadata can be injected based on 
 
 
 :: 12/30/2025 joint accesorry notes
