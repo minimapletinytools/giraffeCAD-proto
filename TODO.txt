@@ -77,20 +77,16 @@ DONE-add back post joints to oscar shed
   -timber metadata
   -measure functions
   -class hierarchy
+    -use global_to_local and local_to_global helpers (or implement Thing classs....)
 
 -be consistent about V2 vs (Numeric,Numeric) tuple
 -pull out parts of mortise and tenon function, maybe move to joint_helpers.py in particular
   -peg positioning
   -finding the shoulder point/shoulder plane
 -add extrude polygon csg rendering to fusino 360
--delete rhino for now
+DONE-delete rhino for now
 
 
--cleanup
-  DONE-make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
-  -use global_to_local and local_to_global helpers (or implement Thing classs....)
-  DONE-rename BACK to BACKWARD (DONE: renamed FORWARD to FRONT instead for consistency)
-  DONE-clean up moothymoth tests to not use exact euality...
 
 -M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
@@ -134,7 +130,6 @@ DONE-add back post joints to oscar shed
     -you'll need to add curve CSG D:
   -make shed example (just add joints)
 
-  IGNORE-get rhino rendering working for the following joints ...
   -improve examples
     -create series of examples showcasing each feature
     -create series of more complex examples
@@ -211,6 +206,11 @@ DONE-add back post joints to oscar shed
 
 :: TODONE
 
+DONE-cleanup
+  DONE-make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
+  DONE-rename BACK to BACKWARD (DONE: renamed FORWARD to FRONT instead for consistency)
+  DONE-clean up moothymoth tests to not use exact euality...
+IGNORE-get rhino rendering working for the following joints ...
 DONE-see if you can fix the transform issue in fusion360...  should be able to do as rigid joint with origin
   FAIL-in fusion 360, hwen transforming occurences (components) to their final position.. rather than setting transform2. instead can you create a rigid joint with the global origin to set the position instead. 
   DONE-just do the body move way...
