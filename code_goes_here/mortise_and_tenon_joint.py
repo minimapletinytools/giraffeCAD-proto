@@ -83,6 +83,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     tenon_timber: Timber,
     mortise_timber: Timber,
     tenon_end: TimberReferenceEnd,
+    # TODO rename to tenon_size
     size: V2,
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
@@ -243,9 +244,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         print(f"    (Both tenon end and timber center are on the same side of the mortise face,")
         print(f"     and the tenon is pointing away from the mortise)")
     
-    # Assert that intersection is in front of tenon end (t > 0)
-    assert t > 0, \
-        f"Tenon centerline does not intersect mortise face in front of tenon end (t={t})"
+    # DELETE this, we "extend" the tenon timber so it can go through the mortise timber
+    #assert t > 0, f"Tenon centerline does not intersect mortise face in front of tenon end (t={t})"
     
     # Calculate the actual intersection point
     intersection_point = tenon_centerline_start + tenon_centerline_direction * t
@@ -807,7 +807,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
     # Verify that the timbers are orthogonal (perpendicular length directions)
     # This is required for proper mortise and tenon joint geometry
     assert _are_timbers_face_orthogonal(mortise_timber, tenon_timber), \
-        "Timbers must be orthogonal (perpendicular length directions) for this joint type"
+        f"Timbers must be orthogon_are_timbers_face_orthogonalal (perpendicular length directions) for this joint type. {mortise_timber.name} length_direction: {mortise_timber.length_direction}, {tenon_timber.name} length_direction: {tenon_timber.length_direction}"
     
     # Verify that tenon size + position doesn't exceed timber cross-section
     # Tenon bounds: [position - size/2, position + size/2] must be within [-timber_size/2, +timber_size/2]

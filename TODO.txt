@@ -72,12 +72,13 @@ timber_cross_section_size_from_faces(
 
 DONE-allow extrude polygon to extrude in both directions
 DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can reference joint pieces by name rather than index
+DONE-add back post joints to oscar shed
 -3 major features
   -timber metadata
   -measure functions
   -class hierarchy
 
--add back post joints to oscar shed
+-be consistent about V2 vs (Numeric,Numeric) tuple
 -pull out parts of mortise and tenon function, maybe move to joint_helpers.py in particular
   -peg positioning
   -finding the shoulder point/shoulder plane
