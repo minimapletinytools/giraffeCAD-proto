@@ -376,16 +376,24 @@ def create_convex_polygon_extrusion_shape(extrusion: ConvexPolygonExtrusion) -> 
     """
     Create a FreeCAD shape from a ConvexPolygonExtrusion CSG.
     
-    The polygon is extruded along the +Z axis from z=0 to z=length,
+    The polygon is extruded along the Z axis from z=start_distance to z=end_distance,
     then the orientation and position are applied.
+    
+    For infinite extrusions (start_distance or end_distance is None), the extrusion 
+    cannot be rendered and None is returned.
     
     Args:
         extrusion: ConvexPolygonExtrusion CSG object
         
     Returns:
-        Part.Shape representing the extruded polygon
+        Part.Shape representing the extruded polygon, or None if infinite
     """
     try:
+        # Check if the extrusion is finite
+        if extrusion.start_distance is None or extrusion.end_distance is None:
+            print(f"Warning: Cannot render infinite ConvexPolygonExtrusion")
+            return None
+        
         # Convert 2D points to FreeCAD Vectors (in mm)
         # Points are in the XY plane (Z=0)
         points_2d = [
@@ -399,10 +407,15 @@ def create_convex_polygon_extrusion_shape(extrusion: ConvexPolygonExtrusion) -> 
         # Create a face from the polygon
         polygon_face = Part.Face(polygon_wire)
         
-        # Extrude the face along Z axis
-        length_mm = distance_to_mm(extrusion.length)
+        # Calculate extrusion length from start_distance to end_distance
+        extrusion_length = extrusion.end_distance - extrusion.start_distance
+        length_mm = distance_to_mm(extrusion_length)
         extrusion_vector = Vector(0, 0, length_mm)
         solid = polygon_face.extrude(extrusion_vector)
+        
+        # Translate to start_distance position in local coordinates
+        start_mm = distance_to_mm(extrusion.start_distance)
+        solid.translate(Vector(0, 0, start_mm))
         
         # Apply the extrusion's orientation and position if not at origin with identity orientation
         from sympy import Matrix, eye

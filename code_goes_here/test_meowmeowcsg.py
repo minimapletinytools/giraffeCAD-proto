@@ -72,13 +72,15 @@ def generate_random_convex_polygon_extrusion():
         y = radius * sin(angle)
         vertices.append(Matrix([x, y]))
     
-    length = Rational(random.randint(10, 25))
+    start_distance = Rational(random.randint(0, 5))
+    end_distance = start_distance + Rational(random.randint(10, 25))
     orientation = Orientation()  # Identity for simplicity
     position = Matrix([Rational(random.randint(-30, 30)), 
                       Rational(random.randint(-30, 30)), 
                       Rational(random.randint(-30, 30))])
     
-    return ConvexPolygonExtrusion(points=vertices, length=length, 
+    return ConvexPolygonExtrusion(points=vertices, start_distance=start_distance,
+                                  end_distance=end_distance,
                                   orientation=orientation, position=position)
 
 
@@ -252,15 +254,19 @@ def generate_convex_polygon_boundary_points(extrusion):
     """Generate points on convex polygon extrusion boundary: vertices, edges, faces."""
     points = []
     
-    # All vertices at z=0 and z=length
+    # Only generate boundary points for finite extrusions
+    if extrusion.start_distance is None or extrusion.end_distance is None:
+        return points
+    
+    # All vertices at z=start_distance and z=end_distance
     for vertex_2d in extrusion.points:
-        # Bottom (z=0)
-        point_local = Matrix([vertex_2d[0], vertex_2d[1], 0])
+        # Bottom (z=start_distance)
+        point_local = Matrix([vertex_2d[0], vertex_2d[1], extrusion.start_distance])
         point_global = extrusion.position + extrusion.orientation.matrix * point_local
         points.append(point_global)
         
-        # Top (z=length)
-        point_local = Matrix([vertex_2d[0], vertex_2d[1], extrusion.length])
+        # Top (z=end_distance)
+        point_local = Matrix([vertex_2d[0], vertex_2d[1], extrusion.end_distance])
         point_global = extrusion.position + extrusion.orientation.matrix * point_local
         points.append(point_global)
     
@@ -271,18 +277,18 @@ def generate_convex_polygon_boundary_points(extrusion):
         centroid_y = sum(p[1] for p in extrusion.points) / len(extrusion.points)
         
         # Bottom face center
-        point_local = Matrix([centroid_x, centroid_y, 0])
+        point_local = Matrix([centroid_x, centroid_y, extrusion.start_distance])
         point_global = extrusion.position + extrusion.orientation.matrix * point_local
         points.append(point_global)
         
         # Top face center
-        point_local = Matrix([centroid_x, centroid_y, extrusion.length])
+        point_local = Matrix([centroid_x, centroid_y, extrusion.end_distance])
         point_global = extrusion.position + extrusion.orientation.matrix * point_local
         points.append(point_global)
     
     # Edge midpoints (on vertical edges)
     for vertex_2d in extrusion.points:
-        z_mid = extrusion.length / 2
+        z_mid = (extrusion.start_distance + extrusion.end_distance) / 2
         point_local = Matrix([vertex_2d[0], vertex_2d[1], z_mid])
         point_global = extrusion.position + extrusion.orientation.matrix * point_local
         points.append(point_global)
@@ -294,15 +300,17 @@ def generate_convex_polygon_non_boundary_points(extrusion):
     """Generate points NOT on convex polygon boundary: interior and far-away points."""
     points = []
     
-    # Interior point at mid-height
-    if len(extrusion.points) > 0:
-        centroid_x = sum(p[0] for p in extrusion.points) / len(extrusion.points)
-        centroid_y = sum(p[1] for p in extrusion.points) / len(extrusion.points)
-        z_mid = extrusion.length / 2
-        
-        point_local = Matrix([centroid_x, centroid_y, z_mid])
-        point_global = extrusion.position + extrusion.orientation.matrix * point_local
-        points.append(point_global)
+    # Only generate interior points for finite extrusions
+    if extrusion.start_distance is not None and extrusion.end_distance is not None:
+        # Interior point at mid-height
+        if len(extrusion.points) > 0:
+            centroid_x = sum(p[0] for p in extrusion.points) / len(extrusion.points)
+            centroid_y = sum(p[1] for p in extrusion.points) / len(extrusion.points)
+            z_mid = (extrusion.start_distance + extrusion.end_distance) / 2
+            
+            point_local = Matrix([centroid_x, centroid_y, z_mid])
+            point_global = extrusion.position + extrusion.orientation.matrix * point_local
+            points.append(point_global)
     
     # Far-away point
     points.append(extrusion.position + Matrix([Rational(1000), Rational(1000), Rational(1000)]))
@@ -1052,13 +1060,16 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, -1]),
             Matrix([1, -1])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()  # Identity orientation
         
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance, 
+                                          end_distance=end_distance, orientation=orientation)
         
         assert extrusion.points == points
-        assert extrusion.length == length
+        assert extrusion.start_distance == start_distance
+        assert extrusion.end_distance == end_distance
         assert extrusion.orientation == orientation
     
     def test_is_valid_enough_points(self):
@@ -1069,10 +1080,12 @@ class TestConvexPolygonExtrusion:
             Matrix([1, 0]),
             Matrix([0, 1])
         ]
-        length = Rational(5)
+        start_distance = Rational(0)
+        end_distance = Rational(5)
         orientation = Orientation()
         
-        extrusion_valid = ConvexPolygonExtrusion(points=points_valid, length=length, orientation=orientation)
+        extrusion_valid = ConvexPolygonExtrusion(points=points_valid, start_distance=start_distance,
+                                                 end_distance=end_distance, orientation=orientation)
         assert extrusion_valid.is_valid() == True
         
         # Only 2 points (invalid)
@@ -1080,11 +1093,12 @@ class TestConvexPolygonExtrusion:
             Matrix([0, 0]),
             Matrix([1, 0])
         ]
-        extrusion_invalid = ConvexPolygonExtrusion(points=points_invalid, length=length, orientation=orientation)
+        extrusion_invalid = ConvexPolygonExtrusion(points=points_invalid, start_distance=start_distance,
+                                                   end_distance=end_distance, orientation=orientation)
         assert extrusion_invalid.is_valid() == False
     
-    def test_is_valid_positive_length(self):
-        """Test that is_valid requires positive length."""
+    def test_is_valid_distance_configuration(self):
+        """Test that is_valid requires valid distance configuration."""
         points = [
             Matrix([0, 0]),
             Matrix([1, 0]),
@@ -1092,21 +1106,31 @@ class TestConvexPolygonExtrusion:
         ]
         orientation = Orientation()
         
-        # Positive length (valid)
-        extrusion_valid = ConvexPolygonExtrusion(points=points, length=Rational(5), orientation=orientation)
+        # Valid: end > start (valid)
+        extrusion_valid = ConvexPolygonExtrusion(points=points, start_distance=Rational(0),
+                                                 end_distance=Rational(5), orientation=orientation)
         assert extrusion_valid.is_valid() == True
         
-        # Zero length (invalid)
-        extrusion_zero = ConvexPolygonExtrusion(points=points, length=0, orientation=orientation)
+        # Invalid: end = start (no volume)
+        extrusion_zero = ConvexPolygonExtrusion(points=points, start_distance=Rational(5),
+                                               end_distance=Rational(5), orientation=orientation)
         assert extrusion_zero.is_valid() == False
         
-        # Negative length (invalid)
-        extrusion_negative = ConvexPolygonExtrusion(points=points, length=-5, orientation=orientation)
+        # Invalid: end < start
+        extrusion_negative = ConvexPolygonExtrusion(points=points, start_distance=Rational(5),
+                                                    end_distance=Rational(0), orientation=orientation)
         assert extrusion_negative.is_valid() == False
+        
+        # Valid: infinite in both directions
+        extrusion_infinite = ConvexPolygonExtrusion(points=points, start_distance=None,
+                                                    end_distance=None, orientation=orientation)
+        assert extrusion_infinite.is_valid() == True
     
     def test_is_valid_convex_polygon(self):
         """Test that is_valid accepts convex polygons."""
         orientation = Orientation()
+        start_distance = Rational(0)
+        end_distance = Rational(5)
         
         # Convex square (counter-clockwise)
         points_ccw = [
@@ -1115,7 +1139,8 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, -1]),
             Matrix([1, -1])
         ]
-        extrusion_ccw = ConvexPolygonExtrusion(points=points_ccw, length=Rational(5), orientation=orientation)
+        extrusion_ccw = ConvexPolygonExtrusion(points=points_ccw, start_distance=start_distance,
+                                               end_distance=end_distance, orientation=orientation)
         assert extrusion_ccw.is_valid() == True
         
         # Convex square (clockwise)
@@ -1125,7 +1150,8 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, -1]),
             Matrix([-1, 1])
         ]
-        extrusion_cw = ConvexPolygonExtrusion(points=points_cw, length=Rational(5), orientation=orientation)
+        extrusion_cw = ConvexPolygonExtrusion(points=points_cw, start_distance=start_distance,
+                                              end_distance=end_distance, orientation=orientation)
         assert extrusion_cw.is_valid() == True
         
         # Convex hexagon
@@ -1137,7 +1163,8 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, -sqrt(3)]),
             Matrix([1, -sqrt(3)])
         ]
-        extrusion_hex = ConvexPolygonExtrusion(points=points_hex, length=Rational(5), orientation=orientation)
+        extrusion_hex = ConvexPolygonExtrusion(points=points_hex, start_distance=start_distance,
+                                               end_distance=end_distance, orientation=orientation)
         assert extrusion_hex.is_valid() == True
     
     def test_is_valid_non_convex_polygon(self):
@@ -1152,7 +1179,8 @@ class TestConvexPolygonExtrusion:
             Matrix([0, -2]),
             Matrix([1, 0])  # This point makes it concave
         ]
-        extrusion_concave = ConvexPolygonExtrusion(points=points_concave, length=Rational(5), orientation=orientation)
+        extrusion_concave = ConvexPolygonExtrusion(points=points_concave, start_distance=Rational(0),
+                                                   end_distance=Rational(5), orientation=orientation)
         assert extrusion_concave.is_valid() == False
     
     def test_is_valid_collinear_points(self):
@@ -1165,7 +1193,8 @@ class TestConvexPolygonExtrusion:
             Matrix([1, 0]),
             Matrix([2, 0])
         ]
-        extrusion_collinear = ConvexPolygonExtrusion(points=points_collinear, length=Rational(5), orientation=orientation)
+        extrusion_collinear = ConvexPolygonExtrusion(points=points_collinear, start_distance=Rational(0),
+                                                     end_distance=Rational(5), orientation=orientation)
         assert extrusion_collinear.is_valid() == False
     
     def test_contains_point_inside_square(self):
@@ -1177,10 +1206,12 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, -1]),
             Matrix([1, -1])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
         
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
         # Point inside
         assert extrusion.contains_point(Matrix([0, 0, 5])) == True
@@ -1193,15 +1224,17 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, -1]),
             Matrix([1, -1])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
         
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
-        # Point on top face (z = length)
+        # Point on top face (z = end_distance)
         assert extrusion.contains_point(Matrix([0, 0, 10])) == True
         
-        # Point on bottom face (z = 0)
+        # Point on bottom face (z = start_distance)
         assert extrusion.contains_point(Matrix([0, 0, 0])) == True
     
     def test_contains_point_outside_square(self):
@@ -1212,10 +1245,12 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, -1]),
             Matrix([1, -1])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
         
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
         # Outside in XY plane
         assert extrusion.contains_point(Matrix([2, 0, 5])) == False
@@ -1232,10 +1267,12 @@ class TestConvexPolygonExtrusion:
             Matrix([1, 0]),
             Matrix([0, 1])
         ]
-        length = Rational(5)
+        start_distance = Rational(0)
+        end_distance = Rational(5)
         orientation = Orientation()
         
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
         # Point inside triangle
         assert extrusion.contains_point(Matrix([Rational(1, 4), Rational(1, 4), Rational(5, 2)])) == True
@@ -1251,15 +1288,17 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, -1]),
             Matrix([1, -1])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
         
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
-        # On bottom face (z = 0)
+        # On bottom face (z = start_distance)
         assert extrusion.is_point_on_boundary(Matrix([0, 0, 0])) == True
         
-        # On top face (z = length)
+        # On top face (z = end_distance)
         assert extrusion.is_point_on_boundary(Matrix([0, 0, 10])) == True
     
     def test_is_point_on_boundary_side_face(self):
@@ -1270,10 +1309,12 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, -1]),
             Matrix([1, -1])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
         
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
         # On edge at x=1 (right edge)
         assert extrusion.is_point_on_boundary(Matrix([1, 0, 5])) == True
@@ -1289,10 +1330,12 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, -1]),
             Matrix([1, -1])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
         
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
         # Interior point
         assert extrusion.is_point_on_boundary(Matrix([0, 0, 5])) == False
@@ -1304,10 +1347,12 @@ class TestConvexPolygonExtrusion:
             Matrix([1, 0]),
             Matrix([0, 1])
         ]
-        length = Rational(5)
+        start_distance = Rational(0)
+        end_distance = Rational(5)
         orientation = Orientation()
         
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
         repr_str = repr(extrusion)
         assert "ConvexPolygonExtrusion" in repr_str
@@ -1560,17 +1605,19 @@ class TestBoundaryDetectionComprehensive:
             Matrix([-2, 0]),
             Matrix([0, -2])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
-        # Vertices at z=0
+        # Vertices at z=start_distance
         assert extrusion.is_point_on_boundary(Matrix([2, 0, 0])) == True
         assert extrusion.is_point_on_boundary(Matrix([0, 2, 0])) == True
         assert extrusion.is_point_on_boundary(Matrix([-2, 0, 0])) == True
         assert extrusion.is_point_on_boundary(Matrix([0, -2, 0])) == True
         
-        # Vertices at z=length
+        # Vertices at z=end_distance
         assert extrusion.is_point_on_boundary(Matrix([2, 0, 10])) == True
         assert extrusion.is_point_on_boundary(Matrix([0, 2, 10])) == True
         assert extrusion.is_point_on_boundary(Matrix([-2, 0, 10])) == True
@@ -1584,9 +1631,11 @@ class TestBoundaryDetectionComprehensive:
             Matrix([-2, 0]),
             Matrix([0, -2])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
         # Points along vertical edges at mid-height
         assert extrusion.is_point_on_boundary(Matrix([2, 0, 5])) == True
@@ -1602,16 +1651,18 @@ class TestBoundaryDetectionComprehensive:
             Matrix([-2, 0]),
             Matrix([0, -2])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
-        # Points on bottom face (z=0)
+        # Points on bottom face (z=start_distance)
         assert extrusion.is_point_on_boundary(Matrix([0, 0, 0])) == True
         assert extrusion.is_point_on_boundary(Matrix([1, 0, 0])) == True
         assert extrusion.is_point_on_boundary(Matrix([0, 1, 0])) == True
         
-        # Points on top face (z=length)
+        # Points on top face (z=end_distance)
         assert extrusion.is_point_on_boundary(Matrix([0, 0, 10])) == True
         assert extrusion.is_point_on_boundary(Matrix([1, 0, 10])) == True
         assert extrusion.is_point_on_boundary(Matrix([0, 1, 10])) == True
@@ -1624,9 +1675,11 @@ class TestBoundaryDetectionComprehensive:
             Matrix([-2, 0]),
             Matrix([0, -2])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
         # Interior point at mid-height
         assert extrusion.is_point_on_boundary(Matrix([0, 0, 5])) == False
@@ -1640,9 +1693,11 @@ class TestBoundaryDetectionComprehensive:
             Matrix([-2, 0]),
             Matrix([0, -2])
         ]
-        length = Rational(10)
+        start_distance = Rational(0)
+        end_distance = Rational(10)
         orientation = Orientation()
-        extrusion = ConvexPolygonExtrusion(points=points, length=length, orientation=orientation)
+        extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
+                                          end_distance=end_distance, orientation=orientation)
         
         # Far-away point
         assert extrusion.is_point_on_boundary(Matrix([100, 100, 100])) == False
