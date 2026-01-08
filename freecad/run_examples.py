@@ -38,8 +38,9 @@ if script_dir not in sys.path:
 # CONFIGURATION: Change this to render different examples
 # ============================================================================
 #EXAMPLE_TO_RENDER = 'basic_joints' 
-EXAMPLE_TO_RENDER = 'oscar_shed'
+#EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
+EXAMPLE_TO_RENDER = 'horsey'
 #EXAMPLE_TO_RENDER = 'csg'
 
 # CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
@@ -66,6 +67,7 @@ def reload_all_modules():
         'giraffe_render_freecad',
         'examples.reference.basic_joints_example',
         'examples.mortise_and_tenon_joint_examples',
+        'examples.horsey_example',
         'examples.oscarshed',
         'examples.test_MeowMeowCSG_examples',
     ]
@@ -203,6 +205,48 @@ def render_oscar_shed():
     print("  - 5 rafters")
 
 
+def render_horsey():
+    """
+    Render Horsey Sawhorse - a simple sawhorse structure.
+    
+    A sawhorse with two horizontal beams, two vertical posts, a stretcher, and a top plate.
+    All connected with mortise and tenon joints with pegs.
+    """
+    from giraffe_render_freecad import render_frame, clear_document
+    from examples.horsey_example import create_sawhorse
+    
+    print("="*60)
+    print("GiraffeCAD FreeCAD - Horsey Sawhorse")
+    print("="*60)
+    
+    # Create Horsey Sawhorse (returns Frame object)
+    print("\nCreating Horsey Sawhorse structure...")
+    frame = create_sawhorse()
+    
+    print(f"Total timbers created: {len(frame.cut_timbers)}")
+    print(f"Total accessories (pegs): {len(frame.accessories)}")
+    
+    # Clear and render
+    print("\nClearing FreeCAD document...")
+    clear_document()
+    
+    print("\nRendering timbers and accessories in FreeCAD...")
+    success_count = render_frame(frame)
+    
+    print("\n" + "="*60)
+    print(f"Rendering Complete!")
+    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
+    print(f"Successfully rendered {len(frame.accessories)} accessories")
+    print("="*60)
+    print("\nHorsey Sawhorse: Simple sawhorse with mortise & tenon joints")
+    print("Check the Model tree on the left to see all components:")
+    print("  - 2 horizontal beams (feet)")
+    print("  - 2 vertical posts")
+    print("  - 1 horizontal stretcher")
+    print("  - 1 top plate")
+    print("  - Mortise & tenon joints with pegs")
+
+
 def render_csg():
     """
     Render CSG test examples.
@@ -298,6 +342,7 @@ def main():
     examples = {
         'basic_joints': render_basic_joints,
         'mortise_and_tenon': render_mortise_and_tenon,
+        'horsey': render_horsey,
         'oscar_shed': render_oscar_shed,
         'csg': render_csg,
     }

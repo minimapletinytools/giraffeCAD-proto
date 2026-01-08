@@ -1,3 +1,10 @@
+
+:: 1/7/2026 Agent instructinos
+
+-agent can work out local coordinates but often won't go through teh computations
+  -could either add clear instructions on working this out, probably need better notes on how to pull out orientation from timber ctors
+  -or just invite agent to sure reference dimension helper classes
+ 
 :: 1/6/2026 metadata
 
 -timber metadata 
@@ -16,10 +23,11 @@
 
 class hierarchy could look like this:
 
--thingy
+-thingy (position/orientation, allows converting from local to global coords)
   -block
     -timber
     -board
+  -joint accessory
 
 -block has faces, but no concept of end/long face
 -boards are lie really big stubby timbers, 
@@ -81,6 +89,7 @@ DONE-delete rhino for now
   -class hierarchy
     -use global_to_local and local_to_global helpers (or implement Thing classs....)
 
+-add support for round peg...
 -be consistent about V2 vs (Numeric,Numeric) tuple
 -pull out parts of mortise and tenon function, maybe move to joint_helpers.py in particular
   -peg positioning
