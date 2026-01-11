@@ -333,6 +333,7 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     
     return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)
 
+# TODO rename to stretch_timber
 def extend_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Numeric, 
                   extend_length: Numeric) -> Timber:
     """
@@ -428,6 +429,7 @@ def split_timber(
     
     return (bottom_timber, top_timber)
 
+# TODO rename to create/raise_joining_timber
 def join_timbers(timber1: Timber, timber2: Timber, 
                 location_on_timber1: Numeric,
                 location_on_timber2: Optional[Numeric] = None,
@@ -549,6 +551,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
     
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction, name=name)
 
+# TODO rename to create/raise_joining_timber_perpendicular_on_face_parallel_timbers
 def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber,
                                                 location_on_timber1: Numeric,
                                                 stickout: Stickout,

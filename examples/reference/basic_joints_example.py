@@ -379,5 +379,5 @@ if __name__ == "__main__":
     # Print summary of each timber
     for i, cut_timber in enumerate(frame.cut_timbers):
         timber = cut_timber.timber
-        num_cuts = len(cut_timber._cuts)
+        num_cuts = len(cut_timber.cuts)
         print(f"{i+1:2d}. {timber.name:30s} | Cuts: {num_cuts} | Length: {float(timber.length):.2f}m")

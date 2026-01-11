@@ -39,6 +39,13 @@ class hierarchy could look like this:
 -boards and timbers have different metadata
 -obv, boards and timbers have different joint methods, although their implementations might ultimately be the same and you can use conversion functions if you want to put a timber joint on a board say
 
+
+:: 1/11/2026 advancedtimber class
+
+base class is BlockyThing
+
+derived classes: Timebr, Board, MesHTimber, RoundTimbe,r PolyTimber, etc
+
 :: 1/8/2026 reference dimension helper classes
 
 general structure looks like this:
@@ -87,8 +94,9 @@ DONE-add back post joints to oscar shed
 DONE-delete rhino for now
 
 -REFACTOR TIME
-  -create Transform class in moothymoth
+  DONE-create Transform class in moothymoth
   -rename create_timber to hew or raise timber?
+    -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
 
 -3 major features

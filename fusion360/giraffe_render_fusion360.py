@@ -1000,7 +1000,7 @@ def log_structure_extents(extent: float, cut_timbers: List[CutTimber]):
     max_x = max_y = max_z = float('-inf')
     
     for cut_timber in cut_timbers:
-        corners = calculate_timber_corners(cut_timber._timber)
+        corners = calculate_timber_corners(cut_timber.timber)
         for corner in corners:
             x, y, z = float(corner[0]), float(corner[1]), float(corner[2])
             min_x = min(min_x, x)
@@ -1200,8 +1200,8 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                     'data': {
                         'index': i,
                         'component_name': component_name,
-                        'timber_name': cut_timber._timber.name if hasattr(cut_timber._timber, 'name') else 'unnamed',
-                        'cuts_count': len(cut_timber._cuts)
+                        'timber_name': cut_timber.timber.name if hasattr(cut_timber.timber, 'name') else 'unnamed',
+                        'cuts_count': len(cut_timber.cuts)
                     },
                     'timestamp': int(datetime.datetime.now().timestamp() * 1000),
                     'sessionId': 'debug-session',
@@ -1220,17 +1220,17 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             # and all cuts are also in local coordinates. This allows us to render at origin and then transform.
             csg = cut_timber.render_timber_with_cuts_csg_local()
             
-            if cut_timber._cuts:
-                print(f"  Applying {len(cut_timber._cuts)} cut(s)")
+            if cut_timber.cuts:
+                print(f"  Applying {len(cut_timber.cuts)} cut(s)")
                 if app:
-                    app.log(f"  Applying {len(cut_timber._cuts)} cut(s)")
+                    app.log(f"  Applying {len(cut_timber.cuts)} cut(s)")
             
             # Render at origin (no transform yet)
             # Pass timber info for coordinate transformations
             if app:
                 app.log(f"  About to render CSG (type: {type(csg).__name__})")
             
-            occurrence = render_meowmeowcsg_component_at_origin(csg, component_name, cut_timber._timber, infinite_geometry_extent)
+            occurrence = render_meowmeowcsg_component_at_origin(csg, component_name, cut_timber.timber, infinite_geometry_extent)
             
             if occurrence is not None:
                 # Validate geometry extents
@@ -1328,8 +1328,8 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                 app.log(f"Transforming {component_name}... (method: {'body' if use_body_transform else 'occurrence'})")
             
             # Get timber position and orientation
-            position = cut_timber._timber.bottom_position
-            orientation = cut_timber._timber.orientation
+            position = cut_timber.timber.bottom_position
+            orientation = cut_timber.timber.orientation
             
             # Apply the transform
             success = apply_timber_transform(occurrence, position, orientation, component_name, use_body_transform)

@@ -193,10 +193,10 @@ class TestPegStuff:
 
         assert joint.cut_timbers["tenon_timber"].timber == tenon_timber
         assert joint.cut_timbers["mortise_timber"].timber == mortise_timber
-        assert len(joint.cut_timbers["tenon_timber"]._cuts) == 1
-        assert len(joint.cut_timbers["mortise_timber"]._cuts) == 1
-        assert joint.cut_timbers["tenon_timber"]._cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
-        assert joint.cut_timbers["mortise_timber"]._cuts[0].maybe_end_cut == None
+        assert len(joint.cut_timbers["tenon_timber"].cuts) == 1
+        assert len(joint.cut_timbers["mortise_timber"].cuts) == 1
+        assert joint.cut_timbers["tenon_timber"].cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
+        assert joint.cut_timbers["mortise_timber"].cuts[0].maybe_end_cut == None
         
         peg = joint.jointAccessories["peg_0"]
         
@@ -211,7 +211,7 @@ class TestPegStuff:
 
         # Get tenon timber's cut CSG (what's removed)
         tenon_cut_timber = joint.cut_timbers["mortise_timber"]
-        tenon_cut_csg = tenon_cut_timber._cuts[0].negative_csg
+        tenon_cut_csg = tenon_cut_timber.cuts[0].negative_csg
         
         # Verify CSG includes peg holes (should be a Union with multiple children)
         from code_goes_here.meowmeowcsg import Union

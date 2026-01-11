@@ -832,6 +832,13 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
 
 
 class CutTimber:
+    """A timber with cuts applied to it."""
+    
+    # Declare members
+    timber: Timber
+    cuts: List['Cut']
+    joints: List  # List of joints this timber participates in
+    
     def __init__(self, timber: Timber, cuts: List['Cut'] = None):
         """
         Create a CutTimber from a Timber.
@@ -840,22 +847,14 @@ class CutTimber:
             timber: The timber to be cut
             cuts: Optional list of cuts to apply (default: empty list)
         """
-
-        # TODO get rid of _ in front of names
-        self._timber = timber
-        self._cuts = cuts if cuts is not None else []
-
+        self.timber = timber
+        self.cuts = cuts if cuts is not None else []
         self.joints = []  # List of joints this timber participates in
-    
-    @property
-    def timber(self) -> Timber:
-        """Get the underlying timber."""
-        return self._timber
 
     @property
     def name(self) -> Optional[str]:
         """Get the name from the underlying timber."""
-        return self._timber.name
+        return self.timber.name
 
     # this one returns the timber without cuts where ends with joints are infinite in length
     def _extended_timber_without_cuts_csg_local(self) -> MeowMeowCSG:
@@ -871,7 +870,7 @@ class CutTimber:
         Returns:
             Prism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
         """
-        return _create_timber_prism_csg_local(self._timber, self._cuts)
+        return _create_timber_prism_csg_local(self.timber, self.cuts)
 
     # this one returns the timber with all cuts applied
     def render_timber_with_cuts_csg_local(self) -> MeowMeowCSG:
@@ -886,11 +885,11 @@ class CutTimber:
         starting_csg = self._extended_timber_without_cuts_csg_local()
         
         # If there are no cuts, just return the starting CSG
-        if not self._cuts:
+        if not self.cuts:
             return starting_csg
         
         # Collect all the negative CSGs (volumes to be removed) from the cuts
-        negative_csgs = [cut.get_negative_csg_local() for cut in self._cuts]
+        negative_csgs = [cut.get_negative_csg_local() for cut in self.cuts]
         
         # Return the difference: timber - all cuts
         from .meowmeowcsg import Difference
@@ -1113,7 +1112,7 @@ class Frame:
             self._check_timber_no_floats(timber)
             
             # Check all cuts on this timber
-            for cut in cut_timber._cuts:
+            for cut in cut_timber.cuts:
                 self._check_cut_no_floats(cut)
         
         # Check all accessories
