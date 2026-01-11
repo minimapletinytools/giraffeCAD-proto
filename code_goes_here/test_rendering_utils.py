@@ -4,7 +4,7 @@ Tests for rendering utilities shared across all rendering backends.
 
 import pytest
 from sympy import Matrix, Rational, Integer
-from .timber import timber_from_directions, create_vector2d, create_vector3d, CutTimber
+from .timber import timber_from_directions, create_v2, create_v3, CutTimber
 from .moothymoth import Orientation
 from .rendering_utils import (
     sympy_to_float,
@@ -70,10 +70,10 @@ def test_calculate_timber_corners():
     # Create a simple timber
     timber = timber_from_directions(
         length=Rational(100, 1),
-        size=create_vector2d(Rational(10, 1), Rational(10, 1)),
-        bottom_position=create_vector3d(0, 0, 0),
-        length_direction=create_vector3d(0, 0, 1),
-        width_direction=create_vector3d(1, 0, 0)
+        size=create_v2(Rational(10, 1), Rational(10, 1)),
+        bottom_position=create_v3(0, 0, 0),
+        length_direction=create_v3(0, 0, 1),
+        width_direction=create_v3(1, 0, 0)
     )
     
     corners = calculate_timber_corners(timber)
@@ -109,10 +109,10 @@ def test_calculate_structure_extents_single_timber():
     """Test structure extents calculation with single timber."""
     timber = timber_from_directions(
         length=Rational(100, 1),
-        size=create_vector2d(Rational(10, 1), Rational(10, 1)),
-        bottom_position=create_vector3d(0, 0, 0),
-        length_direction=create_vector3d(0, 0, 1),
-        width_direction=create_vector3d(1, 0, 0)
+        size=create_v2(Rational(10, 1), Rational(10, 1)),
+        bottom_position=create_v3(0, 0, 0),
+        length_direction=create_v3(0, 0, 1),
+        width_direction=create_v3(1, 0, 0)
     )
     
     cut_timber = CutTimber(timber)
@@ -129,18 +129,18 @@ def test_calculate_structure_extents_multiple_timbers():
     # Create two timbers at different positions
     timber1 = timber_from_directions(
         length=Rational(100, 1),
-        size=create_vector2d(Rational(10, 1), Rational(10, 1)),
-        bottom_position=create_vector3d(0, 0, 0),
-        length_direction=create_vector3d(1, 0, 0),
-        width_direction=create_vector3d(0, 1, 0)
+        size=create_v2(Rational(10, 1), Rational(10, 1)),
+        bottom_position=create_v3(0, 0, 0),
+        length_direction=create_v3(1, 0, 0),
+        width_direction=create_v3(0, 1, 0)
     )
     
     timber2 = timber_from_directions(
         length=Rational(50, 1),
-        size=create_vector2d(Rational(10, 1), Rational(10, 1)),
-        bottom_position=create_vector3d(50, 0, 0),
-        length_direction=create_vector3d(0, 0, 1),
-        width_direction=create_vector3d(1, 0, 0)
+        size=create_v2(Rational(10, 1), Rational(10, 1)),
+        bottom_position=create_v3(50, 0, 0),
+        length_direction=create_v3(0, 0, 1),
+        width_direction=create_v3(1, 0, 0)
     )
     
     cut_timbers = [CutTimber(timber1), CutTimber(timber2)]
@@ -158,10 +158,10 @@ def test_calculate_structure_extents_with_offsets():
     # Create a timber far from origin
     timber = timber_from_directions(
         length=Rational(20, 1),
-        size=create_vector2d(Rational(5, 1), Rational(5, 1)),
-        bottom_position=create_vector3d(100, 100, 100),
-        length_direction=create_vector3d(0, 0, 1),
-        width_direction=create_vector3d(1, 0, 0)
+        size=create_v2(Rational(5, 1), Rational(5, 1)),
+        bottom_position=create_v3(100, 100, 100),
+        length_direction=create_v3(0, 0, 1),
+        width_direction=create_v3(1, 0, 0)
     )
     
     cut_timber = CutTimber(timber)

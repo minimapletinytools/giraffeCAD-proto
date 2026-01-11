@@ -26,16 +26,16 @@ from .helperonis import (
 class TestVectorHelpers:
     """Test vector helper functions."""
     
-    def test_create_vector2d(self):
+    def test_create_v2(self):
         """Test 2D vector creation."""
-        v = create_vector2d(Rational(3, 2), Rational(5, 2))  # 1.5, 2.5 as exact rationals
+        v = create_v2(Rational(3, 2), Rational(5, 2))  # 1.5, 2.5 as exact rationals
         assert v.shape == (2, 1)
         assert v[0] == Rational(3, 2)
         assert v[1] == Rational(5, 2)
     
-    def test_create_vector3d(self):
+    def test_create_v3(self):
         """Test 3D vector creation."""
-        v = create_vector3d(1, 2, 3)  # Use exact integers
+        v = create_v3(1, 2, 3)  # Use exact integers
         assert v.shape == (3, 1)
         assert v[0] == 1
         assert v[1] == 2
@@ -43,7 +43,7 @@ class TestVectorHelpers:
     
     def test_normalize_vector(self):
         """Test vector normalization."""
-        v = create_vector3d(3, 4, 0)  # Use integers for exact computation
+        v = create_v3(3, 4, 0)  # Use integers for exact computation
         normalized = normalize_vector(v)
         
         # Should have magnitude 1
@@ -57,24 +57,24 @@ class TestVectorHelpers:
     
     def test_normalize_zero_vector(self):
         """Test normalization of zero vector."""
-        v = create_vector3d(0, 0, 0)  # Use exact integers
+        v = create_v3(0, 0, 0)  # Use exact integers
         normalized = normalize_vector(v)
         assert normalized == v  # Should return original zero vector
     
     def test_cross_product(self):
         """Test cross product calculation."""
-        v1 = create_vector3d(1, 0, 0)  # Use exact integers
-        v2 = create_vector3d(0, 1, 0)  # Use exact integers
+        v1 = create_v3(1, 0, 0)  # Use exact integers
+        v2 = create_v3(0, 1, 0)  # Use exact integers
         cross = cross_product(v1, v2)
         
-        expected = create_vector3d(0, 0, 1)  # Use exact integers
+        expected = create_v3(0, 0, 1)  # Use exact integers
         assert cross[0] == 0
         assert cross[1] == 0
         assert cross[2] == 1
     
     def test_vector_magnitude(self):
         """Test vector magnitude calculation."""
-        v = create_vector3d(3, 4, 0)  # Use integers for exact computation
+        v = create_v3(3, 4, 0)  # Use integers for exact computation
         magnitude = vector_magnitude(v)
         assert magnitude == 5
 
@@ -86,10 +86,10 @@ class TestTimber:
     def test_timber_creation(self):
         """Test basic timber creation."""
         length = 3  # Use exact integer
-        size = create_vector2d(Rational(1, 10), Rational(1, 10))  # 0.1 as exact rational
-        position = create_vector3d(0, 0, 0)  # Use exact integers
-        length_dir = create_vector3d(0, 0, 1)  # Use exact integers
-        width_dir = create_vector3d(1, 0, 0)   # Use exact integers
+        size = create_v2(Rational(1, 10), Rational(1, 10))  # 0.1 as exact rational
+        position = create_v3(0, 0, 0)  # Use exact integers
+        length_dir = create_v3(0, 0, 1)  # Use exact integers
+        width_dir = create_v3(1, 0, 0)   # Use exact integers
         
         timber = timber_from_directions(length, size, position, length_dir, width_dir)
         
@@ -126,13 +126,13 @@ class TestTimber:
     def test_orientation_computed_from_directions(self):
         """Test that orientation is correctly computed from input face and length directions."""
         # Test with standard vertical timber facing east
-        input_length_dir = create_vector3d(0, 0, 1)  # Up - exact integers
-        input_width_dir = create_vector3d(1, 0, 0)    # East - exact integers
+        input_length_dir = create_v3(0, 0, 1)  # Up - exact integers
+        input_width_dir = create_v3(1, 0, 0)    # East - exact integers
         
         timber = timber_from_directions(
             length=2,  # Use exact integer
-            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
-            bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
+            size=create_v2(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
+            bottom_position=create_v3(0, 0, 0),  # Use exact integers
             length_direction=input_length_dir,
             width_direction=input_width_dir
         )
@@ -159,13 +159,13 @@ class TestTimber:
     def test_orientation_with_horizontal_timber(self):
         """Test orientation computation with a horizontal timber."""
         # Horizontal timber running north, facing up
-        input_length_dir = create_vector3d(0, 1, 0)  # North - exact integers
-        input_width_dir = create_vector3d(0, 0, 1)    # Up - exact integers
+        input_length_dir = create_v3(0, 1, 0)  # North - exact integers
+        input_width_dir = create_v3(0, 0, 1)    # Up - exact integers
         
         timber = timber_from_directions(
             length=3,  # Use exact integer
-            size=create_vector2d(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
-            bottom_position=create_vector3d(0, 0, 0),  # Use exact integers
+            size=create_v2(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
+            bottom_position=create_v3(0, 0, 0),  # Use exact integers
             length_direction=input_length_dir,
             width_direction=input_width_dir
         )
@@ -193,10 +193,10 @@ class TestTimber:
         """Test that the computed direction vectors form an orthonormal basis."""
         timber = timber_from_directions(
             length=Rational(1),
-            size=create_vector2d(Rational("0.1"), Rational("0.1")),
-            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
-            length_direction=create_vector3d(Rational(1), Rational(1), Rational(0)),  # Non-axis-aligned
-            width_direction=create_vector3d(Rational(0), Rational(0), Rational(1))     # Up
+            size=create_v2(Rational("0.1"), Rational("0.1")),
+            bottom_position=create_v3(Rational(0), Rational(0), Rational(0)),
+            length_direction=create_v3(Rational(1), Rational(1), Rational(0)),  # Non-axis-aligned
+            width_direction=create_v3(Rational(0), Rational(0), Rational(1))     # Up
         )
         
         length_dir = timber.length_direction
@@ -216,13 +216,13 @@ class TestTimber:
     def test_orientation_handles_non_normalized_inputs(self):
         """Test that orientation computation works with non-normalized input vectors."""
         # Use vectors that aren't unit length
-        input_length_dir = create_vector3d(Rational(0), Rational(0), Rational(5))  # Up, but length 5
-        input_width_dir = create_vector3d(Rational(3), Rational(0), Rational(0))    # East, but length 3
+        input_length_dir = create_v3(Rational(0), Rational(0), Rational(5))  # Up, but length 5
+        input_width_dir = create_v3(Rational(3), Rational(0), Rational(0))    # East, but length 3
         
         timber = timber_from_directions(
             length=Rational(1),
-            size=create_vector2d(Rational("0.1"), Rational("0.1")),
-            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
+            size=create_v2(Rational("0.1"), Rational("0.1")),
+            bottom_position=create_v3(Rational(0), Rational(0), Rational(0)),
             length_direction=input_length_dir,
             width_direction=input_width_dir
         )
@@ -244,10 +244,10 @@ class TestTimber:
         """Test the get_centerline_position_from_bottom method."""
         timber = timber_from_directions(
             length=Rational(5),
-            size=create_vector2d(Rational("0.2"), Rational("0.3")),
-            bottom_position=create_vector3d(Rational(1), Rational(2), Rational(3)),
-            length_direction=create_vector3d(Rational(0), Rational(1), Rational(0)),  # North
-            width_direction=create_vector3d(Rational(0), Rational(0), Rational(1))     # Up
+            size=create_v2(Rational("0.2"), Rational("0.3")),
+            bottom_position=create_v3(Rational(1), Rational(2), Rational(3)),
+            length_direction=create_v3(Rational(0), Rational(1), Rational(0)),  # North
+            width_direction=create_v3(Rational(0), Rational(0), Rational(1))     # Up
         )
         
         # Test at bottom position (position = 0)
@@ -278,10 +278,10 @@ class TestTimber:
         """Test get_centerline_position_from_bottom method."""
         timber = timber_from_directions(
             length=Rational(10),
-            size=create_vector2d(Rational("0.2"), Rational("0.3")),
-            bottom_position=create_vector3d(Rational(1), Rational(2), Rational(3)),
-            length_direction=create_vector3d(Rational(0), Rational(0), Rational(1)),  # Up
-            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))     # East
+            size=create_v2(Rational("0.2"), Rational("0.3")),
+            bottom_position=create_v3(Rational(1), Rational(2), Rational(3)),
+            length_direction=create_v3(Rational(0), Rational(0), Rational(1)),  # Up
+            width_direction=create_v3(Rational(1), Rational(0), Rational(0))     # East
         )
         
         # Test position at bottom (0)
@@ -306,10 +306,10 @@ class TestTimber:
         """Test get_centerline_position_from_top method."""
         timber = timber_from_directions(
             length=Rational(10),
-            size=create_vector2d(Rational("0.2"), Rational("0.3")),
-            bottom_position=create_vector3d(Rational(1), Rational(2), Rational(3)),
-            length_direction=create_vector3d(Rational(0), Rational(0), Rational(1)),  # Up
-            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))     # East
+            size=create_v2(Rational("0.2"), Rational("0.3")),
+            bottom_position=create_v3(Rational(1), Rational(2), Rational(3)),
+            length_direction=create_v3(Rational(0), Rational(0), Rational(1)),  # Up
+            width_direction=create_v3(Rational(1), Rational(0), Rational(0))     # East
         )
         
         # Test position at top (0 from top = 10 from bottom)
@@ -336,10 +336,10 @@ class TestTimber:
         # length = 10, width (size[0]) = 0.2, height (size[1]) = 0.3
         timber = timber_from_directions(
             length=Rational(10),
-            size=create_vector2d(Rational("0.2"), Rational("0.3")),
-            bottom_position=create_vector3d(Rational(0), Rational(0), Rational(0)),
-            length_direction=create_vector3d(Rational(0), Rational(0), Rational(1)),  # Up (Z-axis)
-            width_direction=create_vector3d(Rational(1), Rational(0), Rational(0))     # East (X-axis)
+            size=create_v2(Rational("0.2"), Rational("0.3")),
+            bottom_position=create_v3(Rational(0), Rational(0), Rational(0)),
+            length_direction=create_v3(Rational(0), Rational(0), Rational(1)),  # Up (Z-axis)
+            width_direction=create_v3(Rational(1), Rational(0), Rational(0))     # East (X-axis)
         )
         
         # TOP and BOTTOM faces are perpendicular to the length direction (Z-axis)
@@ -450,18 +450,18 @@ class TestEnumsAndDataStructures:
         # Create two parallel horizontal posts 2.0 meters apart
         post1 = timber_from_directions(
             length=Rational(3),
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
-            bottom_position=create_vector3d(0, 0, 0),
-            length_direction=create_vector3d(1, 0, 0),  # East
-            width_direction=create_vector3d(0, 0, 1)     # Up
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # East
+            width_direction=create_v3(0, 0, 1)     # Up
         )
         
         post2 = timber_from_directions(
             length=Rational(3),
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
-            bottom_position=create_vector3d(0, 2, 0),  # 2m north
-            length_direction=create_vector3d(1, 0, 0),  # East (parallel)
-            width_direction=create_vector3d(0, 0, 1)     # Up
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            bottom_position=create_v3(0, 2, 0),  # 2m north
+            length_direction=create_v3(1, 0, 0),  # East (parallel)
+            width_direction=create_v3(0, 0, 1)     # Up
         )
         
         # Join with INSIDE reference
@@ -476,7 +476,7 @@ class TestEnumsAndDataStructures:
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("0.1"), Rational("0.1"), StickoutReference.INSIDE, StickoutReference.INSIDE),
             offset_from_timber1=offset,
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
+            size=create_v2(Rational("0.2"), Rational("0.2")),
             orientation_face_on_timber1=TimberFace.TOP
         )
         
@@ -491,18 +491,18 @@ class TestEnumsAndDataStructures:
         # Create two parallel horizontal posts 2.0 meters apart
         post1 = timber_from_directions(
             length=Rational(3),
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
-            bottom_position=create_vector3d(0, 0, 0),
-            length_direction=create_vector3d(1, 0, 0),  # East
-            width_direction=create_vector3d(0, 0, 1)     # Up
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # East
+            width_direction=create_v3(0, 0, 1)     # Up
         )
         
         post2 = timber_from_directions(
             length=Rational(3),
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
-            bottom_position=create_vector3d(0, 2, 0),  # 2m north
-            length_direction=create_vector3d(1, 0, 0),  # East (parallel)
-            width_direction=create_vector3d(0, 0, 1)     # Up
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            bottom_position=create_v3(0, 2, 0),  # 2m north
+            length_direction=create_v3(1, 0, 0),  # East (parallel)
+            width_direction=create_v3(0, 0, 1)     # Up
         )
         
         # Join with OUTSIDE reference
@@ -517,7 +517,7 @@ class TestEnumsAndDataStructures:
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("0.2"), Rational("0.2"), StickoutReference.OUTSIDE, StickoutReference.OUTSIDE),
             offset_from_timber1=offset,
-            size=create_vector2d(Rational("0.2"), Rational("0.2")),
+            size=create_v2(Rational("0.2"), Rational("0.2")),
             orientation_face_on_timber1=TimberFace.TOP
         )
         
@@ -975,7 +975,7 @@ class TestPeg:
     def test_peg_creation(self):
         """Test basic Peg creation."""
         orientation = Orientation.identity()
-        position = create_vector3d(1, 2, 3)
+        position = create_v3(1, 2, 3)
         
         peg = Peg(
             orientation=orientation,
@@ -997,7 +997,7 @@ class TestPeg:
         """Test that Peg is immutable."""
         peg = Peg(
             orientation=Orientation.identity(),
-            position=create_vector3d(0, 0, 0),
+            position=create_v3(0, 0, 0),
             size=Rational(2),
             shape=PegShape.ROUND,
             forward_length=Rational(10),
@@ -1011,7 +1011,7 @@ class TestPeg:
         """Test rendering square peg CSG in local space."""
         peg = Peg(
             orientation=Orientation.identity(),
-            position=create_vector3d(0, 0, 0),
+            position=create_v3(0, 0, 0),
             size=Rational(2),
             shape=PegShape.SQUARE,
             forward_length=Rational(10),
@@ -1034,7 +1034,7 @@ class TestPeg:
         """Test rendering round peg CSG in local space."""
         peg = Peg(
             orientation=Orientation.identity(),
-            position=create_vector3d(0, 0, 0),
+            position=create_v3(0, 0, 0),
             size=Rational(4),
             shape=PegShape.ROUND,
             forward_length=Rational(12),
@@ -1059,7 +1059,7 @@ class TestWedge:
     def test_wedge_creation(self):
         """Test basic Wedge creation."""
         orientation = Orientation.identity()
-        position = create_vector3d(1, 2, 3)
+        position = create_v3(1, 2, 3)
         
         wedge = Wedge(
             orientation=orientation,
@@ -1081,7 +1081,7 @@ class TestWedge:
         """Test that width property is an alias for base_width."""
         wedge = Wedge(
             orientation=Orientation.identity(),
-            position=create_vector3d(0, 0, 0),
+            position=create_v3(0, 0, 0),
             base_width=Rational(5),
             tip_width=Rational(1),
             height=Rational(2),
@@ -1095,7 +1095,7 @@ class TestWedge:
         """Test that Wedge is immutable."""
         wedge = Wedge(
             orientation=Orientation.identity(),
-            position=create_vector3d(0, 0, 0),
+            position=create_v3(0, 0, 0),
             base_width=Rational(5),
             tip_width=Rational(1),
             height=Rational(2),
@@ -1109,7 +1109,7 @@ class TestWedge:
         """Test rendering wedge CSG in local space."""
         wedge = Wedge(
             orientation=Orientation.identity(),
-            position=create_vector3d(0, 0, 0),
+            position=create_v3(0, 0, 0),
             base_width=Rational(5),
             tip_width=Rational(1),
             height=Rational(2),
@@ -1136,10 +1136,10 @@ class TestCreatePegGoingIntoFace:
         """Create a standard vertical timber for testing."""
         self.timber = timber_from_directions(
             length=Rational(100),
-            size=create_vector2d(Rational(10), Rational(15)),
-            bottom_position=create_vector3d(0, 0, 0),
-            length_direction=create_vector3d(0, 0, 1),
-            width_direction=create_vector3d(1, 0, 0)
+            size=create_v2(Rational(10), Rational(15)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0)
         )
     
     def test_peg_into_right_face(self):
@@ -1243,10 +1243,10 @@ class TestCreateWedgeInTimberEnd:
         """Create a standard vertical timber for testing."""
         self.timber = timber_from_directions(
             length=Rational(100),
-            size=create_vector2d(Rational(10), Rational(15)),
-            bottom_position=create_vector3d(0, 0, 0),
-            length_direction=create_vector3d(0, 0, 1),
-            width_direction=create_vector3d(1, 0, 0)
+            size=create_v2(Rational(10), Rational(15)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0)
         )
         self.wedge_spec = WedgeShape(
             base_width=Rational(5),
@@ -1260,7 +1260,7 @@ class TestCreateWedgeInTimberEnd:
         wedge = create_wedge_in_timber_end(
             timber=self.timber,
             end=TimberReferenceEnd.TOP,
-            position=create_vector3d(Rational(2), Rational(3), 0),
+            position=create_v3(Rational(2), Rational(3), 0),
             shape=self.wedge_spec
         )
         
@@ -1280,7 +1280,7 @@ class TestCreateWedgeInTimberEnd:
         wedge = create_wedge_in_timber_end(
             timber=self.timber,
             end=TimberReferenceEnd.BOTTOM,
-            position=create_vector3d(Rational(-1), Rational(2), 0),
+            position=create_v3(Rational(-1), Rational(2), 0),
             shape=self.wedge_spec
         )
         
@@ -1294,7 +1294,7 @@ class TestCreateWedgeInTimberEnd:
         wedge = create_wedge_in_timber_end(
             timber=self.timber,
             end=TimberReferenceEnd.TOP,
-            position=create_vector3d(0, 0, 0),  # Center of cross-section
+            position=create_v3(0, 0, 0),  # Center of cross-section
             shape=self.wedge_spec
         )
         

@@ -124,11 +124,11 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
     timber_depth = size[1]   # Height direction (Y-axis of timber)
     
     # Vertical direction (length)
-    length_direction = create_vector3d(0, 0, 1)
+    length_direction = create_v3(0, 0, 1)
     
     # Align timber face direction with outgoing boundary side
     # Face direction is in the XY plane along the outgoing side
-    width_direction = create_vector3d(outgoing_dir_normalized[0], outgoing_dir_normalized[1], 0)
+    width_direction = create_v3(outgoing_dir_normalized[0], outgoing_dir_normalized[1], 0)
     
     # Calculate bottom position based on location type
     # Keep corner coordinates exact
@@ -139,7 +139,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
         # Position so one vertex of bottom face is on the boundary corner
         # Post extends inside the boundary
         # The corner vertex is at the origin of the timber's local coords
-        bottom_position = create_vector3d(corner_x, corner_y, 0)
+        bottom_position = create_v3(corner_x, corner_y, 0)
         
     elif location_type == FootprintLocation.OUTSIDE:
         # Position so the opposite vertex is on the boundary corner
@@ -148,7 +148,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
         # Use exact arithmetic: outgoing_dir_normalized components are rationals for axis-aligned
         offset_x = -timber_width * outgoing_dir_normalized[0] - timber_depth * (-outgoing_dir_normalized[1])
         offset_y = -timber_width * outgoing_dir_normalized[1] - timber_depth * outgoing_dir_normalized[0]
-        bottom_position = create_vector3d(corner_x + offset_x, corner_y + offset_y, 0)
+        bottom_position = create_v3(corner_x + offset_x, corner_y + offset_y, 0)
         
     else:  # CENTER
         # Position so center of bottom face is on the boundary corner
@@ -156,7 +156,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
         from sympy import Rational
         offset_x = -timber_width/Rational(2) * outgoing_dir_normalized[0] - timber_depth/Rational(2) * (-outgoing_dir_normalized[1])
         offset_y = -timber_width/Rational(2) * outgoing_dir_normalized[1] - timber_depth/Rational(2) * outgoing_dir_normalized[0]
-        bottom_position = create_vector3d(corner_x + offset_x, corner_y + offset_y, 0)
+        bottom_position = create_v3(corner_x + offset_x, corner_y + offset_y, 0)
     
     return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)
 
@@ -228,16 +228,16 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
     timber_depth = size[1]   # Depth perpendicular to boundary side
     
     # Vertical direction (length)
-    length_direction = create_vector3d(0, 0, 1)
+    length_direction = create_v3(0, 0, 1)
     
     # Face direction is parallel to the boundary side
-    width_direction = create_vector3d(side_dir_normalized[0], side_dir_normalized[1], 0)
+    width_direction = create_v3(side_dir_normalized[0], side_dir_normalized[1], 0)
     
     # Calculate bottom position based on location type
     if location_type == FootprintLocation.CENTER:
         # Center of bottom face is on the point
         # No offset needed since timber local origin is at center of bottom face
-        bottom_position = create_vector3d(point_x, point_y, 0)
+        bottom_position = create_v3(point_x, point_y, 0)
         
     elif location_type == FootprintLocation.INSIDE:
         # One edge of bottom face lies on boundary side
@@ -245,7 +245,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
         # Post extends inside (in direction of inward normal)
         # Offset the center by half depth in the inward direction
         from sympy import Rational
-        bottom_position = create_vector3d(point_x + inward_x * timber_depth / Rational(2), 
+        bottom_position = create_v3(point_x + inward_x * timber_depth / Rational(2), 
                                          point_y + inward_y * timber_depth / Rational(2), 
                                          0)
         
@@ -255,7 +255,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
         # Post extends outside (opposite of inward normal)
         # Offset the center by half depth in the outward direction
         from sympy import Rational
-        bottom_position = create_vector3d(point_x - inward_x * timber_depth / Rational(2), 
+        bottom_position = create_v3(point_x - inward_x * timber_depth / Rational(2), 
                                          point_y - inward_y * timber_depth / Rational(2), 
                                          0)
     
@@ -302,10 +302,10 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     
     # Get the inward normal from the footprint
     inward_x, inward_y, inward_z = footprint.get_inward_normal(corner_index)
-    inward_normal = create_vector3d(inward_x, inward_y, inward_z)
+    inward_normal = create_v3(inward_x, inward_y, inward_z)
     
     # Face direction is up (Z+)
-    width_direction = create_vector3d(0, 0, 1)
+    width_direction = create_v3(0, 0, 1)
     
     # The timber's orientation will be:
     #   X-axis (width/size[0]) = width_direction = (0, 0, 1) = vertical (up)
@@ -316,7 +316,7 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     
     # Calculate bottom position based on location type
     # Start at the start_point on the boundary side - keep exact
-    bottom_position = create_vector3d(start_point[0], start_point[1], 0)
+    bottom_position = create_v3(start_point[0], start_point[1], 0)
     
     # Apply offset based on location type
     if location_type == FootprintLocation.INSIDE:
@@ -405,7 +405,7 @@ def split_timber(
     # Create first timber (bottom part)
     bottom_timber = timber_from_directions(
         length=distance_from_bottom,
-        size=create_vector2d(timber.size[0], timber.size[1]),
+        size=create_v2(timber.size[0], timber.size[1]),
         bottom_position=timber.bottom_position,
         length_direction=timber.length_direction,
         width_direction=timber.width_direction,
@@ -419,7 +419,7 @@ def split_timber(
     # Create second timber (top part)
     top_timber = timber_from_directions(
         length=timber.length - distance_from_bottom,
-        size=create_vector2d(timber.size[0], timber.size[1]),
+        size=create_v2(timber.size[0], timber.size[1]),
         bottom_position=top_of_first,
         length_direction=timber.length_direction,
         width_direction=timber.width_direction,
@@ -519,10 +519,10 @@ def join_timbers(timber1: Timber, timber2: Timber,
             # The created timber is joining perpendicular to timber1
             # Its X dimension (width, along width_direction) should match the dimension 
             # of the face it's joining to on timber1, which is timber1's width (size[0])
-            size = create_vector2d(timber1.size[0], timber1.size[1])
+            size = create_v2(timber1.size[0], timber1.size[1])
         else:
             # For other orientations, use timber1's size as-is
-            size = create_vector2d(timber1.size[0], timber1.size[1])
+            size = create_v2(timber1.size[0], timber1.size[1])
     
     # Assert that join_timbers only uses CENTER_LINE stickout reference
     assert stickout.stickoutReference1 == StickoutReference.CENTER_LINE, \

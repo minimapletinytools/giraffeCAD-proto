@@ -108,7 +108,7 @@ class TestMiterJoint:
         self.assert_miter_joint_end_positions_on_boundaries(joint, timberA, timberB)
 
         # check that the "corner" point of the miter is contained on the boundary of both half plane
-        corner_point_global = create_vector3d(Rational(-3), Rational(-3), Rational(0))
+        corner_point_global = create_v3(Rational(-3), Rational(-3), Rational(0))
         corner_point_local_A = timberA.global_to_local(corner_point_global)
         corner_point_local_B = timberB.global_to_local(corner_point_global)
         assert joint.cut_timbers["timberA"]._cuts[0].half_plane.is_point_on_boundary(corner_point_local_A)
@@ -118,7 +118,7 @@ class TestMiterJoint:
         # This point is at (0, -3, 0) in global coordinates, which is:
         # - On the "cut away" side of timber A (should NOT be contained)
         # - On the "kept" side of timber B (should be contained)
-        bottom_point_A_after_cutting_global = create_vector3d(Rational(0), Rational(-3), Rational(0))
+        bottom_point_A_after_cutting_global = create_v3(Rational(0), Rational(-3), Rational(0))
         bottom_point_A_after_cutting_local_A = timberA.global_to_local(bottom_point_A_after_cutting_global)
         bottom_point_A_after_cutting_local_B = timberB.global_to_local(bottom_point_A_after_cutting_global)
         assert not joint.cut_timbers["timberA"]._cuts[0].half_plane.contains_point(bottom_point_A_after_cutting_local_A)
@@ -231,7 +231,7 @@ class TestButtJoint:
             pytest.fail(f"Failed to render cut timber: {e}")
 
         # pick a point that's on the boundary of the butt joint
-        joint_point_global = create_vector3d(Rational(0), Rational(3), Rational(0))
+        joint_point_global = create_v3(Rational(0), Rational(3), Rational(0))
 
         assert joint.cut_timbers["receiving_timber"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberA.global_to_local(joint_point_global))
         assert joint.cut_timbers["butt_timber"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberB.global_to_local(joint_point_global))
@@ -425,7 +425,7 @@ class TestHouseJoint:
         assert joint.cut_timbers["timberA"]._cuts[0].maybe_end_cut is None
 
         # test that the origin point lies in the housed timber but not the housing timber
-        origin = create_vector3d(Rational(0), Rational(0), Rational(0))
+        origin = create_v3(Rational(0), Rational(0), Rational(0))
         assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(housing_timber.global_to_local(origin))
         assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(housed_timber.global_to_local(origin))
         
@@ -533,7 +533,7 @@ class TestCrossLapJoint:
         assert joint.cut_timbers["timberB"]._cuts[0].maybe_end_cut is None
 
         # test that the origin point lies on the boundary of both timbers
-        origin = create_vector3d(Rational(0), Rational(0), Rational(0))
+        origin = create_v3(Rational(0), Rational(0), Rational(0))
         assert joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
         assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
 
@@ -541,12 +541,12 @@ class TestCrossLapJoint:
         assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberB.global_to_local(origin))
 
         # above origin
-        origin = create_vector3d(Rational(0), Rational(0), Rational(1))
+        origin = create_v3(Rational(0), Rational(0), Rational(1))
         assert joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
         assert not joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
 
         # below origin
-        origin = create_vector3d(Rational(0), Rational(0), Rational(-1))
+        origin = create_v3(Rational(0), Rational(0), Rational(-1))
         assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
         assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
         

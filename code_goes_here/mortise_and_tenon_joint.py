@@ -556,7 +556,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             stickout_length = peg_depth * Rational(1, 2)  # Stickout is 0.5 times the depth
             
 
-            peg_pos_on_tenon_face_local_with_peg_offset = peg_pos_on_tenon_face_local + create_vector3d(Rational(0), Rational(0), peg_pos_on_tenon_face_local_z_with_peg_offset)
+            peg_pos_on_tenon_face_local_with_peg_offset = peg_pos_on_tenon_face_local + create_v3(Rational(0), Rational(0), peg_pos_on_tenon_face_local_z_with_peg_offset)
 
             # Create peg hole prism in tenon local space
             # The peg position is ON the tenon face, and extends into the tenon

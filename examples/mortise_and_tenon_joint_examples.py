@@ -7,7 +7,7 @@ from code_goes_here.moothymoth import inches
 from code_goes_here.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace,
     PegShape, timber_from_directions,
-    create_vector3d, V2, CutTimber, Frame
+    create_v3, V2, CutTimber, Frame
 )
 from code_goes_here.mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
@@ -28,7 +28,7 @@ def example_basic_mortise_and_tenon(position=None):
         position: Optional offset position (V3) to translate the joint
     """
     if position is None:
-        position = create_vector3d(0, 0, 0)
+        position = create_v3(0, 0, 0)
     
     # Timber dimensions: 4x4 inches, 4 feet (48 inches) long
     timber_size = Matrix([inches(4), inches(4)])  # 4" x 4" cross section
@@ -47,7 +47,7 @@ def example_basic_mortise_and_tenon(position=None):
     # Create a horizontal beam (mortise timber) centered at position
     # The beam extends along X axis with its center (not bottom) at position
     beam = create_axis_aligned_timber(
-        bottom_position=create_vector3d(position[0] - timber_length / 2, position[1], position[2]),  # Start at -24 inches from position so center is at position
+        bottom_position=create_v3(position[0] - timber_length / 2, position[1], position[2]),  # Start at -24 inches from position so center is at position
         length=timber_length,
         size=timber_size,
         length_direction=TimberFace.RIGHT,  # Points in +X direction
@@ -84,7 +84,7 @@ def example_4x6_into_6x8_mortise_and_tenon(position=None):
         position: Optional offset position (V3) to translate the joint
     """
     if position is None:
-        position = create_vector3d(0, 0, 0)
+        position = create_v3(0, 0, 0)
     
     timber_length = inches(48)  # 4 feet = 48 inches
     
@@ -100,7 +100,7 @@ def example_4x6_into_6x8_mortise_and_tenon(position=None):
     
     # Create a horizontal beam (mortise timber) - 6x8 inches
     beam = create_axis_aligned_timber(
-        bottom_position=create_vector3d(position[0] - timber_length / 2, position[1], position[2]),
+        bottom_position=create_v3(position[0] - timber_length / 2, position[1], position[2]),
         length=timber_length,
         size=Matrix([inches(6), inches(8)]),  # 6" x 8"
         length_direction=TimberFace.RIGHT,
@@ -138,7 +138,7 @@ def example_through_tenon_with_6_inch_stickout(position=None):
         position: Optional offset position (V3) to translate the joint
     """
     if position is None:
-        position = create_vector3d(0, 0, 0)
+        position = create_v3(0, 0, 0)
     
     timber_length = inches(48)  # 4 feet = 48 inches
     
@@ -154,7 +154,7 @@ def example_through_tenon_with_6_inch_stickout(position=None):
     
     # Create a horizontal beam (mortise timber) - 6x6 inches
     beam = create_axis_aligned_timber(
-        bottom_position=create_vector3d(position[0] - timber_length / 2, position[1], position[2]),
+        bottom_position=create_v3(position[0] - timber_length / 2, position[1], position[2]),
         length=timber_length,
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
@@ -195,7 +195,7 @@ def example_full_size_4x4_tenon(position=None):
         position: Optional offset position (V3) to translate the joint
     """
     if position is None:
-        position = create_vector3d(0, 0, 0)
+        position = create_v3(0, 0, 0)
     
     timber_length = inches(48)  # 4 feet = 48 inches
     
@@ -211,7 +211,7 @@ def example_full_size_4x4_tenon(position=None):
     
     # Create a horizontal beam (mortise timber) - 6x6 inches
     beam = create_axis_aligned_timber(
-        bottom_position=create_vector3d(position[0] - timber_length / 2, position[1], position[2]),
+        bottom_position=create_v3(position[0] - timber_length / 2, position[1], position[2]),
         length=timber_length,
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
@@ -250,7 +250,7 @@ def example_offset_corner_tenon(position=None):
         position: Optional offset position (V3) to translate the joint
     """
     if position is None:
-        position = create_vector3d(0, 0, 0)
+        position = create_v3(0, 0, 0)
     
     timber_length = inches(48)  # 4 feet = 48 inches
     
@@ -266,7 +266,7 @@ def example_offset_corner_tenon(position=None):
     
     # Create a horizontal beam (mortise timber) - 6x6 inches
     beam = create_axis_aligned_timber(
-        bottom_position=create_vector3d(position[0] - timber_length / 2, position[1], position[2]),
+        bottom_position=create_v3(position[0] - timber_length / 2, position[1], position[2]),
         length=timber_length,
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
@@ -311,7 +311,7 @@ def example_mortise_and_tenon_with_pegs(position=None):
         position: Optional offset position (V3) to translate the joint
     """
     if position is None:
-        position = create_vector3d(0, 0, 0)
+        position = create_v3(0, 0, 0)
     
     timber_length = inches(48)  # 4 feet = 48 inches
     
@@ -327,7 +327,7 @@ def example_mortise_and_tenon_with_pegs(position=None):
     
     # Create a horizontal beam (mortise timber) - 6x6 inches
     beam = create_axis_aligned_timber(
-        bottom_position=create_vector3d(position[0] - timber_length / 2, position[1], position[2]),
+        bottom_position=create_v3(position[0] - timber_length / 2, position[1], position[2]),
         length=timber_length,
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
@@ -422,7 +422,7 @@ def create_all_mortise_and_tenon_examples():
         
         # Translate timbers to current position
         for timber in joint.cut_timbers:
-            new_position = timber.timber.bottom_position + create_vector3d(current_position_x, 0, 0)
+            new_position = timber.timber.bottom_position + create_v3(current_position_x, 0, 0)
             translated_timber = Timber(
                 name=timber.timber.name,
                 bottom_position=new_position,
@@ -438,7 +438,7 @@ def create_all_mortise_and_tenon_examples():
             for accessory in joint.jointAccessories:
                 # Accessories are stored in global space, so they need to be translated
                 # to match the translated position of the joint
-                translation_offset = create_vector3d(current_position_x, 0, 0)
+                translation_offset = create_v3(current_position_x, 0, 0)
                 translated_accessory = Peg(
                     orientation=accessory.orientation,
                     position=accessory.position + translation_offset,

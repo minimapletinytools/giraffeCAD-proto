@@ -50,7 +50,7 @@ def create_sawhorse() -> Frame:
     
     # Create left beam (4x6, runs in Y direction, 6" dimension in Z)
     left_beam = create_axis_aligned_timber(
-        bottom_position=create_vector3d(-beam_offset_x, -beam_length / 2, Rational(0)),
+        bottom_position=create_v3(-beam_offset_x, -beam_length / 2, Rational(0)),
         length=beam_length,
         size=beam_size,
         length_direction=TimberFace.FRONT,  # Y direction
@@ -60,7 +60,7 @@ def create_sawhorse() -> Frame:
     
     # Create right beam (4x6, runs in Y direction, 6" dimension in Z)
     right_beam = create_axis_aligned_timber(
-        bottom_position=create_vector3d(beam_offset_x, -beam_length / 2, Rational(0)),
+        bottom_position=create_v3(beam_offset_x, -beam_length / 2, Rational(0)),
         length=beam_length,
         size=beam_size,
         length_direction=TimberFace.FRONT,  # Y direction
@@ -70,7 +70,7 @@ def create_sawhorse() -> Frame:
     
     # Create left post (4x4, vertical, centered on left beam)
     left_post = create_axis_aligned_timber(
-        bottom_position=create_vector3d(-beam_offset_x, Rational(0), beam_size[1]),  # Start at top of beam
+        bottom_position=create_v3(-beam_offset_x, Rational(0), beam_size[1]),  # Start at top of beam
         length=post_height,
         size=post_size,
         length_direction=TimberFace.TOP,    # Z direction
@@ -80,7 +80,7 @@ def create_sawhorse() -> Frame:
     
     # Create right post (4x4, vertical, centered on right beam)
     right_post = create_axis_aligned_timber(
-        bottom_position=create_vector3d(beam_offset_x, Rational(0), beam_size[1]),  # Start at top of beam
+        bottom_position=create_v3(beam_offset_x, Rational(0), beam_size[1]),  # Start at top of beam
         length=post_height,
         size=post_size,
         length_direction=TimberFace.TOP,    # Z direction
@@ -94,7 +94,7 @@ def create_sawhorse() -> Frame:
     stretcher_length = 2 * beam_offset_x  # Distance between post centers
     
     stretcher = create_axis_aligned_timber(
-        bottom_position=create_vector3d(-beam_offset_x, Rational(0), stretcher_z_position),
+        bottom_position=create_v3(-beam_offset_x, Rational(0), stretcher_z_position),
         length=stretcher_length,
         size=stretcher_size,
         length_direction=TimberFace.RIGHT,  # X direction
@@ -106,7 +106,7 @@ def create_sawhorse() -> Frame:
     plate_z_position = beam_size[1] + post_height  # Top of posts
     
     plate = create_axis_aligned_timber(
-        bottom_position=create_vector3d(-plate_length / 2, Rational(0), plate_z_position),
+        bottom_position=create_v3(-plate_length / 2, Rational(0), plate_z_position),
         length=plate_length,
         size=plate_size,
         length_direction=TimberFace.RIGHT,  # X direction (5ft long)

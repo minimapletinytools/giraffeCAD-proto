@@ -21,8 +21,8 @@ from code_goes_here.moothymoth import Orientation, inches
 from code_goes_here.footprint import Footprint
 from giraffe import (
     timber_from_directions,
-    create_vector2d,
-    create_vector3d,
+    create_v2,
+    create_v3,
     Timber,
     V3,
     TimberReferenceEnd
@@ -326,10 +326,10 @@ def create_test_footprint(width=4, height=3) -> Footprint:
         Footprint: A rectangular footprint with corners at (0,0), (width,0), (width,height), (0,height)
     """
     corners = [
-        create_vector2d(0, 0),
-        create_vector2d(width, 0),
-        create_vector2d(width, height),
-        create_vector2d(0, height)
+        create_v2(0, 0),
+        create_v2(width, 0),
+        create_v2(width, height),
+        create_v2(0, height)
     ]
     return Footprint(corners)
 
@@ -403,5 +403,5 @@ def identity_orientation():
 @pytest.fixture
 def standard_4x4_timber_size():
     """Fixture providing standard 4x4 inch timber dimensions."""
-    return create_vector2d(inches(4), inches(4))
+    return create_v2(inches(4), inches(4))
 

@@ -53,7 +53,7 @@ def test_giraffe_modules():
         return False
     
     try:
-        from giraffe import CutTimber, Timber, create_vector3d
+        from giraffe import CutTimber, Timber, create_v3
         print("✓ giraffe core classes imported successfully from parent dir")
     except ImportError as e:
         print(f"✗ Failed to import giraffe from parent dir: {e}")

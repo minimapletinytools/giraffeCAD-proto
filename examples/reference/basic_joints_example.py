@@ -341,7 +341,7 @@ def create_all_joint_examples() -> Frame:
     current_position_x = 0
     
     for joint_name, joint_function in JOINTS_TO_RENDER:
-        position = create_vector3d(current_position_x, 0, 0)
+        position = create_v3(current_position_x, 0, 0)
         timbers = joint_function(position)
         all_timbers.extend(timbers)
         
