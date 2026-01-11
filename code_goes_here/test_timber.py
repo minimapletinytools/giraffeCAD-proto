@@ -1333,3 +1333,290 @@ class TestWedgeShape:
             shape.base_width = Rational(7)
 
 
+
+class TestFrameFromJoints:
+    """Test Frame.from_joints constructor."""
+    
+    def test_from_joints_simple(self):
+        """Test creating a frame from a list of joints."""
+        # Create two simple timbers
+        timber1 = create_axis_aligned_timber(
+            bottom_position=create_v3(0, 0, 0),
+            length=Rational(100),
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="Timber 1"
+        )
+        
+        timber2 = create_axis_aligned_timber(
+            bottom_position=create_v3(Rational(10), 0, 0),
+            length=Rational(100),
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="Timber 2"
+        )
+        
+        # Create mock cuts for each timber
+        cut1 = MockCut(timber1, create_v3(0, 0, 0))
+        cut2 = MockCut(timber2, create_v3(0, 0, 0))
+        
+        # Create CutTimbers
+        cut_timber1 = CutTimber(timber1, cuts=[cut1])
+        cut_timber2 = CutTimber(timber2, cuts=[cut2])
+        
+        # Create a joint
+        joint = Joint(
+            cut_timbers={"timber1": cut_timber1, "timber2": cut_timber2},
+            jointAccessories={}
+        )
+        
+        # Create frame from joints
+        frame = Frame.from_joints([joint], name="Test Frame")
+        
+        # Verify frame has 2 cut timbers
+        assert len(frame.cut_timbers) == 2
+        assert frame.name == "Test Frame"
+        assert len(frame.accessories) == 0
+        
+        # Verify each timber appears once
+        timber_names = [ct.timber.name for ct in frame.cut_timbers]
+        assert "Timber 1" in timber_names
+        assert "Timber 2" in timber_names
+    
+    def test_from_joints_merges_same_timber(self):
+        """Test that cut timbers with the same underlying timber reference are merged."""
+        # Create a single timber
+        timber = create_axis_aligned_timber(
+            bottom_position=create_v3(0, 0, 0),
+            length=Rational(100),
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="Shared Timber"
+        )
+        
+        # Create different cuts for the same timber
+        cut1 = MockCut(timber, create_v3(0, 0, 0))
+        cut2 = MockCut(timber, create_v3(0, 0, 0))
+        cut3 = MockCut(timber, create_v3(0, 0, 0))
+        
+        # Create multiple CutTimber instances for the same timber
+        cut_timber1 = CutTimber(timber, cuts=[cut1])
+        cut_timber2 = CutTimber(timber, cuts=[cut2, cut3])
+        
+        # Create two joints that both reference the same timber
+        joint1 = Joint(
+            cut_timbers={"timber": cut_timber1},
+            jointAccessories={}
+        )
+        
+        joint2 = Joint(
+            cut_timbers={"timber": cut_timber2},
+            jointAccessories={}
+        )
+        
+        # Create frame from joints
+        frame = Frame.from_joints([joint1, joint2])
+        
+        # Verify only one cut timber in the frame (merged)
+        assert len(frame.cut_timbers) == 1
+        
+        # Verify all cuts are present
+        merged_cut_timber = frame.cut_timbers[0]
+        assert len(merged_cut_timber.cuts) == 3
+        assert cut1 in merged_cut_timber.cuts
+        assert cut2 in merged_cut_timber.cuts
+        assert cut3 in merged_cut_timber.cuts
+    
+    def test_from_joints_collects_accessories(self):
+        """Test that accessories from all joints are collected."""
+        timber = create_axis_aligned_timber(
+            bottom_position=create_v3(0, 0, 0),
+            length=Rational(100),
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="Timber"
+        )
+        
+        # Create a peg accessory
+        peg = Peg(
+            transform=Transform(
+                position=create_v3(0, 0, Rational(50)),
+                orientation=Orientation.identity()
+            ),
+            size=Rational(1),
+            shape=PegShape.ROUND,
+            forward_length=Rational(10),
+            stickout_length=Rational(2)
+        )
+        
+        # Create a wedge accessory
+        wedge = Wedge(
+            transform=Transform(
+                position=create_v3(0, 0, Rational(100)),
+                orientation=Orientation.identity()
+            ),
+            base_width=Rational(2),
+            tip_width=Rational(1),
+            height=Rational(3),
+            length=Rational(5)
+        )
+        
+        # Create joints with accessories
+        joint1 = Joint(
+            cut_timbers={"timber": CutTimber(timber, cuts=[])},
+            jointAccessories={"peg": peg}
+        )
+        
+        joint2 = Joint(
+            cut_timbers={"timber": CutTimber(timber, cuts=[])},
+            jointAccessories={"wedge": wedge}
+        )
+        
+        # Create frame from joints
+        frame = Frame.from_joints([joint1, joint2])
+        
+        # Verify accessories are collected
+        assert len(frame.accessories) == 2
+        assert peg in frame.accessories
+        assert wedge in frame.accessories
+    
+    def test_from_joints_with_additional_unjointed_timbers(self):
+        """Test adding additional unjointed timbers to the frame."""
+        # Create a timber with a joint
+        timber1 = create_axis_aligned_timber(
+            bottom_position=create_v3(0, 0, 0),
+            length=Rational(100),
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="Jointed Timber"
+        )
+        
+        # Create an unjointed timber
+        timber2 = create_axis_aligned_timber(
+            bottom_position=create_v3(Rational(10), 0, 0),
+            length=Rational(50),
+            size=create_v2(Rational(2), Rational(2)),
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="Unjointed Timber"
+        )
+        
+        # Create a joint with timber1
+        joint = Joint(
+            cut_timbers={"timber1": CutTimber(timber1, cuts=[MockCut(timber1, create_v3(0, 0, 0))])},
+            jointAccessories={}
+        )
+        
+        # Create frame with additional unjointed timber
+        frame = Frame.from_joints([joint], additional_unjointed_timbers=[timber2])
+        
+        # Verify both timbers are in the frame
+        assert len(frame.cut_timbers) == 2
+        
+        timber_names = [ct.timber.name for ct in frame.cut_timbers]
+        assert "Jointed Timber" in timber_names
+        assert "Unjointed Timber" in timber_names
+        
+        # Verify unjointed timber has no cuts
+        unjointed_ct = [ct for ct in frame.cut_timbers if ct.timber.name == "Unjointed Timber"][0]
+        assert len(unjointed_ct.cuts) == 0
+    
+    def test_from_joints_warns_on_different_timbers_same_name(self):
+        """Test that a warning is issued when different timbers have the same name."""
+        # Create two different timbers with the same name
+        timber1 = create_axis_aligned_timber(
+            bottom_position=create_v3(0, 0, 0),
+            length=Rational(100),
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="Post"
+        )
+        
+        timber2 = create_axis_aligned_timber(
+            bottom_position=create_v3(Rational(10), 0, 0),
+            length=Rational(80),  # Different length
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="Post"  # Same name
+        )
+        
+        # Create joints
+        joint1 = Joint(
+            cut_timbers={"timber1": CutTimber(timber1, cuts=[])},
+            jointAccessories={}
+        )
+        
+        joint2 = Joint(
+            cut_timbers={"timber2": CutTimber(timber2, cuts=[])},
+            jointAccessories={}
+        )
+        
+        # Create frame - should issue a warning
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            frame = Frame.from_joints([joint1, joint2])
+            
+            # Verify a warning was issued
+            assert len(w) == 1
+            assert "multiple timbers with the same name" in str(w[0].message).lower()
+            assert "Post" in str(w[0].message)
+    
+    def test_from_joints_errors_on_duplicate_timber_data(self):
+        """Test that an error is raised when same timber data exists with different references."""
+        # Create two timbers with identical data
+        timber1 = create_axis_aligned_timber(
+            bottom_position=create_v3(0, 0, 0),
+            length=Rational(100),
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="Post"
+        )
+        
+        # Create an identical timber (same data, different object)
+        timber2 = create_axis_aligned_timber(
+            bottom_position=create_v3(0, 0, 0),
+            length=Rational(100),
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="Post"
+        )
+        
+        # Verify they are different objects but equal data
+        assert timber1 is not timber2
+        assert timber1 == timber2
+        
+        # Create joints
+        joint1 = Joint(
+            cut_timbers={"timber1": CutTimber(timber1, cuts=[])},
+            jointAccessories={}
+        )
+        
+        joint2 = Joint(
+            cut_timbers={"timber2": CutTimber(timber2, cuts=[])},
+            jointAccessories={}
+        )
+        
+        # Create frame - should raise an error
+        with pytest.raises(ValueError) as exc_info:
+            Frame.from_joints([joint1, joint2])
+        
+        assert "identical underlying timber data" in str(exc_info.value).lower()
+        assert "Post" in str(exc_info.value)
+    
+    def test_from_joints_empty_list(self):
+        """Test creating a frame from an empty list of joints."""
+        frame = Frame.from_joints([], name="Empty Frame")
+        
+        assert len(frame.cut_timbers) == 0
+        assert len(frame.accessories) == 0
+        assert frame.name == "Empty Frame"

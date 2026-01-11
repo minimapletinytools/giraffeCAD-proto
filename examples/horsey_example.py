@@ -220,71 +220,23 @@ def create_sawhorse() -> Frame:
     )
     
     # ============================================================================
-    # Collect cuts for each timber
+    # Create Frame from joints using the new from_joints constructor
     # ============================================================================
+    # The from_joints method automatically:
+    # - Extracts all cut timbers from the joints
+    # - Merges cuts for timbers that appear in multiple joints
+    # - Collects all accessories (pegs, wedges, etc.)
     
-    # Left beam: has mortise for left post
-    left_beam_cuts = []
-    left_beam_cuts.extend(left_beam_post_joint.cut_timbers["mortise_timber"].cuts)
+    all_joints = [
+        left_beam_post_joint,
+        right_beam_post_joint,
+        left_post_stretcher_joint,
+        right_post_stretcher_joint,
+        left_post_plate_joint,
+        right_post_plate_joint
+    ]
     
-    # Right beam: has mortise for right post
-    right_beam_cuts = []
-    right_beam_cuts.extend(right_beam_post_joint.cut_timbers["mortise_timber"].cuts)
-    
-    # Left post: has tenon into left beam, mortise for stretcher, tenon into plate
-    left_post_cuts = []
-    left_post_cuts.extend(left_beam_post_joint.cut_timbers["tenon_timber"].cuts)
-    left_post_cuts.extend(left_post_stretcher_joint.cut_timbers["mortise_timber"].cuts)
-    left_post_cuts.extend(left_post_plate_joint.cut_timbers["tenon_timber"].cuts)
-    
-    # Right post: has tenon into right beam, mortise for stretcher, tenon into plate
-    right_post_cuts = []
-    right_post_cuts.extend(right_beam_post_joint.cut_timbers["tenon_timber"].cuts)
-    right_post_cuts.extend(right_post_stretcher_joint.cut_timbers["mortise_timber"].cuts)
-    right_post_cuts.extend(right_post_plate_joint.cut_timbers["tenon_timber"].cuts)
-    
-    # Stretcher: has tenon into left post and tenon into right post
-    stretcher_cuts = []
-    stretcher_cuts.extend(left_post_stretcher_joint.cut_timbers["tenon_timber"].cuts)
-    stretcher_cuts.extend(right_post_stretcher_joint.cut_timbers["tenon_timber"].cuts)
-    
-    # Plate: has mortise for left post and mortise for right post
-    plate_cuts = []
-    plate_cuts.extend(left_post_plate_joint.cut_timbers["mortise_timber"].cuts)
-    plate_cuts.extend(right_post_plate_joint.cut_timbers["mortise_timber"].cuts)
-    
-    # ============================================================================
-    # Create CutTimber objects with their cuts
-    # ============================================================================
-    
-    cut_left_beam = CutTimber(left_beam, cuts=left_beam_cuts)
-    cut_right_beam = CutTimber(right_beam, cuts=right_beam_cuts)
-    cut_left_post = CutTimber(left_post, cuts=left_post_cuts)
-    cut_right_post = CutTimber(right_post, cuts=right_post_cuts)
-    cut_stretcher = CutTimber(stretcher, cuts=stretcher_cuts)
-    cut_plate = CutTimber(plate, cuts=plate_cuts)
-    
-    # Collect all accessories from joints
-    all_accessories = []
-    for joint in [left_beam_post_joint, right_beam_post_joint, 
-                  left_post_stretcher_joint, right_post_stretcher_joint,
-                  left_post_plate_joint, right_post_plate_joint]:
-        if hasattr(joint, 'jointAccessories') and joint.jointAccessories:
-            all_accessories.extend(joint.jointAccessories.values())
-    
-    # Return Frame with all cut timbers and accessories
-    return Frame(
-        cut_timbers=[
-            cut_left_beam,
-            cut_right_beam,
-            cut_left_post,
-            cut_right_post,
-            cut_stretcher,
-            cut_plate
-        ],
-        accessories=all_accessories,
-        name="Sawhorse"
-    )
+    return Frame.from_joints(all_joints, name="Sawhorse")
 
 
 def main():

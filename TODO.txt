@@ -14,6 +14,7 @@
   -reference face(s)
 
 -joint metadata
+  -name
   -assembly order
   -assembly DOF
     -by combining order and DOF you can validate if it's possible to assemble
@@ -98,6 +99,9 @@ DONE-delete rhino for now
   -rename create_timber to hew or raise timber?
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
+
+-update fusino 360 to similar as run_examples
+-Update Frame to be built from joints
 
 -3 major features
   -measure functions
