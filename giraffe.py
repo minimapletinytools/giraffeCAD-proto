@@ -17,8 +17,14 @@ from code_goes_here.moothymoth import (
     inches, feet, mm, cm, m,
     shaku, sun, bu,
     Rational, S, sympify,
-    V2, V3, Direction3D, Numeric
+    V2, V3, Direction3D, Numeric,
+    create_v2, create_v3,
+    normalize_vector, cross_product, vector_magnitude
 )
+
+# Backward compatibility aliases
+create_vector2d = create_v2
+create_vector3d = create_v3
 
 # Explicitly import private helper functions that are used by tests
 # These start with _ so they won't be included in "import *" by default

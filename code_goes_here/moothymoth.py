@@ -42,6 +42,38 @@ Numeric = Union[float, int, Expr]  # Numeric values (SymPy Expr type STRONGLY pr
 
 
 # ============================================================================
+# Helper Functions for Vector Operations
+# ============================================================================
+
+def create_v2(x: Numeric, y: Numeric) -> V2:
+    """Create a 2D vector"""
+    return Matrix([x, y])
+
+def create_v3(x: Numeric, y: Numeric, z: Numeric) -> V3:
+    """Create a 3D vector"""
+    return Matrix([x, y, z])
+
+def normalize_vector(vec: Matrix) -> Matrix:
+    """Normalize a vector using SymPy's exact computation"""
+    norm = vec.norm()
+    if norm == 0:
+        return vec
+    return vec / norm
+
+def cross_product(v1: V3, v2: V3) -> V3:
+    """Calculate cross product of two 3D vectors"""
+    return Matrix([
+        v1[1]*v2[2] - v1[2]*v2[1],
+        v1[2]*v2[0] - v1[0]*v2[2], 
+        v1[0]*v2[1] - v1[1]*v2[0]
+    ])
+
+def vector_magnitude(vec: Matrix):
+    """Calculate magnitude of a vector using SymPy's exact computation"""
+    return vec.norm()
+
+
+# ============================================================================
 # Unit Conversion Constants
 # ============================================================================
 

@@ -13,7 +13,12 @@ from .moothymoth import (
     V2,
     V3,
     Direction3D,
-    Numeric
+    Numeric,
+    create_v2,
+    create_v3,
+    normalize_vector,
+    cross_product,
+    vector_magnitude
 )
 from .footprint import Footprint
 from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUnion, Difference as CSGDifference
@@ -332,35 +337,13 @@ class Stickout:
         return cls(0, 0)
 
 # ============================================================================
-# Helper Functions for Vector Operations
+# Backward Compatibility Aliases
 # ============================================================================
+# These functions are now defined in moothymoth.py
+# Keep old names as aliases for backward compatibility
 
-def create_vector2d(x: Numeric, y: Numeric) -> V2:
-    """Create a 2D vector"""
-    return Matrix([x, y])
-
-def create_vector3d(x: Numeric, y: Numeric, z: Numeric) -> V3:
-    """Create a 3D vector"""
-    return Matrix([x, y, z])
-
-def normalize_vector(vec: Matrix) -> Matrix:
-    """Normalize a vector using SymPy's exact computation"""
-    norm = vec.norm()
-    if norm == 0:
-        return vec
-    return vec / norm
-
-def cross_product(v1: V3, v2: V3) -> V3:
-    """Calculate cross product of two 3D vectors"""
-    return Matrix([
-        v1[1]*v2[2] - v1[2]*v2[1],
-        v1[2]*v2[0] - v1[0]*v2[2], 
-        v1[0]*v2[1] - v1[1]*v2[0]
-    ])
-
-def vector_magnitude(vec: Matrix):
-    """Calculate magnitude of a vector using SymPy's exact computation"""
-    return vec.norm()
+create_vector2d = create_v2  # Alias for backward compatibility
+create_vector3d = create_v3  # Alias for backward compatibility
 
 # ============================================================================
 # Core Classes
