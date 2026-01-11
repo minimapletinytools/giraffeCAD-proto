@@ -1,10 +1,10 @@
 from giraffe import *
 
 # Define timber dimensions using dimensional helpers
-feet_size = create_vector2d(inches(4), inches(6))
-beam_size = create_vector2d(inches(4), inches(4))
-post_size = create_vector2d(inches(4), inches(4))
-stretcher_size = create_vector2d(inches(4), inches(4))
+feet_size = create_v2(inches(4), inches(6))
+beam_size = create_v2(inches(4), inches(4))
+post_size = create_v2(inches(4), inches(4))
+stretcher_size = create_v2(inches(4), inches(4))
 
 tenon_thickness = inches(1)
 tenon_length = inches(2)
@@ -25,10 +25,10 @@ def create_sawhorse() -> Frame:
     # define footprint
     footprint = Footprint(
         corners=[
-            create_vector2d(-bottom_width / 2, -bottom_length / 2),
-            create_vector2d(bottom_width / 2, -bottom_length / 2),
-            create_vector2d(bottom_width / 2, bottom_length / 2),
-            create_vector2d(-bottom_width / 2, bottom_length / 2),
+            create_v2(-bottom_width / 2, -bottom_length / 2),
+            create_v2(bottom_width / 2, -bottom_length / 2),
+            create_v2(bottom_width / 2, bottom_length / 2),
+            create_v2(-bottom_width / 2, bottom_length / 2),
         ]
     )
 
@@ -55,7 +55,7 @@ def create_sawhorse() -> Frame:
     
     # next create a "beam" that is running from left to right centered on the origin and top_beam_surface_position-stretcher_size[1]/2 above the origin
     beam = create_axis_aligned_timber(
-        bottom_position=create_vector3d(-top_beam_length / 2, 0, top_beam_surface_position - stretcher_size[1] / 2),
+        bottom_position=create_v3(-top_beam_length / 2, 0, top_beam_surface_position - stretcher_size[1] / 2),
         length=top_beam_length,
         size=beam_size,
         length_direction=TimberFace.RIGHT,

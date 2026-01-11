@@ -58,17 +58,17 @@ class TimberFace(Enum):
     def get_direction(self) -> Direction3D:
         """Get the direction vector for this face in world coordinates."""
         if self == TimberFace.TOP:
-            return create_vector3d(0, 0, 1)
+            return create_v3(0, 0, 1)
         elif self == TimberFace.BOTTOM:
-            return create_vector3d(0, 0, -1)
+            return create_v3(0, 0, -1)
         elif self == TimberFace.RIGHT:
-            return create_vector3d(1, 0, 0)
+            return create_v3(1, 0, 0)
         elif self == TimberFace.LEFT:
-            return create_vector3d(-1, 0, 0)
+            return create_v3(-1, 0, 0)
         elif self == TimberFace.FRONT:
-            return create_vector3d(0, 1, 0)
+            return create_v3(0, 1, 0)
         else:  # BACK
-            return create_vector3d(0, -1, 0)
+            return create_v3(0, -1, 0)
     
     def is_perpendicular(self, other: 'TimberFace') -> bool:
         """
@@ -342,8 +342,8 @@ class Stickout:
 # These functions are now defined in moothymoth.py
 # Keep old names as aliases for backward compatibility
 
-create_vector2d = create_v2  # Alias for backward compatibility
-create_vector3d = create_v3  # Alias for backward compatibility
+create_v2 = create_v2  # Alias for backward compatibility
+create_v3 = create_v3  # Alias for backward compatibility
 
 # ============================================================================
 # Core Classes
@@ -375,9 +375,9 @@ def _compute_timber_orientation(length_direction: Direction3D, width_direction: 
         # Choose an arbitrary orthogonal direction
         # Find a vector that's not parallel to length_norm
         if Abs(length_norm[0]) < Rational(9, 10):  # Threshold comparison
-            temp_vector = create_vector3d(1, 0, 0)
+            temp_vector = create_v3(1, 0, 0)
         else:
-            temp_vector = create_vector3d(0, 1, 0)
+            temp_vector = create_v3(0, 1, 0)
         
         # Project and orthogonalize
         projection = length_norm * (temp_vector.dot(length_norm))
@@ -692,16 +692,16 @@ class Timber:
             The TimberFace that points toward the inside of the footprint
         """
         # Project timber's centerline onto XY plane for footprint comparison
-        bottom_2d = create_vector2d(self.bottom_position[0], self.bottom_position[1])
+        bottom_2d = create_v2(self.bottom_position[0], self.bottom_position[1])
         top_position = self.get_top_center_position()
-        top_2d = create_vector2d(top_position[0], top_position[1])
+        top_2d = create_v2(top_position[0], top_position[1])
         
         # Find nearest boundary to timber's centerline
         boundary_idx, boundary_side, distance = footprint.nearest_boundary_from_line(bottom_2d, top_2d)
         
         # Get the inward normal of that boundary
         inward_x, inward_y, inward_z = footprint.get_inward_normal(boundary_idx)
-        inward_normal = create_vector3d(inward_x, inward_y, inward_z)
+        inward_normal = create_v3(inward_x, inward_y, inward_z)
         
         # Find which face of the timber aligns with the inward direction
         return self.get_closest_oriented_face(inward_normal)
@@ -725,16 +725,16 @@ class Timber:
             The TimberFace that points toward the outside of the footprint
         """
         # Project timber's centerline onto XY plane for footprint comparison
-        bottom_2d = create_vector2d(self.bottom_position[0], self.bottom_position[1])
+        bottom_2d = create_v2(self.bottom_position[0], self.bottom_position[1])
         top_position = self.get_top_center_position()
-        top_2d = create_vector2d(top_position[0], top_position[1])
+        top_2d = create_v2(top_position[0], top_position[1])
         
         # Find nearest boundary to timber's centerline
         boundary_idx, boundary_side, distance = footprint.nearest_boundary_from_line(bottom_2d, top_2d)
         
         # Get the inward normal of that boundary
         inward_x, inward_y, inward_z = footprint.get_inward_normal(boundary_idx)
-        inward_normal = create_vector3d(inward_x, inward_y, inward_z)
+        inward_normal = create_v3(inward_x, inward_y, inward_z)
         
         # Find which face of the timber aligns with the outward direction (negative of inward)
         outward_normal = -inward_normal
@@ -969,9 +969,9 @@ class Peg(JointAccessory):
         if self.shape == PegShape.SQUARE:
             # Square peg - use Prism with square cross-section
             return Prism(
-                size=create_vector2d(self.size, self.size),
+                size=create_v2(self.size, self.size),
                 orientation=Orientation.identity(),
-                position=create_vector3d(0, 0, 0),
+                position=create_v3(0, 0, 0),
                 start_distance=-self.stickout_length,
                 end_distance=self.forward_length
             )
@@ -979,9 +979,9 @@ class Peg(JointAccessory):
             # Round peg - use Cylinder
             radius = self.size / 2
             return Cylinder(
-                axis_direction=create_vector3d(0, 0, 1),
+                axis_direction=create_v3(0, 0, 1),
                 radius=radius,
-                position=create_vector3d(0, 0, 0),
+                position=create_v3(0, 0, 0),
                 start_distance=-self.stickout_length,
                 end_distance=self.forward_length
             )
@@ -1062,9 +1062,9 @@ class Wedge(JointAccessory):
         # For Prism, position is the center of the cross-section at the reference point
         # The cross-section is centered in XY, so position should be at the center
         return Prism(
-            size=create_vector2d(self.base_width, self.height),
+            size=create_v2(self.base_width, self.height),
             orientation=Orientation.identity(),
-            position=create_vector3d(0, self.height / Rational(2), 0),
+            position=create_v3(0, self.height / Rational(2), 0),
             start_distance=0,
             end_distance=self.length
         )
@@ -1251,52 +1251,52 @@ def create_peg_going_into_face(
     
     # Position the peg on the timber's surface
     # Start at centerline, then move along length and offset from centerline
-    position_local = create_vector3d(0, 0, distance_from_bottom)
+    position_local = create_v3(0, 0, distance_from_bottom)
     
     # Offset from centerline depends on which face we're on
     if face == TimberReferenceLongFace.RIGHT:
         # RIGHT face: offset in +X (width) direction, surface at +width/2
-        position_local = create_vector3d(
+        position_local = create_v3(
             timber.size[0] / Rational(2),  # At right surface
             distance_from_centerline,  # Offset in height direction
             distance_from_bottom
         )
         # Peg points inward (-X direction in local space)
-        length_dir = create_vector3d(-1, 0, 0)
-        width_dir = create_vector3d(0, 1, 0)
+        length_dir = create_v3(-1, 0, 0)
+        width_dir = create_v3(0, 1, 0)
         
     elif face == TimberReferenceLongFace.LEFT:
         # LEFT face: offset in -X (width) direction
-        position_local = create_vector3d(
+        position_local = create_v3(
             -timber.size[0] / Rational(2),  # At left surface
             distance_from_centerline,  # Offset in height direction
             distance_from_bottom
         )
         # Peg points inward (+X direction in local space)
-        length_dir = create_vector3d(1, 0, 0)
-        width_dir = create_vector3d(0, 1, 0)
+        length_dir = create_v3(1, 0, 0)
+        width_dir = create_v3(0, 1, 0)
         
     elif face == TimberReferenceLongFace.FRONT:
         # FRONT face: offset in +Y (height) direction
-        position_local = create_vector3d(
+        position_local = create_v3(
             distance_from_centerline,  # Offset in width direction
             timber.size[1] / Rational(2),  # At forward surface
             distance_from_bottom
         )
         # Peg points inward (-Y direction in local space)
-        length_dir = create_vector3d(0, -1, 0)
-        width_dir = create_vector3d(1, 0, 0)
+        length_dir = create_v3(0, -1, 0)
+        width_dir = create_v3(1, 0, 0)
         
     else:  # BACK
         # BACK face: offset in -Y (height) direction
-        position_local = create_vector3d(
+        position_local = create_v3(
             distance_from_centerline,  # Offset in width direction
             -timber.size[1] / Rational(2),  # At back surface
             distance_from_bottom
         )
         # Peg points inward (+Y direction in local space)
-        length_dir = create_vector3d(0, 1, 0)
-        width_dir = create_vector3d(1, 0, 0)
+        length_dir = create_v3(0, 1, 0)
+        width_dir = create_v3(1, 0, 0)
     
     # Compute peg orientation (peg's Z-axis points into the timber)
     peg_orientation = _compute_timber_orientation(length_dir, width_dir)
@@ -1336,26 +1336,26 @@ def create_wedge_in_timber_end(
     if end == TimberReferenceEnd.TOP:
         # At top end, wedge points downward into timber (-Z in local space)
         # Position at the top of the timber
-        wedge_position = create_vector3d(
+        wedge_position = create_v3(
             position[0],  # X position (cross-section)
             position[1],  # Y position (cross-section)
             timber.length  # At the top end
         )
         # Wedge points downward
-        length_dir = create_vector3d(0, 0, -1)
-        width_dir = create_vector3d(1, 0, 0)
+        length_dir = create_v3(0, 0, -1)
+        width_dir = create_v3(1, 0, 0)
         
     else:  # BOTTOM
         # At bottom end, wedge points upward into timber (+Z in local space)
         # Position at the bottom of the timber
-        wedge_position = create_vector3d(
+        wedge_position = create_v3(
             position[0],  # X position (cross-section)
             position[1],  # Y position (cross-section)
             0  # At the bottom end
         )
         # Wedge points upward
-        length_dir = create_vector3d(0, 0, 1)
-        width_dir = create_vector3d(1, 0, 0)
+        length_dir = create_v3(0, 0, 1)
+        width_dir = create_v3(1, 0, 0)
     
     # Compute wedge orientation
     wedge_orientation = _compute_timber_orientation(length_dir, width_dir)

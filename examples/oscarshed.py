@@ -9,7 +9,7 @@ import sys
 sys.path.append('..')
 
 from giraffe import (
-    create_vector2d, create_vector3d,
+    create_v2, create_v3,
     create_horizontal_timber_on_footprint,
     create_vertical_timber_on_footprint_side,
     join_timbers,
@@ -46,9 +46,9 @@ post_front_height = feet(5)   # Height of front posts
 
 # Timber size definitions using dimensional helpers
 # Format: (vertical dimension, horizontal depth)
-small_timber_size = create_vector2d(inches(4), inches(Rational(5, 2)))   # 4" vertical x 2.5" depth
-med_timber_size = create_vector2d(inches(4), inches(4))                   # 4" x 4"
-big_timber_size = create_vector2d(inches(6), inches(4))                   # 6" vertical x 4" depth
+small_timber_size = create_v2(inches(4), inches(Rational(5, 2)))   # 4" vertical x 2.5" depth
+med_timber_size = create_v2(inches(4), inches(4))                   # 4" x 4"
+big_timber_size = create_v2(inches(6), inches(4))                   # 6" vertical x 4" depth
 
 
 def create_oscarshed():
@@ -66,10 +66,10 @@ def create_oscarshed():
 
     # Create the footprint (rectangular, counter-clockwise from bottom-left)
     footprint_corners = [
-        create_vector2d(Rational(0), Rational(0)),     # Corner 0: Front-left
-        create_vector2d(base_width, Rational(0)),      # Corner 1: Front-right
-        create_vector2d(base_width, base_length),      # Corner 2: Back-right
-        create_vector2d(Rational(0), base_length)      # Corner 3: Back-left
+        create_v2(Rational(0), Rational(0)),     # Corner 0: Front-left
+        create_v2(base_width, Rational(0)),      # Corner 1: Front-right
+        create_v2(base_width, base_length),      # Corner 2: Back-right
+        create_v2(Rational(0), base_length)      # Corner 3: Back-left
     ]
     footprint = Footprint(footprint_corners)
 
@@ -589,7 +589,7 @@ def create_oscarshed():
         location_on_timber2=post_front_height,   # Same height on right post
         lateral_offset=0,       # No lateral offset
         size=top_plate_size,
-        orientation_width_vector=create_vector3d(0, 0, 1),
+        orientation_width_vector=create_v3(0, 0, 1),
         name="Front Top Plate"
     )
     
@@ -602,7 +602,7 @@ def create_oscarshed():
         location_on_timber2=post_back_height+inches(3),   
         lateral_offset=0,
         size=top_plate_size,
-        orientation_width_vector=create_vector3d(0, 0, 1),
+        orientation_width_vector=create_v3(0, 0, 1),
         name="Back Top Plate"
     )
 
@@ -736,7 +736,7 @@ def create_oscarshed():
             location_on_timber2=mudsill_back.length - location_along_mudsill,    # Reversed distance along back mudsill (measured from opposite end)
             lateral_offset=joist_vertical_offset,     # Offset upward to align tops
             size=joist_size,
-            orientation_width_vector=create_vector3d(0, 0, 1),  # Face up
+            orientation_width_vector=create_v3(0, 0, 1),  # Face up
             name=f"Joist {i}"
         )
         joists.append(joist)
@@ -783,7 +783,7 @@ def create_oscarshed():
             location_on_timber2=location_along_top_plate,  # Same position on front top plate
             lateral_offset=rafter_vertical_offset,
             size=rafter_size,
-            orientation_width_vector=create_vector3d(0, 0, 1),  # Face up
+            orientation_width_vector=create_v3(0, 0, 1),  # Face up
             name=f"Rafter {i}"
         )
         rafters.append(rafter)

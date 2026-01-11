@@ -9,7 +9,7 @@ from code_goes_here.moothymoth import Orientation
 from code_goes_here.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace,
     V2, V3, Numeric, PegShape, WedgeShape, Peg,
-    timber_from_directions, create_vector3d
+    timber_from_directions, create_v3
 )
 from code_goes_here.mortise_and_tenon_joint import (
     SimplePegParameters,
@@ -125,12 +125,12 @@ class TestMortiseAndTenonGeometry:
         tenon_csg = joint.cut_timbers["tenon_timber"].render_timber_with_cuts_csg_local()
         mortise_csg = joint.cut_timbers["mortise_timber"].render_timber_with_cuts_csg_local()
 
-        joint_shoulder_global = create_vector3d(Rational(0), Rational(0), Rational(3))
+        joint_shoulder_global = create_v3(Rational(0), Rational(0), Rational(3))
         
         # Verify basic tenon geometry: tenon should exist from z=0 upward
         # Test that center points are in the tenon at the bottom
         for z in [Rational(0), Rational(1), Rational(2), Rational(3)]:
-            point_global = joint_shoulder_global - create_vector3d(Rational(0), Rational(0), z)
+            point_global = joint_shoulder_global - create_v3(Rational(0), Rational(0), z)
             point_tenon_local = tenon_timber.global_to_local(point_global)
             point_mortise_local = mortise_timber.global_to_local(point_global)
             assert tenon_csg.contains_point(point_tenon_local), \
@@ -139,7 +139,7 @@ class TestMortiseAndTenonGeometry:
                 f"Point at z={z} should not be in mortise centerline"
         
         for z in [Rational(4.2), Rational(4.8)]:
-            point_global = joint_shoulder_global - create_vector3d(Rational(0), Rational(0), z)
+            point_global = joint_shoulder_global - create_v3(Rational(0), Rational(0), z)
             point_tenon_local = tenon_timber.global_to_local(point_global)
             point_mortise_local = mortise_timber.global_to_local(point_global)
             assert not tenon_csg.contains_point(point_tenon_local), \
@@ -148,7 +148,7 @@ class TestMortiseAndTenonGeometry:
                 f"Point at z={z} should not be in mortise centerline"
         
         for z in [Rational(5), Rational(6)]:
-            point_global = joint_shoulder_global - create_vector3d(Rational(0), Rational(0), z)
+            point_global = joint_shoulder_global - create_v3(Rational(0), Rational(0), z)
             point_tenon_local = tenon_timber.global_to_local(point_global)
             point_mortise_local = mortise_timber.global_to_local(point_global)
             assert not tenon_csg.contains_point(point_tenon_local), \
