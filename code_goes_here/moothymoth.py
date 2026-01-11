@@ -22,10 +22,23 @@ RHS = Right Hand System
 '''
 
 import sympy as sp
-from sympy import Matrix, cos, sin, pi, Float, Rational, Abs, S, sympify
+from sympy import Matrix, cos, sin, pi, Float, Rational, Abs, S, sympify, Expr
 from typing import Optional, Union
 from dataclasses import dataclass, field
 import warnings
+
+
+# ============================================================================
+# Type Aliases
+# ============================================================================
+
+# Type aliases for vectors using sympy, these are just to provide some semantic 
+# clarity in the interfaces and are not enforced by the type system.
+V2 = Matrix  # 2D vector - 2x1 Matrix
+V3 = Matrix  # 3D vector - 3x1 Matrix  
+Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
+
+Numeric = Union[float, int, Expr]  # Numeric values (SymPy Expr type STRONGLY preferred, there's really no reason to ever be using floats or ints. Always use Rational)
 
 
 # ============================================================================
@@ -351,6 +364,7 @@ class Orientation:
     """
     Represents a 3D rotation using a 3x3 rotation matrix.
     Uses sympy for symbolic mathematics.
+    I guess we never slerp and don't care about memory usage so apparently we're using matrices to implement this class.
     """
     matrix: Matrix = field(default_factory=lambda: Matrix.eye(3))
     

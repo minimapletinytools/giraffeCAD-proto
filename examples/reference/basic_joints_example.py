@@ -12,9 +12,6 @@ sys.path.append('../..')
 
 from giraffe import *
 
-# Type alias
-V3 = Matrix
-
 # Standard timber dimensions (90mm x 90mm, 1m long)
 TIMBER_SIZE = mm(90)  # 90mm
 TIMBER_LENGTH = m(1)  # 1m
