@@ -307,10 +307,11 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Create a prism representing the tenon volume (in mortise timber's local space)
     from code_goes_here.meowmeowcsg import Prism
+    from code_goes_here.moothymoth import Transform
+    tenon_transform = Transform(position=tenon_origin_local, orientation=relative_orientation)
     tenon_prism_in_mortise_local = Prism(
         size=size,
-        orientation=relative_orientation,
-        position=tenon_origin_local,
+        transform=tenon_transform,
         start_distance= -actual_mortise_depth if tenon_end == TimberReferenceEnd.BOTTOM else 0,
         end_distance= actual_mortise_depth if tenon_end == TimberReferenceEnd.TOP else 0
     )
@@ -318,8 +319,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Create the CSGCut for the mortise
     mortise_cut = CSGCut(
         timber=mortise_timber,
-        origin=mortise_timber.bottom_position,
-        orientation=mortise_timber.orientation,
+        transform=Transform(position=mortise_timber.bottom_position, orientation=mortise_timber.orientation),
         negative_csg=tenon_prism_in_mortise_local,
         maybe_end_cut=None
     )
@@ -359,8 +359,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         # For top end, the timber end extends from shoulder to +infinity
         timber_end_prism = Prism(
             size=tenon_timber.size,
-            orientation=Orientation.identity(),
-            position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            transform=Transform.identity(),
             start_distance=shoulder_plane_point_with_offset_local[2],  # Z coordinate in local space (with offset)
             end_distance=None  # Infinite
         )
@@ -368,8 +367,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         # For bottom end, the timber end extends from -infinity to shoulder
         timber_end_prism = Prism(
             size=tenon_timber.size,
-            orientation=Orientation.identity(),
-            position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            transform=Transform.identity(),
             start_distance=None,  # Infinite
             end_distance=shoulder_plane_point_with_offset_local[2]  # Z coordinate in local space (with offset)
         )
@@ -383,10 +381,13 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         tenon_end_dist = shoulder_plane_point_with_offset_local[2]
         tenon_start = tenon_end_dist - tenon_length
     
+    tenon_transform_local = Transform(
+        position=Matrix([tenon_position[0], tenon_position[1], Rational(0)]),
+        orientation=Orientation.identity()
+    )
     tenon_prism_local = Prism(
         size=size,
-        orientation=Orientation.identity(),
-        position=Matrix([tenon_position[0], tenon_position[1], Rational(0)]),
+        transform=tenon_transform_local,
         start_distance=tenon_start,
         end_distance=tenon_end_dist
     )
@@ -419,8 +420,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Create a single CSG cut
     tenon_cut = CSGCut(
         timber=tenon_timber,
-        origin=tenon_timber.bottom_position,
-        orientation=tenon_timber.orientation,
+        transform=Transform(position=tenon_timber.bottom_position, orientation=tenon_timber.orientation),
         negative_csg=tenon_cut_csg,
         maybe_end_cut=tenon_end
     )
@@ -560,10 +560,13 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
 
             # Create peg hole prism in tenon local space
             # The peg position is ON the tenon face, and extends into the tenon
+            peg_transform_tenon = Transform(
+                position=peg_pos_on_tenon_face_local_with_peg_offset,
+                orientation=peg_orientation_tenon_local
+            )
             peg_hole_tenon = Prism(
                 size=Matrix([peg_size, peg_size]),
-                orientation=peg_orientation_tenon_local,
-                position=peg_pos_on_tenon_face_local_with_peg_offset,
+                transform=peg_transform_tenon,
                 start_distance=0,
                 # TODO substract distance between tenon face and mortise face to get depth from tenon face
                 end_distance=peg_depth  # Stops at mortise face
@@ -652,10 +655,13 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             
             # Create peg hole prism in mortise local space
             # The peg position is ON the mortise face, and extends forward into the mortise
+            peg_transform_mortise = Transform(
+                position=peg_pos_on_mortise_face_local,
+                orientation=peg_orientation_mortise_local
+            )
             peg_hole_mortise = Prism(
                 size=Matrix([peg_size, peg_size]),
-                orientation=peg_orientation_mortise_local,
-                position=peg_pos_on_mortise_face_local,
+                transform=peg_transform_mortise,
                 start_distance=Rational(0),  # Starts at mortise face
                 end_distance=peg_depth  # Extends into mortise
             )
@@ -674,8 +680,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             # forward_length: how deep the peg goes into the mortise
             # stickout_length: how much of the peg remains outside (in the tenon)
             peg_accessory = Peg(
-                orientation=peg_orientation_global,
-                position=peg_pos_global,
+                transform=Transform(position=peg_pos_global, orientation=peg_orientation_global),
                 size=peg_size,
                 shape=peg_parameters.shape,
                 forward_length=peg_depth,
@@ -689,11 +694,10 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         
         if peg_holes_in_tenon_local:
             # Union peg holes into the negative cut CSG for tenon (single union with all children)
-            tenon_cut_with_pegs_csg = Union(children=[tenon_cut_csg] + peg_holes_in_tenon_local)
+            tenon_cut_with_pegs_csg = CSGUnion(children=[tenon_cut_csg] + peg_holes_in_tenon_local)
             tenon_cut = CSGCut(
                 timber=tenon_timber,
-                origin=tenon_timber.bottom_position,
-                orientation=tenon_timber.orientation,
+                transform=Transform(position=tenon_timber.bottom_position, orientation=tenon_timber.orientation),
                 negative_csg=tenon_cut_with_pegs_csg,
                 maybe_end_cut=tenon_end
             )
@@ -701,11 +705,10 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         
         if peg_holes_in_mortise_local:
             # Union peg holes into the negative cut CSG for mortise (single union with all children)
-            mortise_cut_with_pegs_csg = Union(children=[tenon_prism_in_mortise_local] + peg_holes_in_mortise_local)
+            mortise_cut_with_pegs_csg = CSGUnion(children=[tenon_prism_in_mortise_local] + peg_holes_in_mortise_local)
             mortise_cut = CSGCut(
                 timber=mortise_timber,
-                origin=mortise_timber.bottom_position,
-                orientation=mortise_timber.orientation,
+                transform=Transform(position=mortise_timber.bottom_position, orientation=mortise_timber.orientation),
                 negative_csg=mortise_cut_with_pegs_csg,
                 maybe_end_cut=None
             )

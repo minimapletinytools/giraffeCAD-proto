@@ -6,6 +6,7 @@ Contains all core data structures and type definitions for the timber framing sy
 from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify
 from .moothymoth import (
     Orientation,
+    Transform,
     EPSILON_GENERIC,
     zero_test,
     construction_parallel_check,
@@ -402,8 +403,8 @@ def _compute_timber_orientation(length_direction: Direction3D, width_direction: 
 
 # TODO rename to create_timber (or maybe hew lolololol) + add defaults
 def timber_from_directions(length: Numeric, size: V2, bottom_position: V3,
-                           length_direction: Direction3D, width_direction: Direction3D,
-                           name: Optional[str] = None) -> 'Timber':
+                          length_direction: Direction3D, width_direction: Direction3D,
+                          name: Optional[str] = None) -> 'Timber':
     """Factory function to create a Timber with computed orientation from direction vectors
     
     This is the main way to construct Timber instances. It takes direction vectors
@@ -421,8 +422,8 @@ def timber_from_directions(length: Numeric, size: V2, bottom_position: V3,
         Timber instance with computed orientation
     """
     orientation = _compute_timber_orientation(length_direction, width_direction)
-    return Timber(length=length, size=size, bottom_position=bottom_position,
-                  orientation=orientation, name=name)
+    transform = Transform(position=bottom_position, orientation=orientation)
+    return Timber(length=length, size=size, transform=transform, name=name)
 
 
 @dataclass(frozen=True)
@@ -433,14 +434,23 @@ class Timber:
     length_direction and width_direction vectors. This class is frozen to ensure immutability
     after construction.
     
-    Alternatively, if you already have an Orientation object, you can construct
-    Timber directly by passing: Timber(length, size, bottom_position, orientation, name)
+    Alternatively, if you already have a Transform object, you can construct
+    Timber directly by passing: Timber(length, size, transform, name)
     """
     length: Numeric
     size: V2
-    bottom_position: V3
-    orientation: Orientation
+    transform: Transform
     name: Optional[str] = None
+    
+    @property
+    def bottom_position(self) -> V3:
+        """Get the bottom position (center of bottom cross-section) from the transform."""
+        return self.transform.position
+    
+    @property
+    def orientation(self) -> Orientation:
+        """Get the orientation from the transform."""
+        return self.transform.orientation
     
     # TODO rename to get_length_direction_global and convert to class method
     @property
@@ -540,10 +550,7 @@ class Timber:
         Returns:
             The same point in timber-local coordinates
         """
-        # Translate to timber's origin, then rotate to local frame
-        # local = R^T * (global - bottom_position)
-        translated = global_point - self.bottom_position
-        return self.orientation.matrix.T * translated
+        return self.transform.global_to_local(global_point)
     
     def local_to_global(self, local_point: V3) -> V3:
         """
@@ -561,9 +568,7 @@ class Timber:
         Returns:
             The same point in global world coordinates
         """
-        # Rotate to global frame, then translate to timber's position
-        # global = R * local + bottom_position
-        return self.orientation.matrix * local_point + self.bottom_position
+        return self.transform.local_to_global(local_point)
     
     def global_direction_to_local(self, global_direction: Direction3D) -> Direction3D:
         """
@@ -764,8 +769,7 @@ class Cut(ABC):
     timber: Timber
 
     # set these values by computing them relative to the timber features using helper functions 
-    origin: V3
-    orientation: Orientation
+    transform: Transform
 
     # end cuts are special as they set the length of the timber
     # you can only have an end cut on one end of the timber, you can't have an end cut on both ends at once (maybe we should support this?)
@@ -821,7 +825,7 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     # timbers in any direction (horizontal, vertical, diagonal, etc.)
     return Prism(
         size=timber.size,
-        orientation=Orientation.identity(),
+        transform=Transform.identity(),
         start_distance=start_distance,
         end_distance=end_distance
     )
@@ -936,15 +940,13 @@ class Peg(JointAccessory):
     This is why there are 2 lengths parameters, one for how deep the peg goes past the mortise face, and one for how far the peg sticks out of the mortise face.
     
     Attributes:
-        orientation: Orientation of the peg in global space
-        position: Position of the peg's insertion point in global space (V3)
+        transform: Transform (position and orientation) of the peg in global space
         size: Size/diameter of the peg (for square pegs, this is the side length)
         shape: Shape of the peg (SQUARE or ROUND)
         forward_length: How far the peg reaches in the forward direction (into the mortise)
         stickout_length: How far the peg "sticks out" in the back direction (outside the mortise)
     """
-    orientation: Orientation
-    position: V3
+    transform: Transform
     # for square pegs, this is the side length
     # for round pegs, this is the diameter
     size: Numeric
@@ -970,8 +972,7 @@ class Peg(JointAccessory):
             # Square peg - use Prism with square cross-section
             return Prism(
                 size=create_v2(self.size, self.size),
-                orientation=Orientation.identity(),
-                position=create_v3(0, 0, 0),
+                transform=Transform.identity(),
                 start_distance=-self.stickout_length,
                 end_distance=self.forward_length
             )
@@ -1019,15 +1020,13 @@ class Wedge(JointAccessory):
         origin
     
     Attributes:
-        orientation: Orientation of the wedge in local timber space
-        position: Position of the wedge base center in local timber space (V3)
+        transform: Transform (position and orientation) of the wedge in local timber space
         base_width: Width at the base (wider end) of the wedge
         tip_width: Width at the tip (narrower end, where triangle is cut)
         height: Height of the wedge (in Y axis)
         length: Length from base to tip
     """
-    orientation: Orientation
-    position: V3
+    transform: Transform
     base_width: Numeric
     tip_width: Numeric
     height: Numeric
@@ -1061,10 +1060,13 @@ class Wedge(JointAccessory):
         
         # For Prism, position is the center of the cross-section at the reference point
         # The cross-section is centered in XY, so position should be at the center
+        wedge_transform = Transform(
+            position=create_v3(0, self.height / Rational(2), 0),
+            orientation=Orientation.identity()
+        )
         return Prism(
             size=create_v2(self.base_width, self.height),
-            orientation=Orientation.identity(),
-            position=create_v3(0, self.height / Rational(2), 0),
+            transform=wedge_transform,
             start_distance=0,
             end_distance=self.length
         )
@@ -1122,25 +1124,25 @@ class Frame:
         """Check a single timber for float values."""
         self._check_numeric_value(timber.length, f"Timber '{timber.name}' length")
         self._check_vector(timber.size, f"Timber '{timber.name}' size")
-        self._check_vector(timber.bottom_position, f"Timber '{timber.name}' bottom_position")
+        self._check_vector(timber.transform.position, f"Timber '{timber.name}' transform.position")
         # Note: orientation.matrix is checked as part of the matrix
-        self._check_matrix(timber.orientation.matrix, f"Timber '{timber.name}' orientation")
+        self._check_matrix(timber.transform.orientation.matrix, f"Timber '{timber.name}' transform.orientation")
     
     def _check_accessory_no_floats(self, accessory: JointAccessory):
         """Check an accessory for float values."""
         if isinstance(accessory, Peg):
-            self._check_vector(accessory.position, f"Peg position")
+            self._check_vector(accessory.transform.position, f"Peg transform.position")
             self._check_numeric_value(accessory.size, f"Peg size")
             self._check_numeric_value(accessory.forward_length, f"Peg forward_length")
             self._check_numeric_value(accessory.stickout_length, f"Peg stickout_length")
-            self._check_matrix(accessory.orientation.matrix, f"Peg orientation")
+            self._check_matrix(accessory.transform.orientation.matrix, f"Peg transform.orientation")
         elif isinstance(accessory, Wedge):
-            self._check_vector(accessory.position, f"Wedge position")
+            self._check_vector(accessory.transform.position, f"Wedge transform.position")
             self._check_numeric_value(accessory.base_width, f"Wedge base_width")
             self._check_numeric_value(accessory.tip_width, f"Wedge tip_width")
             self._check_numeric_value(accessory.height, f"Wedge height")
             self._check_numeric_value(accessory.length, f"Wedge length")
-            self._check_matrix(accessory.orientation.matrix, f"Wedge orientation")
+            self._check_matrix(accessory.transform.orientation.matrix, f"Wedge transform.orientation")
     
     def _check_cut_no_floats(self, cut: Cut):
         """Check a cut for float values."""
@@ -1300,10 +1302,10 @@ def create_peg_going_into_face(
     
     # Compute peg orientation (peg's Z-axis points into the timber)
     peg_orientation = _compute_timber_orientation(length_dir, width_dir)
+    peg_transform = Transform(position=position_local, orientation=peg_orientation)
     
     return Peg(
-        orientation=peg_orientation,
-        position=position_local,
+        transform=peg_transform,
         size=peg_size,
         shape=peg_shape,
         forward_length=forward_length,
@@ -1359,10 +1361,10 @@ def create_wedge_in_timber_end(
     
     # Compute wedge orientation
     wedge_orientation = _compute_timber_orientation(length_dir, width_dir)
+    wedge_transform = Transform(position=wedge_position, orientation=wedge_orientation)
     
     return Wedge(
-        orientation=wedge_orientation,
-        position=wedge_position,
+        transform=wedge_transform,
         base_width=shape.base_width,
         tip_width=shape.tip_width,
         height=shape.height,
