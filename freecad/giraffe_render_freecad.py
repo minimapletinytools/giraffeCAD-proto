@@ -773,8 +773,8 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                     'data': {
                         'index': i,
                         'component_name': component_name,
-                        'timber_name': cut_timber._timber.name if hasattr(cut_timber._timber, 'name') else 'unnamed',
-                        'cuts_count': len(cut_timber._cuts)
+                        'timber_name': cut_timber.timber.name if hasattr(cut_timber.timber, 'name') else 'unnamed',
+                        'cuts_count': len(cut_timber.cuts)
                     },
                     'timestamp': int(datetime.datetime.now().timestamp() * 1000),
                     'sessionId': 'debug-session',
@@ -788,7 +788,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             csg = cut_timber.render_timber_with_cuts_csg_local()
             
             # Render the CSG to a shape (in local coordinates)
-            shape = render_csg_shape(csg, cut_timber._timber, infinite_geometry_extent)
+            shape = render_csg_shape(csg, cut_timber.timber, infinite_geometry_extent)
             
             if shape is not None:
                 # Add to document
@@ -797,7 +797,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                 
                 # Apply the timber's global transformation (position + orientation)
                 # The shape already has local centering placement applied
-                timber = cut_timber._timber
+                timber = cut_timber.timber
                 global_placement = create_placement_from_orientation(timber.bottom_position, timber.orientation)
                 
                 # Compose placements: global * local

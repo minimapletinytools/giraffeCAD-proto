@@ -17,13 +17,31 @@ Run specific test class:
 python3 -m pytest tests/test_giraffe.py::TestFootprint -v
 ```
 
-## Project Structure
+## Key Files
 
-- `giraffe.py` - Main timber framing CAD system
-- `footprint.py` - Footprint class for 2D structure layouts
-- `moothymoth.py` - Orientation and rotation matrix utilities
-- `tests/` - Test suite (pytest)
-- `morenotes.md` - API specification and design notes
+### code_goes_here/timber.py
+
+This is the main file for all timber and timber-related data structures. It contains the core immutable types (such as Timber, Board, Face, TimberFace, Stickout, etc.), and associated utility and geometric operations for reasoning about timber geometry (axes, size, position, etc). All timber-related core APIs and types are implemented here.
+
+### code_goes_here/construction.py
+
+Contains core construction logic and timber joinery helpers. This includes functions to join timbers, compute join positions, project axes, and handle relationships between multiple timber members. The canonical location for geometry construction logic that goes beyond simple data definition.
+
+### code_goes_here/footprint.py
+
+Footprint is a key utility class for positioning Timbers and cuts and thus gets its own file :O
+
+### code_goes_here/*_joints.py
+
+Joints are split into separate files by groups
+
+### code_goes_here/moothmoth.py
+
+Defines math types, units, and other math related utilities. All math code is expected to use these types and helpers.
+
+### code_goes_here/test_* code_goes_here/helperonis.py 
+
+Tests and test helperonis.
 
 ## Key Dependencies
 
@@ -34,23 +52,15 @@ python3 -m pytest tests/test_giraffe.py::TestFootprint -v
 ## Coding Philosophy
 
 - simplicity over performance!
-    - the code should be easily understandtable.
+    - the code should be straighforward with minimal dependencies on other files and indirections through abstract classes
 - clarity over conciseness!
     - the API can be a little verbose so that what's happening is explicit from the surface!
-- apart from during its initial construction, avoid using data in a mutable way
-- after construction, always treat data as if it's immutable
-- python is a bit of an implementation detail, I would have preferred to hav ewritten this in a functional language
+- all data is frozen (immutable) the API should feel like a functional API in usage
+    - python is a bit of an implementation detail, I would have preferred to have written this in a functional language
 
 ## Coding Conventions
 
-- In our tests and examples ALWAYS use symbolic arithmetic with SymPy (Rational) 
-- Vector types: V2 (2D), V3 (3D), Direction3D
+- ALWAYS use symbolic arithmetic with SymPy (Rational)
+- Use math types in moothmoth.py
 - ALWAYS Run tests after making changes
-
-
-## Notes
-
-- Timbers use exact symbolic computation for precision
-- Footprint operates in XY plane (2D)
-- See `morenotes.md` for detailed API documentation
 

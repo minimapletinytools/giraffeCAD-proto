@@ -61,6 +61,7 @@ def reload_all_modules():
         'code_goes_here.meowmeowcsg',
         'code_goes_here.timber',
         'code_goes_here.construction',
+        'code_goes_here.rendering_utils',
         'code_goes_here.basic_joints',
         'code_goes_here.mortise_and_tenon_joint',
         'giraffe',

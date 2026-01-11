@@ -214,16 +214,16 @@ def apply_timber_cuts(component: adsk.fusion.Component, cut_timber: CutTimber, c
         # TODO: Implement generic CSG cut processing once MeowMeowCSG classes are ready
         # For now, this is stubbed out and just returns success
         
-        if not hasattr(cut_timber, '_cuts') or len(cut_timber._cuts) == 0:
+        if not hasattr(cut_timber, '_cuts') or len(cut_timber.cuts) == 0:
             print(f"    No cuts to apply to {component_name}")
             return True
         
-        total_cuts = len(cut_timber._cuts)
+        total_cuts = len(cut_timber.cuts)
         print(f"    TODO: Apply {total_cuts} generic CSG cuts to {component_name}")
         print(f"    (Waiting for MeowMeowCSG implementation)")
         
         # Generic loop structure (stubbed):
-        # for cut in cut_timber._cuts:
+        # for cut in cut_timber.cuts:
         #     negative_csg = cut.get_negative_csg()
         #     # Apply CSG difference operation to component
         #     pass

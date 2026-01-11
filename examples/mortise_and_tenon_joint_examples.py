@@ -430,7 +430,7 @@ def create_all_mortise_and_tenon_examples():
                 size=timber.timber.size,
                 length=timber.timber.length
             )
-            all_timbers.append(CutTimber(timber=translated_timber, cuts=timber._cuts))
+            all_timbers.append(CutTimber(timber=translated_timber, cuts=timber.cuts))
             translated_timbers.append(translated_timber)
         
         # Collect joint accessories (already in global coordinates)
@@ -482,12 +482,12 @@ if __name__ == "__main__":
         
         # Display timber details
         for i, cut_timber in enumerate(joint.cut_timbers):
-            timber = cut_timber._timber
+            timber = cut_timber.timber
             print(f"\n  Timber {i+1}: {timber.name}")
             print(f"    Position: ({float(timber.bottom_position[0]):.1f}, {float(timber.bottom_position[1]):.1f}, {float(timber.bottom_position[2]):.1f})")
             print(f"    Length: {float(timber.length):.1f} inches")
             print(f"    Size: {float(timber.size[0]):.1f} x {float(timber.size[1]):.1f} inches")
-            print(f"    Cuts: {len(cut_timber._cuts)}")
+            print(f"    Cuts: {len(cut_timber.cuts)}")
     
     print(f"\n{'='*60}")
     print("✅ All examples completed successfully!")

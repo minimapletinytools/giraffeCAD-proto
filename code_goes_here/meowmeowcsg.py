@@ -302,6 +302,7 @@ class Cylinder(MeowMeowCSG):
         start_distance: Distance from position to start of cylinder (None = -infinite)
         end_distance: Distance from position to end of cylinder (None = infinite)
     """
+    # TODO consider just making this a Transform object, even though we don't care about one of the DOFs
     axis_direction: Direction3D  # direction of the cylinder's axis, which is the +Z local axis
     radius: Numeric
     position: V3 = field(default_factory=lambda: Matrix([0, 0, 0]))  # Position in global coordinates

@@ -130,7 +130,7 @@ def calculate_structure_extents(cut_timbers: List[CutTimber]) -> float:
     max_x = max_y = max_z = float('-inf')
     
     for cut_timber in cut_timbers:
-        timber = cut_timber._timber
+        timber = cut_timber.timber
         
         # Get all 8 corners of this timber
         corners = calculate_timber_corners(timber)
