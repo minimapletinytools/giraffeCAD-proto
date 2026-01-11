@@ -1095,6 +1095,124 @@ class Frame:
     accessories: List[JointAccessory] = field(default_factory=list)
     name: Optional[str] = None
     
+    @classmethod
+    def from_joints(cls, joints: List[Joint], 
+                    additional_unjointed_timbers: List[Timber] = None,
+                    name: Optional[str] = None) -> 'Frame':
+        """
+        Create a Frame from a list of joints and optional additional unjointed timbers.
+        
+        This constructor extracts all cut timbers and accessories from the joints,
+        and combines cut timbers that share the same underlying timber reference.
+        
+        Args:
+            joints: List of Joint objects
+            additional_unjointed_timbers: Optional list of Timber objects that don't 
+                                         participate in any joints (default: empty list)
+            name: Optional name for the frame
+            
+        Returns:
+            Frame: A new Frame object with merged cut timbers and collected accessories
+            
+        Raises:
+            ValueError: If two timbers with the same name but same underlying timber 
+                       have different references (indicates a bug)
+        
+        Warnings:
+            Prints a warning if two timbers with the same name have different underlying 
+            timber references and the underlying timbers are actually different.
+        """
+        import warnings
+        
+        if additional_unjointed_timbers is None:
+            additional_unjointed_timbers = []
+        
+        # Dictionary to group CutTimber objects by their underlying Timber reference (identity)
+        # Key: id(timber), Value: List of CutTimber objects
+        timber_ref_to_cut_timbers: Dict[int, List[CutTimber]] = {}
+        
+        # Extract cut timbers from all joints
+        for joint in joints:
+            for cut_timber in joint.cut_timbers.values():
+                timber_id = id(cut_timber.timber)
+                if timber_id not in timber_ref_to_cut_timbers:
+                    timber_ref_to_cut_timbers[timber_id] = []
+                timber_ref_to_cut_timbers[timber_id].append(cut_timber)
+        
+        # Check for name conflicts
+        # Build a mapping from name to list of timber references
+        name_to_timber_refs: Dict[str, List[Timber]] = {}
+        for timber_id, cut_timber_list in timber_ref_to_cut_timbers.items():
+            timber = cut_timber_list[0].timber  # Get timber from first CutTimber
+            timber_name = timber.name
+            if timber_name is not None:
+                if timber_name not in name_to_timber_refs:
+                    name_to_timber_refs[timber_name] = []
+                # Only add if not already in the list (check by identity)
+                if not any(t is timber for t in name_to_timber_refs[timber_name]):
+                    name_to_timber_refs[timber_name].append(timber)
+        
+        # Check for conflicts
+        for timber_name, timber_refs in name_to_timber_refs.items():
+            if len(timber_refs) > 1:
+                # Multiple timbers with the same name
+                # Check if the underlying timbers are actually different
+                for i in range(len(timber_refs)):
+                    for j in range(i + 1, len(timber_refs)):
+                        timber_i = timber_refs[i]
+                        timber_j = timber_refs[j]
+                        
+                        # Compare using structural equality (==)
+                        if timber_i == timber_j:
+                            # Same timber data but different references - this is a bug
+                            raise ValueError(
+                                f"Error: Found two timber references with the same name '{timber_name}' "
+                                f"that have identical underlying timber data. This indicates a bug "
+                                f"where the same timber was created multiple times instead of reusing "
+                                f"the same reference."
+                            )
+                        else:
+                            # Different timber data with the same name - just a warning
+                            warnings.warn(
+                                f"Warning: Found multiple timbers with the same name '{timber_name}' "
+                                f"but different properties (length, size, position, or orientation). "
+                                f"This may indicate an error in timber naming. "
+                                f"Timber 1: length={timber_i.length}, size={timber_i.size}, "
+                                f"position={timber_i.bottom_position}. "
+                                f"Timber 2: length={timber_j.length}, size={timber_j.size}, "
+                                f"position={timber_j.bottom_position}."
+                            )
+        
+        # Merge cut timbers with the same underlying timber reference
+        merged_cut_timbers: List[CutTimber] = []
+        for timber_id, cut_timber_list in timber_ref_to_cut_timbers.items():
+            timber = cut_timber_list[0].timber
+            
+            # Collect all cuts from all CutTimber instances for this timber
+            all_cuts: List[Cut] = []
+            for cut_timber in cut_timber_list:
+                all_cuts.extend(cut_timber.cuts)
+            
+            # Create a single merged CutTimber
+            merged_cut_timber = CutTimber(timber, cuts=all_cuts)
+            merged_cut_timbers.append(merged_cut_timber)
+        
+        # Add additional unjointed timbers as CutTimbers with no cuts
+        for timber in additional_unjointed_timbers:
+            merged_cut_timbers.append(CutTimber(timber, cuts=[]))
+        
+        # Collect all accessories from all joints
+        all_accessories: List[JointAccessory] = []
+        for joint in joints:
+            all_accessories.extend(joint.jointAccessories.values())
+        
+        # Create and return the Frame
+        return cls(
+            cut_timbers=merged_cut_timbers,
+            accessories=all_accessories,
+            name=name
+        )
+    
     def __post_init__(self):
         """Validate that the frame contains no floating point numbers."""
         self._check_no_floats()
