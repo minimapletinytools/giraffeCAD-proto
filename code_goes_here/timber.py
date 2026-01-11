@@ -9,7 +9,11 @@ from .moothymoth import (
     EPSILON_GENERIC,
     zero_test,
     construction_parallel_check,
-    construction_perpendicular_check
+    construction_perpendicular_check,
+    V2,
+    V3,
+    Direction3D,
+    Numeric
 )
 from .footprint import Footprint
 from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUnion, Difference as CSGDifference
@@ -17,12 +21,6 @@ from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-
-# Type aliases for vectors using sympy
-V2 = Matrix  # 2D vector - 2x1 Matrix
-V3 = Matrix  # 3D vector - 3x1 Matrix  
-Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
-Numeric = Union[float, int, Expr]  # Numeric values (SymPy Expr type STRONGLY preferred, there's really no reason to ever be using floats or ints. Always use Rational)
 
 # ============================================================================
 # Constants

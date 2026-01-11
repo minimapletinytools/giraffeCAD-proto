@@ -9,13 +9,7 @@ from sympy import Matrix, Rational, Expr, sqrt, oo
 from typing import List, Optional, Union
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-from .moothymoth import Orientation
-
-# Type aliases (matching giraffe.py)
-V2 = Matrix  # 2D vector - 2x1 Matrix
-V3 = Matrix  # 3D vector - 3x1 Matrix  
-Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
-Numeric = Union[float, int, Expr]  # Numeric values (prefer Rational for exact computation)
+from .moothymoth import Orientation, V2, V3, Direction3D, Numeric
 
 
 class MeowMeowCSG(ABC):

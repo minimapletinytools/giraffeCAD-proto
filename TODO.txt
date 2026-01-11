@@ -26,6 +26,9 @@ class hierarchy could look like this:
 -thingy (position/orientation, allows converting from local to global coords)
   -block
     -timber
+      -MeshTimber
+      -RoundTimber
+      -PolygonalTimber
     -board
   -joint accessory
 
@@ -83,15 +86,21 @@ DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can refer
 DONE-add back post joints to oscar shed
 DONE-delete rhino for now
 
+-REFACTOR TIME
+  -create Transform class in moothymoth
+  
+
 -3 major features
-  -timber metadata
   -measure functions
   -class hierarchy
     -use global_to_local and local_to_global helpers (or implement Thing classs....)
+    -probably CSG can inherit too?
+  -timber metadata
+    -prepare for CSG metadata as well...
 
--add support for round peg...
--be consistent about V2 vs (Numeric,Numeric) tuple
+DONE-be consistent about V2 vs (Numeric,Numeric) tuple
 -pull out parts of mortise and tenon function, maybe move to joint_helpers.py in particular
+  -round peg support
   -peg positioning
   -finding the shoulder point/shoulder plane
 -add extrude polygon csg rendering to fusino 360

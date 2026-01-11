@@ -5,10 +5,7 @@ Footprint class for GiraffeCAD - Represents the 2D footprint of a structure
 from typing import List, Tuple
 from sympy import Matrix, Rational
 from dataclasses import dataclass
-from .moothymoth import zero_test
-
-# Type aliases for vectors using sympy
-V2 = Matrix  # 2D vector - 2x1 Matrix
+from .moothymoth import zero_test, V2
 
 
 def _segment_to_segment_distance(seg1_start: V2, seg1_end: V2, 

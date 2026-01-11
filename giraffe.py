@@ -16,7 +16,8 @@ from code_goes_here.mortise_and_tenon_joint import *
 from code_goes_here.moothymoth import (
     inches, feet, mm, cm, m,
     shaku, sun, bu,
-    Rational, S, sympify
+    Rational, S, sympify,
+    V2, V3, Direction3D, Numeric
 )
 
 # Explicitly import private helper functions that are used by tests
