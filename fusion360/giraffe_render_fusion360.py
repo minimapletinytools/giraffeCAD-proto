@@ -213,23 +213,23 @@ def render_prism_in_local_space(component: adsk.fusion.Component, prism: Prism, 
         body = extrude.bodies.item(0)
         
         # Apply the prism's orientation and position
-        orientation_matrix = prism.orientation.matrix
+        orientation_matrix = prism.transform.orientation.matrix
         
         # Check if transformation is needed
         is_identity = (orientation_matrix == Matrix.eye(3))
-        is_at_origin = (prism.position == Matrix([0, 0, 0]))
+        is_at_origin = (prism.transform.position == Matrix([0, 0, 0]))
         
         app = get_fusion_app()
         if app:
             # log start and end distances
             app.log(f"  render_prism_in_local_space: Start distance: {prism.start_distance}")
             app.log(f"  render_prism_in_local_space: End distance: {prism.end_distance}")
-            app.log(f"  render_prism_in_local_space: Position: {prism.position.T}")
+            app.log(f"  render_prism_in_local_space: Position: {prism.transform.position.T}")
             app.log(f"  render_prism_in_local_space: Identity: {is_identity}, At origin: {is_at_origin}")
         
         # Only apply transformation if needed (non-identity rotation or non-zero position)
         if not is_identity or not is_at_origin:
-            transform = create_matrix3d_from_orientation(prism.position, prism.orientation)
+            transform = create_matrix3d_from_orientation(prism.transform.position, prism.transform.orientation)
             
             # Apply the transformation to the body
             move_features = component.features.moveFeatures
@@ -1361,15 +1361,15 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             
             if app:
                 app.log(f"  Transforming {accessory_name}: (method: {'body' if use_body_transform else 'occurrence'})")
-                app.log(f"    Accessory position (global): {[float(x) for x in accessory.position]}")
+                app.log(f"    Accessory position (global): {[float(x) for x in accessory.transform.position]}")
                 app.log(f"    Accessory orientation matrix:")
                 for i in range(3):
-                    row = [float(accessory.orientation.matrix[i, j]) for j in range(3)]
+                    row = [float(accessory.transform.orientation.matrix[i, j]) for j in range(3)]
                     app.log(f"      [{row[0]:.3f}, {row[1]:.3f}, {row[2]:.3f}]")
             
             # Accessory position and orientation are already in global space
             # Use them directly without transformation
-            success = apply_timber_transform(occurrence, accessory.position, accessory.orientation, accessory_name, use_body_transform)
+            success = apply_timber_transform(occurrence, accessory.transform.position, accessory.transform.orientation, accessory_name, use_body_transform)
             
             if not success:
                 if app:

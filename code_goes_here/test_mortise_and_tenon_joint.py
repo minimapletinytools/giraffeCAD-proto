@@ -201,13 +201,13 @@ class TestPegStuff:
         peg = joint.jointAccessories["peg_0"]
         
         # check that the peg is orthogonal to get_face_direction(TimberFace.FRONT)
-        assert_vectors_parallel(peg.orientation.matrix[:, 2], tenon_timber.get_face_direction(TimberFace.FRONT))
+        assert_vectors_parallel(peg.transform.orientation.matrix[:, 2], tenon_timber.get_face_direction(TimberFace.FRONT))
         f"Peg forward_length should match specified depth. Expected {peg_depth}, got {peg.forward_length}"
         assert peg.stickout_length == peg_depth * Rational(1, 2), \
             f"Peg stickout_length should be half of forward_length by default. Expected {peg_depth * Rational(1, 2)}, got {peg.stickout_length}"
 
         # check that the peg is positioned at the correct distance from the shoulder
-        assert peg.position[2] == shoulder_plane_x_global - distance_from_shoulder
+        assert peg.transform.position[2] == shoulder_plane_x_global - distance_from_shoulder
 
         # Get tenon timber's cut CSG (what's removed)
         tenon_cut_timber = joint.cut_timbers["mortise_timber"]
@@ -249,14 +249,14 @@ class TestPegStuff:
 
         # Sample points within the peg's CSG
         peg_center_points = [
-            peg.position + peg.orientation.matrix * Matrix([0, 0, Rational(1)]),  # 1 unit along peg
-            peg.position + peg.orientation.matrix * Matrix([0, 0, Rational(2)]),  # 2 units along peg
-            peg.position + peg.orientation.matrix * Matrix([0, 0, Rational(3)]),  # 3 units along peg
+            peg.transform.position + peg.transform.orientation.matrix * Matrix([0, 0, Rational(1)]),  # 1 unit along peg
+            peg.transform.position + peg.transform.orientation.matrix * Matrix([0, 0, Rational(2)]),  # 2 units along peg
+            peg.transform.position + peg.transform.orientation.matrix * Matrix([0, 0, Rational(3)]),  # 3 units along peg
         ]
         
         for point_local in peg_center_points:
             # Transform to peg's local space (peg CSG is in its own local coords)
-            point_peg_local = peg.orientation.matrix.T * (point_local - peg.position)
+            point_peg_local = peg.transform.orientation.matrix.T * (point_local - peg.transform.position)
             assert peg_csg.contains_point(point_peg_local), \
                 f"Point along peg centerline should be in peg CSG"
     
@@ -265,8 +265,8 @@ class TestPegStuff:
         half_size = peg_size / 2
         
         # Point on the edge of the square peg at z=1
-        point_on_edge = peg.position + peg.orientation.matrix * Matrix([half_size, 0, Rational(1)])
-        point_on_edge_peg_local = peg.orientation.matrix.T * (point_on_edge - peg.position)
+        point_on_edge = peg.transform.position + peg.transform.orientation.matrix * Matrix([half_size, 0, Rational(1)])
+        point_on_edge_peg_local = peg.transform.orientation.matrix.T * (point_on_edge - peg.transform.position)
 
         # see that the peg total length is equal to 1.5 times the mortise width
         assert peg.forward_length + peg.stickout_length == Rational(3, 2) * mortise_timber.size[0]
@@ -282,7 +282,7 @@ class TestPegStuff:
         
         for i in range(0,10):
             # Test that a point inside the peg hole is NOT contained in the timber CSGs
-            point_in_peg_hole = peg.position + peg.orientation.matrix * Matrix([0, 0, Rational(i)])
+            point_in_peg_hole = peg.transform.position + peg.transform.orientation.matrix * Matrix([0, 0, Rational(i)])
             point_in_peg_hole_tenon_local = tenon_timber.global_to_local(point_in_peg_hole)
             point_in_peg_hole_mortise_local = mortise_timber.global_to_local(point_in_peg_hole)
             

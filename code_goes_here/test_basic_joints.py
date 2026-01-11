@@ -292,14 +292,14 @@ class TestSpliceJoint:
         assert cutB.maybe_end_cut == TimberReferenceEnd.BOTTOM
         
         # Verify both cuts have the same origin (the splice point)
-        assert cutA.origin[0] == cutB.origin[0]
-        assert cutA.origin[1] == cutB.origin[1]
-        assert cutA.origin[2] == cutB.origin[2]
+        assert cutA.transform.position[0] == cutB.transform.position[0]
+        assert cutA.transform.position[1] == cutB.transform.position[1]
+        assert cutA.transform.position[2] == cutB.transform.position[2]
         
         # The origin should be at (50, 0, 0) - the midpoint
-        assert cutA.origin[0] == Rational(50)
-        assert cutA.origin[1] == Rational(0)
-        assert cutA.origin[2] == Rational(0)
+        assert cutA.transform.position[0] == Rational(50)
+        assert cutA.transform.position[1] == Rational(0)
+        assert cutA.transform.position[2] == Rational(0)
         
         # Verify the cut planes are perpendicular to the timber axis (X axis)
         # In global coordinates, the plane normal should be ±(1, 0, 0)
@@ -332,9 +332,9 @@ class TestSpliceJoint:
         # Verify the splice occurred at the specified point
         cutA = joint.cut_timbers["timberA"]._cuts[0]
         
-        assert cutA.origin[0] == Rational(0)
-        assert cutA.origin[1] == Rational(0)
-        assert cutA.origin[2] == Rational(120)
+        assert cutA.transform.position[0] == Rational(0)
+        assert cutA.transform.position[1] == Rational(0)
+        assert cutA.transform.position[2] == Rational(120)
         
     # 🐪
     def test_splice_joint_opposite_orientation(self):
@@ -371,7 +371,7 @@ class TestSpliceJoint:
         cutA = joint.cut_timbers["timberA"]._cuts[0]
         
         # Should be at the midpoint between x=60 and x=40 = x=50
-        assert cutA.origin[0] == Rational(50)
+        assert cutA.transform.position[0] == Rational(50)
         
     # 🐪
     def test_splice_joint_non_aligned_timbers_raises_error(self):
@@ -485,9 +485,9 @@ class TestHouseJoint:
             f"Cut prism height should match housed timber height: {cut_prism_local.size[1]} vs {housed_timber.size[1]}"
         
         # 2. Check the prism's orientation in global space
-        # cut_prism_local.orientation is relative to housing timber's local frame
+        # cut_prism_local.transform.orientation is relative to housing timber's local frame
         # Global orientation = housing_orientation * local_orientation
-        cut_prism_global_orientation = housing_timber.orientation.multiply(cut_prism_local.orientation)
+        cut_prism_global_orientation = housing_timber.orientation.multiply(cut_prism_local.transform.orientation)
         
         # The prism's orientation should match the housed timber's orientation
         # (they should be aligned in the same direction)
@@ -502,7 +502,7 @@ class TestHouseJoint:
         # the housed timber's length direction (also in housing timber's local coords)
         
         housed_length_dir_in_housing_local = housing_timber.orientation.matrix.T * housed_timber.length_direction
-        prism_length_dir_in_housing_local = cut_prism_local.orientation.matrix[:, 2]  # Z-axis of prism
+        prism_length_dir_in_housing_local = cut_prism_local.transform.orientation.matrix[:, 2]  # Z-axis of prism
         
         # These should be parallel (same or opposite direction)
         dot = simplify((housed_length_dir_in_housing_local.T * prism_length_dir_in_housing_local)[0, 0])

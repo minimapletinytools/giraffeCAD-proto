@@ -9,7 +9,7 @@ from sympy import Matrix, Rational, Expr, sqrt, oo
 from typing import List, Optional, Union
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-from .moothymoth import Orientation, V2, V3, Direction3D, Numeric
+from .moothymoth import Orientation, Transform, V2, V3, Direction3D, Numeric
 
 
 class MeowMeowCSG(ABC):
@@ -109,9 +109,8 @@ class Prism(MeowMeowCSG):
     Note,they are parameterized similar to the Timber class which is atypical for such a primitive.
     
     The prism is defined by:
-    - A position (translation from origin)
+    - A transform (position and orientation in global coordinates)
     - A cross-section size (width (x-axis)) x height (y-axis)) in the local XY plane
-    - An orientation (rotation matrix defining the local coordinate system)
     - Start and end distances along the local Z-axis from the position
 
     So the center point of the size cross section is at position and the timber extends out in -z by start_distance and +z by end_distance.
@@ -125,15 +124,13 @@ class Prism(MeowMeowCSG):
     
     Args:
         size: Cross-section dimensions [width, height] (2x1 Matrix)
-        orientation: Orientation matrix defining the prism's coordinate system
-        position: Position of the prism origin in global coordinates (3x1 Matrix, default: origin)
+        transform: Transform (position and orientation) in global coordinates (default: identity)
         start_distance: Distance from position along Z-axis to start of prism (None = 
         -infinite)
         end_distance: Distance from position along Z-axis to end of prism (None = infinite)
     """
     size: V2
-    orientation: Orientation
-    position: V3 = field(default_factory=lambda: Matrix([0, 0, 0]))  # Position in global coordinates
+    transform: Transform = field(default_factory=Transform.identity)
     start_distance: Optional[Numeric] = None  # starting distance of the prism in the direction of the +Z axis. None means infinite in negative direction
     end_distance: Optional[Numeric] = None    # ending distance of the prism in the direction of the +Z axis. None means infinite in positive direction
 
@@ -150,7 +147,7 @@ class Prism(MeowMeowCSG):
         """
         if self.start_distance is None:
             raise ValueError("Cannot get bottom position of infinite prism (start_distance is None)")
-        return self.position - self.orientation.matrix * Matrix([0, 0, self.start_distance])
+        return self.transform.position - self.transform.orientation.matrix * Matrix([0, 0, self.start_distance])
     
     def get_top_position(self) -> V3:
         """
@@ -165,11 +162,11 @@ class Prism(MeowMeowCSG):
         """
         if self.end_distance is None:
             raise ValueError("Cannot get top position of infinite prism (end_distance is None)")
-        return self.position + self.orientation.matrix * Matrix([0, 0, self.end_distance])
+        return self.transform.position + self.transform.orientation.matrix * Matrix([0, 0, self.end_distance])
     
     def __repr__(self) -> str:
-        return (f"Prism(size={self.size.T}, orientation={self.orientation}, "
-                f"position={self.position.T}, start={self.start_distance}, end={self.end_distance})")
+        return (f"Prism(size={self.size.T}, transform={self.transform}, "
+                f"start={self.start_distance}, end={self.end_distance})")
     
     def contains_point(self, point: V3) -> bool:
         """
@@ -182,24 +179,24 @@ class Prism(MeowMeowCSG):
             True if the point is inside or on the boundary of the prism, False otherwise
         """
         # Transform point to local coordinates
-        # Local origin is at self.position
-        local_point = point - self.position
+        # Local origin is at self.transform.position
+        local_point = point - self.transform.position
         
         # Extract axes from orientation matrix
         width_dir = Matrix([
-            self.orientation.matrix[0, 0],
-            self.orientation.matrix[1, 0],
-            self.orientation.matrix[2, 0]
+            self.transform.orientation.matrix[0, 0],
+            self.transform.orientation.matrix[1, 0],
+            self.transform.orientation.matrix[2, 0]
         ])
         height_dir = Matrix([
-            self.orientation.matrix[0, 1],
-            self.orientation.matrix[1, 1],
-            self.orientation.matrix[2, 1]
+            self.transform.orientation.matrix[0, 1],
+            self.transform.orientation.matrix[1, 1],
+            self.transform.orientation.matrix[2, 1]
         ])
         length_dir = Matrix([
-            self.orientation.matrix[0, 2],
-            self.orientation.matrix[1, 2],
-            self.orientation.matrix[2, 2]
+            self.transform.orientation.matrix[0, 2],
+            self.transform.orientation.matrix[1, 2],
+            self.transform.orientation.matrix[2, 2]
         ])
         
         # Project onto local axes
@@ -238,23 +235,23 @@ class Prism(MeowMeowCSG):
             return False
         
         # Transform point to local coordinates
-        local_point = point - self.position
+        local_point = point - self.transform.position
         
         # Extract axes from orientation matrix
         width_dir = Matrix([
-            self.orientation.matrix[0, 0],
-            self.orientation.matrix[1, 0],
-            self.orientation.matrix[2, 0]
+            self.transform.orientation.matrix[0, 0],
+            self.transform.orientation.matrix[1, 0],
+            self.transform.orientation.matrix[2, 0]
         ])
         height_dir = Matrix([
-            self.orientation.matrix[0, 1],
-            self.orientation.matrix[1, 1],
-            self.orientation.matrix[2, 1]
+            self.transform.orientation.matrix[0, 1],
+            self.transform.orientation.matrix[1, 1],
+            self.transform.orientation.matrix[2, 1]
         ])
         length_dir = Matrix([
-            self.orientation.matrix[0, 2],
-            self.orientation.matrix[1, 2],
-            self.orientation.matrix[2, 2]
+            self.transform.orientation.matrix[0, 2],
+            self.transform.orientation.matrix[1, 2],
+            self.transform.orientation.matrix[2, 2]
         ])
         
         # Project onto local axes
@@ -564,8 +561,7 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
     
     The extrusion is defined by:
     - A list of ordered (x,y) points in the polygon (must be convex!)
-    - An orientation (rotation matrix defining the local coordinate system)
-    - A position (translation from origin)
+    - A transform (position and orientation in global coordinates)
     - Start and end distances along the local Z-axis from the position
     
     The polygon is in the local XY plane at the position, and the extrusion extends
@@ -575,14 +571,12 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
     
     Args:
         points: List of ordered (x,y) points in the polygon (last connects to first, must be convex)
-        orientation: Orientation matrix defining the extrusion's coordinate system
-        position: Position of the extrusion origin in global coordinates (3x1 Matrix, default: origin)
+        transform: Transform (position and orientation) in global coordinates (default: identity)
         start_distance: Distance from position along Z-axis to start of extrusion (None = -infinite)
         end_distance: Distance from position along Z-axis to end of extrusion (None = infinite)
     """
     points: List[V2] 
-    orientation: Orientation
-    position: V3 = field(default_factory=lambda: Matrix([0, 0, 0]))  # Position in global coordinates
+    transform: Transform = field(default_factory=Transform.identity)
     start_distance: Optional[Numeric] = None  # starting distance in the direction of the -Z axis. None means infinite in negative direction
     end_distance: Optional[Numeric] = None    # ending distance in the direction of the +Z axis. None means infinite in positive direction
 
@@ -599,7 +593,7 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
         """
         if self.start_distance is None:
             raise ValueError("Cannot get bottom position of infinite extrusion (start_distance is None)")
-        return self.position - self.orientation.matrix * Matrix([0, 0, self.start_distance])
+        return self.transform.position - self.transform.orientation.matrix * Matrix([0, 0, self.start_distance])
     
     def get_top_position(self) -> V3:
         """
@@ -614,11 +608,11 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
         """
         if self.end_distance is None:
             raise ValueError("Cannot get top position of infinite extrusion (end_distance is None)")
-        return self.position + self.orientation.matrix * Matrix([0, 0, self.end_distance])
+        return self.transform.position + self.transform.orientation.matrix * Matrix([0, 0, self.end_distance])
 
     def __repr__(self) -> str:
         return (f"ConvexPolygonExtrusion({len(self.points)} points, "
-                f"position={self.position.T}, start={self.start_distance}, end={self.end_distance})")
+                f"transform={self.transform}, start={self.start_distance}, end={self.end_distance})")
     
     def is_valid(self) -> bool:
         """
@@ -674,8 +668,8 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
             True if the point is inside or on the boundary, False otherwise
         """
         # Transform point to local coordinates
-        local_point = point - self.position
-        local_coords = self.orientation.invert().matrix * local_point
+        local_point = point - self.transform.position
+        local_coords = self.transform.orientation.invert().matrix * local_point
         
         x_coord = local_coords[0]
         y_coord = local_coords[1]
@@ -731,8 +725,8 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
             return False
         
         # Transform point to local coordinates
-        local_point = point - self.position
-        local_coords = self.orientation.invert().matrix * local_point
+        local_point = point - self.transform.position
+        local_coords = self.transform.orientation.invert().matrix * local_point
         
         x_coord = local_coords[0]
         y_coord = local_coords[1]

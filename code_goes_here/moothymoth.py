@@ -42,6 +42,57 @@ Numeric = Union[float, int, Expr]  # Numeric values (SymPy Expr type STRONGLY pr
 
 
 # ============================================================================
+# Transform Class
+# ============================================================================
+
+@dataclass(frozen=True)
+class Transform:
+    """
+    Represents a 3D transformation with position and orientation.
+    Encapsulates both translation and rotation for objects in 3D space.
+    """
+    position: V3
+    orientation: 'Orientation'
+    
+    @classmethod
+    def identity(cls) -> 'Transform':
+        """Create an identity transform at origin with identity orientation."""
+        return cls(
+            position=create_v3(0, 0, 0),
+            orientation=Orientation.identity()
+        )
+    
+    def local_to_global(self, local_point: V3) -> V3:
+        """
+        Convert a point from local coordinates to global world coordinates.
+        
+        Args:
+            local_point: A point in local coordinates
+            
+        Returns:
+            The same point in global world coordinates
+        """
+        # Rotate to global frame, then translate to position
+        # global = R * local + position
+        return self.orientation.matrix * local_point + self.position
+    
+    def global_to_local(self, global_point: V3) -> V3:
+        """
+        Convert a point from global world coordinates to local coordinates.
+        
+        Args:
+            global_point: A point in global world coordinates
+            
+        Returns:
+            The same point in local coordinates
+        """
+        # Translate to origin, then rotate to local frame
+        # local = R^T * (global - position)
+        translated = global_point - self.position
+        return self.orientation.matrix.T * translated
+
+
+# ============================================================================
 # Helper Functions for Vector Operations
 # ============================================================================
 

@@ -88,7 +88,8 @@ DONE-delete rhino for now
 
 -REFACTOR TIME
   -create Transform class in moothymoth
-  
+  -rename create_timber to hew or raise timber?
+    -then boards/panels can be mill_board
 
 -3 major features
   -measure functions

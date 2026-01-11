@@ -758,7 +758,7 @@ class TestCutTimber:
         # In LOCAL coordinates, the prism is always axis-aligned (identity orientation)
         # The timber's orientation transforms from local to global coordinates
         from code_goes_here.moothymoth import Orientation
-        assert simplify(csg.orientation.matrix - Orientation.identity().matrix).norm() == 0
+        assert simplify(csg.transform.orientation.matrix - Orientation.identity().matrix).norm() == 0
     
     def test_extended_timber_without_cuts_positioned(self):
         """Test that CSG works correctly for timber at different position."""
@@ -800,11 +800,10 @@ class TestCutTimber:
         
         # End distance is the timber's length
         assert csg.end_distance == 80
-
+        
         # the csg is in local coordinates, so it should have identity orientation
         from code_goes_here.moothymoth import Orientation
-        assert csg.orientation.matrix.equals(Orientation.identity().matrix)
-        
+        assert csg.transform.orientation.matrix.equals(Orientation.identity().matrix)
     
     def test_render_timber_with_cuts_no_cuts(self):
         """Test render_timber_with_cuts_csg_local with no cuts."""
@@ -847,8 +846,10 @@ class TestCutTimber:
         )
         cut = HalfPlaneCut(
             timber=timber,
-            origin=Matrix([Rational(0), Rational(0), Rational(0)]),
-            orientation=Orientation.identity(),
+            transform=Transform(
+                position=Matrix([Rational(0), Rational(0), Rational(0)]),
+                orientation=Orientation.identity()
+            ),
             half_plane=half_plane,
             maybe_end_cut=None
         )
@@ -883,8 +884,10 @@ class TestCutTimber:
         )
         cut1 = HalfPlaneCut(
             timber=timber,
-            origin=Matrix([Rational(0), Rational(0), Rational(0)]),
-            orientation=Orientation.identity(),
+            transform=Transform(
+                position=Matrix([Rational(0), Rational(0), Rational(0)]),
+                orientation=Orientation.identity()
+            ),
             half_plane=half_plane1,
             maybe_end_cut=None
         )
@@ -895,8 +898,10 @@ class TestCutTimber:
         )
         cut2 = HalfPlaneCut(
             timber=timber,
-            origin=Matrix([Rational(0), Rational(0), Rational(0)]),
-            orientation=Orientation.identity(),
+            transform=Transform(
+                position=Matrix([Rational(0), Rational(0), Rational(0)]),
+                orientation=Orientation.identity()
+            ),
             half_plane=half_plane2,
             maybe_end_cut=None
         )
@@ -931,8 +936,10 @@ class TestCutTimber:
         )
         end_cut = HalfPlaneCut(
             timber=timber,
-            origin=Matrix([Rational(0), Rational(0), Rational(0)]),
-            orientation=Orientation.identity(),
+            transform=Transform(
+                position=Matrix([Rational(0), Rational(0), Rational(0)]),
+                orientation=Orientation.identity()
+            ),
             half_plane=half_plane,
             maybe_end_cut=TimberReferenceEnd.TOP
         )
@@ -978,16 +985,15 @@ class TestPeg:
         position = create_v3(1, 2, 3)
         
         peg = Peg(
-            orientation=orientation,
-            position=position,
+            transform=Transform(position=position, orientation=orientation),
             size=Rational(2),
             shape=PegShape.SQUARE,
             forward_length=Rational(10),
             stickout_length=Rational(1)
         )
         
-        assert peg.orientation == orientation
-        assert peg.position == position
+        assert peg.transform.orientation == orientation
+        assert peg.transform.position == position
         assert peg.size == Rational(2)
         assert peg.shape == PegShape.SQUARE
         assert peg.forward_length == Rational(10)
@@ -996,8 +1002,7 @@ class TestPeg:
     def test_peg_is_frozen(self):
         """Test that Peg is immutable."""
         peg = Peg(
-            orientation=Orientation.identity(),
-            position=create_v3(0, 0, 0),
+            transform=Transform.identity(),
             size=Rational(2),
             shape=PegShape.ROUND,
             forward_length=Rational(10),
@@ -1010,8 +1015,7 @@ class TestPeg:
     def test_peg_render_csg_local_square(self):
         """Test rendering square peg CSG in local space."""
         peg = Peg(
-            orientation=Orientation.identity(),
-            position=create_v3(0, 0, 0),
+            transform=Transform.identity(),
             size=Rational(2),
             shape=PegShape.SQUARE,
             forward_length=Rational(10),
@@ -1033,8 +1037,7 @@ class TestPeg:
     def test_peg_render_csg_local_round(self):
         """Test rendering round peg CSG in local space."""
         peg = Peg(
-            orientation=Orientation.identity(),
-            position=create_v3(0, 0, 0),
+            transform=Transform.identity(),
             size=Rational(4),
             shape=PegShape.ROUND,
             forward_length=Rational(12),
@@ -1062,16 +1065,15 @@ class TestWedge:
         position = create_v3(1, 2, 3)
         
         wedge = Wedge(
-            orientation=orientation,
-            position=position,
+            transform=Transform(position=position, orientation=orientation),
             base_width=Rational(5),
             tip_width=Rational(1),
             height=Rational(2),
             length=Rational(10)
         )
         
-        assert wedge.orientation == orientation
-        assert wedge.position == position
+        assert wedge.transform.orientation == orientation
+        assert wedge.transform.position == position
         assert wedge.base_width == Rational(5)
         assert wedge.tip_width == Rational(1)
         assert wedge.height == Rational(2)
@@ -1080,8 +1082,7 @@ class TestWedge:
     def test_wedge_width_property(self):
         """Test that width property is an alias for base_width."""
         wedge = Wedge(
-            orientation=Orientation.identity(),
-            position=create_v3(0, 0, 0),
+            transform=Transform.identity(),
             base_width=Rational(5),
             tip_width=Rational(1),
             height=Rational(2),
@@ -1094,8 +1095,7 @@ class TestWedge:
     def test_wedge_is_frozen(self):
         """Test that Wedge is immutable."""
         wedge = Wedge(
-            orientation=Orientation.identity(),
-            position=create_v3(0, 0, 0),
+            transform=Transform.identity(),
             base_width=Rational(5),
             tip_width=Rational(1),
             height=Rational(2),
@@ -1108,8 +1108,7 @@ class TestWedge:
     def test_wedge_render_csg_local(self):
         """Test rendering wedge CSG in local space."""
         wedge = Wedge(
-            orientation=Orientation.identity(),
-            position=create_v3(0, 0, 0),
+            transform=Transform.identity(),
             base_width=Rational(5),
             tip_width=Rational(1),
             height=Rational(2),
@@ -1161,9 +1160,9 @@ class TestCreatePegGoingIntoFace:
         assert peg.stickout_length == Rational(1)
         
         # Position should be at the right surface (width/2 = 5)
-        assert peg.position[0] == Rational(5)  # X = width/2
-        assert peg.position[1] == Rational(0)  # Y = distance_from_centerline
-        assert peg.position[2] == Rational(50)  # Z = distance_from_bottom
+        assert peg.transform.position[0] == Rational(5)  # X = width/2
+        assert peg.transform.position[1] == Rational(0)  # Y = distance_from_centerline
+        assert peg.transform.position[2] == Rational(50)  # Z = distance_from_bottom
     
     def test_peg_into_left_face(self):
         """Test creating a peg going into the LEFT face."""
@@ -1179,9 +1178,9 @@ class TestCreatePegGoingIntoFace:
         )
         
         # Position should be at the left surface (-width/2 = -5)
-        assert peg.position[0] == Rational(-5)  # X = -width/2
-        assert peg.position[1] == Rational(2)  # Y = distance_from_centerline
-        assert peg.position[2] == Rational(30)  # Z = distance_from_bottom
+        assert peg.transform.position[0] == Rational(-5)  # X = -width/2
+        assert peg.transform.position[1] == Rational(2)  # Y = distance_from_centerline
+        assert peg.transform.position[2] == Rational(30)  # Z = distance_from_bottom
     
     def test_peg_into_forward_face(self):
         """Test creating a peg going into the FRONT face."""
@@ -1197,9 +1196,9 @@ class TestCreatePegGoingIntoFace:
         )
         
         # Position should be at the forward surface (height/2 = 7.5)
-        assert peg.position[0] == Rational(-1)  # X = distance_from_centerline
-        assert peg.position[1] == Rational(15, 2)  # Y = height/2 = 7.5
-        assert peg.position[2] == Rational(40)  # Z = distance_from_bottom
+        assert peg.transform.position[0] == Rational(-1)  # X = distance_from_centerline
+        assert peg.transform.position[1] == Rational(15, 2)  # Y = height/2 = 7.5
+        assert peg.transform.position[2] == Rational(40)  # Z = distance_from_bottom
     
     def test_peg_into_back_face(self):
         """Test creating a peg going into the BACK face."""
@@ -1215,9 +1214,9 @@ class TestCreatePegGoingIntoFace:
         )
         
         # Position should be at the back surface (-height/2 = -7.5)
-        assert peg.position[0] == Rational(3)  # X = distance_from_centerline
-        assert peg.position[1] == Rational(-15, 2)  # Y = -height/2 = -7.5
-        assert peg.position[2] == Rational(60)  # Z = distance_from_bottom
+        assert peg.transform.position[0] == Rational(3)  # X = distance_from_centerline
+        assert peg.transform.position[1] == Rational(-15, 2)  # Y = -height/2 = -7.5
+        assert peg.transform.position[2] == Rational(60)  # Z = distance_from_bottom
     
     def test_square_peg(self):
         """Test creating a square peg."""
@@ -1271,9 +1270,9 @@ class TestCreateWedgeInTimberEnd:
         assert wedge.width == Rational(5)  # Test width property
         
         # Position should be at the top end (Z = length)
-        assert wedge.position[0] == Rational(2)  # X from position
-        assert wedge.position[1] == Rational(3)  # Y from position
-        assert wedge.position[2] == Rational(100)  # Z = timber length
+        assert wedge.transform.position[0] == Rational(2)  # X from position
+        assert wedge.transform.position[1] == Rational(3)  # Y from position
+        assert wedge.transform.position[2] == Rational(100)  # Z = timber length
     
     def test_wedge_at_bottom_end(self):
         """Test creating a wedge at the BOTTOM end."""
@@ -1285,9 +1284,9 @@ class TestCreateWedgeInTimberEnd:
         )
         
         # Position should be at the bottom end (Z = 0)
-        assert wedge.position[0] == Rational(-1)  # X from position
-        assert wedge.position[1] == Rational(2)  # Y from position
-        assert wedge.position[2] == Rational(0)  # Z = 0 (bottom)
+        assert wedge.transform.position[0] == Rational(-1)  # X from position
+        assert wedge.transform.position[1] == Rational(2)  # Y from position
+        assert wedge.transform.position[2] == Rational(0)  # Z = 0 (bottom)
     
     def test_wedge_at_centerline(self):
         """Test creating a wedge at the timber centerline."""
@@ -1299,9 +1298,9 @@ class TestCreateWedgeInTimberEnd:
         )
         
         # Position should be at center of top end
-        assert wedge.position[0] == Rational(0)
-        assert wedge.position[1] == Rational(0)
-        assert wedge.position[2] == Rational(100)
+        assert wedge.transform.position[0] == Rational(0)
+        assert wedge.transform.position[1] == Rational(0)
+        assert wedge.transform.position[2] == Rational(100)
 
 
 class TestWedgeShape:

@@ -19,7 +19,8 @@ from code_goes_here.moothymoth import (
     Rational, S, sympify,
     V2, V3, Direction3D, Numeric,
     create_v2, create_v3,
-    normalize_vector, cross_product, vector_magnitude
+    normalize_vector, cross_product, vector_magnitude,
+    Orientation, Transform
 )
 
 # Explicitly import private helper functions that are used by tests

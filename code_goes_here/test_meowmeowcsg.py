@@ -6,7 +6,7 @@ This module contains tests for the CSG primitives and operations.
 
 import pytest
 from sympy import Matrix, Rational, simplify, sqrt, cos, sin, pi
-from code_goes_here.moothymoth import Orientation
+from code_goes_here.moothymoth import Orientation, Transform, create_v3
 from code_goes_here.meowmeowcsg import (
     HalfPlane, Prism, Cylinder, Union, Difference, ConvexPolygonExtrusion
 )
@@ -28,7 +28,8 @@ def generate_random_prism():
     start_dist = Rational(random.randint(0, 10))
     end_dist = Rational(random.randint(15, 30))
     
-    return Prism(size=size, orientation=orientation, position=position,
+    transform = Transform(position=position, orientation=orientation)
+    return Prism(size=size, transform=transform,
                 start_distance=start_dist, end_distance=end_dist)
 
 
@@ -79,9 +80,10 @@ def generate_random_convex_polygon_extrusion():
                       Rational(random.randint(-30, 30)), 
                       Rational(random.randint(-30, 30))])
     
+    transform = Transform(position=position, orientation=orientation)
     return ConvexPolygonExtrusion(points=vertices, start_distance=start_distance,
                                   end_distance=end_distance,
-                                  orientation=orientation, position=position)
+                                  transform=transform)
 
 
 def generate_prism_boundary_points(prism):
@@ -91,22 +93,22 @@ def generate_prism_boundary_points(prism):
     hh = prism.size[1] / 2  # half height
     
     # Extract orientation axes
-    width_dir = Matrix([prism.orientation.matrix[0, 0],
-                       prism.orientation.matrix[1, 0],
-                       prism.orientation.matrix[2, 0]])
-    height_dir = Matrix([prism.orientation.matrix[0, 1],
-                        prism.orientation.matrix[1, 1],
-                        prism.orientation.matrix[2, 1]])
-    length_dir = Matrix([prism.orientation.matrix[0, 2],
-                        prism.orientation.matrix[1, 2],
-                        prism.orientation.matrix[2, 2]])
+    width_dir = Matrix([prism.transform.orientation.matrix[0, 0],
+                       prism.transform.orientation.matrix[1, 0],
+                       prism.transform.orientation.matrix[2, 0]])
+    height_dir = Matrix([prism.transform.orientation.matrix[0, 1],
+                        prism.transform.orientation.matrix[1, 1],
+                        prism.transform.orientation.matrix[2, 1]])
+    length_dir = Matrix([prism.transform.orientation.matrix[0, 2],
+                        prism.transform.orientation.matrix[1, 2],
+                        prism.transform.orientation.matrix[2, 2]])
     
     # 8 corners (if finite)
     if prism.start_distance is not None and prism.end_distance is not None:
         for z in [prism.start_distance, prism.end_distance]:
             for x_sign in [-1, 1]:
                 for y_sign in [-1, 1]:
-                    point = (prism.position + 
+                    point = (prism.transform.position + 
                             width_dir * (x_sign * hw) + 
                             height_dir * (y_sign * hh) + 
                             length_dir * z)
@@ -116,13 +118,13 @@ def generate_prism_boundary_points(prism):
     if prism.start_distance is not None and prism.end_distance is not None:
         z_mid = (prism.start_distance + prism.end_distance) / 2
         # Top and bottom faces
-        points.append(prism.position + length_dir * prism.start_distance)
-        points.append(prism.position + length_dir * prism.end_distance)
+        points.append(prism.transform.position + length_dir * prism.start_distance)
+        points.append(prism.transform.position + length_dir * prism.end_distance)
         # Side faces
-        points.append(prism.position + width_dir * hw + length_dir * z_mid)
-        points.append(prism.position + width_dir * (-hw) + length_dir * z_mid)
-        points.append(prism.position + height_dir * hh + length_dir * z_mid)
-        points.append(prism.position + height_dir * (-hh) + length_dir * z_mid)
+        points.append(prism.transform.position + width_dir * hw + length_dir * z_mid)
+        points.append(prism.transform.position + width_dir * (-hw) + length_dir * z_mid)
+        points.append(prism.transform.position + height_dir * hh + length_dir * z_mid)
+        points.append(prism.transform.position + height_dir * (-hh) + length_dir * z_mid)
     
     return points
 
@@ -133,14 +135,14 @@ def generate_prism_non_boundary_points(prism):
     
     # Center point (if finite)
     if prism.start_distance is not None and prism.end_distance is not None:
-        length_dir = Matrix([prism.orientation.matrix[0, 2],
-                            prism.orientation.matrix[1, 2],
-                            prism.orientation.matrix[2, 2]])
+        length_dir = Matrix([prism.transform.orientation.matrix[0, 2],
+                            prism.transform.orientation.matrix[1, 2],
+                            prism.transform.orientation.matrix[2, 2]])
         z_mid = (prism.start_distance + prism.end_distance) / 2
-        points.append(prism.position + length_dir * z_mid)
+        points.append(prism.transform.position + length_dir * z_mid)
     
     # Far-away point
-    points.append(prism.position + Matrix([Rational(1000), Rational(1000), Rational(1000)]))
+    points.append(prism.transform.position + Matrix([Rational(1000), Rational(1000), Rational(1000)]))
     
     return points
 
@@ -262,12 +264,12 @@ def generate_convex_polygon_boundary_points(extrusion):
     for vertex_2d in extrusion.points:
         # Bottom (z=start_distance)
         point_local = Matrix([vertex_2d[0], vertex_2d[1], extrusion.start_distance])
-        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        point_global = extrusion.transform.position + extrusion.transform.orientation.matrix * point_local
         points.append(point_global)
         
         # Top (z=end_distance)
         point_local = Matrix([vertex_2d[0], vertex_2d[1], extrusion.end_distance])
-        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        point_global = extrusion.transform.position + extrusion.transform.orientation.matrix * point_local
         points.append(point_global)
     
     # Face centers on top and bottom
@@ -278,19 +280,19 @@ def generate_convex_polygon_boundary_points(extrusion):
         
         # Bottom face center
         point_local = Matrix([centroid_x, centroid_y, extrusion.start_distance])
-        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        point_global = extrusion.transform.position + extrusion.transform.orientation.matrix * point_local
         points.append(point_global)
         
         # Top face center
         point_local = Matrix([centroid_x, centroid_y, extrusion.end_distance])
-        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        point_global = extrusion.transform.position + extrusion.transform.orientation.matrix * point_local
         points.append(point_global)
     
     # Edge midpoints (on vertical edges)
     for vertex_2d in extrusion.points:
         z_mid = (extrusion.start_distance + extrusion.end_distance) / 2
         point_local = Matrix([vertex_2d[0], vertex_2d[1], z_mid])
-        point_global = extrusion.position + extrusion.orientation.matrix * point_local
+        point_global = extrusion.transform.position + extrusion.transform.orientation.matrix * point_local
         points.append(point_global)
     
     return points
@@ -309,11 +311,11 @@ def generate_convex_polygon_non_boundary_points(extrusion):
             z_mid = (extrusion.start_distance + extrusion.end_distance) / 2
             
             point_local = Matrix([centroid_x, centroid_y, z_mid])
-            point_global = extrusion.position + extrusion.orientation.matrix * point_local
+            point_global = extrusion.transform.position + extrusion.transform.orientation.matrix * point_local
             points.append(point_global)
     
     # Far-away point
-    points.append(extrusion.position + Matrix([Rational(1000), Rational(1000), Rational(1000)]))
+    points.append(extrusion.transform.position + Matrix([Rational(1000), Rational(1000), Rational(1000)]))
     
     return points
 
@@ -325,10 +327,10 @@ class TestConstructors:
         """Test creating a finite prism."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         assert prism.size == size
-        assert prism.orientation == orientation
+        assert prism.transform.orientation == orientation
         assert prism.start_distance == 0
         assert prism.end_distance == 10
     
@@ -336,7 +338,7 @@ class TestConstructors:
         """Test creating a semi-infinite prism."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, orientation=orientation, end_distance=10)
+        prism = Prism(size=size, transform=Transform.identity(), end_distance=10)
         
         assert prism.start_distance is None
         assert prism.end_distance == 10
@@ -344,8 +346,7 @@ class TestConstructors:
     def test_prism_constructor_infinite(self):
         """Test creating an infinite prism."""
         size = Matrix([4, 6])
-        orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, orientation=orientation)
+        prism = Prism(size=size, transform=Transform.identity())
         
         assert prism.start_distance is None
         assert prism.end_distance is None
@@ -382,7 +383,8 @@ class TestPrismPositionMethods:
         position = Matrix([10, 20, 30])
         start_distance = Rational(5)
         end_distance = Rational(15)
-        prism = Prism(size=size, orientation=orientation, position=position, 
+        transform = Transform(position=position, orientation=orientation)
+        prism = Prism(size=size, transform=transform, 
                      start_distance=start_distance, end_distance=end_distance)
         
         # Bottom position should be position - (0, 0, start_distance) in local frame
@@ -399,7 +401,8 @@ class TestPrismPositionMethods:
         position = Matrix([10, 20, 30])
         start_distance = Rational(5)
         end_distance = Rational(15)
-        prism = Prism(size=size, orientation=orientation, position=position, 
+        transform = Transform(position=position, orientation=orientation)
+        prism = Prism(size=size, transform=transform, 
                      start_distance=start_distance, end_distance=end_distance)
         
         # Top position should be position + (0, 0, end_distance) in local frame
@@ -423,7 +426,8 @@ class TestPrismPositionMethods:
         position = Matrix([10, 20, 30])
         start_distance = Rational(5)
         end_distance = Rational(15)
-        prism = Prism(size=size, orientation=orientation, position=position,
+        transform = Transform(position=position, orientation=orientation)
+        prism = Prism(size=size, transform=transform,
                      start_distance=start_distance, end_distance=end_distance)
         
         # With this rotation: local Z becomes global X
@@ -437,8 +441,7 @@ class TestPrismPositionMethods:
     def test_get_bottom_position_infinite_prism_raises_error(self):
         """Test that get_bottom_position raises error for infinite prism."""
         size = Matrix([4, 6])
-        orientation = Orientation()
-        prism = Prism(size=size, orientation=orientation, start_distance=None, end_distance=10)
+        prism = Prism(size=size, transform=Transform.identity(), start_distance=None, end_distance=10)
         
         with pytest.raises(ValueError, match="infinite prism"):
             prism.get_bottom_position()
@@ -446,8 +449,7 @@ class TestPrismPositionMethods:
     def test_get_top_position_infinite_prism_raises_error(self):
         """Test that get_top_position raises error for infinite prism."""
         size = Matrix([4, 6])
-        orientation = Orientation()
-        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=None)
+        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=None)
         
         with pytest.raises(ValueError, match="infinite prism"):
             prism.get_top_position()
@@ -525,7 +527,7 @@ class TestPrismContainsPoint:
         """Test that a point inside the prism is contained."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         # Point inside: within ±2 in x, ±3 in y, 0-10 in z
         point = Matrix([0, 0, 5])
@@ -535,7 +537,7 @@ class TestPrismContainsPoint:
         """Test that a point on a face is contained."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         # Point on face (x = 2, which is half-width)
         point = Matrix([2, 0, 5])
@@ -545,7 +547,7 @@ class TestPrismContainsPoint:
         """Test that a point outside the prism is not contained."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         # Point outside in x direction
         point = Matrix([3, 0, 5])
@@ -559,7 +561,7 @@ class TestPrismContainsPoint:
         """Test boundary detection on prism faces."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         # On width face (x = ±2)
         assert prism.is_point_on_boundary(Matrix([2, 0, 5])) == True
@@ -577,7 +579,7 @@ class TestPrismContainsPoint:
         """Test that interior points are not on boundary."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
+        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         # Interior point
         assert prism.is_point_on_boundary(Matrix([0, 0, 5])) == False
@@ -586,7 +588,7 @@ class TestPrismContainsPoint:
         """Test semi-infinite prism containment."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, orientation=orientation, end_distance=10)  # Infinite in negative direction
+        prism = Prism(size=size, transform=Transform.identity(), end_distance=10)  # Infinite in negative direction
         
         # Point at z = -100 should be contained
         assert prism.contains_point(Matrix([0, 0, -100])) == True
@@ -690,8 +692,8 @@ class TestUnionContainsPoint:
         size = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
-        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
+        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
         union = Union([prism1, prism2])
         
@@ -703,8 +705,8 @@ class TestUnionContainsPoint:
         size = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
-        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
+        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
         union = Union([prism1, prism2])
         
@@ -716,8 +718,8 @@ class TestUnionContainsPoint:
         size = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
-        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
+        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
         union = Union([prism1, prism2])
         
@@ -729,8 +731,8 @@ class TestUnionContainsPoint:
         size = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
-        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
+        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
         union = Union([prism1, prism2])
         
@@ -745,8 +747,8 @@ class TestUnionContainsPoint:
         size = Matrix([4, 4])
         orientation = Orientation()
         
-        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
-        prism2 = Prism(size=size, orientation=orientation, start_distance=5, end_distance=15)
+        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
+        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=5, end_distance=15)
         
         union = Union([prism1, prism2])
         
@@ -762,8 +764,8 @@ class TestUnionContainsPoint:
         orientation = Orientation()
         
         # Two overlapping prisms
-        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=10)
-        prism2 = Prism(size=size, orientation=orientation, start_distance=5, end_distance=15)
+        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
+        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=5, end_distance=15)
         
         union = Union([prism1, prism2])
         
@@ -783,8 +785,8 @@ class TestUnionContainsPoint:
         size = Matrix([2, 2])
         orientation = Orientation()
         
-        prism1 = Prism(size=size, orientation=orientation, start_distance=0, end_distance=5)
-        prism2 = Prism(size=size, orientation=orientation, start_distance=10, end_distance=15)
+        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
+        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
         union = Union([prism1, prism2])
         
@@ -806,8 +808,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -820,8 +822,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -834,8 +836,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -848,8 +850,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -862,8 +864,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -877,8 +879,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()
         
-        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -891,8 +893,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([4, 4])
         orientation = Orientation()
         
-        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -907,8 +909,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([4, 4])
         orientation = Orientation()
         
-        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, orientation=orientation, start_distance=2, end_distance=8)
+        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -922,7 +924,7 @@ class TestDifferenceContainsPoint:
         size_base = Matrix([10, 10])
         orientation = Orientation()
         
-        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
         # Half-plane at z=5, normal pointing in +z direction
         half_plane = HalfPlane(normal=Matrix([0, 0, 1]), offset=5)
         
@@ -943,12 +945,12 @@ class TestDifferenceContainsPoint:
         size_base = Matrix([10, 10])
         orientation = Orientation()
         
-        base = Prism(size=size_base, orientation=orientation, start_distance=0, end_distance=10)
+        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
         # Two small prisms to subtract
-        subtract1 = Prism(size=Matrix([2, 2]), orientation=orientation, 
-                         position=Matrix([2, 2, 0]), start_distance=2, end_distance=8)
-        subtract2 = Prism(size=Matrix([2, 2]), orientation=orientation,
-                         position=Matrix([-2, -2, 0]), start_distance=2, end_distance=8)
+        subtract1 = Prism(size=Matrix([2, 2]), transform=Transform(position=Matrix([2, 2, 0]), orientation=Orientation()), 
+                         start_distance=2, end_distance=8)
+        subtract2 = Prism(size=Matrix([2, 2]), transform=Transform(position=Matrix([-2, -2, 0]), orientation=Orientation()),
+                         start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract1, subtract2])
         
@@ -966,11 +968,11 @@ class TestDifferenceContainsPoint:
         orientation = Orientation()
         
         # Create base prism
-        base = Prism(size=Matrix([10, 10]), orientation=orientation, 
+        base = Prism(size=Matrix([10, 10]), transform=Transform.identity(), 
                     start_distance=0, end_distance=10)
         
         # Create a subtract prism at the center
-        subtract_inner = Prism(size=Matrix([2, 2]), orientation=orientation,
+        subtract_inner = Prism(size=Matrix([2, 2]), transform=Transform.identity(),
                               start_distance=3, end_distance=7)
         
         # Create a nested difference (prism with hole in center)
@@ -978,8 +980,8 @@ class TestDifferenceContainsPoint:
         
         # Now subtract another prism from a different location
         # Place it off to the side so it doesn't overlap with subtract_inner
-        subtract_outer = Prism(size=Matrix([2, 2]), orientation=orientation,
-                              position=Matrix([4, 0, 0]), start_distance=1, end_distance=9)
+        subtract_outer = Prism(size=Matrix([2, 2]), transform=Transform(position=Matrix([4, 0, 0]), orientation=orientation),
+                              start_distance=1, end_distance=9)
         
         outer_diff = Difference(inner_diff, [subtract_outer])
         
@@ -1003,7 +1005,7 @@ class TestDifferenceContainsPoint:
         orientation = Orientation()
         
         # Create a prism
-        prism = Prism(size=Matrix([10, 10]), orientation=orientation,
+        prism = Prism(size=Matrix([10, 10]), transform=Transform(position=create_v3(0, 0, 0), orientation=orientation),
                      start_distance=Rational(0), end_distance=Rational(10))
         
         # Subtract the prism from itself
@@ -1065,12 +1067,12 @@ class TestConvexPolygonExtrusion:
         orientation = Orientation()  # Identity orientation
         
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance, 
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         assert extrusion.points == points
         assert extrusion.start_distance == start_distance
         assert extrusion.end_distance == end_distance
-        assert extrusion.orientation == orientation
+        assert extrusion.transform.orientation == orientation
     
     def test_is_valid_enough_points(self):
         """Test that is_valid requires at least 3 points."""
@@ -1085,7 +1087,7 @@ class TestConvexPolygonExtrusion:
         orientation = Orientation()
         
         extrusion_valid = ConvexPolygonExtrusion(points=points_valid, start_distance=start_distance,
-                                                 end_distance=end_distance, orientation=orientation)
+                                                 end_distance=end_distance, transform=Transform.identity())
         assert extrusion_valid.is_valid() == True
         
         # Only 2 points (invalid)
@@ -1094,7 +1096,7 @@ class TestConvexPolygonExtrusion:
             Matrix([1, 0])
         ]
         extrusion_invalid = ConvexPolygonExtrusion(points=points_invalid, start_distance=start_distance,
-                                                   end_distance=end_distance, orientation=orientation)
+                                                   end_distance=end_distance, transform=Transform.identity())
         assert extrusion_invalid.is_valid() == False
     
     def test_is_valid_distance_configuration(self):
@@ -1108,22 +1110,22 @@ class TestConvexPolygonExtrusion:
         
         # Valid: end > start (valid)
         extrusion_valid = ConvexPolygonExtrusion(points=points, start_distance=Rational(0),
-                                                 end_distance=Rational(5), orientation=orientation)
+                                                 end_distance=Rational(5), transform=Transform.identity())
         assert extrusion_valid.is_valid() == True
         
         # Invalid: end = start (no volume)
         extrusion_zero = ConvexPolygonExtrusion(points=points, start_distance=Rational(5),
-                                               end_distance=Rational(5), orientation=orientation)
+                                               end_distance=Rational(5), transform=Transform.identity())
         assert extrusion_zero.is_valid() == False
         
         # Invalid: end < start
         extrusion_negative = ConvexPolygonExtrusion(points=points, start_distance=Rational(5),
-                                                    end_distance=Rational(0), orientation=orientation)
+                                                    end_distance=Rational(0), transform=Transform.identity())
         assert extrusion_negative.is_valid() == False
         
         # Valid: infinite in both directions
         extrusion_infinite = ConvexPolygonExtrusion(points=points, start_distance=None,
-                                                    end_distance=None, orientation=orientation)
+                                                    end_distance=None, transform=Transform.identity())
         assert extrusion_infinite.is_valid() == True
     
     def test_is_valid_convex_polygon(self):
@@ -1140,7 +1142,7 @@ class TestConvexPolygonExtrusion:
             Matrix([1, -1])
         ]
         extrusion_ccw = ConvexPolygonExtrusion(points=points_ccw, start_distance=start_distance,
-                                               end_distance=end_distance, orientation=orientation)
+                                               end_distance=end_distance, transform=Transform.identity())
         assert extrusion_ccw.is_valid() == True
         
         # Convex square (clockwise)
@@ -1151,7 +1153,7 @@ class TestConvexPolygonExtrusion:
             Matrix([-1, 1])
         ]
         extrusion_cw = ConvexPolygonExtrusion(points=points_cw, start_distance=start_distance,
-                                              end_distance=end_distance, orientation=orientation)
+                                              end_distance=end_distance, transform=Transform.identity())
         assert extrusion_cw.is_valid() == True
         
         # Convex hexagon
@@ -1164,7 +1166,7 @@ class TestConvexPolygonExtrusion:
             Matrix([1, -sqrt(3)])
         ]
         extrusion_hex = ConvexPolygonExtrusion(points=points_hex, start_distance=start_distance,
-                                               end_distance=end_distance, orientation=orientation)
+                                               end_distance=end_distance, transform=Transform.identity())
         assert extrusion_hex.is_valid() == True
     
     def test_is_valid_non_convex_polygon(self):
@@ -1180,7 +1182,7 @@ class TestConvexPolygonExtrusion:
             Matrix([1, 0])  # This point makes it concave
         ]
         extrusion_concave = ConvexPolygonExtrusion(points=points_concave, start_distance=Rational(0),
-                                                   end_distance=Rational(5), orientation=orientation)
+                                                   end_distance=Rational(5), transform=Transform.identity())
         assert extrusion_concave.is_valid() == False
     
     def test_is_valid_collinear_points(self):
@@ -1194,7 +1196,7 @@ class TestConvexPolygonExtrusion:
             Matrix([2, 0])
         ]
         extrusion_collinear = ConvexPolygonExtrusion(points=points_collinear, start_distance=Rational(0),
-                                                     end_distance=Rational(5), orientation=orientation)
+                                                     end_distance=Rational(5), transform=Transform.identity())
         assert extrusion_collinear.is_valid() == False
     
     def test_contains_point_inside_square(self):
@@ -1211,7 +1213,7 @@ class TestConvexPolygonExtrusion:
         orientation = Orientation()
         
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # Point inside
         assert extrusion.contains_point(Matrix([0, 0, 5])) == True
@@ -1229,7 +1231,7 @@ class TestConvexPolygonExtrusion:
         orientation = Orientation()
         
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # Point on top face (z = end_distance)
         assert extrusion.contains_point(Matrix([0, 0, 10])) == True
@@ -1250,7 +1252,7 @@ class TestConvexPolygonExtrusion:
         orientation = Orientation()
         
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # Outside in XY plane
         assert extrusion.contains_point(Matrix([2, 0, 5])) == False
@@ -1272,7 +1274,7 @@ class TestConvexPolygonExtrusion:
         orientation = Orientation()
         
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # Point inside triangle
         assert extrusion.contains_point(Matrix([Rational(1, 4), Rational(1, 4), Rational(5, 2)])) == True
@@ -1293,7 +1295,7 @@ class TestConvexPolygonExtrusion:
         orientation = Orientation()
         
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # On bottom face (z = start_distance)
         assert extrusion.is_point_on_boundary(Matrix([0, 0, 0])) == True
@@ -1314,7 +1316,7 @@ class TestConvexPolygonExtrusion:
         orientation = Orientation()
         
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # On edge at x=1 (right edge)
         assert extrusion.is_point_on_boundary(Matrix([1, 0, 5])) == True
@@ -1335,7 +1337,7 @@ class TestConvexPolygonExtrusion:
         orientation = Orientation()
         
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # Interior point
         assert extrusion.is_point_on_boundary(Matrix([0, 0, 5])) == False
@@ -1352,7 +1354,7 @@ class TestConvexPolygonExtrusion:
         orientation = Orientation()
         
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         repr_str = repr(extrusion)
         assert "ConvexPolygonExtrusion" in repr_str
@@ -1371,7 +1373,7 @@ class TestBoundaryDetectionComprehensive:
         """Test that all 8 corners of a finite prism are on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
-        prism = Prism(size=size, orientation=orientation, start_distance=Rational(0), end_distance=Rational(10))
+        prism = Prism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
         
         # Generate all 8 corners
         hw, hh = Rational(2), Rational(3)
@@ -1390,7 +1392,7 @@ class TestBoundaryDetectionComprehensive:
         """Test that points along prism edges are on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
-        prism = Prism(size=size, orientation=orientation, start_distance=Rational(0), end_distance=Rational(10))
+        prism = Prism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
         
         hw, hh = Rational(2), Rational(3)
         
@@ -1417,7 +1419,7 @@ class TestBoundaryDetectionComprehensive:
         """Test that face centers are on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
-        prism = Prism(size=size, orientation=orientation, start_distance=Rational(0), end_distance=Rational(10))
+        prism = Prism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
         
         hw, hh = Rational(2), Rational(3)
         
@@ -1433,7 +1435,7 @@ class TestBoundaryDetectionComprehensive:
         """Test that interior points are NOT on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
-        prism = Prism(size=size, orientation=orientation, start_distance=Rational(0), end_distance=Rational(10))
+        prism = Prism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
         
         # Center point should not be on boundary
         assert prism.is_point_on_boundary(Matrix([0, 0, 5])) == False
@@ -1445,7 +1447,7 @@ class TestBoundaryDetectionComprehensive:
         """Test that exterior points are NOT on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
-        prism = Prism(size=size, orientation=orientation, start_distance=Rational(0), end_distance=Rational(10))
+        prism = Prism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
         
         # Far-away point
         assert prism.is_point_on_boundary(Matrix([100, 100, 100])) == False
@@ -1609,7 +1611,7 @@ class TestBoundaryDetectionComprehensive:
         end_distance = Rational(10)
         orientation = Orientation()
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # Vertices at z=start_distance
         assert extrusion.is_point_on_boundary(Matrix([2, 0, 0])) == True
@@ -1635,7 +1637,7 @@ class TestBoundaryDetectionComprehensive:
         end_distance = Rational(10)
         orientation = Orientation()
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # Points along vertical edges at mid-height
         assert extrusion.is_point_on_boundary(Matrix([2, 0, 5])) == True
@@ -1655,7 +1657,7 @@ class TestBoundaryDetectionComprehensive:
         end_distance = Rational(10)
         orientation = Orientation()
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # Points on bottom face (z=start_distance)
         assert extrusion.is_point_on_boundary(Matrix([0, 0, 0])) == True
@@ -1679,7 +1681,7 @@ class TestBoundaryDetectionComprehensive:
         end_distance = Rational(10)
         orientation = Orientation()
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # Interior point at mid-height
         assert extrusion.is_point_on_boundary(Matrix([0, 0, 5])) == False
@@ -1697,7 +1699,7 @@ class TestBoundaryDetectionComprehensive:
         end_distance = Rational(10)
         orientation = Orientation()
         extrusion = ConvexPolygonExtrusion(points=points, start_distance=start_distance,
-                                          end_distance=end_distance, orientation=orientation)
+                                          end_distance=end_distance, transform=Transform.identity())
         
         # Far-away point
         assert extrusion.is_point_on_boundary(Matrix([100, 100, 100])) == False

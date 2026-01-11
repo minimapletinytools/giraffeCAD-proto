@@ -23,7 +23,6 @@ if parent_dir not in sys.path:
 try:
     # Import from parent directory - these files are NOT copied locally
     # Note: We only import basic functions here, the rest are imported after reload
-    from examples.sawhorse_example import create_sawhorse
     from examples.oscarshed import create_oscarshed
     from examples.reference.basic_joints_example import create_all_joint_examples
     # Import just one function from mortise_and_tenon_joint_examples to test module accessibility
@@ -78,7 +77,6 @@ def run(_context: str):
                 'code_goes_here.mortise_and_tenon_joint',
                 'giraffe', 
                 'giraffe_render_fusion360',
-                'examples.sawhorse_example',
                 'examples.oscarshed',
                 'examples.reference.basic_joints_example',
                 'examples.mortise_and_tenon_joint_examples'
@@ -93,7 +91,6 @@ def run(_context: str):
             
             # Re-import the functions we need after reload to get fresh versions
             print("  Re-importing functions...")
-            from examples.sawhorse_example import create_sawhorse
             from examples.oscarshed import create_oscarshed
             from examples.reference.basic_joints_example import create_all_joint_examples
             from examples.mortise_and_tenon_joint_examples import create_all_mortise_and_tenon_examples

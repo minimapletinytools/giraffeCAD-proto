@@ -15,7 +15,7 @@ NOTE: Prism positioning follows the Timber convention:
 
 from sympy import Matrix, eye, Rational, sqrt
 from code_goes_here.meowmeowcsg import Prism, HalfPlane, Difference, Union, ConvexPolygonExtrusion
-from code_goes_here.moothymoth import Orientation
+from code_goes_here.moothymoth import Orientation, Transform
 
 
 def example_cube_with_cube_cutout():
@@ -177,8 +177,7 @@ def example_hexagon_extrusion():
         points=hexagon_points,
         start_distance=0,  # Start at Z=0
         end_distance=1,    # End at Z=1 (1 meter tall)
-        position=Matrix([0, 0, 0]),
-        orientation=Orientation(eye(3))  # Identity orientation
+        transform=Transform.identity()
     )
     
     return hexagon

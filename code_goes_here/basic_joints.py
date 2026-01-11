@@ -157,16 +157,14 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # Create the HalfPlaneCuts (in LOCAL coordinates relative to each timber)
     cutA = HalfPlaneCut(
         timber=timberA,
-        origin=intersection_point,
-        orientation=timberA.orientation,
+        transform=Transform(position=intersection_point, orientation=timberA.orientation),
         half_plane=HalfPlane(normal=local_normalA, offset=local_offsetA),
         maybe_end_cut=timberA_end
     )
     
     cutB = HalfPlaneCut(
         timber=timberB,
-        origin=intersection_point,
-        orientation=timberB.orientation,
+        transform=Transform(position=intersection_point, orientation=timberB.orientation),
         half_plane=HalfPlane(normal=local_normalB, offset=local_offsetB),
         maybe_end_cut=timberB_end
     )
@@ -261,8 +259,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     # Create the HalfPlaneCut for the butt timber
     cut = HalfPlaneCut(
         timber=butt_timber,
-        origin=face_center,
-        orientation=butt_timber.orientation,
+        transform=Transform(position=face_center, orientation=butt_timber.orientation),
         half_plane=HalfPlane(normal=local_normal, offset=local_offset),
         maybe_end_cut=butt_end
     )
@@ -416,16 +413,14 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
     # Create the HalfPlaneCuts
     cutA = HalfPlaneCut(
         timber=timberA,
-        origin=splice_point,
-        orientation=timberA.orientation,
+        transform=Transform(position=splice_point, orientation=timberA.orientation),
         half_plane=HalfPlane(normal=local_normalA, offset=local_offsetA),
         maybe_end_cut=timberA_end
     )
     
     cutB = HalfPlaneCut(
         timber=timberB,
-        origin=splice_point,
-        orientation=timberB.orientation,
+        transform=Transform(position=splice_point, orientation=timberB.orientation),
         half_plane=HalfPlane(normal=local_normalB, offset=local_offsetB),
         maybe_end_cut=timberB_end
     )
@@ -574,10 +569,10 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         timberB_origin_in_A_local = timberA.orientation.matrix.T * (timberB.bottom_position - timberA.bottom_position)
         
         # Create timberB prism in timberA's local coordinates (infinite extent)
+        transform_B_in_A = Transform(position=timberB_origin_in_A_local, orientation=relative_orientation_B_in_A)
         timberB_prism_in_A = Prism(
             size=timberB.size,
-            orientation=relative_orientation_B_in_A,
-            position=timberB_origin_in_A_local,
+            transform=transform_B_in_A,
             start_distance=None,  # Infinite
             end_distance=None     # Infinite
         )
@@ -637,8 +632,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         
         cut_A = CSGCut(
             timber=timberA,
-            origin=timberA.bottom_position,
-            orientation=timberA.orientation,
+            transform=Transform(position=timberA.bottom_position, orientation=timberA.orientation),
             negative_csg=negative_csg_A,
             maybe_end_cut=None
         )
@@ -651,10 +645,10 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         timberA_origin_in_B_local = timberB.orientation.matrix.T * (timberA.bottom_position - timberB.bottom_position)
         
         # Create timberA prism in timberB's local coordinates (infinite extent)
+        transform_A_in_B = Transform(position=timberA_origin_in_B_local, orientation=relative_orientation_A_in_B)
         timberA_prism_in_B = Prism(
             size=timberA.size,
-            orientation=relative_orientation_A_in_B,
-            position=timberA_origin_in_B_local,
+            transform=transform_A_in_B,
             start_distance=None,  # Infinite
             end_distance=None     # Infinite
         )
@@ -679,8 +673,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         
         cut_B = CSGCut(
             timber=timberB,
-            origin=timberB.bottom_position,
-            orientation=timberB.orientation,
+            transform=Transform(position=timberB.bottom_position, orientation=timberB.orientation),
             negative_csg=negative_csg_B,
             maybe_end_cut=None
         )
@@ -905,10 +898,10 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
         end_distance = housed_timber.length
     
     # Create the housed prism in housing timber's LOCAL coordinate system
+    housed_transform_local = Transform(position=housed_origin_local, orientation=relative_orientation)
     housed_prism_local = Prism(
         size=housed_timber.size,
-        orientation=relative_orientation,
-        position=housed_origin_local,
+        transform=housed_transform_local,
         start_distance=start_distance,
         end_distance=end_distance
     )
@@ -916,8 +909,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     # Create the CSG cut for the housing timber
     cut = CSGCut(
         timber=housing_timber,
-        origin=housing_timber.bottom_position,  # Reference point (not used for CSG cuts)
-        orientation=housing_timber.orientation,
+        transform=Transform(position=housing_timber.bottom_position, orientation=housing_timber.orientation),
         negative_csg=housed_prism_local,  # Subtract the housed timber's volume
         maybe_end_cut=None  # Not an end cut
     )

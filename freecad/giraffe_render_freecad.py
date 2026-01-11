@@ -269,12 +269,12 @@ def create_prism_shape(prism: Prism, infinite_extent: float = 10000.0) -> 'Part.
         # For local coordinates (used in render_timber_with_cuts_csg_local), prism is at origin with identity
         # The global transformation will be applied later in render_multiple_timbers
         from sympy import Matrix, eye
-        is_identity = (prism.orientation.matrix == eye(3))
-        is_at_origin = (prism.position == Matrix([0, 0, 0]))
+        is_identity = (prism.transform.orientation.matrix == eye(3))
+        is_at_origin = (prism.transform.position == Matrix([0, 0, 0]))
         
         if not is_identity or not is_at_origin:
             # Apply the prism's orientation and position
-            prism_placement = create_placement_from_orientation(prism.position, prism.orientation)
+            prism_placement = create_placement_from_orientation(prism.transform.position, prism.transform.orientation)
             box.Placement = prism_placement.multiply(box.Placement)
         
         return box
@@ -419,12 +419,12 @@ def create_convex_polygon_extrusion_shape(extrusion: ConvexPolygonExtrusion) -> 
         
         # Apply the extrusion's orientation and position if not at origin with identity orientation
         from sympy import Matrix, eye
-        is_identity = (extrusion.orientation.matrix == eye(3))
-        is_at_origin = (extrusion.position == Matrix([0, 0, 0]))
+        is_identity = (extrusion.transform.orientation.matrix == eye(3))
+        is_at_origin = (extrusion.transform.position == Matrix([0, 0, 0]))
         
         if not is_identity or not is_at_origin:
             # Apply the extrusion's orientation and position
-            extrusion_placement = create_placement_from_orientation(extrusion.position, extrusion.orientation)
+            extrusion_placement = create_placement_from_orientation(extrusion.transform.position, extrusion.transform.orientation)
             solid.Placement = extrusion_placement.multiply(solid.Placement)
         
         return solid
@@ -849,7 +849,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                     
                     # Accessory position and orientation are already in global space
                     # Simply use them directly to create the global placement
-                    global_placement = create_placement_from_orientation(accessory.position, accessory.orientation)
+                    global_placement = create_placement_from_orientation(accessory.transform.position, accessory.transform.orientation)
                     
                     # Compose placements: global * local
                     # The shape already has local centering placement applied (e.g., for prism cross-section centering)
