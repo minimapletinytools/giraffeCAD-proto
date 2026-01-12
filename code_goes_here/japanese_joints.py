@@ -20,6 +20,23 @@ from code_goes_here.moothymoth import (
 # Japanese Joint Construction Functions
 # ============================================================================
 
+
+# see diagram below
+def draw_gooseneck_polygon(length: Numeric, small_width: Numeric, large_width: Numeric, head_length: Numeric) -> List[V2]:
+    """
+    Draw the gooseneck shape. 
+    """
+    return [
+            V2(small_width/2, 0),
+            V2(small_width/2, length-head_length),
+            V2(large_width/2, length-head_length),
+            V2(small_width/2, length),
+            V2(-small_width/2, length),
+            V2(-large_width/2, length-head_length),
+            V2(-small_width/2, length-head_length),
+            V2(-small_width/2, 0),
+        ]
+
 '''
 
  ___     ___
@@ -47,12 +64,14 @@ _______________|__________
 def cut_lapped_gooseneck_joint(
     gooseneck_timber: Timber,
     receiving_timber: Timber,
+    receiving_timber_end: TimberReferenceEnd,
     gooseneck_timber_face: TimberReferenceLongFace,
     gooseneck_length: Numeric,
     gooseneck_small_width: Numeric,
     gooseneck_large_width: Numeric,
     gooseneck_head_length: Numeric,
-    lap_length: Numeric,
+    lap_length: Numeric = Rational(0), # 0 just means no lap
+    gooseneck_lateral_offset: Numeric = Rational(0),
     gooseneck_depth: Optional[Numeric] = None
 ) -> Joint:
     """
@@ -115,13 +134,49 @@ def cut_lapped_gooseneck_joint(
         raise ValueError(f"gooseneck_depth must be positive if provided, got {gooseneck_depth}")
 
     # Validate timbers are parallel
-    # Require that the two timbers are parallel in axis orientation (face-parallel)
-    # We use check_axis_parallel from the timber module, and raise ValueError if not parallel.
-    if not check_axis_parallel(gooseneck_timber, receiving_timber):
+    if not are_timbers_parallel(gooseneck_timber, receiving_timber):
         raise ValueError(
             "Timbers must be parallel for gooseneck joint construction (face-parallel required). "
             f"Got gooseneck_timber axes: {gooseneck_timber.axis}, receiving_timber axes: {receiving_timber.axis}"
         )
+
+    gooseneck_timber_end = TimberReferenceEnd.TOP if receiving_timber_end == TimberReferenceEnd.BOTTOM else TimberReferenceEnd.TOP
+
+    # TODO check that the timbers overlap in a sensible way, e.g. something like this:
+    #             |==================| <- gooseneck timber
+    # receiving_timber_end -> |==================| <- receiving timber
+
+
+    # compute the starting position for the gooseneck shape in global space
+    gooseneck_direction_global = -receiving_timber.get_face_direction(receiving_timber_end)
+    # TODO should lateral offset be different sign depending which face_direction?
+    gooseneck_lateral_offset_global = receiving_timber.get_face_direction(gooseneck_lateral_offset.rotate_right())
+    gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global = receiving_timber.bottom_position + gooseneck_direction_global * lap_length + gooseneck_lateral_offset_global * gooseneck_lateral_offset
+    # project gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global onto the gooseneck_timber_facene_global)
+    gooseneck_starting_position_global = receiving_timber.project_global_point_onto_timber_face_global(gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global, gooseneck_timber_face)
+    goosneck_drawing_normal_global = gooseneck_timber.get_face_direction(gooseneck_timber_face)
+
+    # now cut the gooseneck shape into the gooseneck_timber
+    gooseneck_shape = draw_gooseneck_shape(gooseneck_length, gooseneck_small_width, gooseneck_large_width, gooseneck_head_length)
+
+    # TODO
+    # gooseneck_shape_csg_on_gooseneck_timber = ConvexPolygonExtrusion(...)
+    # we want to cut out everything but the gooseneck shape from the gooseneck_timber
+    # gooseneck_outside_csg_on_gooseneck_timber = Prism(..)
+    # gooseneck_timber_final_negative_csg = Difference(gooseneck_outside_csg_on_gooseneck_timber, gooseneck_shape_csg_on_gooseneck_timber)
+
+    # TODO
+    receiving_timber_gooseneck_shape_csg = ConvexPolygonExtrusion(...)
+    
+
+
+
+
+
+
+
+
+
 
     # ========================================================================
     # Determine gooseneck depth default
