@@ -579,7 +579,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         New timber that joins timber1 and timber2
     """
     # Verify that the two timbers are face-aligned
-    assert _are_timbers_face_aligned(timber1, timber2), \
+    assert are_timbers_face_aligned(timber1, timber2), \
         "timber1 and timber2 must be face-aligned (share at least one parallel direction)"
     
     # Auto-determine size if not provided
@@ -697,24 +697,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
 # Helper Functions
 # ============================================================================
 
-
-def _has_rational_components(vector: Direction3D) -> bool:
-    """
-    Check if a direction vector contains only rational (exact) components.
-    
-    Args:
-        vector: Direction vector to check
-        
-    Returns:
-        True if all components are integers or rationals, False otherwise
-    """
-    for i in range(3):
-        val = vector[i]
-        if not isinstance(val, (int, Integer, Rational)):
-            return False
-    return True
-
-def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+def are_timbers_parallel(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two timbers have parallel length directions.
     
@@ -735,7 +718,7 @@ def _are_timbers_face_parallel(timber1: Timber, timber2: Timber, tolerance: Opti
         # Use provided tolerance for approximate comparison
         return Abs(dot_product - 1) < tolerance
 
-def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+def are_timbers_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two timbers have orthogonal (perpendicular) length directions.
     
@@ -756,6 +739,56 @@ def _are_timbers_face_orthogonal(timber1: Timber, timber2: Timber, tolerance: Op
     else:
         # Use provided tolerance for approximate comparison
         return Abs(dot_product) < tolerance
+
+def are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+    """
+    Check if two timbers are face-aligned.
+    
+    Two timbers are face-aligned if any face of one timber is parallel to any face 
+    of the other timber. This occurs when their orientations are related by 90-degree 
+    rotations around any axis (i.e., they share the same coordinate grid alignment).
+    
+    Mathematically, timbers are face-aligned if any of their orthogonal direction 
+    vectors (length_direction, width_direction, height_direction) are parallel to each other.
+    
+    Args:
+        timber1: First timber
+        timber2: Second timber  
+        tolerance: Optional numerical tolerance for parallel check. If None, uses exact
+                   equality (recommended when using SymPy Rational types). If provided,
+                   uses approximate floating-point comparison.
+        
+    Returns:
+        True if timbers are face-aligned, False otherwise
+    """
+    # Get the three orthogonal direction vectors for each timber
+    dirs1 = [timber1.length_direction, timber1.width_direction, timber1.height_direction]
+    dirs2 = [timber2.length_direction, timber2.width_direction, timber2.height_direction]
+    
+    # Check all pairs of directions
+    for dir1 in dirs1:
+        for dir2 in dirs2:
+            dot_product = Abs(dir1.dot(dir2))
+            
+            if tolerance is None:
+                # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
+                if equality_test(dot_product, 1):
+                    return True
+            else:
+                # Use provided tolerance for approximate comparison
+                if Abs(dot_product - 1) < tolerance:
+                    return True
+    
+    return False
+
+  
+
+
+# =========================================
+# internal helpers
+# =========================================
+
+
 
 def _are_directions_perpendicular(direction1: Direction3D, direction2: Direction3D, tolerance: Optional[Numeric] = None) -> bool:
     """
@@ -801,48 +834,3 @@ def _are_directions_parallel(direction1: Direction3D, direction2: Direction3D, t
     else:
         # Use provided tolerance for approximate comparison
         return Abs(dot_mag - 1) < tolerance
-
-def _are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
-    """
-    Check if two timbers are face-aligned.
-    
-    Two timbers are face-aligned if any face of one timber is parallel to any face 
-    of the other timber. This occurs when their orientations are related by 90-degree 
-    rotations around any axis (i.e., they share the same coordinate grid alignment).
-    
-    Mathematically, timbers are face-aligned if any of their orthogonal direction 
-    vectors (length_direction, width_direction, height_direction) are parallel to each other.
-    
-    Args:
-        timber1: First timber
-        timber2: Second timber  
-        tolerance: Optional numerical tolerance for parallel check. If None, uses exact
-                   equality (recommended when using SymPy Rational types). If provided,
-                   uses approximate floating-point comparison.
-        
-    Returns:
-        True if timbers are face-aligned, False otherwise
-    """
-    # Get the three orthogonal direction vectors for each timber
-    dirs1 = [timber1.length_direction, timber1.width_direction, timber1.height_direction]
-    dirs2 = [timber2.length_direction, timber2.width_direction, timber2.height_direction]
-    
-    # Check all pairs of directions
-    for dir1 in dirs1:
-        for dir2 in dirs2:
-            dot_product = Abs(dir1.dot(dir2))
-            
-            if tolerance is None:
-                # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
-                if equality_test(dot_product, 1):
-                    return True
-            else:
-                # Use provided tolerance for approximate comparison
-                if Abs(dot_product - 1) < tolerance:
-                    return True
-    
-    return False
-
-  
-
-

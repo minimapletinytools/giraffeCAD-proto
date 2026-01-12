@@ -15,12 +15,6 @@ from code_goes_here.moothymoth import (
     construction_perpendicular_check
 )
 
-# Explicitly import private helper functions used by joint functions
-from code_goes_here.construction import (
-    _are_directions_perpendicular,
-    _are_timbers_face_aligned,
-    _are_timbers_face_orthogonal
-)
 
 # ============================================================================
 # Japanese Joint Construction Functions
@@ -40,7 +34,15 @@ from code_goes_here.construction import (
   . |---| .        gooseneck_small_width
   .       .
   |-------|        gooseneck_large_width 
-  
+
+
+          lap length 
+             |-|
+__________________________
+   |__|______|_              | <- goosneck_depth
+_______________|__________
+               ^
+               end of receiving timber
 '''
 def cut_lapped_gooseneck_joint(
     gooseneck_timber: Timber,
@@ -62,7 +64,8 @@ def cut_lapped_gooseneck_joint(
     
     Args:
         gooseneck_timber: The timber that will have the gooseneck feature cut into it
-        receiving_timber: The timber that receives the gooseneck
+        receiving_timber: The timber that receives the gooseneck. The top/bot of this timber also determines the position of the gooseneck joint
+        receiving_timber_end: The end to cut on the receiving timber, which will also determine the end of the gooseneck timber
         gooseneck_timber_face: The face on the gooseneck timber where the gooseneck profile is visible
         gooseneck_length: Length of the gooseneck shape (does not include lap length)
         gooseneck_small_width: Width of the narrow end of the gooseneck taper
@@ -110,7 +113,16 @@ def cut_lapped_gooseneck_joint(
     # Validate gooseneck_depth if provided
     if gooseneck_depth is not None and gooseneck_depth <= 0:
         raise ValueError(f"gooseneck_depth must be positive if provided, got {gooseneck_depth}")
-    
+
+    # Validate timbers are parallel
+    # Require that the two timbers are parallel in axis orientation (face-parallel)
+    # We use check_axis_parallel from the timber module, and raise ValueError if not parallel.
+    if not check_axis_parallel(gooseneck_timber, receiving_timber):
+        raise ValueError(
+            "Timbers must be parallel for gooseneck joint construction (face-parallel required). "
+            f"Got gooseneck_timber axes: {gooseneck_timber.axis}, receiving_timber axes: {receiving_timber.axis}"
+        )
+
     # ========================================================================
     # Determine gooseneck depth default
     # ========================================================================

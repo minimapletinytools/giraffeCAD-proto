@@ -8,44 +8,59 @@
 :: 1/6/2026 metadata
 
 -timber metadata 
-  -move name into metadata?
-  -parent folder (for organization)
   -material
-  -reference face(s)
+  -reference face(s) 
+    -used for generating drawings
 
 -joint metadata
-  -name
   -assembly order
   -assembly DOF
     -by combining order and DOF you can validate if it's possible to assemble
 
 
-:: 1/6/2026 timber/board
+we want to generaize name/parent so we can build ahirerachy, 
+there is one special distiction which is that there are Construction and Concept names, Construction maps to actual objects or are used to organize actual objects. Concepts map to things like joints and features
 
-class hierarchy could look like this:
+I guess for now just mash them all together but flag them as such. when rendering in something that doesn't support concepts, just omit them, or we can extract concepts into a sepaarte tree but use the same hierarchy (if they were parented to a construction, then just create ap roxy for the construction in the concept tree)
 
--thingy (position/orientation, allows converting from local to global coords)
-  -block
-    -timber
-      -MeshTimber
-      -RoundTimber
-      -PolygonalTimber
-    -board
-  -joint accessory
 
--block has faces, but no concept of end/long face
--boards are lie really big stubby timbers, 
-  -they have short edges instead of long edges lol.
-  -they have sides instead of ends
--boards and timbers have different metadata
--obv, boards and timbers have different joint methods, although their implementations might ultimately be the same and you can use conversion functions if you want to put a timber joint on a board say
+class TicketType(Enum):
+  Folder
+  Timber
+  Accessory
+  Board
+  Joint
+  etc
 
+class Ticket
+  name
+  parent
+  type: TicketType
+  def is_type()
+  def is_concept()
+  def is_construction()
 
 :: 1/11/2026 advancedtimber class
 
-base class is BlockyThing
+class PerfectTimberWithin
+  current timber stuff
+  nominal_bounding_box 
+  get_perfect_timber_within_CSG
+  get_actual_csg -> CSG (make mesh a CSG class that errors if in a union or on the RHS of a difference)
+  is_perfect_timber: check nominal_bounding_box is same as true box, only works if is timber
 
-derived classes: Timebr, Board, MesHTimber, RoundTimbe,r PolyTimber, etc
+Timber
+
+Board
+  add board related measuring functions here?
+
+
+MeshTimber
+RoundTimber
+PolyTimber
+CSGTimber?
+    
+
 
 :: 1/8/2026 reference dimension helper classes
 
@@ -93,6 +108,10 @@ DONE-allow extrude polygon to extrude in both directions
 DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can reference joint pieces by name rather than index
 DONE-add back post joints to oscar shed
 DONE-delete rhino for now
+IGNORE-update fusino 360 to similar as run_examples
+DONE-Update Frame to be built from joints
+DONE-be consistent about V2 vs (Numeric,Numeric) tuple
+
 
 -REFACTOR TIME
   DONE-create Transform class in moothymoth
@@ -100,18 +119,13 @@ DONE-delete rhino for now
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
 
--update fusino 360 to similar as run_examples
--Update Frame to be built from joints
 
 -3 major features
   -measure functions
-  -class hierarchy
-    -use global_to_local and local_to_global helpers (or implement Thing classs....)
-    -probably CSG can inherit too?
-  -timber metadata
+  -refactor timber class
+  -add timber metadata
     -prepare for CSG metadata as well...
 
-DONE-be consistent about V2 vs (Numeric,Numeric) tuple
 -pull out parts of mortise and tenon function, maybe move to joint_helpers.py in particular
   -round peg support
   -peg positioning
@@ -358,6 +372,29 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 
 :: END TODONE
+
+
+:: 1/6/2026 timber/board [ARCHIVE]
+
+class hierarchy could look like this:
+
+-thingy (position/orientation, allows converting from local to global coords)
+  -block
+    -timber
+      -MeshTimber
+      -RoundTimber
+      -PolygonalTimber
+    -board
+  -joint accessory
+
+-block has faces, but no concept of end/long face
+-boards are lie really big stubby timbers, 
+  -they have short edges instead of long edges lol.
+  -they have sides instead of ends
+-boards and timbers have different metadata
+-obv, boards and timbers have different joint methods, although their implementations might ultimately be the same and you can use conversion functions if you want to put a timber joint on a board say
+
+
 
 :: 1/9/2026 vscode extension 3js viewer
 

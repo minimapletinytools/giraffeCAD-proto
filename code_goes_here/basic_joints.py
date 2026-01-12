@@ -13,12 +13,6 @@ from code_goes_here.moothymoth import (
     construction_perpendicular_check
 )
 
-# Explicitly import private helper functions used by joint functions
-from code_goes_here.construction import (
-    _are_directions_perpendicular,
-    _are_timbers_face_aligned,
-    _are_timbers_face_orthogonal
-)
 
 # ============================================================================
 # Joint Construction Functions
@@ -186,7 +180,7 @@ def cut_basic_miter_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: 
     Creates a basic miter joint between two timbers such that the 2 ends meet at a 90 degree angle miter corner.
     """
     # Assert that the timber length axes are perpendicular (90-degree corner)
-    assert _are_directions_perpendicular(timberA.length_direction, timberB.length_direction), \
+    assert are_timbers_orthogonal(timberA, timberB), \
         "Timbers must have perpendicular length axes (90-degree angle) for this joint type"
     
     return cut_basic_miter_joint(timberA, timberA_end, timberB, timberB_end)
@@ -205,7 +199,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     Returns:
         Joint object containing the cut butt timber and uncut receiving timber
     """
-    assert _are_timbers_face_aligned(receiving_timber, butt_timber), \
+    assert are_timbers_face_aligned(receiving_timber, butt_timber), \
         "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
     
     # Check that timbers are not parallel (butt joints require timbers to be at an angle)

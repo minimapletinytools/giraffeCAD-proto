@@ -25,14 +25,6 @@ from code_goes_here.moothymoth import (
 
 # Explicitly import private helper functions that are used by tests
 # These start with _ so they won't be included in "import *" by default
-from code_goes_here.construction import (
-    _has_rational_components,
-    _are_directions_perpendicular,
-    _are_directions_parallel,
-    _are_timbers_face_parallel,
-    _are_timbers_face_orthogonal,
-    _are_timbers_face_aligned
-)
 from code_goes_here.timber import (
     _create_timber_prism_csg_local
 )
