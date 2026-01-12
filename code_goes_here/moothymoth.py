@@ -395,6 +395,7 @@ def equality_test(value, expected) -> bool:
 # Parallel and Perpendicular Check Functions
 # ============================================================================
 
+# TODO rename to are_vectors_parallel
 def construction_parallel_check(vector1: Matrix, vector2: Matrix) -> bool:
     """
     Check if two vectors are parallel.
@@ -418,6 +419,7 @@ def construction_parallel_check(vector1: Matrix, vector2: Matrix) -> bool:
     return zero_test(deviation)
 
 
+# TODO rename to are_vectors_orthogonal
 def construction_perpendicular_check(vector1: Matrix, vector2: Matrix) -> bool:
     """
     Check if two vectors are perpendicular.
