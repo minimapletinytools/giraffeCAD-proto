@@ -1163,6 +1163,59 @@ class TestHelperFunctions:
         bottom_dir = timber.get_face_direction(TimberFace.BOTTOM)
         assert bottom_dir == -timber.length_direction
     
+    def test_timber_get_face_direction_with_timber_reference_end(self):
+        """Test that Timber.get_face_direction() accepts TimberReferenceEnd."""
+        # Create a timber
+        timber = timber_from_directions(
+            length=Rational(2),
+            size=create_v2(Rational("0.2"), Rational("0.3")),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),   # Z-up
+            width_direction=create_v3(1, 0, 0)      # X-right
+        )
+        
+        # Test TOP end direction using TimberReferenceEnd.TOP
+        top_dir = timber.get_face_direction(TimberReferenceEnd.TOP)
+        assert top_dir == timber.length_direction
+        
+        # Test BOTTOM end direction using TimberReferenceEnd.BOTTOM
+        bottom_dir = timber.get_face_direction(TimberReferenceEnd.BOTTOM)
+        assert bottom_dir == -timber.length_direction
+        
+        # Verify that results are the same whether using TimberFace or TimberReferenceEnd
+        assert timber.get_face_direction(TimberReferenceEnd.TOP) == timber.get_face_direction(TimberFace.TOP)
+        assert timber.get_face_direction(TimberReferenceEnd.BOTTOM) == timber.get_face_direction(TimberFace.BOTTOM)
+    
+    def test_timber_get_size_in_face_normal_axis_with_timber_reference_end(self):
+        """Test that Timber.get_size_in_face_normal_axis() accepts TimberReferenceEnd."""
+        # Create a timber
+        timber = timber_from_directions(
+            length=Rational(2),
+            size=create_v2(Rational("0.2"), Rational("0.3")),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),   # Z-up
+            width_direction=create_v3(1, 0, 0)      # X-right
+        )
+        
+        # Test that TimberReferenceEnd works
+        top_size = timber.get_size_in_face_normal_axis(TimberReferenceEnd.TOP)
+        assert top_size == timber.length
+        
+        bottom_size = timber.get_size_in_face_normal_axis(TimberReferenceEnd.BOTTOM)
+        assert bottom_size == timber.length
+        
+        # Verify that results are the same whether using TimberFace or TimberReferenceEnd
+        assert timber.get_size_in_face_normal_axis(TimberReferenceEnd.TOP) == timber.get_size_in_face_normal_axis(TimberFace.TOP)
+        assert timber.get_size_in_face_normal_axis(TimberReferenceEnd.BOTTOM) == timber.get_size_in_face_normal_axis(TimberFace.BOTTOM)
+    
+    def test_timber_reference_end_to_timber_face_conversion(self):
+        """Test TimberReferenceEnd.to_timber_face() conversion method."""
+        # Test TOP conversion
+        assert TimberReferenceEnd.TOP.to_timber_face() == TimberFace.TOP
+        
+        # Test BOTTOM conversion
+        assert TimberReferenceEnd.BOTTOM.to_timber_face() == TimberFace.BOTTOM
+    
     def testare_timbers_parallel(self):
         """Test are_timbers_parallel helper function."""
         # Create two timbers with parallel length directions

@@ -124,6 +124,10 @@ class TimberFace(Enum):
 class TimberReferenceEnd(Enum):
     TOP = 1
     BOTTOM = 2
+    
+    def to_timber_face(self) -> TimberFace:
+        """Convert TimberReferenceEnd to TimberFace."""
+        return TimberFace(self.value)
 
 class TimberReferenceLongFace(Enum):
     RIGHT = 3
@@ -615,17 +619,20 @@ class Timber:
         return self.orientation.matrix * local_direction
     
     # TODO rename to get_face_direction_global
-    # TODO overload this method so it can take TimberReferenceEnd as an argument, or allow TimberReferenceEnd to auto cast into TimberFace
-    def get_face_direction(self, face: TimberFace) -> Direction3D:
+    def get_face_direction(self, face: Union[TimberFace, TimberReferenceEnd]) -> Direction3D:
         """
         Get the world direction vector for a specific face of this timber.
         
         Args:
-            face: The face to get the direction for
+            face: The face to get the direction for (can be TimberFace or TimberReferenceEnd)
             
         Returns:
             Direction vector pointing outward from the specified face in world coordinates
         """
+        # Convert TimberReferenceEnd to TimberFace if needed
+        if isinstance(face, TimberReferenceEnd):
+            face = face.to_timber_face()
+        
         if face == TimberFace.TOP:
             return self.length_direction
         elif face == TimberFace.BOTTOM:
@@ -639,10 +646,17 @@ class Timber:
         else:  # BACK
             return -self.height_direction
 
-    def get_size_in_face_normal_axis(self, face: TimberFace) -> Numeric:
+    def get_size_in_face_normal_axis(self, face: Union[TimberFace, TimberReferenceEnd]) -> Numeric:
         """
         Get the size of the timber in the direction normal to the specified face.
+        
+        Args:
+            face: The face to get the size for (can be TimberFace or TimberReferenceEnd)
         """
+        # Convert TimberReferenceEnd to TimberFace if needed
+        if isinstance(face, TimberReferenceEnd):
+            face = face.to_timber_face()
+        
         if face == TimberFace.TOP or face == TimberFace.BOTTOM:
             return self.length
         elif face == TimberFace.RIGHT or face == TimberFace.LEFT:
