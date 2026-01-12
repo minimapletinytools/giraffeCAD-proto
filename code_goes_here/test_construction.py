@@ -7,16 +7,12 @@ from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.footprint import Footprint
 from giraffe import *
-from giraffe import _has_rational_components, _are_directions_perpendicular, _are_directions_parallel, _are_timbers_face_parallel, _are_timbers_face_orthogonal, _are_timbers_face_aligned
 from .helperonis import (
     create_standard_vertical_timber,
     create_standard_horizontal_timber,
-    create_test_footprint,
-    assert_is_valid_rotation_matrix,
     assert_vectors_perpendicular
 )
 from code_goes_here.moothymoth import inches, feet
-
 
 # ============================================================================
 # Tests for construction.py - Timber Creation and Manipulation
@@ -581,7 +577,7 @@ class TestJoinTimbers:
         )
         
         # Verify they are NOT face-aligned
-        assert not _are_timbers_face_aligned(timber1, timber2), "Timbers should not be face-aligned"
+        assert not are_timbers_face_aligned(timber1, timber2), "Timbers should not be face-aligned"
         
         # Now try to join them - should raise AssertionError
         offset = FaceAlignedJoinedTimberOffset(
@@ -1167,8 +1163,8 @@ class TestHelperFunctions:
         bottom_dir = timber.get_face_direction(TimberFace.BOTTOM)
         assert bottom_dir == -timber.length_direction
     
-    def test_are_timbers_face_parallel(self):
-        """Test _are_timbers_face_parallel helper function."""
+    def testare_timbers_parallel(self):
+        """Test are_timbers_parallel helper function."""
         # Create two timbers with parallel length directions
         timber1 = timber_from_directions(
             length=Rational(2),
@@ -1187,7 +1183,7 @@ class TestHelperFunctions:
         )
         
         # Should be parallel (parallel length directions)
-        assert _are_timbers_face_parallel(timber1, timber2)
+        assert are_timbers_parallel(timber1, timber2)
         
         # Create a timber with opposite direction (still parallel)
         timber3 = timber_from_directions(
@@ -1199,7 +1195,7 @@ class TestHelperFunctions:
         )
         
         # Should still be parallel (anti-parallel is still parallel)
-        assert _are_timbers_face_parallel(timber1, timber3)
+        assert are_timbers_parallel(timber1, timber3)
         
         # Create a timber with perpendicular direction
         timber4 = timber_from_directions(
@@ -1211,10 +1207,10 @@ class TestHelperFunctions:
         )
         
         # Should NOT be parallel
-        assert not _are_timbers_face_parallel(timber1, timber4)
+        assert not are_timbers_parallel(timber1, timber4)
     
-    def test_are_timbers_face_orthogonal(self):
-        """Test _are_timbers_face_orthogonal helper function."""
+    def testare_timbers_orthogonal(self):
+        """Test are_timbers_orthogonal helper function."""
         # Create two timbers with perpendicular length directions
         timber1 = timber_from_directions(
             length=Rational(2),
@@ -1233,7 +1229,7 @@ class TestHelperFunctions:
         )
         
         # Should be orthogonal
-        assert _are_timbers_face_orthogonal(timber1, timber2)
+        assert are_timbers_orthogonal(timber1, timber2)
         
         # Create a timber with parallel direction
         timber3 = timber_from_directions(
@@ -1245,7 +1241,7 @@ class TestHelperFunctions:
         )
         
         # Should NOT be orthogonal
-        assert not _are_timbers_face_orthogonal(timber1, timber3)
+        assert not are_timbers_orthogonal(timber1, timber3)
         
         # Test with Y-direction
         timber4 = timber_from_directions(
@@ -1257,10 +1253,10 @@ class TestHelperFunctions:
         )
         
         # Should be orthogonal
-        assert _are_timbers_face_orthogonal(timber1, timber4)
+        assert are_timbers_orthogonal(timber1, timber4)
     
-    def test_are_timbers_face_aligned(self):
-        """Test _are_timbers_face_aligned helper function."""
+    def testare_timbers_face_aligned(self):
+        """Test are_timbers_face_aligned helper function."""
         # Create a reference timber with standard orientation
         timber1 = timber_from_directions(
             length=Rational(2),
@@ -1279,7 +1275,7 @@ class TestHelperFunctions:
             length_direction=create_v3(0, 0, 1),   # Same as timber1
             width_direction=create_v3(1, 0, 0)      # Same as timber1
         )
-        assert _are_timbers_face_aligned(timber1, timber2)
+        assert are_timbers_face_aligned(timber1, timber2)
         
         # Test 2: Timber rotated 90° around Z - should be face-aligned  
         # (length stays Z, but face becomes Y, height becomes -X)
@@ -1290,7 +1286,7 @@ class TestHelperFunctions:
             length_direction=create_v3(0, 0, 1),   # Same Z
             width_direction=create_v3(0, 1, 0)      # Y direction
         )
-        assert _are_timbers_face_aligned(timber1, timber3)
+        assert are_timbers_face_aligned(timber1, timber3)
         
         # Test 3: Timber rotated 90° around X - should be face-aligned
         # (length becomes -Y, face stays X, height becomes Z) 
@@ -1301,7 +1297,7 @@ class TestHelperFunctions:
             length_direction=create_v3(0, -1, 0),  # -Y direction
             width_direction=create_v3(1, 0, 0)      # Same X
         )
-        assert _are_timbers_face_aligned(timber1, timber4)
+        assert are_timbers_face_aligned(timber1, timber4)
         
         # Test 4: Timber with perpendicular orientation but face-aligned
         # (length becomes X, face becomes Z, height becomes Y)
@@ -1312,7 +1308,7 @@ class TestHelperFunctions:
             length_direction=create_v3(1, 0, 0),   # X direction  
             width_direction=create_v3(0, 0, 1)      # Z direction
         )
-        assert _are_timbers_face_aligned(timber1, timber5)
+        assert are_timbers_face_aligned(timber1, timber5)
         
         # Test 5: Timber with arbitrary 3D rotation - should NOT be face-aligned
         # Using a rotation that doesn't align any direction with cardinal axes
@@ -1331,7 +1327,7 @@ class TestHelperFunctions:
             length_direction=create_v3(sin45*cos30, sin45*sin30, cos45),  # Complex 3D direction
             width_direction=create_v3(cos45*cos30, cos45*sin30, -sin45)    # Perpendicular complex direction
         )
-        assert not _are_timbers_face_aligned(timber1, timber6)
+        assert not are_timbers_face_aligned(timber1, timber6)
         
         # Test 6: Verify that 45° rotation in XY plane IS face-aligned 
         # (because height direction is still Z, parallel to timber1's length direction)
@@ -1345,162 +1341,20 @@ class TestHelperFunctions:
             width_direction=create_v3(-sin45_xy, cos45_xy, 0)    # Perpendicular in XY
         )
         # This SHOULD be face-aligned because height direction = [0,0,1] = timber1.length_direction
-        assert _are_timbers_face_aligned(timber1, timber7)
+        assert are_timbers_face_aligned(timber1, timber7)
         
         # Test 8: Verify face-aligned timbers can be orthogonal
         # timber1 length=[0,0,1], timber5 length=[1,0,0] - these are orthogonal but face-aligned
-        assert _are_timbers_face_aligned(timber1, timber5)
-        assert _are_timbers_face_orthogonal(timber1, timber5)
+        assert are_timbers_face_aligned(timber1, timber5)
+        assert are_timbers_orthogonal(timber1, timber5)
         
         # Test 9: Verify face-aligned timbers can be parallel  
         # timber1 and timber2 have same length direction - parallel and face-aligned
-        assert _are_timbers_face_aligned(timber1, timber2)
-        assert _are_timbers_face_parallel(timber1, timber2)
+        assert are_timbers_face_aligned(timber1, timber2)
+        assert are_timbers_parallel(timber1, timber2)
     
-    def test_has_rational_components(self):
-        """Test _has_rational_components helper function."""
-        from sympy import Rational, Float
-        
-        # Test with rational components
-        rational_vec = create_v3(Rational(1, 2), Rational(3, 4), Rational(1, 1))
-        assert _has_rational_components(rational_vec)
-        
-        # Test with integer components
-        int_vec = create_v3(1, 0, 1)
-        assert _has_rational_components(int_vec)
-        
-        # Test with float components
-        float_vec = create_v3(Float("0.5"), Float("0.75"), Float(1))
-        assert not _has_rational_components(float_vec)
-        
-        # Test with mixed components (has at least one Float, so not all rational)
-        mixed_vec = create_v3(Rational(1, 2), Float("0.75"), 1)
-        assert not _has_rational_components(mixed_vec)
-    
-    def test_are_directions_perpendicular_rational(self):
-        """Test _are_directions_perpendicular with rational (exact) values."""
-        from sympy import Rational
-        
-        # Test perpendicular rational vectors (should use exact comparison)
-        v1 = create_v3(1, 0, 0)
-        v2 = create_v3(0, 1, 0)
-        assert _are_directions_perpendicular(v1, v2)
-        
-        # Test with rational components
-        v3 = create_v3(Rational(1, 2), Rational(1, 2), 0)
-        v3 = normalize_vector(v3)
-        v4 = create_v3(Rational(-1, 2), Rational(1, 2), 0)
-        v4 = normalize_vector(v4)
-        assert _are_directions_perpendicular(v3, v4)
-        
-        # Test non-perpendicular rational vectors
-        v5 = create_v3(1, 0, 0)
-        v6 = create_v3(1, 1, 0)
-        v6 = normalize_vector(v6)
-        assert not _are_directions_perpendicular(v5, v6)
-    
-    def test_are_directions_perpendicular_float(self):
-        """Test _are_directions_perpendicular with float (fuzzy) values."""
-        import math
-        
-        # Test perpendicular float vectors (should use tolerance)
-        v1 = create_v3(Rational(1), Rational(0), Rational(0))
-        v2 = create_v3(Rational(0), Rational(1), Rational(0))
-        assert _are_directions_perpendicular(v1, v2)
-        
-        # Test nearly perpendicular vectors (within tolerance)
-        angle = math.pi / 2 + 1e-11  # Very close to 90 degrees
-        v3 = create_v3(Rational(1), Rational(0), Rational(0))
-        v4 = create_v3(math.cos(angle), math.sin(angle), Rational(0))
-        assert _are_directions_perpendicular(v3, v4)
-        
-        # Test not perpendicular (outside tolerance)
-        v5 = create_v3(Rational(1), Rational(0), Rational(0))
-        v6 = create_v3(Rational("0.1"), Rational("0.99"), Rational(0))  # About 84 degrees
-        assert not _are_directions_perpendicular(v5, v6)
-    
-    def test_are_directions_perpendicular_explicit_tolerance(self):
-        """Test _are_directions_perpendicular with explicit tolerance."""
-        # Test with custom tolerance
-        v1 = create_v3(Rational(1), Rational(0), Rational(0))
-        v2 = create_v3(Rational("0.01"), Rational(1), Rational(0))  # Nearly perpendicular
-        
-        # Should pass with loose tolerance
-        assert _are_directions_perpendicular(v1, v2, tolerance=Rational("0.1"))
-        
-        # Should fail with tight tolerance
-        assert not _are_directions_perpendicular(v1, v2, tolerance=1e-6)
-    
-    def test_are_directions_parallel_rational(self):
-        """Test _are_directions_parallel with rational (exact) values."""
-        from sympy import Rational
-        
-        # Test parallel rational vectors (same direction)
-        v1 = create_v3(1, 0, 0)
-        v2 = create_v3(2, 0, 0)
-        v2 = normalize_vector(v2)
-        assert _are_directions_parallel(v1, v2)
-        
-        # Test anti-parallel rational vectors (opposite direction)
-        v3 = create_v3(1, 0, 0)
-        v4 = create_v3(-1, 0, 0)
-        assert _are_directions_parallel(v3, v4)
-        
-        # Test with rational components
-        v5 = create_v3(Rational(1, 2), Rational(1, 2), 0)
-        v5 = normalize_vector(v5)
-        v6 = create_v3(Rational(3, 4), Rational(3, 4), 0)
-        v6 = normalize_vector(v6)
-        assert _are_directions_parallel(v5, v6)
-        
-        # Test non-parallel rational vectors
-        v7 = create_v3(1, 0, 0)
-        v8 = create_v3(0, 1, 0)
-        assert not _are_directions_parallel(v7, v8)
-    
-    def test_are_directions_parallel_float(self):
-        """Test _are_directions_parallel with float (fuzzy) values."""
-        import math
-        
-        # Test parallel float vectors (same direction)
-        v1 = create_v3(Rational(1), Rational(0), Rational(0))
-        v2 = create_v3(Rational("2.5"), Rational(0), Rational(0))
-        v2 = normalize_vector(v2)
-        assert _are_directions_parallel(v1, v2)
-        
-        # Test anti-parallel float vectors (opposite direction)
-        v3 = create_v3(Rational(1), Rational(0), Rational(0))
-        v4 = create_v3(-Rational("3.7"), Rational(0), Rational(0))
-        v4 = normalize_vector(v4)
-        assert _are_directions_parallel(v3, v4)
-        
-        # Test nearly parallel vectors (within tolerance)
-        small_angle = 1e-11
-        v5 = create_v3(Rational(1), Rational(0), Rational(0))
-        v6 = create_v3(math.cos(small_angle), math.sin(small_angle), Rational(0))
-        assert _are_directions_parallel(v5, v6)
-        
-        # Test not parallel (outside tolerance)
-        v7 = create_v3(Rational(1), Rational(0), Rational(0))
-        v8 = create_v3(Rational("0.9"), Rational("0.1"), Rational(0))  # About 6 degrees
-        v8 = normalize_vector(v8)
-        assert not _are_directions_parallel(v7, v8)
-    
-    def test_are_directions_parallel_explicit_tolerance(self):
-        """Test _are_directions_parallel with explicit tolerance."""
-        # Test with custom tolerance
-        v1 = create_v3(Rational(1), Rational(0), Rational(0))
-        v2 = create_v3(Rational("0.99"), Rational("0.01"), Rational(0))  # Nearly parallel
-        v2 = normalize_vector(v2)
-        
-        # Should pass with loose tolerance
-        assert _are_directions_parallel(v1, v2, tolerance=Rational("0.1"))
-        
-        # Should fail with tight tolerance
-        assert not _are_directions_parallel(v1, v2, tolerance=1e-6)
-    
-    def test_are_timbers_face_parallel_rational(self):
-        """Test _are_timbers_face_parallel with rational (exact) values."""
+    def testare_timbers_parallel_rational(self):
+        """Test are_timbers_parallel with rational (exact) values."""
         from sympy import Rational
         
         # Create timbers with exact rational directions
@@ -1521,7 +1375,7 @@ class TestHelperFunctions:
         )
         
         # Should be parallel (exact comparison)
-        assert _are_timbers_face_parallel(timber1, timber2)
+        assert are_timbers_parallel(timber1, timber2)
         
         # Test anti-parallel (should still be parallel)
         timber3 = timber_from_directions(
@@ -1532,7 +1386,7 @@ class TestHelperFunctions:
             width_direction=create_v3(1, 0, 0)
         )
         
-        assert _are_timbers_face_parallel(timber1, timber3)
+        assert are_timbers_parallel(timber1, timber3)
         
         # Test perpendicular (should not be parallel)
         timber4 = timber_from_directions(
@@ -1543,10 +1397,10 @@ class TestHelperFunctions:
             width_direction=create_v3(0, 0, 1)
         )
         
-        assert not _are_timbers_face_parallel(timber1, timber4)
+        assert not are_timbers_parallel(timber1, timber4)
     
-    def test_are_timbers_face_parallel_float(self):
-        """Test _are_timbers_face_parallel with float (fuzzy) values."""
+    def testare_timbers_parallel_float(self):
+        """Test are_timbers_parallel with float (fuzzy) values."""
         import math
         
         # Create timbers with float directions
@@ -1563,10 +1417,10 @@ class TestHelperFunctions:
         )
         
         # Should be parallel (fuzzy comparison)
-        assert _are_timbers_face_parallel(timber1, timber2)
+        assert are_timbers_parallel(timber1, timber2)
     
-    def test_are_timbers_face_orthogonal_rational(self):
-        """Test _are_timbers_face_orthogonal with rational (exact) values."""
+    def testare_timbers_orthogonal_rational(self):
+        """Test are_timbers_orthogonal with rational (exact) values."""
         from sympy import Rational
         
         # Create timbers with exact rational perpendicular directions
@@ -1587,7 +1441,7 @@ class TestHelperFunctions:
         )
         
         # Should be orthogonal (exact comparison)
-        assert _are_timbers_face_orthogonal(timber1, timber2)
+        assert are_timbers_orthogonal(timber1, timber2)
         
         # Test non-orthogonal
         timber3 = timber_from_directions(
@@ -1598,10 +1452,10 @@ class TestHelperFunctions:
             width_direction=create_v3(1, 0, 0)
         )
         
-        assert not _are_timbers_face_orthogonal(timber1, timber3)
+        assert not are_timbers_orthogonal(timber1, timber3)
     
-    def test_are_timbers_face_orthogonal_float(self):
-        """Test _are_timbers_face_orthogonal with float (fuzzy) values."""
+    def testare_timbers_orthogonal_float(self):
+        """Test are_timbers_orthogonal with float (fuzzy) values."""
         import math
         
         # Create timbers with float perpendicular directions
@@ -1618,10 +1472,10 @@ class TestHelperFunctions:
         )
         
         # Should be orthogonal (fuzzy comparison)
-        assert _are_timbers_face_orthogonal(timber1, timber2)
+        assert are_timbers_orthogonal(timber1, timber2)
     
-    def test_are_timbers_face_aligned_exact_equality(self):
-        """Test _are_timbers_face_aligned with exact equality (no tolerance)."""
+    def testare_timbers_face_aligned_exact_equality(self):
+        """Test are_timbers_face_aligned with exact equality (no tolerance)."""
         # Create two face-aligned timbers using exact rational values
         timber1 = timber_from_directions(
             length=2,  # Integer
@@ -1640,7 +1494,7 @@ class TestHelperFunctions:
         )
         
         # These should be face-aligned with exact equality (no tolerance)
-        assert _are_timbers_face_aligned(timber1, timber2, tolerance=None)
+        assert are_timbers_face_aligned(timber1, timber2, tolerance=None)
         
         # Create a non-face-aligned timber (3D rotation with no aligned axes)
         # Using a timber rotated in 3D such that none of its axes align with timber1's axes
@@ -1655,11 +1509,11 @@ class TestHelperFunctions:
         # timber1 and timber3 should NOT be face-aligned
         # Note: timber3's normalized directions contain Float values, but the new
         # system automatically handles this without warnings
-        result = _are_timbers_face_aligned(timber1, timber3, tolerance=None)
+        result = are_timbers_face_aligned(timber1, timber3, tolerance=None)
         assert not result
         
         # Test with tolerance parameter (no warning)
-        assert _are_timbers_face_aligned(timber1, timber2, tolerance=1e-10)
+        assert are_timbers_face_aligned(timber1, timber2, tolerance=1e-10)
     
     # COMMENTED OUT: Tests for deleted helper functions
     # def test_project_point_on_timber_centerline(self):
