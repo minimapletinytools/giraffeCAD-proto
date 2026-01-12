@@ -760,17 +760,20 @@ class Timber:
         return transform
 
 
-    def project_local_point_onto_face_global(self, local_point: V3, face: Union[TimberFace, TimberReferenceEnd]) -> V3:
+    def project_global_point_onto_timber_face_global(self, global_point: V3, face: Union[TimberFace, TimberReferenceEnd]) -> V3:
         """
-        Project a point from local coordinates onto the timber's face and return result in global coordinates.
+        Project a point from global coordinates onto the timber's face and return result in global coordinates.
         
         Args:
-            local_point: The point to project (3x1 Matrix)
+            global_point: The point to project in global coordinates (3x1 Matrix)
             face: The face to project onto (can be TimberFace or TimberReferenceEnd)
         """
         # Convert TimberReferenceEnd to TimberFace if needed
         if isinstance(face, TimberReferenceEnd):
             face = face.to_timber_face()
+        
+        # Convert global point to local coordinates
+        local_point = self.global_to_local(global_point)
         
         # project the 0,0 point onto the face
         face_zero_local = face.get_direction() * self.get_size_in_face_normal_axis(face) / 2
