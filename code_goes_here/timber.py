@@ -149,6 +149,14 @@ class TimberReferenceLongFace(Enum):
         """
         return self.to_timber_face().is_perpendicular(other.to_timber_face())
 
+    def rotate_right(self) -> 'TimberReferenceLongFace':
+        """Rotate the long face right (90 degrees clockwise)."""
+        return TimberReferenceLongFace(self.value + 1 % 4)
+    
+    def rotate_left(self) -> 'TimberReferenceLongFace':
+        """Rotate the long face left (90 degrees counter-clockwise)."""
+        return TimberReferenceLongFace(self.value - 1 % 4)
+
 class TimberReferenceLongEdge(Enum):
     RIGHT_FRONT = 7
     FRONT_LEFT = 8
@@ -538,6 +546,7 @@ class Timber:
         """
         return self.bottom_position + self.length_direction * self.length
     
+    # TODO DELETE move this method onto Transform
     def global_to_local(self, global_point: V3) -> V3:
         """
         Convert a point from global world coordinates to timber-local coordinates.
@@ -556,6 +565,7 @@ class Timber:
         """
         return self.transform.global_to_local(global_point)
     
+    # TODO DELETE move this method onto Transform
     def local_to_global(self, local_point: V3) -> V3:
         """
         Convert a point from timber-local coordinates to global world coordinates.
@@ -573,29 +583,8 @@ class Timber:
             The same point in global world coordinates
         """
         return self.transform.local_to_global(local_point)
-    
-    def global_direction_to_local(self, global_direction: Direction3D) -> Direction3D:
-        """
-        Convert a direction vector from global world coordinates to timber-local coordinates.
-        
-        Direction vectors are transformed differently from points - they are not affected by
-        translation, only by rotation.
-        
-        In the timber's local coordinate system:
-        - Local X-axis is the width_direction
-        - Local Y-axis is the height_direction
-        - Local Z-axis is the length_direction
-        
-        Args:
-            global_direction: A direction vector in global world coordinates
-            
-        Returns:
-            The same direction vector in timber-local coordinates
-        """
-        # Direction vectors only need rotation (no translation)
-        # local_direction = R^T * global_direction
-        return self.orientation.matrix.T * global_direction
-    
+
+    # TODO DELETE move this method onto Transform
     def local_direction_to_global(self, local_direction: Direction3D) -> Direction3D:
         """
         Convert a direction vector from timber-local coordinates to global world coordinates.
@@ -769,6 +758,25 @@ class Timber:
             [0, 0, 0, 1]
         ])
         return transform
+
+
+    def project_local_point_onto_face_global(self, local_point: V3, face: Union[TimberFace, TimberReferenceEnd]) -> V3:
+        """
+        Project a point from local coordinates onto the timber's face and return result in global coordinates.
+        
+        Args:
+            local_point: The point to project (3x1 Matrix)
+            face: The face to project onto (can be TimberFace or TimberReferenceEnd)
+        """
+        # Convert TimberReferenceEnd to TimberFace if needed
+        if isinstance(face, TimberReferenceEnd):
+            face = face.to_timber_face()
+        
+        # project the 0,0 point onto the face
+        face_zero_local = face.get_direction() * self.get_size_in_face_normal_axis(face) / 2
+        local_point_face_component = (local_point-face_zero_local).dot(face.get_direction()) * face.get_direction()
+        local_point_projected = local_point - local_point_face_component
+        return self.transform.local_to_global(local_point_projected)
 
 
 # ============================================================================
