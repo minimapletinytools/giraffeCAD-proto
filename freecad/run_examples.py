@@ -38,9 +38,10 @@ if script_dir not in sys.path:
 # CONFIGURATION: Change this to render different examples
 # ============================================================================
 #EXAMPLE_TO_RENDER = 'basic_joints' 
-EXAMPLE_TO_RENDER = 'oscar_shed'
+#EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
 #EXAMPLE_TO_RENDER = 'horsey'
+EXAMPLE_TO_RENDER = 'japanese_joints'
 #EXAMPLE_TO_RENDER = 'csg'
 
 # CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
@@ -64,12 +65,14 @@ def reload_all_modules():
         'code_goes_here.rendering_utils',
         'code_goes_here.basic_joints',
         'code_goes_here.mortise_and_tenon_joint',
+        'code_goes_here.japanese_joints',
         'giraffe',
         'giraffe_render_freecad',
         'examples.reference.basic_joints_example',
         'examples.mortise_and_tenon_joint_examples',
         'examples.horsey_example',
         'examples.oscarshed',
+        'examples.japanese_joints_example',
         'examples.test_MeowMeowCSG_examples',
     ]
     
@@ -155,8 +158,8 @@ def render_mortise_and_tenon():
     
     print("\n" + "="*70)
     print(f"Rendering Complete!")
-    print(f"Successfully rendered {success_count}/{len(cut_timbers)} timbers")
-    print(f"Successfully rendered {len(accessories)} accessories")
+    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
+    print(f"Successfully rendered {len(frame.accessories)} accessories")
     print("="*70)
     print("\nExamples rendered (configured in mortise_and_tenon_joint_examples.py):")
     print("  - Mortise and tenon joints with pegs")
@@ -246,6 +249,48 @@ def render_horsey():
     print("  - 1 horizontal stretcher")
     print("  - 1 top plate")
     print("  - Mortise & tenon joints with pegs")
+
+
+def render_japanese_joints():
+    """
+    Render Japanese joint examples - Lapped Gooseneck Joint.
+    
+    Demonstrates traditional Japanese timber joinery including the lapped gooseneck joint
+    (腰掛鎌継ぎ / Koshikake Kama Tsugi) used to splice beams end-to-end.
+    """
+    from giraffe_render_freecad import render_frame, clear_document
+    from examples.japanese_joints_example import create_lapped_gooseneck_splice_example
+    
+    print("="*70)
+    print("GiraffeCAD FreeCAD - Japanese Lapped Gooseneck Joint")
+    print("="*70)
+    
+    # Create Japanese joint example (returns Frame object)
+    print("\nCreating Japanese lapped gooseneck joint example...")
+    print("Splicing two 4\"x4\" x 3' timbers with traditional joint...")
+    frame = create_lapped_gooseneck_splice_example()
+    
+    print(f"Total timbers created: {len(frame.cut_timbers)}")
+    print(f"Total accessories: {len(frame.accessories)}")
+    
+    # Clear and render
+    print("\nClearing FreeCAD document...")
+    clear_document()
+    
+    print("\nRendering timbers in FreeCAD...")
+    success_count = render_frame(frame)
+    
+    print("\n" + "="*70)
+    print(f"Rendering Complete!")
+    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
+    print("="*70)
+    print("\nJapanese Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi)")
+    print("  - Two 4\"x4\" x 3' timbers spliced end-to-end")
+    print("  - Gooseneck profile provides mechanical interlock")
+    print("  - Lap joint provides compression bearing surface")
+    print("\nCheck the Model tree on the left to see:")
+    print("  - gooseneck_timber: timber with gooseneck feature protruding")
+    print("  - receiving_timber: timber with pocket to receive gooseneck")
 
 
 def render_csg():
@@ -345,6 +390,7 @@ def main():
         'mortise_and_tenon': render_mortise_and_tenon,
         'horsey': render_horsey,
         'oscar_shed': render_oscar_shed,
+        'japanese_joints': render_japanese_joints,
         'csg': render_csg,
     }
     

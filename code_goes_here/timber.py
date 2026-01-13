@@ -608,18 +608,18 @@ class Timber:
         return self.orientation.matrix * local_direction
     
     # TODO rename to get_face_direction_global
-    def get_face_direction(self, face: Union[TimberFace, TimberReferenceEnd]) -> Direction3D:
+    def get_face_direction(self, face: Union[TimberFace, TimberReferenceEnd, TimberReferenceLongFace]) -> Direction3D:
         """
         Get the world direction vector for a specific face of this timber.
         
         Args:
-            face: The face to get the direction for (can be TimberFace or TimberReferenceEnd)
+            face: The face to get the direction for (can be TimberFace, TimberReferenceEnd, or TimberReferenceLongFace)
             
         Returns:
             Direction vector pointing outward from the specified face in world coordinates
         """
-        # Convert TimberReferenceEnd to TimberFace if needed
-        if isinstance(face, TimberReferenceEnd):
+        # Convert TimberReferenceEnd or TimberReferenceLongFace to TimberFace if needed
+        if isinstance(face, (TimberReferenceEnd, TimberReferenceLongFace)):
             face = face.to_timber_face()
         
         if face == TimberFace.TOP:
@@ -635,15 +635,15 @@ class Timber:
         else:  # BACK
             return -self.height_direction
 
-    def get_size_in_face_normal_axis(self, face: Union[TimberFace, TimberReferenceEnd]) -> Numeric:
+    def get_size_in_face_normal_axis(self, face: Union[TimberFace, TimberReferenceEnd, TimberReferenceLongFace]) -> Numeric:
         """
         Get the size of the timber in the direction normal to the specified face.
         
         Args:
-            face: The face to get the size for (can be TimberFace or TimberReferenceEnd)
+            face: The face to get the size for (can be TimberFace, TimberReferenceEnd, or TimberReferenceLongFace)
         """
-        # Convert TimberReferenceEnd to TimberFace if needed
-        if isinstance(face, TimberReferenceEnd):
+        # Convert TimberReferenceEnd or TimberReferenceLongFace to TimberFace if needed
+        if isinstance(face, (TimberReferenceEnd, TimberReferenceLongFace)):
             face = face.to_timber_face()
         
         if face == TimberFace.TOP or face == TimberFace.BOTTOM:
@@ -760,16 +760,16 @@ class Timber:
         return transform
 
 
-    def project_global_point_onto_timber_face_global(self, global_point: V3, face: Union[TimberFace, TimberReferenceEnd]) -> V3:
+    def project_global_point_onto_timber_face_global(self, global_point: V3, face: Union[TimberFace, TimberReferenceEnd, TimberReferenceLongFace]) -> V3:
         """
         Project a point from global coordinates onto the timber's face and return result in global coordinates.
         
         Args:
             global_point: The point to project in global coordinates (3x1 Matrix)
-            face: The face to project onto (can be TimberFace or TimberReferenceEnd)
+            face: The face to project onto (can be TimberFace, TimberReferenceEnd, or TimberReferenceLongFace)
         """
-        # Convert TimberReferenceEnd to TimberFace if needed
-        if isinstance(face, TimberReferenceEnd):
+        # Convert TimberReferenceEnd or TimberReferenceLongFace to TimberFace if needed
+        if isinstance(face, (TimberReferenceEnd, TimberReferenceLongFace)):
             face = face.to_timber_face()
         
         # Convert global point to local coordinates
