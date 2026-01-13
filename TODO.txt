@@ -64,28 +64,66 @@ CSGTimber?
 
 :: 1/8/2026 reference dimension helper classes
 
-general structure looks like this:
+measuring functions should look like this:
 
+```
 measure_from_some_feature(
   timber_to_reference,
   timber_to_mark,
-  reference_feature,
-  measurement_relative_to_reference_feature
+  reference_feature_on_timber_to_reference,
+  measurement_relative_to_reference_feature_on_timber_to_reference_local,
 ) -> measurement_in_timber_to_mark_local_space
-
-
-# we want a version of the above function that also takes a reference_feature_on_timber_to_mark that the measurement gets converted to, assuming it makes sense, in particular that the measurement in both cases share the same basis
-
-
-timber_cross_section_size_from_faces(
+```
+for example:
+```
+timber_cross_section_size_from_reference_long_faces(
     timber_to_reference,
     timber_to_mark, 
-    x_face: Optional[Face]
-    y_face: Optional[Face]
-    size: (Numeric, Numeric)
+    x_face: Optional[LongFace]
+    y_face: Optional[LongFace]
+    size: V2
 ) -> size_in_timber_to_mark_xy_local_space
 # so (x,y) would have x in the x_face axis and/or y in the y_face axis of timber_to_reference
-# only valid if these faces align with the xy axis of timber_to_mark
+# only valid if these faces are adjacent
+# you typically only want to specify 1 of these faces and the other one is inferred but nothing is stopping you from specifying both
+```
+
+
+sometimes we also want to take reference_feature_on_timber_to_mark and in this case, the returned measurement is relative to reference_feature_on_timber_to_mark. Of course this may only make sense in some cases, in particular that the feature in both cases share the same "basis".
+
+let's make sharing the same basis concrete.
+
+We use the feature definition in concepts.md
+
+first declare the feature e.g. some long edge on a timber (we treat edges as infinite lines)
+next restrict the basis e.g. measuring on some face (plane) of the timber
+at this stage, we need to do some *magic* to determine the sign of the basis, so if we're measuring on a face of some timber from an edge, then positive is obviously measuring away from the edge onto the face.
+for multidimensional basis, we always go x -> y -> z in that order
+sometimes the reference timber and mark timber share a basis but have different signs, in this case, the measurement is taking in the reference timbers basis, and then returned in the mark timber basis obviously.
+sometimes (often) the basis match but the measurements don't overlap in global space, in this case, project the point orthogonally from 1 basis to the other (TODO need to define this more rigorously, basis is insufficient, we are really talking about a distance in space relative to either a line (1D) or a point (2D) in a plane, in which case we can project to another plane that's parallel (or perhaps better to treat it as a plane/line in space that we intersect with another plane? nah)
+or we might be takling about a measurement in an axis or plane (for sizes), in which case no project is needed
+
+Here are some example of feature + basis 
+
+-size on face
+-distance from long edge on long face
+-distance from end face on centerline
+-distance from shoulder plane on centerline (this gets converted to distance from end face internally)
+
+
+examples of things we want to do
+
+-using join timbers, we want to set lateral offest such that the outside face of the created timber is inset from the outside face of the timber to be joined:
+  -how do we do this, the created timber doesn't exist yet???
+
+-position a rafter such that the bottom of of the rafter is 1 inch away from top of the beam
+  -same issue as above...
+
+-size a tenon
+
+-locate a
+
+
 
 
 :: documentation
