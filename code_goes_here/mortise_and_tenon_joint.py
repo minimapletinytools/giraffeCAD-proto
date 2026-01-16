@@ -449,7 +449,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             raise ValueError(f"Invalid peg face: {peg_parameters.tenon_face}")
         
 
-        # TODO use orientation constants instead of this
+        # TODO use TIMBER ORIENTATION METHODS instead of this
+        # Peg orientation matches timber orientation so we use the TIMBER ORIENTATION METHODS in moothymoth to create the peg orientation matrix
         
         # Create orientation matrix for peg prism
         # The peg position is at the timber SURFACE, and the peg extends INTO the timber
@@ -496,7 +497,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         # Create peg holes for each peg position
         peg_holes_in_tenon_local = []
         peg_holes_in_mortise_local = []
-        
+         
         for peg_idx, (distance_from_shoulder, distance_from_centerline) in enumerate(peg_parameters.peg_positions):
             # Calculate peg insertion point in tenon timber's local space
             # Start at the tenon position offset, then add the peg-specific offsets
@@ -561,19 +562,19 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             )
             peg_holes_in_tenon_local.append(peg_hole_tenon)
             
+
+            # Next we cut the peg hole in themortise timber
+
             # Transform peg position to world space
             peg_pos_on_tenon_face_world = tenon_timber.bottom_position + tenon_timber.orientation.matrix * peg_pos_on_tenon_face_local
+            peg_orientation_world = Orientation(tenon_timber.orientation.matrix * peg_orientation_tenon_local.matrix)
+            peg_direction_world = peg_orientation_world.matrix[:, 2] # Z-axis of peg in world space
 
             # Calculate where the peg intersects the mortise timber
-            # The peg travels from the tenon face along the peg's Z-axis direction
-            
-            # Get peg direction in world space (Z-axis of peg orientation)
-            peg_orientation_world = Orientation(tenon_timber.orientation.matrix * peg_orientation_tenon_local.matrix)
-
-            # the Z axis of the peg orientation in world space (the direction the peg points in)
-            peg_direction_world = peg_orientation_world.matrix[:, 2]
+            # The peg starts at the tenon face points in the peg's Z-axis direction
             
             # Get the tenon face normal (where the peg enters the tenon timber)
+            # TODO rename to tenon_peg_entry_face
             tenon_face = peg_parameters.tenon_face.to_timber_face()
             tenon_face_direction = tenon_timber.get_face_direction(tenon_face)
             tenon_face_normal = tenon_face_direction
@@ -616,7 +617,11 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             else:  # TOP or BOTTOM
                 peg_entry_face_offset = mortise_timber.length / 2
             
-            # Calculate the peg entry face plane point
+
+            # Calculate the point where the peg enters on the mortise peg entry face plane
+
+
+            # Get a point on the mortise peg entry face plane (any point)
             peg_entry_face_plane_point = mortise_timber.bottom_position + peg_entry_face_normal * peg_entry_face_offset
             
             # Ray-plane intersection to find where peg enters the mortise face
@@ -628,9 +633,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             assert abs(denominator) > EPSILON_GENERIC, \
                 f"Peg direction is parallel to mortise peg entry face {mortise_peg_entry_face} (dot product: {denominator}), pick a different tenon face or direction for the peg"
             
-            # Calculate intersection parameter t
+            # intersect the line from the peg entry point on the tenon face with the plane of the mortise peg entry face
             t_peg = (peg_entry_face_plane_point - peg_pos_on_tenon_face_world).dot(peg_entry_face_normal) / denominator
-            
             
             # Calculate the intersection point on the mortise peg entry face
             peg_pos_on_mortise_face_world = peg_pos_on_tenon_face_world + peg_direction_world * t_peg
@@ -676,7 +680,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             )
             joint_accessories[f"peg_{peg_idx}"] = peg_accessory
         
-        # Add peg holes to the existing CSGs using Union
+        # Union the peg holes to the existing tenon/mortise timber cut CSGs
         if peg_holes_in_tenon_local or peg_holes_in_mortise_local:
             from code_goes_here.meowmeowcsg import Union
         
