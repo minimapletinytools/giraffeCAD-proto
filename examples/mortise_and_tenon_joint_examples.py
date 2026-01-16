@@ -3,9 +3,9 @@ Example usage of mortise and tenon joint functions
 """
 
 from sympy import Matrix, Rational
-from code_goes_here.moothymoth import inches
+from code_goes_here.moothymoth import inches, Transform
 from code_goes_here.timber import (
-    Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace,
+    Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace, Peg
     PegShape, timber_from_directions,
     create_v3, V2, CutTimber, Frame
 )
@@ -421,12 +421,11 @@ def create_all_mortise_and_tenon_examples():
         translated_timbers = []
         
         # Translate timbers to current position
-        for timber in joint.cut_timbers:
+        for timber in joint.cut_timbers.values():
             new_position = timber.timber.bottom_position + create_v3(current_position_x, 0, 0)
             translated_timber = Timber(
                 name=timber.timber.name,
-                bottom_position=new_position,
-                orientation=timber.timber.orientation,
+                transform=Transform(position=new_position, orientation=timber.timber.orientation),
                 size=timber.timber.size,
                 length=timber.timber.length
             )

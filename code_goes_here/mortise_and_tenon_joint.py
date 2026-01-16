@@ -114,6 +114,11 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     Raises:
         AssertionError: If unsupported parameters are provided or if timbers are not face-aligned
     """
+
+    # ========================================================================
+    # Set default values
+    # ========================================================================
+
     # Set default tenon_position if not provided (centered)
     if tenon_position is None:
         tenon_position = Matrix([Rational(0), Rational(0)])
@@ -121,6 +126,10 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Set default tenon_rotation if not provided
     if tenon_rotation is None:
         tenon_rotation = Orientation.identity()
+
+    # ========================================================================
+    # Validate parameters
+    # ========================================================================
     
     # Assert unsupported features
     assert wedge_parameters is None, "Wedge parameters not yet supported"
@@ -136,23 +145,17 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     if mortise_depth is not None:
         assert mortise_depth >= tenon_length, \
             f"Mortise depth ({mortise_depth}) must be >= tenon length ({tenon_length})"
+
     
     # ========================================================================
-    # Calculate geometric positions in local coordinate system
+    # Step 1: Determine tenon directional centerline (this line starts at the where the tenon intersects the defined end of the timber and runs down the center of the tenon!)
     # ========================================================================
     
     # Get the direction of the tenon end in world coordinates
     tenon_end_direction = tenon_timber.get_face_direction(
         TimberFace.TOP if tenon_end == TimberReferenceEnd.TOP else TimberFace.BOTTOM
     )
-    
-    # Find which face of the mortise timber receives the mortise
-    mortise_face = mortise_timber.get_closest_oriented_face(-tenon_end_direction)
-    
-    # ========================================================================
-    # Step 1: Determine tenon directional centerline
-    # ========================================================================
-    
+
     # Get the tenon end point in world coordinates
     if tenon_end == TimberReferenceEnd.TOP:
         tenon_end_point = tenon_timber.get_top_center_position()
@@ -174,9 +177,11 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Step 2: Calculate mortise face plane
     # ========================================================================
     
+    # Find which face of the mortise timber receives the mortise
+    mortise_face = mortise_timber.get_closest_oriented_face(-tenon_end_direction)
+
     # Get the mortise face normal (pointing outward from mortise timber)
-    mortise_face_direction = mortise_timber.get_face_direction(mortise_face)
-    mortise_face_normal = mortise_face_direction
+    mortise_face_normal = mortise_timber.get_face_direction(mortise_face)
     
     # Get the mortise face offset (distance from centerline to face)
     if mortise_face in [TimberFace.RIGHT, TimberFace.LEFT]:
@@ -186,30 +191,33 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     else:
         raise ValueError(f"Invalid mortise face: {mortise_face}")
     
+    # We need a point on the mortise face plane. For simplicity, use the mortise timber's bottom position as the reference
+    mortise_face_plane_point = mortise_timber.bottom_position + mortise_face_normal * face_offset
+
     # ========================================================================
-    # Step 3: Line-plane intersection
+    # Step 3: Intersect the tenon centerline with the mortise face plane
     # ========================================================================
     
     # Check that tenon direction is not parallel to mortise face
     denominator = tenon_centerline_direction.dot(mortise_face_normal)
     assert abs(denominator) > EPSILON_GENERIC, \
         f"Tenon direction is parallel to mortise face (dot product: {denominator})"
-    
-    # We need a point on the mortise face plane. We'll use a point that's:
-    # - On the mortise timber centerline somewhere
-    # - Offset by face_offset in the face normal direction
-    # For simplicity, use the mortise timber's bottom position as the reference
-    mortise_centerline_reference = mortise_timber.bottom_position
-    mortise_face_plane_point = mortise_centerline_reference + mortise_face_normal * face_offset
-    
+
+  
     # Calculate intersection parameter t
     # Line: P = tenon_centerline_start + t * tenon_centerline_direction
     # Plane: (P - mortise_face_plane_point) · mortise_face_normal = 0
     # Solving: t = (mortise_face_plane_point - tenon_centerline_start) · mortise_face_normal / denominator
     t = (mortise_face_plane_point - tenon_centerline_start).dot(mortise_face_normal) / denominator
     
+    # Calculate the actual intersection point
+    # TODO rename to intersection_point_global
+    intersection_point = tenon_centerline_start + tenon_centerline_direction * t
+
+
     # ========================================================================
-    # Warning: Check if tenon end might be pointing away from mortise
+    # Step 4: WARN that the tenon is pointing towards the mortise
+    # this calculation is a little weird since it's more of a semantic check rather than a geometric check
     # ========================================================================
     
     # Calculate the center of the tenon timber centerline
@@ -230,26 +238,25 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     dot_product = tenon_centerline_direction.dot(mortise_face_normal)
     pointing_away = (distance_tenon_end * dot_product) > 0
     
+    # a weaker less semantic, more geometric check might be to check if both ends of the tenon timber are on the same side AND the tenon end is pointing away from the mortise face
     if same_side and pointing_away:
         print(f"⚠️  Warning: The tenon end seems to be pointing AWAY from the mortise timber.")
         print(f"    Are you sure you chose the right end of the tenon timber?")
         print(f"    Tenon end: {tenon_end}, Mortise face: {mortise_face}")
-        print(f"    (Both tenon end and timber center are on the same side of the mortise face,")
-        print(f"     and the tenon is pointing away from the mortise)")
+        print(f"    (Both the tenon end and tenon timber center are on the same side of the mortise face,")
+        print(f"     AND the tenon end is pointing away from the mortise)")
     
-    # DELETE this, we "extend" the tenon timber so it can go through the mortise timber
-    #assert t > 0, f"Tenon centerline does not intersect mortise face in front of tenon end (t={t})"
-    
-    # Calculate the actual intersection point
-    intersection_point = tenon_centerline_start + tenon_centerline_direction * t
     
     # ========================================================================
-    # Step 4: Check if intersection is within timber face bounds
+    # Step 4: Check if intersection is within mortise timber face bounds
     # ========================================================================
     
     # Transform intersection point to mortise timber's local coordinate system
+    # TODO rename to intersection_point_mortise_timber_local
     intersection_local = mortise_timber.orientation.matrix.T * (intersection_point - mortise_timber.bottom_position)
     
+    # NOTE should only check one axis, checking both is fine too...
+
     # Check bounds in the local XY plane (the face is perpendicular to one of these axes)
     # Determine which local axes define the face bounds
     half_width = mortise_timber.size[0] / 2
@@ -262,35 +269,25 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     if not (x_in_bounds and y_in_bounds):
         print(f"Warning: Mortise intersection at local position ({float(intersection_local[0]):.4f}, "
               f"{float(intersection_local[1]):.4f}, {float(intersection_local[2]):.4f}) "
-              f"is outside timber face bounds (±{float(half_width):.4f}, ±{float(half_height):.4f})")
-    
-    # ========================================================================
-    # Step 5: Calculate positions for mortise and tenon
-    # ========================================================================
-    
-    # Mortise position from bottom: project intersection onto mortise centerline
-    mortise_position_from_bottom = (intersection_point - mortise_timber.bottom_position).dot(mortise_timber.length_direction)
-    
-    # Tenon shoulder distance: the parameter t from line-plane intersection
-    tenon_shoulder_distance = t
+              f"is outside mortise timber face bounds (±{float(half_width):.4f}, ±{float(half_height):.4f})")
     
     # ========================================================================
     # Create mortise cut (CSGCut with Prism)
+    # Mortise is a rectangular hole cut into the mortise timber
+    # The hole matches the shape of the tenon but the depth might be different 
     # ========================================================================
     
-    # Mortise is a rectangular hole cut into the mortise timber
-    # It's positioned in the mortise timber's LOCAL coordinate system
+
+    # TODO handle mortise_shoulder_inset 
+    # TODO handle mortise_shoulder_relief_housing_cut : ReliefHousingCut
     
-    # Get the mortise face direction in world coordinates
-    mortise_face_direction = mortise_timber.get_face_direction(mortise_face)
 
     # Determine mortise depth (if not specified, make it a through mortise)
-    # TODO `(tenon_length + mortise_timber.size[0] + mortise_timber.size[1])` is fine but better to be more precise and use the exact dimension of the mortise timber that the tenon is going through
+    # NOTE `(tenon_length + mortise_timber.size[0] + mortise_timber.size[1])` is fine but better to be more precise and use the exact dimension of the mortise timber that the tenon is going through
     actual_mortise_depth = mortise_depth if mortise_depth is not None else (tenon_length + mortise_timber.size[0] + mortise_timber.size[1])
     
     # Create the mortise prism in the mortise timber's LOCAL coordinate system
     # We create a prism representing the tenon volume
-    
     relative_orientation = Orientation(mortise_timber.orientation.matrix.T * tenon_timber.orientation.matrix)
     
     # The intersection_point is already the tenon center position in world coordinates
@@ -328,11 +325,9 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Calculate the shoulder plane position in world coordinates
     if tenon_end == TimberReferenceEnd.TOP:
-        shoulder_plane_point = tenon_timber.get_top_center_position() - \
-            tenon_timber.length_direction * tenon_shoulder_distance
+        shoulder_plane_point = tenon_timber.get_top_center_position() - tenon_timber.length_direction * t
     else:  # BOTTOM
-        shoulder_plane_point = tenon_timber.get_bottom_center_position() + \
-            tenon_timber.length_direction * tenon_shoulder_distance
+        shoulder_plane_point = tenon_timber.get_bottom_center_position() + tenon_timber.length_direction * t
     
     # Apply tenon_position offset to shoulder plane point
     tenon_x_direction = tenon_timber.get_face_direction(TimberFace.RIGHT)
