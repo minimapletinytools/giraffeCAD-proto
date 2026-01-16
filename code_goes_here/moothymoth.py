@@ -527,7 +527,9 @@ class Orientation:
     # TIMBER ORIENTATION METHODS
     # ========================================================================
     #
-    # These methods provide orientations specifically for timber framing.
+    # TODO prefix all these method with orient_timber_
+    #
+    # These methods provide orientations specifically for orienting timbers and thus their names reflect how they move timber from its default orientation.
     # 
     # CANONICAL CONVENTIONS:
     # - facing_west is the IDENTITY orientation
