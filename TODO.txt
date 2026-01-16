@@ -158,17 +158,24 @@ DONE-be consistent about V2 vs (Numeric,Numeric) tuple
     -then boards/panels can be mill_board
 
 
+-fix morties_and_tenon_joint_example
 -3 major features
   -measure functions
   -refactor timber class
   -add timber metadata
     -prepare for CSG metadata as well...
 
--pull out parts of mortise and tenon function, maybe move to joint_helpers.py in particular
+-pull out parts of mortise and tenon function, maybe move to joint_helperonis.py in particular
   -round peg support
   -peg positioning
   -finding the shoulder point/shoulder plane
 -add extrude polygon csg rendering to fusino 360
+
+
+-xyz lap joint
+  -pull out logic into joint_helperonis.py
+  -dovetail lap joint
+  -gooseneck lap joint
 
 
 
