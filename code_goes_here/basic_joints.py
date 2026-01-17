@@ -12,6 +12,7 @@ from code_goes_here.moothymoth import (
     construction_parallel_check,
     construction_perpendicular_check
 )
+from code_goes_here.joint_helperonis import chop_timber_end_with_half_plane
 
 
 # ============================================================================
@@ -353,69 +354,46 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
     if centerline_distance > max_dimension / Rational(2):
         warnings.warn(f"Timber cross sections may not overlap (centerline distance: {float(centerline_distance)}). Check joint geometry.")
     
-    # Create the splice plane perpendicular to the length direction
-    # The plane normal is the length direction (or its negative, depending on orientation)
-    # For each timber, the half-plane normal should point away from the material we're keeping
+    # Calculate distance from each timber end to the splice point
+    # We need to measure how far along the timber (from bottom) the splice point is
+    # Then calculate the distance from the specified end
     
-    # Use normalized length direction as the plane normal
-    # The splice plane is perpendicular to the timber axes
-    plane_normal = normalize_vector(timberA.length_direction)
+    # For timberA: project splice point onto timber's centerline
+    vector_A_from_bottom = splice_point - timberA.bottom_position
+    distance_A_from_bottom = (vector_A_from_bottom.T * timberA.length_direction)[0, 0]
     
-    # For timberA: the half-plane normal should point away from the material we're keeping
-    # If timberA_end is TOP, we're cutting the top, so normal points up (+length_direction)
-    # If timberA_end is BOTTOM, we're cutting the bottom, so normal points down (-length_direction)
+    # Distance from the specified end
     if timberA_end == TimberReferenceEnd.TOP:
-        normalA = plane_normal
+        distance_A_from_end_to_cut = timberA.length - distance_A_from_bottom
     else:  # BOTTOM
-        normalA = -plane_normal
+        distance_A_from_end_to_cut = distance_A_from_bottom
     
-    # For timberB: determine the normal based on which end is being cut
-    # The key insight: in a splice joint, the two normals should always point AWAY from each other
-    # (opposite directions), regardless of the timber orientations or which ends are being cut.
-    # 
-    # We need to check which way timberB's length direction points relative to timberA
-    alignment = (timberA.length_direction.T * timberB.length_direction)[0, 0]
+    # For timberB: project splice point onto timber's centerline
+    vector_B_from_bottom = splice_point - timberB.bottom_position
+    distance_B_from_bottom = (vector_B_from_bottom.T * timberB.length_direction)[0, 0]
     
-    if alignment > 0:
-        # Same orientation: timberB points in same direction as timberA
-        # If timberA TOP is cut with normal +plane_normal, timberB BOTTOM should be cut with -plane_normal
-        # If timberA TOP is cut with normal +plane_normal, timberB TOP should be cut with +plane_normal (same)
-        # But in a splice, we want opposite normals, so:
-        if timberB_end == TimberReferenceEnd.TOP:
-            # Both TOP ends meet: they point in the same direction, so use same normal as timberA
-            normalB = normalA
-        else:  # BOTTOM
-            # TOP meets BOTTOM: opposite ends meet, so use opposite normal
-            normalB = -normalA
-    else:
-        # Opposite orientation: timberB points in opposite direction to timberA
-        # The plane normal for timberB is based on timberB's own length direction
-        plane_normalB = normalize_vector(timberB.length_direction)
-        if timberB_end == TimberReferenceEnd.TOP:
-            normalB = plane_normalB
-        else:  # BOTTOM
-            normalB = -plane_normalB
+    # Distance from the specified end
+    if timberB_end == TimberReferenceEnd.TOP:
+        distance_B_from_end_to_cut = timberB.length - distance_B_from_bottom
+    else:  # BOTTOM
+        distance_B_from_end_to_cut = distance_B_from_bottom
     
-    # Convert to LOCAL coordinates for timberA
-    local_normalA = timberA.orientation.matrix.T * normalA
-    local_offsetA = (splice_point.T * normalA)[0, 0] - (normalA.T * timberA.bottom_position)[0, 0]
-    
-    # Convert to LOCAL coordinates for timberB
-    local_normalB = timberB.orientation.matrix.T * normalB
-    local_offsetB = (splice_point.T * normalB)[0, 0] - (normalB.T * timberB.bottom_position)[0, 0]
+    # Create half-plane cuts using the helper function
+    half_plane_A = chop_timber_end_with_half_plane(timberA, timberA_end, distance_A_from_end_to_cut)
+    half_plane_B = chop_timber_end_with_half_plane(timberB, timberB_end, distance_B_from_end_to_cut)
     
     # Create the HalfPlaneCuts
     cutA = HalfPlaneCut(
         timber=timberA,
         transform=Transform(position=splice_point, orientation=timberA.orientation),
-        half_plane=HalfPlane(normal=local_normalA, offset=local_offsetA),
+        half_plane=half_plane_A,
         maybe_end_cut=timberA_end
     )
     
     cutB = HalfPlaneCut(
         timber=timberB,
         transform=Transform(position=splice_point, orientation=timberB.orientation),
-        half_plane=HalfPlane(normal=local_normalB, offset=local_offsetB),
+        half_plane=half_plane_B,
         maybe_end_cut=timberB_end
     )
     
