@@ -5,9 +5,12 @@ Contains traditional Japanese timber joint implementations
 
 from __future__ import annotations  # Enable deferred annotation evaluation
 
+import warnings
+
 from code_goes_here.timber import *
 from code_goes_here.timber import _compute_timber_orientation  # Private function, needs explicit import
 from code_goes_here.construction import *
+from code_goes_here.joint_helperonis import check_timber_overlap_for_splice_joint_is_sensible
 from code_goes_here.moothymoth import (
     Orientation,
     EPSILON_GENERIC,
@@ -148,12 +151,16 @@ def cut_lapped_gooseneck_joint(
             f"Got gooseneck_timber axes: {gooseneck_timber.axis}, receiving_timber axes: {receiving_timber.axis}"
         )
 
-    gooseneck_timber_end = TimberReferenceEnd.TOP if receiving_timber_end == TimberReferenceEnd.BOTTOM else TimberReferenceEnd.TOP
+    gooseneck_timber_end = TimberReferenceEnd.TOP if receiving_timber_end == TimberReferenceEnd.BOTTOM else TimberReferenceEnd.BOTTOM
 
-    # TODO check that the timbers overlap in a sensible way, e.g. something like this:
+    # Check that the timbers overlap in a sensible way for a splice joint:
     #             |==================| <- gooseneck timber
     # receiving_timber_end -> |==================| <- receiving timber
-
+    overlap_error = check_timber_overlap_for_splice_joint_is_sensible(
+        gooseneck_timber, receiving_timber, gooseneck_timber_end, receiving_timber_end
+    )
+    if overlap_error:
+        warnings.warn(f"Gooseneck joint configuration may not be sensible: {overlap_error}")
 
     # compute the starting position for the gooseneck shape in global space
     gooseneck_direction_global = -receiving_timber.get_face_direction(receiving_timber_end)
@@ -177,100 +184,7 @@ def cut_lapped_gooseneck_joint(
             gooseneck_timber_face.to_timber_face()
         ) / 2
 
-    # ========================================================================
-    # Create gooseneck CSG geometry
-    # ========================================================================
-    
-    # Create orientation for the gooseneck extrusion
-    # The gooseneck polygon is in the XY plane where:
-    #   - Y axis is along the gooseneck length (gooseneck_direction_global)
-    #   - Z axis is the extrusion depth direction (pointing INWARD into the timber)
-    #   - X axis is the width direction (perpendicular to both)
-    # We flip the normal direction so Z points inward instead of outward
-    gooseneck_width_direction_global = normalize_vector(cross_product(gooseneck_direction_global, gooseneck_drawing_normal_global))
-    gooseneck_orientation = _compute_timber_orientation(
-        length_direction=-gooseneck_drawing_normal_global,  # Z-axis points inward (negative of outward normal)
-        width_direction=gooseneck_width_direction_global    # X-axis = width direction
-    )
-    gooseneck_transform = Transform(position=gooseneck_starting_position_global, orientation=gooseneck_orientation)
-    
-    # Create the gooseneck shape as a ConvexPolygonExtrusion
-    # Now Z-axis points inward, so we extrude in the +Z direction (into the timber)
-    # start_distance=0 means start at the face, end_distance=depth means extrude inward by depth
-    gooseneck_shape_csg_on_gooseneck_timber = ConvexPolygonExtrusion(
-        points=gooseneck_shape,
-        transform=gooseneck_transform,
-        start_distance=Rational(0),           # Start at the face
-        end_distance=gooseneck_depth          # Extrude inward into timber by gooseneck_depth
-    )
-    
-    # Create a larger prism that encompasses the region outside the gooseneck
-    # This prism should cover the area we want to remove (everything but the gooseneck)
-    # Make it larger than the gooseneck in all dimensions
-    gooseneck_outside_width = gooseneck_large_width * Rational(2)  # Make it wider than the widest part
-    gooseneck_outside_height = (gooseneck_length + lap_length) * Rational(2)  # Make it longer
-    gooseneck_outside_csg_on_gooseneck_timber = Prism(
-        size=create_v2(gooseneck_outside_width, gooseneck_outside_height),
-        transform=gooseneck_transform,
-        start_distance=Rational(0),           # Start at the face
-        end_distance=gooseneck_depth          # Extrude inward by the same depth
-    )
-    
-    # Create the cut for the gooseneck timber: remove everything except the gooseneck shape
-    # This creates a "negative" that cuts away the material around the gooseneck
-    gooseneck_timber_final_negative_csg = Difference(
-        base=gooseneck_outside_csg_on_gooseneck_timber,
-        subtract=[gooseneck_shape_csg_on_gooseneck_timber]  # subtract expects a list
-    )
-
-    # Create the matching pocket in the receiving timber
-    # This is just the gooseneck shape extruded (a positive cut to remove material)
-    receiving_timber_gooseneck_shape_csg = ConvexPolygonExtrusion(
-        points=gooseneck_shape,
-        transform=gooseneck_transform,
-        start_distance=Rational(0),           # Start at the face
-        end_distance=gooseneck_depth          # Extrude inward into timber by gooseneck_depth
-    )
-    
-
-
-
-    
-    # ========================================================================
-    # Create the cuts on both timbers
-    # ========================================================================
-    
-    # Create CutTimber for the gooseneck timber
-    gooseneck_cut_timber = CutTimber(
-        timber=gooseneck_timber,
-        cuts=[CSGCut(
-            timber=gooseneck_timber,
-            transform=Transform(position=gooseneck_timber.bottom_position, orientation=gooseneck_timber.orientation),
-            negative_csg=gooseneck_timber_final_negative_csg,
-            maybe_end_cut=None
-        )]
-    )
-    
-    # Create CutTimber for the receiving timber  
-    receiving_cut_timber = CutTimber(
-        timber=receiving_timber,
-        cuts=[CSGCut(
-            timber=receiving_timber,
-            transform=Transform(position=receiving_timber.bottom_position, orientation=receiving_timber.orientation),
-            negative_csg=receiving_timber_gooseneck_shape_csg,
-            maybe_end_cut=None
-        )]
-    )
-    
-    # Return the joint
-    return Joint(
-        cut_timbers={
-            "gooseneck_timber": gooseneck_cut_timber,
-            "receiving_timber": receiving_cut_timber
-        },
-        jointAccessories={}
-    )
-
+    # TODO finish
 
 # ============================================================================
 # Aliases for Japanese joint functions

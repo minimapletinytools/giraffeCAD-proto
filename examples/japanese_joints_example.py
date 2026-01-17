@@ -35,12 +35,13 @@ def create_lapped_gooseneck_splice_example():
     
     # Create second timber (receiving timber)
     # This will have a pocket cut to receive the gooseneck
-    # Position it so its bottom end meets the top end of the gooseneck timber
+    # For a splice joint, this timber must point in the opposite direction
+    # Position it so its bottom end (at timber_length, 0, 0) overlaps with gooseneck's top end
     receiving_timber = timber_from_directions(
         length=timber_length,
         size=create_v2(timber_width, timber_height),
-        bottom_position=create_v3(timber_length, 0, 0),  # Start where first timber ends
-        length_direction=create_v3(1, 0, 0),   # Also pointing east
+        bottom_position=create_v3(timber_length * 2, 0, 0),  # Start further east, pointing back west
+        length_direction=create_v3(-1, 0, 0),  # Pointing west (opposite of gooseneck)
         width_direction=create_v3(0, 1, 0),
         name="receiving_timber"
     )
