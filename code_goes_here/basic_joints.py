@@ -240,22 +240,15 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
         else:  # BACK
             face_center = face_center - (receiving_timber.size[1] / Rational(2)) * receiving_timber.height_direction
     
-    # The cutting plane is at the receiving face, with normal pointing INWARD
-    # (toward the receiving timber body). This ensures we remove material on the
-    # butt timber that's on the opposite side from the receiving timber.
-    # For example, if a post sits on top of a mudsill (mudsill's top face),
-    # we remove the part of the post that extends below the mudsill.
-    global_normal = -receiving_face_direction
+    # Calculate distance from the specified butt end to the receiving face
+    distance_from_bottom = ((face_center - butt_timber.bottom_position).T * butt_timber.length_direction)[0, 0]
+    distance_from_end = butt_timber.length - distance_from_bottom if butt_end == TimberReferenceEnd.TOP else distance_from_bottom
     
-    # Convert to LOCAL coordinates for the butt timber
-    local_normal = butt_timber.orientation.matrix.T * global_normal
-    local_offset = (face_center.T * global_normal)[0, 0] - (global_normal.T * butt_timber.bottom_position)[0, 0]
-    
-    # Create the HalfPlaneCut for the butt timber
+    # Create the HalfPlaneCut using the helper function
     cut = HalfPlaneCut(
         timber=butt_timber,
         transform=Transform(position=face_center, orientation=butt_timber.orientation),
-        half_plane=HalfPlane(normal=local_normal, offset=local_offset),
+        half_plane=chop_timber_end_with_half_plane(butt_timber, butt_end, distance_from_end),
         maybe_end_cut=butt_end
     )
     
@@ -355,45 +348,24 @@ def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: Timb
         warnings.warn(f"Timber cross sections may not overlap (centerline distance: {float(centerline_distance)}). Check joint geometry.")
     
     # Calculate distance from each timber end to the splice point
-    # We need to measure how far along the timber (from bottom) the splice point is
-    # Then calculate the distance from the specified end
+    distance_A_from_bottom = ((splice_point - timberA.bottom_position).T * timberA.length_direction)[0, 0]
+    distance_A_from_end = timberA.length - distance_A_from_bottom if timberA_end == TimberReferenceEnd.TOP else distance_A_from_bottom
     
-    # For timberA: project splice point onto timber's centerline
-    vector_A_from_bottom = splice_point - timberA.bottom_position
-    distance_A_from_bottom = (vector_A_from_bottom.T * timberA.length_direction)[0, 0]
+    distance_B_from_bottom = ((splice_point - timberB.bottom_position).T * timberB.length_direction)[0, 0]
+    distance_B_from_end = timberB.length - distance_B_from_bottom if timberB_end == TimberReferenceEnd.TOP else distance_B_from_bottom
     
-    # Distance from the specified end
-    if timberA_end == TimberReferenceEnd.TOP:
-        distance_A_from_end_to_cut = timberA.length - distance_A_from_bottom
-    else:  # BOTTOM
-        distance_A_from_end_to_cut = distance_A_from_bottom
-    
-    # For timberB: project splice point onto timber's centerline
-    vector_B_from_bottom = splice_point - timberB.bottom_position
-    distance_B_from_bottom = (vector_B_from_bottom.T * timberB.length_direction)[0, 0]
-    
-    # Distance from the specified end
-    if timberB_end == TimberReferenceEnd.TOP:
-        distance_B_from_end_to_cut = timberB.length - distance_B_from_bottom
-    else:  # BOTTOM
-        distance_B_from_end_to_cut = distance_B_from_bottom
-    
-    # Create half-plane cuts using the helper function
-    half_plane_A = chop_timber_end_with_half_plane(timberA, timberA_end, distance_A_from_end_to_cut)
-    half_plane_B = chop_timber_end_with_half_plane(timberB, timberB_end, distance_B_from_end_to_cut)
-    
-    # Create the HalfPlaneCuts
+    # Create the HalfPlaneCuts using the helper function
     cutA = HalfPlaneCut(
         timber=timberA,
         transform=Transform(position=splice_point, orientation=timberA.orientation),
-        half_plane=half_plane_A,
+        half_plane=chop_timber_end_with_half_plane(timberA, timberA_end, distance_A_from_end),
         maybe_end_cut=timberA_end
     )
     
     cutB = HalfPlaneCut(
         timber=timberB,
         transform=Transform(position=splice_point, orientation=timberB.orientation),
-        half_plane=half_plane_B,
+        half_plane=chop_timber_end_with_half_plane(timberB, timberB_end, distance_B_from_end),
         maybe_end_cut=timberB_end
     )
     
