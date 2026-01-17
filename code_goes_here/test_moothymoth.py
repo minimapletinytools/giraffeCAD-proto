@@ -206,9 +206,14 @@ class TestTimberOrientations:
         assert orient.matrix == Matrix.eye(3)
     
     def test_pointing_up_is_identity(self):
-        """Test pointing_up is also the identity orientation."""
+        """Test pointing_up has LENGTH pointing upward (+Z)."""
         orient = Orientation.pointing_up()
-        assert orient.matrix == Matrix.eye(3)
+        # Length points up (+Z)
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([0, 0, 1])
+        # Width points north (+Y)
+        assert orient.matrix * Matrix([0, 1, 0]) == Matrix([0, 1, 0])
+        # Facing points west (-X)
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([-1, 0, 0])
     
     def test_facing_west_directions(self):
         """Test facing_west timber directions (identity)."""
@@ -251,14 +256,14 @@ class TestTimberOrientations:
         assert orient.matrix * Matrix([0, 0, 1]) == Matrix([0, 0, 1])
     
     def test_pointing_down_directions(self):
-        """Test pointing_down timber directions (180° around Y)."""
+        """Test pointing_down has LENGTH pointing downward (-Z)."""
         orient = Orientation.pointing_down()
-        # Length along -X
-        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([-1, 0, 0])
-        # Width along +Y
+        # Length points down (-Z)
+        assert orient.matrix * Matrix([1, 0, 0]) == Matrix([0, 0, -1])
+        # Width points north (+Y)
         assert orient.matrix * Matrix([0, 1, 0]) == Matrix([0, 1, 0])
-        # Facing -Z (down)
-        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([0, 0, -1])
+        # Facing points east (+X)
+        assert orient.matrix * Matrix([0, 0, 1]) == Matrix([1, 0, 0])
     
     def test_pointing_forward_directions(self):
         """Test pointing_forward: +X points to +Z, facing upward."""
@@ -469,14 +474,16 @@ class TestFlipOrientation:
     
     def test_flip_pointing_up(self):
         """Test flip on a vertical orientation."""
-        orientation = Orientation.pointing_up()  # Identity
+        orientation = Orientation.pointing_up()  # Length points +Z
         flipped = orientation.flip(flip_z=True)
         
-        # Should negate third column
+        # Should negate third column (Facing direction)
+        # pointing_up is [[0,0,-1], [0,1,0], [1,0,0]]
+        # After flipping Z: [[0,0,1], [0,1,0], [1,0,0]]
         expected = Matrix([
-            [1, 0, 0],
+            [0, 0, 1],
             [0, 1, 0],
-            [0, 0, -1]
+            [1, 0, 0]
         ])
         assert flipped.matrix == expected
     

@@ -529,21 +529,21 @@ class Orientation:
     #
     # TODO prefix all these method with orient_timber_
     #
-    # These methods provide orientations specifically for orienting timbers and thus their names reflect how they move timber from its default orientation.
+    # These methods provide orientations specifically for orienting timbers.
     # 
     # CANONICAL CONVENTIONS:
-    # - facing_west is the IDENTITY orientation
-    # - All facing_* methods are HORIZONTAL timbers (top face pointing up, +Z)
-    #   with rotations about the Z axis
-    # - pointing_up is also IDENTITY (same as facing_west)
-    # - pointing_down maintains the facing_west orientation
-    # - pointing_forward/backward/left/right have +X rotated to point in +Z direction
-    #   (vertical timbers), with their facing direction upward (+Z in local space)
+    # - facing_* methods: HORIZONTAL timbers with LENGTH along the horizontal plane
+    #   and FACING (top) pointing up (+Z). The name indicates which direction the
+    #   LENGTH axis points. Example: facing_east has Length pointing +X (east).
+    # 
+    # - pointing_* methods: Timbers with LENGTH pointing in the named direction.
+    #   Example: pointing_up has Length pointing +Z (up), pointing_down has Length
+    #   pointing -Z (down).
     #
-    # COORDINATE SYSTEM:
-    # - Timber LENGTH runs along local +X axis
-    # - Timber WIDTH runs along local +Y axis  
-    # - Timber HEIGHT/FACING runs along local +Z axis
+    # COORDINATE SYSTEM (timber local space):
+    # - Timber LENGTH runs along local +X axis (column 0 of rotation matrix)
+    # - Timber WIDTH runs along local +Y axis (column 1 of rotation matrix)
+    # - Timber HEIGHT/FACING runs along local +Z axis (column 2 of rotation matrix)
     # ========================================================================
     
     @classmethod
@@ -612,43 +612,45 @@ class Orientation:
     @classmethod
     def pointing_up(cls) -> 'Orientation':
         """
-        Same as facing_west - this is the IDENTITY orientation.
-        Can be used for vertical timbers pointing upward.
+        Vertical timber with LENGTH pointing upward (+Z).
+        This is the same as pointing_forward.
         
-        - Length: +X (local)
-        - Width: +Y (local)
-        - Facing: +Z (local)
+        - Length (local +X) → +Z (up) in global
+        - Width (local +Y) → +Y (north) in global
+        - Facing (local +Z) → -X (west) in global
         """
-        return cls()  # Identity matrix
+        matrix = Matrix([
+            [0, 0, -1],
+            [0, 1, 0],
+            [1, 0, 0]
+        ])
+        return cls(matrix)
     
     @classmethod
     def pointing_down(cls) -> 'Orientation':
         """
-        Vertical timber pointing downward, maintaining facing_west orientation.
-        180° rotation around Y axis.
+        Vertical timber with LENGTH pointing downward (-Z).
         
-        - Length: -X (pointing down in some rotated sense)
-        - Width: +Y (local)
-        - Facing: -Z (pointing down but facing west)
+        - Length (local +X) → -Z (down) in global
+        - Width (local +Y) → +Y (north) in global
+        - Facing (local +Z) → +X (east) in global
         """
         matrix = Matrix([
-            [-1, 0, 0],
+            [0, 0, 1],
             [0, 1, 0],
-            [0, 0, -1]
+            [-1, 0, 0]
         ])
         return cls(matrix)
     
     @classmethod
     def pointing_forward(cls) -> 'Orientation':
         """
-        Vertical timber where +X points to +Z (vertical), facing upward.
-        Timber length runs vertically upward.
+        Vertical timber with LENGTH pointing upward (+Z).
+        Identical to pointing_up.
         
-        - Length: +Z (up) in global
-        - Width: +Y (local)
-        - Facing: -X in global (upward in the timber's local sense)
-        
-        90° rotation around Y axis.
+        - Length (local +X) → +Z (up) in global
+        - Width (local +Y) → +Y (north) in global
+        - Facing (local +Z) → -X (west) in global
         """
         matrix = Matrix([
             [0, 0, -1],
@@ -660,14 +662,11 @@ class Orientation:
     @classmethod
     def pointing_backward(cls) -> 'Orientation':
         """
-        Vertical timber where +X points to +Z (vertical), facing upward.
-        Timber length runs vertically upward, rotated 180° from pointing_forward.
+        Vertical timber with LENGTH pointing upward (+Z), rotated 180° from pointing_forward.
         
-        - Length: +Z (up) in global
-        - Width: -Y (local)
-        - Facing: +X in global (upward in the timber's local sense)
-        
-        90° rotation around Y axis, then 180° around Z axis.
+        - Length (local +X) → +Z (up) in global
+        - Width (local +Y) → -Y (south) in global
+        - Facing (local +Z) → +X (east) in global
         """
         matrix = Matrix([
             [0, 0, 1],
@@ -679,14 +678,11 @@ class Orientation:
     @classmethod
     def pointing_left(cls) -> 'Orientation':
         """
-        Vertical timber where +X points to +Z (vertical), facing upward.
-        Timber length runs vertically upward, rotated 90° CCW from pointing_forward.
+        Vertical timber with LENGTH pointing upward (+Z), rotated 90° CCW from pointing_forward.
         
-        - Length: [1,0,0] → [0,0,1] (up in global)
-        - Width: [0,1,0] → [-1,0,0] (left/west in global)
-        - Facing: [0,0,1] → [0,-1,0]
-        
-        Rotate so X→Z, then rotate 90° CCW around the new vertical axis.
+        - Length (local +X) → +Z (up) in global
+        - Width (local +Y) → -X (west) in global
+        - Facing (local +Z) → -Y (south) in global
         """
         matrix = Matrix([
             [0, -1, 0],
@@ -698,14 +694,11 @@ class Orientation:
     @classmethod
     def pointing_right(cls) -> 'Orientation':
         """
-        Vertical timber where +X points to +Z (vertical), facing upward.
-        Timber length runs vertically upward, rotated 90° CW from pointing_forward.
+        Vertical timber with LENGTH pointing upward (+Z), rotated 90° CW from pointing_forward.
         
-        - Length: [1,0,0] → [0,0,1] (up in global)
-        - Width: [0,1,0] → [1,0,0] (right/east in global)
-        - Facing: [0,0,1] → [0,1,0]
-        
-        Rotate so X→Z, then rotate 90° CW around the new vertical axis.
+        - Length (local +X) → +Z (up) in global
+        - Width (local +Y) → +X (east) in global
+        - Facing (local +Z) → +Y (north) in global
         """
         matrix = Matrix([
             [0, 1, 0],
