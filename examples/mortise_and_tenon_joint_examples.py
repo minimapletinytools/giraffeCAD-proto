@@ -5,7 +5,7 @@ Example usage of mortise and tenon joint functions
 from sympy import Matrix, Rational
 from code_goes_here.moothymoth import inches, Transform
 from code_goes_here.timber import (
-    Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace, Peg
+    Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace, Peg,
     PegShape, timber_from_directions,
     create_v3, V2, CutTimber, Frame
 )
@@ -434,13 +434,16 @@ def create_all_mortise_and_tenon_examples():
         
         # Collect joint accessories (already in global coordinates)
         if joint.jointAccessories:
-            for accessory in joint.jointAccessories:
+            for accessory in joint.jointAccessories.values():
                 # Accessories are stored in global space, so they need to be translated
                 # to match the translated position of the joint
                 translation_offset = create_v3(current_position_x, 0, 0)
+                translated_transform = Transform(
+                    position=accessory.transform.position + translation_offset,
+                    orientation=accessory.transform.orientation
+                )
                 translated_accessory = Peg(
-                    orientation=accessory.orientation,
-                    position=accessory.position + translation_offset,
+                    transform=translated_transform,
                     size=accessory.size,
                     shape=accessory.shape,
                     forward_length=accessory.forward_length,
@@ -480,7 +483,7 @@ if __name__ == "__main__":
         print(f"✅ Created joint with {len(joint.cut_timbers)} timbers")
         
         # Display timber details
-        for i, cut_timber in enumerate(joint.cut_timbers):
+        for i, cut_timber in enumerate(joint.cut_timbers.values()):
             timber = cut_timber.timber
             print(f"\n  Timber {i+1}: {timber.name}")
             print(f"    Position: ({float(timber.bottom_position[0]):.1f}, {float(timber.bottom_position[1]):.1f}, {float(timber.bottom_position[2]):.1f})")

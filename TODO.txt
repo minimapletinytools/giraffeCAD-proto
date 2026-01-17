@@ -157,7 +157,7 @@ DONE-be consistent about V2 vs (Numeric,Numeric) tuple
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
 
--I tihnk the pointing constants in moothymoth are wrong (the comments are certainly wrong)
+DONE-I tihnk the pointing constants in moothymoth are wrong (the comments are certainly wrong)
 -fix morties_and_tenon_joint_example
 
 
