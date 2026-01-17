@@ -238,6 +238,7 @@ def chop_timber_end_with_half_plane(timber: Timber, end: TimberReferenceEnd, dis
         # - HalfPlane keeps points where normal·P >= offset
         # - So normal should point in +Z and offset should be the cut position
         normal = create_v3(0, 0, 1)
+        # note offset is measured from the timber bottom position, not the timber top end position
         offset = timber.length - distance_from_end_to_cut
     else:  # BOTTOM
         # For BOTTOM end:
