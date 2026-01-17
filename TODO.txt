@@ -156,12 +156,14 @@ DONE-fix morties_and_tenon_joint_example
 
 -REFACTOR TIME
   DONE-create Transform class in moothymoth
+  -change cut_ to layout_? or plan_
+  -rename helperonis to something more cute
   -rename create_timber to hew or raise timber?
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
 
 
--change cut_ to layout_?
+
 
 
 -3 major features

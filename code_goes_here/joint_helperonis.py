@@ -7,7 +7,8 @@ These functions help ensure that joints are geometrically valid and sensibly con
 
 from typing import Optional
 from code_goes_here.timber import Timber, TimberReferenceEnd
-from code_goes_here.moothymoth import EPSILON_GENERIC, construction_parallel_check
+from code_goes_here.moothymoth import EPSILON_GENERIC, construction_parallel_check, Numeric, Transform, create_v3
+from code_goes_here.meowmeowcsg import Prism, HalfPlane
 
 
 def check_timber_overlap_for_splice_joint_is_sensible(
@@ -144,6 +145,108 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     return None
 
 
-def chop_timber_end(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> Prism:
-    #creates a csg prims in the timbers local space that starts at distance_from_end_to_cut of the timber end and extends to infinity in the timber length direction
-    # use the size of the timber for the size of the prism
+def chop_timber_end_with_prism(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> Prism:
+    """
+    Create a Prism CSG for chopping off material from a timber end (in local coordinates).
+    
+    Creates a CSG prism in the timber's local coordinate system that starts at 
+    distance_from_end_to_cut from the timber end and extends to infinity in the timber 
+    length direction. The prism has the same cross-section size as the timber.
+    
+    This is useful when you need a volumetric cut that exactly matches the timber's 
+    cross-section (e.g., for CSGCut objects in compound cuts).
+    
+    Args:
+        timber: The timber to create a chop prism for
+        end: Which end to chop from (TOP or BOTTOM)
+        distance_from_end_to_cut: Distance from the end where the cut begins
+    
+    Returns:
+        Prism: A CSG prism in local coordinates representing the material beyond 
+               distance_from_end_to_cut from the end, extending to infinity
+    
+    Example:
+        >>> # Chop everything beyond 2 inches from the top of a timber
+        >>> chop_prism = chop_timber_end_with_prism(my_timber, TimberReferenceEnd.TOP, Rational(2))
+        >>> # This creates a semi-infinite prism starting 2 inches from the top
+    """
+    # In timber local coordinates:
+    # - Bottom is at 0
+    # - Top is at timber.length
+    # - Z-axis points along the length direction (bottom to top)
+    
+    if end == TimberReferenceEnd.TOP:
+        # For TOP end:
+        # - Start at (timber.length - distance_from_end_to_cut)
+        # - Extend to infinity in the +Z direction (beyond the top)
+        start_distance_local = timber.length - distance_from_end_to_cut
+        end_distance_local = None  # Infinite in +Z direction
+    else:  # BOTTOM
+        # For BOTTOM end:
+        # - Start at infinity in the -Z direction (below the bottom)
+        # - End at distance_from_end_to_cut from the bottom
+        start_distance_local = None  # Infinite in -Z direction
+        end_distance_local = distance_from_end_to_cut
+    
+    # Create the prism with identity transform (local coordinates)
+    return Prism(
+        size=timber.size,
+        transform=Transform.identity(),
+        start_distance=start_distance_local,
+        end_distance=end_distance_local
+    )
+
+
+def chop_timber_end_with_half_plane(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> HalfPlane:
+    """
+    Create a HalfPlane CSG for chopping off material from a timber end (in local coordinates).
+    
+    Creates a half-plane cut in the timber's local coordinate system, perpendicular to the 
+    timber's length direction, positioned at distance_from_end_to_cut from the specified end.
+    The half-plane removes everything beyond that distance.
+    
+    This is simpler and more efficient than a prism-based cut when you just need a planar
+    cut perpendicular to the timber's length (e.g., for simple butt joints or splice joints).
+    
+    Args:
+        timber: The timber to create a chop half-plane for
+        end: Which end to chop from (TOP or BOTTOM)
+        distance_from_end_to_cut: Distance from the end where the cut plane is positioned
+    
+    Returns:
+        HalfPlane: A half-plane in local coordinates that removes material beyond 
+                   distance_from_end_to_cut from the end
+    
+    Example:
+        >>> # Chop everything beyond 2 inches from the top of a timber
+        >>> chop_plane = chop_timber_end_with_half_plane(my_timber, TimberReferenceEnd.TOP, Rational(2))
+        >>> # This creates a half-plane 2 inches from the top, removing everything beyond
+    """
+    # In timber local coordinates:
+    # - Bottom is at 0
+    # - Top is at timber.length
+    # - Z-axis (local) points along the length direction (bottom to top)
+    
+    # The half-plane is perpendicular to the length direction (Z-axis in local coords)
+    # Normal vector in local coordinates is always +Z or -Z
+    
+    if end == TimberReferenceEnd.TOP:
+        # For TOP end:
+        # - Cut plane is at (timber.length - distance_from_end_to_cut)
+        # - Normal points in +Z direction (away from the timber body, toward the top)
+        # - We want to remove everything beyond this point (in +Z direction)
+        # - HalfPlane keeps points where normal·P >= offset
+        # - So normal should point in +Z and offset should be the cut position
+        normal = create_v3(0, 0, 1)
+        offset = timber.length - distance_from_end_to_cut
+    else:  # BOTTOM
+        # For BOTTOM end:
+        # - Cut plane is at distance_from_end_to_cut from bottom
+        # - Normal points in -Z direction (away from the timber body, toward the bottom)
+        # - We want to remove everything beyond this point (in -Z direction)
+        # - HalfPlane keeps points where normal·P >= offset
+        # - So normal should point in -Z and offset should be negative of cut position
+        normal = create_v3(0, 0, -1)
+        offset = -distance_from_end_to_cut
+    
+    return HalfPlane(normal=normal, offset=offset)

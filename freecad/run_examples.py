@@ -37,9 +37,9 @@ if script_dir not in sys.path:
 # ============================================================================
 # CONFIGURATION: Change this to render different examples
 # ============================================================================
-#EXAMPLE_TO_RENDER = 'basic_joints' 
+EXAMPLE_TO_RENDER = 'basic_joints' 
 #EXAMPLE_TO_RENDER = 'oscar_shed'
-EXAMPLE_TO_RENDER = 'mortise_and_tenon'
+#EXAMPLE_TO_RENDER = 'mortise_and_tenon'
 #EXAMPLE_TO_RENDER = 'horsey'
 #EXAMPLE_TO_RENDER = 'japanese_joints'
 #EXAMPLE_TO_RENDER = 'csg'
@@ -74,6 +74,7 @@ def reload_all_modules():
         'examples.oscarshed',
         'examples.japanese_joints_example',
         'examples.test_MeowMeowCSG_examples',
+        'code_goes_here.joint_helperonis',
     ]
     
     for module_name in modules_to_reload:
