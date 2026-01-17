@@ -449,50 +449,24 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             raise ValueError(f"Invalid peg face: {peg_parameters.tenon_face}")
         
 
-        # TODO use TIMBER ORIENTATION METHODS instead of this
-        # Peg orientation matches timber orientation so we use the TIMBER ORIENTATION METHODS in moothymoth to create the peg orientation matrix
-        
-        # Create orientation matrix for peg prism
+        # Create orientation for peg prism using timber orientation methods
         # The peg position is at the timber SURFACE, and the peg extends INTO the timber
-        # So Z-axis (column 2) must point INTO the timber (opposite of surface normal)
-        # IMPORTANT: Must create proper rotation matrices (det = +1), not reflections (det = -1)
-        # Matrix columns form a right-handed coordinate system: col0 = col1 × col2
+        # So the peg's Z-axis must point INTO the timber (opposite of surface normal)
+        
         if peg_length_axis_index == 0:  # Peg through X face
             if peg_sign == 1:  # RIGHT face (surface at +X)
-                # Peg extends INTO timber in -X direction
-                # Z-axis (col2) = [-1,0,0], Y-axis (col1) = [0,1,0], X-axis (col0) = [0,0,1]
-                peg_orientation_matrix = Matrix([
-                    [0, 0, -1],  # row 0
-                    [0, 1, 0],   # row 1
-                    [1, 0, 0]    # row 2
-                ])
+                # Peg extends INTO timber in -X direction (west)
+                peg_orientation_tenon_local = Orientation.pointing_forward()
             else:  # LEFT face (surface at -X)
-                # Peg extends INTO timber in +X direction
-                # Z-axis (col2) = [1,0,0], Y-axis (col1) = [0,1,0], X-axis (col0) = [0,0,-1]
-                peg_orientation_matrix = Matrix([
-                    [0, 0, 1],   # row 0
-                    [0, 1, 0],   # row 1
-                    [-1, 0, 0]   # row 2
-                ])
+                # Peg extends INTO timber in +X direction (east)
+                peg_orientation_tenon_local = Orientation.pointing_backward()
         else:  # Peg through Y face
             if peg_sign == 1:  # FRONT face (surface at +Y)
-                # Peg extends INTO timber in -Y direction
-                # Z-axis (col2) = [0,-1,0], X-axis (col0) = [1,0,0], Y-axis (col1) = [0,0,1]
-                peg_orientation_matrix = Matrix([
-                    [1, 0, 0],   # row 0
-                    [0, 0, -1],  # row 1
-                    [0, 1, 0]    # row 2
-                ])
+                # Peg extends INTO timber in -Y direction (south)
+                peg_orientation_tenon_local = Orientation.pointing_left()
             else:  # BACK face (surface at -Y)
-                # Peg extends INTO timber in +Y direction
-                # Z-axis (col2) = [0,1,0], X-axis (col0) = [1,0,0], Y-axis (col1) = [0,0,-1]
-                peg_orientation_matrix = Matrix([
-                    [1, 0, 0],   # row 0
-                    [0, 0, 1],   # row 1
-                    [0, -1, 0]   # row 2
-                ])
-        
-        peg_orientation_tenon_local = Orientation(peg_orientation_matrix)
+                # Peg extends INTO timber in +Y direction (north)
+                peg_orientation_tenon_local = Orientation.pointing_right()
         
         # Create peg holes for each peg position
         peg_holes_in_tenon_local = []
