@@ -7,8 +7,9 @@ These functions help ensure that joints are geometrically valid and sensibly con
 
 from typing import Optional, Tuple
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace
-from code_goes_here.moothymoth import EPSILON_GENERIC, construction_parallel_check, Numeric, Transform, create_v3, create_v2, Orientation
+from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation
 from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, Union
+from code_goes_here.construction import are_timbers_face_aligned, do_xy_cross_section_on_parallel_timbers_overlap
 
 
 def check_timber_overlap_for_splice_joint_is_sensible(
@@ -55,7 +56,7 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     # For anti-parallel, the dot product should be close to -1
     dot_product = timberA_length_direction.dot(timberB_length_direction)
     
-    if not construction_parallel_check(timberA_length_direction, timberB_length_direction):
+    if not are_vectors_parallel(timberA_length_direction, timberB_length_direction):
         return (
             f"Joint ends are not parallel. TimberA length direction {timberA_length_direction.T} "
             f"and timberB length direction {timberB_length_direction.T} must be parallel "
@@ -434,10 +435,23 @@ def chop_lap_on_timber_ends(
         ... )
     """
 
-    # TODO assert that the 2 timbers are face aligned and 
-    # TODO assert the 2 timbers are parallel
-    # TODO assert the 2 timbers overlap at least a little
+    # Assert that the 2 timbers are face aligned
+    assert are_timbers_face_aligned(top_lap_timber, bottom_lap_timber), \
+        f"Timbers must be face-aligned for a splice lap joint. " \
+        f"{top_lap_timber.name} and {bottom_lap_timber.name} orientations are not related by 90-degree rotations."
+    
+    # Assert the 2 timbers are parallel (either same direction or opposite)
+    assert are_vectors_parallel(top_lap_timber.length_direction, bottom_lap_timber.length_direction), \
+        f"Timbers must be parallel for a splice lap joint. " \
+        f"{top_lap_timber.name} length_direction {top_lap_timber.length_direction.T} and " \
+        f"{bottom_lap_timber.name} length_direction {bottom_lap_timber.length_direction.T} are not parallel."
+    
+    # Assert the 2 timber cross sections overlap at least a little
+    assert do_xy_cross_section_on_parallel_timbers_overlap(top_lap_timber, bottom_lap_timber), \
+        f"Timber cross sections should overlap for a splice lap joint or there is nothing to cut! " \
+        f"{top_lap_timber.name} and {bottom_lap_timber.name} cross sections do not overlap."
 
+    
     top_lap_csg = chop_lap_on_timber_end(top_lap_timber, top_lap_timber_end, top_lap_timber_face, lap_length, top_lap_shoulder_position_from_top_lap_shoulder_timber_end, lap_depth)
 
     # Step 2: Find the corresponding face on the bottom lap timber
