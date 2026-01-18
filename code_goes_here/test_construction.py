@@ -351,7 +351,7 @@ class TestTimberCreation:
         assert timber_center_right.bottom_position[0] == Rational(2)  # X on boundary
         assert timber_center_right.bottom_position[1] == Rational(0)  # Y unchanged
     
-    def test_extend_timber(self):
+    def test_stretch_timber(self):
         """Test timber extension creation with correct length calculation."""
         # Create a vertical timber from Z=0 to Z=10
         original_timber = create_standard_vertical_timber(height=10, size=(0.2, 0.2), position=(0, 0, 0))
@@ -359,7 +359,7 @@ class TestTimberCreation:
         # Extend from top with 2 units of overlap and 5 units of extension
         # overlap_length = 2.0 (overlaps with last 2 units of original timber)
         # extend_length = 5.0 (extends 5 units beyond the end)
-        extended = extend_timber(
+        extended = stretch_timber(
             original_timber, 
             TimberReferenceEnd.TOP, 
             overlap_length=Rational(2), 
