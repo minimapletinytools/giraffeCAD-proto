@@ -1,3 +1,4 @@
+#TODO rename to just MeowMeowCSG_examples.py
 """
 Test examples for MeowMeowCSG rendering.
 
@@ -16,6 +17,8 @@ NOTE: Prism positioning follows the Timber convention:
 from sympy import Matrix, eye, Rational, sqrt
 from code_goes_here.meowmeowcsg import Prism, HalfPlane, Difference, Union, ConvexPolygonExtrusion
 from code_goes_here.moothymoth import Orientation, Transform
+from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, timber_from_directions
+from code_goes_here.joint_helperonis import chop_lap_on_timber_end
 
 
 def example_cube_with_cube_cutout():
@@ -183,6 +186,75 @@ def example_hexagon_extrusion():
     return hexagon
 
 
+def example_lap_cut_on_timber():
+    """
+    4"x4"x4' timber with a 4" lap cut on the top end.
+    
+    Creates a timber and cuts a lap joint on it using chop_lap_on_timber_end.
+    The lap is cut from the BACK face at the TOP end of the timber.
+    
+    Dimensions (in meters):
+    - Timber: 0.1016m x 0.1016m x 1.2192m (4" x 4" x 4')
+    - Lap depth: 0.1016m (4", which is the full height)
+    - Lap length: 0.3048m (12" = 1')
+    - Shoulder position: 0.1016m (4" from the top end)
+    
+    Returns:
+        Difference CSG object (timber with lap cut removed)
+    """
+    # Convert inches and feet to meters
+    # 1 inch = 0.0254 meters, 1 foot = 0.3048 meters
+    inch = Rational(254, 10000)  # 0.0254 meters
+    foot = Rational(3048, 10000)  # 0.3048 meters
+    
+    # Create a 4"x4"x4' timber
+    timber_width = 4 * inch  # 4"
+    timber_height = 4 * inch  # 4"
+    timber_length = 4 * foot  # 4'
+    
+    # Create timber extending along X-axis
+    timber = timber_from_directions(
+        length=timber_length,
+        size=Matrix([timber_width, timber_height]),
+        bottom_position=Matrix([0, 0, 0]),
+        length_direction=Matrix([1, 0, 0]),
+        width_direction=Matrix([0, 1, 0]),
+        name='lap_test_timber'
+    )
+    
+    # Create the lap cut parameters
+    lap_depth = 2 * inch  # Cut 2" (half the height)
+    lap_length = 1 * foot  # 1 foot long lap
+    shoulder_distance = 4 * inch  # Shoulder is 4" from the top end
+    
+    # Create the lap cut CSG (in timber's local coordinates)
+    lap_cut_csg = chop_lap_on_timber_end(
+        top_lap_timber=timber,
+        top_lap_timber_end=TimberReferenceEnd.TOP,
+        top_lap_timber_face=TimberFace.BACK,
+        lap_length=lap_length,
+        top_lap_shoulder_position_from_top_lap_shoulder_timber_end=shoulder_distance,
+        lap_depth=lap_depth
+    )
+    
+    # Create the base timber prism (in local coordinates)
+    timber_prism = Prism(
+        size=timber.size,
+        transform=Transform.identity(),
+        start_distance=0,
+        end_distance=None
+    )
+    
+    # Create the difference (timber with lap cut removed)
+    result = Difference(
+        base=timber_prism,
+        subtract=[lap_cut_csg]
+    )
+    
+    return result
+
+
+
 # Dictionary for easy example selection
 EXAMPLES = {
     'cube_cutout': {
@@ -209,6 +281,11 @@ EXAMPLES = {
         'name': 'Hexagon Extrusion',
         'description': 'Regular hexagon (0.5m radius) extruded to 1m height',
         'function': example_hexagon_extrusion
+    },
+    'lap_cut_timber': {
+        'name': 'Lap Cut on Timber',
+        'description': '4"x4"x4\' timber with 4" lap cut on top end (tests chop_lap_on_timber_end)',
+        'function': example_lap_cut_on_timber
     }
 }
 

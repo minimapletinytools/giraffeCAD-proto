@@ -48,6 +48,7 @@ class MeowMeowCSG(ABC):
         pass
 
 
+# TODO rename to HalfSpace or something? Maybe HalfPlane is fine...
 @dataclass(frozen=True)
 class HalfPlane(MeowMeowCSG):
     """
