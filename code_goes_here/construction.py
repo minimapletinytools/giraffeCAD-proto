@@ -333,8 +333,7 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     
     return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)
 
-# TODO rename to stretch_timber
-def extend_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Numeric, 
+def stretch_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Numeric, 
                   extend_length: Numeric) -> Timber:
     """
     Creates a new timber extending the original timber by a given length.
