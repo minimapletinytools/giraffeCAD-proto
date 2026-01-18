@@ -303,27 +303,27 @@ def chop_lap_on_timber_end(
     # Step 1: Determine the end positions and shoulder position of the top lap timber
     if top_lap_timber_end == TimberReferenceEnd.TOP:
         top_lap_end_pos = top_lap_timber.get_top_center_position()
-        top_lap_direction = top_lap_timber.length_direction
+        top_lap_direction = -top_lap_timber.length_direction  # Inward from TOP
     else:  # BOTTOM
         top_lap_end_pos = top_lap_timber.get_bottom_center_position()
-        top_lap_direction = -top_lap_timber.length_direction
+        top_lap_direction = top_lap_timber.length_direction  # Inward from BOTTOM
     
     # Calculate the shoulder position (where the lap starts)
-    shoulder_pos_global = top_lap_end_pos - top_lap_direction * top_lap_shoulder_position_from_top_lap_shoulder_timber_end
+    shoulder_pos_global = top_lap_end_pos + top_lap_direction * top_lap_shoulder_position_from_top_lap_shoulder_timber_end
     
     # Calculate the end of the lap (shoulder + lap_length)
     lap_end_pos_global = shoulder_pos_global + top_lap_direction * lap_length
     
     # Step 3: Create half-plane cuts to remove the ends beyond the lap region
-    # Top lap: remove everything from shoulder position onward
+    # Top lap: remove everything beyond the shoulder position (towards the timber end)
     top_lap_shoulder_distance_from_bottom = ((shoulder_pos_global - top_lap_timber.bottom_position).T * top_lap_timber.length_direction)[0, 0]
     top_lap_end_distance_from_bottom = ((lap_end_pos_global - top_lap_timber.bottom_position).T * top_lap_timber.length_direction)[0, 0]
     
-    top_lap_end_distance_from_end = (top_lap_timber.length - top_lap_end_distance_from_bottom
-                                  if top_lap_timber_end == TimberReferenceEnd.TOP 
-                                  else top_lap_end_distance_from_bottom)
+    top_lap_shoulder_distance_from_end = (top_lap_timber.length - top_lap_shoulder_distance_from_bottom
+                                         if top_lap_timber_end == TimberReferenceEnd.TOP 
+                                         else top_lap_shoulder_distance_from_bottom)
                                   
-    top_lap_half_plane = chop_timber_end_with_half_plane(top_lap_timber, top_lap_timber_end, top_lap_end_distance_from_end)
+    top_lap_half_plane = chop_timber_end_with_half_plane(top_lap_timber, top_lap_timber_end, top_lap_shoulder_distance_from_end)
     
     
     # Step 4: Determine the orientation of the lap based on top_lap_timber_face
@@ -334,8 +334,9 @@ def chop_lap_on_timber_end(
     
     # Calculate the prism dimensions and position for top lap
     # Start and end distances in local coordinates
-    lap_start_local = top_lap_shoulder_distance_from_bottom
-    lap_end_local = top_lap_end_distance_from_bottom
+    # Ensure start <= end for Prism
+    prism_start = min(top_lap_shoulder_distance_from_bottom, top_lap_end_distance_from_bottom)
+    prism_end = max(top_lap_shoulder_distance_from_bottom, top_lap_end_distance_from_bottom)
     
     # Step 5: Find where the two laps meet based on lap_depth
     # The top lap removes material from top_lap_timber_face
@@ -359,8 +360,8 @@ def chop_lap_on_timber_end(
         top_lap_prism = Prism(
             size=create_v2(lap_depth, top_lap_timber.size[1]),
             transform=Transform(position=create_v3(x_offset, 0, 0), orientation=Orientation.identity()),
-            start_distance=lap_start_local,
-            end_distance=lap_end_local
+            start_distance=prism_start,
+            end_distance=prism_end
         )
     else:  # FRONT or BACK
         # Lap is on a height face (Y-axis in local coords)
@@ -375,16 +376,12 @@ def chop_lap_on_timber_end(
         top_lap_prism = Prism(
             size=create_v2(top_lap_timber.size[0], lap_depth),
             transform=Transform(position=create_v3(0, y_offset, 0), orientation=Orientation.identity()),
-            start_distance=lap_start_local,
-            end_distance=lap_end_local
+            start_distance=prism_start,
+            end_distance=prism_end
         )
     
     # Step 7: Union the half-plane cuts with the prism cuts
     top_lap_csg = Union([top_lap_prism, top_lap_half_plane])
 
-    import pprint
-    pprint.pprint(top_lap_prism)
-    pprint.pprint(top_lap_half_plane)
-    
     return top_lap_csg
 
