@@ -76,8 +76,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     tenon_timber: Timber,
     mortise_timber: Timber,
     tenon_end: TimberReferenceEnd,
-    # TODO rename to tenon_size
-    size: V2,
+    tenon_size: V2,
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
     mortise_shoulder_inset: Numeric = Rational(0),
@@ -99,7 +98,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         tenon_timber: Timber that will receive the tenon cut
         mortise_timber: Timber that will receive the mortise cut
         tenon_end: Which end of the tenon timber gets the tenon (TOP or BOTTOM)
-        size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
+        tenon_size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
         tenon_length: Length of tenon extending from mortise face
         mortise_depth: Depth of mortise (None = through mortise, >= tenon_length)
         mortise_shoulder_inset: Inset distance from mortise face to shoulder plane (not yet supported, must be 0)
@@ -300,7 +299,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     from code_goes_here.moothymoth import Transform
     tenon_transform = Transform(position=tenon_origin_local, orientation=relative_orientation)
     tenon_prism_in_mortise_local = Prism(
-        size=size,
+        size=tenon_size,
         transform=tenon_transform,
         start_distance= -actual_mortise_depth if tenon_end == TimberReferenceEnd.BOTTOM else 0,
         end_distance= actual_mortise_depth if tenon_end == TimberReferenceEnd.TOP else 0
@@ -374,7 +373,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         orientation=Orientation.identity()
     )
     tenon_prism_local = Prism(
-        size=size,
+        size=tenon_size,
         transform=tenon_transform_local,
         start_distance=tenon_start,
         end_distance=tenon_end_dist
@@ -721,7 +720,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
     tenon_timber: Timber,
     mortise_timber: Timber,
     tenon_end: TimberReferenceEnd,
-    size: V2,
+    tenon_size: V2,
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
     tenon_position: V2 = None,
@@ -737,7 +736,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber: Timber that will receive the tenon cut
         mortise_timber: Timber that will receive the mortise cut
         tenon_end: Which end of the tenon timber gets the tenon (TOP or BOTTOM)
-        size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
+        tenon_size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
         tenon_length: Length of tenon extending from mortise face
         mortise_depth: Depth of mortise (None = through mortise)
         tenon_position: Offset of tenon center from timber centerline (X, Y) in tenon timber's local space
@@ -757,7 +756,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         ...     tenon_timber=vertical_post,
         ...     mortise_timber=horizontal_beam,
         ...     tenon_end=TimberReferenceEnd.TOP,
-        ...     size=Matrix([Rational(2), Rational(2)]),
+        ...     tenon_size=Matrix([Rational(2), Rational(2)]),
         ...     tenon_length=Rational(3),
         ...     mortise_depth=Rational(4),  # or None for through mortise
         ...     tenon_position=Matrix([Rational(0), Rational(0)]),  # centered
@@ -779,9 +778,9 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         f"Timbers must be orthogonare_timbers_orthogonalal (perpendicular length directions) for this joint type. {mortise_timber.name} length_direction: {mortise_timber.length_direction}, {tenon_timber.name} length_direction: {tenon_timber.length_direction}"
     
     # Verify that tenon size + position doesn't exceed timber cross-section
-    # Tenon bounds: [position - size/2, position + size/2] must be within [-timber_size/2, +timber_size/2]
-    tenon_half_size_x = size[0] / 2
-    tenon_half_size_y = size[1] / 2
+    # Tenon bounds: [position - tenon_size/2, position + tenon_size/2] must be within [-timber_size/2, +timber_size/2]
+    tenon_half_size_x = tenon_size[0] / 2
+    tenon_half_size_y = tenon_size[1] / 2
     timber_half_size_x = tenon_timber.size[0] / 2
     timber_half_size_y = tenon_timber.size[1] / 2
     
@@ -800,7 +799,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         tenon_timber=tenon_timber,
         mortise_timber=mortise_timber,
         tenon_end=tenon_end,
-        size=size,
+        tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         tenon_position=tenon_position,

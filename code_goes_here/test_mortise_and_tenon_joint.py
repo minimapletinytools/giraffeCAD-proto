@@ -116,7 +116,7 @@ class TestMortiseAndTenonGeometry:
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
-            size=Matrix([Rational(2), Rational(2)]),
+            tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=tenon_length,
             mortise_depth=mortise_depth
         )
@@ -185,7 +185,7 @@ class TestPegStuff:
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
-            size=Matrix([Rational(2), Rational(2)]),
+            tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
             peg_parameters=peg_params
@@ -238,7 +238,7 @@ class TestPegStuff:
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
-            size=Matrix([Rational(2), Rational(2)]),
+            tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
             peg_parameters=peg_params
@@ -317,7 +317,7 @@ class TestPegStuff:
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
-            size=Matrix([Rational(2), Rational(2)]),
+            tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
             peg_parameters=peg_params
@@ -359,7 +359,7 @@ class TestPegStuff:
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
-            size=Matrix([Rational(2), Rational(2)]),
+            tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
             peg_parameters=peg_params_with_offset
@@ -379,7 +379,7 @@ class TestPegStuff:
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
-            size=Matrix([Rational(2), Rational(2)]),
+            tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
             peg_parameters=peg_params_no_offset
