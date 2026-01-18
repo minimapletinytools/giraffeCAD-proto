@@ -781,6 +781,81 @@ def are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Option
     return False
 
   
+def do_xy_cross_section_on_parallel_timbers_overlap(timberA: Timber, timberB: Timber) -> bool:
+    """
+    Check if the cross-section of two parallel timbers overlap.
+    
+    Converts timberB into timberA's local space and checks if the XY cross-sections
+    (defined by bottom_position and size) overlap.
+
+    Args:
+        timberA: First timber
+        timberB: Second timber
+
+    Returns:
+        True if the cross-sections overlap, False otherwise
+    """
+    from sympy import Rational
+    
+    assert are_vectors_parallel(timberA.length_direction, timberB.length_direction), "Timbers must be parallel"
+
+    # Convert timberB's bottom position into timberA's local space
+    timberB_bottom_local = timberA.global_to_local(timberB.bottom_position)
+    
+    # In timberA's local space:
+    # - timberA's cross section is centered at (0, 0) in XY plane
+    # - timberA spans from (-width/2, -height/2) to (width/2, height/2)
+    timberA_x_min = -timberA.size[0] / Rational(2)
+    timberA_x_max = timberA.size[0] / Rational(2)
+    timberA_y_min = -timberA.size[1] / Rational(2)
+    timberA_y_max = timberA.size[1] / Rational(2)
+    
+    # timberB's cross section is centered at (timberB_bottom_local.x, timberB_bottom_local.y)
+    # We need to transform timberB's width and height directions into timberA's local space
+    # to determine the extents of timberB's cross section
+    
+    # Get timberB's width and height directions in global space
+    timberB_width_dir_global = timberB.width_direction
+    timberB_height_dir_global = timberB.height_direction
+    
+    # Convert to timberA's local space (just rotate, don't translate)
+    timberB_width_dir_local = timberA.orientation.matrix.T * timberB_width_dir_global
+    timberB_height_dir_local = timberA.orientation.matrix.T * timberB_height_dir_global
+    
+    # Get the four corners of timberB's cross section in timberA's local space
+    # Start from timberB's center in local space
+    timberB_center_local_xy = create_v2(timberB_bottom_local[0], timberB_bottom_local[1])
+    
+    # Offset vectors for the corners (in timberA's local XY plane)
+    half_width = timberB.size[0] / Rational(2)
+    half_height = timberB.size[1] / Rational(2)
+    
+    # Corner offsets in timberA's local space
+    offset_width_local = create_v2(timberB_width_dir_local[0], timberB_width_dir_local[1]) * half_width
+    offset_height_local = create_v2(timberB_height_dir_local[0], timberB_height_dir_local[1]) * half_height
+    
+    # Four corners of timberB in timberA's local XY coordinates
+    corner1 = timberB_center_local_xy + offset_width_local + offset_height_local
+    corner2 = timberB_center_local_xy + offset_width_local - offset_height_local
+    corner3 = timberB_center_local_xy - offset_width_local + offset_height_local
+    corner4 = timberB_center_local_xy - offset_width_local - offset_height_local
+    
+    # Find axis-aligned bounding box of timberB in timberA's local space
+    from sympy import Min, Max
+    timberB_x_min = Min(corner1[0], corner2[0], corner3[0], corner4[0])
+    timberB_x_max = Max(corner1[0], corner2[0], corner3[0], corner4[0])
+    timberB_y_min = Min(corner1[1], corner2[1], corner3[1], corner4[1])
+    timberB_y_max = Max(corner1[1], corner2[1], corner3[1], corner4[1])
+    
+    # Check if the axis-aligned bounding boxes overlap
+    # Two rectangles overlap if they overlap in both X and Y dimensions
+    x_overlap = timberA_x_max >= timberB_x_min and timberB_x_max >= timberA_x_min
+    y_overlap = timberA_y_max >= timberB_y_min and timberB_y_max >= timberA_y_min
+    
+    return x_overlap and y_overlap
+
+
+
 
 
 # =========================================
