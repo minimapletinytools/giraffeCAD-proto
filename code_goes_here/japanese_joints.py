@@ -95,7 +95,7 @@ def cut_lapped_gooseneck_joint(
     Args:
         gooseneck_timber: The timber that will have the gooseneck feature cut into it
         receiving_timber: The timber that receives the gooseneck. The top/bot of this timber also determines the position of the gooseneck joint
-        receiving_timber_end: The end to cut on the receiving timber, which will also determine the end of the gooseneck timber
+        receiving_timber_end: The end to cut on the receiving timber, which will also determine the end of the gooseneck timber (or you could add a optional parameter for this)
         gooseneck_timber_face: The face on the gooseneck timber where the gooseneck profile is visible
         gooseneck_length: Length of the gooseneck shape (does not include lap length)
         gooseneck_small_width: Width of the narrow end of the gooseneck taper
@@ -164,9 +164,17 @@ def cut_lapped_gooseneck_joint(
 
     # compute the starting position for the gooseneck shape in global space
     gooseneck_direction_global = -receiving_timber.get_face_direction(receiving_timber_end)
-    # TODO should lateral offset be different sign depending which face_direction?
     gooseneck_lateral_offset_direction_global = receiving_timber.get_face_direction(gooseneck_timber_face.rotate_right())
-    gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global = receiving_timber.bottom_position + gooseneck_direction_global * lap_length + gooseneck_lateral_offset_direction_global * gooseneck_lateral_offset
+
+    # Get the receiving timber end position
+    if receiving_timber_end == TimberReferenceEnd.TOP:
+        receiving_timber_end_position = receiving_timber.get_top_center_position()
+    else:  # BOTTOM
+        receiving_timber_end_position = receiving_timber.bottom_position
+    
+    # Move from the receiving timber end by gooseneck_length (inward) to get the gooseneck starting position
+    gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global = receiving_timber_end_position + gooseneck_direction_global * gooseneck_length + gooseneck_lateral_offset_direction_global * gooseneck_lateral_offset
+
     # project gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global onto the gooseneck_timber_face
     gooseneck_starting_position_global = receiving_timber.project_global_point_onto_timber_face_global(gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global, gooseneck_timber_face)
     gooseneck_drawing_normal_global = gooseneck_timber.get_face_direction(gooseneck_timber_face)
@@ -185,6 +193,19 @@ def cut_lapped_gooseneck_joint(
         ) / 2
 
     # TODO finish
+    # extract the length component from gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global
+    gooseneck_starting_position_on_receiving_timber = None
+    # compute gooseneck_starting_position_on_receiving_timber + lap_length (in direction of receiving timber end)
+    lap_end_position_on_receiving_timber = None
+
+    # compute gooseneck depth relative to face on receiving timber that opposes gooseneck_timber_face (use measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber)
+
+    # use chop_lap_on_timber_end to cut a lap from gooseneck_starting_position_on_receiving_timber (shoulder) to lap_starting_position_on_receiving_timber
+
+
+    # use chop_lap_on_timber_end to cut a lap from lap_end_position_on_receiving_timber (shoulder) to lap_end_position_on_receiving_timber + lap_length + gooseneck_length (in direction of gooseneck timber end)
+
+    # return the joint as is for now for testing purposes
 
 # ============================================================================
 # Aliases for Japanese joint functions

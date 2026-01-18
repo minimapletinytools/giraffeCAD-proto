@@ -168,11 +168,14 @@ DONE-pull out logic into joint_helperonis.py
   -split the lap helper to do the lap cut on just 1 timber...
 IGNORE-add optional key to lap helper?
 
+
+
+
 -REFACTOR TIME
   DONE-create Transform class in moothymoth
   DONE-rename helperonis to something more cute
+  -rename meowmeocsg and moothymoth?
   -change cut_ to layout_? or plan_
-  
   -rename create_timber to hew or raise timber?
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board

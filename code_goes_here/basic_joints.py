@@ -737,7 +737,9 @@ def cut_basic_splice_lap_joint_on_aligned_timbers(
     bottom_lap_timber: Timber,
     bottom_lap_timber_end: TimberReferenceEnd,
     top_lap_timber_face: TimberFace,
+    # TODO make this optional, and if it is, copmtued based on how much the 2 timbers overlap (remember to use top_lap_shoulder_position_from_top_lap_shoulder_timber_end to determine the lap end for the top lap timber, the bototm lap timber lap end is just the bottom lap timber end in this case)
     lap_length: Numeric,
+    # TODO make this optional, and if it is, compute based on the top lap timber end
     top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric,
     lap_depth: Optional[Numeric] = None
 ) -> Joint:
