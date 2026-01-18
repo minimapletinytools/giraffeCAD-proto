@@ -123,6 +123,8 @@ class TimberReferenceEnd(Enum):
         """Convert TimberReferenceEnd to TimberFace."""
         return TimberFace(self.value)
 
+
+# TODO rename to TimberLongFace
 class TimberReferenceLongFace(Enum):
     RIGHT = 3
     FRONT = 4
