@@ -298,6 +298,58 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
     return list(joint.cut_timbers.values())
 
 
+def make_splice_lap_joint_example(position: V3) -> list[CutTimber]:
+    """
+    Create a splice lap joint example.
+    Two timbers meet end-to-end with interlocking lap notches.
+    
+    Args:
+        position: Center position of the joint (V3)
+        
+    Returns:
+        List of CutTimber objects representing the joint
+    """
+    half_length = TIMBER_LENGTH / 2
+    lap_length = TIMBER_SIZE * 3  # Lap extends 3x the timber width
+    shoulder_distance = TIMBER_SIZE  # Shoulder starts 1x timber width from end
+    
+    # TimberA extends in +X direction from the center
+    timberA = timber_from_directions(
+        length=TIMBER_LENGTH,
+        size=create_v2(TIMBER_SIZE, TIMBER_SIZE),
+        bottom_position=position - create_v3(half_length, 0, 0),
+        length_direction=create_v3(1, 0, 0),
+        width_direction=create_v3(0, 1, 0),
+        name="splice_lap_timberA"
+    )
+    
+    # TimberB extends in +X direction, positioned to meet timberA end-to-end
+    timberB = timber_from_directions(
+        length=TIMBER_LENGTH,
+        size=create_v2(TIMBER_SIZE, TIMBER_SIZE),
+        bottom_position=position + create_v3(half_length, 0, 0),
+        length_direction=create_v3(1, 0, 0),
+        width_direction=create_v3(0, 1, 0),
+        name="splice_lap_timberB"
+    )
+    
+    # Create the splice lap joint
+    # TimberA has material removed from BOTTOM face
+    # TimberB has material removed from TOP face (opposite)
+    joint = cut_basic_splice_lap_joint(
+        top_lap_timber=timberA,
+        top_lap_timber_end=TimberReferenceEnd.TOP,
+        bottom_lap_timber=timberB,
+        bottom_lap_timber_end=TimberReferenceEnd.BOTTOM,
+        top_lap_timber_face=TimberFace.BOTTOM,
+        lap_length=lap_length,
+        top_lap_shoulder_position_from_top_lap_shoulder_timber_end=shoulder_distance,
+        lap_depth=None  # Use default (half thickness)
+    )
+    
+    return list(joint.cut_timbers.values())
+
+
 def create_all_joint_examples() -> Frame:
     """
     Create joint examples with automatic spacing starting from the origin.
@@ -327,6 +379,7 @@ def create_all_joint_examples() -> Frame:
         ("Miter Joint (Face Aligned)", make_miter_joint_face_aligned_example),
         ("Butt Joint", make_butt_joint_example),
         ("Splice Joint", make_splice_joint_example),
+        ("Splice Lap Joint", make_splice_lap_joint_example),
         ("House Joint", make_house_joint_example),
         ("Cross Lap Joint", make_cross_lap_joint_example),  # Not yet implemented
     ]
