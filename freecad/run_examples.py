@@ -66,6 +66,7 @@ def reload_all_modules():
         'code_goes_here.basic_joints',
         'code_goes_here.mortise_and_tenon_joint',
         'code_goes_here.japanese_joints',
+        'code_goes_here.joint_helperonis',
         'giraffe',
         'giraffe_render_freecad',
         'examples.reference.basic_joints_example',
@@ -74,7 +75,6 @@ def reload_all_modules():
         'examples.oscarshed',
         'examples.japanese_joints_example',
         'examples.MeowMeowCSG_examples',
-        'code_goes_here.joint_helperonis',
     ]
     
     for module_name in modules_to_reload:
@@ -302,7 +302,7 @@ def render_csg():
     Edit CSG_EXAMPLE_TO_RENDER to choose which example to render.
     """
     from giraffe_render_freecad import render_csg_shape, clear_document, get_active_document
-    from examples.test_MeowMeowCSG_examples import EXAMPLES, get_example
+    from examples.MeowMeowCSG_examples import EXAMPLES, get_example
     
     print("="*60)
     print("GiraffeCAD FreeCAD - CSG Test")

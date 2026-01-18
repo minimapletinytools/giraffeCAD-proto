@@ -1,4 +1,17 @@
 
+:: 1/16/2026 half lap cut agent instructions
+
+implement def chop_lap_on_timber_ends(top_lap_timber: Timber, top_lap_timber_end: TimberReferenceEnd, bottom_lap_timber: Timber, bottom_lap_timber_end: TimberReferenceEnd, top_lap_timber_face: TimberFace, lap_length: Numeric, lap_depth: Numeric, top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric) -> (MeowMeowCSG, MeowMeowCSG):
+
+
+1. determine the end the top lap timber based on top_lap_shoulder_position_from_top_lap_shoulder_timber_end and lap_length
+2. project the end position onto bottom_lap_timber
+3. create half plane cuts to remove the end
+4. determine the orientation of the lap based on top_lap_timber_face
+5. in the axis orthogonal to top_lap_timber_face find where the 2 laps meet based on lap_deth
+6. create prisms to remove the material from each timber resp
+7. union with the half lap cuts we created earlier and return the CSG pair
+
 :: 1/7/2026 Agent instructinos
 
 -agent can work out local coordinates but often won't go through teh computations
@@ -152,6 +165,8 @@ DONE-be consistent about V2 vs (Numeric,Numeric) tuple
 DONE-I tihnk the pointing constants in moothymoth are wrong (the comments are certainly wrong)
 DONE-fix morties_and_tenon_joint_example
 
+-pull out logic into joint_helperonis.py
+  -split the lap helper to do the lap cut on just 1 timber...
 
 
 -REFACTOR TIME
@@ -180,7 +195,6 @@ DONE-fix morties_and_tenon_joint_example
 
 
 -xyz lap joint
-  -pull out logic into joint_helperonis.py
   -dovetail lap joint
   -gooseneck lap joint
 
