@@ -266,9 +266,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     
     return joint
 
-
-# TODO rename to cut_basic_butt_splice_joint_on_aligned_timbers
-def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd, splice_point: Optional[V3] = None) -> Joint:
+def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd, splice_point: Optional[V3] = None) -> Joint:
     """
     Creates a basic splice joint between two timbers with parallel (aligned) length axes.
     Both timbers are cut at the splice plane, creating a butt joint connection.
@@ -873,8 +871,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     
     return joint
 
-# TODO rename to cut_basic_lap_splice_joint_on_aligned_timbers
-def cut_basic_splice_lap_joint(
+def cut_basic_splice_lap_joint_on_aligned_timbers(
     top_lap_timber: Timber,
     top_lap_timber_end: TimberReferenceEnd,
     bottom_lap_timber: Timber,
@@ -917,7 +914,7 @@ def cut_basic_splice_lap_joint(
     
     Example:
         >>> # Create a half-lap splice joint
-        >>> joint = cut_basic_splice_lap_joint(
+        >>> joint = cut_basic_splice_lap_joint_on_aligned_timbers(
         ...     timber_a, TimberReferenceEnd.TOP,
         ...     timber_b, TimberReferenceEnd.BOTTOM,
         ...     TimberFace.BOTTOM, lap_length=4, shoulder_pos=1
