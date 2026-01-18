@@ -6,13 +6,90 @@ These functions help ensure that joints are geometrically valid and sensibly con
 """
 
 from typing import Optional, Tuple
-from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace
+from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation
 from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, Union
 from code_goes_here.construction import are_timbers_face_aligned, do_xy_cross_section_on_parallel_timbers_overlap
+from sympy import Abs, Rational
 
 
-def check_timber_overlap_for_splice_joint_is_sensible(
+def measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+    reference_timber: Timber,
+    reference_face: TimberReferenceLongFace,
+    reference_depth_from_face: Numeric,
+    target_timber: Timber
+) -> Numeric:
+    """
+    Measure the distance from a plane (at a given depth from a timber long face) to the opposing face on another timber.
+
+    Expects the target timber to have a long face parallel to the reference face.
+    
+    This is useful for calculating depths for lap cuts between 2 timbers.
+    For example, in a splice lap joint, the top timber's cutting plane may not align perfectly with the
+    bottom timber's cross-section due to rotation.
+    
+    Args:
+        reference_timber: The timber with the reference face
+        reference_face: The long face on the reference timber (not an end face)
+        reference_depth_from_face: Distance from the reference face (inward) where the cutting plane is
+        target_timber: The timber whose opposing face we want to measure to (must have a long face parallel to reference_face)
+        
+    Returns:
+        The distance from the cutting plane to the target timber's opposing face
+        
+    Example:
+        >>> # Measure how deep to cut the bottom timber based on where the top timber's cut plane is
+        >>> bottom_depth = measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+        ...     reference_timber=top_timber,
+        ...     reference_face=TimberReferenceLongFace.BACK,
+        ...     reference_depth_from_face=lap_depth,
+        ...     target_timber=bottom_timber
+        ... )
+    """
+    from sympy import Rational
+    
+    # Assert that the target timber has a long face parallel to the reference face
+    reference_face_direction = reference_timber.get_face_direction(reference_face)
+    target_long_faces = [TimberReferenceLongFace.RIGHT, TimberReferenceLongFace.LEFT, 
+                         TimberReferenceLongFace.FRONT, TimberReferenceLongFace.BACK]
+    
+    has_parallel_face = False
+    for target_face in target_long_faces:
+        target_face_direction = target_timber.get_face_direction(target_face)
+        if are_vectors_parallel(reference_face_direction, target_face_direction):
+            has_parallel_face = True
+            break
+    
+    assert has_parallel_face, \
+        f"Target timber {target_timber.name} must have a long face parallel to reference face {reference_face.name} " \
+        f"on timber {reference_timber.name}. Reference face direction: {reference_face_direction.T}"
+    
+    # Get a point on the reference face
+    reference_face_offset = reference_timber.get_size_in_face_normal_axis(reference_face) / Rational(2)
+    reference_face_point = reference_timber.bottom_position + reference_face_direction * reference_face_offset
+    
+    # Calculate the cutting plane point (moved inward by reference_depth_from_face)
+    cutting_plane_point = reference_face_point - reference_face_direction * reference_depth_from_face
+    cutting_plane_normal = reference_face_direction
+    
+    # Find the opposing face on the target timber
+    target_face_direction = -reference_face_direction  # Opposite direction
+    target_face = target_timber.get_closest_oriented_face(target_face_direction)
+    
+    # Get a point on the target timber's opposing face
+    target_face_offset = target_timber.get_size_in_face_normal_axis(target_face) / Rational(2)
+    target_face_point = target_timber.bottom_position + target_timber.get_face_direction(target_face) * target_face_offset
+    
+    # Calculate the signed distance from the cutting plane to the target face point
+    # Distance = (target_face_point - cutting_plane_point) · cutting_plane_normal
+    distance_vector = target_face_point - cutting_plane_point
+    signed_distance = (distance_vector.T * cutting_plane_normal)[0, 0]
+    
+    # Return the absolute distance (depth is always positive)
+    return Abs(signed_distance)
+
+
+def check_timber_overlap_for_splice_joint_is_sensible(E
     timberA: Timber,
     timberB: Timber,
     timberA_end: TimberReferenceEnd,
@@ -464,10 +541,15 @@ def chop_lap_on_timber_ends(
     # Find which face of the bottom timber aligns with this direction
     bottom_lap_timber_face = bottom_lap_timber.get_closest_oriented_face(bottom_lap_face_direction_global)
     
-    # TODO bottom lap calculation IS NOT CORRECT
-    # to calculate bottom lap depth, find the top lap plane, then determine the distance from the top lap plane to the bottom lap timber face
     # Step 3: Calculate the depth for the bottom lap
-    bottom_lap_depth = lap_depth
+    # The bottom lap depth is measured from the bottom timber's face to the top timber's cutting plane
+    # This accounts for any rotation or offset between the timbers
+    bottom_lap_depth = measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+        reference_timber=top_lap_timber,
+        reference_face=TimberReferenceLongFace(top_lap_timber_face.value),
+        reference_depth_from_face=lap_depth,
+        target_timber=bottom_lap_timber
+    )
     
     # Step 4: Calculate the shoulder position for the bottom lap timber
     # Starting from scratch to avoid confusion between timber END and lap END
