@@ -6,7 +6,7 @@ import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
 from code_goes_here.moothymoth import Orientation
 from giraffe import *
-from .helperonis import (
+from .testing_shavings import (
     create_standard_vertical_timber,
     create_standard_horizontal_timber,
     assert_is_valid_rotation_matrix,

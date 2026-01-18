@@ -17,7 +17,7 @@ from sympy import Matrix, eye, Rational, sqrt
 from code_goes_here.meowmeowcsg import Prism, HalfPlane, Difference, Union, ConvexPolygonExtrusion
 from code_goes_here.moothymoth import Orientation, Transform
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, timber_from_directions
-from code_goes_here.joint_helperonis import chop_lap_on_timber_end
+from code_goes_here.joint_shavings import chop_lap_on_timber_end
 
 
 def example_cube_with_cube_cutout():
