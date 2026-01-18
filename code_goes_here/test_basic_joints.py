@@ -555,10 +555,6 @@ class TestSpliceLapJoint:
         """
         Test splice lap joint creates correct geometry with proper containment.
         
-        TODO: This test needs geometry review after implementing chop_lap_on_timber_ends TODOs.
-        The test expectations were written before the implementation was complete and don't
-        match the actual lap joint geometry (which includes half-plane cuts at shoulders).
-        
         Tests:
         1. Points outside the ends on centerline are not contained
         2. Points along a line perpendicular to the lap face show correct containment
