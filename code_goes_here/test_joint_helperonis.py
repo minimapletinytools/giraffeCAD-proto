@@ -7,10 +7,12 @@ from sympy import Rational
 from code_goes_here.joint_helperonis import (
     check_timber_overlap_for_splice_joint_is_sensible, 
     chop_timber_end_with_prism,
-    chop_timber_end_with_half_plane
+    chop_timber_end_with_half_plane,
+    chop_lap_on_timber_end
 )
-from code_goes_here.timber import timber_from_directions, TimberReferenceEnd
+from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace
 from code_goes_here.moothymoth import create_v3, create_v2, inches
+from code_goes_here.meowmeowcsg import Union, Prism, HalfPlane
 
 # TODO too many tests, just delete some lol... or combine into 1 test that varies only the timber length...
 class TestCheckTimberOverlapForSpliceJoint:
@@ -442,6 +444,97 @@ class TestChopTimberEndWithHalfPlane:
         expected_offset = Rational(10) - Rational(1, 3)
         assert half_plane.offset == expected_offset
         assert half_plane.normal == create_v3(0, 0, 1)
+
+
+class TestChopLapOnTimberEnd:
+    """Tests for chop_lap_on_timber_end function."""
+    
+    def test_lap_on_right_face_geometry(self):
+        """
+        Test lap joint cut on RIGHT face of a timber.
+        
+        Creates a 4"x6" timber that is 4 ft long.
+        Lap length is 1ft, shoulder 6" from end, lap face is RIGHT.
+        Tests boundary points and verifies CSG structure.
+        """
+        # Create a 4"x6" timber that is 4 ft long
+        timber = timber_from_directions(
+            length=inches(48),  # 4 ft
+            size=create_v2(inches(4), inches(6)),  # 4" wide x 6" high
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Along Z axis
+            width_direction=create_v3(1, 0, 0),   # Width along X axis
+            name="test_timber"
+        )
+        
+        # Lap parameters
+        lap_length = inches(12)  # 1 ft
+        shoulder_distance = inches(6)  # 6" from end
+        lap_depth = inches(2)  # 2" depth (half of 4" width for half-lap)
+        lap_face = TimberFace.RIGHT  # Cut on RIGHT face
+        lap_end = TimberReferenceEnd.TOP  # Cutting from top end
+        
+        # Create the lap cut
+        lap_csg = chop_lap_on_timber_end(
+            lap_timber=timber,
+            lap_timber_end=lap_end,
+            lap_timber_face=lap_face,
+            lap_length=lap_length,
+            lap_shoulder_position_from_lap_timber_end=shoulder_distance,
+            lap_depth=lap_depth
+        )
+        
+        # Verify the CSG is a Union
+        assert isinstance(lap_csg, Union), "Lap CSG should be a Union"
+        assert len(lap_csg.children) == 2, "Lap CSG should have 2 children (Prism and HalfPlane)"
+        
+        # Find the Prism and HalfPlane in the union
+        prism = None
+        half_plane = None
+        for child in lap_csg.children:
+            if isinstance(child, Prism):
+                prism = child
+            elif isinstance(child, HalfPlane):
+                half_plane = child
+        
+        assert prism is not None, "Lap CSG should contain a Prism"
+        assert half_plane is not None, "Lap CSG should contain a HalfPlane"
+        
+        # Verify geometry based on the implementation:
+        # For TOP end with shoulder_distance=6", lap_length=12":
+        # - Timber end at 48" from bottom
+        # - Shoulder at 48" - 6" = 42" from bottom
+        # - Lap extends from shoulder in +Z direction by lap_length = 42" + 12" = 54" from bottom
+        # - Prism from 42" to 54", HalfPlane at 54"
+        expected_shoulder_z = inches(42)  # 48" - 6"
+        expected_lap_end_z = inches(54)   # 42" + 12"
+        
+        # Check that prism extends from shoulder to lap end
+        assert prism.start_distance == expected_shoulder_z, \
+            f"Prism should start at shoulder (z={expected_shoulder_z}), got {prism.start_distance}"
+        assert prism.end_distance == expected_lap_end_z, \
+            f"Prism should end at lap end (z={expected_lap_end_z}), got {prism.end_distance}"
+        
+        # Check that half plane coincides with lap end
+        assert half_plane.offset == expected_lap_end_z, \
+            f"HalfPlane should be at lap end (z={expected_lap_end_z}), got {half_plane.offset}"
+        
+        # Test point 1: 6" down from timber end (at shoulder), on the lap face
+        # RIGHT face is at x=+2", this point should be IN the CSG (material removed)
+        point1 = create_v3(inches(2), 0, expected_shoulder_z)
+        assert lap_csg.contains_point(point1), \
+            "Point at shoulder on RIGHT face should be in the removed region"
+        
+        # Test point 2: From point1, move 2" left (to x=0), should be ON BOUNDARY
+        point2 = create_v3(0, 0, expected_shoulder_z)
+        assert lap_csg.contains_point(point2), \
+            "Point at boundary (x=0) at shoulder should be on boundary (contained)"
+        
+        # Test point 3: From point2, go 3" down from shoulder (to z=39")
+        # This is BELOW the prism start (shoulder at 42"), so should NOT be in CSG
+        point3 = create_v3(0, 0, expected_shoulder_z - inches(3))
+        assert not lap_csg.contains_point(point3), \
+            "Point 3\" below shoulder (outside lap region) should NOT be in the removed region"
 
 
 if __name__ == "__main__":
