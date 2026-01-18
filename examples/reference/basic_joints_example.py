@@ -341,9 +341,9 @@ def make_splice_lap_joint_example(position: V3) -> list[CutTimber]:
         top_lap_timber_end=TimberReferenceEnd.TOP,
         bottom_lap_timber=timberB,
         bottom_lap_timber_end=TimberReferenceEnd.BOTTOM,
-        top_lap_timber_face=TimberFace.FRONT,
+        top_lap_timber_face=TimberFace.RIGHT,
         lap_length=lap_length,
-        top_lap_shoulder_position_from_top_lap_shoulder_timber_end=shoulder_distance,
+        top_lap_shoulder_position_from_top_lap_shoulder_timber_end=lap_length/2,
         lap_depth=None  # Use default (half thickness)
     )
     

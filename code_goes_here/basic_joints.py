@@ -12,7 +12,7 @@ from code_goes_here.moothymoth import (
     construction_parallel_check,
     construction_perpendicular_check
 )
-from code_goes_here.joint_helperonis import chop_timber_end_with_half_plane
+from code_goes_here.joint_helperonis import chop_timber_end_with_half_plane, chop_lap_on_timber_ends
 
 
 # ============================================================================
@@ -267,6 +267,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     return joint
 
 
+# TODO rename to cut_basic_butt_splice_joint_on_aligned_timbers
 def cut_basic_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd, splice_point: Optional[V3] = None) -> Joint:
     """
     Creates a basic splice joint between two timbers with parallel (aligned) length axes.
@@ -867,6 +868,110 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     # Create and return the Joint
     joint = Joint(
         cut_timbers={"housing_timber": cut_housing, "housed_timber": cut_housed},
+        jointAccessories={}
+    )
+    
+    return joint
+
+# TODO rename to cut_basic_lap_splice_joint_on_aligned_timbers
+def cut_basic_splice_lap_joint(
+    top_lap_timber: Timber,
+    top_lap_timber_end: TimberReferenceEnd,
+    bottom_lap_timber: Timber,
+    bottom_lap_timber_end: TimberReferenceEnd,
+    top_lap_timber_face: TimberFace,
+    lap_length: Numeric,
+    top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric,
+    lap_depth: Optional[Numeric] = None
+) -> Joint:
+    """
+    Creates a splice lap joint between two timber ends.
+    
+    A splice lap joint connects two timbers end-to-end with interlocking notches,
+    where one timber has material removed from one face and the other has material
+    removed from the opposite face.
+    
+        top_lap_timber_face
+        v           |--------| lap_length
+    ╔════════════════════════╗╔══════╗  -
+    ║top_lap_timber          ║║      ║  | lap_depth
+    ║               ╔════════╝║      ║  -
+    ║               ║╔════════╝      ║ 
+    ║               ║║ bottom_lap    ║ 
+    ╚═══════════════╝╚═══════════════╝
+                    ^ top_lap_shoulder_position_from_top_lap_shoulder_timber_end
+    
+    Args:
+        top_lap_timber: The timber that will have material removed from the specified face
+        top_lap_timber_end: Which end of the top lap timber is being joined (TOP or BOTTOM)
+        bottom_lap_timber: The timber that will have material removed from the opposite face
+        bottom_lap_timber_end: Which end of the bottom lap timber is being joined (TOP or BOTTOM)
+        top_lap_timber_face: Which face of the top lap timber to remove material from
+        lap_length: Length of the lap region along the timber length
+        top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Distance from the timber end to the shoulder (inward)
+        lap_depth: Depth of material to remove (perpendicular to the face). 
+                   If None, defaults to half the timber thickness in the axis perpendicular to top_lap_timber_face
+    
+    Returns:
+        Joint object containing the two CutTimbers with lap cuts
+    
+    Example:
+        >>> # Create a half-lap splice joint
+        >>> joint = cut_basic_splice_lap_joint(
+        ...     timber_a, TimberReferenceEnd.TOP,
+        ...     timber_b, TimberReferenceEnd.BOTTOM,
+        ...     TimberFace.BOTTOM, lap_length=4, shoulder_pos=1
+        ... )
+    """
+    from sympy import Rational
+    
+    # Calculate default lap_depth if not provided
+    if lap_depth is None:
+        # Use half the thickness in the axis perpendicular to top_lap_timber_face
+        if top_lap_timber_face == TimberFace.LEFT or top_lap_timber_face == TimberFace.RIGHT:
+            # Face is on X-axis, so thickness is in X direction (width)
+            lap_depth = top_lap_timber.size[0] / Rational(2)
+        elif top_lap_timber_face == TimberFace.FRONT or top_lap_timber_face == TimberFace.BACK:
+            # Face is on Y-axis, so thickness is in Y direction (height)
+            lap_depth = top_lap_timber.size[1] / Rational(2)
+        else:  # TOP or BOTTOM
+            # Face is on Z-axis (end face), use the smaller of width/height
+            lap_depth = min(top_lap_timber.size[0], top_lap_timber.size[1]) / Rational(2)
+    
+    # Create the CSG cuts using the helper function
+    top_lap_csg, bottom_lap_csg = chop_lap_on_timber_ends(
+        top_lap_timber=top_lap_timber,
+        top_lap_timber_end=top_lap_timber_end,
+        bottom_lap_timber=bottom_lap_timber,
+        bottom_lap_timber_end=bottom_lap_timber_end,
+        top_lap_timber_face=top_lap_timber_face,
+        lap_length=lap_length,
+        lap_depth=lap_depth,
+        top_lap_shoulder_position_from_top_lap_shoulder_timber_end=top_lap_shoulder_position_from_top_lap_shoulder_timber_end
+    )
+
+    # Create CSGCuts for both timbers
+    cut_top = CSGCut(
+        timber=top_lap_timber,
+        transform=Transform.identity(),
+        negative_csg=top_lap_csg,
+        maybe_end_cut=top_lap_timber_end
+    )
+    
+    cut_bottom = CSGCut(
+        timber=bottom_lap_timber,
+        transform=Transform.identity(),
+        negative_csg=bottom_lap_csg,
+        maybe_end_cut=bottom_lap_timber_end
+    )
+    
+    # Create CutTimbers
+    cut_top_timber = CutTimber(top_lap_timber, cuts=[cut_top])
+    cut_bottom_timber = CutTimber(bottom_lap_timber, cuts=[cut_bottom])
+    
+    # Create and return the Joint
+    joint = Joint(
+        cut_timbers={"top_lap_timber": cut_top_timber, "bottom_lap_timber": cut_bottom_timber},
         jointAccessories={}
     )
     
