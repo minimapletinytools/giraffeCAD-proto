@@ -18,7 +18,7 @@ import math
 from typing import Optional, Tuple
 from sympy import Matrix, Rational, simplify, det, eye
 from code_goes_here.moothymoth import Orientation, inches
-from code_goes_here.footprint import Footprint
+from code_goes_here.footprint import *
 from giraffe import (
     timber_from_directions,
     create_v2,

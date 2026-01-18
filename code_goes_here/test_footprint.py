@@ -6,7 +6,8 @@ This module contains tests for the Footprint class in the GiraffeCAD system.
 
 import pytest
 from sympy import Matrix
-from code_goes_here.footprint import Footprint, _segment_to_segment_distance
+from code_goes_here.footprint import *
+from code_goes_here.footprint import _segment_to_segment_distance
 from giraffe import create_v2
 from .helperonis import create_test_footprint
 

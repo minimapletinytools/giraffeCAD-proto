@@ -2,6 +2,7 @@
 Footprint class for GiraffeCAD - Represents the 2D footprint of a structure
 """
 
+from enum import Enum
 from typing import List, Tuple
 from sympy import Matrix, Rational
 from dataclasses import dataclass
@@ -353,3 +354,8 @@ class Footprint:
         
         return nearest_idx, sides[nearest_idx], min_distance
 
+
+class FootprintLocation(Enum):
+    INSIDE = 1
+    CENTER = 2
+    OUTSIDE = 3

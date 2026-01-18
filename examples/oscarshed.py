@@ -8,23 +8,7 @@ from dataclasses import replace
 import sys
 sys.path.append('..')
 
-from giraffe import (
-    create_v2, create_v3,
-    create_horizontal_timber_on_footprint,
-    create_vertical_timber_on_footprint_side,
-    join_timbers,
-    split_timber,
-    cut_basic_miter_joint,
-    cut_basic_butt_joint_on_face_aligned_timbers,
-    cut_basic_butt_splice_joint_on_aligned_timbers,
-    cut_basic_house_joint_DEPRECATED,
-    cut_basic_house_joint,
-    cut_mortise_and_tenon_joint_on_face_aligned_timbers,
-    FootprintLocation, CutTimber, Stickout, TimberReferenceEnd,
-    SimplePegParameters, PegShape, TimberReferenceLongFace, TimberFace,
-    inches, feet, Rational, Matrix
-)
-from code_goes_here.footprint import Footprint
+from giraffe import *
 from code_goes_here.timber import Frame
 
 # ============================================================================
@@ -246,7 +230,7 @@ def create_oscarshed():
         tenon_timber=post_front_left,
         mortise_timber=mudsill_front,
         tenon_end=TimberReferenceEnd.BOTTOM,
-        size=tenon_size,
+        tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         tenon_position=tenon_offset_left
@@ -258,7 +242,7 @@ def create_oscarshed():
         tenon_timber=post_front_right,
         mortise_timber=mudsill_front,
         tenon_end=TimberReferenceEnd.BOTTOM,
-        size=tenon_size,
+        tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         tenon_position=tenon_offset_right
@@ -269,7 +253,7 @@ def create_oscarshed():
         tenon_timber=post_back_right,
         mortise_timber=mudsill_back,
         tenon_end=TimberReferenceEnd.BOTTOM,
-        size=tenon_size,
+        tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         tenon_position=tenon_offset_left
@@ -280,7 +264,7 @@ def create_oscarshed():
         tenon_timber=post_back_left,
         mortise_timber=mudsill_back,
         tenon_end=TimberReferenceEnd.BOTTOM,
-        size=tenon_size,
+        tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         tenon_position=tenon_offset_right
@@ -304,7 +288,7 @@ def create_oscarshed():
         tenon_timber=post_back_middle_right,
         mortise_timber=mudsill_back,
         tenon_end=TimberReferenceEnd.BOTTOM,
-        size=middle_post_tenon_size,
+        tenon_size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
         tenon_position=None  # Centered (no offset needed)
@@ -315,7 +299,7 @@ def create_oscarshed():
         tenon_timber=post_back_middle_left,
         mortise_timber=mudsill_back,
         tenon_end=TimberReferenceEnd.BOTTOM,
-        size=middle_post_tenon_size,
+        tenon_size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
         tenon_position=None  # Centered (no offset needed)
@@ -341,7 +325,7 @@ def create_oscarshed():
         stickout=side_girt_stickout,   # 5" stickout on back, none on front
         location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0,       # No lateral offset
-        size=side_girt_size,
+        tenon_size=side_girt_size,
         name="Left Side Girt"
     )
     
@@ -353,7 +337,7 @@ def create_oscarshed():
         stickout=side_girt_stickout,   # 5" stickout on back, none on front
         location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0,       # No lateral offset
-        size=side_girt_size,
+        tenon_size=side_girt_size,
         name="Right Side Girt"
     )
 
@@ -375,7 +359,7 @@ def create_oscarshed():
         tenon_timber=post_back_left,
         mortise_timber=side_girt_left,
         tenon_end=TimberReferenceEnd.TOP,
-        size=side_girt_back_tenon_size,
+        tenon_size=side_girt_back_tenon_size,
         tenon_length=side_girt_back_tenon_length,
         mortise_depth=side_girt_back_mortise_depth,
         tenon_position=None  # Centered
@@ -386,7 +370,7 @@ def create_oscarshed():
         tenon_timber=post_back_right,
         mortise_timber=side_girt_right,
         tenon_end=TimberReferenceEnd.TOP,
-        size=side_girt_back_tenon_size,
+        tenon_size=side_girt_back_tenon_size,
         tenon_length=side_girt_back_tenon_length,
         mortise_depth=side_girt_back_mortise_depth,
         tenon_position=None  # Centered
@@ -425,7 +409,7 @@ def create_oscarshed():
         tenon_timber=side_girt_left,
         mortise_timber=post_front_left,
         tenon_end=TimberReferenceEnd.TOP,
-        size=side_girt_tenon_size,
+        tenon_size=side_girt_tenon_size,
         tenon_length=side_girt_tenon_length,
         mortise_depth=side_girt_mortise_depth,
         tenon_position=None,  # Centered
@@ -437,7 +421,7 @@ def create_oscarshed():
         tenon_timber=side_girt_right,
         mortise_timber=post_front_right,
         tenon_end=TimberReferenceEnd.TOP,
-        size=side_girt_tenon_size,
+        tenon_size=side_girt_tenon_size,
         tenon_length=side_girt_tenon_length,
         mortise_depth=side_girt_mortise_depth,
         tenon_position=None,  # Centered
@@ -474,7 +458,7 @@ def create_oscarshed():
         stickout=front_girt_stickout,  # 1.5" stickout on both sides
         location_on_timber2=front_girt_height_on_posts,   # Same height on right post
         lateral_offset=0,       # No lateral offset
-        size=front_girt_size,
+        tenon_size=front_girt_size,
         name="Front Girt"
     )
     
@@ -524,7 +508,7 @@ def create_oscarshed():
         tenon_timber=front_girt_left,
         mortise_timber=post_front_left,
         tenon_end=TimberReferenceEnd.BOTTOM,
-        size=front_girt_tenon_size,
+        tenon_size=front_girt_tenon_size,
         tenon_length=front_girt_tenon_length,
         mortise_depth=front_girt_mortise_depth,
         tenon_position=None,  # Centered
@@ -536,7 +520,7 @@ def create_oscarshed():
         tenon_timber=front_girt_right,
         mortise_timber=post_front_right,
         tenon_end=TimberReferenceEnd.TOP,
-        size=front_girt_tenon_size,
+        tenon_size=front_girt_tenon_size,
         tenon_length=front_girt_tenon_length,
         mortise_depth=front_girt_mortise_depth,
         tenon_position=None,  # Centered
@@ -620,7 +604,7 @@ def create_oscarshed():
         tenon_timber=post_back_middle_right,
         mortise_timber=top_plate_back,
         tenon_end=TimberReferenceEnd.TOP,
-        size=middle_post_tenon_size,
+        tenon_size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
         tenon_position=None  # Centered
@@ -631,7 +615,7 @@ def create_oscarshed():
         tenon_timber=post_back_middle_left,
         mortise_timber=top_plate_back,
         tenon_end=TimberReferenceEnd.TOP,
-        size=middle_post_tenon_size,
+        tenon_size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
         tenon_position=None  # Centered
@@ -673,7 +657,7 @@ def create_oscarshed():
         tenon_timber=post_back_left,
         mortise_timber=top_plate_back,
         tenon_end=TimberReferenceEnd.TOP,
-        size=corner_post_to_beam_tenon_size,
+        tenon_size=corner_post_to_beam_tenon_size,
         tenon_length=corner_post_to_beam_tenon_length,
         mortise_depth=corner_post_to_beam_mortise_depth,
         tenon_position=None  # Centered
@@ -684,7 +668,7 @@ def create_oscarshed():
         tenon_timber=post_back_right,
         mortise_timber=top_plate_back,
         tenon_end=TimberReferenceEnd.TOP,
-        size=corner_post_to_beam_tenon_size,
+        tenon_size=corner_post_to_beam_tenon_size,
         tenon_length=corner_post_to_beam_tenon_length,
         mortise_depth=corner_post_to_beam_mortise_depth,
         tenon_position=None  # Centered

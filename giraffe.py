@@ -7,6 +7,7 @@ This is the main entry point that imports and re-exports all giraffeCAD function
 
 # Import everything from the organized modules
 from code_goes_here.timber import *
+from code_goes_here.footprint import *
 from code_goes_here.construction import *
 from code_goes_here.basic_joints import *
 from code_goes_here.mortise_and_tenon_joint import *

@@ -5,7 +5,6 @@ Tests for GiraffeCAD timber framing system
 import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
 from code_goes_here.moothymoth import Orientation
-from code_goes_here.footprint import Footprint
 from giraffe import *
 from .helperonis import (
     create_standard_vertical_timber,

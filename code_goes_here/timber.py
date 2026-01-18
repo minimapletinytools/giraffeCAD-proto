@@ -21,7 +21,7 @@ from .moothymoth import (
     cross_product,
     vector_magnitude
 )
-from .footprint import Footprint
+from .footprint import Footprint, FootprintLocation
 from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUnion, Difference as CSGDifference
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict
@@ -41,12 +41,6 @@ OFFSET_TEST_POINT = Rational(1, 1000)  # Small offset (0.001) for testing inward
 # Enums and Basic Types
 # ============================================================================
 
-
-# TODO move to footprint?
-class FootprintLocation(Enum):
-    INSIDE = 1
-    CENTER = 2
-    OUTSIDE = 3
 
 class TimberFace(Enum):
     TOP = 1 # the face vector with normal vector in the +Z axis direction

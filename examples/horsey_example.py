@@ -141,7 +141,7 @@ def create_sawhorse() -> Frame:
         tenon_timber=left_post,
         mortise_timber=left_beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
-        size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in beam's Y direction)
+        tenon_size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in beam's Y direction)
         tenon_length=tenon_length,
         mortise_depth=None,  # Through mortise
         peg_parameters=peg_params_post_beam
@@ -152,7 +152,7 @@ def create_sawhorse() -> Frame:
         tenon_timber=right_post,
         mortise_timber=right_beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
-        size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in beam's Y direction)
+        tenon_size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in beam's Y direction)
         tenon_length=tenon_length,
         mortise_depth=None,  # Through mortise
         peg_parameters=peg_params_post_beam
@@ -172,7 +172,7 @@ def create_sawhorse() -> Frame:
         tenon_timber=stretcher,
         mortise_timber=left_post,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Left end of stretcher
-        size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in post's Z direction)
+        tenon_size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in post's Z direction)
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         peg_parameters=peg_params_stretcher
@@ -183,7 +183,7 @@ def create_sawhorse() -> Frame:
         tenon_timber=stretcher,
         mortise_timber=right_post,
         tenon_end=TimberReferenceEnd.TOP,  # Right end of stretcher
-        size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in post's Z direction)
+        tenon_size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in post's Z direction)
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         peg_parameters=peg_params_stretcher
@@ -202,7 +202,7 @@ def create_sawhorse() -> Frame:
         tenon_timber=left_post,
         mortise_timber=plate,
         tenon_end=TimberReferenceEnd.TOP,
-        size=Matrix([tenon_width, tenon_thickness]),  # 3" x 1" (3" in plate's X direction)
+        tenon_size=Matrix([tenon_width, tenon_thickness]),  # 3" x 1" (3" in plate's X direction)
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         peg_parameters=peg_params_post_plate
@@ -213,7 +213,7 @@ def create_sawhorse() -> Frame:
         tenon_timber=right_post,
         mortise_timber=plate,
         tenon_end=TimberReferenceEnd.TOP,
-        size=Matrix([tenon_width, tenon_thickness]),  # 3" x 1" (3" in plate's X direction)
+        tenon_size=Matrix([tenon_width, tenon_thickness]),  # 3" x 1" (3" in plate's X direction)
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         peg_parameters=peg_params_post_plate
