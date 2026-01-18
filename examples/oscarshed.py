@@ -325,7 +325,7 @@ def create_oscarshed():
         stickout=side_girt_stickout,   # 5" stickout on back, none on front
         location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0,       # No lateral offset
-        tenon_size=side_girt_size,
+        size=side_girt_size,
         name="Left Side Girt"
     )
     
@@ -337,7 +337,7 @@ def create_oscarshed():
         stickout=side_girt_stickout,   # 5" stickout on back, none on front
         location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0,       # No lateral offset
-        tenon_size=side_girt_size,
+        size=side_girt_size,
         name="Right Side Girt"
     )
 
@@ -458,7 +458,7 @@ def create_oscarshed():
         stickout=front_girt_stickout,  # 1.5" stickout on both sides
         location_on_timber2=front_girt_height_on_posts,   # Same height on right post
         lateral_offset=0,       # No lateral offset
-        tenon_size=front_girt_size,
+        size=front_girt_size,
         name="Front Girt"
     )
     
