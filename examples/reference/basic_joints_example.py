@@ -190,7 +190,7 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
         width_direction=Matrix([0, 1, 0])
     )
     
-    joint = cut_basic_splice_joint_on_aligned_timbers(
+    joint = cut_basic_butt_splice_joint_on_aligned_timbers(
         timberA, TimberReferenceEnd.TOP,
         timberB, TimberReferenceEnd.BOTTOM,
         splice_point=position  # Meet at the specified position
@@ -336,7 +336,7 @@ def make_splice_lap_joint_example(position: V3) -> list[CutTimber]:
     # Create the splice lap joint
     # TimberA has material removed from BOTTOM face
     # TimberB has material removed from TOP face (opposite)
-    joint = cut_basic_splice_lap_joint(
+    joint = cut_basic_splice_lap_joint_on_aligned_timbers(
         top_lap_timber=timberA,
         top_lap_timber_end=TimberReferenceEnd.TOP,
         bottom_lap_timber=timberB,

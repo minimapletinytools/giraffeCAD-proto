@@ -16,7 +16,7 @@ from giraffe import (
     split_timber,
     cut_basic_miter_joint,
     cut_basic_butt_joint_on_face_aligned_timbers,
-    cut_basic_splice_joint_on_aligned_timbers,
+    cut_basic_butt_splice_joint_on_aligned_timbers,
     cut_basic_house_joint_DEPRECATED,
     cut_basic_house_joint,
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
@@ -492,7 +492,7 @@ def create_oscarshed():
     
     # Create a splice joint to rejoin the two pieces
     # The left piece's TOP end meets the right piece's BOTTOM end
-    front_girt_splice_joint = cut_basic_splice_joint_on_aligned_timbers(
+    front_girt_splice_joint = cut_basic_butt_splice_joint_on_aligned_timbers(
         front_girt_left, TimberReferenceEnd.TOP,
         front_girt_right, TimberReferenceEnd.BOTTOM
     )

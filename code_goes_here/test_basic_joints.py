@@ -259,7 +259,7 @@ class TestButtJoint:
 
 
 class TestSpliceJoint:
-    """Test cut_basic_splice_joint_on_aligned_timbers function."""
+    """Test cut_basic_butt_splice_joint_on_aligned_timbers function."""
         
         # 🐪
     def test_basic_splice_joint_same_orientation(self):
@@ -272,7 +272,7 @@ class TestSpliceJoint:
         
         # Create splice joint at x=50 (where they meet)
         # TimberA TOP meets TimberB BOTTOM
-        joint = cut_basic_splice_joint_on_aligned_timbers(
+        joint = cut_basic_butt_splice_joint_on_aligned_timbers(
             timberA, TimberReferenceEnd.TOP, 
             timberB, TimberReferenceEnd.BOTTOM
         )
@@ -320,7 +320,7 @@ class TestSpliceJoint:
         # Specify splice point at z=120 (not the midpoint)
         splice_point = Matrix([Rational(0), Rational(0), Rational(120)])
         
-        joint = cut_basic_splice_joint_on_aligned_timbers(
+        joint = cut_basic_butt_splice_joint_on_aligned_timbers(
             timberA, TimberReferenceEnd.TOP,
             timberB, TimberReferenceEnd.BOTTOM,
             splice_point
@@ -356,7 +356,7 @@ class TestSpliceJoint:
         )
         
         # Create splice joint (should meet in the middle at x=50)
-        joint = cut_basic_splice_joint_on_aligned_timbers(
+        joint = cut_basic_butt_splice_joint_on_aligned_timbers(
             timberA, TimberReferenceEnd.TOP,
             timberB, TimberReferenceEnd.TOP
         )
@@ -392,7 +392,7 @@ class TestSpliceJoint:
         
         # Should raise ValueError
         with pytest.raises(ValueError, match="must have parallel length axes"):
-            cut_basic_splice_joint_on_aligned_timbers(
+            cut_basic_butt_splice_joint_on_aligned_timbers(
                 timberA, TimberReferenceEnd.TOP,
                 timberB, TimberReferenceEnd.BOTTOM
             )
@@ -549,7 +549,7 @@ class TestCrossLapJoint:
 
 
 class TestSpliceLapJoint:
-    """Test cut_basic_splice_lap_joint function."""
+    """Test cut_basic_splice_lap_joint_on_aligned_timbers function."""
     
     def test_splice_lap_joint_geometry(self):
         """
@@ -593,7 +593,7 @@ class TestSpliceLapJoint:
         lap_length = 6
         shoulder_distance = 2
         
-        joint = cut_basic_splice_lap_joint(
+        joint = cut_basic_splice_lap_joint_on_aligned_timbers(
             top_lap_timber=timberA,
             top_lap_timber_end=TimberReferenceEnd.TOP,
             bottom_lap_timber=timberB,
