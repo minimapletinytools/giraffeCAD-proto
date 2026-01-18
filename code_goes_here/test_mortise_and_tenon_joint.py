@@ -17,7 +17,7 @@ from code_goes_here.mortise_and_tenon_joint import (
     cut_mortise_and_tenon_many_options_do_not_call_me_directly,
     cut_mortise_and_tenon_joint_on_face_aligned_timbers
 )
-from .helperonis import (
+from .testing_shavings import (
     create_standard_vertical_timber,
     create_standard_horizontal_timber,
     create_centered_horizontal_timber,

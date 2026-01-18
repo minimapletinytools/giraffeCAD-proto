@@ -10,7 +10,7 @@ import warnings
 from code_goes_here.timber import *
 from code_goes_here.timber import _compute_timber_orientation  # Private function, needs explicit import
 from code_goes_here.construction import *
-from code_goes_here.joint_helperonis import check_timber_overlap_for_splice_joint_is_sensible
+from code_goes_here.joint_shavings import check_timber_overlap_for_splice_joint_is_sensible
 from code_goes_here.moothymoth import (
     Orientation,
     EPSILON_GENERIC,

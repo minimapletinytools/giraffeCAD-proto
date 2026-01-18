@@ -12,7 +12,7 @@ from code_goes_here.moothymoth import (
     are_vectors_parallel,
     are_vectors_perpendicular
 )
-from code_goes_here.joint_helperonis import chop_timber_end_with_half_plane, chop_lap_on_timber_ends
+from code_goes_here.joint_shavings import chop_timber_end_with_half_plane, chop_lap_on_timber_ends
 
 
 # ============================================================================

@@ -66,7 +66,7 @@ def reload_all_modules():
         'code_goes_here.basic_joints',
         'code_goes_here.mortise_and_tenon_joint',
         'code_goes_here.japanese_joints',
-        'code_goes_here.joint_helperonis',
+        'code_goes_here.joint_shavings',
         'giraffe',
         'giraffe_render_freecad',
         'examples.reference.basic_joints_example',

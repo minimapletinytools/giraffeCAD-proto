@@ -15,7 +15,7 @@ from code_goes_here.moothymoth import (
     INCH_TO_METER, FOOT_TO_METER, SHAKU_TO_METER
 )
 import random
-from .helperonis import generate_random_orientation, assert_is_valid_rotation_matrix
+from .testing_shavings import generate_random_orientation, assert_is_valid_rotation_matrix
 
 
 class TestOrientation:

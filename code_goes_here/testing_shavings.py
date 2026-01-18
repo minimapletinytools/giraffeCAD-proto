@@ -1,7 +1,5 @@
 """
-TODO rename this file to something cute
-
-Shared test utilities and fixtures for GiraffeCAD test suite.
+Shared test utilities and fixtures for GiraffeCAD test suite (testing_shavings.py).
 
 This module contains:
 - Common constants (INCH_TO_METER, TOLERANCE, etc.)

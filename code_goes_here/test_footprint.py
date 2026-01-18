@@ -9,7 +9,7 @@ from sympy import Matrix
 from code_goes_here.footprint import *
 from code_goes_here.footprint import _segment_to_segment_distance
 from giraffe import create_v2
-from .helperonis import create_test_footprint
+from .testing_shavings import create_test_footprint
 
 
 class TestFootprint:
