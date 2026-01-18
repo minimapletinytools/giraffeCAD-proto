@@ -1,4 +1,3 @@
-#TODO rename to just MeowMeowCSG_examples.py
 """
 Test examples for MeowMeowCSG rendering.
 

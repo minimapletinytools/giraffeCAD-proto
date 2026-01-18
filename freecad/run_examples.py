@@ -73,7 +73,7 @@ def reload_all_modules():
         'examples.horsey_example',
         'examples.oscarshed',
         'examples.japanese_joints_example',
-        'examples.test_MeowMeowCSG_examples',
+        'examples.MeowMeowCSG_examples',
         'code_goes_here.joint_helperonis',
     ]
     
