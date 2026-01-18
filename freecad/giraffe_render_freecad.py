@@ -436,7 +436,8 @@ def create_convex_polygon_extrusion_shape(extrusion: ConvexPolygonExtrusion) -> 
 
 
 def render_csg_shape(csg: MeowMeowCSG, timber: Optional[Timber] = None, 
-                     infinite_extent: float = 10000.0) -> Optional['Part.Shape']:
+                     infinite_extent: float = 10000.0,
+                     halfplane_as_solid: bool = False) -> Optional['Part.Shape']:
     """
     Render a CSG object to a FreeCAD shape.
     
@@ -461,8 +462,7 @@ def render_csg_shape(csg: MeowMeowCSG, timber: Optional[Timber] = None,
         return create_convex_polygon_extrusion_shape(csg)
     
     elif isinstance(csg, HalfPlane):
-        # HalfPlane is typically used for cutting operations, not standalone rendering
-        return None
+        return create_halfplane_shape(csg, infinite_extent = infinite_extent, render_as_solid = True)
     
     elif isinstance(csg, Union):
         return render_union(csg, timber, infinite_extent)
@@ -510,10 +510,103 @@ def render_union(union: Union, timber: Optional[Timber] = None,
         try:
             result_shape = result_shape.fuse(child_shape)
         except Exception as e:
-            print(f"Error performing union with child {i}: {e}")
+            print(f"Error performing union fuse with child {i}: {e}")
             continue
     
     return result_shape
+
+
+def create_halfplane_shape(half_plane: HalfPlane, infinite_extent: float = 10000.0, render_as_solid: bool = True) -> Optional['Part.Shape']:
+    """
+    Create a shape representing the half-space defined by a HalfPlane.
+    
+    The HalfPlane keeps all points P where (P · normal) >= offset.
+    
+    Args:
+        half_plane: HalfPlane object defining the half-space
+        render_as_solid: If True, renders as a solid box filling the half-space.
+                        If False, renders as a thin plane surface. Set to False for debugging only!
+        infinite_extent: Extent to use for the plane/box (in meters)
+        
+        
+    Returns:
+        Part.Shape representing the half-space (plane or box), or None if creation failed
+    """
+    try:
+        # HalfPlane is in local coordinates
+        plane_normal = half_plane.normal
+        plane_offset = distance_to_mm(half_plane.offset)  # Convert meters to mm
+        
+        # The plane equation is: normal · P = offset
+        # Find a point on the plane
+        normal_norm = plane_normal.norm()
+        normal_normalized = plane_normal / normal_norm
+        
+        # Point on the plane along the normal direction
+        plane_point = normal_normalized * plane_offset
+        plane_point_vec = Vector(
+            direction_to_float(plane_point[0]),
+            direction_to_float(plane_point[1]),
+            direction_to_float(plane_point[2])
+        )
+        
+        # Normal vector (direction, not position - don't scale)
+        normal_vec = Vector(
+            direction_to_float(plane_normal[0]),
+            direction_to_float(plane_normal[1]),
+            direction_to_float(plane_normal[2])
+        )
+        
+        # Build rotation to align Z-axis with the plane normal
+        normalized = normal_vec.normalize()
+        
+        # Find the rotation that takes the +Z axis to the normal direction
+        z_axis = Vector(0, 0, 1)
+        dot_product = z_axis.dot(normalized)
+        
+        if abs(dot_product - 1.0) < 0.001:
+            # Normal is already aligned with +Z, no rotation needed
+            rotation = Base.Rotation()
+        elif abs(dot_product + 1.0) < 0.001:
+            # Normal is opposite to +Z, rotate 180° around X axis
+            rotation = Base.Rotation(Vector(1, 0, 0), 180)
+        else:
+            # General case: rotate around the cross product axis
+            axis = z_axis.cross(normalized)
+            angle_deg = math.degrees(math.acos(max(-1.0, min(1.0, dot_product))))
+            rotation = Base.Rotation(axis, angle_deg)
+        
+        if render_as_solid:
+            # Render as a solid box filling the half-space
+            BOX_SIZE = meters_to_mm(infinite_extent) * 2  # Double for safety, in mm
+            
+            # Create box centered at origin, extending in +Z direction
+            box = Part.makeBox(BOX_SIZE, BOX_SIZE, BOX_SIZE)
+            box.translate(Vector(-BOX_SIZE/2, -BOX_SIZE/2, 0))  # Box extends from 0 to BOX_SIZE in Z
+            
+            # Create placement with rotation and translation to plane point
+            placement = Base.Placement(plane_point_vec, rotation)
+            box.Placement = placement.multiply(box.Placement)
+            
+            return box
+        else:
+            # Render as a thin plane surface
+            PLANE_SIZE = meters_to_mm(infinite_extent) * 2  # Size of the plane, in mm
+            
+            # Create a rectangular plane in the XY plane centered at origin
+            plane = Part.makePlane(PLANE_SIZE, PLANE_SIZE, 
+                                  Vector(-PLANE_SIZE/2, -PLANE_SIZE/2, 0))
+            
+            # Create placement with rotation and translation to plane point
+            placement = Base.Placement(plane_point_vec, rotation)
+            plane.Placement = placement.multiply(plane.Placement)
+            
+            return plane
+        
+    except Exception as e:
+        print(f"Error creating HalfPlane shape: {e}")
+        traceback.print_exc()
+        return None
 
 
 def apply_halfplane_cut(shape: 'Part.Shape', half_plane: HalfPlane, 
