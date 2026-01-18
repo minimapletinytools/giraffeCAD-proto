@@ -1577,6 +1577,177 @@ class TestHelperFunctions:
     #     """Test _calculate_mortise_position_from_tenon_intersection helper function."""
     #     pass
 
+    def test_do_xy_cross_section_on_parallel_timbers_overlap(self):
+        """Test do_xy_cross_section_on_parallel_timbers_overlap function."""
+        from sympy import Rational
+        
+        # Test 1: Two aligned timbers that overlap
+        timber1 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber1'
+        )
+        
+        timber2 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(5, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber2'
+        )
+        
+        assert do_xy_cross_section_on_parallel_timbers_overlap(timber1, timber2), \
+            "Aligned timbers at same cross-section should overlap"
+        
+        # Test 2: Two aligned timbers that don't overlap (separated in Y)
+        timber3 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(5, 10, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber3'
+        )
+        
+        assert not do_xy_cross_section_on_parallel_timbers_overlap(timber1, timber3), \
+            "Timbers separated in Y should not overlap"
+        
+        # Test 3: Two rotated timbers that overlap
+        timber4 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber4'
+        )
+        
+        timber5 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 0, 1),  # Rotated 90 degrees
+            name='timber5'
+        )
+        
+        assert do_xy_cross_section_on_parallel_timbers_overlap(timber4, timber5), \
+            "Rotated timbers at same position should overlap"
+        
+        # Test 4: Timbers that just touch at edge (should overlap)
+        timber6 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber6'
+        )
+        
+        # timber6 spans Y: -2 to 2
+        # timber7 at Y=4 spans Y: 2 to 6, so they just touch
+        timber7 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, Rational(4), 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber7'
+        )
+        
+        assert do_xy_cross_section_on_parallel_timbers_overlap(timber6, timber7), \
+            "Timbers touching at edge should overlap"
+        
+        # Test 5: Timbers with small gap (should not overlap)
+        timber8 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, Rational(4) + Rational('0.01'), 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber8'
+        )
+        
+        assert not do_xy_cross_section_on_parallel_timbers_overlap(timber6, timber8), \
+            "Timbers with small gap should not overlap"
+        
+        # Test 6: Anti-parallel timbers (same direction but opposite ends)
+        timber9 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber9'
+        )
+        
+        timber10 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(20, 0, 0),
+            length_direction=create_v3(-1, 0, 0),  # Opposite direction
+            width_direction=create_v3(0, 1, 0),
+            name='timber10'
+        )
+        
+        assert do_xy_cross_section_on_parallel_timbers_overlap(timber9, timber10), \
+            "Anti-parallel timbers at same cross-section should overlap"
+        
+        # Test 7: Offset rotated timbers
+        timber11 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(6)),  # 4 wide, 6 high
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            name='timber11'
+        )
+        
+        # Rotated 90 degrees and offset
+        timber12 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(6), Rational(4)),  # 6 wide, 4 high
+            bottom_position=create_v3(Rational(4), 0, 0),  # Offset in X
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(0, 1, 0),  # Rotated 90 degrees
+            name='timber12'
+        )
+        
+        # timber11: X spans -2 to 2, Y spans -3 to 3
+        # timber12: X spans 1 to 7, Y spans -2 to 2
+        # They should overlap in the region X: 1 to 2, Y: -2 to 2
+        assert do_xy_cross_section_on_parallel_timbers_overlap(timber11, timber12), \
+            "Offset rotated timbers with partial overlap should overlap"
+        
+        # Test 8: Assertion error for non-parallel timbers
+        timber13 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber13'
+        )
+        
+        timber14 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 1, 0),  # Perpendicular
+            width_direction=create_v3(1, 0, 0),
+            name='timber14'
+        )
+        
+        # Should raise assertion error for non-parallel timbers
+        try:
+            do_xy_cross_section_on_parallel_timbers_overlap(timber13, timber14)
+            assert False, "Should have raised AssertionError for non-parallel timbers"
+        except AssertionError as e:
+            assert "must be parallel" in str(e)
 
 
 class TestTimberFootprintOrientation:
