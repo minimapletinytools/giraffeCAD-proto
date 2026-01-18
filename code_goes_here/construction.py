@@ -9,8 +9,8 @@ from code_goes_here.moothymoth import (
     EPSILON_GENERIC,
     zero_test,
     equality_test,
-    construction_parallel_check,
-    construction_perpendicular_check
+    are_vectors_parallel,
+    are_vectors_perpendicular
 )
 
 # ============================================================================

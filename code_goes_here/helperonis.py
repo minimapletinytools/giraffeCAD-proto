@@ -151,45 +151,6 @@ def create_centered_horizontal_timber(
         size=size,
         position=position)
 
-
-# TODO DELETE
-def create_4x4_inch_timber(
-    length,
-    position: Optional[Tuple] = None,
-    direction: str = 'vertical',
-    name: str = "test_timber"
-) -> Timber:
-    """
-    Create a standard 4x4 inch timber (actual dimensions).
-    
-    Args:
-        length: Length of timber
-        position: (x, y, z) tuple for bottom position (default (0, 0, 0))
-        direction: 'vertical', 'x', 'y', etc.
-        name: Name for the timber
-        
-    Returns:
-        Timber: A 4x4 inch timber
-    """
-    timber_size = (inches(4), inches(4))
-    
-    if direction == 'vertical':
-        return create_standard_vertical_timber(
-            height=length,
-            size=timber_size,
-            position=position,
-            name=name
-        )
-    else:
-        return create_standard_horizontal_timber(
-            direction=direction,
-            length=length,
-            size=timber_size,
-            position=position,
-            name=name
-        )
-
-
 # ============================================================================
 # Assertion Helpers
 # ============================================================================

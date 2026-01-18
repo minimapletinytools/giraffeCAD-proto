@@ -9,8 +9,8 @@ from code_goes_here.moothymoth import (
     Orientation,
     EPSILON_GENERIC,
     zero_test,
-    construction_parallel_check,
-    construction_perpendicular_check
+    are_vectors_parallel,
+    are_vectors_perpendicular
 )
 from code_goes_here.joint_helperonis import chop_timber_end_with_half_plane, chop_lap_on_timber_ends
 
@@ -54,7 +54,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
         endB_position = timberB.get_bottom_center_position()
     
     # Check that the timbers are not parallel
-    if construction_parallel_check(directionA, directionB):
+    if are_vectors_parallel(directionA, directionB):
         raise ValueError("Timbers cannot be parallel for a miter joint")
     
     # Find the intersection point (or closest point) between the two timber centerlines
@@ -204,7 +204,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
         "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
     
     # Check that timbers are not parallel (butt joints require timbers to be at an angle)
-    assert not construction_parallel_check(receiving_timber.length_direction, butt_timber.length_direction), \
+    assert not are_vectors_parallel(receiving_timber.length_direction, butt_timber.length_direction), \
         "Timbers cannot be parallel for a butt joint"
     
     # Get the direction of the butt end (pointing outward from the timber)
