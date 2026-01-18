@@ -546,4 +546,148 @@ class TestCrossLapJoint:
         origin = create_v3(Rational(0), Rational(0), Rational(-1))
         assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
         assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
+
+
+class TestSpliceLapJoint:
+    """Test cut_basic_splice_lap_joint function."""
+    
+    def test_splice_lap_joint_geometry(self):
+        """
+        Test splice lap joint creates correct geometry with proper containment.
+        
+        TODO: This test needs geometry review after implementing chop_lap_on_timber_ends TODOs.
+        The test expectations were written before the implementation was complete and don't
+        match the actual lap joint geometry (which includes half-plane cuts at shoulders).
+        
+        Tests:
+        1. Points outside the ends on centerline are not contained
+        2. Points along a line perpendicular to the lap face show correct containment
+        """
+        from sympy import Rational
+        
+        # Create two aligned timbers meeting end-to-end
+        timber_length = 20
+        timber_size = create_v2(4, 4)
+        
+        # TimberA extends from x=0 to x=20
+        timberA = timber_from_directions(
+            length=timber_length,
+            size=timber_size,
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timberA'
+        )
+        
+        # TimberB extends from x=20 to x=40
+        timberB = timber_from_directions(
+            length=timber_length,
+            size=timber_size,
+            bottom_position=create_v3(20, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timberB'
+        )
+        
+        # Create splice lap joint
+        lap_length = 6
+        shoulder_distance = 2
+        
+        joint = cut_basic_splice_lap_joint(
+            top_lap_timber=timberA,
+            top_lap_timber_end=TimberReferenceEnd.TOP,
+            bottom_lap_timber=timberB,
+            bottom_lap_timber_end=TimberReferenceEnd.BOTTOM,
+            top_lap_timber_face=TimberFace.BACK,  # Use BACK (side face), not BOTTOM (end face)
+            lap_length=lap_length,
+            top_lap_shoulder_position_from_top_lap_shoulder_timber_end=shoulder_distance,
+            lap_depth=None  # Use default
+        )
+        
+        # Verify joint was created
+        assert joint is not None
+        assert len(joint.cut_timbers) == 2
+        
+        # Get the cut timbers
+        cut_timberA = joint.cut_timbers['top_lap_timber']
+        cut_timberB = joint.cut_timbers['bottom_lap_timber']
+        
+        # Verify each has exactly one cut
+        assert len(cut_timberA.cuts) == 1
+        assert len(cut_timberB.cuts) == 1
+        
+        # Render the CSGs
+        csg_A = cut_timberA.render_timber_with_cuts_csg_local()
+        csg_B = cut_timberB.render_timber_with_cuts_csg_local()
+        
+        # Test 1: Points outside the ends on centerline should not be contained
+        point_before_A = create_v3(-5, 0, 0)
+        point_before_A_local = timberA.global_to_local(point_before_A)
+        assert not csg_A.contains_point(point_before_A_local), \
+            "Point before timberA should not be contained"
+        
+        point_after_B = create_v3(45, 0, 0)
+        point_after_B_local = timberB.global_to_local(point_after_B)
+        assert not csg_B.contains_point(point_after_B_local), \
+            "Point after timberB should not be contained"
+        
+        # Test 2: Points in the middle of each timber (before lap region) should be contained
+        point_middle_A = create_v3(10, 0, 0)  # Well before lap at x=18
+        point_middle_A_local = timberA.global_to_local(point_middle_A)
+        assert csg_A.contains_point(point_middle_A_local), \
+            "Point in middle of timberA (before lap) should be contained"
+        
+        point_middle_B = create_v3(30, 0, 0)  # After lap region (lap ends at x=24)
+        point_middle_B_local = timberB.global_to_local(point_middle_B)
+        assert csg_B.contains_point(point_middle_B_local), \
+            "Point in middle of timberB (after lap) should be contained"
+        
+        # Test 3: Walk perpendicular to top lap face checking containment at different depths
+        # Pick a point in the lap region on the cut face of timberA
+        # The lap_depth defaults to half of timberA's height: 4/2 = 2
+        lap_depth = Rational(4) / 2  # 2
+        
+        # Choose x_in_lap to be in the overlap region where both timbers have laps
+        # TimberA lap: x=12 to x=18, TimberB lap: x=18 to x=24
+        # Overlap region where both timbers exist and have laps: x=18 to x=20
+        # Pick middle of overlap: x=19
+        x_in_lap = 19
+        
+        # The cut face of timberA (BACK face after cutting) removes material from global Z < 0
+        # The normal of the BACK face points in -Z direction
+        # After cutting depth lap_depth=2, material is removed from global Z in [-2, 0]
+        # Timber A remains at global Z in [0, ∞) (local Y in [0, 2])
+        
+        # At depth 0: slightly above the cut face (inside timberA), should be in timberA but not in timberB
+        epsilon = Rational(1, 10)  # Small offset
+        point_at_face = create_v3(x_in_lap, 0, epsilon)  # Just above Z=0 (the cut boundary)
+        point_at_face_A_local = timberA.global_to_local(point_at_face)
+        point_at_face_B_local = timberB.global_to_local(point_at_face)
+        
+        assert csg_A.contains_point(point_at_face_A_local), \
+            "Point just above cut face should be contained in timberA"
+        assert not csg_B.contains_point(point_at_face_B_local), \
+            "Point just above cut face should NOT be contained in timberB"
+        
+        # At lap_depth: on the boundary where the two timbers meet
+        # This is at global Z = 0
+        point_at_lap_depth = create_v3(x_in_lap, 0, 0)
+        point_at_lap_depth_A_local = timberA.global_to_local(point_at_lap_depth)
+        point_at_lap_depth_B_local = timberB.global_to_local(point_at_lap_depth)
+        
+        # At the boundary, the point should be contained in both (on their surfaces)
+        assert csg_A.contains_point(point_at_lap_depth_A_local), \
+            "Point at lap_depth should be on boundary of timberA"
+        assert csg_B.contains_point(point_at_lap_depth_B_local), \
+            "Point at lap_depth should be on boundary of timberB"
+        
+        # A little further (beyond lap_depth, into timberB): should be in timberB only, not in timberA
+        point_beyond_lap_depth = create_v3(x_in_lap, 0, -epsilon)  # Just below Z=0 (into cut region)
+        point_beyond_A_local = timberA.global_to_local(point_beyond_lap_depth)
+        point_beyond_B_local = timberB.global_to_local(point_beyond_lap_depth)
+        
+        assert not csg_A.contains_point(point_beyond_A_local), \
+            "Point beyond lap_depth should NOT be contained in timberA"
+        assert csg_B.contains_point(point_beyond_B_local), \
+            "Point beyond lap_depth should be contained in timberB"
         

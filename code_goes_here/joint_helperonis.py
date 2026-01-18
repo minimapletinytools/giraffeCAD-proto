@@ -284,7 +284,7 @@ def chop_lap_on_timber_end(
         top_lap_timber_end: Which end of the top lap timber is being joined
         top_lap_timber_face: Which face of the top lap timber to remove material from
         lap_length: Length of the lap region along the timber length
-        top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Distance from the timber end to the shoulder
+        top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Distance from the timber end to the shoulder (inward)
         lap_depth: Depth of material to remove (measured from top_lap_timber_face)
     
     Returns:
@@ -303,25 +303,25 @@ def chop_lap_on_timber_end(
     # Step 1: Determine the end positions and shoulder position of the top lap timber
     if top_lap_timber_end == TimberReferenceEnd.TOP:
         top_lap_end_pos = top_lap_timber.get_top_center_position()
-        top_lap_direction = -top_lap_timber.length_direction  # Inward from TOP
+        top_lap_direction = top_lap_timber.length_direction 
     else:  # BOTTOM
         top_lap_end_pos = top_lap_timber.get_bottom_center_position()
-        top_lap_direction = top_lap_timber.length_direction  # Inward from BOTTOM
+        top_lap_direction = -top_lap_timber.length_direction
     
     # Calculate the shoulder position (where the lap starts)
-    shoulder_pos_global = top_lap_end_pos + top_lap_direction * top_lap_shoulder_position_from_top_lap_shoulder_timber_end
+    shoulder_pos_global = top_lap_end_pos - top_lap_direction * top_lap_shoulder_position_from_top_lap_shoulder_timber_end
     
     # Calculate the end of the lap (shoulder + lap_length)
     lap_end_pos_global = shoulder_pos_global + top_lap_direction * lap_length
     
     # Step 3: Create half-plane cuts to remove the ends beyond the lap region
     # Top lap: remove everything beyond the shoulder position (towards the timber end)
-    top_lap_shoulder_distance_from_bottom = ((shoulder_pos_global - top_lap_timber.bottom_position).T * top_lap_timber.length_direction)[0, 0]
     top_lap_end_distance_from_bottom = ((lap_end_pos_global - top_lap_timber.bottom_position).T * top_lap_timber.length_direction)[0, 0]
+    top_lap_shoulder_distance_from_bottom = ((shoulder_pos_global - top_lap_timber.bottom_position).T * top_lap_timber.length_direction)[0, 0]
     
-    top_lap_shoulder_distance_from_end = (top_lap_timber.length - top_lap_shoulder_distance_from_bottom
+    top_lap_shoulder_distance_from_end = (top_lap_timber.length - top_lap_end_distance_from_bottom
                                          if top_lap_timber_end == TimberReferenceEnd.TOP 
-                                         else top_lap_shoulder_distance_from_bottom)
+                                         else top_lap_end_distance_from_bottom)
                                   
     top_lap_half_plane = chop_timber_end_with_half_plane(top_lap_timber, top_lap_timber_end, top_lap_shoulder_distance_from_end)
     
@@ -384,4 +384,309 @@ def chop_lap_on_timber_end(
     top_lap_csg = Union([top_lap_prism, top_lap_half_plane])
 
     return top_lap_csg
+
+
+# TODO update to call chop_lap_on_timber_end twice
+def chop_lap_on_timber_ends(
+    top_lap_timber: Timber,
+    top_lap_timber_end: TimberReferenceEnd,
+    bottom_lap_timber: Timber,
+    bottom_lap_timber_end: TimberReferenceEnd,
+    top_lap_timber_face: TimberFace,
+    lap_length: Numeric,
+    top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric,
+    lap_depth: Numeric
+) -> Tuple[MeowMeowCSG, MeowMeowCSG]:
+    """
+    Create CSG cuts for a lap joint between two timber ends.
+    
+    Creates material removal volumes for both timbers in a lap joint configuration where
+    one timber (top lap) has material removed from one face, and the other timber (bottom lap)
+    has material removed from the opposite face so they interlock.
+    
+        top_lap_timber_face
+        v           |--------| lap_length
+    ╔════════════════════════╗╔══════╗  -
+    ║face_lap_timber         ║║      ║  | lap_depth
+    ║               ╔════════╝║      ║  -
+    ║               ║╔════════╝      ║ 
+    ║               ║║      timberB  ║ 
+    ╚═══════════════╝╚═══════════════╝
+                    ^ top_lap_shoulder_position_from_top_lap_shoulder_timber_end
+    
+    Args:
+        top_lap_timber: The timber that will have material removed from the specified face
+        top_lap_timber_end: Which end of the top lap timber is being joined
+        bottom_lap_timber: The timber that will have material removed from the opposite face
+        bottom_lap_timber_end: Which end of the bottom lap timber is being joined
+        top_lap_timber_face: Which face of the top lap timber to remove material from
+        lap_length: Length of the lap region along the timber length
+        top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Distance from the timber end to the shoulder (inward)
+        lap_depth: Depth of material to remove (measured from top_lap_timber_face)
+    
+    Returns:
+        Tuple of (top_lap_csg, bottom_lap_csg) representing material to remove from each timber
+        Both CSGs are in local coordinates of their respective timbers
+    
+    Example:
+        >>> # Create a half-lap joint
+        >>> top_csg, bottom_csg = chop_lap_on_timber_ends(
+        ...     timber_a, TimberReferenceEnd.TOP,
+        ...     timber_b, TimberReferenceEnd.BOTTOM,
+        ...     TimberFace.BOTTOM, lap_length=4, lap_depth=2, shoulder_pos=1
+        ... )
+    """
+
+    # TODO assert that the 2 timbers are face aligned and 
+    # TODO assert the 2 timbers are parallel
+    # TODO assert the 2 timbers overlap at least a little
+
+    top_lap_csg = chop_lap_on_timber_end(top_lap_timber, top_lap_timber_end, top_lap_timber_face, lap_length, top_lap_shoulder_position_from_top_lap_shoulder_timber_end, lap_depth)
+
+    # Step 2: Find the corresponding face on the bottom lap timber
+    # Get top_lap_timber_face direction in global space
+    top_lap_face_direction_global = top_lap_timber.get_face_direction(top_lap_timber_face)
+    
+    # Negate it to get the direction for the bottom timber face
+    bottom_lap_face_direction_global = -top_lap_face_direction_global
+    
+    # Find which face of the bottom timber aligns with this direction
+    bottom_lap_timber_face = bottom_lap_timber.get_closest_oriented_face(bottom_lap_face_direction_global)
+    
+    # TODO bottom lap calculation IS NOT CORRECT
+    # to calculate bottom lap depth, find the top lap plane, then determine the distance from the top lap plane to the bottom lap timber face
+    # Step 3: Calculate the depth for the bottom lap
+    bottom_lap_depth = lap_depth
+    
+    # Step 4: Calculate the shoulder position for the bottom lap timber
+    # Starting from scratch to avoid confusion between timber END and lap END
+    #
+    # For interlocking splice lap joint:
+    # - Top timber SHOULDER → Bottom timber LAP END
+    # - Top timber LAP END → Bottom timber SHOULDER
+    
+    # Calculate top timber's shoulder and lap end positions in global space
+    if top_lap_timber_end == TimberReferenceEnd.TOP:
+        top_timber_end_pos = top_lap_timber.get_top_center_position()
+        top_lap_direction = top_lap_timber.length_direction 
+    else:  # BOTTOM
+        top_timber_end_pos = top_lap_timber.get_bottom_center_position()
+        top_lap_direction = -top_lap_timber.length_direction 
+    
+    # Top timber shoulder: move inward from timber end by shoulder distance
+    top_shoulder_global = top_timber_end_pos - top_lap_direction * top_lap_shoulder_position_from_top_lap_shoulder_timber_end
+    
+    # Top timber lap end: move outward from shoulder by lap_length
+    top_lap_end_global = top_shoulder_global + top_lap_direction * lap_length
+    
+    # For bottom timber: swap shoulder and lap end
+    # Bottom timber shoulder = Top timber lap END
+    bottom_shoulder_global = top_lap_end_global
+    
+    # Project bottom shoulder position onto bottom timber's length axis
+    bottom_shoulder_from_bottom_timber_bottom = ((bottom_shoulder_global - bottom_lap_timber.bottom_position).T * bottom_lap_timber.length_direction)[0, 0]
+    
+    # Calculate shoulder distance from bottom timber's reference end
+    if bottom_lap_timber_end == TimberReferenceEnd.TOP:
+        # Measuring from top end
+        bottom_lap_shoulder_position_from_bottom_timber_end = bottom_lap_timber.length - bottom_shoulder_from_bottom_timber_bottom
+    else:  # BOTTOM
+        # Measuring from bottom end
+        bottom_lap_shoulder_position_from_bottom_timber_end = bottom_shoulder_from_bottom_timber_bottom
+
+    bottom_lap_csg = chop_lap_on_timber_end(bottom_lap_timber, bottom_lap_timber_end, bottom_lap_timber_face, lap_length, bottom_lap_shoulder_position_from_bottom_timber_end, bottom_lap_depth)
+    return (top_lap_csg, bottom_lap_csg)
+
+
+
+def chop_lap_on_timber_ends_DEPRECATED(
+    top_lap_timber: Timber,
+    top_lap_timber_end: TimberReferenceEnd,
+    bottom_lap_timber: Timber,
+    bottom_lap_timber_end: TimberReferenceEnd,
+    top_lap_timber_face: TimberFace,
+    lap_length: Numeric,
+    top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric,
+    lap_depth: Numeric
+) -> Tuple[MeowMeowCSG, MeowMeowCSG]:
+    """
+    Create CSG cuts for a lap joint between two timber ends.
+    
+    Creates material removal volumes for both timbers in a lap joint configuration where
+    one timber (top lap) has material removed from one face, and the other timber (bottom lap)
+    has material removed from the opposite face so they interlock.
+    
+        top_lap_timber_face
+        v           |--------| lap_length
+    ╔════════════════════════╗╔══════╗  -
+    ║face_lap_timber         ║║      ║  | lap_depth
+    ║               ╔════════╝║      ║  -
+    ║               ║╔════════╝      ║ 
+    ║               ║║      timberB  ║ 
+    ╚═══════════════╝╚═══════════════╝
+                    ^ top_lap_shoulder_position_from_top_lap_shoulder_timber_end
+    
+    Args:
+        top_lap_timber: The timber that will have material removed from the specified face
+        top_lap_timber_end: Which end of the top lap timber is being joined
+        bottom_lap_timber: The timber that will have material removed from the opposite face
+        bottom_lap_timber_end: Which end of the bottom lap timber is being joined
+        top_lap_timber_face: Which face of the top lap timber to remove material from
+        lap_length: Length of the lap region along the timber length
+        top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Distance from the timber end to the shoulder
+        lap_depth: Depth of material to remove (measured from top_lap_timber_face)
+    
+    Returns:
+        Tuple of (top_lap_csg, bottom_lap_csg) representing material to remove from each timber
+        Both CSGs are in local coordinates of their respective timbers
+    
+    Example:
+        >>> # Create a half-lap joint
+        >>> top_csg, bottom_csg = chop_lap_on_timber_ends(
+        ...     timber_a, TimberReferenceEnd.TOP,
+        ...     timber_b, TimberReferenceEnd.BOTTOM,
+        ...     TimberFace.BOTTOM, lap_length=4, lap_depth=2, shoulder_pos=1
+        ... )
+    """
+    from sympy import Rational
+    
+    # Step 1: Determine the end positions and shoulder position of the top lap timber
+    if top_lap_timber_end == TimberReferenceEnd.TOP:
+        top_lap_end_pos = top_lap_timber.get_top_center_position()
+        top_lap_direction = top_lap_timber.length_direction
+    else:  # BOTTOM
+        top_lap_end_pos = top_lap_timber.get_bottom_center_position()
+        top_lap_direction = -top_lap_timber.length_direction
+    
+    # Calculate the shoulder position (where the lap starts)
+    shoulder_pos = top_lap_end_pos - top_lap_direction * top_lap_shoulder_position_from_top_lap_shoulder_timber_end
+    
+    # Calculate the end of the lap (shoulder + lap_length)
+    lap_end_pos = shoulder_pos + top_lap_direction * lap_length
+    
+    # Step 2: Project these positions onto the bottom lap timber to find where to cut
+    # Find the distance from bottom lap timber's bottom to the shoulder and lap end
+    shoulder_from_bottom_lap_bottom = ((shoulder_pos - bottom_lap_timber.bottom_position).T * bottom_lap_timber.length_direction)[0, 0]
+    lap_end_from_bottom_lap_bottom = ((lap_end_pos - bottom_lap_timber.bottom_position).T * bottom_lap_timber.length_direction)[0, 0]
+    
+    # Step 3: Create half-plane cuts to remove the ends beyond the lap region
+    # Top lap: remove everything from shoulder position onward
+    top_lap_shoulder_from_bottom = ((shoulder_pos - top_lap_timber.bottom_position).T * top_lap_timber.length_direction)[0, 0]
+    top_lap_distance_from_end = (top_lap_timber.length - top_lap_shoulder_from_bottom 
+                                  if top_lap_timber_end == TimberReferenceEnd.TOP 
+                                  else top_lap_shoulder_from_bottom)
+    top_lap_half_plane = chop_timber_end_with_half_plane(top_lap_timber, top_lap_timber_end, top_lap_distance_from_end)
+    
+    # Bottom lap: remove everything from lap end position onward
+    bottom_lap_distance_from_end = (bottom_lap_timber.length - lap_end_from_bottom_lap_bottom
+                                     if bottom_lap_timber_end == TimberReferenceEnd.TOP
+                                     else lap_end_from_bottom_lap_bottom)
+    bottom_lap_half_plane = chop_timber_end_with_half_plane(bottom_lap_timber, bottom_lap_timber_end, bottom_lap_distance_from_end)
+    
+    # Step 4: Determine the orientation of the lap based on top_lap_timber_face
+    # We need to remove material from one face of each timber
+    
+    # For the top lap timber: remove material on the specified face
+    # The prism should extend from shoulder to lap_end in length direction
+    # And remove lap_depth of material perpendicular to the face
+    
+    # Calculate the prism dimensions and position for top lap
+    # Start and end distances in local coordinates
+    lap_start_local = top_lap_shoulder_from_bottom
+    lap_end_local = lap_start_local + lap_length
+    
+    # Step 5: Find where the two laps meet based on lap_depth
+    # The top lap removes material from top_lap_timber_face
+    # The bottom lap removes material from the opposite side
+    
+    # For a face-based lap, we need to offset the prism perpendicular to the face
+    # Get the face direction and offset
+    if top_lap_timber_face == TimberFace.TOP or top_lap_timber_face == TimberFace.BOTTOM:
+        # Lap is on the end faces - this is unusual for a lap joint
+        # Use the full cross-section but trim the length
+        top_lap_prism = Prism(
+            size=top_lap_timber.size,
+            transform=Transform.identity(),
+            start_distance=prism_start,
+            end_distance=prism_end
+        )
+    elif top_lap_timber_face == TimberFace.LEFT or top_lap_timber_face == TimberFace.RIGHT:
+        # Lap is on a width face (X-axis in local coords)
+        # Remove lap_depth from the width dimension
+        # Position offset in local Y=0, X depends on which face
+        if top_lap_timber_face == TimberFace.RIGHT:
+            # Remove from +X side
+            x_offset = top_lap_timber.size[0] / Rational(2) - lap_depth / Rational(2)
+        else:  # LEFT
+            # Remove from -X side  
+            x_offset = -top_lap_timber.size[0] / Rational(2) + lap_depth / Rational(2)
+        
+        top_lap_prism = Prism(
+            size=create_v2(lap_depth, top_lap_timber.size[1]),
+            transform=Transform(position=create_v3(x_offset, 0, 0), orientation=Orientation.identity()),
+            start_distance=prism_start,
+            end_distance=prism_end
+        )
+    else:  # FRONT or BACK
+        # Lap is on a height face (Y-axis in local coords)
+        # Remove lap_depth from the height dimension
+        if top_lap_timber_face == TimberFace.FRONT:
+            # Remove from +Y side
+            y_offset = top_lap_timber.size[1] / Rational(2) - lap_depth / Rational(2)
+        else:  # BACK
+            # Remove from -Y side
+            y_offset = -top_lap_timber.size[1] / Rational(2) + lap_depth / Rational(2)
+        
+        top_lap_prism = Prism(
+            size=create_v2(top_lap_timber.size[0], lap_depth),
+            transform=Transform(position=create_v3(0, y_offset, 0), orientation=Orientation.identity()),
+            start_distance=prism_start,
+            end_distance=prism_end
+        )
+    
+    # Step 6: Create prism for bottom lap timber (removes material from opposite side)
+    # The bottom lap extends from shoulder to lap_end in the bottom timber's local coordinates
+    bottom_lap_start_local = shoulder_from_bottom_lap_bottom
+    bottom_lap_end_local = lap_end_from_bottom_lap_bottom
+    
+    # The bottom lap removes material from the opposite face
+    # We need to determine which face of the bottom timber corresponds to the opposite
+    # For now, assume they're aligned and just use the opposite offset
+    # This is a simplification - proper implementation would need to check orientations
+    
+    if top_lap_timber_face == TimberFace.LEFT or top_lap_timber_face == TimberFace.RIGHT:
+        # Bottom lap removes from opposite X side
+        if top_lap_timber_face == TimberFace.RIGHT:
+            # Top removes from +X, bottom removes from -X
+            x_offset = -bottom_lap_timber.size[0] / Rational(2) + lap_depth / Rational(2)
+        else:
+            # Top removes from -X, bottom removes from +X
+            x_offset = bottom_lap_timber.size[0] / Rational(2) - lap_depth / Rational(2)
+        
+        bottom_lap_prism = Prism(
+            size=create_v2(lap_depth, bottom_lap_timber.size[1]),
+            transform=Transform(position=create_v3(x_offset, 0, 0), orientation=Orientation.identity()),
+            start_distance=bottom_lap_start_local,
+            end_distance=bottom_lap_end_local
+        )
+    else:  # FRONT or BACK
+        if top_lap_timber_face == TimberFace.FRONT:
+            # Top removes from +Y, bottom removes from -Y
+            y_offset = -bottom_lap_timber.size[1] / Rational(2) + lap_depth / Rational(2)
+        else:
+            # Top removes from -Y, bottom removes from +Y
+            y_offset = bottom_lap_timber.size[1] / Rational(2) - lap_depth / Rational(2)
+        
+        bottom_lap_prism = Prism(
+            size=create_v2(bottom_lap_timber.size[0], lap_depth),
+            transform=Transform(position=create_v3(0, y_offset, 0), orientation=Orientation.identity()),
+            start_distance=bottom_lap_start_local,
+            end_distance=bottom_lap_end_local
+        )
+    
+    # Step 7: Union the half-plane cuts with the prism cuts
+    top_lap_csg = Union([top_lap_half_plane, top_lap_prism])
+    bottom_lap_csg = Union([bottom_lap_half_plane, bottom_lap_prism])
+    
+    return (top_lap_csg, bottom_lap_csg)
 

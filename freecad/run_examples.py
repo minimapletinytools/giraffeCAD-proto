@@ -42,7 +42,7 @@ EXAMPLE_TO_RENDER = 'basic_joints'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
 #EXAMPLE_TO_RENDER = 'horsey'
 #EXAMPLE_TO_RENDER = 'japanese_joints'
-EXAMPLE_TO_RENDER = 'csg'
+#EXAMPLE_TO_RENDER = 'csg'
 
 # CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
 CSG_EXAMPLE_TO_RENDER = 'lap_cut_timber'  # Options: 'cube_cutout', 'halfplane_cut', 'positioned_cube', 'lap_cut_on_timber', 'union_cubes', 'hexagon_extrusion'
