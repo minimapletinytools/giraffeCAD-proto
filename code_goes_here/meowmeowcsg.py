@@ -103,6 +103,7 @@ class HalfPlane(MeowMeowCSG):
         return dot_product == self.offset
 
 
+# TODO rename to TimberPrism maybe?
 @dataclass(frozen=True)
 class Prism(MeowMeowCSG):
     """
