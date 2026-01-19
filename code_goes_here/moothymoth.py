@@ -62,6 +62,7 @@ class Transform:
             orientation=Orientation.identity()
         )
     
+    # TODO consider renaming to do_transform
     def local_to_global(self, local_point: V3) -> V3:
         """
         Convert a point from local coordinates to global world coordinates.
@@ -76,6 +77,7 @@ class Transform:
         # global = R * local + position
         return self.orientation.matrix * local_point + self.position
     
+    # TODO consider renaming to undo_transform
     def global_to_local(self, global_point: V3) -> V3:
         """
         Convert a point from global world coordinates to local coordinates.
@@ -91,6 +93,19 @@ class Transform:
         translated = global_point - self.position
         return self.orientation.matrix.T * translated
 
+    # TODO consider renaming to leave_parent_transform
+    def to_global_transform(self, old_parent: 'Transform') -> 'Transform':
+        """
+        Convert this transform to global coordinates relative to a parent transform.
+        """
+        return old_parent * self
+
+    # TODO consider renaming to become_child_transform
+    def to_local_transform(self, new_parent: 'Transform') -> 'Transform':
+        """
+        Convert this transform to local coordinates relative to a parent transform.
+        """
+        return new_parent.invert() * self
 
 # ============================================================================
 # Helper Functions for Vector Operations

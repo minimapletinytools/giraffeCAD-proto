@@ -27,7 +27,8 @@ from code_goes_here.meowmeowcsg import (
     Prism,
     Difference,
     Union,
-    translate_profiles
+    translate_profiles,
+    adopt_csg
 )
 
 
@@ -365,13 +366,19 @@ def cut_lapped_gooseneck_joint(
     # Both cuts need to be applied to the gooseneck timber
     gooseneck_timber_combined_csg = Union([gooseneck_timber_lap_csg, gooseneck_profile_difference_csg])
 
+
+    # Transform the gooseneck profile CSG from gooseneck_timber coordinates to receiving_timber coordinates
+    # Use the generic adopt_csg function to handle all CSG types (Union, Difference, Prism, etc.)
+    gooseneck_csg_on_receiving_timber = adopt_csg(gooseneck_timber, receiving_timber, gooseneck_profile_csg) 
+
+
     
     # Create CSGCut objects for each timber
     receiving_timber_cut_obj = CSGCut(
         timber=receiving_timber,
         transform=Transform.identity(), 
         maybe_end_cut=receiving_timber_end,
-        negative_csg=receiving_timber_lap_csg
+        negative_csg=Union([receiving_timber_lap_csg, gooseneck_csg_on_receiving_timber])
     )
 
     
@@ -406,6 +413,6 @@ def cut_lapped_gooseneck_joint(
 # ============================================================================
 
 # Japanese name alias
-cut_腰掛鎌継ぎ = cut_lapped_gooseneck_joint#
+cut_腰掛鎌継ぎ = cut_lapped_gooseneck_joint
 cut_koshikake_kama_tsugi = cut_lapped_gooseneck_joint
 

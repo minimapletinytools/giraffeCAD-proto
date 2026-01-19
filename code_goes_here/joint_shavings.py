@@ -8,7 +8,7 @@ These functions help ensure that joints are geometrically valid and sensibly con
 from typing import Optional, Tuple, List, Union as TypeUnion
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation, V2, V3
-from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, Union
+from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, Union, ConvexPolygonExtrusion
 from code_goes_here.construction import are_timbers_face_aligned, do_xy_cross_section_on_parallel_timbers_overlap
 from sympy import Abs, Rational
 
@@ -611,7 +611,7 @@ def chop_lap_on_timber_ends(
     return (top_lap_csg, bottom_lap_csg)
 
 
-def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: TypeUnion[List[V2], List[List[V2]]], depth: Numeric) -> MeowMeowCSG:
+def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: TypeUnion[List[V2], List[List[V2]]], depth: Numeric) -> TypeUnion[Union, ConvexPolygonExtrusion]:
     """
     Create a CSG extrusion of a profile (or multiple profiles) on a timber face.
     See the diagram below for understanding how to interpret the profile in the timber's local space based on the end and face arguments.

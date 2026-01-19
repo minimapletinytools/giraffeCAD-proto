@@ -6,8 +6,8 @@ and geometry operations. All operations use SymPy symbolic math for exact comput
 """
 
 from sympy import Matrix, Rational, Expr, sqrt, oo
-from typing import List, Optional, Union
-from dataclasses import dataclass, field
+from typing import List, Optional, Union as TypeUnion
+from dataclasses import dataclass, field, replace
 from abc import ABC, abstractmethod
 from .moothymoth import Orientation, Transform, V2, V3, Direction3D, Numeric
 
@@ -784,3 +784,111 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
                     return True
         
         return False
+
+
+# ============================================================================
+# CSG Coordinate Transform Utility
+# ============================================================================
+
+def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: MeowMeowCSG) -> MeowMeowCSG:
+    """
+    Transform a CSG object from one timber's local coordinate system to another timber's local coordinate system.
+    
+    This function takes a CSG that is defined in orig_timber's local coordinates and transforms it
+    to be in adopting_timber's local coordinates. This is useful for copying joint features from
+    one timber to another (e.g., copying a gooseneck profile from the gooseneck timber to the receiving timber).
+    
+    Args:
+        orig_timber: The timber whose coordinate system the CSG is currently in
+        adopting_timber: The timber whose coordinate system we want to transform the CSG to
+        csg_in_orig_timber_space: The CSG object in orig_timber's local coordinates
+    
+    Returns:
+        A new CSG object in adopting_timber's local coordinates
+    
+    Example:
+        >>> # Create a cut on timber_a
+        >>> cut_csg = create_some_cut(timber_a, ...)
+        >>> # Transform the cut to timber_b's coordinate system
+        >>> cut_on_b = adopt_csg(timber_a, timber_b, cut_csg)
+    """
+    from .timber import Timber
+    
+    # Helper function to transform a transform from orig_timber to adopting_timber
+    def transform_transform(trans: Transform) -> Transform:
+        """Transform a Transform from orig_timber local coords to adopting_timber local coords."""
+        # Convert from orig_timber local to global
+        global_position = orig_timber.bottom_position + orig_timber.orientation.matrix * trans.position
+        global_orientation = orig_timber.orientation * trans.orientation
+        
+        # Convert from global to adopting_timber local
+        local_position = adopting_timber.orientation.matrix.T * (global_position - adopting_timber.bottom_position)
+        local_orientation = adopting_timber.orientation.invert() * global_orientation
+        
+        return Transform(position=local_position, orientation=local_orientation)
+    
+    # Helper function to transform HalfPlane normal and offset
+    def transform_halfplane(hp: HalfPlane) -> HalfPlane:
+        """Transform a HalfPlane from orig_timber local coords to adopting_timber local coords."""
+        # The half plane is defined by: normal · point >= offset (in local coords)
+        # We need to transform this equation to the new coordinate system
+        
+        # Transform the normal vector (it's a direction, so no translation)
+        # global_normal = orig_timber.orientation * local_normal
+        global_normal = orig_timber.orientation.matrix * hp.normal
+        # new_local_normal = adopting_timber.orientation^T * global_normal
+        new_local_normal = adopting_timber.orientation.matrix.T * global_normal
+        
+        # To transform the offset, we need a point on the plane
+        # In orig timber local coords: point where normal · point = offset
+        # Pick the point: point = normal * offset (assuming normal is unit length)
+        # This gives us normal · (normal * offset) = (normal · normal) * offset = offset (if normalized)
+        # But normals might not be unit length, so we use: point = normal * (offset / (normal · normal))
+        normal_length_sq = (hp.normal.T * hp.normal)[0, 0]
+        if normal_length_sq == 0:
+            # Degenerate case
+            return replace(hp, normal=new_local_normal, offset=hp.offset)
+        
+        point_on_plane_local = hp.normal * (hp.offset / normal_length_sq)
+        
+        # Transform this point to global, then to new local
+        point_on_plane_global = orig_timber.bottom_position + orig_timber.orientation.matrix * point_on_plane_local
+        point_on_plane_new_local = adopting_timber.orientation.matrix.T * (point_on_plane_global - adopting_timber.bottom_position)
+        
+        # New offset = new_normal · point_on_plane_new_local
+        new_offset = (new_local_normal.T * point_on_plane_new_local)[0, 0]
+        
+        return replace(hp, normal=new_local_normal, offset=new_offset)
+    
+    # Recursively transform based on CSG type
+    if isinstance(csg_in_orig_timber_space, Union):
+        # Transform each child recursively
+        transformed_children = [
+            adopt_csg(orig_timber, adopting_timber, child)
+            for child in csg_in_orig_timber_space.children
+        ]
+        return Union(transformed_children)
+    
+    elif isinstance(csg_in_orig_timber_space, Difference):
+        # Transform base and all subtract elements recursively
+        transformed_base = adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space.base)
+        transformed_subtract = [
+            adopt_csg(orig_timber, adopting_timber, sub)
+            for sub in csg_in_orig_timber_space.subtract
+        ]
+        return Difference(base=transformed_base, subtract=transformed_subtract)
+    
+    elif isinstance(csg_in_orig_timber_space, HalfPlane):
+        # Transform the plane equation
+        return transform_halfplane(csg_in_orig_timber_space)
+    
+    elif hasattr(csg_in_orig_timber_space, 'transform'):
+        # For types with a transform property (Prism, ConvexPolygonExtrusion, etc.)
+        # Transform the transform and return a new instance
+        new_transform = transform_transform(csg_in_orig_timber_space.transform)
+        return replace(csg_in_orig_timber_space, transform=new_transform)
+    
+    else:
+        # For other types without special handling, return as-is
+        # This might need to be extended for new CSG types
+        return csg_in_orig_timber_space
