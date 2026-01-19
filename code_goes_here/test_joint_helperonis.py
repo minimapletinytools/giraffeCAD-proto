@@ -455,6 +455,7 @@ class TestChopLapOnTimberEnd:
         
         Creates a 4"x6" timber that is 4 ft long.
         Lap length is 1ft, shoulder 6" from end, lap face is RIGHT.
+        lap_depth=2" means we KEEP 2" on the RIGHT side and REMOVE from the LEFT side.
         Tests boundary points and verifies CSG structure.
         """
         # Create a 4"x6" timber that is 4 ft long
@@ -470,8 +471,8 @@ class TestChopLapOnTimberEnd:
         # Lap parameters
         lap_length = inches(12)  # 1 ft
         shoulder_distance = inches(6)  # 6" from end
-        lap_depth = inches(2)  # 2" depth (half of 4" width for half-lap)
-        lap_face = TimberFace.RIGHT  # Cut on RIGHT face
+        lap_depth = inches(2)  # 2" depth to KEEP on RIGHT side (half of 4" width for half-lap)
+        lap_face = TimberFace.RIGHT  # Lap on RIGHT face (keep material here)
         lap_end = TimberReferenceEnd.TOP  # Cutting from top end
         
         # Create the lap cut
@@ -519,21 +520,30 @@ class TestChopLapOnTimberEnd:
         assert half_plane.offset == expected_lap_end_z, \
             f"HalfPlane should be at lap end (z={expected_lap_end_z}), got {half_plane.offset}"
         
-        # Test point 1: 6" down from timber end (at shoulder), on the lap face
-        # RIGHT face is at x=+2", this point should be IN the CSG (material removed)
-        point1 = create_v3(inches(2), 0, expected_shoulder_z)
+        # Test point 1: 6" down from timber end (at shoulder), on the LEFT face (removed side)
+        # Timber is 4" wide centered at x=0, so LEFT face is at x=-2"
+        # With lap_face=RIGHT and lap_depth=2", we keep x=0 to x=+2", remove x=-2" to x=0
+        # LEFT face at x=-2" should be IN the CSG (material removed)
+        point1 = create_v3(inches(-2), 0, expected_shoulder_z)
         assert lap_csg.contains_point(point1), \
-            "Point at shoulder on RIGHT face should be in the removed region"
+            "Point at shoulder on LEFT face (removed side) should be in the removed region"
         
-        # Test point 2: From point1, move 2" left (to x=0), should be ON BOUNDARY
+        # Test point 2: At the boundary between removed and kept material (x=0)
+        # This should be at the boundary (on the edge of the prism)
         point2 = create_v3(0, 0, expected_shoulder_z)
         assert lap_csg.contains_point(point2), \
             "Point at boundary (x=0) at shoulder should be on boundary (contained)"
         
-        # Test point 3: From point2, go 3" down from shoulder (to z=39")
-        # This is BELOW the prism start (shoulder at 42"), so should NOT be in CSG
-        point3 = create_v3(0, 0, expected_shoulder_z - inches(3))
+        # Test point 3: On the RIGHT face (kept side) at x=+2"
+        # This should NOT be in the removed region (material is kept here)
+        point3 = create_v3(inches(2), 0, expected_shoulder_z)
         assert not lap_csg.contains_point(point3), \
+            "Point at shoulder on RIGHT face (kept side) should NOT be in the removed region"
+        
+        # Test point 4: Below the shoulder (outside lap region)
+        # This is BELOW the prism start (shoulder at 42"), so should NOT be in CSG
+        point4 = create_v3(0, 0, expected_shoulder_z - inches(3))
+        assert not lap_csg.contains_point(point4), \
             "Point 3\" below shoulder (outside lap region) should NOT be in the removed region"
 
 
