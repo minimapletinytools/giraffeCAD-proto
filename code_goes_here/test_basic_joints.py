@@ -644,46 +644,61 @@ class TestSpliceLapJoint:
         lap_depth = Rational(4) / 2  # 2
         
         # Choose x_in_lap to be in the overlap region where both timbers have laps
-        # TimberA lap: x=12 to x=18, TimberB lap: x=18 to x=24
-        # Overlap region where both timbers exist and have laps: x=18 to x=20
-        # Pick middle of overlap: x=19
+        # TimberA lap: x=18-shoulder_distance to x=18, then lap extends beyond
+        # Let's pick x=19 which is definitely in the lap region
         x_in_lap = 19
         
-        # The cut face of timberA (BACK face after cutting) removes material from global Z < 0
-        # The normal of the BACK face points in -Z direction
-        # After cutting depth lap_depth=2, material is removed from global Z in [-2, 0]
-        # Timber A remains at global Z in [0, ∞) (local Y in [0, 2])
+        # NEW LOGIC: With top_lap_timber_face=BACK:
+        # - BACK face is at z=-2 (timber is 4x4 centered at y=0, z=0)
+        # - lap_depth=2 means we KEEP 2" on the BACK side (z=-2 to z=0)
+        # - We REMOVE material from the FRONT side (z=0 to z=+2)
+        # - TimberA remains at global Z in [-2, 0]
+        #
+        # For timberB (opposing lap):
+        # - Opposing face is FRONT (opposite of BACK)
+        # - TimberB keeps material on FRONT side (z=0 to z=+2)
+        # - TimberB removes material from BACK side (z=-2 to z=0)
+        # - TimberB remains at global Z in [0, +2]
         
-        # At depth 0: slightly above the cut face (inside timberA), should be in timberA but not in timberB
+        # At z=-epsilon: Just inside timberA's kept region (BACK side), should be in timberA but not in timberB
         epsilon = Rational(1, 10)  # Small offset
-        point_at_face = create_v3(x_in_lap, 0, epsilon)  # Just above Z=0 (the cut boundary)
-        point_at_face_A_local = timberA.global_to_local(point_at_face)
-        point_at_face_B_local = timberB.global_to_local(point_at_face)
+        point_in_A = create_v3(x_in_lap, 0, -epsilon)  # Just below Z=0 (in timberA's kept region)
+        point_in_A_local = timberA.global_to_local(point_in_A)
+        point_in_A_as_B_local = timberB.global_to_local(point_in_A)
         
-        assert csg_A.contains_point(point_at_face_A_local), \
-            "Point just above cut face should be contained in timberA"
-        assert not csg_B.contains_point(point_at_face_B_local), \
-            "Point just above cut face should NOT be contained in timberB"
+        assert csg_A.contains_point(point_in_A_local), \
+            "Point in timberA's kept region (z=-epsilon) should be contained in timberA"
+        assert not csg_B.contains_point(point_in_A_as_B_local), \
+            "Point in timberA's kept region (z=-epsilon) should NOT be contained in timberB"
         
-        # At lap_depth: on the boundary where the two timbers meet
-        # This is at global Z = 0
-        point_at_lap_depth = create_v3(x_in_lap, 0, 0)
-        point_at_lap_depth_A_local = timberA.global_to_local(point_at_lap_depth)
-        point_at_lap_depth_B_local = timberB.global_to_local(point_at_lap_depth)
+        # At z=0: on the boundary where the two timbers meet
+        point_at_boundary = create_v3(x_in_lap, 0, 0)
+        point_at_boundary_A_local = timberA.global_to_local(point_at_boundary)
+        point_at_boundary_B_local = timberB.global_to_local(point_at_boundary)
         
         # At the boundary, the point should be contained in both (on their surfaces)
-        assert csg_A.contains_point(point_at_lap_depth_A_local), \
-            "Point at lap_depth should be on boundary of timberA"
-        assert csg_B.contains_point(point_at_lap_depth_B_local), \
-            "Point at lap_depth should be on boundary of timberB"
+        assert csg_A.contains_point(point_at_boundary_A_local), \
+            "Point at boundary (z=0) should be on boundary of timberA"
+        assert csg_B.contains_point(point_at_boundary_B_local), \
+            "Point at boundary (z=0) should be on boundary of timberB"
         
-        # A little further (beyond lap_depth, into timberB): should be in timberB only, not in timberA
-        point_beyond_lap_depth = create_v3(x_in_lap, 0, -epsilon)  # Just below Z=0 (into cut region)
-        point_beyond_A_local = timberA.global_to_local(point_beyond_lap_depth)
-        point_beyond_B_local = timberB.global_to_local(point_beyond_lap_depth)
+        # At z=+epsilon: Just inside timberB's kept region (FRONT side), should be in timberB but not in timberA
+        point_in_B = create_v3(x_in_lap, 0, epsilon)  # Just above Z=0 (in timberB's kept region)
+        point_in_B_as_A_local = timberA.global_to_local(point_in_B)
+        point_in_B_local = timberB.global_to_local(point_in_B)
         
-        assert not csg_A.contains_point(point_beyond_A_local), \
-            "Point beyond lap_depth should NOT be contained in timberA"
-        assert csg_B.contains_point(point_beyond_B_local), \
-            "Point beyond lap_depth should be contained in timberB"
+        assert not csg_A.contains_point(point_in_B_as_A_local), \
+            "Point in timberB's kept region (z=+epsilon) should NOT be contained in timberA"
+        assert csg_B.contains_point(point_in_B_local), \
+            "Point in timberB's kept region (z=+epsilon) should be contained in timberB"
+        
+        # A little further into timberB (beyond the lap boundary): should be in timberB only, not in timberA
+        point_deeper_in_B = create_v3(x_in_lap, 0, lap_depth - epsilon)  # z = 2 - 0.1 = 1.9 (deep into timberB)
+        point_deeper_in_B_as_A_local = timberA.global_to_local(point_deeper_in_B)
+        point_deeper_in_B_local = timberB.global_to_local(point_deeper_in_B)
+        
+        assert not csg_A.contains_point(point_deeper_in_B_as_A_local), \
+            "Point deep in timberB should NOT be contained in timberA"
+        assert csg_B.contains_point(point_deeper_in_B_local), \
+            "Point deep in timberB should be contained in timberB"
         

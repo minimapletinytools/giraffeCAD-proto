@@ -311,6 +311,7 @@ def cut_lapped_gooseneck_joint(
     else:  # BOTTOM
         gooseneck_timber_lap_shoulder_from_end = gooseneck_lap_start_on_gooseneck_timber
 
+    print(f"gooseneck_timber_face: {TimberFace(gooseneck_timber_face.value)}")
     # Cut lap on gooseneck timber
     gooseneck_timber_lap_csg = chop_lap_on_timber_end(
         lap_timber=gooseneck_timber,

@@ -169,7 +169,7 @@ DONE-pull out logic into joint_helperonis.py
 IGNORE-add optional key to lap helper?
 
 
-
+-rafters get added twice in oscar shed
 
 -REFACTOR TIME
   DONE-create Transform class in moothymoth

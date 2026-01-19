@@ -436,33 +436,42 @@ def chop_lap_on_timber_end(
         raise ValueError("cannot cut lap on end faces")
     elif lap_timber_face == TimberFace.LEFT or lap_timber_face == TimberFace.RIGHT:
         # Lap is on a width face (X-axis in local coords)
-        # Remove lap_depth from the width dimension
-        # Position offset in local Y=0, X depends on which face
+        # Remove material from the OPPOSITE side of lap_timber_face
+        # lap_depth is the thickness of material we KEEP on the lap_timber_face side
         if lap_timber_face == TimberFace.RIGHT:
-            # Remove from +X side
-            x_offset = lap_timber.size[0] / Rational(2) - lap_depth / Rational(2)
+            # Keep lap_depth on RIGHT side, remove from LEFT side
+            # Remove from x = -size[0]/2 to x = +size[0]/2 - lap_depth
+            removal_width = lap_timber.size[0] - lap_depth
+            x_offset = -lap_timber.size[0] / Rational(2) + removal_width / Rational(2)
         else:  # LEFT
-            # Remove from -X side  
-            x_offset = -lap_timber.size[0] / Rational(2) + lap_depth / Rational(2)
+            # Keep lap_depth on LEFT side, remove from RIGHT side
+            # Remove from x = -size[0]/2 + lap_depth to x = +size[0]/2
+            removal_width = lap_timber.size[0] - lap_depth
+            x_offset = lap_timber.size[0] / Rational(2) - removal_width / Rational(2)
         
         lap_prism = Prism(
-            size=create_v2(lap_depth, lap_timber.size[1]),
+            size=create_v2(removal_width, lap_timber.size[1]),
             transform=Transform(position=create_v3(x_offset, 0, 0), orientation=Orientation.identity()),
             start_distance=prism_start,
             end_distance=prism_end
         )
     else:  # FRONT or BACK
         # Lap is on a height face (Y-axis in local coords)
-        # Remove lap_depth from the height dimension
+        # Remove material from the OPPOSITE side of lap_timber_face
+        # lap_depth is the thickness of material we KEEP on the lap_timber_face side
         if lap_timber_face == TimberFace.FRONT:
-            # Remove from +Y side
-            y_offset = lap_timber.size[1] / Rational(2) - lap_depth / Rational(2)
+            # Keep lap_depth on FRONT side, remove from BACK side
+            # Remove from y = -size[1]/2 to y = +size[1]/2 - lap_depth
+            removal_height = lap_timber.size[1] - lap_depth
+            y_offset = -lap_timber.size[1] / Rational(2) + removal_height / Rational(2)
         else:  # BACK
-            # Remove from -Y side
-            y_offset = -lap_timber.size[1] / Rational(2) + lap_depth / Rational(2)
+            # Keep lap_depth on BACK side, remove from FRONT side
+            # Remove from y = -size[1]/2 + lap_depth to y = +size[1]/2
+            removal_height = lap_timber.size[1] - lap_depth
+            y_offset = lap_timber.size[1] / Rational(2) - removal_height / Rational(2)
         
         lap_prism = Prism(
-            size=create_v2(lap_timber.size[0], lap_depth),
+            size=create_v2(lap_timber.size[0], removal_height),
             transform=Transform(position=create_v3(0, y_offset, 0), orientation=Orientation.identity()),
             start_distance=prism_start,
             end_distance=prism_end
