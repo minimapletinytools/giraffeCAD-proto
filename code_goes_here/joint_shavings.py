@@ -5,9 +5,9 @@ Collection of helper functions for validating and checking timber joint configur
 These functions help ensure that joints are geometrically valid and sensibly constructed.
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
-from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation
+from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation, V2, V3
 from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, Union
 from code_goes_here.construction import are_timbers_face_aligned, do_xy_cross_section_on_parallel_timbers_overlap
 from sympy import Abs, Rational
@@ -620,18 +620,113 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
         timber: The timber to create a profile for
         end: Which end to create the profile on (determines the origin and rotation of the profile)
         face: Which face to create the profile on (determines the origin, rotation, and extrusion direction of the profile)
-        profile: List of points in the local XY plane
+        profile: List of points in the local XY plane defining the profile shape
         depth: Depth to extrude the profile through the timber's face
 
     Returns:
         MeowMeowCSG representing the extruded profile in the timber's local coordinates
+        
+    Notes:
+        - The profile is positioned at the intersection of the specified end and face
+        - Profile coordinates: X-axis points into timber from end, Y-axis across face, origin at (0,0) on face
+        - The extrusion extends inward from the face by the specified depth
+        - Currently uses ConvexPolygonExtrusion, which may not handle non-convex profiles correctly
+          in all rendering backends. For complex profiles like gooseneck, the rendering backend
+          must support non-convex polygon extrusions.
     """
-    # In timber local coordinates:
-    # - Bottom is at 0
-    # - Top is at timber.length
-    # - Z-axis (local) points along the length direction (bottom to top)
+    from sympy import Rational, Matrix
+    from .moothymoth import Orientation, Transform, create_v3, cross_product, normalize_vector
+    from .meowmeowcsg import ConvexPolygonExtrusion
     
-    # The profile is defined by a list of points in the local X-Y plane
-    # The profile is cut perpendicular to the timber's length direction (Z-axis in local coords)
-    # The profile is cut at the given depth from the timber's face
-    # The profile is cut at the given end of the timber
+    # ========================================================================
+    # Step 1: Determine the origin position in timber local coordinates
+    # ========================================================================
+    # The origin is at the intersection of the end and the face
+    # In timber local coordinates:
+    # - Local X-axis = width_direction
+    # - Local Y-axis = height_direction
+    # - Local Z-axis = length_direction (bottom to top)
+    # - Origin is at bottom_position (center of bottom face)
+    
+    # Get Z coordinate based on end
+    if end == TimberReferenceEnd.TOP:
+        origin_z = timber.length
+    else:  # BOTTOM
+        origin_z = Rational(0)
+    
+    # Get X and Y offset based on face
+    # The face determines where on the cross-section the origin is
+    half_width = timber.size[0] / Rational(2)
+    half_height = timber.size[1] / Rational(2)
+    
+    if face == TimberFace.TOP or face == TimberFace.BOTTOM:
+        # For end faces, we can't really position a profile "on" them in the way described
+        # This shouldn't happen based on the function's design
+        raise ValueError(f"Face cannot be an end face (TOP or BOTTOM), got {face}")
+    elif face == TimberFace.RIGHT:
+        origin_x = half_width
+        origin_y = Rational(0)
+    elif face == TimberFace.LEFT:
+        origin_x = -half_width
+        origin_y = Rational(0)
+    elif face == TimberFace.FRONT:
+        origin_x = Rational(0)
+        origin_y = half_height
+    else:  # BACK
+        origin_x = Rational(0)
+        origin_y = -half_height
+    
+    origin_local = create_v3(origin_x, origin_y, origin_z)
+    
+    # ========================================================================
+    # Step 2: Determine the profile coordinate system orientation
+    # ========================================================================
+    # The profile's coordinate system needs:
+    # - X-axis: points along timber length (into timber from end)
+    # - Y-axis: points across the face (perpendicular to length and face normal)
+    # - Z-axis: points inward from face (extrusion direction)
+    
+    # Get face normal direction in timber local coordinates
+    face_normal_local = face.get_direction()  # This gives the outward normal
+    
+    # Profile X-axis: depends on which end we're at
+    if end == TimberReferenceEnd.TOP:
+        # At top, profile X points into timber (negative length direction)
+        profile_y_axis = create_v3(0, 0, 1)
+    else:  # BOTTOM
+        # At bottom, profile X points into timber (positive length direction)
+        profile_y_axis = create_v3(0, 0, -1)
+    
+    # Profile Z-axis (extrusion): points inward from face (negative of face normal)
+    profile_z_axis = -face_normal_local
+    
+    # Profile Y-axis: perpendicular to X and Z, using right-hand rule
+    # Y = Z × X (so that X, Y, Z form a right-handed system)
+    profile_x_axis = cross_product(profile_y_axis, profile_z_axis)
+    profile_x_axis = normalize_vector(profile_x_axis)
+    
+    # Create the orientation matrix for the profile
+    # Columns are: X-axis, Y-axis, Z-axis
+    profile_orientation_matrix = Matrix([
+        [profile_x_axis[0], profile_y_axis[0], profile_z_axis[0]],
+        [profile_x_axis[1], profile_y_axis[1], profile_z_axis[1]],
+        [profile_x_axis[2], profile_y_axis[2], profile_z_axis[2]]
+    ])
+    
+    profile_orientation = Orientation(profile_orientation_matrix)
+    profile_transform = Transform(position=origin_local, orientation=profile_orientation)
+    
+    # ========================================================================
+    # Step 3: Create the ConvexPolygonExtrusion
+    # ========================================================================
+    # The extrusion starts at the origin (start_distance=0) and extends 
+    # inward by depth along the profile's Z-axis
+    
+    extrusion = ConvexPolygonExtrusion(
+        points=profile,
+        transform=profile_transform,
+        start_distance=Rational(0),
+        end_distance=depth
+    )
+    
+    return extrusion

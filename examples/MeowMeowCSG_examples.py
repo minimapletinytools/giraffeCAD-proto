@@ -15,9 +15,10 @@ NOTE: Prism positioning follows the Timber convention:
 
 from sympy import Matrix, eye, Rational, sqrt
 from code_goes_here.meowmeowcsg import Prism, HalfPlane, Difference, Union, ConvexPolygonExtrusion
-from code_goes_here.moothymoth import Orientation, Transform
+from code_goes_here.moothymoth import Orientation, Transform, inches, feet
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, timber_from_directions
-from code_goes_here.joint_shavings import chop_lap_on_timber_end
+from code_goes_here.joint_shavings import chop_lap_on_timber_end, chop_profile_on_timber_face
+from code_goes_here.japanese_joints import draw_gooseneck_polygon
 
 
 def example_cube_with_cube_cutout():
@@ -228,11 +229,11 @@ def example_lap_cut_on_timber():
     
     # Create the lap cut CSG (in timber's local coordinates)
     lap_cut_csg = chop_lap_on_timber_end(
-        top_lap_timber=timber,
-        top_lap_timber_end=TimberReferenceEnd.TOP,
-        top_lap_timber_face=TimberFace.BACK,
+        lap_timber=timber,
+        lap_timber_end=TimberReferenceEnd.TOP,
+        lap_timber_face=TimberFace.BACK,
         lap_length=lap_length,
-        top_lap_shoulder_position_from_top_lap_shoulder_timber_end=shoulder_distance,
+        lap_shoulder_position_from_lap_timber_end=shoulder_distance,
         lap_depth=lap_depth
     )
     
@@ -248,6 +249,83 @@ def example_lap_cut_on_timber():
     result = Difference(
         base=timber_prism,
         subtract=[lap_cut_csg]
+    )
+    
+    return result
+
+
+def example_gooseneck_profile_cut():
+    """
+    2"x6"x4' timber with a gooseneck profile cut on the FRONT face at the TOP end.
+    
+    Creates a timber and cuts a gooseneck profile using chop_profile_on_timber_face.
+    The gooseneck is a traditional Japanese joint feature with a tapered profile.
+    
+    Dimensions (in meters):
+    - Timber: 0.0508m x 0.1524m x 1.2192m (2" x 6" x 4')
+    - Gooseneck length: 0.2032m (8")
+    - Gooseneck small width: 0.0254m (1")
+    - Gooseneck large width: 0.0508m (2")
+    - Gooseneck head length: 0.0508m (2")
+    - Gooseneck depth: 0.0254m (1", cuts into the timber)
+    
+    Returns:
+        Difference CSG object (timber with gooseneck profile cut removed)
+    """
+    # Create a 2"x6"x4' timber
+    timber_width = inches(2)   # 2"
+    timber_height = inches(6)  # 6"
+    timber_length = feet(4)    # 4'
+    
+    # Create timber extending along Z-axis (vertical)
+    timber = timber_from_directions(
+        length=timber_length,
+        size=Matrix([timber_width, timber_height]),
+        bottom_position=Matrix([0, 0, 0]),
+        length_direction=Matrix([0, 0, 1]),  # Vertical
+        width_direction=Matrix([1, 0, 0]),   # Along X
+        name='gooseneck_test_timber'
+    )
+    
+    # Define gooseneck parameters
+    gooseneck_length = inches(8)       # 8"
+    gooseneck_small_width = inches(1)  # 1"
+    gooseneck_large_width = inches(2)  # 2"
+    gooseneck_head_length = inches(2)  # 2"
+    gooseneck_depth = inches(1)        # 1" deep into the timber
+    
+    # Create the gooseneck profile
+    gooseneck_profile = draw_gooseneck_polygon(
+        length=gooseneck_length,
+        small_width=gooseneck_small_width,
+        large_width=gooseneck_large_width,
+        head_length=gooseneck_head_length
+    )
+
+    # substract gooseneck_length from the y point of all profile points
+    gooseneck_profile = [[point[0], point[1] - gooseneck_length] for point in gooseneck_profile]
+    
+    # Create the gooseneck cut CSG (in timber's local coordinates)
+    gooseneck_cut_csg = chop_profile_on_timber_face(
+        timber=timber,
+        end=TimberReferenceEnd.TOP,
+        face=TimberFace.RIGHT,
+        profile=gooseneck_profile,
+        depth=gooseneck_depth
+    )
+    
+    # Create the base timber prism (in local coordinates)
+    timber_prism = Prism(
+        size=timber.size,
+        transform=Transform.identity(),
+        start_distance=0,
+        end_distance=timber.length
+    )
+    
+    # Create the difference (timber with gooseneck cut removed)
+    result = Difference(
+        base=timber_prism,
+        subtract=[gooseneck_cut_csg]
     )
     
     return result
@@ -285,6 +363,11 @@ EXAMPLES = {
         'name': 'Lap Cut on Timber',
         'description': '4"x4"x4\' timber with 4" lap cut on top end (tests chop_lap_on_timber_end)',
         'function': example_lap_cut_on_timber
+    },
+    'gooseneck_profile': {
+        'name': 'Gooseneck Profile Cut',
+        'description': '2"x6"x4\' timber with gooseneck profile cut (tests chop_profile_on_timber_face)',
+        'function': example_gooseneck_profile_cut
     }
 }
 

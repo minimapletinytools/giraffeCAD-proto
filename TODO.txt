@@ -180,6 +180,8 @@ IGNORE-add optional key to lap helper?
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
 
+-change gooseneck to return 2 Convex CSGs or support non convex polygon extrusion CSG (errors on some functions or returns None or whatever)
+
 -3 major features
   -measure functions
   -refactor timber class
