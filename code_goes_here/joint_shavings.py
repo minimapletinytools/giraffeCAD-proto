@@ -5,7 +5,7 @@ Collection of helper functions for validating and checking timber joint configur
 These functions help ensure that joints are geometrically valid and sensibly constructed.
 """
 
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union as TypeUnion
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation, V2, V3
 from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, Union
@@ -602,9 +602,9 @@ def chop_lap_on_timber_ends(
     return (top_lap_csg, bottom_lap_csg)
 
 
-def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: List[V2], depth: Numeric) -> MeowMeowCSG:
+def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: TypeUnion[List[V2], List[List[V2]]], depth: Numeric) -> MeowMeowCSG:
     """
-    Create a CSG extrusion of a profile on a timber face.
+    Create a CSG extrusion of a profile (or multiple profiles) on a timber face.
     See the diagram below for understanding how to interpret the profile in the timber's local space based on the end and face arguments.
 
 
@@ -620,23 +620,41 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
         timber: The timber to create a profile for
         end: Which end to create the profile on (determines the origin and rotation of the profile)
         face: Which face to create the profile on (determines the origin, rotation, and extrusion direction of the profile)
-        profile: List of points in the local XY plane defining the profile shape
+        profile: Either a single profile (List[V2]) or multiple profiles (List[List[V2]]).
+                 Multiple profiles are provided as a convenience for creating non-convex shapes
+                 by unioning multiple convex polygon extrusions.
         depth: Depth to extrude the profile through the timber's face
 
     Returns:
-        MeowMeowCSG representing the extruded profile in the timber's local coordinates
+        MeowMeowCSG representing the extruded profile(s) in the timber's local coordinates.
+        If multiple profiles are provided, returns a Union of all extruded profiles.
         
     Notes:
         - The profile is positioned at the intersection of the specified end and face
         - Profile coordinates: X-axis points into timber from end, Y-axis across face, origin at (0,0) on face
         - The extrusion extends inward from the face by the specified depth
-        - Currently uses ConvexPolygonExtrusion, which may not handle non-convex profiles correctly
-          in all rendering backends. For complex profiles like gooseneck, the rendering backend
-          must support non-convex polygon extrusions.
+        - For non-convex shapes, provide multiple profiles (List[List[V2]]) which will be 
+          individually extruded and unioned together
+        - Each individual profile uses ConvexPolygonExtrusion, so complex non-convex shapes
+          should be decomposed into multiple convex profiles
     """
     from sympy import Rational, Matrix
     from .moothymoth import Orientation, Transform, create_v3, cross_product, normalize_vector
     from .meowmeowcsg import ConvexPolygonExtrusion
+    
+    # Check if we have a single profile or multiple profiles
+    # If the first element is a list, we have multiple profiles
+    is_multiple_profiles = isinstance(profile, list) and len(profile) > 0 and isinstance(profile[0], list)
+    
+    if is_multiple_profiles:
+        # Recursively call this function for each profile and union the results
+        extrusions = []
+        for single_profile in profile:
+            extrusion = chop_profile_on_timber_face(timber, end, face, single_profile, depth)
+            extrusions.append(extrusion)
+        return Union(extrusions)
+    
+    # Single profile case - continue with original logic
     
     # ========================================================================
     # Step 1: Determine the origin position in timber local coordinates
