@@ -844,8 +844,9 @@ def create_oscarshed():
         all_joints.append(joint_back)
         all_joints.append(joint_front)
     
-    # Joists and rafters don't have joints, so pass them as additional unjointed timbers
-    unjointed_timbers = joists + rafters
+    # Joists don't have joints, so pass them as additional unjointed timbers
+    # Note: Rafters already have house joints above, so they shouldn't be included here
+    unjointed_timbers = joists
     
     return Frame.from_joints(all_joints, additional_unjointed_timbers=unjointed_timbers, name="Oscar's Shed")
 
