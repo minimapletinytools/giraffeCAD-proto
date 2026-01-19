@@ -600,3 +600,38 @@ def chop_lap_on_timber_ends(
 
     bottom_lap_csg = chop_lap_on_timber_end(bottom_lap_timber, bottom_lap_timber_end, bottom_lap_timber_face, lap_length, bottom_lap_shoulder_position_from_bottom_timber_end, bottom_lap_depth)
     return (top_lap_csg, bottom_lap_csg)
+
+
+def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: List[V2], depth: Numeric) -> MeowMeowCSG:
+    """
+    Create a CSG extrusion of a profile on a timber face.
+    See the diagram below for understanding how to interpret the profile in the timber's local space based on the end and face arguments.
+
+
+                            end
+    timber                   v                          ^
+    ╔════════════════════════╗                          -x
+    ║face                    ║< (0,0) of the profile    +y ->
+    ╚════════════════════════╝                          +x
+                                                        v
+
+
+    Args:
+        timber: The timber to create a profile for
+        end: Which end to create the profile on (determines the origin and rotation of the profile)
+        face: Which face to create the profile on (determines the origin, rotation, and extrusion direction of the profile)
+        profile: List of points in the local XY plane
+        depth: Depth to extrude the profile through the timber's face
+
+    Returns:
+        MeowMeowCSG representing the extruded profile in the timber's local coordinates
+    """
+    # In timber local coordinates:
+    # - Bottom is at 0
+    # - Top is at timber.length
+    # - Z-axis (local) points along the length direction (bottom to top)
+    
+    # The profile is defined by a list of points in the local X-Y plane
+    # The profile is cut perpendicular to the timber's length direction (Z-axis in local coords)
+    # The profile is cut at the given depth from the timber's face
+    # The profile is cut at the given end of the timber

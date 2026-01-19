@@ -2,9 +2,6 @@
 GiraffeCAD - Japanese Joint Construction Functions
 Contains traditional Japanese timber joint implementations
 """
-
-from __future__ import annotations  # Enable deferred annotation evaluation
-
 import warnings
 
 from code_goes_here.timber import *
