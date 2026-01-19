@@ -167,9 +167,9 @@ DONE-fix morties_and_tenon_joint_example
 DONE-pull out logic into joint_helperonis.py
   -split the lap helper to do the lap cut on just 1 timber...
 IGNORE-add optional key to lap helper?
-
-
--rafters get added twice in oscar shed
+DONE-gooseneck lap joint
+DONE-change gooseneck to return 2 Convex CSGs or support non convex polygon extrusion CSG (errors on some functions or returns None or whatever)
+DONE-rafters get added twice in oscar shed
 
 -REFACTOR TIME
   DONE-create Transform class in moothymoth
@@ -180,7 +180,7 @@ IGNORE-add optional key to lap helper?
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
 
-DONE-change gooseneck to return 2 Convex CSGs or support non convex polygon extrusion CSG (errors on some functions or returns None or whatever)
+
 
 -3 major features
   -measure functions
@@ -192,12 +192,10 @@ DONE-change gooseneck to return 2 Convex CSGs or support non convex polygon extr
   -round peg support
   -peg positioning
   -finding the shoulder point/shoulder plane
+
 -add extrude polygon csg rendering to fusino 360
-
-
--xyz lap joint
-  -dovetail lap joint
-  -gooseneck lap joint
+-dovetail lap joint
+  
 
 
 
