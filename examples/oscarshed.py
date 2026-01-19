@@ -463,22 +463,72 @@ def create_oscarshed():
     )
     
     # ============================================================================
-    # Split the front girt into two pieces and rejoin with a splice joint
+    # Split the front girt into three pieces and rejoin with gooseneck joints
     # ============================================================================    
-    # Split the front girt at the midpoint
-    front_girt_split_distance = front_girt.length / 2
-    front_girt_left, front_girt_right = split_timber(
+    # Middle section is 3 inches wide, centered
+    middle_section_width = inches(3)
+    
+    # Calculate split positions
+    # First split: left section ends where middle section begins
+    first_split_distance = (front_girt.length - middle_section_width) / Rational(2)
+    # Second split: middle section ends (measured from front girt start)
+    second_split_distance = first_split_distance + middle_section_width
+    
+    # Split into three pieces
+    front_girt_left_and_middle, front_girt_right = split_timber(
         front_girt, 
-        front_girt_split_distance,
-        name1="Front Girt Left",
+        second_split_distance,
+        name1="Front Girt Left+Middle (temp)",
         name2="Front Girt Right"
     )
     
-    # Create a splice joint to rejoin the two pieces
-    # The left piece's TOP end meets the right piece's BOTTOM end
-    front_girt_splice_joint = cut_basic_butt_splice_joint_on_aligned_timbers(
-        front_girt_left, TimberReferenceEnd.TOP,
-        front_girt_right, TimberReferenceEnd.BOTTOM
+    front_girt_left, front_girt_middle = split_timber(
+        front_girt_left_and_middle,
+        first_split_distance,
+        name1="Front Girt Left",
+        name2="Front Girt Middle"
+    )
+    
+    # Create gooseneck joints
+    # Middle section (gooseneck timber) connects to left section (receiving timber)
+    # and to right section (receiving timber)
+    
+    # Gooseneck parameters
+    gooseneck_length = inches(3)
+    gooseneck_narrow_width = inches(1)  # 1 inch
+    gooseneck_wide_width = inches(Rational(3, 2))  # 1.25 inches
+    gooseneck_head_length = inches(1.5)  # 1 inch
+    gooseneck_depth = inches(Rational(3, 2))  # 1.5 inches (reasonable default)
+    lap_length = inches(Rational(1, 2))  # 1.5 inches (reasonable default)
+    
+    # Left gooseneck joint: middle section BOTTOM end meets left section TOP end
+    front_girt_gooseneck_joint_left = cut_lapped_gooseneck_joint(
+        gooseneck_timber=front_girt_middle,
+        receiving_timber=front_girt_left,
+        receiving_timber_end=TimberReferenceEnd.TOP,
+        gooseneck_timber_face=TimberReferenceLongFace.FRONT,
+        gooseneck_length=gooseneck_length,
+        gooseneck_small_width=gooseneck_narrow_width,
+        gooseneck_large_width=gooseneck_wide_width,
+        gooseneck_head_length=gooseneck_head_length,
+        lap_length=lap_length,
+        gooseneck_lateral_offset=Rational(0),
+        gooseneck_depth=gooseneck_depth
+    )
+    
+    # Right gooseneck joint: middle section TOP end meets right section BOTTOM end
+    front_girt_gooseneck_joint_right = cut_lapped_gooseneck_joint(
+        gooseneck_timber=front_girt_middle,
+        receiving_timber=front_girt_right,
+        receiving_timber_end=TimberReferenceEnd.BOTTOM,
+        gooseneck_timber_face=TimberReferenceLongFace.FRONT,
+        gooseneck_length=gooseneck_length,
+        gooseneck_small_width=gooseneck_narrow_width,
+        gooseneck_large_width=gooseneck_wide_width,
+        gooseneck_head_length=gooseneck_head_length,
+        lap_length=lap_length,
+        gooseneck_lateral_offset=Rational(0),
+        gooseneck_depth=gooseneck_depth
     )
     
     # ============================================================================
@@ -528,21 +578,31 @@ def create_oscarshed():
     )
     
     # Collect cuts for each piece:
-    # - Left piece: tenon cuts (BOTTOM end) + splice cuts (TOP end)
-    # - Right piece: tenon cuts (TOP end) + splice cuts (BOTTOM end)
+    # - Left piece: tenon cuts (BOTTOM end) + gooseneck joint cuts (TOP end)
+    # - Middle piece: gooseneck joint cuts (BOTTOM end) + gooseneck joint cuts (TOP end)
+    # - Right piece: tenon cuts (TOP end) + gooseneck joint cuts (BOTTOM end)
     
-    # The left piece gets cuts from joint and splice
+    # The left piece gets cuts from mortise & tenon joint and left gooseneck joint
     front_girt_left_cuts = []
     front_girt_left_cuts.extend(joint_front_girt_left.cut_timbers["tenon_timber"].cuts)  # Tenon cuts
-    front_girt_left_cuts.extend(front_girt_splice_joint.cut_timbers["timberA"].cuts)  # Splice cuts
+    front_girt_left_cuts.extend(front_girt_gooseneck_joint_left.cut_timbers[front_girt_left.name].cuts)  # Gooseneck cuts
     
-    # The right piece gets cuts from joint and splice
+    # The middle piece gets cuts from both gooseneck joints
+    front_girt_middle_cuts = []
+    # Middle piece is referenced in both joints, need to check which one has it
+    if front_girt_middle.name in front_girt_gooseneck_joint_left.cut_timbers:
+        front_girt_middle_cuts.extend(front_girt_gooseneck_joint_left.cut_timbers[front_girt_middle.name].cuts)
+    if front_girt_middle.name in front_girt_gooseneck_joint_right.cut_timbers:
+        front_girt_middle_cuts.extend(front_girt_gooseneck_joint_right.cut_timbers[front_girt_middle.name].cuts)
+    
+    # The right piece gets cuts from mortise & tenon joint and right gooseneck joint
     front_girt_right_cuts = []
     front_girt_right_cuts.extend(joint_front_girt_right.cut_timbers["tenon_timber"].cuts)  # Tenon cuts
-    front_girt_right_cuts.extend(front_girt_splice_joint.cut_timbers["timberB"].cuts)  # Splice cuts
+    front_girt_right_cuts.extend(front_girt_gooseneck_joint_right.cut_timbers[front_girt_right.name].cuts)  # Gooseneck cuts
     
     # Create CutTimbers for the split pieces with all their cuts
     pct_front_girt_left = CutTimber(front_girt_left, cuts=front_girt_left_cuts)
+    pct_front_girt_middle = CutTimber(front_girt_middle, cuts=front_girt_middle_cuts)
     pct_front_girt_right = CutTimber(front_girt_right, cuts=front_girt_right_cuts)
     
     # Collect joint accessories (pegs) for rendering
@@ -827,7 +887,8 @@ def create_oscarshed():
         joint_side_girt_left,
         joint_side_girt_right,
         # Front girt joints
-        front_girt_splice_joint,
+        front_girt_gooseneck_joint_left,
+        front_girt_gooseneck_joint_right,
         joint_front_girt_left,
         joint_front_girt_right,
         # Back top plate joints
@@ -884,10 +945,11 @@ if __name__ == "__main__":
     print(f"  - Post inset: {post_inset} ft from corners (outer posts only)")
     print(f"Side Girts: 2 (running from back to front)")
     print(f"  - Stickout: 5 inches on back, 0 on front")
-    print(f"Front Girt: 1 (running left to right, spliced in middle)")
+    print(f"Front Girt: 3 pieces (running left to right, joined with gooseneck joints)")
     print(f"  - Position: 2 inches below side girts")
     print(f"  - Stickout: 1.5 inches on both sides (symmetric)")
-    print(f"  - Split at midpoint with splice joint")
+    print(f"  - Split into 3 parts: left, middle (3\" wide), and right")
+    print(f"  - Joined with 2 lapped gooseneck joints (traditional Japanese joinery)")
     print(f"Top Plates: 2 (one front, one back)")
     print(f"  - Size: 6\" x 4\" (6\" vertical, same as mudsills)")
     print(f"  - Position: On top of posts")
