@@ -12,7 +12,7 @@ from code_goes_here.moothymoth import (
     are_vectors_parallel,
     are_vectors_perpendicular
 )
-from code_goes_here.joint_shavings import chop_timber_end_with_half_plane, chop_lap_on_timber_ends
+from code_goes_here.joint_shavings import chop_timber_end_with_half_plane, chop_lap_on_timber_ends, find_opposing_face_on_another_timber
 
 
 # ============================================================================
@@ -221,24 +221,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     receiving_face_direction = receiving_timber.get_face_direction(receiving_face)
     
     # Compute the center position of the receiving face
-    if receiving_face == TimberFace.TOP:
-        face_center = receiving_timber.get_top_center_position()
-    elif receiving_face == TimberFace.BOTTOM:
-        face_center = receiving_timber.get_bottom_center_position()
-    else:
-        # For long faces (LEFT, RIGHT, FRONT, BACK), center is at mid-length
-        from sympy import Rational
-        face_center = receiving_timber.bottom_position + (receiving_timber.length / Rational(2)) * receiving_timber.length_direction
-        
-        # Offset to the face surface
-        if receiving_face == TimberFace.RIGHT:
-            face_center = face_center + (receiving_timber.size[0] / Rational(2)) * receiving_timber.width_direction
-        elif receiving_face == TimberFace.LEFT:
-            face_center = face_center - (receiving_timber.size[0] / Rational(2)) * receiving_timber.width_direction
-        elif receiving_face == TimberFace.FRONT:
-            face_center = face_center + (receiving_timber.size[1] / Rational(2)) * receiving_timber.height_direction
-        else:  # BACK
-            face_center = face_center - (receiving_timber.size[1] / Rational(2)) * receiving_timber.height_direction
+    face_center = _get_face_center_position(receiving_timber, receiving_face)
     
     # Calculate distance from the specified butt end to the receiving face
     distance_from_bottom = ((face_center - butt_timber.bottom_position).T * butt_timber.length_direction)[0, 0]
