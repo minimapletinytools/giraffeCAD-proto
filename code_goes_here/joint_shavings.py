@@ -12,6 +12,17 @@ from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, Union
 from code_goes_here.construction import are_timbers_face_aligned, do_xy_cross_section_on_parallel_timbers_overlap
 from sympy import Abs, Rational
 
+def find_opposing_face_on_another_timber(reference_timber: Timber, reference_face: TimberReferenceLongFace, target_timber: Timber) -> TimberFace:
+    """
+    Find the opposing face on another timber. Assumes that the target_timber has a face parallel to the reference face on the reference_timber.
+    """
+    target_face = target_timber.get_closest_oriented_face(-reference_timber.get_face_direction(reference_face))
+
+    # assert that the target_face is parallel to the reference_face
+    assert are_vectors_parallel(reference_timber.get_face_direction(reference_face), target_timber.get_face_direction(target_face)), \
+        f"Target face {target_face} is not parallel to reference face {reference_face} on timber {reference_timber.name}"
+    
+    return target_face
 
 def measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
     reference_timber: Timber,
