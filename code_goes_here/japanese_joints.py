@@ -10,7 +10,11 @@ import warnings
 from code_goes_here.timber import *
 from code_goes_here.timber import _compute_timber_orientation  # Private function, needs explicit import
 from code_goes_here.construction import *
-from code_goes_here.joint_shavings import check_timber_overlap_for_splice_joint_is_sensible
+from code_goes_here.joint_shavings import (
+    check_timber_overlap_for_splice_joint_is_sensible,
+    chop_lap_on_timber_end,
+    measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber
+)
 from code_goes_here.moothymoth import (
     Orientation,
     EPSILON_GENERIC,
@@ -192,20 +196,123 @@ def cut_lapped_gooseneck_joint(
             gooseneck_timber_face.to_timber_face()
         ) / 2
 
-    # TODO finish
-    # extract the length component from gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global
-    gooseneck_starting_position_on_receiving_timber = None
-    # compute gooseneck_starting_position_on_receiving_timber + lap_length (in direction of receiving timber end)
-    lap_end_position_on_receiving_timber = None
-
-    # compute gooseneck depth relative to face on receiving timber that opposes gooseneck_timber_face (use measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber)
-
-    # use chop_lap_on_timber_end to cut a lap from gooseneck_starting_position_on_receiving_timber (shoulder) to lap_starting_position_on_receiving_timber
-
-
-    # use chop_lap_on_timber_end to cut a lap from lap_end_position_on_receiving_timber (shoulder) to lap_end_position_on_receiving_timber + lap_length + gooseneck_length (in direction of gooseneck timber end)
-
-    # return the joint as is for now for testing purposes
+    # ========================================================================
+    # Calculate lap positions and depths
+    # ========================================================================
+    
+    # Extract the length component from gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global
+    # This gives us the distance from the receiving timber's bottom position along its length axis
+    gooseneck_starting_position_on_receiving_timber = (
+        (gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global - receiving_timber.bottom_position).T 
+        * receiving_timber.length_direction
+    )[0, 0]
+    
+    # Compute lap end position: move by lap_length in the direction away from receiving timber end
+    # (opposite of gooseneck_direction_global, which points inward from the end)
+    lap_direction = -gooseneck_direction_global
+    lap_end_position_on_receiving_timber = gooseneck_starting_position_on_receiving_timber + lap_length
+    
+    # Compute gooseneck depth relative to the opposing face on the receiving timber
+    # This accounts for any offset or rotation between the timbers
+    receiving_timber_lap_depth = measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+        reference_timber=gooseneck_timber,
+        reference_face=gooseneck_timber_face,
+        reference_depth_from_face=gooseneck_depth,
+        target_timber=receiving_timber
+    )
+    
+    # ========================================================================
+    # Cut laps on both timbers
+    # ========================================================================
+    
+    # Calculate shoulder position for receiving timber (distance from end to shoulder)
+    if receiving_timber_end == TimberReferenceEnd.TOP:
+        receiving_timber_shoulder_from_end = receiving_timber.length - gooseneck_starting_position_on_receiving_timber
+    else:  # BOTTOM
+        receiving_timber_shoulder_from_end = gooseneck_starting_position_on_receiving_timber
+    
+    # Get the receiving timber face that opposes the gooseneck face
+    receiving_timber_lap_face_direction = -gooseneck_timber.get_face_direction(gooseneck_timber_face)
+    receiving_timber_lap_face = receiving_timber.get_closest_oriented_face(receiving_timber_lap_face_direction)
+    
+    # Cut lap on receiving timber
+    receiving_timber_lap_csg = chop_lap_on_timber_end(
+        lap_timber=receiving_timber,
+        lap_timber_end=receiving_timber_end,
+        lap_timber_face=receiving_timber_lap_face,
+        lap_length=lap_length,
+        lap_shoulder_position_from_lap_timber_end=receiving_timber_shoulder_from_end,
+        lap_depth=receiving_timber_lap_depth
+    )
+    
+    # Calculate shoulder position for gooseneck timber
+    # The gooseneck timber's lap starts at the point where it meets the receiving timber's lap end
+    # and extends by lap_length in the direction of the gooseneck timber end
+    gooseneck_lap_start_global = (
+        receiving_timber_end_position 
+        + gooseneck_direction_global * (gooseneck_length - lap_length)
+        + gooseneck_lateral_offset_direction_global * gooseneck_lateral_offset
+    )
+    
+    # Project onto gooseneck timber's length axis
+    gooseneck_lap_start_on_gooseneck_timber = (
+        (gooseneck_lap_start_global - gooseneck_timber.bottom_position).T 
+        * gooseneck_timber.length_direction
+    )[0, 0]
+    
+    if gooseneck_timber_end == TimberReferenceEnd.TOP:
+        gooseneck_timber_shoulder_from_end = gooseneck_timber.length - gooseneck_lap_start_on_gooseneck_timber
+    else:  # BOTTOM
+        gooseneck_timber_shoulder_from_end = gooseneck_lap_start_on_gooseneck_timber
+    
+    # Cut lap on gooseneck timber
+    gooseneck_timber_lap_csg = chop_lap_on_timber_end(
+        lap_timber=gooseneck_timber,
+        lap_timber_end=gooseneck_timber_end,
+        lap_timber_face=TimberFace(gooseneck_timber_face.value),
+        lap_length=lap_length,
+        lap_shoulder_position_from_lap_timber_end=gooseneck_timber_shoulder_from_end,
+        lap_depth=gooseneck_depth
+    )
+    
+    # ========================================================================
+    # TODO: Cut gooseneck shape into gooseneck timber
+    # ========================================================================
+    # This will need ConvexPolygonExtrusion with the gooseneck_shape polygon
+    
+    # Create CSGCut objects for each timber
+    receiving_timber_cut_obj = CSGCut(
+        timber=receiving_timber,
+        transform=Transform.identity(),  # CSG is already in local coordinates
+        maybe_end_cut=receiving_timber_end,
+        negative_csg=receiving_timber_lap_csg
+    )
+    
+    gooseneck_timber_cut_obj = CSGCut(
+        timber=gooseneck_timber,
+        transform=Transform.identity(),  # CSG is already in local coordinates
+        maybe_end_cut=gooseneck_timber_end,
+        negative_csg=gooseneck_timber_lap_csg
+    )
+    
+    # Create CutTimber objects with the cuts
+    receiving_timber_cut = CutTimber(
+        timber=receiving_timber,
+        cuts=[receiving_timber_cut_obj]
+    )
+    
+    gooseneck_timber_cut = CutTimber(
+        timber=gooseneck_timber,
+        cuts=[gooseneck_timber_cut_obj]
+    )
+    
+    return Joint(
+        cut_timbers={
+            receiving_timber.name: receiving_timber_cut,
+            gooseneck_timber.name: gooseneck_timber_cut
+        },
+        jointAccessories={}
+    )
 
 # ============================================================================
 # Aliases for Japanese joint functions
