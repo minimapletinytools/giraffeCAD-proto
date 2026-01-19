@@ -41,8 +41,8 @@ if script_dir not in sys.path:
 #EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
 #EXAMPLE_TO_RENDER = 'horsey'
-#EXAMPLE_TO_RENDER = 'japanese_joints'
-EXAMPLE_TO_RENDER = 'csg'
+EXAMPLE_TO_RENDER = 'japanese_joints'
+#EXAMPLE_TO_RENDER = 'csg'
 
 # CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
 CSG_EXAMPLE_TO_RENDER = 'gooseneck_profile'  # Options: 'cube_cutout', 'halfplane_cut', 'positioned_cube', 'lap_cut_timber', 'union_cubes', 'hexagon_extrusion', 'gooseneck_profile'

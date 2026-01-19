@@ -11,7 +11,8 @@ from code_goes_here.joint_shavings import (
     check_timber_overlap_for_splice_joint_is_sensible,
     chop_lap_on_timber_end,
     measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber,
-    find_opposing_face_on_another_timber
+    find_opposing_face_on_another_timber,
+    chop_profile_on_timber_face
 )
 from code_goes_here.moothymoth import (
     Orientation,
@@ -23,7 +24,9 @@ from code_goes_here.moothymoth import (
 from code_goes_here.meowmeowcsg import (
     ConvexPolygonExtrusion,
     Prism,
-    Difference
+    Difference,
+    Union,
+    translate_profiles
 )
 
 
@@ -120,8 +123,6 @@ def cut_lapped_gooseneck_joint(
     gooseneck_depth: Optional[Numeric] = None
 ) -> Joint:
     """
-    WIP NOT WORKING YET 
-    
     Creates a lapped gooseneck joint (腰掛鎌継ぎ / Koshikake Kama Tsugi) between two timbers.
     
     This is a traditional Japanese timber joint that combines a lap joint with a gooseneck-shaped
@@ -306,9 +307,9 @@ def cut_lapped_gooseneck_joint(
     )[0, 0]
     
     if gooseneck_timber_end == TimberReferenceEnd.TOP:
-        gooseneck_timber_shoulder_from_end = gooseneck_timber.length - gooseneck_lap_start_on_gooseneck_timber
+        gooseneck_timber_lap_shoulder_from_end = gooseneck_timber.length - gooseneck_lap_start_on_gooseneck_timber
     else:  # BOTTOM
-        gooseneck_timber_shoulder_from_end = gooseneck_lap_start_on_gooseneck_timber
+        gooseneck_timber_lap_shoulder_from_end = gooseneck_lap_start_on_gooseneck_timber
 
     # Cut lap on gooseneck timber
     gooseneck_timber_lap_csg = chop_lap_on_timber_end(
@@ -316,14 +317,37 @@ def cut_lapped_gooseneck_joint(
         lap_timber_end=gooseneck_timber_end,
         lap_timber_face=TimberFace(gooseneck_timber_face.value),
         lap_length=lap_length+gooseneck_length,
-        lap_shoulder_position_from_lap_timber_end=gooseneck_timber_shoulder_from_end,
+        lap_shoulder_position_from_lap_timber_end=gooseneck_timber_lap_shoulder_from_end,
         lap_depth=gooseneck_depth
     )
     
     # ========================================================================
-    # TODO: Cut gooseneck shape into gooseneck timber
+    # Cut gooseneck shape into gooseneck timber
     # ========================================================================
-    # This will need ConvexPolygonExtrusion with the gooseneck_shape polygon
+    
+    # Translate the gooseneck profile to start at lap_length from the timber end
+    # The profile coordinate system has Y-axis pointing into the timber from the end
+    # draw_gooseneck_polygon creates profiles with base at Y=0 and head at Y=gooseneck_length
+    # TODO translate so that the base of the profile is at gooseneck_lap_start_on_gooseneck_timber + lap_length
+    gooseneck_profiles_translated = translate_profiles(
+        gooseneck_shape,
+        Matrix([0, lap_length])
+    )
+    
+    # Create the gooseneck profile CSG cut using chop_profile_on_timber_face
+    # This creates a CSG that removes the gooseneck shape from the timber
+    gooseneck_profile_csg = chop_profile_on_timber_face(
+        timber=gooseneck_timber,
+        end=gooseneck_timber_end,
+        face=TimberFace(gooseneck_timber_face.value),
+        profile=gooseneck_profiles_translated,
+        depth=gooseneck_depth
+    )
+    
+    # Union the gooseneck profile cut with the lap cut
+    # Both cuts need to be applied to the gooseneck timber
+    gooseneck_timber_combined_csg = Union([gooseneck_timber_lap_csg, gooseneck_profile_csg])
+
     
     # Create CSGCut objects for each timber
     receiving_timber_cut_obj = CSGCut(
@@ -338,7 +362,7 @@ def cut_lapped_gooseneck_joint(
         timber=gooseneck_timber,
         transform=Transform.identity(), 
         maybe_end_cut=gooseneck_timber_end,
-        negative_csg=gooseneck_timber_lap_csg
+        negative_csg=gooseneck_timber_combined_csg
     )
     
     # Create CutTimber objects with the cuts
