@@ -95,7 +95,7 @@ def create_simple_gooseneck_example():
         bottom_position=create_v3(0, 0, 0),
         length_direction=create_v3(0, 0, 1),  # Vertical
         width_direction=create_v3(1, 0, 0),
-        name="post_1"
+        name="gooseneck_timber"
     )
     
     # Create second timber above the first
@@ -105,9 +105,9 @@ def create_simple_gooseneck_example():
         bottom_position=create_v3(0, 0, timber_length),
         length_direction=create_v3(0, 0, 1),  # Also vertical
         width_direction=create_v3(1, 0, 0),
-        name="post_2"
+        name="receiving_timber"
     )
-    
+
     # Smaller joint parameters for the smaller timber
     joint = cut_lapped_gooseneck_joint(
         gooseneck_timber=gooseneck_timber,

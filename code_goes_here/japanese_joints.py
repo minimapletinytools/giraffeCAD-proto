@@ -13,7 +13,8 @@ from code_goes_here.construction import *
 from code_goes_here.joint_shavings import (
     check_timber_overlap_for_splice_joint_is_sensible,
     chop_lap_on_timber_end,
-    measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber
+    measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber,
+    find_opposing_face_on_another_timber
 )
 from code_goes_here.moothymoth import (
     Orientation,
@@ -155,10 +156,27 @@ def cut_lapped_gooseneck_joint(
             f"Got gooseneck_timber axes: {gooseneck_timber.axis}, receiving_timber axes: {receiving_timber.axis}"
         )
 
-    gooseneck_timber_end = TimberReferenceEnd.TOP if receiving_timber_end == TimberReferenceEnd.BOTTOM else TimberReferenceEnd.BOTTOM
+    # Find the opposing end on the gooseneck timber (the end that faces the receiving timber end)
+    # We can use find_opposing_face_on_another_timber even though it's typed for long faces -
+    # the logic works for end faces too
+    opposing_face = gooseneck_timber.get_closest_oriented_face(
+        -receiving_timber.get_face_direction(receiving_timber_end)
+    )
+    
+    # Convert TimberFace to TimberReferenceEnd (TOP or BOTTOM)
+    if opposing_face == TimberFace.TOP:
+        gooseneck_timber_end = TimberReferenceEnd.TOP
+    elif opposing_face == TimberFace.BOTTOM:
+        gooseneck_timber_end = TimberReferenceEnd.BOTTOM
+    else:
+        raise ValueError(
+            f"Expected opposing face to be an end face (TOP or BOTTOM), but got {opposing_face}. "
+            f"This suggests the timbers are not properly oriented for a splice joint. "
+            f"Should not be possible because of parallel check earlier."
+        )
 
     # Check that the timbers overlap in a sensible way for a splice joint:
-    #             |==================| <- gooseneck timber
+    #             |==================| <- gooseneck timber / end
     # receiving_timber_end -> |==================| <- receiving timber
     overlap_error = check_timber_overlap_for_splice_joint_is_sensible(
         gooseneck_timber, receiving_timber, gooseneck_timber_end, receiving_timber_end
@@ -172,12 +190,12 @@ def cut_lapped_gooseneck_joint(
 
     # Get the receiving timber end position
     if receiving_timber_end == TimberReferenceEnd.TOP:
-        receiving_timber_end_position = receiving_timber.get_top_center_position()
+        receiving_timber_end_position_global = receiving_timber.get_top_center_position()
     else:  # BOTTOM
-        receiving_timber_end_position = receiving_timber.bottom_position
+        receiving_timber_end_position_global = receiving_timber.bottom_position
     
     # Move from the receiving timber end by gooseneck_length (inward) to get the gooseneck starting position
-    gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global = receiving_timber_end_position + gooseneck_direction_global * gooseneck_length + gooseneck_lateral_offset_direction_global * gooseneck_lateral_offset
+    gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global = receiving_timber_end_position_global + gooseneck_direction_global * lap_length + gooseneck_lateral_offset_direction_global * gooseneck_lateral_offset
 
     # project gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global onto the gooseneck_timber_face
     gooseneck_starting_position_global = receiving_timber.project_global_point_onto_timber_face_global(gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global, gooseneck_timber_face)
@@ -248,11 +266,7 @@ def cut_lapped_gooseneck_joint(
     # Calculate shoulder position for gooseneck timber
     # The gooseneck timber's lap starts at the point where it meets the receiving timber's lap end
     # and extends by lap_length in the direction of the gooseneck timber end
-    gooseneck_lap_start_global = (
-        receiving_timber_end_position 
-        + gooseneck_direction_global * (gooseneck_length - lap_length)
-        + gooseneck_lateral_offset_direction_global * gooseneck_lateral_offset
-    )
+    gooseneck_lap_start_global = receiving_timber_end_position_global 
     
     # Project onto gooseneck timber's length axis
     gooseneck_lap_start_on_gooseneck_timber = (
@@ -264,13 +278,13 @@ def cut_lapped_gooseneck_joint(
         gooseneck_timber_shoulder_from_end = gooseneck_timber.length - gooseneck_lap_start_on_gooseneck_timber
     else:  # BOTTOM
         gooseneck_timber_shoulder_from_end = gooseneck_lap_start_on_gooseneck_timber
-    
+
     # Cut lap on gooseneck timber
     gooseneck_timber_lap_csg = chop_lap_on_timber_end(
         lap_timber=gooseneck_timber,
         lap_timber_end=gooseneck_timber_end,
         lap_timber_face=TimberFace(gooseneck_timber_face.value),
-        lap_length=lap_length,
+        lap_length=lap_length+gooseneck_length,
         lap_shoulder_position_from_lap_timber_end=gooseneck_timber_shoulder_from_end,
         lap_depth=gooseneck_depth
     )
@@ -283,14 +297,15 @@ def cut_lapped_gooseneck_joint(
     # Create CSGCut objects for each timber
     receiving_timber_cut_obj = CSGCut(
         timber=receiving_timber,
-        transform=Transform.identity(),  # CSG is already in local coordinates
+        transform=Transform.identity(), 
         maybe_end_cut=receiving_timber_end,
         negative_csg=receiving_timber_lap_csg
     )
+
     
     gooseneck_timber_cut_obj = CSGCut(
         timber=gooseneck_timber,
-        transform=Transform.identity(),  # CSG is already in local coordinates
+        transform=Transform.identity(), 
         maybe_end_cut=gooseneck_timber_end,
         negative_csg=gooseneck_timber_lap_csg
     )

@@ -81,7 +81,7 @@ def reload_all_modules():
         if module_name in sys.modules:
             try:
                 importlib.reload(sys.modules[module_name])
-                print(f"  ✓ Reloaded {module_name}")
+                #print(f"  ✓ Reloaded {module_name}")
             except Exception as e:
                 print(f"  ⚠ Error reloading {module_name}: {e}")
         else:
@@ -260,7 +260,7 @@ def render_japanese_joints():
     (腰掛鎌継ぎ / Koshikake Kama Tsugi) used to splice beams end-to-end.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.japanese_joints_example import create_lapped_gooseneck_splice_example
+    from examples.japanese_joints_example import create_simple_gooseneck_example
     
     print("="*70)
     print("GiraffeCAD FreeCAD - Japanese Lapped Gooseneck Joint")
@@ -269,7 +269,7 @@ def render_japanese_joints():
     # Create Japanese joint example (returns Frame object)
     print("\nCreating Japanese lapped gooseneck joint example...")
     print("Splicing two 4\"x4\" x 3' timbers with traditional joint...")
-    frame = create_lapped_gooseneck_splice_example()
+    frame = create_simple_gooseneck_example()
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories: {len(frame.accessories)}")
