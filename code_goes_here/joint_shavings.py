@@ -89,7 +89,7 @@ def measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
     return Abs(signed_distance)
 
 
-def check_timber_overlap_for_splice_joint_is_sensible(E
+def check_timber_overlap_for_splice_joint_is_sensible(
     timberA: Timber,
     timberB: Timber,
     timberA_end: TimberReferenceEnd,
