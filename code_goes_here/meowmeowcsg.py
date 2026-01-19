@@ -555,6 +555,21 @@ class Difference(MeowMeowCSG):
 
 
 
+# TODO come upw ith a cuter/better name for these
+Profile = List[V2]
+Profiles = List[Profile]
+
+def translate_profile(profile: Profile, translation: V2) -> Profile:
+    """
+    Translate a profile by a given translation vector.
+    """
+    return [point + translation for point in profile]
+
+def translate_profiles(profiles: Profiles, translation: V2) -> Profiles:
+    """
+    Translate a list of profiles by a given translation vector.
+    """
+    return [translate_profile(profile, translation) for profile in profiles]
 
 
 @dataclass(frozen=True)
@@ -578,7 +593,7 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
         start_distance: Distance from position along Z-axis to start of extrusion (None = -infinite)
         end_distance: Distance from position along Z-axis to end of extrusion (None = infinite)
     """
-    points: List[V2] 
+    points: Profile
     transform: Transform = field(default_factory=Transform.identity)
     start_distance: Optional[Numeric] = None  # starting distance in the direction of the -Z axis. None means infinite in negative direction
     end_distance: Optional[Numeric] = None    # ending distance in the direction of the +Z axis. None means infinite in positive direction

@@ -14,7 +14,7 @@ NOTE: Prism positioning follows the Timber convention:
 """
 
 from sympy import Matrix, eye, Rational, sqrt
-from code_goes_here.meowmeowcsg import Prism, HalfPlane, Difference, Union, ConvexPolygonExtrusion
+from code_goes_here.meowmeowcsg import *
 from code_goes_here.moothymoth import Orientation, Transform, inches, feet
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, timber_from_directions
 from code_goes_here.joint_shavings import chop_lap_on_timber_end, chop_profile_on_timber_face
@@ -295,7 +295,7 @@ def example_gooseneck_profile_cut():
     gooseneck_depth = inches(1)        # 1" deep into the timber
     
     # Create the gooseneck profile (returns List[List[V2]] for multiple convex shapes)
-    gooseneck_profile = draw_gooseneck_polygon(
+    gooseneck_profiles = draw_gooseneck_polygon(
         length=gooseneck_length,
         small_width=gooseneck_small_width,
         large_width=gooseneck_large_width,
@@ -303,17 +303,17 @@ def example_gooseneck_profile_cut():
     )
 
     # Subtract gooseneck_length from the y coordinate of all profile points in all sub-profiles
-    gooseneck_profile = [
-        [Matrix([point[0, 0], point[1, 0] - gooseneck_length]) for point in sub_profile]
-        for sub_profile in gooseneck_profile
-    ]
+    gooseneck_profiles = translate_profiles(
+        gooseneck_profiles,
+        Matrix([0, -gooseneck_length])
+    )
     
     # Create the gooseneck cut CSG (in timber's local coordinates)
     gooseneck_cut_csg = chop_profile_on_timber_face(
         timber=timber,
         end=TimberReferenceEnd.TOP,
         face=TimberFace.RIGHT,
-        profile=gooseneck_profile,
+        profile=gooseneck_profiles,
         depth=gooseneck_depth
     )
     
