@@ -33,7 +33,7 @@ from code_goes_here.meowmeowcsg import (
 
 
 # see diagram below
-def draw_gooseneck_polygon(length: Numeric, small_width: Numeric, large_width: Numeric, head_length: Numeric) -> List[V2]:
+def draw_gooseneck_polygon_NONCONVEX(length: Numeric, small_width: Numeric, large_width: Numeric, head_length: Numeric) -> List[V2]:
     """
     Draw the gooseneck shape. 
     """
@@ -47,6 +47,40 @@ def draw_gooseneck_polygon(length: Numeric, small_width: Numeric, large_width: N
             Matrix([-small_width/2, length-head_length]),
             Matrix([-small_width/2, 0]),
         ]
+
+# see diagram below
+def draw_gooseneck_polygon_CONVEX(length: Numeric, small_width: Numeric, large_width: Numeric, head_length: Numeric) -> List[List[V2]]:
+    """
+    Draw the gooseneck shape as multiple convex polygons.
+    
+    Returns a list of convex polygons that together form the gooseneck shape.
+    This can be used with chop_profile_on_timber_face which accepts List[List[V2]]
+    for creating non-convex profiles via union of convex shapes.
+    """
+    # Decompose the gooseneck into 2 convex polygons
+    # Center rectangle and head trapezoid
+    
+    # Center neck rectangle
+    center_rect = [
+        Matrix([small_width/2, 0]),
+        Matrix([small_width/2, length-head_length]),
+        Matrix([-small_width/2, length-head_length]),
+        Matrix([-small_width/2, 0]),
+    ]
+    
+    # Head trapezoid (single shape)
+    head_trap = [
+        Matrix([-large_width/2, length-head_length]),
+        Matrix([large_width/2, length-head_length]),
+        Matrix([small_width/2, length]),
+        Matrix([-small_width/2, length]),
+    ]
+    
+    return [center_rect, head_trap]
+
+# Alias for convenience
+draw_gooseneck_polygon = draw_gooseneck_polygon_CONVEX
+
 
 r'''
 

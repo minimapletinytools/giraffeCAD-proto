@@ -294,7 +294,7 @@ def example_gooseneck_profile_cut():
     gooseneck_head_length = inches(2)  # 2"
     gooseneck_depth = inches(1)        # 1" deep into the timber
     
-    # Create the gooseneck profile
+    # Create the gooseneck profile (returns List[List[V2]] for multiple convex shapes)
     gooseneck_profile = draw_gooseneck_polygon(
         length=gooseneck_length,
         small_width=gooseneck_small_width,
@@ -302,8 +302,11 @@ def example_gooseneck_profile_cut():
         head_length=gooseneck_head_length
     )
 
-    # substract gooseneck_length from the y point of all profile points
-    gooseneck_profile = [[point[0], point[1] - gooseneck_length] for point in gooseneck_profile]
+    # Subtract gooseneck_length from the y coordinate of all profile points in all sub-profiles
+    gooseneck_profile = [
+        [Matrix([point[0, 0], point[1, 0] - gooseneck_length]) for point in sub_profile]
+        for sub_profile in gooseneck_profile
+    ]
     
     # Create the gooseneck cut CSG (in timber's local coordinates)
     gooseneck_cut_csg = chop_profile_on_timber_face(
