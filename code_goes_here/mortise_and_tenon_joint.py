@@ -166,11 +166,11 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     tenon_y_direction = tenon_timber.get_face_direction(TimberFace.FRONT)
     tenon_x_offset = tenon_x_direction * tenon_position[0]
     tenon_y_offset = tenon_y_direction * tenon_position[1]
-    tenon_centerline_start = tenon_end_point + tenon_x_offset + tenon_y_offset
+    tenon_centerline_start_global = tenon_end_point + tenon_x_offset + tenon_y_offset
     
     # Tenon centerline direction (pointing from the tenon end toward the mortise)
     # The tenon extends OPPOSITE to tenon_end_direction (back into the timber toward the mortise)
-    tenon_centerline_direction = -tenon_end_direction
+    tenon_centerline_direction_global = -tenon_end_direction
     
     # ========================================================================
     # Step 2: Calculate mortise face plane
@@ -191,27 +191,26 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         raise ValueError(f"Invalid mortise face: {mortise_face}")
     
     # We need a point on the mortise face plane. For simplicity, use the mortise timber's bottom position as the reference
-    mortise_face_plane_point = mortise_timber.bottom_position + mortise_face_normal * face_offset
+    mortise_face_plane_point_global = mortise_timber.bottom_position + mortise_face_normal * face_offset
 
     # ========================================================================
     # Step 3: Intersect the tenon centerline with the mortise face plane
     # ========================================================================
     
     # Check that tenon direction is not parallel to mortise face
-    denominator = tenon_centerline_direction.dot(mortise_face_normal)
+    denominator = tenon_centerline_direction_global.dot(mortise_face_normal)
     assert abs(denominator) > EPSILON_GENERIC, \
         f"Tenon direction is parallel to mortise face (dot product: {denominator})"
 
   
     # Calculate intersection parameter t
-    # Line: P = tenon_centerline_start + t * tenon_centerline_direction
-    # Plane: (P - mortise_face_plane_point) · mortise_face_normal = 0
-    # Solving: t = (mortise_face_plane_point - tenon_centerline_start) · mortise_face_normal / denominator
-    t = (mortise_face_plane_point - tenon_centerline_start).dot(mortise_face_normal) / denominator
+    # Line: P = tenon_centerline_start_global + t * tenon_centerline_direction_global
+    # Plane: (P - mortise_face_plane_point_global) · mortise_face_normal = 0
+    # Solving: t = (mortise_face_plane_point_global - tenon_centerline_start_global) · mortise_face_normal / denominator
+    t = (mortise_face_plane_point_global - tenon_centerline_start_global).dot(mortise_face_normal) / denominator
     
     # Calculate the actual intersection point
-    # TODO rename to intersection_point_global
-    intersection_point = tenon_centerline_start + tenon_centerline_direction * t
+    intersection_point_global = tenon_centerline_start_global + tenon_centerline_direction_global * t
 
 
     # ========================================================================
@@ -220,12 +219,12 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # ========================================================================
     
     # Calculate the center of the tenon timber centerline
-    tenon_timber_center = tenon_timber.bottom_position + tenon_timber.length_direction * (tenon_timber.length / Rational(2))
+    tenon_timber_center_global = tenon_timber.bottom_position + tenon_timber.length_direction * (tenon_timber.length / Rational(2))
     
     # Calculate signed distances from mortise face plane
     # Positive distance means on the side of the outward normal
-    distance_tenon_end = (tenon_centerline_start - mortise_face_plane_point).dot(mortise_face_normal)
-    distance_tenon_center = (tenon_timber_center - mortise_face_plane_point).dot(mortise_face_normal)
+    distance_tenon_end = (tenon_centerline_start_global - mortise_face_plane_point_global).dot(mortise_face_normal)
+    distance_tenon_center = (tenon_timber_center_global - mortise_face_plane_point_global).dot(mortise_face_normal)
     
     # Check if both are on the same side of the plane (same sign)
     same_side = (distance_tenon_end * distance_tenon_center) > 0
@@ -234,7 +233,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # The tenon is pointing away if moving along the centerline increases the distance to the plane
     # This happens when: (tenon is on positive side AND direction is positive) OR (tenon is on negative side AND direction is negative)
     # Equivalently: distance_tenon_end and dot_product have the same sign
-    dot_product = tenon_centerline_direction.dot(mortise_face_normal)
+    dot_product = tenon_centerline_direction_global.dot(mortise_face_normal)
     pointing_away = (distance_tenon_end * dot_product) > 0
     
     # a weaker less semantic, more geometric check might be to check if both ends of the tenon timber are on the same side AND the tenon end is pointing away from the mortise face
@@ -251,8 +250,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # ========================================================================
     
     # Transform intersection point to mortise timber's local coordinate system
-    # TODO rename to intersection_point_mortise_timber_local
-    intersection_local = mortise_timber.orientation.matrix.T * (intersection_point - mortise_timber.bottom_position)
+    intersection_point_mortise_timber_local = mortise_timber.orientation.matrix.T * (intersection_point_global - mortise_timber.bottom_position)
     
     # NOTE should only check one axis, checking both is fine too...
 
@@ -262,12 +260,12 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     half_height = mortise_timber.size[1] / 2
     
     # Check if the intersection is within the timber cross-section bounds
-    x_in_bounds = abs(intersection_local[0]) <= half_width
-    y_in_bounds = abs(intersection_local[1]) <= half_height
+    x_in_bounds = abs(intersection_point_mortise_timber_local[0]) <= half_width
+    y_in_bounds = abs(intersection_point_mortise_timber_local[1]) <= half_height
     
     if not (x_in_bounds and y_in_bounds):
-        print(f"Warning: Mortise intersection at local position ({float(intersection_local[0]):.4f}, "
-              f"{float(intersection_local[1]):.4f}, {float(intersection_local[2]):.4f}) "
+        print(f"Warning: Mortise intersection at local position ({float(intersection_point_mortise_timber_local[0]):.4f}, "
+              f"{float(intersection_point_mortise_timber_local[1]):.4f}, {float(intersection_point_mortise_timber_local[2]):.4f}) "
               f"is outside mortise timber face bounds (±{float(half_width):.4f}, ±{float(half_height):.4f})")
     
     # ========================================================================
@@ -289,10 +287,10 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # We create a prism representing the tenon volume
     relative_orientation = Orientation(mortise_timber.orientation.matrix.T * tenon_timber.orientation.matrix)
     
-    # The intersection_point is already the tenon center position in world coordinates
+    # The intersection_point_global is already the tenon center position in world coordinates
     # (with tenon_position offset already applied)
     # Transform it to mortise timber's local coordinates
-    tenon_origin_local = mortise_timber.orientation.matrix.T * (intersection_point - mortise_timber.bottom_position)
+    tenon_origin_local = mortise_timber.orientation.matrix.T * (intersection_point_global - mortise_timber.bottom_position)
     
     # Create a prism representing the tenon volume (in mortise timber's local space)
     from code_goes_here.meowmeowcsg import Prism
@@ -324,19 +322,19 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Calculate the shoulder plane position in world coordinates
     if tenon_end == TimberReferenceEnd.TOP:
-        shoulder_plane_point = tenon_timber.get_top_center_position() - tenon_timber.length_direction * t
+        shoulder_plane_point_global = tenon_timber.get_top_center_position() - tenon_timber.length_direction * t
     else:  # BOTTOM
-        shoulder_plane_point = tenon_timber.get_bottom_center_position() + tenon_timber.length_direction * t
+        shoulder_plane_point_global = tenon_timber.get_bottom_center_position() + tenon_timber.length_direction * t
     
     # Apply tenon_position offset to shoulder plane point
     tenon_x_direction = tenon_timber.get_face_direction(TimberFace.RIGHT)
     tenon_y_direction = tenon_timber.get_face_direction(TimberFace.FRONT)
     tenon_x_offset_vec = tenon_x_direction * tenon_position[0]
     tenon_y_offset_vec = tenon_y_direction * tenon_position[1]
-    shoulder_plane_point_with_offset = shoulder_plane_point + tenon_x_offset_vec + tenon_y_offset_vec
+    shoulder_plane_point_with_offset_global = shoulder_plane_point_global + tenon_x_offset_vec + tenon_y_offset_vec
     
     # Convert shoulder plane point to tenon timber's local coordinates
-    shoulder_plane_point_with_offset_local = tenon_timber.orientation.matrix.T * (shoulder_plane_point_with_offset - tenon_timber.bottom_position)
+    shoulder_plane_point_with_offset_local = tenon_timber.orientation.matrix.T * (shoulder_plane_point_with_offset_global - tenon_timber.bottom_position)
     
     # Create infinite prism representing the timber end beyond the shoulder
     # This extends from the shoulder to infinity in the tenon direction
@@ -538,10 +536,10 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
 
             # Next we cut the peg hole in themortise timber
 
-            # Transform peg position to world space
-            peg_pos_on_tenon_face_world = tenon_timber.bottom_position + tenon_timber.orientation.matrix * peg_pos_on_tenon_face_local
-            peg_orientation_world = Orientation(tenon_timber.orientation.matrix * peg_orientation_tenon_local.matrix)
-            peg_direction_world = peg_orientation_world.matrix[:, 2] # Z-axis of peg in world space
+            # Transform peg position to global space
+            peg_pos_on_tenon_face_global = tenon_timber.bottom_position + tenon_timber.orientation.matrix * peg_pos_on_tenon_face_local
+            peg_orientation_global = Orientation(tenon_timber.orientation.matrix * peg_orientation_tenon_local.matrix)
+            peg_direction_global = peg_orientation_global.matrix[:, 2] # Z-axis of peg in global space
 
             # Calculate where the peg intersects the mortise timber
             # The peg starts at the tenon face points in the peg's Z-axis direction
@@ -595,28 +593,28 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
 
 
             # Get a point on the mortise peg entry face plane (any point)
-            peg_entry_face_plane_point = mortise_timber.bottom_position + peg_entry_face_normal * peg_entry_face_offset
+            peg_entry_face_plane_point_global = mortise_timber.bottom_position + peg_entry_face_normal * peg_entry_face_offset
             
             # Ray-plane intersection to find where peg enters the mortise face
-            # Ray: P = peg_pos_on_tenon_face_world + t * peg_direction_world
-            # Plane: (P - peg_entry_face_plane_point) · peg_entry_face_normal = 0
-            denominator = peg_direction_world.dot(peg_entry_face_normal)
+            # Ray: P = peg_pos_on_tenon_face_global + t * peg_direction_global
+            # Plane: (P - peg_entry_face_plane_point_global) · peg_entry_face_normal = 0
+            denominator = peg_direction_global.dot(peg_entry_face_normal)
             
             # The peg should not be parallel to the entry face
             assert abs(denominator) > EPSILON_GENERIC, \
                 f"Peg direction is parallel to mortise peg entry face {mortise_peg_entry_face} (dot product: {denominator}), pick a different tenon face or direction for the peg"
             
             # intersect the line from the peg entry point on the tenon face with the plane of the mortise peg entry face
-            t_peg = (peg_entry_face_plane_point - peg_pos_on_tenon_face_world).dot(peg_entry_face_normal) / denominator
+            t_peg = (peg_entry_face_plane_point_global - peg_pos_on_tenon_face_global).dot(peg_entry_face_normal) / denominator
             
             # Calculate the intersection point on the mortise peg entry face
-            peg_pos_on_mortise_face_world = peg_pos_on_tenon_face_world + peg_direction_world * t_peg
+            peg_pos_on_mortise_face_global = peg_pos_on_tenon_face_global + peg_direction_global * t_peg
             
             # Transform the intersection point to mortise timber's local coordinates
-            peg_pos_on_mortise_face_local = mortise_timber.orientation.matrix.T * (peg_pos_on_mortise_face_world - mortise_timber.bottom_position)
+            peg_pos_on_mortise_face_local = mortise_timber.orientation.matrix.T * (peg_pos_on_mortise_face_global - mortise_timber.bottom_position)
             
-            # Transform peg orientation to mortise local space (peg_orientation_world already calculated above)
-            peg_orientation_mortise_local = Orientation(mortise_timber.orientation.matrix.T * peg_orientation_world.matrix)
+            # Transform peg orientation to mortise local space (peg_orientation_global already calculated above)
+            peg_orientation_mortise_local = Orientation(mortise_timber.orientation.matrix.T * peg_orientation_global.matrix)
             
             # Create peg hole prism in mortise local space
             # The peg position is ON the mortise face, and extends forward into the mortise
