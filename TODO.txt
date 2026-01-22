@@ -192,17 +192,23 @@ DONE-gooseneck lap joint
 DONE-change gooseneck to return 2 Convex CSGs or support non convex polygon extrusion CSG (errors on some functions or returns None or whatever)
 DONE-rafters get added twice in oscar shed
 
+-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes_here/japanese_joints.py:221: UserWarning: Gooseneck joint configuration may not be sensible: Joint ends are pointing in the same direction (dot product = 1.000). For a splice joint, the ends should point in opposite directions (dot product should be -1) warning
+
 -REFACTOR TIME
   DONE-create Transform class in moothymoth
   DONE-rename helperonis to something more cute
+  -update places to use teh local/global stuff in Transform class
+  -make global/local var naming consistent
+    -add cursor rules for this
+  
+
+-RENAME TIME
+  -do the horseCAD rename
   -rename meowmeocsg and moothymoth?
   -change cut_ to layout_? or plan_
   -rename create_timber to hew or raise timber?
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
-  -update places to use teh local/global stuff in Transform class
-  -make global/local var naming consistent
-    -add cursor rules for this
 
 
 

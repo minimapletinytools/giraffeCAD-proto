@@ -242,10 +242,6 @@ If you encounter issues:
 
 Check the Fusion 360 console for detailed error messages.
 
-### Rhino Integration
-
-The Rhino renderer currently supports basic geometry but does not yet support CSG operations (joints/cuts). See [`rhino/README.md`](rhino/README.md) for current capabilities and usage.
-
 ## Architecture
 
 GiraffeCAD uses a modular architecture with shared utilities across rendering backends:
@@ -263,9 +259,6 @@ fusion360/
 
 freecad/
 └── giraffe_render_freecad.py     # FreeCAD renderer (NEW!)
-
-rhino/
-└── giraffe_render_rhino.py       # Rhino renderer (basic)
 ```
 
 ### Shared Rendering Utilities
