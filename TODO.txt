@@ -1,16 +1,37 @@
-
-:: 1/16/2026 half lap cut agent instructions
-
-implement def chop_lap_on_timber_ends(top_lap_timber: Timber, top_lap_timber_end: TimberReferenceEnd, bottom_lap_timber: Timber, bottom_lap_timber_end: TimberReferenceEnd, top_lap_timber_face: TimberFace, lap_length: Numeric, lap_depth: Numeric, top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric) -> (MeowMeowCSG, MeowMeowCSG):
+:: 1/19/2026 impl methodology and helpre notes
 
 
-1. determine the end the top lap timber based on top_lap_shoulder_position_from_top_lap_shoulder_timber_end and lap_length
-2. project the end position onto bottom_lap_timber
-3. create half plane cuts to remove the end
-4. determine the orientation of the lap based on top_lap_timber_face
-5. in the axis orthogonal to top_lap_timber_face find where the 2 laps meet based on lap_deth
-6. create prisms to remove the material from each timber resp
-7. union with the half lap cuts we created earlier and return the CSG pair
+
+-joint construction methodology
+  -I think for most end joints you want to create a transform that defines where to compute all of the joint features from!!!
+    -implemnetation detail, add to cursor rules
+    -always use the look at convention, so that +x is right, +y is into the timber (looking at the face), +z is in the joint direction, 
+  -try and do the same for butt joints? The challenge here is if it's not perpendicular
+  -call it marking_transform?
+-joint testing methodology
+  -can we do something similar with joint testing? typically, we want to find some point on the face of a timber and work inwards to test various points in the joint
+    -so in general, we want to create a transform on the timber and pick points relative to there to test
+-variable naming methodology
+  -ALWAYS prefix vars in global space with _global
+  -try to laways prefix vars in local space with _local
+  -unprefix vars should usually be in local space
+
+
+-feature classes?
+  -plane 
+  -transform_on_timber
+
+-measure functions
+  -decide consistent naming scheme for measure helpers and document
+  -some helpers to add (and use throughout)
+    -find_closests_face_to_timber_end_direction
+    -plane_from_offset_timber_face
+    -also ask AI to see if there are any others
+      -especially when it comes with all the timber end if statements
+  
+
+
+
 
 :: 1/7/2026 Agent instructinos
 
@@ -179,6 +200,16 @@ DONE-rafters get added twice in oscar shed
   -rename create_timber to hew or raise timber?
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
+  -update places to use teh local/global stuff in Transform class
+  -make global/local var naming consistent
+    -add cursor rules for this
+
+
+
+-add extrude polygon csg rendering to fusino 360
+-new joints using methodology 
+  -dovetail lap joint
+  -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)
 
 
 
@@ -192,11 +223,6 @@ DONE-rafters get added twice in oscar shed
   -round peg support
   -peg positioning
   -finding the shoulder point/shoulder plane
-
--add extrude polygon csg rendering to fusino 360
--dovetail lap joint
-  
-
 
 
 -M1 (reward is reimburse H2D LOL)
@@ -220,6 +246,11 @@ DONE-rafters get added twice in oscar shed
     DONE-basic_house_joint
     DONE-basic_cross_lap_joint
 
+  DONE-splice_joint
+    DONE-gooseneck joint 
+    DONE-pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
+
+
   -butt joints
     DONE-mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
       DONE-mortise and tenon
@@ -230,9 +261,6 @@ DONE-rafters get added twice in oscar shed
   -corner joints
     -maybe try the fancy  one we used on the shed  Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)
 
-  -splice_joint
-    -gooseneck joint 
-    -pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
 
 
 
@@ -437,6 +465,28 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 
 :: END TODONE
+
+:: 1/16/2026 cut agent instructions
+
+implement def chop_lap_on_timber_ends(top_lap_timber: Timber, top_lap_timber_end: TimberReferenceEnd, bottom_lap_timber: Timber, bottom_lap_timber_end: TimberReferenceEnd, top_lap_timber_face: TimberFace, lap_length: Numeric, lap_depth: Numeric, top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric) -> (MeowMeowCSG, MeowMeowCSG):
+1. determine the end the top lap timber based on top_lap_shoulder_position_from_top_lap_shoulder_timber_end and lap_length
+2. project the end position onto bottom_lap_timber
+3. create half plane cuts to remove the end
+4. determine the orientation of the lap based on top_lap_timber_face
+5. in the axis orthogonal to top_lap_timber_face find where the 2 laps meet based on lap_deth
+6. create prisms to remove the material from each timber resp
+7. union with the half lap cuts we created earlier and return the CSG pair
+
+
+implement cut_lapped_dovetail_butt_joint
+
+-there is no lap like the gooseneck joint
+-assert that the receiving timber is orthognal
+-so the shoulder of the dovetail starts right on the receiving timber and then inset by receiving_timber_shoulder_inset
+-create a helper function in joiint_shavings to do the shoulder inset notice, it takes the face to notch, where along the face to notch and how wide (take center and width), how far to inset the shoulder
+-the dovetail polygon is a simple trapezoidal shape
+-use similar logic as we did on the gooseneck joint to cut the dovetail positive in the tenon timber and then adopt the dovetail CSG into the mortise timber to notch it out.
+
 
 
 :: 1/6/2026 timber/board [ARCHIVE]
