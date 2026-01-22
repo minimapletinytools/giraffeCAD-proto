@@ -49,7 +49,7 @@ Tests and test helperonis.
 - `pytest` - Testing framework
 
 
-## Coding Philosophy
+## General Coding Philosophy
 
 - simplicity over performance!
     - the code should be straighforward with minimal dependencies on other files and indirections through abstract classes
@@ -58,9 +58,52 @@ Tests and test helperonis.
 - all data is frozen (immutable) the API should feel like a functional API in usage
     - python is a bit of an implementation detail, I would have preferred to have written this in a functional language
 
-## Coding Conventions
+## General Coding Conventions
 
 - ALWAYS use symbolic arithmetic with SymPy (Rational)
 - Use math types in moothmoth.py
 - ALWAYS Run tests after making changes
+
+## Coding Conventions when Implementing Joints
+
+Joints involve creating CSG cuts on one or more timbers. A typicall joint implementation will look as such.
+
+1. validate input parameters
+2. locate key features (e.g. where the shoulder is for a mortise an tenon cut)
+3. pick a timber to start working on 
+4. create a sensible `marking_transform : Transform` on that timber which is a transform in the timber's local space from which we will make all further calculations from. 
+    - e.g. if we are cutting a tenon, marking_transform could be where the tenon centerline intersects the tenon shoulder pointing in the tenon direction 
+    - for marking transforms inside the timber that are pointing in the length or -length direction, the "+x" axis of the transform should line up with the timber's "+x" axis
+    - for marking_transforms on the surface of the timber the "+y" should point into the timber
+5. calculate positions from marking_transform to locate features and generate the CSG cuts
+6. repeat 3-5 until all cuts are done
+7. return a joint object containing the cuts
+
+It is very important that variable names stay consistent. Do the following:
+
+- ALWAYS postfix markings in global space with `_global`
+- for markings in local space variables should be postfix with `_{timber name}_local` e.g. `some_feature_timberA_local`
+- you can omit the postfix if there is ONLY 1 timber involved in the scope of execution
+
+Feel free to create nested functions to create local variable scopes as needed (especially if it makes variable naming simpler)
+
+## Coding Conventions when Writing Tests for Joints
+
+Each joint should have at least one "general" test that looks something like:
+
+1. create the joint with "normal" parameters
+2. validate that the joint object returned is as expected (right number of cuts for example)
+3. pick key points on key features in the joints and test those points to ensure they are/are not contained in the cut timbers or on the cut timber boundary as expected
+    - this is often done by picking a line running through the joint and testing various points along the line
+4. If appropriate, break down the returned CSG objects and ensure certain cuts are where they are expecetd (e.g. look for a HalfPlane cut that matches the shoulder when doing a mortise and tenon cut)
+
+In addition (but not required) we may add tests as follows:
+
+1. if checks can easily be abstracted, create single tests with loops testing for multiple "normal" configurations e.g. different timber orientations
+    - NOTE always generalize check functions whenever possible, even if there is only 1 test using it.
+2. test specific parameters on the joint behave as expected
+3. test invalid configurations are caught
+4. test degenerate and edge cases are handled appropriately, e.g. tenon length of 0
+
+
 
