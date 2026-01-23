@@ -9,7 +9,7 @@ using the MeowMeowCSG system for constructive solid geometry operations.
 try:
     app = adsk.core.Application.get()
     if app:
-        app.log("🦒 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - CSG Version 🦒")
+        app.log("🦒 MODULE RELOAD TRACKER: giraffe_render_fusion360.py LOADED - Recursive Union Flattening v3 🦒")
 except:
     pass  # Ignore if app not available during import
 
@@ -23,7 +23,7 @@ from sympy import Matrix, Float
 from giraffe import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge, Frame
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
-    MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference
+    MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference, ConvexPolygonExtrusion
 )
 from code_goes_here.rendering_utils import (
     calculate_structure_extents,
@@ -319,6 +319,11 @@ def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG
             app.log(f"  render_csg_in_local_space: Rendering Cylinder with orientation")
         return render_cylinder_in_local_space(component, csg)
     
+    elif isinstance(csg, ConvexPolygonExtrusion):
+        if app:
+            app.log(f"  render_csg_in_local_space: Rendering ConvexPolygonExtrusion with orientation")
+        return render_convex_polygon_extrusion_in_local_space(component, csg)
+    
     elif isinstance(csg, HalfPlane):
         # HalfPlane is typically used for cutting operations, not standalone rendering
         print("Warning: HalfPlane rendering not implemented (typically used in Difference operations)")
@@ -474,6 +479,120 @@ def render_cylinder_in_local_space(component: adsk.fusion.Component, cylinder: C
         return None
 
 
+def render_convex_polygon_extrusion_in_local_space(component: adsk.fusion.Component, extrusion: ConvexPolygonExtrusion) -> Optional[adsk.fusion.BRepBody]:
+    """
+    Render a ConvexPolygonExtrusion CSG in the component's local coordinate system with orientation and position applied.
+    
+    The polygon is extruded along the Z axis from z=start_distance to z=end_distance,
+    then the orientation and position are applied.
+    
+    For infinite extrusions (start_distance or end_distance is None), the extrusion 
+    cannot be rendered and None is returned.
+    
+    Args:
+        component: Fusion 360 component to create geometry in
+        extrusion: ConvexPolygonExtrusion CSG object
+        
+    Returns:
+        Created BRepBody, or None if creation failed
+    """
+    app = get_fusion_app()
+    try:
+        # Check if the extrusion is finite
+        if extrusion.start_distance is None or extrusion.end_distance is None:
+            print(f"Warning: Cannot render infinite ConvexPolygonExtrusion")
+            if app:
+                app.log(f"Warning: Cannot render infinite ConvexPolygonExtrusion")
+            return None
+        
+        if app:
+            app.log(f"  render_convex_polygon_extrusion_in_local_space: {len(extrusion.points)} points, start={float(extrusion.start_distance):.3f}, end={float(extrusion.end_distance):.3f}")
+        
+        # Create a sketch on the XY plane
+        sketches = component.sketches
+        xy_plane = component.xYConstructionPlane
+        sketch = sketches.add(xy_plane)
+        
+        # Convert 2D points to Fusion 360 Point3D (in the XY plane, Z=0)
+        points_3d = []
+        for pt in extrusion.points:
+            x = float(pt[0])
+            y = float(pt[1])
+            points_3d.append(adsk.core.Point3D.create(x, y, 0.0))
+        
+        # Create polygon lines by connecting consecutive points
+        lines = sketch.sketchCurves.sketchLines
+        for i in range(len(points_3d)):
+            start_point = points_3d[i]
+            end_point = points_3d[(i + 1) % len(points_3d)]  # Wrap around to first point
+            lines.addByTwoPoints(start_point, end_point)
+        
+        # Get the profile for extrusion (should be a closed profile)
+        if sketch.profiles.count == 0:
+            print("Error: No closed profile created from polygon points")
+            return None
+        
+        profile = sketch.profiles.item(0)
+        
+        # Calculate extrusion length from start_distance to end_distance
+        extrusion_length = extrusion.end_distance - extrusion.start_distance
+        length = float(extrusion_length)
+        
+        # Create extrusion along +Z axis
+        extrudes = component.features.extrudeFeatures
+        extrude_input = extrudes.createInput(profile, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+        
+        # Set extrusion distance
+        distance = adsk.core.ValueInput.createByReal(length)
+        extrude_input.setDistanceExtent(False, distance)
+        
+        # Set start offset to position the extrusion at start_distance along Z
+        start_offset = adsk.core.ValueInput.createByReal(float(extrusion.start_distance))
+        extrude_input.startExtent = adsk.fusion.OffsetStartDefinition.create(start_offset)
+        
+        # Create the extrusion
+        extrude = extrudes.add(extrude_input)
+        
+        if not extrude or not extrude.bodies or extrude.bodies.count == 0:
+            print("Failed to create convex polygon extrusion")
+            return None
+        
+        body = extrude.bodies.item(0)
+        
+        # Apply the extrusion's orientation and position if not at origin with identity orientation
+        from sympy import Matrix
+        is_identity = (extrusion.transform.orientation.matrix == Matrix.eye(3))
+        is_at_origin = (extrusion.transform.position == Matrix([0, 0, 0]))
+        
+        app = get_fusion_app()
+        if app:
+            app.log(f"  render_convex_polygon_extrusion_in_local_space: Position: {extrusion.transform.position.T}")
+            app.log(f"  render_convex_polygon_extrusion_in_local_space: Identity: {is_identity}, At origin: {is_at_origin}")
+        
+        # Only apply transformation if needed (non-identity rotation or non-zero position)
+        if not is_identity or not is_at_origin:
+            transform = create_matrix3d_from_orientation(extrusion.transform.position, extrusion.transform.orientation)
+            
+            # Apply the transformation to the body
+            move_features = component.features.moveFeatures
+            bodies = adsk.core.ObjectCollection.create()
+            bodies.add(body)
+            move_input = move_features.createInput(bodies, transform)
+            move_input.defineAsFreeMove(transform)
+            move_features.add(move_input)
+        
+        if app:
+            app.log(f"  ✓ ConvexPolygonExtrusion rendered successfully")
+        return body
+        
+    except Exception as e:
+        print(f"Error rendering convex polygon extrusion: {e}")
+        if app:
+            app.log(f"ERROR rendering convex polygon extrusion: {e}")
+        traceback.print_exc()
+        return None
+
+
 def render_union_at_origin(component: adsk.fusion.Component, union: Union, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
     Render a Union CSG operation at the origin.
@@ -485,31 +604,55 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union, timbe
     Returns:
         Combined BRepBody, or None if creation failed
     """
+    app = get_fusion_app()
+    
     if not union.children:
         print("Warning: Empty union")
+        if app:
+            app.log("Warning: Empty union in render_union_at_origin")
         return None
     
+    if app:
+        app.log(f"render_union_at_origin: Rendering Union with {len(union.children)} children")
+        for i, child in enumerate(union.children):
+            app.log(f"  Child {i}: {type(child).__name__}")
+    
     # Render the first child
+    if app:
+        app.log(f"  Rendering first child (type: {type(union.children[0]).__name__})...")
     result_body = render_csg_in_local_space(component, union.children[0], timber, infinite_extent)
     
     if result_body is None:
         print("Failed to render first child of union")
+        if app:
+            app.log(f"ERROR: Failed to render first child of union (type: {type(union.children[0]).__name__})")
         return None
+    
+    if app:
+        app.log(f"  ✓ First child rendered successfully")
     
     # Render all remaining children and collect them as tool bodies
     tools = adsk.core.ObjectCollection.create()
     for i, child in enumerate(union.children[1:], start=1):
+        if app:
+            app.log(f"  Rendering union child {i+1} (type: {type(child).__name__})...")
         child_body = render_csg_in_local_space(component, child, timber, infinite_extent)
         
         if child_body is None:
             print(f"Failed to render union child {i}")
+            if app:
+                app.log(f"ERROR: Failed to render union child {i+1} (type: {type(child).__name__})")
             continue
         
+        if app:
+            app.log(f"  ✓ Union child {i+1} rendered successfully")
         tools.add(child_body)
     
     # Perform a single union operation with all tool bodies
     if tools.count > 0:
         try:
+            if app:
+                app.log(f"  Performing union combine operation with {tools.count} tool bodies...")
             combine_features = component.features.combineFeatures
             
             # Create combine input (union operation) with all tools at once
@@ -520,12 +663,21 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union, timbe
             # Execute the combine
             combine_features.add(combine_input)
             
+            if app:
+                app.log(f"  ✓ Union combine operation completed successfully")
+            
             # Give Fusion 360 time to process the union
             time.sleep(0.05)
             adsk.doEvents()
             
         except Exception as e:
             print(f"Error performing union operation: {e}")
+            if app:
+                app.log(f"ERROR performing union operation: {e}")
+            traceback.print_exc()
+    else:
+        if app:
+            app.log("  Note: No additional tools to union (only first child)")
     
     return result_body
 
@@ -799,15 +951,35 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
         return None
     
     if app:
-        app.log(f"render_difference_at_origin: Base body created successfully, now applying {len(difference.subtract)} cuts")
+        app.log(f"render_difference_at_origin: Base body created successfully, now applying {len(difference.subtract)} cuts (may be flattened)")
+    
+    # Flatten the subtract list to handle Union objects that contain HalfPlanes
+    # A Union in a subtract list means "remove all these things", so we flatten it
+    # to apply each child separately. We need to flatten recursively for nested Unions.
+    def flatten_union_recursively(csg_list):
+        """Recursively flatten Union objects in a list"""
+        result = []
+        for csg in csg_list:
+            if isinstance(csg, Union):
+                # Recursively flatten the Union's children
+                result.extend(flatten_union_recursively(csg.children))
+            else:
+                result.append(csg)
+        return result
+    
+    flattened_subtracts = flatten_union_recursively(difference.subtract)
+    
+    if len(flattened_subtracts) != len(difference.subtract) and app:
+        app.log(f"  Flattened Unions: {len(difference.subtract)} original subtracts → {len(flattened_subtracts)} flattened cuts")
+        app.log(f"  Flattened cut types: {[type(c).__name__ for c in flattened_subtracts]}")
     
     # Subtract each child
-    for i, subtract_csg in enumerate(difference.subtract):
+    for i, subtract_csg in enumerate(flattened_subtracts):
         # Special handling for HalfPlane cuts
         if isinstance(subtract_csg, HalfPlane):
-            print(f"  Applying HalfPlane cut {i+1}/{len(difference.subtract)} using split operation")
+            print(f"  Applying HalfPlane cut {i+1}/{len(flattened_subtracts)} using split operation")
             if app:
-                app.log(f"  Applying HalfPlane cut {i+1}/{len(difference.subtract)} using split operation")
+                app.log(f"  Applying HalfPlane cut {i+1}/{len(flattened_subtracts)} using split operation")
             success = apply_halfplane_cut(component, base_body, subtract_csg, timber, infinite_extent)
             if not success:
                 print(f"  Failed to apply HalfPlane cut {i+1}")
@@ -819,9 +991,9 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
             continue
         
         # For other CSG types, render and perform boolean difference
-        print(f"  Applying {type(subtract_csg).__name__} cut {i+1}/{len(difference.subtract)} using boolean difference")
+        print(f"  Applying {type(subtract_csg).__name__} cut {i+1}/{len(flattened_subtracts)} using boolean difference")
         if app:
-            app.log(f"  Applying {type(subtract_csg).__name__} cut {i+1}/{len(difference.subtract)} using boolean difference")
+            app.log(f"  Applying {type(subtract_csg).__name__} cut {i+1}/{len(flattened_subtracts)} using boolean difference")
         
         subtract_body = render_csg_in_local_space(component, subtract_csg, timber, infinite_extent)
         
@@ -864,7 +1036,7 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
             continue
     
     if app:
-        app.log(f"render_difference_at_origin: COMPLETE - all {len(difference.subtract)} cuts processed")
+        app.log(f"render_difference_at_origin: COMPLETE - all {len(flattened_subtracts)} cuts processed (from {len(difference.subtract)} original subtracts)")
     
     return base_body
 

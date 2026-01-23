@@ -27,6 +27,7 @@ try:
     from examples.reference.basic_joints_example import create_all_joint_examples
     # Import just one function from mortise_and_tenon_joint_examples to test module accessibility
     from examples.mortise_and_tenon_joint_examples import example_basic_mortise_and_tenon
+    from examples.japanese_joints_example import create_simple_gooseneck_example
     from giraffe_render_fusion360 import get_active_design, clear_design, render_frame
     
     # Test that core dependencies are available
@@ -76,11 +77,14 @@ def run(_context: str):
                 'code_goes_here.rendering_utils',
                 'code_goes_here.basic_joints',
                 'code_goes_here.mortise_and_tenon_joint',
+                'code_goes_here.japanese_joints',
+                'code_goes_here.joint_shavings',
                 'giraffe', 
                 'giraffe_render_fusion360',
                 'examples.oscarshed',
                 'examples.reference.basic_joints_example',
-                'examples.mortise_and_tenon_joint_examples'
+                'examples.mortise_and_tenon_joint_examples',
+                'examples.japanese_joints_example'
             ]
             
             for module_name in modules_to_reload:
@@ -95,6 +99,7 @@ def run(_context: str):
             from examples.oscarshed import create_oscarshed
             from examples.reference.basic_joints_example import create_all_joint_examples
             from examples.mortise_and_tenon_joint_examples import create_all_mortise_and_tenon_examples
+            from examples.japanese_joints_example import create_simple_gooseneck_example
             from giraffe_render_fusion360 import get_active_design, clear_design, render_frame
             
             print("✓ Module reload complete")
@@ -106,12 +111,12 @@ def run(_context: str):
 
         # Show dialog to choose which example to render
         try:
-            # Use a simple message box with buttons to select example
+            # First dialog: Choose between joint examples or structures
             result = ui.messageBox(
                 'Choose which example to render:\n\n' +
-                '• YES = Basic Joints Examples (6 joint types)\n' +
-                '• NO = Oscar\'s Shed (timber frame structure)\n' +
-                '• CANCEL = All Mortise and Tenon Examples (4 joint types)',
+                '• YES = Japanese Gooseneck Joint (simple isolated joint)\n' +
+                '• NO = Oscar\'s Shed (full timber frame structure)\n' +
+                '• CANCEL = Other Joint Examples',
                 'GiraffeCAD - Select Example',
                 adsk.core.MessageBoxButtonTypes.YesNoCancelButtonType,
                 adsk.core.MessageBoxIconTypes.QuestionIconType
@@ -119,20 +124,35 @@ def run(_context: str):
             
             # Process user selection
             if result == adsk.core.DialogResults.DialogYes:
-                example_name = "Basic Joints"
-                example_func = create_all_joint_examples
-                prefix = "Joint"
+                example_name = "Japanese Gooseneck Joint"
+                example_func = create_simple_gooseneck_example
+                prefix = "Gooseneck"
                 has_accessories = False
             elif result == adsk.core.DialogResults.DialogNo:
                 example_name = "Oscar's Shed"
                 example_func = create_oscarshed
                 prefix = "OscarShed_Timber"
                 has_accessories = True  # Oscar's Shed now has pegs on front girt
-            else:  # Cancel = All Mortise and Tenon Examples
-                example_name = "All Mortise and Tenon Examples"
-                example_func = create_all_mortise_and_tenon_examples
-                prefix = "MortiseTenon"
-                has_accessories = True
+            else:  # Cancel = Other Joint Examples - show second dialog
+                result2 = ui.messageBox(
+                    'Choose which joint examples to render:\n\n' +
+                    '• YES = Basic Joints Examples (6 joint types)\n' +
+                    '• NO = All Mortise and Tenon Examples (4 joint types)',
+                    'GiraffeCAD - Select Joint Examples',
+                    adsk.core.MessageBoxButtonTypes.YesNoButtonType,
+                    adsk.core.MessageBoxIconTypes.QuestionIconType
+                )
+                
+                if result2 == adsk.core.DialogResults.DialogYes:
+                    example_name = "Basic Joints"
+                    example_func = create_all_joint_examples
+                    prefix = "Joint"
+                    has_accessories = False
+                else:
+                    example_name = "All Mortise and Tenon Examples"
+                    example_func = create_all_mortise_and_tenon_examples
+                    prefix = "MortiseTenon"
+                    has_accessories = True
             
             print(f"🦒 GIRAFFETEST: {example_name.upper()} 🦒")
             app.log(f"🦒 GIRAFFETEST: {example_name.upper()} 🦒")
