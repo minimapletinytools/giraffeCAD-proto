@@ -10,7 +10,8 @@ from code_goes_here.joint_shavings import (
     chop_timber_end_with_half_plane,
     chop_lap_on_timber_end,
     measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber,
-    find_opposing_face_on_another_timber
+    find_opposing_face_on_another_timber,
+    chop_shoulder_notch_on_timber_face
 )
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import create_v3, create_v2, inches, are_vectors_parallel
@@ -1002,6 +1003,84 @@ class TestFindOpposingFaceOnAnotherTimber:
         
         # Check that the error message mentions parallel
         assert "parallel" in str(excinfo.value).lower()
+
+
+class TestChopShoulderNotchOnTimberFace:
+    """Tests for chop_shoulder_notch_on_timber_face function."""
+    
+    def test_shoulder_notch_on_each_face(self):
+        """
+        Test that shoulder notch correctly removes material from the specified face only.
+        
+        For each long face (LEFT, RIGHT, FRONT, BACK), create a notch and verify:
+        - A point on the notched face (in the middle) IS contained in the notch CSG (will be removed)
+        - Points on the other three faces are NOT contained in the notch CSG (will remain)
+        """
+        # Create a vertical 4"x4"x4' timber
+        timber_width = inches(4)
+        timber_height = inches(4)
+        timber_length = inches(48)  # 4 feet
+        
+        timber = timber_from_directions(
+            length=timber_length,
+            size=create_v2(timber_width, timber_height),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Vertical (along Z)
+            width_direction=create_v3(1, 0, 0),   # Width along X
+            name='test_timber'
+        )
+        # Timber orientation:
+        # - width_direction (X): RIGHT face at +X, LEFT face at -X
+        # - height_direction (Y): FRONT face at +Y, BACK face at -Y
+        # - length_direction (Z): TOP face at +Z, BOTTOM face at -Z
+        
+        # Notch parameters
+        notch_depth = inches(1)    # 1" deep into the timber
+        notch_width = inches(4)    # 4" wide along timber length
+        notch_center = timber_length / Rational(2)  # Middle of timber (24" from bottom)
+        
+        # Test each long face
+        long_faces = [TimberFace.LEFT, TimberFace.RIGHT, TimberFace.FRONT, TimberFace.BACK]
+        
+        for notch_face in long_faces:
+            # Create the shoulder notch on this face
+            notch_csg = chop_shoulder_notch_on_timber_face(
+                timber=timber,
+                notch_face=notch_face,
+                distance_along_timber=notch_center,
+                notch_width=notch_width,
+                notch_depth=notch_depth
+            )
+            
+            # Verify it's a Prism
+            assert isinstance(notch_csg, Prism), f"Expected Prism, got {type(notch_csg).__name__}"
+            
+            # Define test points on each face at the middle of the timber
+            # All points are at the center height (notch_center) and centered on the timber cross-section
+            # but offset to be on the surface of each face
+            half_width = timber_width / Rational(2)
+            half_height = timber_height / Rational(2)
+            
+            # Points on each face (on the surface, at the middle of timber length)
+            test_points = {
+                TimberFace.RIGHT: create_v3(half_width, 0, notch_center),
+                TimberFace.LEFT: create_v3(-half_width, 0, notch_center),
+                TimberFace.FRONT: create_v3(0, half_height, notch_center),
+                TimberFace.BACK: create_v3(0, -half_height, notch_center)
+            }
+            
+            # Test each point
+            for test_face, test_point in test_points.items():
+                point_contained = notch_csg.contains_point(test_point)
+                
+                if test_face == notch_face:
+                    # Point on the notched face should be contained in the notch CSG (will be removed)
+                    assert point_contained, \
+                        f"Point on notched face {notch_face.name} should be contained in notch CSG, but was not"
+                else:
+                    # Points on other faces should NOT be contained in the notch CSG (will remain)
+                    assert not point_contained, \
+                        f"Point on face {test_face.name} should NOT be contained in notch on {notch_face.name}, but was"
 
 
 if __name__ == "__main__":

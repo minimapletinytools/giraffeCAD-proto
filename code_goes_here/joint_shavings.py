@@ -763,3 +763,98 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
     )
     
     return extrusion
+
+
+def chop_shoulder_notch_on_timber_face(
+    timber: Timber,
+    notch_face: TimberFace,
+    distance_along_timber: Numeric,
+    notch_width: Numeric,
+    notch_depth: Numeric
+) -> Prism:
+    """
+    Create a rectangular shoulder notch on a timber face.
+    
+    This creates a rectangular notch/pocket on a specified face of a timber.
+    The notch is centered at a specific position along the timber's length.
+    
+    Args:
+        timber: The timber to notch
+        notch_face: The face to cut the notch into (LEFT, RIGHT, FRONT, or BACK)
+        distance_along_timber: Distance from the timber's BOTTOM end to the center of the notch
+        notch_width: Width of the notch (measured along timber length direction)
+        notch_depth: Depth of the notch (measured perpendicular to the face, into the timber)
+    
+    Returns:
+        Prism representing the material to remove (in timber's local coordinates)
+    
+    Example:
+        >>> # Create a 2" wide, 1" deep notch on the front face, 6" from bottom
+        >>> notch = chop_shoulder_notch_on_timber_face(
+        ...     timber, TimberFace.FRONT, inches(6), inches(2), inches(1)
+        ... )
+    """
+    from sympy import Rational
+    
+    # Validate face is a long face (not TOP or BOTTOM)
+    if notch_face == TimberFace.TOP or notch_face == TimberFace.BOTTOM:
+        raise ValueError("Cannot cut shoulder notch on end faces (TOP or BOTTOM)")
+    
+    # Validate dimensions
+    if notch_width <= 0:
+        raise ValueError(f"notch_width must be positive, got {notch_width}")
+    if notch_depth <= 0:
+        raise ValueError(f"notch_depth must be positive, got {notch_depth}")
+    if distance_along_timber < 0 or distance_along_timber > timber.length:
+        raise ValueError(
+            f"distance_along_timber must be between 0 and timber.length ({timber.length}), "
+            f"got {distance_along_timber}"
+        )
+    
+    # Calculate prism extent along timber length
+    prism_start = distance_along_timber - notch_width / Rational(2)
+    prism_end = distance_along_timber + notch_width / Rational(2)
+    
+    # Ensure start/end are within timber bounds
+    prism_start = max(Rational(0), prism_start)
+    prism_end = min(timber.length, prism_end)
+    
+    # Calculate prism position and size based on which face
+    if notch_face == TimberFace.LEFT or notch_face == TimberFace.RIGHT:
+        # Notch is on a width face (X-axis in local coords)
+        # The notch removes material inward from the face
+        if notch_face == TimberFace.RIGHT:
+            # Notch starts at right face (-depth inward)
+            # Prism center: size[0]/2 - depth/2
+            x_offset = timber.size[0] / Rational(2) - notch_depth / Rational(2)
+        else:  # LEFT
+            # Notch starts at left face (-depth inward)
+            # Prism center: -size[0]/2 + depth/2
+            x_offset = -timber.size[0] / Rational(2) + notch_depth / Rational(2)
+        
+        notch_prism = Prism(
+            size=create_v2(notch_depth, timber.size[1]),  # depth in X, full height in Y
+            transform=Transform(position=create_v3(x_offset, 0, 0), orientation=Orientation.identity()),
+            start_distance=prism_start,
+            end_distance=prism_end
+        )
+    else:  # FRONT or BACK
+        # Notch is on a height face (Y-axis in local coords)
+        # The notch removes material inward from the face
+        if notch_face == TimberFace.FRONT:
+            # Notch starts at front face (-depth inward)
+            # Prism center: size[1]/2 - depth/2
+            y_offset = timber.size[1] / Rational(2) - notch_depth / Rational(2)
+        else:  # BACK
+            # Notch starts at back face (-depth inward)
+            # Prism center: -size[1]/2 + depth/2
+            y_offset = -timber.size[1] / Rational(2) + notch_depth / Rational(2)
+        
+        notch_prism = Prism(
+            size=create_v2(timber.size[0], notch_depth),  # full width in X, depth in Y
+            transform=Transform(position=create_v3(0, y_offset, 0), orientation=Orientation.identity()),
+            start_distance=prism_start,
+            end_distance=prism_end
+        )
+    
+    return notch_prism

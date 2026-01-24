@@ -17,7 +17,7 @@ from sympy import Matrix, eye, Rational, sqrt
 from code_goes_here.meowmeowcsg import *
 from code_goes_here.moothymoth import Orientation, Transform, inches, feet
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, timber_from_directions
-from code_goes_here.joint_shavings import chop_lap_on_timber_end, chop_profile_on_timber_face
+from code_goes_here.joint_shavings import chop_lap_on_timber_end, chop_profile_on_timber_face, chop_shoulder_notch_on_timber_face
 from code_goes_here.japanese_joints import draw_gooseneck_polygon
 
 
@@ -37,8 +37,10 @@ def example_cube_with_cube_cutout():
         size=Matrix([2, 2]),  # 2m x 2m cross-section
         start_distance=0,      # Start at Z=0 (relative to position)
         end_distance=2,        # End at Z=2 (relative to position)
-        position=Matrix([0, 0, 0]),  # Cross-section center at origin
-        orientation=Orientation(eye(3))  # Identity orientation
+        transform=Transform(
+            position=Matrix([0, 0, 0]),  # Cross-section center at origin
+            orientation=Orientation(eye(3))  # Identity orientation
+        )
     )
     
     # Create a 1x1x1 cube to cut out (cross-section centered at origin)
@@ -46,8 +48,10 @@ def example_cube_with_cube_cutout():
         size=Matrix([1, 1]),  # 1m x 1m cross-section
         start_distance=0,      # Start at Z=0 (relative to position)
         end_distance=1,        # End at Z=1 (relative to position)
-        position=Matrix([0, 0, 0]),  # Cross-section center at origin
-        orientation=Orientation(eye(3))  # Identity orientation
+        transform=Transform(
+            position=Matrix([0, 0, 0]),  # Cross-section center at origin
+            orientation=Orientation(eye(3))  # Identity orientation
+        )
     )
     
     # Create the difference
@@ -75,8 +79,10 @@ def example_cube_with_halfplane_cut():
         size=Matrix([1, 1]),  # 1m x 1m cross-section
         start_distance=0,      # Start at Z=0 (relative to position)
         end_distance=1,        # End at Z=1 (relative to position)
-        position=Matrix([0, 0, 0]),  # Cross-section center at origin
-        orientation=Orientation(eye(3))  # Identity orientation
+        transform=Transform(
+            position=Matrix([0, 0, 0]),  # Cross-section center at origin
+            orientation=Orientation(eye(3))  # Identity orientation
+        )
     )
     
     # Create a halfplane that removes Z < 0.5
@@ -111,8 +117,10 @@ def example_cube_at_position():
         size=Matrix([1, 1]),  # 1m x 1m cross-section
         start_distance=Rational(-1, 2),   # Start at Z=-0.5 (relative to position Z=1)
         end_distance=Rational(1, 2),      # End at Z=0.5 (relative to position Z=1)
-        position=Matrix([2, 3, 1]),  # Center at (2, 3, 1)
-        orientation=Orientation(eye(3))  # Identity orientation
+        transform=Transform(
+            position=Matrix([2, 3, 1]),  # Center at (2, 3, 1)
+            orientation=Orientation(eye(3))  # Identity orientation
+        )
     )
     
     return cube
@@ -134,8 +142,10 @@ def example_union_of_cubes():
         size=Matrix([1, 1]),
         start_distance=0,
         end_distance=1,
-        position=Matrix([0, 0, 0]),
-        orientation=Orientation(eye(3))
+        transform=Transform(
+            position=Matrix([0, 0, 0]),
+            orientation=Orientation(eye(3))
+        )
     )
     
     # Second cube offset by 1m in X (cross-section centered at (1,0,0))
@@ -143,8 +153,10 @@ def example_union_of_cubes():
         size=Matrix([1, 1]),
         start_distance=0,
         end_distance=1,
-        position=Matrix([1, 0, 0]),
-        orientation=Orientation(eye(3))
+        transform=Transform(
+            position=Matrix([1, 0, 0]),
+            orientation=Orientation(eye(3))
+        )
     )
     
     result = Union(children=[cube1, cube2])
@@ -334,6 +346,67 @@ def example_gooseneck_profile_cut():
     return result
 
 
+def example_shoulder_notch_on_timber():
+    """
+    4"x4"x4' vertical timber with a 1" deep x 4" wide shoulder notch on the right face.
+    
+    Creates a vertical timber and cuts a rectangular shoulder notch in the center
+    using chop_shoulder_notch_on_timber_face.
+    
+    Dimensions (in meters):
+    - Timber: 0.1016m x 0.1016m x 1.2192m (4" x 4" x 4')
+    - Notch depth: 0.0254m (1")
+    - Notch width: 0.1016m (4")
+    - Notch center position: 0.6096m (24" = 2' from bottom, center of timber)
+    
+    Returns:
+        Difference CSG object (timber with shoulder notch removed)
+    """
+    # Create a 4"x4"x4' vertical timber
+    timber_width = inches(4)   # 4"
+    timber_height = inches(4)  # 4"
+    timber_length = feet(4)    # 4'
+    
+    # Create vertical timber extending along Z-axis
+    timber = timber_from_directions(
+        length=timber_length,
+        size=Matrix([timber_width, timber_height]),
+        bottom_position=Matrix([0, 0, 0]),
+        length_direction=Matrix([0, 0, 1]),  # Vertical (along Z)
+        width_direction=Matrix([1, 0, 0]),   # Width along X
+        name='shoulder_notch_test_timber'
+    )
+    
+    # Define notch parameters
+    notch_depth = inches(1)    # 1" deep into the timber
+    notch_width = inches(4)    # 4" wide along timber length
+    notch_center = timber_length / Rational(2)  # Center of timber (2' from bottom)
+    
+    # Create the shoulder notch CSG (in timber's local coordinates)
+    notch_cut_csg = chop_shoulder_notch_on_timber_face(
+        timber=timber,
+        notch_face=TimberFace.RIGHT,
+        distance_along_timber=notch_center,
+        notch_width=notch_width,
+        notch_depth=notch_depth
+    )
+    
+    # Create the base timber prism (in local coordinates)
+    timber_prism = Prism(
+        size=timber.size,
+        transform=Transform.identity(),
+        start_distance=0,
+        end_distance=timber.length
+    )
+    
+    # Create the difference (timber with shoulder notch removed)
+    result = Difference(
+        base=timber_prism,
+        subtract=[notch_cut_csg]
+    )
+    
+    return result
+
 
 # Dictionary for easy example selection
 EXAMPLES = {
@@ -371,6 +444,11 @@ EXAMPLES = {
         'name': 'Gooseneck Profile Cut',
         'description': '2"x6"x4\' timber with gooseneck profile cut (tests chop_profile_on_timber_face)',
         'function': example_gooseneck_profile_cut
+    },
+    'shoulder_notch': {
+        'name': 'Shoulder Notch on Timber',
+        'description': '4"x4"x4\' vertical timber with 1" deep x 4" wide notch on right face (tests chop_shoulder_notch_on_timber_face)',
+        'function': example_shoulder_notch_on_timber
     }
 }
 
