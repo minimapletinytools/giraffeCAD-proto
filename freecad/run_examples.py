@@ -38,14 +38,20 @@ if script_dir not in sys.path:
 # CONFIGURATION: Change this to render different examples
 # ============================================================================
 #EXAMPLE_TO_RENDER = 'basic_joints' 
-EXAMPLE_TO_RENDER = 'oscar_shed'
+#EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
 #EXAMPLE_TO_RENDER = 'horsey'
 #EXAMPLE_TO_RENDER = 'japanese_joints'
-#EXAMPLE_TO_RENDER = 'csg'
+EXAMPLE_TO_RENDER = 'csg'
 
 # CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
-CSG_EXAMPLE_TO_RENDER = 'gooseneck_profile'  # Options: 'cube_cutout', 'halfplane_cut', 'positioned_cube', 'lap_cut_timber', 'union_cubes', 'hexagon_extrusion', 'gooseneck_profile'
+CSG_EXAMPLE_TO_RENDER = 'shoulder_notch'  # Options: 'cube_cutout', 'halfplane_cut', 'positioned_cube', 'lap_cut_timber', 'union_cubes', 'hexagon_extrusion', 'gooseneck_profile', 'shoulder_notch'
+
+# Japanese Joints Configuration (only used when EXAMPLE_TO_RENDER = 'japanese_joints')
+# Uncomment ONE of the following lines to select which joint example to render:
+JAPANESE_JOINT_EXAMPLE = 'gooseneck_splice'     # Lapped gooseneck splice joint (4"x4" x 3')
+#JAPANESE_JOINT_EXAMPLE = 'gooseneck_simple'    # Simple vertical gooseneck joint (3"x3" x 2')
+#JAPANESE_JOINT_EXAMPLE = 'dovetail_butt'       # Dovetail butt joint / T-joint (4"x4" x 3')
 
 
 def reload_all_modules():
@@ -254,22 +260,73 @@ def render_horsey():
 
 def render_japanese_joints():
     """
-    Render Japanese joint examples - Lapped Gooseneck Joint.
+    Render traditional Japanese timber joints.
     
-    Demonstrates traditional Japanese timber joinery including the lapped gooseneck joint
-    (腰掛鎌継ぎ / Koshikake Kama Tsugi) used to splice beams end-to-end.
+    Available joints:
+    - Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi) - splices beams end-to-end
+    - Dovetail Butt Joint (蟻仕口 / Ari Shiguchi) - connects timbers at right angles
+    
+    Change JAPANESE_JOINT_EXAMPLE at the top of this file to select which joint to render.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.japanese_joints_example import create_simple_gooseneck_example
+    from examples.japanese_joints_example import (
+        create_lapped_gooseneck_splice_example,
+        create_simple_gooseneck_example,
+        create_dovetail_butt_joint_example
+    )
+    
+    # Select which example to render based on configuration
+    joint_examples = {
+        'gooseneck_splice': {
+            'func': create_lapped_gooseneck_splice_example,
+            'title': 'Japanese Lapped Gooseneck Joint - Splice',
+            'description': 'Splicing two 4"x4" x 3\' timbers with traditional joint...',
+            'details': [
+                'Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi)',
+                '  - Two 4"x4" x 3\' timbers spliced end-to-end',
+                '  - Gooseneck profile resists tension',
+                '  - Lap provides compression bearing'
+            ]
+        },
+        'gooseneck_simple': {
+            'func': create_simple_gooseneck_example,
+            'title': 'Japanese Lapped Gooseneck Joint - Simple',
+            'description': 'Creating simple vertical post splice...',
+            'details': [
+                'Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi)',
+                '  - Two 3"x3" x 2\' timbers spliced vertically',
+                '  - Simplified version for easier visualization',
+                '  - Gooseneck profile creates mechanical interlock'
+            ]
+        },
+        'dovetail_butt': {
+            'func': create_dovetail_butt_joint_example,
+            'title': 'Japanese Dovetail Butt Joint',
+            'description': 'Creating T-joint with dovetail connection...',
+            'details': [
+                'Dovetail Butt Joint (蟻仕口 / Ari Shiguchi)',
+                '  - Two 4"x4" x 3\' timbers at right angles',
+                '  - Dovetail shape resists pulling apart',
+                '  - Used for T-joints and corner connections'
+            ]
+        }
+    }
+    
+    if JAPANESE_JOINT_EXAMPLE not in joint_examples:
+        print(f"ERROR: Unknown Japanese joint example '{JAPANESE_JOINT_EXAMPLE}'")
+        print(f"Available examples: {list(joint_examples.keys())}")
+        print("\nEdit JAPANESE_JOINT_EXAMPLE in run_examples.py to change the joint.")
+        return
+    
+    example_config = joint_examples[JAPANESE_JOINT_EXAMPLE]
     
     print("="*70)
-    print("GiraffeCAD FreeCAD - Japanese Lapped Gooseneck Joint")
+    print(f"GiraffeCAD FreeCAD - {example_config['title']}")
     print("="*70)
     
     # Create Japanese joint example (returns Frame object)
-    print("\nCreating Japanese lapped gooseneck joint example...")
-    print("Splicing two 4\"x4\" x 3' timbers with traditional joint...")
-    frame = create_simple_gooseneck_example()
+    print(f"\n{example_config['description']}")
+    frame = example_config['func']()
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories: {len(frame.accessories)}")
@@ -285,13 +342,9 @@ def render_japanese_joints():
     print(f"Rendering Complete!")
     print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
     print("="*70)
-    print("\nJapanese Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi)")
-    print("  - Two 4\"x4\" x 3' timbers spliced end-to-end")
-    print("  - Gooseneck profile provides mechanical interlock")
-    print("  - Lap joint provides compression bearing surface")
-    print("\nCheck the Model tree on the left to see:")
-    print("  - gooseneck_timber: timber with gooseneck feature protruding")
-    print("  - receiving_timber: timber with pocket to receive gooseneck")
+    for detail in example_config['details']:
+        print(detail)
+    print("="*70)
 
 
 def render_csg():
