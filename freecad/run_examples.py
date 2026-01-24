@@ -41,17 +41,17 @@ if script_dir not in sys.path:
 #EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
 #EXAMPLE_TO_RENDER = 'horsey'
-#EXAMPLE_TO_RENDER = 'japanese_joints'
-EXAMPLE_TO_RENDER = 'csg'
+EXAMPLE_TO_RENDER = 'japanese_joints'
+#EXAMPLE_TO_RENDER = 'csg'
 
 # CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
 CSG_EXAMPLE_TO_RENDER = 'shoulder_notch'  # Options: 'cube_cutout', 'halfplane_cut', 'positioned_cube', 'lap_cut_timber', 'union_cubes', 'hexagon_extrusion', 'gooseneck_profile', 'shoulder_notch'
 
 # Japanese Joints Configuration (only used when EXAMPLE_TO_RENDER = 'japanese_joints')
 # Uncomment ONE of the following lines to select which joint example to render:
-JAPANESE_JOINT_EXAMPLE = 'gooseneck_splice'     # Lapped gooseneck splice joint (4"x4" x 3')
+#JAPANESE_JOINT_EXAMPLE = 'gooseneck_splice'     # Lapped gooseneck splice joint (4"x4" x 3')
 #JAPANESE_JOINT_EXAMPLE = 'gooseneck_simple'    # Simple vertical gooseneck joint (3"x3" x 2')
-#JAPANESE_JOINT_EXAMPLE = 'dovetail_butt'       # Dovetail butt joint / T-joint (4"x4" x 3')
+JAPANESE_JOINT_EXAMPLE = 'dovetail_butt'       # Dovetail butt joint / T-joint (4"x4" x 3')
 
 
 def reload_all_modules():

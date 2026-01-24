@@ -259,6 +259,10 @@ DONE-add extrude polygon csg rendering to fusino 360
 DONE-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes_here/japanese_joints.py:221: UserWarning: Gooseneck joint configuration may not be sensible: Joint ends are pointing in the same direction (dot product = 1.000). For a splice joint, the ends should point in opposite directions (dot product should be -1) warning
 DONE-do irrational joint test for rendering
 
+-fix or delete goosenecksplice example in japanese joints examples
+
+-come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
+
 -update morties and tenon to support
   -perpendicular but not face aligned
   -not perpendicular but partially face aligned (for braces)
