@@ -1,44 +1,97 @@
-:: 1/19/2026 impl methodology and helpre notes
+:: 1/23/2026 viewer planning notes
+
+use three.js to implement viewer as a VScode plugin
+
+base features:
+-vscode integration (must be easy to use and integrate with some main script)
+-render all timbers
+-3d space navigation
+-click on timber to focus and see more details
+  -render gimbal to show local coordinates
+
+additional features:
+-incremental rerendering upon refresh
+-timber/folder hierarchy (show/hide/collapse)
+-hover over focused timber individual fetaures 
+-feature rendering (e.g. render a face in a different color, render joint cuts in different color, etc)
+
+future features:
+-2d/3d drawing generation and view (add mesaurements to )
+  -a good step 1 would be to show some basic measurements when focused on 1 timber
+-assembly explosion
 
 
+major decision points and things you'll probably need
+-triangulation in python or js  (probably in js)
+-CSG to mesh function
+-add metadata to timbers
+-add metadata to CSG/joints for features
+  -this includes naming cuts and sub cuts like faces of a prism
+  -TODO you probably need some feature CSG classes and then learn to intersect them for new features...
+  -TODO this needs to be its own spec
 
--joint construction methodology
-  -I think for most end joints you want to create a transform that defines where to compute all of the joint features from!!!
-    -implemnetation detail, add to cursor rules
-    -always use the look at convention, so that +x is right, +y is into the timber (looking at the face), +z is in the joint direction, 
-  -try and do the same for butt joints? The challenge here is if it's not perpendicular
-  -call it marking_transform?
--joint testing methodology
-  -can we do something similar with joint testing? typically, we want to find some point on the face of a timber and work inwards to test various points in the joint
-    -so in general, we want to create a transform on the timber and pick points relative to there to test
--variable naming methodology
-  -ALWAYS prefix vars in global space with _global
-  -try to laways prefix vars in local space with _local
-  -unprefix vars should usually be in local space
+for the naive version of feature highlighting:
+  -CSG metadata maps to feature filter functions so that we can do the following
+    -you probbaly need some kinda BVH to do this efficiently, but linear search is fine too LOL
+  -hover -> raycast triangle -> find feature on timber
+
+:: 1/23/2026 viewer and drawing notes [messy]
+
+We want to be able to generate 2d/3d drawings and be able to highlight features in the viewer.
+
+so the key thing we need is to be able to identify features on timbers. Thihhs comes in 2 flavors
+1. when generating diagrams, it needs a list of features to create drawings from
+2. when in the viewer, it needs to raycast to see which featuer your hovering over.
+
+2. is more or less covered by 1, perhaps we need some additional data to deal with priorities or something but it should nto be a big deal.
+
+For features when generating drawings, lets worok through some broad examples:
+
+-round draw bore holes need their centers and diameters marked
+-mortise holes need their dimensions and depth marked
+-angled things can have lengths projected onto axis and/OR show actual angle
+-only 1 side of parallel lines of rectangles need to be marked
+-view from multiple isometric angles, each measurement need only be drawn once (do this automatically or allow user to specify which measurement goes to which view)
+-measurements are specified to some reference point
+  -you could auto pick reference point and ensure all referenced points can be referenced to face/edge on the timber I guess?
+  -or allow user to specify which feature to reference to in the drawing
+-automatic marking generation will probbaly make too many marking so maybe remove some?
+-I think in general we need to make suer all features are solveable, have priority on some fetaures, 
+  -but prehaps we just name some featuers and do due diligence in coding to ensure everything else is solveable
+
+examples of features we want to mark:
+
+-distance between 2 parallel faces
+  -choose side perpendicular to these 2 faces to draw on (or with smallest dot product)
 
 
--feature classes?
-  -plane 
-  -transform_on_timber
+-special rules for face aligned features:
+TODO
 
--measure functions
-  -decide consistent naming scheme for measure helpers and document
-  -some helpers to add (and use throughout)
-    -find_closests_face_to_timber_end_direction
-    -plane_from_offset_timber_face
-    -also ask AI to see if there are any others
-      -especially when it comes with all the timber end if statements
+
+specific examples:
+
+-mortise example:
+  -mortise width and height (distance between opposing parallel faces of the mortise)
+    -pick a view to draw it, either top or side, but not from the ends (could use priority system to determine which face of the timber to mark on?)
+  -morties depth
+    -distance between morties shoulder face and mortise bottom
+  -mortise shoulder
+    -side view only, distance between mortise shoulder face and timber face that the morties is on 
+  -mortise position
+    -distance from one side of the mortise to timber face
+    -distance from one side of the mortise to the timber end (need rule to pick side, I guess just pick the closest?)
+    -(HARD) if multiple mrotises in a row on a timber we may want to do interval spacing (from center) or side to side on the mortises
+    -if rotated on face normal axis, mortise, then do a corner of the mortise + angles I guess?
+    -if rotated on another axis then mortise depth is measured from 1 side of the 
   
 
+So we need to design a way to 
+1. mark features with names 
 
 
 
-:: 1/7/2026 Agent instructinos
 
--agent can work out local coordinates but often won't go through teh computations
-  -could either add clear instructions on working this out, probably need better notes on how to pull out orientation from timber ctors
-  -or just invite agent to sure reference dimension helper classes
- 
 :: 1/6/2026 metadata
 
 -timber metadata 
@@ -159,6 +212,17 @@ examples of things we want to do
 
 
 
+-measure functions
+  -decide consistent naming scheme for measure helpers and document
+  -some helpers to add (and use throughout)
+    -find_closests_face_to_timber_end_direction
+    -plane_from_offset_timber_face
+    -also ask AI to see if there are any others
+      -especially when it comes with all the timber end if statements
+  
+
+
+
 
 :: documentation
 
@@ -192,18 +256,21 @@ DONE-gooseneck lap joint
 DONE-change gooseneck to return 2 Convex CSGs or support non convex polygon extrusion CSG (errors on some functions or returns None or whatever)
 DONE-rafters get added twice in oscar shed
 DONE-add extrude polygon csg rendering to fusino 360
-
-
--do irrational joint test for rendering
-
 DONE-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes_here/japanese_joints.py:221: UserWarning: Gooseneck joint configuration may not be sensible: Joint ends are pointing in the same direction (dot product = 1.000). For a splice joint, the ends should point in opposite directions (dot product should be -1) warning
+DONE-do irrational joint test for rendering
+
+-update morties and tenon to support
+  -perpendicular but not face aligned
+  -not perpendicular but partially face aligned (for braces)
+    -maybe have an add brace function?
+  -neither perpendicular nor face aligned
 
 -REFACTOR TIME
   DONE-create Transform class in moothymoth
   DONE-rename helperonis to something more cute
+  IGNORE-make global/local var naming consistent
+    DONE-add cursor rules for this
   -update places to use teh local/global stuff in Transform class
-  -make global/local var naming consistent
-    -add cursor rules for this
   
 
 -RENAME TIME
@@ -255,12 +322,9 @@ DONE-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes
   DONE-cross_joints
     DONE-basic_house_joint
     DONE-basic_cross_lap_joint
-
   DONE-splice_joint
     DONE-gooseneck joint 
     DONE-pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
-
-
   -butt joints
     DONE-mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
       DONE-mortise and tenon
@@ -270,9 +334,6 @@ DONE-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes
     -dovetail lap joint (for the floor joists)
   -corner joints
     -maybe try the fancy  one we used on the shed  Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)
-
-
-
 
   -decorative cuts
     -basically joints with 1 timber
@@ -475,6 +536,27 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 
 :: END TODONE
+:: 1/19/2026 impl methodology and helpre notes
+
+-joint construction methodology
+  -I think for most end joints you want to create a transform that defines where to compute all of the joint features from!!!
+    -implemnetation detail, add to cursor rules
+    -always use the look at convention, so that +x is right, +y is into the timber (looking at the face), +z is in the joint direction, 
+  -try and do the same for butt joints? The challenge here is if it's not perpendicular
+  -call it marking_transform?
+-joint testing methodology
+  -can we do something similar with joint testing? typically, we want to find some point on the face of a timber and work inwards to test various points in the joint
+    -so in general, we want to create a transform on the timber and pick points relative to there to test
+-variable naming methodology
+  -ALWAYS prefix vars in global space with _global
+  -try to laways prefix vars in local space with _local
+  -unprefix vars should usually be in local space
+
+-feature classes?
+  -plane 
+  -transform_on_timber
+
+ 
 
 :: 1/16/2026 cut agent instructions
 
