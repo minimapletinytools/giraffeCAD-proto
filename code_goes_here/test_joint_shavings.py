@@ -37,6 +37,7 @@ class TestCheckTimberOverlapForSpliceJoint:
         )
         
         # TimberB pointing west (right to left), positioned to overlap
+        # For timbers pointing opposite directions, join matching ends (TOP to TOP)
         timberB = timber_from_directions(
             length=timber_length,
             size=timber_size,
@@ -46,9 +47,9 @@ class TestCheckTimberOverlapForSpliceJoint:
             name="timberB"
         )
         
-        # Check the configuration
+        # Check the configuration - join TOP to TOP so ends face each other
         error = check_timber_overlap_for_splice_joint_is_sensible(
-            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.BOTTOM
+            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.TOP
         )
         
         assert error is None, f"Expected no error, but got: {error}"
@@ -68,28 +69,30 @@ class TestCheckTimberOverlapForSpliceJoint:
             name="timberA"
         )
         
-        # TimberB pointing west, ends exactly touch
+        # TimberB pointing west, TOP ends exactly touch
+        # For opposite direction timbers, join matching ends so they face each other
         timberB = timber_from_directions(
             length=timber_length,
             size=timber_size,
-            bottom_position=create_v3(timber_length, 0, 0),  # Bottom exactly at A's top
+            bottom_position=create_v3(2 * timber_length, 0, 0),  # Start further right
             length_direction=create_v3(-1, 0, 0),
             width_direction=create_v3(0, 1, 0),
             name="timberB"
         )
         
+        # Join TOP to TOP so ends face each other
         error = check_timber_overlap_for_splice_joint_is_sensible(
-            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.BOTTOM
+            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.TOP
         )
         
         assert error is None, f"Expected no error for touching ends, but got: {error}"
     
     def test_invalid_same_direction(self):
-        """Test that timbers pointing in the same direction trigger an error."""
+        """Test that ends facing away from each other trigger an error."""
         timber_length = inches(36)
         timber_size = create_v2(inches(4), inches(4))
         
-        # Both timbers pointing east (invalid)
+        # Both timbers pointing east
         timberA = timber_from_directions(
             length=timber_length,
             size=timber_size,
@@ -108,11 +111,13 @@ class TestCheckTimberOverlapForSpliceJoint:
             name="timberB"
         )
         
+        # Invalid: joining TOP to TOP when both point same direction
+        # (both ends face same direction, away from each other)
         error = check_timber_overlap_for_splice_joint_is_sensible(
-            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.BOTTOM
+            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.TOP
         )
         
-        assert error is not None, "Expected error for same direction"
+        assert error is not None, "Expected error for ends facing away from each other"
         assert "same direction" in error.lower()
         assert "dot product" in error.lower()
     
@@ -198,26 +203,31 @@ class TestCheckTimberOverlapForSpliceJoint:
         )
         
         # TimberB pointing down, overlapping in the middle
+        # For opposite direction timbers, join matching ends (TOP to TOP)
+        # TimberA TOP is at z=timber_length
+        # Position TimberB so its TOP is at z=1.5*timber_length (overlapping)
         timberB = timber_from_directions(
             length=timber_length,
             size=timber_size,
-            bottom_position=create_v3(0, 0, timber_length * Rational(3, 2)),  # 12 feet up
-            length_direction=create_v3(0, 0, -1),  # Pointing down
+            bottom_position=create_v3(0, 0, timber_length * Rational(5, 2)),  # Start at 2.5*L
+            length_direction=create_v3(0, 0, -1),  # Pointing down, so TOP is at 1.5*L
             width_direction=create_v3(1, 0, 0),
             name="timberB"
         )
         
+        # Join TOP to TOP so ends face each other
         error = check_timber_overlap_for_splice_joint_is_sensible(
-            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.BOTTOM
+            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.TOP
         )
         
         assert error is None, f"Expected no error for vertical splice, but got: {error}"
     
     def test_different_timber_sizes(self):
         """Test validation works with different sized timbers."""
-        # 4x4 timber
+        # 4x4 timber, 36 inches long
+        timberA_length = inches(36)
         timberA = timber_from_directions(
-            length=inches(36),
+            length=timberA_length,
             size=create_v2(inches(4), inches(4)),
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
@@ -225,22 +235,59 @@ class TestCheckTimberOverlapForSpliceJoint:
             name="timberA"
         )
         
-        # 6x8 timber
+        # 6x8 timber, 48 inches long, pointing opposite direction
+        # For opposite direction timbers, join matching ends (TOP to TOP)
+        # TimberA TOP is at x=36"
+        # Position TimberB so its TOP is at x=48" (overlapping)
+        timberB_length = inches(48)
         timberB = timber_from_directions(
-            length=inches(48),
+            length=timberB_length,
             size=create_v2(inches(6), inches(8)),
-            bottom_position=create_v3(inches(60), 0, 0),
-            length_direction=create_v3(-1, 0, 0),
+            bottom_position=create_v3(timberA_length + timberB_length, 0, 0),  # Start at 84"
+            length_direction=create_v3(-1, 0, 0),  # Pointing left, so TOP is at 36"
             width_direction=create_v3(0, 1, 0),
             name="timberB"
         )
         
+        # Join TOP to TOP so ends face each other (both at x=36")
         error = check_timber_overlap_for_splice_joint_is_sensible(
-            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.BOTTOM
+            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.TOP
         )
         
         # Should be valid - sizes don't matter for this check
         assert error is None, f"Expected no error for different sizes, but got: {error}"
+    
+    def test_valid_same_direction_opposite_ends(self):
+        """Test that same direction timbers can have valid splice when joining opposite ends (oscarshed case)."""
+        timber_length = inches(36)
+        timber_size = create_v2(inches(4), inches(4))
+        
+        # Both timbers pointing east (e.g., split from same timber)
+        timberA = timber_from_directions(
+            length=timber_length,
+            size=timber_size,
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name="timberA"
+        )
+        
+        timberB = timber_from_directions(
+            length=timber_length,
+            size=timber_size,
+            bottom_position=create_v3(timber_length, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # Same direction!
+            width_direction=create_v3(0, 1, 0),
+            name="timberB"
+        )
+        
+        # Valid: joining TOP to BOTTOM when both point same direction
+        # (ends face towards each other)
+        error = check_timber_overlap_for_splice_joint_is_sensible(
+            timberA, timberB, TimberReferenceEnd.TOP, TimberReferenceEnd.BOTTOM
+        )
+        
+        assert error is None, f"Expected no error for same direction opposite ends (oscarshed case), but got: {error}"
     
     def test_swapped_end_references(self):
         """Test that using BOTTOM/TOP vs TOP/BOTTOM both work correctly."""
