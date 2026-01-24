@@ -191,8 +191,12 @@ IGNORE-add optional key to lap helper?
 DONE-gooseneck lap joint
 DONE-change gooseneck to return 2 Convex CSGs or support non convex polygon extrusion CSG (errors on some functions or returns None or whatever)
 DONE-rafters get added twice in oscar shed
+DONE-add extrude polygon csg rendering to fusino 360
 
--fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes_here/japanese_joints.py:221: UserWarning: Gooseneck joint configuration may not be sensible: Joint ends are pointing in the same direction (dot product = 1.000). For a splice joint, the ends should point in opposite directions (dot product should be -1) warning
+
+-do irrational joint test for rendering
+
+DONE-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes_here/japanese_joints.py:221: UserWarning: Gooseneck joint configuration may not be sensible: Joint ends are pointing in the same direction (dot product = 1.000). For a splice joint, the ends should point in opposite directions (dot product should be -1) warning
 
 -REFACTOR TIME
   DONE-create Transform class in moothymoth
@@ -212,7 +216,7 @@ DONE-rafters get added twice in oscar shed
 
 
 
--add extrude polygon csg rendering to fusino 360
+
 -new joints using methodology 
   -dovetail lap joint
   -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)

@@ -140,25 +140,18 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     timberA_length_direction = timberA.length_direction
     timberB_length_direction = timberB.length_direction
     
-    # Check 1: The joint ends must be pointing in opposite directions (anti-parallel)
-    # For anti-parallel, the dot product should be close to -1
+    # First, check that timbers are parallel (not perpendicular or skewed)
     dot_product = timberA_length_direction.dot(timberB_length_direction)
     
     if not are_vectors_parallel(timberA_length_direction, timberB_length_direction):
         return (
-            f"Joint ends are not parallel. TimberA length direction {timberA_length_direction.T} "
+            f"Timbers are not parallel. TimberA length direction {timberA_length_direction.T} "
             f"and timberB length direction {timberB_length_direction.T} must be parallel "
             f"(dot product should be ±1, got {float(dot_product):.3f})"
         )
     
-    # Check if they're pointing in the same direction (should be opposite)
-    if dot_product > 0:
-        return (
-            f"Joint ends are pointing in the same direction (dot product = {float(dot_product):.3f}). "
-            f"For a splice joint, the ends should point in opposite directions (dot product should be -1)"
-        )
-    
-    # Get the end positions in world coordinates
+    # Get the end positions and directions in world coordinates
+    # Note: end_direction points AWAY from the timber (outward from the end)
     if timberA_end == TimberReferenceEnd.TOP:
         timberA_end_pos = timberA.get_top_center_position()
         timberA_end_direction = timberA.length_direction  # Points away from timber
@@ -176,6 +169,19 @@ def check_timber_overlap_for_splice_joint_is_sensible(
         timberB_end_pos = timberB.bottom_position
         timberB_end_direction = -timberB.length_direction  # Points away from timber
         timberB_opposite_end_pos = timberB.get_top_center_position()
+    
+    # Check 1: The joint ends must be pointing in opposite directions (anti-parallel)
+    # For a proper splice joint, the specified ends should point towards each other
+    # (dot product of end directions should be close to -1)
+    end_dot_product = timberA_end_direction.dot(timberB_end_direction)
+    
+    if end_dot_product > 0:
+        return (
+            f"Joint ends are pointing in the same direction (dot product = {float(end_dot_product):.3f}). "
+            f"For a splice joint, the ends should point in opposite directions (dot product should be -1). "
+            f"TimberA {timberA_end.name} end direction: {timberA_end_direction.T}, "
+            f"TimberB {timberB_end.name} end direction: {timberB_end_direction.T}"
+        )
     
     # Check 2: The joint ends should either touch or overlap (not be separated)
     # Vector from timberA end to timberB end
