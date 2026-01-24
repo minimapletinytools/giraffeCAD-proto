@@ -727,8 +727,24 @@ def render_difference(difference: Difference, timber: Optional[Timber] = None,
     if base_shape is None:
         return None
     
-    # Subtract each child
-    for i, subtract_csg in enumerate(difference.subtract):
+    # Flatten the subtract list to handle nested Unions
+    # This ensures HalfPlane objects within Unions are handled correctly
+    flattened_subtracts = []
+    for sub_csg in difference.subtract:
+        if isinstance(sub_csg, Union):
+            # Recursively flatten nested unions
+            def _flatten_union_recursive(union_csg, result_list):
+                for child in union_csg.children:
+                    if isinstance(child, Union):
+                        _flatten_union_recursive(child, result_list)
+                    else:
+                        result_list.append(child)
+            _flatten_union_recursive(sub_csg, flattened_subtracts)
+        else:
+            flattened_subtracts.append(sub_csg)
+    
+    # Subtract each child from the flattened list
+    for i, subtract_csg in enumerate(flattened_subtracts):
         # Special handling for HalfPlane cuts
         if isinstance(subtract_csg, HalfPlane):
             base_shape = apply_halfplane_cut(base_shape, subtract_csg, timber, infinite_extent)

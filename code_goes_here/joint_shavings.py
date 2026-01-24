@@ -617,6 +617,7 @@ def chop_lap_on_timber_ends(
     return (top_lap_csg, bottom_lap_csg)
 
 
+# TODO add offset_origin_from_end parameter and then update call sites to ues it..
 def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: TypeUnion[List[V2], List[List[V2]]], depth: Numeric) -> TypeUnion[Union, ConvexPolygonExtrusion]:
     """
     Create a CSG extrusion of a profile (or multiple profiles) on a timber face.
