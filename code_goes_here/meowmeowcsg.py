@@ -818,11 +818,11 @@ def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: MeowMeowCS
     def transform_transform(trans: Transform) -> Transform:
         """Transform a Transform from orig_timber local coords to adopting_timber local coords."""
         # Convert from orig_timber local to global
-        global_position = orig_timber.bottom_position + orig_timber.orientation.matrix * trans.position
+        global_position = orig_timber.get_bottom_position_global() + orig_timber.orientation.matrix * trans.position
         global_orientation = orig_timber.orientation * trans.orientation
         
         # Convert from global to adopting_timber local
-        local_position = adopting_timber.orientation.matrix.T * (global_position - adopting_timber.bottom_position)
+        local_position = adopting_timber.orientation.matrix.T * (global_position - adopting_timber.get_bottom_position_global())
         local_orientation = adopting_timber.orientation.invert() * global_orientation
         
         return Transform(position=local_position, orientation=local_orientation)
@@ -852,8 +852,8 @@ def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: MeowMeowCS
         point_on_plane_local = hp.normal * (hp.offset / normal_length_sq)
         
         # Transform this point to global, then to new local
-        point_on_plane_global = orig_timber.bottom_position + orig_timber.orientation.matrix * point_on_plane_local
-        point_on_plane_new_local = adopting_timber.orientation.matrix.T * (point_on_plane_global - adopting_timber.bottom_position)
+        point_on_plane_global = orig_timber.get_bottom_position_global() + orig_timber.orientation.matrix * point_on_plane_local
+        point_on_plane_new_local = adopting_timber.orientation.matrix.T * (point_on_plane_global - adopting_timber.get_bottom_position_global())
         
         # New offset = new_normal · point_on_plane_new_local
         new_offset = (new_local_normal.T * point_on_plane_new_local)[0, 0]

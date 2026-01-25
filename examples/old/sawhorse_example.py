@@ -244,7 +244,7 @@ def main():
               f"length={timber.length:.3f}m, "
               f"size=({float(timber.size[0]):.3f}m x {float(timber.size[1]):.3f}m), "
               f"joints={len(cut_timber.joints)}, "
-              f"position={timber.bottom_position}")
+              f"position={timber.get_bottom_position_global()}")
     
     return frame
 

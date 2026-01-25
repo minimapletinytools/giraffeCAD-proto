@@ -378,9 +378,9 @@ def apply_timber_transform(occurrence: adsk.fusion.Occurrence, timber: Timber, c
         
         # Create transform matrix with unit conversion to cm
         position_cm = Matrix([
-            timber.bottom_position[0] * 100,
-            timber.bottom_position[1] * 100,
-            timber.bottom_position[2] * 100
+            timber.get_bottom_position_global()[0] * 100,
+            timber.get_bottom_position_global()[1] * 100,
+            timber.get_bottom_position_global()[2] * 100
         ])
         transform_cm = create_matrix3d_from_orientation(position_cm, timber.orientation)
         

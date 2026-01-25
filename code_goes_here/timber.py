@@ -453,9 +453,8 @@ class Timber:
     transform: Transform
     name: Optional[str] = None
     
-    @property
-    def bottom_position(self) -> V3:
-        """Get the bottom position (center of bottom cross-section) from the transform."""
+    def get_bottom_position_global(self) -> V3:
+        """Get the bottom position (center of bottom cross-section) in global coordinates from the transform."""
         return self.transform.position
     
     @property
@@ -504,7 +503,7 @@ class Timber:
         Returns:
             3D position vector on the timber's centerline at the specified distance from bottom
         """
-        return self.bottom_position + self.get_length_direction_global() * distance
+        return self.get_bottom_position_global() + self.get_length_direction_global() * distance
     
     # TODO DELETE or rename to get_centerline_position_from_top_global
     def get_centerline_position_from_top(self, distance: Numeric) -> V3:
@@ -517,7 +516,7 @@ class Timber:
         Returns:
             3D position vector on the timber's centerline at the specified distance from top
         """
-        return self.bottom_position + self.get_length_direction_global() * (self.length - distance)
+        return self.get_bottom_position_global() + self.get_length_direction_global() * (self.length - distance)
     
     # TODO DELETE or rename to get_bottom_center_position_global
     def get_bottom_center_position(self) -> V3:
@@ -527,7 +526,7 @@ class Timber:
         Returns:
             3D position vector at the center of the bottom cross-section
         """
-        return self.bottom_position
+        return self.get_bottom_position_global()
     
     # TODO DELETE or rename to get_top_center_position_global
     def get_top_center_position(self) -> V3:
@@ -537,7 +536,7 @@ class Timber:
         Returns:
             3D position vector at the center of the top cross-section
         """
-        return self.bottom_position + self.get_length_direction_global() * self.length
+        return self.get_bottom_position_global() + self.get_length_direction_global() * self.length
     
     # TODO DELETE move this method onto Transform
     def global_to_local(self, global_point: V3) -> V3:
@@ -693,7 +692,7 @@ class Timber:
             The TimberFace that points toward the inside of the footprint
         """
         # Project timber's centerline onto XY plane for footprint comparison
-        bottom_2d = create_v2(self.bottom_position[0], self.bottom_position[1])
+        bottom_2d = create_v2(self.get_bottom_position_global()[0], self.get_bottom_position_global()[1])
         top_position = self.get_top_center_position()
         top_2d = create_v2(top_position[0], top_position[1])
         
@@ -726,7 +725,7 @@ class Timber:
             The TimberFace that points toward the outside of the footprint
         """
         # Project timber's centerline onto XY plane for footprint comparison
-        bottom_2d = create_v2(self.bottom_position[0], self.bottom_position[1])
+        bottom_2d = create_v2(self.get_bottom_position_global()[0], self.get_bottom_position_global()[1])
         top_position = self.get_top_center_position()
         top_2d = create_v2(top_position[0], top_position[1])
         
@@ -745,9 +744,9 @@ class Timber:
         """Get the 4x4 transformation matrix for this timber"""
         # Create 4x4 transformation matrix
         transform = Matrix([
-            [self.orientation.matrix[0,0], self.orientation.matrix[0,1], self.orientation.matrix[0,2], self.bottom_position[0]],
-            [self.orientation.matrix[1,0], self.orientation.matrix[1,1], self.orientation.matrix[1,2], self.bottom_position[1]],
-            [self.orientation.matrix[2,0], self.orientation.matrix[2,1], self.orientation.matrix[2,2], self.bottom_position[2]],
+            [self.orientation.matrix[0,0], self.orientation.matrix[0,1], self.orientation.matrix[0,2], self.get_bottom_position_global()[0]],
+            [self.orientation.matrix[1,0], self.orientation.matrix[1,1], self.orientation.matrix[1,2], self.get_bottom_position_global()[1]],
+            [self.orientation.matrix[2,0], self.orientation.matrix[2,1], self.orientation.matrix[2,2], self.get_bottom_position_global()[2]],
             [0, 0, 0, 1]
         ])
         return transform
@@ -1196,9 +1195,9 @@ class Frame:
                                 f"but different properties (length, size, position, or orientation). "
                                 f"This may indicate an error in timber naming. "
                                 f"Timber 1: length={timber_i.length}, size={timber_i.size}, "
-                                f"position={timber_i.bottom_position}. "
+                                f"position={timber_i.get_bottom_position_global()}. "
                                 f"Timber 2: length={timber_j.length}, size={timber_j.size}, "
-                                f"position={timber_j.bottom_position}."
+                                f"position={timber_j.get_bottom_position_global()}."
                             )
         
         # Merge cut timbers with the same underlying timber reference

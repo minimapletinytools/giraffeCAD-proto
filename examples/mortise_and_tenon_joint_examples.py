@@ -422,7 +422,7 @@ def create_all_mortise_and_tenon_examples():
         
         # Translate timbers to current position
         for timber in joint.cut_timbers.values():
-            new_position = timber.timber.bottom_position + create_v3(current_position_x, 0, 0)
+            new_position = timber.timber.get_bottom_position_global() + create_v3(current_position_x, 0, 0)
             translated_timber = Timber(
                 name=timber.timber.name,
                 transform=Transform(position=new_position, orientation=timber.timber.orientation),
@@ -486,7 +486,7 @@ if __name__ == "__main__":
         for i, cut_timber in enumerate(joint.cut_timbers.values()):
             timber = cut_timber.timber
             print(f"\n  Timber {i+1}: {timber.name}")
-            print(f"    Position: ({float(timber.bottom_position[0]):.1f}, {float(timber.bottom_position[1]):.1f}, {float(timber.bottom_position[2]):.1f})")
+            print(f"    Position: ({float(timber.get_bottom_position_global()[0]):.1f}, {float(timber.get_bottom_position_global()[1]):.1f}, {float(timber.get_bottom_position_global()[2]):.1f})")
             print(f"    Length: {float(timber.length):.1f} inches")
             print(f"    Size: {float(timber.size[0]):.1f} x {float(timber.size[1]):.1f} inches")
             print(f"    Cuts: {len(cut_timber.cuts)}")

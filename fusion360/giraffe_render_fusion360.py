@@ -1500,7 +1500,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                 app.log(f"Transforming {component_name}... (method: {'body' if use_body_transform else 'occurrence'})")
             
             # Get timber position and orientation
-            position = cut_timber.timber.bottom_position
+            position = cut_timber.timber.get_bottom_position_global()
             orientation = cut_timber.timber.orientation
             
             # Apply the transform

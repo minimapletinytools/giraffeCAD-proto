@@ -349,11 +349,11 @@ def stretch_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Nume
     if end == TimberReferenceEnd.TOP:
         # Extend from top
         extension_vector = timber.get_length_direction_global() * (timber.length - overlap_length)
-        new_bottom_position = timber.bottom_position + extension_vector
+        new_bottom_position = timber.get_bottom_position_global() + extension_vector
     else:  # BOTTOM
         # Extend from bottom
         extension_vector = timber.get_length_direction_global() * extend_length
-        new_bottom_position = timber.bottom_position - extension_vector
+        new_bottom_position = timber.get_bottom_position_global() - extension_vector
     
     # Create new timber with extended length
     new_length = timber.length + extend_length + overlap_length
@@ -406,7 +406,7 @@ def split_timber(
     bottom_timber = timber_from_directions(
         length=distance_from_bottom,
         size=create_v2(timber.size[0], timber.size[1]),
-        bottom_position=timber.bottom_position,
+        bottom_position=timber.get_bottom_position_global(),
         length_direction=timber.get_length_direction_global(),
         width_direction=timber.get_width_direction_global(),
         name=bottom_name
@@ -414,7 +414,7 @@ def split_timber(
     
     # Calculate the bottom position of the second timber
     # It's at the top of the first timber
-    top_of_first = timber.bottom_position + distance_from_bottom * timber.get_length_direction_global()
+    top_of_first = timber.get_bottom_position_global() + distance_from_bottom * timber.get_length_direction_global()
     
     # Create second timber (top part)
     top_timber = timber_from_directions(
@@ -480,7 +480,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
         pos2 = timber2.get_centerline_position_from_bottom(location_on_timber2)
     else:
         # Project location_on_timber1 to timber2's Z axis
-        pos2 = Matrix([pos1[0], pos1[1], timber2.bottom_position[2] + location_on_timber1])
+        pos2 = Matrix([pos1[0], pos1[1], timber2.get_bottom_position_global()[2] + location_on_timber1])
     
     # Calculate length direction (from timber1 to timber2)
     length_direction = pos2 - pos1
@@ -591,7 +591,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     
     # Project pos1 onto timber2's centerline to find location_on_timber2
     # Vector from timber2's bottom to pos1
-    to_pos1 = pos1 - timber2.bottom_position
+    to_pos1 = pos1 - timber2.get_bottom_position_global()
     
     # Project this onto timber2's length direction to find the parameter t
     location_on_timber2 = to_pos1.dot(timber2.get_length_direction_global()) / timber2.get_length_direction_global().dot(timber2.get_length_direction_global())
@@ -800,7 +800,7 @@ def do_xy_cross_section_on_parallel_timbers_overlap(timberA: Timber, timberB: Ti
     assert are_vectors_parallel(timberA.get_length_direction_global(), timberB.get_length_direction_global()), "Timbers must be parallel"
 
     # Convert timberB's bottom position into timberA's local space
-    timberB_bottom_local = timberA.global_to_local(timberB.bottom_position)
+    timberB_bottom_local = timberA.global_to_local(timberB.get_bottom_position_global())
     
     # In timberA's local space:
     # - timberA's cross section is centered at (0, 0) in XY plane

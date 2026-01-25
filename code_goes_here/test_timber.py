@@ -93,7 +93,7 @@ class TestTimber:
         
         assert timber.length == 3
         assert timber.size.shape == (2, 1)
-        assert timber.bottom_position.shape == (3, 1)
+        assert timber.get_bottom_position_global().shape == (3, 1)
         assert isinstance(timber.orientation, Orientation)
     
     def test_timber_orientation_computation(self):

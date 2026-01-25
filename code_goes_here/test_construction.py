@@ -30,9 +30,9 @@ class TestTimberCreation:
         timber = create_timber(position, Rational("2.5"), size, length_dir, width_dir)
         
         assert timber.length == Rational("2.5")
-        assert timber.bottom_position[0] == Rational(1)
-        assert timber.bottom_position[1] == Rational(1)
-        assert timber.bottom_position[2] == Rational(0)
+        assert timber.get_bottom_position_global()[0] == Rational(1)
+        assert timber.get_bottom_position_global()[1] == Rational(1)
+        assert timber.get_bottom_position_global()[2] == Rational(0)
     
     def test_create_axis_aligned_timber(self):
         """Test axis-aligned timber creation with explicit width_direction."""
@@ -123,9 +123,9 @@ class TestTimberCreation:
         
         assert timber_inside.length == Rational(5, 2)
         # For INSIDE, vertex is at corner (0, 0) - exact!
-        assert timber_inside.bottom_position[0] == 0
-        assert timber_inside.bottom_position[1] == 0
-        assert timber_inside.bottom_position[2] == 0
+        assert timber_inside.get_bottom_position_global()[0] == 0
+        assert timber_inside.get_bottom_position_global()[1] == 0
+        assert timber_inside.get_bottom_position_global()[2] == 0
         # Should be vertical
         assert timber_inside.get_length_direction_global()[2] == 1
         # Face direction should align with outgoing boundary side (+X)
@@ -142,9 +142,9 @@ class TestTimberCreation:
         
         assert timber_center.length == Rational(5, 2)
         # For CENTER, offset by half dimensions: -9/200 in both X and Y - exact!
-        assert timber_center.bottom_position[0] == Rational(-9, 200)
-        assert timber_center.bottom_position[1] == Rational(-9, 200)
-        assert timber_center.bottom_position[2] == 0
+        assert timber_center.get_bottom_position_global()[0] == Rational(-9, 200)
+        assert timber_center.get_bottom_position_global()[1] == Rational(-9, 200)
+        assert timber_center.get_bottom_position_global()[2] == 0
         # Should be vertical
         assert timber_center.get_length_direction_global()[2] == 1
         # Face direction should align with outgoing boundary side (+X)
@@ -160,9 +160,9 @@ class TestTimberCreation:
         
         assert timber_outside.length == Rational(5, 2)
         # For OUTSIDE, offset by full dimensions: -9/100 in both X and Y - exact!
-        assert timber_outside.bottom_position[0] == Rational(-9, 100)
-        assert timber_outside.bottom_position[1] == Rational(-9, 100)
-        assert timber_outside.bottom_position[2] == 0
+        assert timber_outside.get_bottom_position_global()[0] == Rational(-9, 100)
+        assert timber_outside.get_bottom_position_global()[1] == Rational(-9, 100)
+        assert timber_outside.get_bottom_position_global()[2] == 0
         # Should be vertical
         assert timber_outside.get_length_direction_global()[2] == 1
         # Face direction should align with outgoing boundary side (+X)
@@ -196,9 +196,9 @@ class TestTimberCreation:
         
         assert timber_center.length == Rational(3, 1)
         # For CENTER, center is exactly at (1, 0) - exact!
-        assert timber_center.bottom_position[0] == 1
-        assert timber_center.bottom_position[1] == 0
-        assert timber_center.bottom_position[2] == 0
+        assert timber_center.get_bottom_position_global()[0] == 1
+        assert timber_center.get_bottom_position_global()[1] == 0
+        assert timber_center.get_bottom_position_global()[2] == 0
         # Should be vertical
         assert timber_center.get_length_direction_global()[2] == 1
         # Face direction should be parallel to the side (along +X)
@@ -213,9 +213,9 @@ class TestTimberCreation:
         
         assert timber_inside.length == Rational(3, 1)
         # For INSIDE, offset by half depth inward (toward +Y)
-        assert timber_inside.bottom_position[0] == 1
-        assert timber_inside.bottom_position[1] == size[1] / 2
-        assert timber_inside.bottom_position[2] == 0
+        assert timber_inside.get_bottom_position_global()[0] == 1
+        assert timber_inside.get_bottom_position_global()[1] == size[1] / 2
+        assert timber_inside.get_bottom_position_global()[2] == 0
         # Should be vertical
         assert timber_inside.get_length_direction_global()[2] == 1
         # Face direction parallel to side
@@ -230,9 +230,9 @@ class TestTimberCreation:
         
         assert timber_outside.length == Rational(3, 1)
         # For OUTSIDE, offset by half depth outward (toward -Y)
-        assert timber_outside.bottom_position[0] == 1
-        assert timber_outside.bottom_position[1] == -size[1] / 2
-        assert timber_outside.bottom_position[2] == 0
+        assert timber_outside.get_bottom_position_global()[0] == 1
+        assert timber_outside.get_bottom_position_global()[1] == -size[1] / 2
+        assert timber_outside.get_bottom_position_global()[2] == 0
         # Should be vertical
         assert timber_outside.get_length_direction_global()[2] == 1
         # Face direction parallel to side
@@ -287,9 +287,9 @@ class TestTimberCreation:
         )
         # Timber should extend inward (in +Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) inside the footprint
-        assert timber_inside.bottom_position[1] == timber_height / Rational(2)
-        assert timber_inside.bottom_position[0] == 0  # X unchanged
-        assert timber_inside.bottom_position[2] == 0  # Z at ground
+        assert timber_inside.get_bottom_position_global()[1] == timber_height / Rational(2)
+        assert timber_inside.get_bottom_position_global()[0] == 0  # X unchanged
+        assert timber_inside.get_bottom_position_global()[2] == 0  # Z at ground
         
         # Test OUTSIDE positioning
         timber_outside = create_horizontal_timber_on_footprint(
@@ -298,18 +298,18 @@ class TestTimberCreation:
         # Timber should extend outward (in -Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) outside the footprint
         # Note: get_inward_normal returns floats, so the result is Float
-        assert timber_outside.bottom_position[1] == -timber_height / Rational(2)
-        assert timber_outside.bottom_position[0] == 0  # X unchanged
-        assert timber_outside.bottom_position[2] == 0  # Z at ground
+        assert timber_outside.get_bottom_position_global()[1] == -timber_height / Rational(2)
+        assert timber_outside.get_bottom_position_global()[0] == 0  # X unchanged
+        assert timber_outside.get_bottom_position_global()[2] == 0  # Z at ground
         
         # Test CENTER positioning
         timber_center = create_horizontal_timber_on_footprint(
             footprint, 0, FootprintLocation.CENTER, size, length=Rational(2)
         )
         # Centerline should be on the boundary side
-        assert timber_center.bottom_position[1] == Rational(0)  # Y on boundary
-        assert timber_center.bottom_position[0] == Rational(0)  # X unchanged
-        assert timber_center.bottom_position[2] == Rational(0)  # Z at ground
+        assert timber_center.get_bottom_position_global()[1] == Rational(0)  # Y on boundary
+        assert timber_center.get_bottom_position_global()[0] == Rational(0)  # X unchanged
+        assert timber_center.get_bottom_position_global()[2] == Rational(0)  # Z at ground
         
         # Verify all timbers have correct length direction (along +X for bottom side)
         assert timber_inside.get_length_direction_global()[0] == Rational(1)
@@ -332,23 +332,23 @@ class TestTimberCreation:
         )
         # Timber should extend inward (in -X direction)
         # Use timber_height (size[1]) as it's the dimension perpendicular to boundary
-        assert timber_inside_right.bottom_position[0] == Rational(2) - timber_height / Rational(2)
-        assert timber_inside_right.bottom_position[1] == Rational(0)  # Y unchanged
+        assert timber_inside_right.get_bottom_position_global()[0] == Rational(2) - timber_height / Rational(2)
+        assert timber_inside_right.get_bottom_position_global()[1] == Rational(0)  # Y unchanged
         
         timber_outside_right = create_horizontal_timber_on_footprint(
             footprint, 1, FootprintLocation.OUTSIDE, size, length=Rational(2)
         )
         # Timber should extend outward (in +X direction)
         # Use timber_height (size[1]) as it's the dimension perpendicular to boundary
-        assert timber_outside_right.bottom_position[0] == Rational(2) + timber_height / Rational(2)
-        assert timber_outside_right.bottom_position[1] == Rational(0)  # Y unchanged
+        assert timber_outside_right.get_bottom_position_global()[0] == Rational(2) + timber_height / Rational(2)
+        assert timber_outside_right.get_bottom_position_global()[1] == Rational(0)  # Y unchanged
         
         timber_center_right = create_horizontal_timber_on_footprint(
             footprint, 1, FootprintLocation.CENTER, size, length=Rational(2)
         )
         # Centerline should be on the boundary side
-        assert timber_center_right.bottom_position[0] == Rational(2)  # X on boundary
-        assert timber_center_right.bottom_position[1] == Rational(0)  # Y unchanged
+        assert timber_center_right.get_bottom_position_global()[0] == Rational(2)  # X on boundary
+        assert timber_center_right.get_bottom_position_global()[1] == Rational(0)  # Y unchanged
     
     def test_stretch_timber(self):
         """Test timber extension creation with correct length calculation."""
@@ -371,8 +371,8 @@ class TestTimberCreation:
         
         # Verify bottom position moved up by (original_length - overlap_length)
         # = 0.0 + (10.0 - 2.0) = 8.0
-        assert extended.bottom_position[2] == Rational(8), \
-            f"Expected bottom Z at Rational(8), got {float(extended.bottom_position[2])}"
+        assert extended.get_bottom_position_global()[2] == Rational(8), \
+            f"Expected bottom Z at Rational(8), got {float(extended.get_bottom_position_global()[2])}"
 
 
 
@@ -439,7 +439,7 @@ class TestJoinTimbers:
         
         # Check that the timber actually spans the connection points correctly
         # The timber should start before pos1 and end after pos2 (or vice versa)
-        timber_start = joining_timber.bottom_position
+        timber_start = joining_timber.get_bottom_position_global()
         timber_end = joining_timber.get_centerline_position_from_bottom(joining_timber.length)
         
         # Verify timber spans the connection region
@@ -531,7 +531,7 @@ class TestJoinTimbers:
             orientation_face_on_timber1=TimberFace.TOP
         )
    
-        assert joining_timber2.bottom_position == timber1.get_centerline_position_from_bottom(Rational("1.5"))
+        assert joining_timber2.get_bottom_position_global() == timber1.get_centerline_position_from_bottom(Rational("1.5"))
         print(joining_timber2.orientation)
         
         
@@ -641,8 +641,8 @@ class TestJoinTimbers:
         
         # Verify the beam connects the posts at the correct height
         expected_bottom_z = Rational(3, 2)  # At 1.5m up post1 (exact rational)
-        assert beam.bottom_position[2] == expected_bottom_z, \
-            f"Beam should be at Z={expected_bottom_z}, got Z={beam.bottom_position[2]}"
+        assert beam.get_bottom_position_global()[2] == expected_bottom_z, \
+            f"Beam should be at Z={expected_bottom_z}, got Z={beam.get_bottom_position_global()[2]}"
 
     def test_join_timbers_creates_orthogonal_rotation_matrix(self):
         """Test that join_timbers creates valid orthogonal orientation matrices."""
@@ -797,7 +797,7 @@ class TestJoinTimbers:
         
         # Verify that base timbers are face-aligned (same top face Z coordinate)
         for timber in base_timbers:
-            top_face_z = timber.bottom_position[2] + timber.get_height_direction_global()[2] * timber.size[1]
+            top_face_z = timber.get_bottom_position_global()[2] + timber.get_height_direction_global()[2] * timber.size[1]
             expected_top_z = base_z + timber_size[1]  # base_z + height
             assert simplify(top_face_z - expected_top_z) == 0, f"Base timber {timber.name} not at expected height"
         
@@ -868,7 +868,7 @@ class TestJoinTimbers:
             
             # The joining timber should start from approximately the top face of the base timber
             expected_start_z = expected_base_pos[2] + base_timber.size[1]  # Top of base timber
-            actual_start_z = joining_timber.bottom_position[2]
+            actual_start_z = joining_timber.get_bottom_position_global()[2]
             
             # Use exact comparison for rational arithmetic - allow for stickout adjustments
             start_z_diff = abs(actual_start_z - expected_start_z)
@@ -877,7 +877,7 @@ class TestJoinTimbers:
             # 3. Verify the joining timber connects to the beam
             # The top of the joining timber should be near the beam
             joining_top = joining_timber.get_top_center_position()
-            beam_bottom_z = beam.bottom_position[2]
+            beam_bottom_z = beam.get_bottom_position_global()[2]
             
             # Should connect somewhere on or near the beam - use exact comparison
             beam_connection_diff = abs(joining_top[2] - beam_bottom_z)
@@ -939,7 +939,7 @@ class TestJoinTimbers:
             assert horizontal_component > Rational("0.8"), f"Cross_{i} should be mostly horizontal for face-aligned horizontal timbers"
             
             # Should be at the same Z level as the base timbers (face-aligned)
-            cross_z = cross_timber.bottom_position[2]
+            cross_z = cross_timber.get_bottom_position_global()[2]
             expected_z = base_z + timber_size[1]  # Top face level of base timbers
             z_level_diff = abs(cross_z - expected_z)
             assert z_level_diff <= Rational("0.15"), f"Cross_{i} should be at the same level as base timbers, diff={float(z_level_diff)}"
@@ -1857,7 +1857,7 @@ class TestSplitTimber:
         assert bottom_timber.length == Rational(3)
         assert bottom_timber.size[0] == Rational(4)
         assert bottom_timber.size[1] == Rational(4)
-        assert bottom_timber.bottom_position == create_v3(Rational(0), Rational(0), Rational(0))
+        assert bottom_timber.get_bottom_position_global() == create_v3(Rational(0), Rational(0), Rational(0))
         assert bottom_timber.get_length_direction_global() == create_v3(Rational(0), Rational(0), Rational(1))
         assert bottom_timber.get_width_direction_global() == create_v3(Rational(1), Rational(0), Rational(0))
         assert bottom_timber.name == "Test Timber_bottom"
@@ -1866,7 +1866,7 @@ class TestSplitTimber:
         assert top_timber.length == Rational(7)
         assert top_timber.size[0] == Rational(4)
         assert top_timber.size[1] == Rational(4)
-        assert top_timber.bottom_position == create_v3(Rational(0), Rational(0), Rational(3))
+        assert top_timber.get_bottom_position_global() == create_v3(Rational(0), Rational(0), Rational(3))
         assert top_timber.get_length_direction_global() == create_v3(Rational(0), Rational(0), Rational(1))
         assert top_timber.get_width_direction_global() == create_v3(Rational(1), Rational(0), Rational(0))
         assert top_timber.name == "Test Timber_top"
@@ -1887,11 +1887,11 @@ class TestSplitTimber:
         
         # Check bottom timber
         assert bottom_timber.length == Rational(8)
-        assert bottom_timber.bottom_position == create_v3(Rational(5), Rational(10), Rational(2))
+        assert bottom_timber.get_bottom_position_global() == create_v3(Rational(5), Rational(10), Rational(2))
         
         # Check top timber
         assert top_timber.length == Rational(12)
-        assert top_timber.bottom_position == create_v3(Rational(13), Rational(10), Rational(2))  # 5 + 8
+        assert top_timber.get_bottom_position_global() == create_v3(Rational(13), Rational(10), Rational(2))  # 5 + 8
     
     def test_split_timber_diagonal(self):
         """Test splitting a diagonal timber"""
@@ -1914,11 +1914,11 @@ class TestSplitTimber:
         assert top_timber.length == Rational(6)
         
         # Check positions
-        assert bottom_timber.bottom_position == create_v3(Rational(0), Rational(0), Rational(0))
+        assert bottom_timber.get_bottom_position_global() == create_v3(Rational(0), Rational(0), Rational(0))
         
         # Top timber should start at 4 units along the diagonal
         expected_top_pos = create_v3(Rational(0), Rational(0), Rational(0)) + Rational(4) * length_dir
-        assert top_timber.bottom_position == expected_top_pos
+        assert top_timber.get_bottom_position_global() == expected_top_pos
         
         # Both should maintain same orientation
         assert bottom_timber.get_length_direction_global() == length_dir
@@ -1942,7 +1942,7 @@ class TestSplitTimber:
         # Check exact rational values
         assert bottom_timber.length == Rational(3, 1)
         assert top_timber.length == Rational(7, 1)
-        assert top_timber.bottom_position[2] == Rational(3, 1)
+        assert top_timber.get_bottom_position_global()[2] == Rational(3, 1)
     
     def test_split_timber_invalid_distance(self):
         """Test that invalid split distances raise assertions"""

@@ -82,8 +82,8 @@ def calculate_timber_corners(timber: Timber) -> List[V3]:
         List of 8 corner position vectors
     """
     # Get the bottom and top center positions
-    bottom_pos = timber.bottom_position
-    top_pos = timber.bottom_position + timber.get_length_direction_global() * timber.length
+    bottom_pos = timber.get_bottom_position_global()
+    top_pos = timber.get_bottom_position_global() + timber.get_length_direction_global() * timber.length
     
     # Extract direction vectors
     width_dir, height_dir, length_dir = extract_rotation_matrix_columns(timber.orientation)

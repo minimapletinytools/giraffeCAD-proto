@@ -907,7 +907,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                 # Apply the timber's global transformation (position + orientation)
                 # The shape already has local centering placement applied
                 timber = cut_timber.timber
-                global_placement = create_placement_from_orientation(timber.bottom_position, timber.orientation)
+                global_placement = create_placement_from_orientation(timber.get_bottom_position_global(), timber.orientation)
                 
                 # Compose placements: global * local
                 # The shape was created with a local centering placement, now apply global transform
