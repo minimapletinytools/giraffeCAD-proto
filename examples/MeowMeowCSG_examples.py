@@ -313,20 +313,16 @@ def example_gooseneck_profile_cut():
         large_width=gooseneck_large_width,
         head_length=gooseneck_head_length
     )
-
-    # Subtract gooseneck_length from the y coordinate of all profile points in all sub-profiles
-    gooseneck_profiles = translate_profiles(
-        gooseneck_profiles,
-        Matrix([0, -gooseneck_length])
-    )
     
     # Create the gooseneck cut CSG (in timber's local coordinates)
+    # The profile is positioned so its head is at the timber end
     gooseneck_cut_csg = chop_profile_on_timber_face(
         timber=timber,
         end=TimberReferenceEnd.TOP,
         face=TimberFace.RIGHT,
         profile=gooseneck_profiles,
-        depth=gooseneck_depth
+        depth=gooseneck_depth,
+        profile_y_offset_from_end=gooseneck_length
     )
     
     # Create the base timber prism (in local coordinates)

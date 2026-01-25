@@ -339,19 +339,15 @@ def cut_lapped_gooseneck_joint(
     # So: gooseneck base position = shoulder + lap_length
     gooseneck_profile_y_position = gooseneck_timber_lap_shoulder_from_end + lap_length
     
-    gooseneck_profiles_translated = translate_profiles(
-        gooseneck_shape,
-        Matrix([0, gooseneck_profile_y_position])
-    )
-    
     # Create the gooseneck profile CSG cut using chop_profile_on_timber_face
     # This creates a CSG that removes the gooseneck shape from the timber
     gooseneck_profile_csg = chop_profile_on_timber_face(
         timber=gooseneck_timber,
         end=gooseneck_timber_end,
         face=TimberFace(gooseneck_timber_face.value),
-        profile=gooseneck_profiles_translated,
-        depth=gooseneck_depth
+        profile=gooseneck_shape,
+        depth=gooseneck_depth,
+        profile_y_offset_from_end=gooseneck_profile_y_position
     )
 
     # use chop_timber_end_with_prism to create a prism starting from gooseneck_profile_y_position
