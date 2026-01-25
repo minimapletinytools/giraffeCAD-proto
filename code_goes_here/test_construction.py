@@ -440,7 +440,7 @@ class TestJoinTimbers:
         # Check that the timber actually spans the connection points correctly
         # The timber should start before pos1 and end after pos2 (or vice versa)
         timber_start = joining_timber.get_bottom_position_global()
-        timber_end = joining_timber.get_centerline_position_from_bottom(joining_timber.length)
+        timber_end = joining_timber.get_centerline_position_from_bottom_global(joining_timber.length)
         
         # Verify timber spans the connection region
         assert joining_timber.length > Rational(2)  # Should be longer than just the span between points
@@ -531,7 +531,7 @@ class TestJoinTimbers:
             orientation_face_on_timber1=TimberFace.TOP
         )
    
-        assert joining_timber2.get_bottom_position_global() == timber1.get_centerline_position_from_bottom(Rational("1.5"))
+        assert joining_timber2.get_bottom_position_global() == timber1.get_centerline_position_from_bottom_global(Rational("1.5"))
         print(joining_timber2.orientation)
         
         
@@ -864,7 +864,7 @@ class TestJoinTimbers:
             assert vertical_component > Rational("0.8"), f"Post_{i} should be mostly vertical, got length_direction={[float(x) for x in length_dir]}"
             
             # 2. Verify the joining timber connects to the correct position on the base timber
-            expected_base_pos = base_timber.get_centerline_position_from_bottom(location_used)
+            expected_base_pos = base_timber.get_centerline_position_from_bottom_global(location_used)
             
             # The joining timber should start from approximately the top face of the base timber
             expected_start_z = expected_base_pos[2] + base_timber.size[1]  # Top of base timber
@@ -876,7 +876,7 @@ class TestJoinTimbers:
             
             # 3. Verify the joining timber connects to the beam
             # The top of the joining timber should be near the beam
-            joining_top = joining_timber.get_top_center_position()
+            joining_top = joining_timber.get_top_center_position_global()
             beam_bottom_z = beam.get_bottom_position_global()[2]
             
             # Should connect somewhere on or near the beam - use exact comparison
@@ -961,7 +961,7 @@ class TestHelperFunctions:
     """Test helper functions for timber operations."""
     
     def test_timber_get_closest_oriented_face_axis_aligned(self):
-        """Test Timber.get_closest_oriented_face() with axis-aligned timber."""
+        """Test Timber.get_closest_oriented_face_from_global_direction() with axis-aligned timber."""
         # Create an axis-aligned timber (standard orientation)
         timber = timber_from_directions(
             length=Rational(2),
@@ -979,36 +979,36 @@ class TestHelperFunctions:
 
         # Target pointing in +Z (length direction) should align with TOP face
         target_length_pos = create_v3(0, 0, 1)
-        aligned_face = timber.get_closest_oriented_face(target_length_pos)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_length_pos)
         assert aligned_face == TimberFace.TOP
 
         # Target pointing in -Z (negative length direction) should align with BOTTOM face
         target_length_neg = create_v3(0, 0, -1)
-        aligned_face = timber.get_closest_oriented_face(target_length_neg)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_length_neg)
         assert aligned_face == TimberFace.BOTTOM
 
         # Target pointing in +X (face direction) should align with RIGHT face
         target_face_pos = create_v3(1, 0, 0)
-        aligned_face = timber.get_closest_oriented_face(target_face_pos)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_face_pos)
         assert aligned_face == TimberFace.RIGHT
 
         # Target pointing in -X (negative face direction) should align with LEFT face
         target_face_neg = create_v3(-1, 0, 0)
-        aligned_face = timber.get_closest_oriented_face(target_face_neg)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_face_neg)
         assert aligned_face == TimberFace.LEFT
 
         # Target pointing in +Y (height direction) should align with FRONT face
         target_height_pos = create_v3(0, 1, 0)
-        aligned_face = timber.get_closest_oriented_face(target_height_pos)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_height_pos)
         assert aligned_face == TimberFace.FRONT
 
         # Target pointing in -Y (negative height direction) should align with BACK face
         target_height_neg = create_v3(0, -1, 0)
-        aligned_face = timber.get_closest_oriented_face(target_height_neg)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_height_neg)
         assert aligned_face == TimberFace.BACK
     
     def test_timber_get_closest_oriented_face_rotated(self):
-        """Test Timber.get_closest_oriented_face() with rotated timber."""
+        """Test Timber.get_closest_oriented_face_from_global_direction() with rotated timber."""
         # Create a timber rotated 90 degrees around Z axis
         # length_direction stays Z-up, but width_direction becomes Y-forward
         timber = timber_from_directions(
@@ -1029,26 +1029,26 @@ class TestHelperFunctions:
 
         # Target pointing in +Y direction should align with RIGHT face
         target_y_pos = create_v3(0, 1, 0)
-        aligned_face = timber.get_closest_oriented_face(target_y_pos)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_y_pos)
         assert aligned_face == TimberFace.RIGHT
 
         # Target pointing in -Y direction should align with LEFT face
         target_y_neg = create_v3(0, -1, 0)
-        aligned_face = timber.get_closest_oriented_face(target_y_neg)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_y_neg)
         assert aligned_face == TimberFace.LEFT
 
         # Target pointing in -X direction should align with FRONT face
         target_x_neg = create_v3(-1, 0, 0)
-        aligned_face = timber.get_closest_oriented_face(target_x_neg)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_x_neg)
         assert aligned_face == TimberFace.FRONT
 
         # Target pointing in +X direction should align with BACK face
         target_x_pos = create_v3(1, 0, 0)
-        aligned_face = timber.get_closest_oriented_face(target_x_pos)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_x_pos)
         assert aligned_face == TimberFace.BACK
     
     def test_timber_get_closest_oriented_face_horizontal(self):
-        """Test Timber.get_closest_oriented_face() with horizontal timber."""
+        """Test Timber.get_closest_oriented_face_from_global_direction() with horizontal timber."""
         # Create a horizontal timber lying along X axis
         # Note: create_standard_horizontal_timber uses width_direction=[0,1,0] by default,
         # so we need to use timber_from_directions here for width_direction=[0,0,1]
@@ -1070,26 +1070,26 @@ class TestHelperFunctions:
         
         # Target pointing in +Z should align with RIGHT face
         target_z_pos = create_v3(0, 0, 1)
-        aligned_face = timber.get_closest_oriented_face(target_z_pos)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_z_pos)
         assert aligned_face == TimberFace.RIGHT
         
         # Target pointing in -Z should align with LEFT face
         target_z_neg = create_v3(0, 0, -1)
-        aligned_face = timber.get_closest_oriented_face(target_z_neg)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_z_neg)
         assert aligned_face == TimberFace.LEFT
         
         # Target pointing in +X (length direction) should align with TOP face
         target_x_pos = create_v3(1, 0, 0)
-        aligned_face = timber.get_closest_oriented_face(target_x_pos)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_x_pos)
         assert aligned_face == TimberFace.TOP
         
         # Target pointing in +Y should align with BACK face
         target_y_pos = create_v3(0, 1, 0)
-        aligned_face = timber.get_closest_oriented_face(target_y_pos)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_y_pos)
         assert aligned_face == TimberFace.BACK
     
     def test_timber_get_closest_oriented_face_diagonal(self):
-        """Test Timber.get_closest_oriented_face() with diagonal target direction."""
+        """Test Timber.get_closest_oriented_face_from_global_direction() with diagonal target direction."""
         # Create an axis-aligned timber
         timber = timber_from_directions(
             length=Rational(2),
@@ -1102,17 +1102,17 @@ class TestHelperFunctions:
                 # Test with diagonal direction that's closer to +Z than +X
         # This should align with TOP face (Z-direction)
         target_diagonal_z = normalize_vector(create_v3(Rational("0.3"), 0, 1))  # Mostly +Z, little bit +X
-        aligned_face = timber.get_closest_oriented_face(target_diagonal_z)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_diagonal_z)
         assert aligned_face == TimberFace.TOP
 
         # Test with diagonal direction that's closer to +X than +Z
         # This should align with RIGHT face (X-direction)
         target_diagonal_x = normalize_vector(create_v3(1, 0, Rational("0.3")))  # Mostly +X, little bit +Z
-        aligned_face = timber.get_closest_oriented_face(target_diagonal_x)
+        aligned_face = timber.get_closest_oriented_face_from_global_direction(target_diagonal_x)
         assert aligned_face == TimberFace.RIGHT
     
     def test_timber_get_face_direction(self):
-        """Test Timber.get_face_direction() method."""
+        """Test Timber.get_face_direction_global() method."""
         # Create an axis-aligned timber
         timber = timber_from_directions(
             length=Rational(2),
@@ -1123,28 +1123,28 @@ class TestHelperFunctions:
         )
         
         # Test that face directions match expected values (CORRECTED MAPPING)
-        top_dir = timber.get_face_direction(TimberFace.TOP)
+        top_dir = timber.get_face_direction_global(TimberFace.TOP)
         assert top_dir == timber.get_length_direction_global()
         
-        bottom_dir = timber.get_face_direction(TimberFace.BOTTOM)
+        bottom_dir = timber.get_face_direction_global(TimberFace.BOTTOM)
         assert bottom_dir == -timber.get_length_direction_global()
         
-        right_dir = timber.get_face_direction(TimberFace.RIGHT)
+        right_dir = timber.get_face_direction_global(TimberFace.RIGHT)
         assert right_dir == timber.get_width_direction_global()
         
-        left_dir = timber.get_face_direction(TimberFace.LEFT)
+        left_dir = timber.get_face_direction_global(TimberFace.LEFT)
         assert left_dir == -timber.get_width_direction_global()
         
         # FRONT should be the height direction
-        front_dir = timber.get_face_direction(TimberFace.FRONT)
+        front_dir = timber.get_face_direction_global(TimberFace.FRONT)
         assert front_dir == timber.get_height_direction_global()
         
         # BACK should be the negative height direction
-        back_dir = timber.get_face_direction(TimberFace.BACK)
+        back_dir = timber.get_face_direction_global(TimberFace.BACK)
         assert back_dir == -timber.get_height_direction_global()
     
     def test_timber_get_face_direction_for_ends(self):
-        """Test using Timber.get_face_direction() for timber ends."""
+        """Test using Timber.get_face_direction_global() for timber ends."""
         # Create a timber
         timber = timber_from_directions(
             length=Rational(2),
@@ -1155,15 +1155,15 @@ class TestHelperFunctions:
         )
         
         # Test TOP end direction (using TimberFace.TOP)
-        top_dir = timber.get_face_direction(TimberFace.TOP)
+        top_dir = timber.get_face_direction_global(TimberFace.TOP)
         assert top_dir == timber.get_length_direction_global()
         
         # Test BOTTOM end direction (using TimberFace.BOTTOM)
-        bottom_dir = timber.get_face_direction(TimberFace.BOTTOM)
+        bottom_dir = timber.get_face_direction_global(TimberFace.BOTTOM)
         assert bottom_dir == -timber.get_length_direction_global()
     
     def test_timber_get_face_direction_with_timber_reference_end(self):
-        """Test that Timber.get_face_direction() accepts TimberReferenceEnd."""
+        """Test that Timber.get_face_direction_global() accepts TimberReferenceEnd."""
         # Create a timber
         timber = timber_from_directions(
             length=Rational(2),
@@ -1174,16 +1174,16 @@ class TestHelperFunctions:
         )
         
         # Test TOP end direction using TimberReferenceEnd.TOP
-        top_dir = timber.get_face_direction(TimberReferenceEnd.TOP)
+        top_dir = timber.get_face_direction_global(TimberReferenceEnd.TOP)
         assert top_dir == timber.get_length_direction_global()
         
         # Test BOTTOM end direction using TimberReferenceEnd.BOTTOM
-        bottom_dir = timber.get_face_direction(TimberReferenceEnd.BOTTOM)
+        bottom_dir = timber.get_face_direction_global(TimberReferenceEnd.BOTTOM)
         assert bottom_dir == -timber.get_length_direction_global()
         
         # Verify that results are the same whether using TimberFace or TimberReferenceEnd
-        assert timber.get_face_direction(TimberReferenceEnd.TOP) == timber.get_face_direction(TimberFace.TOP)
-        assert timber.get_face_direction(TimberReferenceEnd.BOTTOM) == timber.get_face_direction(TimberFace.BOTTOM)
+        assert timber.get_face_direction_global(TimberReferenceEnd.TOP) == timber.get_face_direction_global(TimberFace.TOP)
+        assert timber.get_face_direction_global(TimberReferenceEnd.BOTTOM) == timber.get_face_direction_global(TimberFace.BOTTOM)
     
     def test_timber_get_size_in_face_normal_axis_with_timber_reference_end(self):
         """Test that Timber.get_size_in_face_normal_axis() accepts TimberReferenceEnd."""
@@ -1800,8 +1800,8 @@ class TestTimberFootprintOrientation:
                 width_direction=width_dir
             )
             
-            inside_face = timber.get_inside_face(footprint)
-            outside_face = timber.get_outside_face(footprint)
+            inside_face = timber.get_inside_face_from_footprint(footprint)
+            outside_face = timber.get_outside_face_from_footprint(footprint)
             
             assert inside_face == expected_inside, \
                 f"{description}: Expected inside face {expected_inside}, got {inside_face}"
@@ -1827,16 +1827,16 @@ class TestTimberFootprintOrientation:
             width_direction=normalize_vector(create_v3(-1, 1, 0))   # Perpendicular to length, pointing "inward-ish"
         )
         
-        inside_face = timber.get_inside_face(footprint)
-        outside_face = timber.get_outside_face(footprint)
+        inside_face = timber.get_inside_face_from_footprint(footprint)
+        outside_face = timber.get_outside_face_from_footprint(footprint)
         
         # Should determine a consistent inside/outside face based on nearest boundary
         # The exact face depends on which boundary is closest, but they should be opposite
         assert inside_face != outside_face
         
         # Verify that the inside and outside faces are opposite
-        inside_dir = timber.get_face_direction(inside_face)
-        outside_dir = timber.get_face_direction(outside_face)
+        inside_dir = timber.get_face_direction_global(inside_face)
+        outside_dir = timber.get_face_direction_global(outside_face)
         # Dot product should be negative (opposite directions)
         assert inside_dir.dot(outside_dir) < 0
 

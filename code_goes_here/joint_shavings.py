@@ -30,10 +30,10 @@ def find_opposing_face_on_another_timber(reference_timber: Timber, reference_fac
     """
     Find the opposing face on another timber. Assumes that the target_timber has a face parallel to the reference face on the reference_timber.
     """
-    target_face = target_timber.get_closest_oriented_face(-reference_timber.get_face_direction(reference_face))
+    target_face = target_timber.get_closest_oriented_face_from_global_direction(-reference_timber.get_face_direction_global(reference_face))
 
     # assert that the target_face is parallel to the reference_face
-    assert are_vectors_parallel(reference_timber.get_face_direction(reference_face), target_timber.get_face_direction(target_face)), \
+    assert are_vectors_parallel(reference_timber.get_face_direction_global(reference_face), target_timber.get_face_direction_global(target_face)), \
         f"Target face {target_face} is not parallel to reference face {reference_face} on timber {reference_timber.name}"
     
     return target_face
@@ -72,7 +72,7 @@ def find_face_plane_intersection_on_centerline(face: TimberFace, face_timber: Ti
     
     # Get the center point on the face of face_timber
     # A face center is at mid-length for long faces, mid-cross-section for the face surface
-    face_direction = face_timber.get_face_direction(face)
+    face_direction = face_timber.get_face_direction_global(face)
     face_offset = face_timber.get_size_in_face_normal_axis(face) / Rational(2)
     
     # For long faces (LEFT, RIGHT, FRONT, BACK), the center is at mid-length
@@ -80,9 +80,9 @@ def find_face_plane_intersection_on_centerline(face: TimberFace, face_timber: Ti
     if face == TimberFace.TOP or face == TimberFace.BOTTOM:
         # End face: use the end center position
         if face == TimberFace.TOP:
-            face_center_point = face_timber.get_top_center_position()
+            face_center_point = face_timber.get_top_center_position_global()
         else:  # BOTTOM
-            face_center_point = face_timber.get_bottom_center_position()
+            face_center_point = face_timber.get_bottom_center_position_global()
     else:
         # Long face: center is at mid-length, offset by face normal
         face_center_point = (face_timber.get_bottom_position_global() + 
@@ -91,11 +91,11 @@ def find_face_plane_intersection_on_centerline(face: TimberFace, face_timber: Ti
     
     # Get the end position on to_timber
     if to_timber_end == TimberReferenceEnd.TOP:
-        end_position = to_timber.get_top_center_position()
+        end_position = to_timber.get_top_center_position_global()
         # Direction from end into timber is negative length direction
         into_timber_direction = -to_timber.get_length_direction_global()
     else:  # BOTTOM
-        end_position = to_timber.get_bottom_center_position()
+        end_position = to_timber.get_bottom_center_position_global()
         # Direction from end into timber is positive length direction
         into_timber_direction = to_timber.get_length_direction_global()
     
@@ -207,13 +207,13 @@ def measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
     from sympy import Rational
     
     # Assert that the target timber has a long face parallel to the reference face
-    reference_face_direction = reference_timber.get_face_direction(reference_face)
+    reference_face_direction = reference_timber.get_face_direction_global(reference_face)
     target_long_faces = [TimberReferenceLongFace.RIGHT, TimberReferenceLongFace.LEFT, 
                          TimberReferenceLongFace.FRONT, TimberReferenceLongFace.BACK]
     
     has_parallel_face = False
     for target_face in target_long_faces:
-        target_face_direction = target_timber.get_face_direction(target_face)
+        target_face_direction = target_timber.get_face_direction_global(target_face)
         if are_vectors_parallel(reference_face_direction, target_face_direction):
             has_parallel_face = True
             break
@@ -232,11 +232,11 @@ def measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
     
     # Find the opposing face on the target timber
     target_face_direction = -reference_face_direction  # Opposite direction
-    target_face = target_timber.get_closest_oriented_face(target_face_direction)
+    target_face = target_timber.get_closest_oriented_face_from_global_direction(target_face_direction)
     
     # Get a point on the target timber's opposing face
     target_face_offset = target_timber.get_size_in_face_normal_axis(target_face) / Rational(2)
-    target_face_point = target_timber.get_bottom_position_global() + target_timber.get_face_direction(target_face) * target_face_offset
+    target_face_point = target_timber.get_bottom_position_global() + target_timber.get_face_direction_global(target_face) * target_face_offset
     
     # Calculate the signed distance from the cutting plane to the target face point
     # Distance = (target_face_point - cutting_plane_point) · cutting_plane_normal
@@ -300,22 +300,22 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     # Get the end positions and directions in world coordinates
     # Note: end_direction points AWAY from the timber (outward from the end)
     if timberA_end == TimberReferenceEnd.TOP:
-        timberA_end_pos = timberA.get_top_center_position()
+        timberA_end_pos = timberA.get_top_center_position_global()
         timberA_end_direction = timberA.get_length_direction_global()  # Points away from timber
         timberA_opposite_end_pos = timberA.get_bottom_position_global()
     else:  # BOTTOM
         timberA_end_pos = timberA.get_bottom_position_global()
         timberA_end_direction = -timberA.get_length_direction_global()  # Points away from timber
-        timberA_opposite_end_pos = timberA.get_top_center_position()
+        timberA_opposite_end_pos = timberA.get_top_center_position_global()
     
     if timberB_end == TimberReferenceEnd.TOP:
-        timberB_end_pos = timberB.get_top_center_position()
+        timberB_end_pos = timberB.get_top_center_position_global()
         timberB_end_direction = timberB.get_length_direction_global()  # Points away from timber
         timberB_opposite_end_pos = timberB.get_bottom_position_global()
     else:  # BOTTOM
         timberB_end_pos = timberB.get_bottom_position_global()
         timberB_end_direction = -timberB.get_length_direction_global()  # Points away from timber
-        timberB_opposite_end_pos = timberB.get_top_center_position()
+        timberB_opposite_end_pos = timberB.get_top_center_position_global()
     
     # Check 1: The joint ends must be pointing in opposite directions (anti-parallel)
     # For a proper splice joint, the specified ends should point towards each other
@@ -543,10 +543,10 @@ def chop_lap_on_timber_end(
     
     # Step 1: Determine the end positions and shoulder position of the top lap timber
     if lap_timber_end == TimberReferenceEnd.TOP:
-        lap_end_pos = lap_timber.get_top_center_position()
+        lap_end_pos = lap_timber.get_top_center_position_global()
         lap_direction = lap_timber.get_length_direction_global() 
     else:  # BOTTOM
-        lap_end_pos = lap_timber.get_bottom_center_position()
+        lap_end_pos = lap_timber.get_bottom_center_position_global()
         lap_direction = -lap_timber.get_length_direction_global()
     
     # Calculate the shoulder position (where the lap starts)
@@ -706,13 +706,13 @@ def chop_lap_on_timber_ends(
 
     # Step 2: Find the corresponding face on the bottom lap timber
     # Get top_lap_timber_face direction in global space
-    top_lap_face_direction_global = top_lap_timber.get_face_direction(top_lap_timber_face)
+    top_lap_face_direction_global = top_lap_timber.get_face_direction_global(top_lap_timber_face)
     
     # Negate it to get the direction for the bottom timber face
     bottom_lap_face_direction_global = -top_lap_face_direction_global
     
     # Find which face of the bottom timber aligns with this direction
-    bottom_lap_timber_face = bottom_lap_timber.get_closest_oriented_face(bottom_lap_face_direction_global)
+    bottom_lap_timber_face = bottom_lap_timber.get_closest_oriented_face_from_global_direction(bottom_lap_face_direction_global)
     
     # Step 3: Calculate the depth for the bottom lap
     # The bottom lap depth is measured from the bottom timber's face to the top timber's cutting plane
@@ -733,10 +733,10 @@ def chop_lap_on_timber_ends(
     
     # Calculate top timber's shoulder and lap end positions in global space
     if top_lap_timber_end == TimberReferenceEnd.TOP:
-        top_timber_end_pos = top_lap_timber.get_top_center_position()
+        top_timber_end_pos = top_lap_timber.get_top_center_position_global()
         top_lap_direction = top_lap_timber.get_length_direction_global() 
     else:  # BOTTOM
-        top_timber_end_pos = top_lap_timber.get_bottom_center_position()
+        top_timber_end_pos = top_lap_timber.get_bottom_center_position_global()
         top_lap_direction = -top_lap_timber.get_length_direction_global() 
     
     # Top timber shoulder: move inward from timber end by shoulder distance

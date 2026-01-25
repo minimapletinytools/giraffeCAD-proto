@@ -201,7 +201,7 @@ class TestPegStuff:
         peg = joint.jointAccessories["peg_0"]
         
         # check that the peg is orthogonal to get_face_direction(TimberFace.FRONT)
-        assert_vectors_parallel(peg.transform.orientation.matrix[:, 2], tenon_timber.get_face_direction(TimberFace.FRONT))
+        assert_vectors_parallel(peg.transform.orientation.matrix[:, 2], tenon_timber.get_face_direction_global(TimberFace.FRONT))
         f"Peg forward_length should match specified depth. Expected {peg_depth}, got {peg.forward_length}"
         assert peg.stickout_length == peg_depth * Rational(1, 2), \
             f"Peg stickout_length should be half of forward_length by default. Expected {peg_depth * Rational(1, 2)}, got {peg.stickout_length}"
