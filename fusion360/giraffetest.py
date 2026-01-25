@@ -90,11 +90,13 @@ def reload_all_modules():
         'code_goes_here.japanese_joints',
         'giraffe',
         'giraffe_render_freecad',
+        'giraffe_render_fusion360',  # Add this so the rendering module itself gets reloaded
         'examples.reference.basic_joints_example',
         'examples.mortise_and_tenon_joint_examples',
         'examples.horsey_example',
         'examples.oscarshed',
         'examples.japanese_joints_example',
+        'examples.irrational_angles_example',
         'examples.MeowMeowCSG_examples',
     ]
     
@@ -130,7 +132,9 @@ def render_basic_joints():
     
     # Clear and render
     print("\nClearing Fusion 360 design...")
-    clear_design()
+    if not clear_design():
+        print("Failed to prepare design - aborting rendering")
+        return
     
     print("\nRendering timbers in Fusion 360...")
     success_count = render_frame(frame, "Joint")
@@ -168,7 +172,9 @@ def render_mortise_and_tenon():
     
     # Clear and render
     print("\nClearing Fusion 360 design...")
-    clear_design()
+    if not clear_design():
+        print("Failed to prepare design - aborting rendering")
+        return
     
     print("\nRendering timbers and accessories in Fusion 360...")
     success_count = render_frame(frame, "MortiseTenon")
@@ -207,7 +213,9 @@ def render_gooseneck():
     
     # Clear and render
     print("\nClearing Fusion 360 design...")
-    clear_design()
+    if not clear_design():
+        print("Failed to prepare design - aborting rendering")
+        return
     
     print("\nRendering timbers in Fusion 360...")
     success_count = render_frame(frame, "Gooseneck")
@@ -246,7 +254,9 @@ def render_oscar_shed():
     
     # Clear and render
     print("\nClearing Fusion 360 design...")
-    clear_design()
+    if not clear_design():
+        print("Failed to prepare design - aborting rendering")
+        return
     
     print("\nRendering timbers and accessories in Fusion 360...")
     success_count = render_frame(frame, "OscarShed_Timber")
@@ -286,7 +296,9 @@ def render_irrational_angles():
     
     # Clear and render
     print("\nClearing Fusion 360 design...")
-    clear_design()
+    if not clear_design():
+        print("Failed to prepare design - aborting rendering")
+        return
     
     print("\nRendering timbers in Fusion 360...")
     success_count = render_frame(frame, "Irrational")
