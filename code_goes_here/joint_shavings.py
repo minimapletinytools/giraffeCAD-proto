@@ -7,7 +7,7 @@ These functions help ensure that joints are geometrically valid and sensibly con
 
 from typing import Optional, Tuple, List, Union as TypeUnion
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
-from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation, V2, V3, are_vectors_perpendicular
+from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation, V2, V3, are_vectors_perpendicular, zero_test
 from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, Union, ConvexPolygonExtrusion
 from code_goes_here.construction import are_timbers_face_aligned, do_xy_cross_section_on_parallel_timbers_overlap
 from sympy import Abs, Rational
@@ -107,6 +107,68 @@ def find_face_plane_intersection_on_centerline(face: TimberFace, face_timber: Ti
     signed_distance = (vector_to_face.T * into_timber_direction)[0, 0]
     
     return signed_distance
+
+def find_projected_intersection_on_centerlines(timberA: Timber, timberB: Timber, timberA_end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM, timberB_end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> (Numeric, Numeric):
+    """
+    Find the projected intersection of the centerlines of two timbers.
+    That is to say ,there is 1 unique line that connects the centerlines of the two timbers, 
+    this function finds the point on each centerline that is closest to the other centerline.
+
+    Args:
+        timberA: First timber
+        timberB: Second timber
+        timberA_end: Which end of timberA to measure from (defaults to BOTTOM)
+        timberB_end: Which end of timberB to measure from (defaults to BOTTOM)
+
+    Returns:
+        a tuple of the respective points on each timber 
+        (distance from timberA_end, distance from timberB_end)
+    """
+    # Get the starting points for each centerline (at the specified ends)
+    if timberA_end == TimberReferenceEnd.TOP:
+        pointA = timberA.bottom_position + timberA.length * timberA.length_direction
+    else:  # BOTTOM
+        pointA = timberA.bottom_position
+    
+    if timberB_end == TimberReferenceEnd.TOP:
+        pointB = timberB.bottom_position + timberB.length * timberB.length_direction
+    else:  # BOTTOM
+        pointB = timberB.bottom_position
+    
+    # Direction vectors for each centerline
+    dirA = timberA.length_direction
+    dirB = timberB.length_direction
+    
+    # Solve for closest points on two 3D lines using the standard formula
+    # Line A: pointA + t_A * dirA
+    # Line B: pointB + t_B * dirB
+    # We need to find t_A and t_B such that the connecting vector is perpendicular to both directions
+    
+    w = pointA - pointB  # Vector between starting points
+    
+    a = dirA.dot(dirA)  # Should be 1 for normalized directions
+    b = dirA.dot(dirB)
+    c = dirB.dot(dirB)  # Should be 1 for normalized directions
+    d = w.dot(dirA)
+    e = w.dot(dirB)
+    
+    denominator = a * c - b * b
+    
+    # Check if lines are parallel (denominator near zero)
+    if zero_test(denominator):
+        # Lines are parallel - any perpendicular works, use starting points
+        distanceA = Rational(0)
+        distanceB = Rational(0)
+    else:
+        # Calculate parameters for closest points
+        t_A = (b * e - c * d) / denominator
+        t_B = (a * e - b * d) / denominator
+        
+        # Return distances from the specified ends
+        distanceA = t_A
+        distanceB = t_B
+    
+    return (distanceA, distanceB) 
 
 # TODO this can be replaced with your magical scribe1d function lol
 def measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
@@ -702,6 +764,7 @@ def chop_lap_on_timber_ends(
     return (top_lap_csg, bottom_lap_csg)
 
 
+# TODO I think this is cutting on the wrong face...
 def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: TypeUnion[List[V2], List[List[V2]]], depth: Numeric, profile_y_offset_from_end: Numeric = 0) -> TypeUnion[Union, ConvexPolygonExtrusion]:
     """
     Create a CSG extrusion of a profile (or multiple profiles) on a timber face.

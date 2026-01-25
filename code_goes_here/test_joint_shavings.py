@@ -12,7 +12,8 @@ from code_goes_here.joint_shavings import (
     measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber,
     find_opposing_face_on_another_timber,
     chop_shoulder_notch_on_timber_face,
-    find_face_plane_intersection_on_centerline
+    find_face_plane_intersection_on_centerline,
+    find_projected_intersection_on_centerlines
 )
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import create_v3, create_v2, inches, are_vectors_parallel
@@ -1444,6 +1445,105 @@ class TestScribeFaceOnCenterline:
         expected_distance = inches(-12)
         assert distance == expected_distance, \
             f"Expected distance {expected_distance}, got {distance}"
+
+
+class TestFindProjectedIntersectionOnCenterlines:
+    """Tests for find_projected_intersection_on_centerlines function."""
+    
+    def test_orthogonal_timbers_t_joint(self):
+        """Test with orthogonal timbers forming a T-joint."""
+        # Vertical timber (receiving)
+        timber_vertical = timber_from_directions(
+            length=inches(36),
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
+            name="vertical"
+        )
+        
+        # Horizontal timber intersecting at middle of vertical
+        timber_horizontal = timber_from_directions(
+            length=inches(24),
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, inches(12), inches(18)),  # 18" up on vertical
+            length_direction=create_v3(0, -1, 0),  # Pointing toward vertical
+            width_direction=create_v3(1, 0, 0),
+            name="horizontal"
+        )
+        
+        # Find closest points
+        distA, distB = find_projected_intersection_on_centerlines(
+            timber_vertical, timber_horizontal,
+            TimberReferenceEnd.BOTTOM, TimberReferenceEnd.BOTTOM
+        )
+        
+        # Vertical timber: closest point should be at 18" from bottom
+        assert distA == inches(18)
+        # Horizontal timber: closest point should be at 12" from its bottom (where it intersects)
+        assert distB == inches(12)
+    
+    def test_parallel_timbers(self):
+        """Test with parallel timbers - should return zero distances."""
+        # Two parallel timbers
+        timberA = timber_from_directions(
+            length=inches(36),
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name="timberA"
+        )
+        
+        timberB = timber_from_directions(
+            length=inches(36),
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, inches(6), 0),  # 6" away parallel
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name="timberB"
+        )
+        
+        distA, distB = find_projected_intersection_on_centerlines(
+            timberA, timberB,
+            TimberReferenceEnd.BOTTOM, TimberReferenceEnd.BOTTOM
+        )
+        
+        # For parallel lines, should return 0 (starting points)
+        assert distA == Rational(0)
+        assert distB == Rational(0)
+    
+    def test_with_different_reference_ends(self):
+        """Test measuring from different reference ends (TOP vs BOTTOM)."""
+        # Vertical timber
+        timber_vertical = timber_from_directions(
+            length=inches(36),
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            name="vertical"
+        )
+        
+        # Horizontal timber at middle
+        timber_horizontal = timber_from_directions(
+            length=inches(24),
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, inches(12), inches(18)),
+            length_direction=create_v3(0, -1, 0),
+            width_direction=create_v3(1, 0, 0),
+            name="horizontal"
+        )
+        
+        # Measure from TOP of vertical timber
+        distA, distB = find_projected_intersection_on_centerlines(
+            timber_vertical, timber_horizontal,
+            TimberReferenceEnd.TOP, TimberReferenceEnd.BOTTOM
+        )
+        
+        # From TOP of vertical (36" high), intersection at 18" from bottom = 18" from top down
+        assert distA == inches(-18)  # Negative because going down from top
+        assert distB == inches(12)
 
 
 if __name__ == "__main__":
