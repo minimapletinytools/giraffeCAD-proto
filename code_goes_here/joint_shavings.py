@@ -7,10 +7,24 @@ These functions help ensure that joints are geometrically valid and sensibly con
 
 from typing import Optional, Tuple, List, Union as TypeUnion
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
-from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation, V2, V3
+from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation, V2, V3, are_vectors_perpendicular
 from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, Union, ConvexPolygonExtrusion
 from code_goes_here.construction import are_timbers_face_aligned, do_xy_cross_section_on_parallel_timbers_overlap
 from sympy import Abs, Rational
+
+
+
+    
+
+def orientation_pointing_towards_face_sitting_on_face(towards_face : TimberFace, sitting_face : TimberFace) -> 'Orientation':
+    """
+    marking orientations live within a timber's local space and are used to help mark joint features on the timber. They can be anything, but in general they should be chosen such that:
+    for marking_transforms on the surface of the timber the "+y" should point into the timber
+    """
+    assert are_vectors_perpendicular(towards_face.get_direction(), sitting_face.get_direction())
+    return Orientation.from_z_and_y(towards_face.get_direction(), -sitting_face.get_direction())
+
+    
 
 def find_opposing_face_on_another_timber(reference_timber: Timber, reference_face: TimberReferenceLongFace, target_timber: Timber) -> TimberFace:
     """
