@@ -834,7 +834,7 @@ def create_oscarshed():
             dovetail_timber=joist,
             receiving_timber=mudsill_front,
             dovetail_timber_end=TimberReferenceEnd.BOTTOM,
-            dovetail_timber_face=TimberReferenceLongFace.RIGHT,
+            dovetail_timber_face=TimberReferenceLongFace.RIGHT,  # Perpendicular to receiving timber
             receiving_timber_shoulder_inset=dovetail_shoulder_inset,
             dovetail_length=dovetail_length,
             dovetail_small_width=dovetail_small_width,
@@ -848,7 +848,7 @@ def create_oscarshed():
             dovetail_timber=joist,
             receiving_timber=mudsill_back,
             dovetail_timber_end=TimberReferenceEnd.TOP,
-            dovetail_timber_face=TimberReferenceLongFace.RIGHT,
+            dovetail_timber_face=TimberReferenceLongFace.RIGHT,  # Perpendicular to receiving timber
             receiving_timber_shoulder_inset=dovetail_shoulder_inset,
             dovetail_length=dovetail_length,
             dovetail_small_width=dovetail_small_width,

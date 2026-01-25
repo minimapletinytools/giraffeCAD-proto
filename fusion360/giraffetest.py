@@ -34,8 +34,8 @@ if parent_dir not in sys.path:
 #EXAMPLE_TO_RENDER = 'basic_joints' 
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
 #EXAMPLE_TO_RENDER = 'gooseneck'
-#EXAMPLE_TO_RENDER = 'oscar_shed'
-EXAMPLE_TO_RENDER = 'irrational_angles'
+EXAMPLE_TO_RENDER = 'oscar_shed'
+#EXAMPLE_TO_RENDER = 'irrational_angles'
 
 # Import our GiraffeCAD modules from parent directory
 try:
