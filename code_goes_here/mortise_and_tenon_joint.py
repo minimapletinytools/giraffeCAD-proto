@@ -38,6 +38,7 @@ class SimplePegParameters:
         tenon_hole_offset: Offset distance of the hole in the tenon towards the shoulder so that the peg tightens the joint up. You should usually set this to 1-2mm
     """
     shape: PegShape
+    # TODO rename to peg_face_on_tenon
     tenon_face: TimberReferenceLongFace
     peg_positions: List[Tuple[Numeric, Numeric]]
     size: Numeric
