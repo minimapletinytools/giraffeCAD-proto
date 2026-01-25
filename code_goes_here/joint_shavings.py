@@ -24,6 +24,77 @@ def find_opposing_face_on_another_timber(reference_timber: Timber, reference_fac
     
     return target_face
 
+def scribe_face_on_centerline(face: TimberFace, face_timber: Timber, to_timber: Timber, to_timber_end: TimberReferenceEnd) -> Numeric:
+    """
+    Find the distance from to_timber_end on to_timber to the face on face_timber.
+    
+    This method "scribes" a measurement from a specific end of one timber (to_timber) 
+    along its centerline to where it intersects (or would intersect) with a face of 
+    another timber (face_timber). This is useful for finding shoulder plane positions 
+    in various butt joints.
+    
+    The distance is measured along to_timber's length direction from the specified end.
+    Positive distance means the face is in the direction away from the end (into the timber).
+    
+    Args:
+        face: The face on face_timber to measure to
+        face_timber: The timber whose face we're measuring to
+        to_timber: The timber we're measuring from
+        to_timber_end: Which end of to_timber to measure from (TOP or BOTTOM)
+    
+    Returns:
+        The signed distance along to_timber's centerline from to_timber_end to 
+        the plane of the specified face on face_timber
+    
+    Example:
+        >>> # Find where to place a shoulder on timber_a when it butts against timber_b's FRONT face
+        >>> shoulder_distance = scribe_face_on_centerline(
+        ...     face=TimberFace.FRONT,
+        ...     face_timber=timber_b,
+        ...     to_timber=timber_a,
+        ...     to_timber_end=TimberReferenceEnd.TOP
+        ... )
+    """
+    
+    # Get the center point on the face of face_timber
+    # A face center is at mid-length for long faces, mid-cross-section for the face surface
+    face_direction = face_timber.get_face_direction(face)
+    face_offset = face_timber.get_size_in_face_normal_axis(face) / Rational(2)
+    
+    # For long faces (LEFT, RIGHT, FRONT, BACK), the center is at mid-length
+    # For end faces (TOP, BOTTOM), the center is at the end
+    if face == TimberFace.TOP or face == TimberFace.BOTTOM:
+        # End face: use the end center position
+        if face == TimberFace.TOP:
+            face_center_point = face_timber.get_top_center_position()
+        else:  # BOTTOM
+            face_center_point = face_timber.get_bottom_center_position()
+    else:
+        # Long face: center is at mid-length, offset by face normal
+        face_center_point = (face_timber.bottom_position + 
+                            face_timber.length_direction * (face_timber.length / Rational(2)) +
+                            face_direction * face_offset)
+    
+    # Get the end position on to_timber
+    if to_timber_end == TimberReferenceEnd.TOP:
+        end_position = to_timber.get_top_center_position()
+        # Direction from end into timber is negative length direction
+        into_timber_direction = -to_timber.length_direction
+    else:  # BOTTOM
+        end_position = to_timber.get_bottom_center_position()
+        # Direction from end into timber is positive length direction
+        into_timber_direction = to_timber.length_direction
+    
+    # Calculate the vector from the end position to the face center
+    vector_to_face = face_center_point - end_position
+    
+    # Project this vector onto the into_timber_direction to get the signed distance
+    # Distance is positive if the face is in the direction away from the end
+    signed_distance = (vector_to_face.T * into_timber_direction)[0, 0]
+    
+    return signed_distance
+
+# TODO this can be replaced with your magical scribe1d function lol
 def measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
     reference_timber: Timber,
     reference_face: TimberReferenceLongFace,

@@ -11,7 +11,8 @@ from code_goes_here.joint_shavings import (
     chop_lap_on_timber_end,
     measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber,
     find_opposing_face_on_another_timber,
-    chop_shoulder_notch_on_timber_face
+    chop_shoulder_notch_on_timber_face,
+    scribe_face_on_centerline
 )
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import create_v3, create_v2, inches, are_vectors_parallel
@@ -1081,6 +1082,368 @@ class TestChopShoulderNotchOnTimberFace:
                     # Points on other faces should NOT be contained in the notch CSG (will remain)
                     assert not point_contained, \
                         f"Point on face {test_face.name} should NOT be contained in notch on {notch_face.name}, but was"
+
+
+class TestScribeFaceOnCenterline:
+    """Tests for scribe_face_on_centerline function."""
+    
+    def test_horizontal_timbers_butt_joint(self):
+        """
+        Test scribing from timber_a's TOP end to timber_b's BOTTOM face.
+        
+        Classic butt joint scenario: timber_a (horizontal) butts against timber_b's bottom face.
+        """
+        # Create timber_a pointing east (horizontal)
+        timber_a = timber_from_directions(
+            length=inches(48),  # 4 feet
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, 0, inches(4)),  # 4 inches above ground
+            length_direction=create_v3(1, 0, 0),  # Pointing east
+            width_direction=create_v3(0, 1, 0),
+            name="timber_a"
+        )
+        # timber_a's TOP end is at x=48"
+        
+        # Create timber_b vertical, positioned so timber_a's end approaches its bottom face
+        timber_b = timber_from_directions(
+            length=inches(96),  # 8 feet tall
+            size=create_v2(inches(6), inches(6)),
+            bottom_position=create_v3(inches(60), 0, 0),  # Bottom at x=60"
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
+            name="timber_b"
+        )
+        # timber_b's BOTTOM face is at z=0
+        # timber_a's centerline is at z=4" (its bottom position)
+        
+        # Scribe from timber_a's TOP end to timber_b's BOTTOM face
+        distance = scribe_face_on_centerline(
+            face=TimberFace.BOTTOM,
+            face_timber=timber_b,
+            to_timber=timber_a,
+            to_timber_end=TimberReferenceEnd.TOP
+        )
+        
+        # Expected calculation:
+        # - timber_a's TOP end position: (48", 0, 4")
+        # - timber_b's BOTTOM face center: (60", 0, 0) (at the bottom end)
+        # - Vector from timber_a TOP to timber_b BOTTOM face: (60"-48", 0, 0-4") = (12", 0, -4")
+        # - timber_a's into_timber_direction from TOP = -length_direction = (-1, 0, 0)
+        # - Signed distance = (12", 0, -4") · (-1, 0, 0) = -12"
+        # Negative means the face is in the opposite direction (timber_b is past timber_a's end)
+        expected_distance = inches(-12)
+        assert distance == expected_distance, \
+            f"Expected distance {expected_distance}, got {distance}"
+    
+    def test_vertical_timbers_face_to_face(self):
+        """
+        Test scribing between two vertical timbers where one approaches the other's long face.
+        """
+        # Create timber_a pointing up
+        timber_a = timber_from_directions(
+            length=inches(96),  # 8 feet
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
+            name="timber_a"
+        )
+        # timber_a's TOP end is at z=96"
+        
+        # Create timber_b also pointing up, offset in X direction
+        timber_b = timber_from_directions(
+            length=inches(96),  # 8 feet
+            size=create_v2(inches(6), inches(6)),
+            bottom_position=create_v3(inches(10), 0, 0),  # Offset 10 inches in X
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
+            name="timber_b"
+        )
+        # timber_b's LEFT face is at x = 10" - 3" = 7"
+        # timber_b's LEFT face center (mid-length) is at (7", 0, 48")
+        
+        # Scribe from timber_a's TOP end to timber_b's LEFT face
+        distance = scribe_face_on_centerline(
+            face=TimberFace.LEFT,
+            face_timber=timber_b,
+            to_timber=timber_a,
+            to_timber_end=TimberReferenceEnd.TOP
+        )
+        
+        # Expected calculation:
+        # - timber_a's TOP end position: (0, 0, 96")
+        # - timber_b's LEFT face center: (7", 0, 48") (mid-length of long face)
+        # - Vector from timber_a TOP to timber_b LEFT face: (7", 0, 48"-96") = (7", 0, -48")
+        # - timber_a's into_timber_direction from TOP = -length_direction = (0, 0, -1)
+        # - Signed distance = (7", 0, -48") · (0, 0, -1) = 48"
+        # Positive means the face is in the direction into the timber from the end
+        expected_distance = inches(48)
+        assert distance == expected_distance, \
+            f"Expected distance {expected_distance}, got {distance}"
+    
+    def test_scribe_from_bottom_end(self):
+        """Test scribing from the BOTTOM end of a timber."""
+        # Create timber_a pointing up
+        timber_a = timber_from_directions(
+            length=inches(96),  # 8 feet
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, 0, inches(12)),  # Bottom at z=12"
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
+            name="timber_a"
+        )
+        # timber_a's BOTTOM end is at z=12"
+        # timber_a's TOP end is at z=12"+96"=108"
+        
+        # Create timber_b horizontal, below timber_a
+        timber_b = timber_from_directions(
+            length=inches(48),  # 4 feet
+            size=create_v2(inches(6), inches(6)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # Pointing east
+            width_direction=create_v3(0, 1, 0),
+            name="timber_b"
+        )
+        # timber_b's TOP face (end face) is at x=48", z=0"
+        # timber_b's TOP face center: (48", 0, 0)
+        
+        # Scribe from timber_a's BOTTOM end to timber_b's TOP face
+        distance = scribe_face_on_centerline(
+            face=TimberFace.TOP,
+            face_timber=timber_b,
+            to_timber=timber_a,
+            to_timber_end=TimberReferenceEnd.BOTTOM
+        )
+        
+        # Expected calculation:
+        # - timber_a's BOTTOM end position: (0, 0, 12")
+        # - timber_b's TOP face center: (48", 0, 0) (at the top end)
+        # - Vector from timber_a BOTTOM to timber_b TOP face: (48", 0, -12")
+        # - timber_a's into_timber_direction from BOTTOM = +length_direction = (0, 0, 1)
+        # - Signed distance = (48", 0, -12") · (0, 0, 1) = -12"
+        # Negative means the face is below the end (opposite direction)
+        expected_distance = inches(-12)
+        assert distance == expected_distance, \
+            f"Expected distance {expected_distance}, got {distance}"
+    
+    def test_scribe_to_end_face_top(self):
+        """Test scribing to a TOP end face."""
+        # Create timber_a horizontal
+        timber_a = timber_from_directions(
+            length=inches(48),  # 4 feet
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # Pointing east
+            width_direction=create_v3(0, 1, 0),
+            name="timber_a"
+        )
+        # timber_a's TOP end is at x=48"
+        
+        # Create timber_b horizontal, aligned with timber_a
+        timber_b = timber_from_directions(
+            length=inches(60),  # 5 feet
+            size=create_v2(inches(6), inches(6)),
+            bottom_position=create_v3(inches(60), 0, 0),  # Start at x=60"
+            length_direction=create_v3(1, 0, 0),  # Pointing east
+            width_direction=create_v3(0, 1, 0),
+            name="timber_b"
+        )
+        # timber_b's TOP face is at x=60"+60"=120"
+        # timber_b's TOP face center: (120", 0, 0)
+        
+        # Scribe from timber_a's TOP end to timber_b's TOP face
+        distance = scribe_face_on_centerline(
+            face=TimberFace.TOP,
+            face_timber=timber_b,
+            to_timber=timber_a,
+            to_timber_end=TimberReferenceEnd.TOP
+        )
+        
+        # Expected calculation:
+        # - timber_a's TOP end position: (48", 0, 0)
+        # - timber_b's TOP face center: (120", 0, 0)
+        # - Vector from timber_a TOP to timber_b TOP face: (72", 0, 0)
+        # - timber_a's into_timber_direction from TOP = -length_direction = (-1, 0, 0)
+        # - Signed distance = (72", 0, 0) · (-1, 0, 0) = -72"
+        # Negative means the face is past the end (opposite direction)
+        expected_distance = inches(-72)
+        assert distance == expected_distance, \
+            f"Expected distance {expected_distance}, got {distance}"
+    
+    def test_scribe_to_long_face(self):
+        """Test scribing to a long face (FRONT/BACK/LEFT/RIGHT)."""
+        # Create timber_a horizontal
+        timber_a = timber_from_directions(
+            length=inches(36),  # 3 feet
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # Pointing east
+            width_direction=create_v3(0, 1, 0),
+            name="timber_a"
+        )
+        # timber_a's TOP end is at x=36"
+        
+        # Create timber_b vertical
+        timber_b = timber_from_directions(
+            length=inches(96),  # 8 feet
+            size=create_v2(inches(6), inches(6)),
+            bottom_position=create_v3(inches(50), 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
+            name="timber_b"
+        )
+        # timber_b's LEFT face is at x = 50" - 3" = 47"
+        # timber_b's LEFT face center (mid-length) is at (47", 0, 48")
+        
+        # Scribe from timber_a's TOP end to timber_b's LEFT face
+        distance = scribe_face_on_centerline(
+            face=TimberFace.LEFT,
+            face_timber=timber_b,
+            to_timber=timber_a,
+            to_timber_end=TimberReferenceEnd.TOP
+        )
+        
+        # Expected calculation:
+        # - timber_a's TOP end position: (36", 0, 0)
+        # - timber_b's LEFT face center: (47", 0, 48")
+        # - Vector from timber_a TOP to timber_b LEFT face: (11", 0, 48")
+        # - timber_a's into_timber_direction from TOP = -length_direction = (-1, 0, 0)
+        # - Signed distance = (11", 0, 48") · (-1, 0, 0) = -11"
+        # Negative means moving in opposite direction along timber_a
+        expected_distance = inches(-11)
+        assert distance == expected_distance, \
+            f"Expected distance {expected_distance}, got {distance}"
+    
+    def test_with_rational_arithmetic(self):
+        """Test that the function works correctly with exact Rational arithmetic."""
+        # Create timber_a with Rational dimensions
+        timber_a = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(2), Rational(2)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
+            name="timber_a"
+        )
+        # timber_a's TOP end is at z=10
+        
+        # Create timber_b offset in X and Y
+        timber_b = timber_from_directions(
+            length=Rational(20),
+            size=create_v2(Rational(3), Rational(3)),
+            bottom_position=create_v3(Rational(5), 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
+            name="timber_b"
+        )
+        # timber_b's LEFT face is at x = 5 - 3/2 = 7/2
+        # timber_b's LEFT face center (mid-length) is at (7/2, 0, 10)
+        
+        # Scribe from timber_a's TOP end to timber_b's LEFT face
+        distance = scribe_face_on_centerline(
+            face=TimberFace.LEFT,
+            face_timber=timber_b,
+            to_timber=timber_a,
+            to_timber_end=TimberReferenceEnd.TOP
+        )
+        
+        # Expected calculation:
+        # - timber_a's TOP end position: (0, 0, 10)
+        # - timber_b's LEFT face center: (7/2, 0, 10)
+        # - Vector from timber_a TOP to timber_b LEFT face: (7/2, 0, 0)
+        # - timber_a's into_timber_direction from TOP = -length_direction = (0, 0, -1)
+        # - Signed distance = (7/2, 0, 0) · (0, 0, -1) = 0
+        expected_distance = Rational(0)
+        assert distance == expected_distance, \
+            f"Expected exact rational {expected_distance}, got {distance}"
+    
+    def test_positive_distance_into_timber(self):
+        """Test a case where the scribed face is in the positive direction (into the timber)."""
+        # Create timber_a pointing east
+        timber_a = timber_from_directions(
+            length=inches(48),  # 4 feet
+            size=create_v2(inches(4), inches(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # Pointing east
+            width_direction=create_v3(0, 1, 0),
+            name="timber_a"
+        )
+        # timber_a's TOP end is at x=48"
+        
+        # Create timber_b with BOTTOM face at x=36" (before timber_a's TOP end)
+        timber_b = timber_from_directions(
+            length=inches(60),  # 5 feet
+            size=create_v2(inches(6), inches(6)),
+            bottom_position=create_v3(inches(36), 0, 0),
+            length_direction=create_v3(1, 0, 0),  # Pointing east
+            width_direction=create_v3(0, 1, 0),
+            name="timber_b"
+        )
+        # timber_b's BOTTOM face (end face) is at x=36" (the bottom position for horizontal timber)
+        # timber_b's BOTTOM face center: (36", 0, 0)
+        
+        # Scribe from timber_a's TOP end to timber_b's BOTTOM face
+        distance = scribe_face_on_centerline(
+            face=TimberFace.BOTTOM,
+            face_timber=timber_b,
+            to_timber=timber_a,
+            to_timber_end=TimberReferenceEnd.TOP
+        )
+        
+        # Expected calculation:
+        # - timber_a's TOP end position: (48", 0, 0)
+        # - timber_b's BOTTOM face center: (36", 0, 0)
+        # - Vector from timber_a TOP to timber_b BOTTOM face: (-12", 0, 0)
+        # - timber_a's into_timber_direction from TOP = -length_direction = (-1, 0, 0)
+        # - Signed distance = (-12", 0, 0) · (-1, 0, 0) = 12"
+        # Positive means the face is in the direction into the timber from the end
+        expected_distance = inches(12)
+        assert distance == expected_distance, \
+            f"Expected distance {expected_distance}, got {distance}"
+    
+    def test_different_timber_sizes(self):
+        """Test scribing between timbers of different cross-sectional sizes."""
+        # Create small timber_a
+        timber_a = timber_from_directions(
+            length=inches(24),  # 2 feet
+            size=create_v2(inches(2), inches(4)),  # 2x4
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
+            name="timber_a"
+        )
+        # timber_a's TOP end is at z=24"
+        
+        # Create larger timber_b
+        timber_b = timber_from_directions(
+            length=inches(48),  # 4 feet
+            size=create_v2(inches(8), inches(8)),  # 8x8
+            bottom_position=create_v3(0, 0, inches(36)),  # Start at z=36"
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
+            name="timber_b"
+        )
+        # timber_b's BOTTOM face (end face) is at z=36"
+        # timber_b's BOTTOM face center: (0, 0, 36")
+        
+        # Scribe from timber_a's TOP end to timber_b's BOTTOM face
+        distance = scribe_face_on_centerline(
+            face=TimberFace.BOTTOM,
+            face_timber=timber_b,
+            to_timber=timber_a,
+            to_timber_end=TimberReferenceEnd.TOP
+        )
+        
+        # Expected calculation:
+        # - timber_a's TOP end position: (0, 0, 24")
+        # - timber_b's BOTTOM face center: (0, 0, 36")
+        # - Vector from timber_a TOP to timber_b BOTTOM face: (0, 0, 12")
+        # - timber_a's into_timber_direction from TOP = -length_direction = (0, 0, -1)
+        # - Signed distance = (0, 0, 12") · (0, 0, -1) = -12"
+        # Negative means the face is past the end (opposite direction)
+        expected_distance = inches(-12)
+        assert distance == expected_distance, \
+            f"Expected distance {expected_distance}, got {distance}"
 
 
 if __name__ == "__main__":
