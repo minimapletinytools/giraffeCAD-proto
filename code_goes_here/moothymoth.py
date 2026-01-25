@@ -538,40 +538,40 @@ class Orientation:
         """Identity orientation - facing east (+X)"""
         return cls()
 
-    @staticmethod
-    def from_z_and_y(z_direction: Direction3D, y_direction: Direction3D) -> 'Orientation':
+    @classmethod
+    def from_z_and_y(cls, z_direction: Direction3D, y_direction: Direction3D) -> 'Orientation':
         """
         Create an Orientation from z and y direction vectors.
         Computes x = y × z to complete the right-handed coordinate system.
         """
         x_direction = cross_product(y_direction, z_direction)
-        return Orientation(Matrix([
+        return cls(Matrix([
             [x_direction[0], y_direction[0], z_direction[0]],
             [x_direction[1], y_direction[1], z_direction[1]],
             [x_direction[2], y_direction[2], z_direction[2]]
         ]))
     
-    @staticmethod
-    def from_z_and_x(z_direction: Direction3D, x_direction: Direction3D) -> 'Orientation':
+    @classmethod
+    def from_z_and_x(cls, z_direction: Direction3D, x_direction: Direction3D) -> 'Orientation':
         """
         Create an Orientation from z and x direction vectors.
         Computes y = z × x to complete the right-handed coordinate system.
         """
         y_direction = cross_product(z_direction, x_direction)
-        return Orientation(Matrix([
+        return cls(Matrix([
             [x_direction[0], y_direction[0], z_direction[0]],
             [x_direction[1], y_direction[1], z_direction[1]],
             [x_direction[2], y_direction[2], z_direction[2]]
         ]))
     
-    @staticmethod
-    def from_x_and_y(x_direction: Direction3D, y_direction: Direction3D) -> 'Orientation':
+    @classmethod
+    def from_x_and_y(cls, x_direction: Direction3D, y_direction: Direction3D) -> 'Orientation':
         """
         Create an Orientation from x and y direction vectors.
         Computes z = x × y to complete the right-handed coordinate system.
         """
         z_direction = cross_product(x_direction, y_direction)
-        return Orientation(Matrix([
+        return cls(Matrix([
             [x_direction[0], y_direction[0], z_direction[0]],
             [x_direction[1], y_direction[1], z_direction[1]],
             [x_direction[2], y_direction[2], z_direction[2]]
