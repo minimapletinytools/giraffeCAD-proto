@@ -874,8 +874,8 @@ class TestFindOpposingFaceOnAnotherTimber:
             f"Expected LEFT face, got {opposing_face}"
         
         # Verify the faces are parallel by checking their directions
-        reference_direction = timber_a.get_face_direction(TimberReferenceLongFace.RIGHT)
-        target_direction = timber_b.get_face_direction(opposing_face)
+        reference_direction = timber_a.get_face_direction_global(TimberReferenceLongFace.RIGHT)
+        target_direction = timber_b.get_face_direction_global(opposing_face)
         assert are_vectors_parallel(reference_direction, target_direction), \
             "Reference and target faces should be parallel"
     
@@ -938,8 +938,8 @@ class TestFindOpposingFaceOnAnotherTimber:
             f"Expected BACK face, got {opposing_face}"
         
         # Verify the faces are parallel by checking their directions
-        reference_direction = timber_a.get_face_direction(TimberReferenceLongFace.FRONT)
-        target_direction = timber_b.get_face_direction(opposing_face)
+        reference_direction = timber_a.get_face_direction_global(TimberReferenceLongFace.FRONT)
+        target_direction = timber_b.get_face_direction_global(opposing_face)
         assert are_vectors_parallel(reference_direction, target_direction), \
             "Reference and target faces should be parallel"
         

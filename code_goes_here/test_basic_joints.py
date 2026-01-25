@@ -56,10 +56,10 @@ class TestMiterJoint:
             timberB: Second timber in the joint
         """
         # Get the end position of the cut on timberA (in global coordinates)
-        end_position_A_global = timberA.get_centerline_position_from_bottom(-3)
+        end_position_A_global = timberA.get_centerline_position_from_bottom_global(-3)
         
         # Get the end position of the cut on timberB (in global coordinates)
-        end_position_B_global = timberB.get_centerline_position_from_bottom(-3)
+        end_position_B_global = timberB.get_centerline_position_from_bottom_global(-3)
         
         # see that end_position_A_global is NOT in cut timberA but is in cut timberB
         assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(end_position_A_global))

@@ -41,17 +41,17 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # Get the end directions for each timber (pointing outward from the timber)
     if timberA_end == TimberReferenceEnd.TOP:
         directionA = timberA.get_length_direction_global()
-        endA_position = timberA.get_top_center_position()
+        endA_position = timberA.get_top_center_position_global()
     else:  # BOTTOM
         directionA = -timberA.get_length_direction_global() 
-        endA_position = timberA.get_bottom_center_position()
+        endA_position = timberA.get_bottom_center_position_global()
     
     if timberB_end == TimberReferenceEnd.TOP:
         directionB = timberB.get_length_direction_global()
-        endB_position = timberB.get_top_center_position()
+        endB_position = timberB.get_top_center_position_global()
     else:  # BOTTOM
         directionB = -timberB.get_length_direction_global()
-        endB_position = timberB.get_bottom_center_position()
+        endB_position = timberB.get_bottom_center_position_global()
     
     # Check that the timbers are not parallel
     if are_vectors_parallel(directionA, directionB):
@@ -210,15 +210,15 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     # Get the direction of the butt end (pointing outward from the timber)
     if butt_end == TimberReferenceEnd.TOP:
         butt_direction = butt_timber.get_length_direction_global()
-        butt_end_position = butt_timber.get_top_center_position()
+        butt_end_position = butt_timber.get_top_center_position_global()
     else:  # BOTTOM
         butt_direction = -butt_timber.get_length_direction_global()
-        butt_end_position = butt_timber.get_bottom_center_position()
+        butt_end_position = butt_timber.get_bottom_center_position_global()
     
     # Find which face of the receiving timber the butt is approaching
     # The butt approaches opposite to its end direction
-    receiving_face = receiving_timber.get_closest_oriented_face(-butt_direction)
-    receiving_face_direction = receiving_timber.get_face_direction(receiving_face)
+    receiving_face = receiving_timber.get_closest_oriented_face_from_global_direction(-butt_direction)
+    receiving_face_direction = receiving_timber.get_face_direction_global(receiving_face)
     
     # Compute the center position of the receiving face
     face_center = _get_face_center_position(receiving_timber, receiving_face)
@@ -278,17 +278,17 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end:
     
     # Get the end positions for each timber
     if timberA_end == TimberReferenceEnd.TOP:
-        endA_position = timberA.get_top_center_position()
+        endA_position = timberA.get_top_center_position_global()
         directionA = timberA.get_length_direction_global()
     else:  # BOTTOM
-        endA_position = timberA.get_bottom_center_position()
+        endA_position = timberA.get_bottom_center_position_global()
         directionA = -timberA.get_length_direction_global()
     
     if timberB_end == TimberReferenceEnd.TOP:
-        endB_position = timberB.get_top_center_position()
+        endB_position = timberB.get_top_center_position_global()
         directionB = timberB.get_length_direction_global()
     else:  # BOTTOM
-        endB_position = timberB.get_bottom_center_position()
+        endB_position = timberB.get_bottom_center_position_global()
         directionB = -timberB.get_length_direction_global()
     
     # Normalize length direction for later use
@@ -444,8 +444,8 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     
     # Get face normals (pointing outward from the timber) in GLOBAL space
     # get_face_direction returns the direction vector in world coordinates
-    normalA = timberA.get_face_direction(timberA_cut_face)
-    normalB = timberB.get_face_direction(timberB_cut_face)
+    normalA = timberA.get_face_direction_global(timberA_cut_face)
+    normalB = timberB.get_face_direction_global(timberB_cut_face)
     
     # Verify that the face normals oppose each other (point toward each other)
     # For a valid cross lap joint, the normals must strictly oppose (dot product < 0)
@@ -630,9 +630,9 @@ def _get_face_center_position(timber: Timber, face: TimberFace) -> V3:
         3D position vector at the center of the specified face
     """
     if face == TimberFace.TOP:
-        return timber.get_top_center_position()
+        return timber.get_top_center_position_global()
     elif face == TimberFace.BOTTOM:
-        return timber.get_bottom_center_position()
+        return timber.get_bottom_center_position_global()
     else:
         # For long faces (LEFT, RIGHT, FRONT, BACK), center is at mid-length
         from sympy import Rational

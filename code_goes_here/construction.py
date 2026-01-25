@@ -473,11 +473,11 @@ def join_timbers(timber1: Timber, timber2: Timber,
         New timber connecting timber1 and timber2 along their centerlines
     """
     # Calculate position on timber1
-    pos1 = timber1.get_centerline_position_from_bottom(location_on_timber1)
+    pos1 = timber1.get_centerline_position_from_bottom_global(location_on_timber1)
     
     # Calculate position on timber2
     if location_on_timber2 is not None:
-        pos2 = timber2.get_centerline_position_from_bottom(location_on_timber2)
+        pos2 = timber2.get_centerline_position_from_bottom_global(location_on_timber2)
     else:
         # Project location_on_timber1 to timber2's Z axis
         pos2 = Matrix([pos1[0], pos1[1], timber2.get_bottom_position_global()[2] + location_on_timber1])
@@ -587,7 +587,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         size = timber1.size
     
     # Calculate position on timber1
-    pos1 = timber1.get_centerline_position_from_bottom(location_on_timber1)
+    pos1 = timber1.get_centerline_position_from_bottom_global(location_on_timber1)
     
     # Project pos1 onto timber2's centerline to find location_on_timber2
     # Vector from timber2's bottom to pos1
@@ -607,7 +607,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     
     # Convert INSIDE/OUTSIDE stickout references to CENTER_LINE
     # For face-aligned timbers, we know the joining direction
-    pos2 = timber2.get_centerline_position_from_bottom(location_on_timber2)
+    pos2 = timber2.get_centerline_position_from_bottom_global(location_on_timber2)
     joining_direction = normalize_vector(pos2 - pos1)
     
     # Determine which dimension of the created timber is perpendicular to the joining direction

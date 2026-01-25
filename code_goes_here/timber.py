@@ -453,14 +453,15 @@ class Timber:
     transform: Transform
     name: Optional[str] = None
     
-    def get_bottom_position_global(self) -> V3:
-        """Get the bottom position (center of bottom cross-section) in global coordinates from the transform."""
-        return self.transform.position
-    
     @property
     def orientation(self) -> Orientation:
         """Get the orientation from the transform."""
         return self.transform.orientation
+
+    def get_bottom_position_global(self) -> V3:
+        """Get the bottom position (center of bottom cross-section) in global coordinates from the transform."""
+        return self.transform.position
+    
     
     def get_length_direction_global(self) -> Direction3D:
         """Get the length direction vector in global coordinates from the orientation matrix"""
@@ -492,8 +493,7 @@ class Timber:
             self.orientation.matrix[2, 1]
         ])
     
-    # TODO DELETE or rename to get_centerline_position_from_bottom_global
-    def get_centerline_position_from_bottom(self, distance: Numeric) -> V3:
+    def get_centerline_position_from_bottom_global(self, distance: Numeric) -> V3:
         """
         Get the 3D position at a specific point along the timber's centerline, measured from the bottom.
         
@@ -505,8 +505,7 @@ class Timber:
         """
         return self.get_bottom_position_global() + self.get_length_direction_global() * distance
     
-    # TODO DELETE or rename to get_centerline_position_from_top_global
-    def get_centerline_position_from_top(self, distance: Numeric) -> V3:
+    def get_centerline_position_from_top_global(self, distance: Numeric) -> V3:
         """
         Get the 3D position at a specific point along the timber's centerline, measured from the top.
         
@@ -518,8 +517,7 @@ class Timber:
         """
         return self.get_bottom_position_global() + self.get_length_direction_global() * (self.length - distance)
     
-    # TODO DELETE or rename to get_bottom_center_position_global
-    def get_bottom_center_position(self) -> V3:
+    def get_bottom_center_position_global(self) -> V3:
         """
         Get the 3D position of the center of the bottom cross-section of the timber.
         
@@ -528,8 +526,7 @@ class Timber:
         """
         return self.get_bottom_position_global()
     
-    # TODO DELETE or rename to get_top_center_position_global
-    def get_top_center_position(self) -> V3:
+    def get_top_center_position_global(self) -> V3:
         """
         Get the 3D position of the center of the top cross-section of the timber.
         
@@ -599,8 +596,7 @@ class Timber:
         # global_direction = R * local_direction
         return self.orientation.matrix * local_direction
     
-    # TODO rename to get_face_direction_global
-    def get_face_direction(self, face: Union[TimberFace, TimberReferenceEnd, TimberReferenceLongFace]) -> Direction3D:
+    def get_face_direction_global(self, face: Union[TimberFace, TimberReferenceEnd, TimberReferenceLongFace]) -> Direction3D:
         """
         Get the world direction vector for a specific face of this timber.
         
@@ -645,8 +641,7 @@ class Timber:
         else:  # FRONT or BACK
             return self.size[1]
     
-    # TODO rename get_closest_oriented_face_from_global_direction
-    def get_closest_oriented_face(self, target_direction: Direction3D) -> TimberFace:
+    def get_closest_oriented_face_from_global_direction(self, target_direction: Direction3D) -> TimberFace:
         """
         Find which face of this timber best aligns with the target direction.
         
@@ -662,10 +657,10 @@ class Timber:
                 TimberFace.LEFT, TimberFace.FRONT, TimberFace.BACK]
         
         best_face = faces[0]
-        best_alignment = target_direction.dot(self.get_face_direction(faces[0]))
+        best_alignment = target_direction.dot(self.get_face_direction_global(faces[0]))
         
         for face in faces[1:]:
-            face_direction = self.get_face_direction(face)
+            face_direction = self.get_face_direction_global(face)
             alignment = target_direction.dot(face_direction)
             if alignment > best_alignment:
                 best_alignment = alignment
@@ -674,8 +669,7 @@ class Timber:
         return best_face 
     
     # UNTESTED
-    # TODO rename to get_inside_face_from_footprint
-    def get_inside_face(self, footprint: Footprint) -> TimberFace:
+    def get_inside_face_from_footprint(self, footprint: Footprint) -> TimberFace:
         """
         Get the inside face of this timber relative to the footprint.
         
@@ -693,7 +687,7 @@ class Timber:
         """
         # Project timber's centerline onto XY plane for footprint comparison
         bottom_2d = create_v2(self.get_bottom_position_global()[0], self.get_bottom_position_global()[1])
-        top_position = self.get_top_center_position()
+        top_position = self.get_top_center_position_global()
         top_2d = create_v2(top_position[0], top_position[1])
         
         # Find nearest boundary to timber's centerline
@@ -704,11 +698,10 @@ class Timber:
         inward_normal = create_v3(inward_x, inward_y, inward_z)
         
         # Find which face of the timber aligns with the inward direction
-        return self.get_closest_oriented_face(inward_normal)
+        return self.get_closest_oriented_face_from_global_direction(inward_normal)
 
     # UNTESTED
-    # TODO rename to get_outside_face_from_footprint
-    def get_outside_face(self, footprint: Footprint) -> TimberFace:
+    def get_outside_face_from_footprint(self, footprint: Footprint) -> TimberFace:
         """
         Get the outside face of this timber relative to the footprint.
         
@@ -726,7 +719,7 @@ class Timber:
         """
         # Project timber's centerline onto XY plane for footprint comparison
         bottom_2d = create_v2(self.get_bottom_position_global()[0], self.get_bottom_position_global()[1])
-        top_position = self.get_top_center_position()
+        top_position = self.get_top_center_position_global()
         top_2d = create_v2(top_position[0], top_position[1])
         
         # Find nearest boundary to timber's centerline
@@ -738,7 +731,7 @@ class Timber:
         
         # Find which face of the timber aligns with the outward direction (negative of inward)
         outward_normal = -inward_normal
-        return self.get_closest_oriented_face(outward_normal)
+        return self.get_closest_oriented_face_from_global_direction(outward_normal)
     
     def get_transform_matrix(self) -> Matrix:
         """Get the 4x4 transformation matrix for this timber"""

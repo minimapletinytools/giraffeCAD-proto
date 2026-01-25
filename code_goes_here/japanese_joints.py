@@ -186,8 +186,8 @@ def cut_lapped_gooseneck_joint(
     # Find the opposing end on the gooseneck timber (the end that faces the receiving timber end)
     # We can use find_opposing_face_on_another_timber even though it's typed for long faces -
     # the logic works for end faces too
-    opposing_face = gooseneck_timber.get_closest_oriented_face(
-        -receiving_timber.get_face_direction(receiving_timber_end)
+    opposing_face = gooseneck_timber.get_closest_oriented_face_from_global_direction(
+        -receiving_timber.get_face_direction_global(receiving_timber_end)
     )
     
     # Convert TimberFace to TimberReferenceEnd (TOP or BOTTOM)
@@ -213,12 +213,12 @@ def cut_lapped_gooseneck_joint(
         warnings.warn(f"Gooseneck joint configuration may not be sensible: {overlap_error}")
 
     # compute the starting position for the gooseneck shape in global space
-    gooseneck_direction_global = -receiving_timber.get_face_direction(receiving_timber_end)
-    gooseneck_lateral_offset_direction_global = receiving_timber.get_face_direction(gooseneck_timber_face.rotate_right())
+    gooseneck_direction_global = -receiving_timber.get_face_direction_global(receiving_timber_end)
+    gooseneck_lateral_offset_direction_global = receiving_timber.get_face_direction_global(gooseneck_timber_face.rotate_right())
 
     # Get the receiving timber end position
     if receiving_timber_end == TimberReferenceEnd.TOP:
-        receiving_timber_end_position_global = receiving_timber.get_top_center_position()
+        receiving_timber_end_position_global = receiving_timber.get_top_center_position_global()
     else:  # BOTTOM
         receiving_timber_end_position_global = receiving_timber.get_bottom_position_global()
     
@@ -227,7 +227,7 @@ def cut_lapped_gooseneck_joint(
 
     # project gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global onto the gooseneck_timber_face
     gooseneck_starting_position_global = receiving_timber.project_global_point_onto_timber_face_global(gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global, gooseneck_timber_face)
-    gooseneck_drawing_normal_global = gooseneck_timber.get_face_direction(gooseneck_timber_face)
+    gooseneck_drawing_normal_global = gooseneck_timber.get_face_direction_global(gooseneck_timber_face)
 
     # now cut the gooseneck shape into the gooseneck_timber
     gooseneck_shape = draw_gooseneck_polygon(gooseneck_length, gooseneck_small_width, gooseneck_large_width, gooseneck_head_length)
@@ -278,8 +278,8 @@ def cut_lapped_gooseneck_joint(
         receiving_timber_shoulder_from_end = gooseneck_starting_position_on_receiving_timber
     
     # Get the receiving timber face that opposes the gooseneck face
-    receiving_timber_lap_face_direction = -gooseneck_timber.get_face_direction(gooseneck_timber_face)
-    receiving_timber_lap_face = receiving_timber.get_closest_oriented_face(receiving_timber_lap_face_direction)
+    receiving_timber_lap_face_direction = -gooseneck_timber.get_face_direction_global(gooseneck_timber_face)
+    receiving_timber_lap_face = receiving_timber.get_closest_oriented_face_from_global_direction(receiving_timber_lap_face_direction)
     
     # Cut lap on receiving timber
     receiving_timber_lap_csg = chop_lap_on_timber_end(
@@ -482,12 +482,12 @@ def cut_lapped_dovetail_butt_joint(
 
 
     # assert that dovetail_timber_face is perpendicular to receiving_timber.get_length_direction_global()
-    if are_vectors_parallel(dovetail_timber.get_face_direction(dovetail_timber_face), receiving_timber.get_length_direction_global()):
+    if are_vectors_parallel(dovetail_timber.get_face_direction_global(dovetail_timber_face), receiving_timber.get_length_direction_global()):
         raise ValueError(
             "Dovetail timber face must be perpendicular to receiving timber length direction for dovetail butt joint. "
             "The face should be oriented such that the dovetail profile is visible when looking along the receiving timber. "
             "Try rotating the dovetail face by 90 degrees. "
-            f"Got dovetail_timber_face direction: {dovetail_timber.get_face_direction(dovetail_timber_face).T}, "
+            f"Got dovetail_timber_face direction: {dovetail_timber.get_face_direction_global(dovetail_timber_face).T}, "
             f"receiving_timber length_direction: {receiving_timber.get_length_direction_global().T}"
         )
     
@@ -523,7 +523,7 @@ def cut_lapped_dovetail_butt_joint(
     # it is on the centerline of the dovetail face where it intersects the inset shoulder of the mortise timber
     # ========================================================================
 
-    receiving_timber_shoulder_face = receiving_timber.get_closest_oriented_face(-dovetail_timber.get_face_direction(dovetail_timber_end.to_timber_face()))
+    receiving_timber_shoulder_face = receiving_timber.get_closest_oriented_face_from_global_direction(-dovetail_timber.get_face_direction_global(dovetail_timber_end.to_timber_face()))
     shoulder_distance_from_end = find_face_plane_intersection_on_centerline(
         face=receiving_timber_shoulder_face,
         face_timber=receiving_timber,
@@ -531,7 +531,7 @@ def cut_lapped_dovetail_butt_joint(
         to_timber_end=dovetail_timber_end
     ) - receiving_timber_shoulder_inset
 
-    offset_to_dovetail_face = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face) / Rational(2) * dovetail_timber.get_face_direction(dovetail_timber_face)
+    offset_to_dovetail_face = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face) / Rational(2) * dovetail_timber.get_face_direction_global(dovetail_timber_face)
     
     marking_transform_position = dovetail_timber.get_bottom_position_global() + shoulder_distance_from_end * dovetail_timber.get_length_direction_global() + offset_to_dovetail_face
     marking_transform_orientation = orientation_pointing_towards_face_sitting_on_face(towards_face=dovetail_timber_end.to_timber_face(), sitting_face=dovetail_timber_face.to_timber_face())
