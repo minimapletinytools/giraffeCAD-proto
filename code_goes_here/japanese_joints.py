@@ -480,11 +480,6 @@ def cut_lapped_dovetail_butt_joint(
             "Timbers must be face-aligned for dovetail butt joint. "
         )
 
-    print(f"dovetail_timber_face: {dovetail_timber_face}")
-    print(f"dovetail_timber.get_face_direction(dovetail_timber_face): {dovetail_timber.get_face_direction(dovetail_timber_face)}")
-    print(f"dovetail_timber.length_direction: {dovetail_timber.length_direction}")
-    print(f"receiving_timber.length_direction: {receiving_timber.length_direction}")
-
     # assert that dovetail_timber_face is not parallel to receiving_timber.length_direction
     # TODO uncomment once you fix the chop_profile_on_timber_face function
     """

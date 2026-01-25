@@ -682,6 +682,34 @@ def create_oscarshed():
     )
 
     # ============================================================================
+    # Create mortise and tenon joints for front posts with front top plate
+    # ============================================================================
+    # Front posts have tenons on top that go into the front top plate
+    # Use same parameters as middle posts: 2" x 1" tenon, 3" length, 3.5" depth
+    
+    # Front left post TOP end meets front top plate
+    joint_front_left_post_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post_front_left,
+        mortise_timber=top_plate_front,
+        tenon_end=TimberReferenceEnd.TOP,
+        tenon_size=middle_post_tenon_size,
+        tenon_length=middle_post_tenon_length,
+        mortise_depth=middle_post_mortise_depth,
+        tenon_position=None  # Centered
+    )
+    
+    # Front right post TOP end meets front top plate
+    joint_front_right_post_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=post_front_right,
+        mortise_timber=top_plate_front,
+        tenon_end=TimberReferenceEnd.TOP,
+        tenon_size=middle_post_tenon_size,
+        tenon_length=middle_post_tenon_length,
+        mortise_depth=middle_post_mortise_depth,
+        tenon_position=None  # Centered
+    )
+
+    # ============================================================================
     # Create housing joints between side girts and back top plate (back beam)
     # ============================================================================
     # The side girts are the housing timber (receiving the housed timber)
@@ -944,6 +972,9 @@ def create_oscarshed():
         joint_back_beam_right_housing,
         joint_back_left_post_to_beam,
         joint_back_right_post_to_beam,
+        # Front top plate joints
+        joint_front_left_post_to_top_plate,
+        joint_front_right_post_to_top_plate,
     ]
     
     # Flatten rafter house joints (they're stored as tuples of (back_joint, front_joint))
@@ -1002,7 +1033,9 @@ if __name__ == "__main__":
     print(f"  - Joined with 2 lapped gooseneck joints (traditional Japanese joinery)")
     print(f"Top Plates: 2 (one front, one back)")
     print(f"  - Size: 6\" x 4\" (6\" vertical, same as mudsills)")
-    print(f"  - Position: On top of posts")
+    print(f"  - Position: On top of posts with mortise & tenon joints")
+    print(f"  - Front posts: 2\" x 1\" tenon, 3\" long, 3.5\" mortise depth")
+    print(f"  - Back middle posts: same dimensions")
     print(f"  - Stickout: 1 foot on both sides (symmetric)")
     print(f"Joists: 3 (running from front to back between mudsills)")
     print(f"  - Size: 4\" x 4\"")
