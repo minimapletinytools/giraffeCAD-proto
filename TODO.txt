@@ -325,6 +325,7 @@ DONE-add extrude polygon csg rendering to fusino 360
 DONE-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes_here/japanese_joints.py:221: UserWarning: Gooseneck joint configuration may not be sensible: Joint ends are pointing in the same direction (dot product = 1.000). For a splice joint, the ends should point in opposite directions (dot product should be -1) warning
 DONE-do irrational joint test for rendering
 
+-do refactors in timber as well...
 -static method in orientation class
 -transform prob does not need to be frozen...
 

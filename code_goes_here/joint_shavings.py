@@ -86,18 +86,18 @@ def find_face_plane_intersection_on_centerline(face: TimberFace, face_timber: Ti
     else:
         # Long face: center is at mid-length, offset by face normal
         face_center_point = (face_timber.bottom_position + 
-                            face_timber.length_direction * (face_timber.length / Rational(2)) +
+                            face_timber.get_length_direction_global() * (face_timber.length / Rational(2)) +
                             face_direction * face_offset)
     
     # Get the end position on to_timber
     if to_timber_end == TimberReferenceEnd.TOP:
         end_position = to_timber.get_top_center_position()
         # Direction from end into timber is negative length direction
-        into_timber_direction = -to_timber.length_direction
+        into_timber_direction = -to_timber.get_length_direction_global()
     else:  # BOTTOM
         end_position = to_timber.get_bottom_center_position()
         # Direction from end into timber is positive length direction
-        into_timber_direction = to_timber.length_direction
+        into_timber_direction = to_timber.get_length_direction_global()
     
     # Calculate the vector from the end position to the face center
     vector_to_face = face_center_point - end_position
@@ -126,18 +126,18 @@ def find_projected_intersection_on_centerlines(timberA: Timber, timberB: Timber,
     """
     # Get the starting points for each centerline (at the specified ends)
     if timberA_end == TimberReferenceEnd.TOP:
-        pointA = timberA.bottom_position + timberA.length * timberA.length_direction
+        pointA = timberA.bottom_position + timberA.length * timberA.get_length_direction_global()
     else:  # BOTTOM
         pointA = timberA.bottom_position
     
     if timberB_end == TimberReferenceEnd.TOP:
-        pointB = timberB.bottom_position + timberB.length * timberB.length_direction
+        pointB = timberB.bottom_position + timberB.length * timberB.get_length_direction_global()
     else:  # BOTTOM
         pointB = timberB.bottom_position
     
     # Direction vectors for each centerline
-    dirA = timberA.length_direction
-    dirB = timberB.length_direction
+    dirA = timberA.get_length_direction_global()
+    dirB = timberB.get_length_direction_global()
     
     # Solve for closest points on two 3D lines using the standard formula
     # Line A: pointA + t_A * dirA
@@ -284,8 +284,8 @@ def check_timber_overlap_for_splice_joint_is_sensible(
         ...     print(f"Joint configuration error: {error}")
     """
     # Get the length directions for both timbers
-    timberA_length_direction = timberA.length_direction
-    timberB_length_direction = timberB.length_direction
+    timberA_length_direction = timberA.get_length_direction_global()
+    timberB_length_direction = timberB.get_length_direction_global()
     
     # First, check that timbers are parallel (not perpendicular or skewed)
     dot_product = timberA_length_direction.dot(timberB_length_direction)
@@ -301,20 +301,20 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     # Note: end_direction points AWAY from the timber (outward from the end)
     if timberA_end == TimberReferenceEnd.TOP:
         timberA_end_pos = timberA.get_top_center_position()
-        timberA_end_direction = timberA.length_direction  # Points away from timber
+        timberA_end_direction = timberA.get_length_direction_global()  # Points away from timber
         timberA_opposite_end_pos = timberA.bottom_position
     else:  # BOTTOM
         timberA_end_pos = timberA.bottom_position
-        timberA_end_direction = -timberA.length_direction  # Points away from timber
+        timberA_end_direction = -timberA.get_length_direction_global()  # Points away from timber
         timberA_opposite_end_pos = timberA.get_top_center_position()
     
     if timberB_end == TimberReferenceEnd.TOP:
         timberB_end_pos = timberB.get_top_center_position()
-        timberB_end_direction = timberB.length_direction  # Points away from timber
+        timberB_end_direction = timberB.get_length_direction_global()  # Points away from timber
         timberB_opposite_end_pos = timberB.bottom_position
     else:  # BOTTOM
         timberB_end_pos = timberB.bottom_position
-        timberB_end_direction = -timberB.length_direction  # Points away from timber
+        timberB_end_direction = -timberB.get_length_direction_global()  # Points away from timber
         timberB_opposite_end_pos = timberB.get_top_center_position()
     
     # Check 1: The joint ends must be pointing in opposite directions (anti-parallel)
@@ -544,10 +544,10 @@ def chop_lap_on_timber_end(
     # Step 1: Determine the end positions and shoulder position of the top lap timber
     if lap_timber_end == TimberReferenceEnd.TOP:
         lap_end_pos = lap_timber.get_top_center_position()
-        lap_direction = lap_timber.length_direction 
+        lap_direction = lap_timber.get_length_direction_global() 
     else:  # BOTTOM
         lap_end_pos = lap_timber.get_bottom_center_position()
-        lap_direction = -lap_timber.length_direction
+        lap_direction = -lap_timber.get_length_direction_global()
     
     # Calculate the shoulder position (where the lap starts)
     shoulder_pos_global = lap_end_pos - lap_direction * lap_shoulder_position_from_lap_timber_end
@@ -557,8 +557,8 @@ def chop_lap_on_timber_end(
     
     # Step 3: Create half-plane cuts to remove the ends beyond the lap region
     # Top lap: remove everything beyond the shoulder position (towards the timber end)
-    lap_end_distance_from_bottom = ((lap_end_pos_global - lap_timber.bottom_position).T * lap_timber.length_direction)[0, 0]
-    lap_shoulder_distance_from_bottom = ((shoulder_pos_global - lap_timber.bottom_position).T * lap_timber.length_direction)[0, 0]
+    lap_end_distance_from_bottom = ((lap_end_pos_global - lap_timber.bottom_position).T * lap_timber.get_length_direction_global())[0, 0]
+    lap_shoulder_distance_from_bottom = ((shoulder_pos_global - lap_timber.bottom_position).T * lap_timber.get_length_direction_global())[0, 0]
     
     lap_shoulder_distance_from_end = (lap_timber.length - lap_end_distance_from_bottom
                                          if lap_timber_end == TimberReferenceEnd.TOP 
@@ -691,10 +691,10 @@ def chop_lap_on_timber_ends(
         f"{top_lap_timber.name} and {bottom_lap_timber.name} orientations are not related by 90-degree rotations."
     
     # Assert the 2 timbers are parallel (either same direction or opposite)
-    assert are_vectors_parallel(top_lap_timber.length_direction, bottom_lap_timber.length_direction), \
+    assert are_vectors_parallel(top_lap_timber.get_length_direction_global(), bottom_lap_timber.get_length_direction_global()), \
         f"Timbers must be parallel for a splice lap joint. " \
-        f"{top_lap_timber.name} length_direction {top_lap_timber.length_direction.T} and " \
-        f"{bottom_lap_timber.name} length_direction {bottom_lap_timber.length_direction.T} are not parallel."
+        f"{top_lap_timber.name} length_direction {top_lap_timber.get_length_direction_global().T} and " \
+        f"{bottom_lap_timber.name} length_direction {bottom_lap_timber.get_length_direction_global().T} are not parallel."
     
     # Assert the 2 timber cross sections overlap at least a little
     assert do_xy_cross_section_on_parallel_timbers_overlap(top_lap_timber, bottom_lap_timber), \
@@ -734,10 +734,10 @@ def chop_lap_on_timber_ends(
     # Calculate top timber's shoulder and lap end positions in global space
     if top_lap_timber_end == TimberReferenceEnd.TOP:
         top_timber_end_pos = top_lap_timber.get_top_center_position()
-        top_lap_direction = top_lap_timber.length_direction 
+        top_lap_direction = top_lap_timber.get_length_direction_global() 
     else:  # BOTTOM
         top_timber_end_pos = top_lap_timber.get_bottom_center_position()
-        top_lap_direction = -top_lap_timber.length_direction 
+        top_lap_direction = -top_lap_timber.get_length_direction_global() 
     
     # Top timber shoulder: move inward from timber end by shoulder distance
     top_shoulder_global = top_timber_end_pos - top_lap_direction * top_lap_shoulder_position_from_top_lap_shoulder_timber_end
@@ -750,7 +750,7 @@ def chop_lap_on_timber_ends(
     bottom_shoulder_global = top_lap_end_global
     
     # Project bottom shoulder position onto bottom timber's length axis
-    bottom_shoulder_from_bottom_timber_bottom = ((bottom_shoulder_global - bottom_lap_timber.bottom_position).T * bottom_lap_timber.length_direction)[0, 0]
+    bottom_shoulder_from_bottom_timber_bottom = ((bottom_shoulder_global - bottom_lap_timber.bottom_position).T * bottom_lap_timber.get_length_direction_global())[0, 0]
     
     # Calculate shoulder distance from bottom timber's reference end
     if bottom_lap_timber_end == TimberReferenceEnd.TOP:
