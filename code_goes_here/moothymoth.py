@@ -509,12 +509,7 @@ class Orientation:
     
     def __repr__(self) -> str:
         return f"Orientation(\n{self.matrix}\n)"
-    
-    # Static constants for cardinal directions
-    @classmethod
-    def identity(cls) -> 'Orientation':
-        """Identity orientation - facing east (+X)"""
-        return cls()
+
     @classmethod
     def rotate_right(cls) -> 'Orientation':
         """Rotate right: +X axis rotates to -Y axis (clockwise around Z)"""
@@ -534,6 +529,95 @@ class Orientation:
             [0, 0, 1]
         ])
         return cls(matrix)
+        
+    
+    # TODO change veeryhting below to static methods....
+    # Static constants for cardinal directions
+    @classmethod
+    def identity(cls) -> 'Orientation':
+        """Identity orientation - facing east (+X)"""
+        return cls()
+
+    @staticmethod
+    def from_z_and_y(z_direction: Direction3D, y_direction: Direction3D) -> 'Orientation':
+        """
+        Create an Orientation from z and y direction vectors.
+        Computes x = y × z to complete the right-handed coordinate system.
+        """
+        x_direction = cross_product(y_direction, z_direction)
+        return Orientation(Matrix([
+            [x_direction[0], y_direction[0], z_direction[0]],
+            [x_direction[1], y_direction[1], z_direction[1]],
+            [x_direction[2], y_direction[2], z_direction[2]]
+        ]))
+    
+    @staticmethod
+    def from_z_and_x(z_direction: Direction3D, x_direction: Direction3D) -> 'Orientation':
+        """
+        Create an Orientation from z and x direction vectors.
+        Computes y = z × x to complete the right-handed coordinate system.
+        """
+        y_direction = cross_product(z_direction, x_direction)
+        return Orientation(Matrix([
+            [x_direction[0], y_direction[0], z_direction[0]],
+            [x_direction[1], y_direction[1], z_direction[1]],
+            [x_direction[2], y_direction[2], z_direction[2]]
+        ]))
+    
+    @staticmethod
+    def from_x_and_y(x_direction: Direction3D, y_direction: Direction3D) -> 'Orientation':
+        """
+        Create an Orientation from x and y direction vectors.
+        Computes z = x × y to complete the right-handed coordinate system.
+        """
+        z_direction = cross_product(x_direction, y_direction)
+        return Orientation(Matrix([
+            [x_direction[0], y_direction[0], z_direction[0]],
+            [x_direction[1], y_direction[1], z_direction[1]],
+            [x_direction[2], y_direction[2], z_direction[2]]
+        ]))
+            
+    @classmethod
+    def from_euleryZYX(cls, yaw: Union[float, int, sp.Basic], pitch: Union[float, int, sp.Basic], roll: Union[float, int, sp.Basic]) -> 'Orientation':
+        """
+        Create an Orientation from Euler angles using ZYX rotation sequence.
+        
+        Args:
+            yaw: Rotation around Z-axis (radians)
+            pitch: Rotation around Y-axis (radians) 
+            roll: Rotation around X-axis (radians)
+            
+        Returns:
+            Orientation object with combined rotation matrix
+            
+        The rotation sequence is:
+        1. Yaw (Z-axis rotation)
+        2. Pitch (Y-axis rotation)
+        3. Roll (X-axis rotation)
+        """
+        # Individual rotation matrices
+        Rz = Matrix([
+            [cos(yaw), -sin(yaw), 0],
+            [sin(yaw), cos(yaw), 0],
+            [0, 0, 1]
+        ])
+        
+        Ry = Matrix([
+            [cos(pitch), 0, sin(pitch)],
+            [0, 1, 0],
+            [-sin(pitch), 0, cos(pitch)]
+        ])
+        
+        Rx = Matrix([
+            [1, 0, 0],
+            [0, cos(roll), -sin(roll)],
+            [0, sin(roll), cos(roll)]
+        ])
+        
+        # Combined rotation: R = Rz * Ry * Rx
+        combined_matrix = Rz * Ry * Rx
+        return cls(combined_matrix)
+
     
     # ========================================================================
     # TIMBER ORIENTATION METHODS
@@ -718,45 +802,3 @@ class Orientation:
             [1, 0, 0]
         ])
         return cls(matrix)
-    
-    @classmethod
-    def from_euleryZYX(cls, yaw: Union[float, int, sp.Basic], pitch: Union[float, int, sp.Basic], roll: Union[float, int, sp.Basic]) -> 'Orientation':
-        """
-        Create an Orientation from Euler angles using ZYX rotation sequence.
-        
-        Args:
-            yaw: Rotation around Z-axis (radians)
-            pitch: Rotation around Y-axis (radians) 
-            roll: Rotation around X-axis (radians)
-            
-        Returns:
-            Orientation object with combined rotation matrix
-            
-        The rotation sequence is:
-        1. Yaw (Z-axis rotation)
-        2. Pitch (Y-axis rotation)
-        3. Roll (X-axis rotation)
-        """
-        # Individual rotation matrices
-        Rz = Matrix([
-            [cos(yaw), -sin(yaw), 0],
-            [sin(yaw), cos(yaw), 0],
-            [0, 0, 1]
-        ])
-        
-        Ry = Matrix([
-            [cos(pitch), 0, sin(pitch)],
-            [0, 1, 0],
-            [-sin(pitch), 0, cos(pitch)]
-        ])
-        
-        Rx = Matrix([
-            [1, 0, 0],
-            [0, cos(roll), -sin(roll)],
-            [0, sin(roll), cos(roll)]
-        ])
-        
-        # Combined rotation: R = Rz * Ry * Rx
-        combined_matrix = Rz * Ry * Rx
-        return cls(combined_matrix)
-

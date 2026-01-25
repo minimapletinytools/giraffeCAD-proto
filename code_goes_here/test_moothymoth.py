@@ -12,7 +12,8 @@ from code_goes_here.moothymoth import (
     Orientation,
     inches, feet, mm, cm, m,
     shaku, sun, bu,
-    INCH_TO_METER, FOOT_TO_METER, SHAKU_TO_METER
+    INCH_TO_METER, FOOT_TO_METER, SHAKU_TO_METER,
+    create_v3
 )
 import random
 from .testing_shavings import generate_random_orientation, assert_is_valid_rotation_matrix
@@ -96,6 +97,69 @@ class TestOrientation:
         for i in range(3):
             for j in range(3):
                 assert abs(float(diff[i, j])) < 1e-10
+
+
+class TestOrientationFromVectors:
+    """Test creating Orientations from direction vectors."""
+    
+    def test_from_z_and_y_basic(self):
+        """Test from_z_and_y with basic orthogonal vectors."""
+        z_dir = create_v3(0, 0, 1)  # Up
+        y_dir = create_v3(0, 1, 0)  # North
+        orient = Orientation.from_z_and_y(z_dir, y_dir)
+        
+        # Check the matrix columns are correct
+        assert orient.matrix[:, 2] == z_dir  # Z column
+        assert orient.matrix[:, 1] == y_dir  # Y column
+        # X should be y × z = [0,1,0] × [0,0,1] = [1,0,0]
+        assert orient.matrix[:, 0] == create_v3(1, 0, 0)
+        assert_is_valid_rotation_matrix(orient.matrix)
+    
+    def test_from_z_and_x_basic(self):
+        """Test from_z_and_x with basic orthogonal vectors."""
+        z_dir = create_v3(0, 0, 1)  # Up
+        x_dir = create_v3(1, 0, 0)  # East
+        orient = Orientation.from_z_and_x(z_dir, x_dir)
+        
+        # Check the matrix columns are correct
+        assert orient.matrix[:, 2] == z_dir  # Z column
+        assert orient.matrix[:, 0] == x_dir  # X column
+        # Y should be z × x = [0,0,1] × [1,0,0] = [0,1,0]
+        assert orient.matrix[:, 1] == create_v3(0, 1, 0)
+        assert_is_valid_rotation_matrix(orient.matrix)
+    
+    def test_from_x_and_y_basic(self):
+        """Test from_x_and_y with basic orthogonal vectors."""
+        x_dir = create_v3(1, 0, 0)  # East
+        y_dir = create_v3(0, 1, 0)  # North
+        orient = Orientation.from_x_and_y(x_dir, y_dir)
+        
+        # Check the matrix columns are correct
+        assert orient.matrix[:, 0] == x_dir  # X column
+        assert orient.matrix[:, 1] == y_dir  # Y column
+        # Z should be x × y = [1,0,0] × [0,1,0] = [0,0,1]
+        assert orient.matrix[:, 2] == create_v3(0, 0, 1)
+        assert_is_valid_rotation_matrix(orient.matrix)
+    
+    def test_from_z_and_y_gives_identity(self):
+        """Test that standard up/north vectors give identity."""
+        orient = Orientation.from_z_and_y(
+            create_v3(0, 0, 1),  # Z up
+            create_v3(0, 1, 0)   # Y north
+        )
+        # This should give identity matrix
+        assert orient.matrix == Matrix.eye(3)
+    
+    def test_from_vectors_consistency(self):
+        """Test all three methods give same result for same orientation."""
+        # All three should produce identity when given standard basis vectors
+        orient_zy = Orientation.from_z_and_y(create_v3(0, 0, 1), create_v3(0, 1, 0))
+        orient_zx = Orientation.from_z_and_x(create_v3(0, 0, 1), create_v3(1, 0, 0))
+        orient_xy = Orientation.from_x_and_y(create_v3(1, 0, 0), create_v3(0, 1, 0))
+        
+        assert orient_zy.matrix == Matrix.eye(3)
+        assert orient_zx.matrix == Matrix.eye(3)
+        assert orient_xy.matrix == Matrix.eye(3)
 
 
 class TestOrientationConstants:
