@@ -786,6 +786,52 @@ def create_oscarshed():
         joists.append(joist)
 
     # ============================================================================
+    # Create dovetail butt joints for joists with mudsills
+    # ============================================================================
+    
+    # Dovetail parameters
+    dovetail_shoulder_inset = inches(Rational(1, 2))  # 1/2 inch shoulder inset
+    dovetail_small_width = inches(Rational(3, 2))     # 1.5 inch small width
+    dovetail_large_width = inches(2)                   # 2 inch large width
+    dovetail_length = inches(2)                        # 2 inch long
+    dovetail_depth = inches(2)                         # 2 inch deep
+    
+    joist_dovetail_joints = []
+    
+    for i, joist in enumerate(joists, start=1):
+        # Create dovetail joint with front mudsill
+        # Joist runs from front (BOTTOM) to back (TOP)
+        # The dovetail should be visible on the RIGHT face of the joist (facing right/positive X)
+        joint_front = cut_lapped_dovetail_butt_joint(
+            dovetail_timber=joist,
+            receiving_timber=mudsill_front,
+            dovetail_timber_end=TimberReferenceEnd.BOTTOM,
+            dovetail_timber_face=TimberReferenceLongFace.RIGHT,
+            receiving_timber_shoulder_inset=dovetail_shoulder_inset,
+            dovetail_length=dovetail_length,
+            dovetail_small_width=dovetail_small_width,
+            dovetail_large_width=dovetail_large_width,
+            dovetail_lateral_offset=Rational(0),
+            dovetail_depth=dovetail_depth
+        )
+        
+        # Create dovetail joint with back mudsill
+        joint_back = cut_lapped_dovetail_butt_joint(
+            dovetail_timber=joist,
+            receiving_timber=mudsill_back,
+            dovetail_timber_end=TimberReferenceEnd.TOP,
+            dovetail_timber_face=TimberReferenceLongFace.RIGHT,
+            receiving_timber_shoulder_inset=dovetail_shoulder_inset,
+            dovetail_length=dovetail_length,
+            dovetail_small_width=dovetail_small_width,
+            dovetail_large_width=dovetail_large_width,
+            dovetail_lateral_offset=Rational(0),
+            dovetail_depth=dovetail_depth
+        )
+        
+        joist_dovetail_joints.append((joint_front, joint_back))
+
+    # ============================================================================
     # Create rafters (running from back top plate to front top plate)
     # ============================================================================
     
@@ -905,9 +951,13 @@ def create_oscarshed():
         all_joints.append(joint_back)
         all_joints.append(joint_front)
     
-    # Joists don't have joints, so pass them as additional unjointed timbers
-    # Note: Rafters already have house joints above, so they shouldn't be included here
-    unjointed_timbers = joists
+    # Add joist dovetail joints (stored as tuples of (front_joint, back_joint))
+    for joint_front, joint_back in joist_dovetail_joints:
+        all_joints.append(joint_front)
+        all_joints.append(joint_back)
+    
+    # Joists now have dovetail joints, so no unjointed timbers
+    unjointed_timbers = []
     
     return Frame.from_joints(all_joints, additional_unjointed_timbers=unjointed_timbers, name="Oscar's Shed")
 
@@ -959,6 +1009,9 @@ if __name__ == "__main__":
     print(f"  - Spacing: Evenly spaced with equal gaps")
     print(f"  - Position: Tops flush with tops of mudsills")
     print(f"  - No stickout (flush with mudsills lengthwise)")
+    print(f"  - Joined with lapped dovetail butt joints (蟻仕口) at both ends")
+    print(f"    - Dovetail: 1.5\" to 2\" wide, 2\" long, 2\" deep")
+    print(f"    - Shoulder inset: 0.5\" on mudsills")
     print(f"Rafters: 5 (running from back to front on top plates)")
     print(f"  - Size: 4\" x 4\"")
     print(f"  - Spacing: Uniformly spaced")
