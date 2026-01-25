@@ -192,7 +192,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         raise ValueError(f"Invalid mortise face: {mortise_face}")
     
     # We need a point on the mortise face plane. For simplicity, use the mortise timber's bottom position as the reference
-    mortise_face_plane_point_global = mortise_timber.bottom_position + mortise_face_normal * face_offset
+    mortise_face_plane_point_global = mortise_timber.get_bottom_position_global() + mortise_face_normal * face_offset
 
     # ========================================================================
     # Step 3: Intersect the tenon centerline with the mortise face plane
@@ -220,7 +220,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # ========================================================================
     
     # Calculate the center of the tenon timber centerline
-    tenon_timber_center_global = tenon_timber.bottom_position + tenon_timber.get_length_direction_global() * (tenon_timber.length / Rational(2))
+    tenon_timber_center_global = tenon_timber.get_bottom_position_global() + tenon_timber.get_length_direction_global() * (tenon_timber.length / Rational(2))
     
     # Calculate signed distances from mortise face plane
     # Positive distance means on the side of the outward normal
@@ -251,7 +251,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # ========================================================================
     
     # Transform intersection point to mortise timber's local coordinate system
-    intersection_point_mortise_timber_local = mortise_timber.orientation.matrix.T * (intersection_point_global - mortise_timber.bottom_position)
+    intersection_point_mortise_timber_local = mortise_timber.orientation.matrix.T * (intersection_point_global - mortise_timber.get_bottom_position_global())
     
     # NOTE should only check one axis, checking both is fine too...
 
@@ -291,7 +291,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # The intersection_point_global is already the tenon center position in world coordinates
     # (with tenon_position offset already applied)
     # Transform it to mortise timber's local coordinates
-    tenon_origin_local = mortise_timber.orientation.matrix.T * (intersection_point_global - mortise_timber.bottom_position)
+    tenon_origin_local = mortise_timber.orientation.matrix.T * (intersection_point_global - mortise_timber.get_bottom_position_global())
     
     # Create a prism representing the tenon volume (in mortise timber's local space)
     from code_goes_here.meowmeowcsg import Prism
@@ -307,7 +307,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Create the CSGCut for the mortise
     mortise_cut = CSGCut(
         timber=mortise_timber,
-        transform=Transform(position=mortise_timber.bottom_position, orientation=mortise_timber.orientation),
+        transform=Transform(position=mortise_timber.get_bottom_position_global(), orientation=mortise_timber.orientation),
         negative_csg=tenon_prism_in_mortise_local,
         maybe_end_cut=None
     )
@@ -335,7 +335,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     shoulder_plane_point_with_offset_global = shoulder_plane_point_global + tenon_x_offset_vec + tenon_y_offset_vec
     
     # Convert shoulder plane point to tenon timber's local coordinates
-    shoulder_plane_point_with_offset_local = tenon_timber.orientation.matrix.T * (shoulder_plane_point_with_offset_global - tenon_timber.bottom_position)
+    shoulder_plane_point_with_offset_local = tenon_timber.orientation.matrix.T * (shoulder_plane_point_with_offset_global - tenon_timber.get_bottom_position_global())
     
     # Create infinite prism representing the timber end beyond the shoulder
     # This extends from the shoulder to infinity in the tenon direction
@@ -406,7 +406,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Create a single CSG cut
     tenon_cut = CSGCut(
         timber=tenon_timber,
-        transform=Transform(position=tenon_timber.bottom_position, orientation=tenon_timber.orientation),
+        transform=Transform(position=tenon_timber.get_bottom_position_global(), orientation=tenon_timber.orientation),
         negative_csg=tenon_cut_csg,
         maybe_end_cut=tenon_end
     )
@@ -538,7 +538,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             # Next we cut the peg hole in themortise timber
 
             # Transform peg position to global space
-            peg_pos_on_tenon_face_global = tenon_timber.bottom_position + tenon_timber.orientation.matrix * peg_pos_on_tenon_face_local
+            peg_pos_on_tenon_face_global = tenon_timber.get_bottom_position_global() + tenon_timber.orientation.matrix * peg_pos_on_tenon_face_local
             peg_orientation_global = Orientation(tenon_timber.orientation.matrix * peg_orientation_tenon_local.matrix)
             peg_direction_global = peg_orientation_global.matrix[:, 2] # Z-axis of peg in global space
 
@@ -594,7 +594,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
 
 
             # Get a point on the mortise peg entry face plane (any point)
-            peg_entry_face_plane_point_global = mortise_timber.bottom_position + peg_entry_face_normal * peg_entry_face_offset
+            peg_entry_face_plane_point_global = mortise_timber.get_bottom_position_global() + peg_entry_face_normal * peg_entry_face_offset
             
             # Ray-plane intersection to find where peg enters the mortise face
             # Ray: P = peg_pos_on_tenon_face_global + t * peg_direction_global
@@ -612,7 +612,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             peg_pos_on_mortise_face_global = peg_pos_on_tenon_face_global + peg_direction_global * t_peg
             
             # Transform the intersection point to mortise timber's local coordinates
-            peg_pos_on_mortise_face_local = mortise_timber.orientation.matrix.T * (peg_pos_on_mortise_face_global - mortise_timber.bottom_position)
+            peg_pos_on_mortise_face_local = mortise_timber.orientation.matrix.T * (peg_pos_on_mortise_face_global - mortise_timber.get_bottom_position_global())
             
             # Transform peg orientation to mortise local space (peg_orientation_global already calculated above)
             peg_orientation_mortise_local = Orientation(mortise_timber.orientation.matrix.T * peg_orientation_global.matrix)
@@ -636,7 +636,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             # but the final accessory is stored in global space
             
             # Transform peg position from mortise local space to global space
-            peg_pos_global = mortise_timber.bottom_position + mortise_timber.orientation.matrix * peg_pos_on_mortise_face_local
+            peg_pos_global = mortise_timber.get_bottom_position_global() + mortise_timber.orientation.matrix * peg_pos_on_mortise_face_local
             
             # Transform peg orientation from mortise local space to global space
             peg_orientation_global = Orientation(mortise_timber.orientation.matrix * peg_orientation_mortise_local.matrix)
@@ -661,7 +661,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             tenon_cut_with_pegs_csg = CSGUnion(children=[tenon_cut_csg] + peg_holes_in_tenon_local)
             tenon_cut = CSGCut(
                 timber=tenon_timber,
-                transform=Transform(position=tenon_timber.bottom_position, orientation=tenon_timber.orientation),
+                transform=Transform(position=tenon_timber.get_bottom_position_global(), orientation=tenon_timber.orientation),
                 negative_csg=tenon_cut_with_pegs_csg,
                 maybe_end_cut=tenon_end
             )
@@ -672,7 +672,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             mortise_cut_with_pegs_csg = CSGUnion(children=[tenon_prism_in_mortise_local] + peg_holes_in_mortise_local)
             mortise_cut = CSGCut(
                 timber=mortise_timber,
-                transform=Transform(position=mortise_timber.bottom_position, orientation=mortise_timber.orientation),
+                transform=Transform(position=mortise_timber.get_bottom_position_global(), orientation=mortise_timber.orientation),
                 negative_csg=mortise_cut_with_pegs_csg,
                 maybe_end_cut=None
             )

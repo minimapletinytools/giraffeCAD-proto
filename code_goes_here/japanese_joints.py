@@ -220,7 +220,7 @@ def cut_lapped_gooseneck_joint(
     if receiving_timber_end == TimberReferenceEnd.TOP:
         receiving_timber_end_position_global = receiving_timber.get_top_center_position()
     else:  # BOTTOM
-        receiving_timber_end_position_global = receiving_timber.bottom_position
+        receiving_timber_end_position_global = receiving_timber.get_bottom_position_global()
     
     # Move from the receiving timber end by gooseneck_length (inward) to get the gooseneck starting position
     gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global = receiving_timber_end_position_global + gooseneck_direction_global * lap_length + gooseneck_lateral_offset_direction_global * gooseneck_lateral_offset
@@ -249,7 +249,7 @@ def cut_lapped_gooseneck_joint(
     # Extract the length component from gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global
     # This gives us the distance from the receiving timber's bottom position along its length axis
     gooseneck_starting_position_on_receiving_timber = (
-        (gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global - receiving_timber.bottom_position).T 
+        (gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global - receiving_timber.get_bottom_position_global()).T 
         * receiving_timber.get_length_direction_global()
     )[0, 0]
     
@@ -298,7 +298,7 @@ def cut_lapped_gooseneck_joint(
     
     # Project onto gooseneck timber's length axis
     gooseneck_lap_start_on_gooseneck_timber = (
-        (gooseneck_lap_start_global - gooseneck_timber.bottom_position).T 
+        (gooseneck_lap_start_global - gooseneck_timber.get_bottom_position_global()).T 
         * gooseneck_timber.get_length_direction_global()
     )[0, 0]
     
@@ -533,7 +533,7 @@ def cut_lapped_dovetail_butt_joint(
 
     offset_to_dovetail_face = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face) / Rational(2) * dovetail_timber.get_face_direction(dovetail_timber_face)
     
-    marking_transform_position = dovetail_timber.bottom_position + shoulder_distance_from_end * dovetail_timber.get_length_direction_global() + offset_to_dovetail_face
+    marking_transform_position = dovetail_timber.get_bottom_position_global() + shoulder_distance_from_end * dovetail_timber.get_length_direction_global() + offset_to_dovetail_face
     marking_transform_orientation = orientation_pointing_towards_face_sitting_on_face(towards_face=dovetail_timber_end.to_timber_face(), sitting_face=dovetail_timber_face.to_timber_face())
     dovetail_timber_marking_transform = Transform(position=marking_transform_position, orientation=marking_transform_orientation)
 

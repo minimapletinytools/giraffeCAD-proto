@@ -55,7 +55,7 @@ def simple_T_configuration():
 # TODO DELETE replace with timber.global_to_local
 def transform_point_to_local(point_world: V3, timber: Timber) -> V3:
     """Transform a point from world coordinates to timber local coordinates."""
-    return timber.orientation.matrix.T * (point_world - timber.bottom_position)
+    return timber.orientation.matrix.T * (point_world - timber.get_bottom_position_global())
 
 
 def sample_points_in_box(center: V3, size: V3, num_samples: int = 5) -> List[V3]:

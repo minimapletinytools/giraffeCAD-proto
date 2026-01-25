@@ -252,9 +252,9 @@ def main():
         print(f"   Length: {float(timber.length):.3f}m ({float(timber.length) / 0.0254:.1f} inches)")
         print(f"   Size: {float(timber.size[0]):.3f}m x {float(timber.size[1]):.3f}m "
               f"({float(timber.size[0]) / 0.0254:.1f}\" x {float(timber.size[1]) / 0.0254:.1f}\")")
-        print(f"   Position: ({float(timber.bottom_position[0]):.3f}, "
-              f"{float(timber.bottom_position[1]):.3f}, "
-              f"{float(timber.bottom_position[2]):.3f}) meters")
+        print(f"   Position: ({float(timber.get_bottom_position_global()[0]):.3f}, "
+              f"{float(timber.get_bottom_position_global()[1]):.3f}, "
+              f"{float(timber.get_bottom_position_global()[2]):.3f}) meters")
         print(f"   Cuts: {len(cut_timber.cuts)}")
         print()
     
