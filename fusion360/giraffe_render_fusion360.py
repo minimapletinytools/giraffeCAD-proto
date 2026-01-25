@@ -58,11 +58,32 @@ def get_active_design() -> Optional[adsk.fusion.Design]:
 
 
 def clear_design():
-    """Clear all objects from the current design."""
+    """Clear all objects from the current design and ensure it's an assembly."""
     design = get_active_design()
     if not design:
         print("No active design found")
-        return
+        return False
+    
+    app = get_fusion_app()
+    
+    # Ensure we're working with an assembly design
+    # Part designs can only contain one component, but we need multiple
+    if design.designType != adsk.fusion.DesignTypes.DirectDesignType:
+        print(f"Converting to DirectDesign (Assembly) mode...")
+        if app:
+            app.log("Converting to DirectDesign (Assembly) mode...")
+        
+        try:
+            design.designType = adsk.fusion.DesignTypes.DirectDesignType
+            print("Successfully converted to DirectDesign mode")
+            if app:
+                app.log("Successfully converted to DirectDesign mode")
+        except Exception as e:
+            error_msg = f"ERROR: Failed to convert to DirectDesign mode: {e}\nMultiple components cannot be created in Part Design mode. Please create a new Design or change to DirectDesign mode manually."
+            print(error_msg)
+            if app:
+                app.log(error_msg)
+            return False
     
     root = design.rootComponent
     
@@ -75,6 +96,7 @@ def clear_design():
         root.bRepBodies.item(0).deleteMe()
     
     print("Design cleared")
+    return True
 
 
 def create_matrix3d_from_orientation(position: Matrix, orientation: Orientation) -> adsk.core.Matrix3D:
