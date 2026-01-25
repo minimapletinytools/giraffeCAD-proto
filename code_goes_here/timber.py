@@ -187,11 +187,13 @@ class TimberReferenceLongFace(Enum):
 
     def rotate_right(self) -> 'TimberReferenceLongFace':
         """Rotate the long face right (90 degrees clockwise)."""
-        return TimberReferenceLongFace(self.value + 1 % 4)
+        # Map from 3-6 to 0-3, rotate, then map back to 3-6
+        return TimberReferenceLongFace((self.value - 3 + 1) % 4 + 3)
     
     def rotate_left(self) -> 'TimberReferenceLongFace':
         """Rotate the long face left (90 degrees counter-clockwise)."""
-        return TimberReferenceLongFace(self.value - 1 % 4)
+        # Map from 3-6 to 0-3, rotate, then map back to 3-6
+        return TimberReferenceLongFace((self.value - 3 - 1) % 4 + 3)
 
 class TimberReferenceLongEdge(Enum):
     RIGHT_FRONT = 7

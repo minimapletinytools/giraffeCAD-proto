@@ -602,6 +602,78 @@ class TestEnumsAndDataStructures:
         assert not TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.FRONT)
         assert not TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.BACK)
     
+    def test_timber_reference_long_face_rotate_right(self):
+        """Test TimberReferenceLongFace.rotate_right() method."""
+        # Test single rotation clockwise (when viewed from above/+Z)
+        # RIGHT (3) -> FRONT (4) -> LEFT (5) -> BACK (6) -> RIGHT (3)
+        assert TimberReferenceLongFace.RIGHT.rotate_right() == TimberReferenceLongFace.FRONT
+        assert TimberReferenceLongFace.FRONT.rotate_right() == TimberReferenceLongFace.LEFT
+        assert TimberReferenceLongFace.LEFT.rotate_right() == TimberReferenceLongFace.BACK
+        assert TimberReferenceLongFace.BACK.rotate_right() == TimberReferenceLongFace.RIGHT
+        
+        # Test chaining: rotating right 4 times should return to original
+        assert TimberReferenceLongFace.RIGHT.rotate_right().rotate_right().rotate_right().rotate_right() == TimberReferenceLongFace.RIGHT
+        assert TimberReferenceLongFace.FRONT.rotate_right().rotate_right().rotate_right().rotate_right() == TimberReferenceLongFace.FRONT
+        assert TimberReferenceLongFace.LEFT.rotate_right().rotate_right().rotate_right().rotate_right() == TimberReferenceLongFace.LEFT
+        assert TimberReferenceLongFace.BACK.rotate_right().rotate_right().rotate_right().rotate_right() == TimberReferenceLongFace.BACK
+        
+        # Test rotating right twice (180 degrees) gives opposite face
+        assert TimberReferenceLongFace.RIGHT.rotate_right().rotate_right() == TimberReferenceLongFace.LEFT
+        assert TimberReferenceLongFace.LEFT.rotate_right().rotate_right() == TimberReferenceLongFace.RIGHT
+        assert TimberReferenceLongFace.FRONT.rotate_right().rotate_right() == TimberReferenceLongFace.BACK
+        assert TimberReferenceLongFace.BACK.rotate_right().rotate_right() == TimberReferenceLongFace.FRONT
+    
+    def test_timber_reference_long_face_rotate_left(self):
+        """Test TimberReferenceLongFace.rotate_left() method."""
+        # Test single rotation counter-clockwise (when viewed from above/+Z)
+        # RIGHT (3) -> BACK (6) -> LEFT (5) -> FRONT (4) -> RIGHT (3)
+        assert TimberReferenceLongFace.RIGHT.rotate_left() == TimberReferenceLongFace.BACK
+        assert TimberReferenceLongFace.BACK.rotate_left() == TimberReferenceLongFace.LEFT
+        assert TimberReferenceLongFace.LEFT.rotate_left() == TimberReferenceLongFace.FRONT
+        assert TimberReferenceLongFace.FRONT.rotate_left() == TimberReferenceLongFace.RIGHT
+        
+        # Test chaining: rotating left 4 times should return to original
+        assert TimberReferenceLongFace.RIGHT.rotate_left().rotate_left().rotate_left().rotate_left() == TimberReferenceLongFace.RIGHT
+        assert TimberReferenceLongFace.FRONT.rotate_left().rotate_left().rotate_left().rotate_left() == TimberReferenceLongFace.FRONT
+        assert TimberReferenceLongFace.LEFT.rotate_left().rotate_left().rotate_left().rotate_left() == TimberReferenceLongFace.LEFT
+        assert TimberReferenceLongFace.BACK.rotate_left().rotate_left().rotate_left().rotate_left() == TimberReferenceLongFace.BACK
+        
+        # Test rotating left twice (180 degrees) gives opposite face
+        assert TimberReferenceLongFace.RIGHT.rotate_left().rotate_left() == TimberReferenceLongFace.LEFT
+        assert TimberReferenceLongFace.LEFT.rotate_left().rotate_left() == TimberReferenceLongFace.RIGHT
+        assert TimberReferenceLongFace.FRONT.rotate_left().rotate_left() == TimberReferenceLongFace.BACK
+        assert TimberReferenceLongFace.BACK.rotate_left().rotate_left() == TimberReferenceLongFace.FRONT
+    
+    def test_timber_reference_long_face_rotate_right_left_inverse(self):
+        """Test that rotate_right() and rotate_left() are inverses of each other."""
+        # Test that rotating right then left returns to original
+        assert TimberReferenceLongFace.RIGHT.rotate_right().rotate_left() == TimberReferenceLongFace.RIGHT
+        assert TimberReferenceLongFace.FRONT.rotate_right().rotate_left() == TimberReferenceLongFace.FRONT
+        assert TimberReferenceLongFace.LEFT.rotate_right().rotate_left() == TimberReferenceLongFace.LEFT
+        assert TimberReferenceLongFace.BACK.rotate_right().rotate_left() == TimberReferenceLongFace.BACK
+        
+        # Test that rotating left then right returns to original
+        assert TimberReferenceLongFace.RIGHT.rotate_left().rotate_right() == TimberReferenceLongFace.RIGHT
+        assert TimberReferenceLongFace.FRONT.rotate_left().rotate_right() == TimberReferenceLongFace.FRONT
+        assert TimberReferenceLongFace.LEFT.rotate_left().rotate_right() == TimberReferenceLongFace.LEFT
+        assert TimberReferenceLongFace.BACK.rotate_left().rotate_right() == TimberReferenceLongFace.BACK
+        
+        # Test multiple rotations in opposite directions cancel out
+        assert TimberReferenceLongFace.RIGHT.rotate_right().rotate_right().rotate_left().rotate_left() == TimberReferenceLongFace.RIGHT
+        assert TimberReferenceLongFace.FRONT.rotate_left().rotate_left().rotate_left().rotate_right().rotate_right().rotate_right() == TimberReferenceLongFace.FRONT
+    
+    def test_timber_reference_long_face_rotate_perpendicularity(self):
+        """Test that rotating by 90 degrees produces perpendicular faces."""
+        # Single rotation should produce perpendicular face
+        assert TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.RIGHT.rotate_right())
+        assert TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.RIGHT.rotate_left())
+        assert TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.FRONT.rotate_right())
+        assert TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.FRONT.rotate_left())
+        assert TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.LEFT.rotate_right())
+        assert TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.LEFT.rotate_left())
+        assert TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.BACK.rotate_right())
+        assert TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.BACK.rotate_left())
+    
     def test_distance_from_long_edge_is_valid(self):
         """Test DistanceFromLongEdge.is_valid() method."""
         # Valid cases - perpendicular faces
