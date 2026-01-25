@@ -214,7 +214,7 @@ class TestButtJoint:
         cut_normal_local = joint.cut_timbers["butt_timber"].cuts[0].half_plane.normal
         cut_normal_global = timberB.local_direction_to_global(cut_normal_local)
         
-        dot_with_length = (cut_normal_global.T * timberB.length_direction)[0, 0]
+        dot_with_length = (cut_normal_global.T * timberB.get_length_direction_global())[0, 0]
         from sympy import simplify, Abs
         assert simplify(Abs(dot_with_length)) == 1, \
             "Cut normal should be parallel or anti-parallel to butt timber's length direction"
@@ -498,7 +498,7 @@ class TestHouseJoint:
         # The prism's length direction (in housing timber's local coords) should match
         # the housed timber's length direction (also in housing timber's local coords)
         
-        housed_length_dir_in_housing_local = housing_timber.orientation.matrix.T * housed_timber.length_direction
+        housed_length_dir_in_housing_local = housing_timber.orientation.matrix.T * housed_timber.get_length_direction_global()
         prism_length_dir_in_housing_local = cut_prism_local.transform.orientation.matrix[:, 2]  # Z-axis of prism
         
         # These should be parallel (same or opposite direction)

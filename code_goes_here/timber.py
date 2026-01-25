@@ -251,6 +251,7 @@ class DistanceFromLongEdge:
 
     
 
+# TODO get rid of this, use measure/mark instead
 # TODO write better comments or give this a better name. wtf is this?
 @dataclass(frozen=True)
 class FaceAlignedJoinedTimberOffset:
@@ -462,10 +463,8 @@ class Timber:
         """Get the orientation from the transform."""
         return self.transform.orientation
     
-    # TODO rename to get_length_direction_global and convert to class method
-    @property
-    def length_direction(self) -> Direction3D:
-        """Get the length direction vector from the orientation matrix"""
+    def get_length_direction_global(self) -> Direction3D:
+        """Get the length direction vector in global coordinates from the orientation matrix"""
         # Length direction is the 3rd column (index 2) of the rotation matrix
         # The +length direction is the +Z direction
         return Matrix([
@@ -474,22 +473,18 @@ class Timber:
             self.orientation.matrix[2, 2]
         ])
     
-    # TODO rename to get_width_direction_global and convert to class method
-    @property
-    def width_direction(self) -> Direction3D:
-        """Get the face direction vector from the orientation matrix"""
-        # Face direction is the 1st column (index 0) of the rotation matrix
-        # The +face direction is the +X direction
+    def get_width_direction_global(self) -> Direction3D:
+        """Get the width direction vector in global coordinates from the orientation matrix"""
+        # Width direction is the 1st column (index 0) of the rotation matrix
+        # The +width direction is the +X direction
         return Matrix([
             self.orientation.matrix[0, 0],
             self.orientation.matrix[1, 0],
             self.orientation.matrix[2, 0]
         ])
     
-    # TODO rename to get_height_direction_global and convert to class method
-    @property
-    def height_direction(self) -> Direction3D:
-        """Get the height direction vector from the orientation matrix"""
+    def get_height_direction_global(self) -> Direction3D:
+        """Get the height direction vector in global coordinates from the orientation matrix"""
         # Height direction is the 2nd column (index 1) of the rotation matrix
         # The +height direction is the +Y direction
         return Matrix([
@@ -509,7 +504,7 @@ class Timber:
         Returns:
             3D position vector on the timber's centerline at the specified distance from bottom
         """
-        return self.bottom_position + self.length_direction * distance
+        return self.bottom_position + self.get_length_direction_global() * distance
     
     # TODO DELETE or rename to get_centerline_position_from_top_global
     def get_centerline_position_from_top(self, distance: Numeric) -> V3:
@@ -522,7 +517,7 @@ class Timber:
         Returns:
             3D position vector on the timber's centerline at the specified distance from top
         """
-        return self.bottom_position + self.length_direction * (self.length - distance)
+        return self.bottom_position + self.get_length_direction_global() * (self.length - distance)
     
     # TODO DELETE or rename to get_bottom_center_position_global
     def get_bottom_center_position(self) -> V3:
@@ -542,7 +537,7 @@ class Timber:
         Returns:
             3D position vector at the center of the top cross-section
         """
-        return self.bottom_position + self.length_direction * self.length
+        return self.bottom_position + self.get_length_direction_global() * self.length
     
     # TODO DELETE move this method onto Transform
     def global_to_local(self, global_point: V3) -> V3:
@@ -621,17 +616,17 @@ class Timber:
             face = face.to_timber_face()
         
         if face == TimberFace.TOP:
-            return self.length_direction
+            return self.get_length_direction_global()
         elif face == TimberFace.BOTTOM:
-            return -self.length_direction
+            return -self.get_length_direction_global()
         elif face == TimberFace.RIGHT:
-            return self.width_direction
+            return self.get_width_direction_global()
         elif face == TimberFace.LEFT:
-            return -self.width_direction
+            return -self.get_width_direction_global()
         elif face == TimberFace.FRONT:
-            return self.height_direction
+            return self.get_height_direction_global()
         else:  # BACK
-            return -self.height_direction
+            return -self.get_height_direction_global()
 
     def get_size_in_face_normal_axis(self, face: Union[TimberFace, TimberReferenceEnd, TimberReferenceLongFace]) -> Numeric:
         """

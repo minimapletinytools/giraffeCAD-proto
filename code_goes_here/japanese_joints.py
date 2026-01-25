@@ -250,7 +250,7 @@ def cut_lapped_gooseneck_joint(
     # This gives us the distance from the receiving timber's bottom position along its length axis
     gooseneck_starting_position_on_receiving_timber = (
         (gooseneck_starting_position_on_receiving_timber_centerline_with_lateral_offset_global - receiving_timber.bottom_position).T 
-        * receiving_timber.length_direction
+        * receiving_timber.get_length_direction_global()
     )[0, 0]
     
     # Compute lap end position: move by lap_length in the direction away from receiving timber end
@@ -299,7 +299,7 @@ def cut_lapped_gooseneck_joint(
     # Project onto gooseneck timber's length axis
     gooseneck_lap_start_on_gooseneck_timber = (
         (gooseneck_lap_start_global - gooseneck_timber.bottom_position).T 
-        * gooseneck_timber.length_direction
+        * gooseneck_timber.get_length_direction_global()
     )[0, 0]
     
     if gooseneck_timber_end == TimberReferenceEnd.TOP:
@@ -470,8 +470,8 @@ def cut_lapped_dovetail_butt_joint(
     if not are_timbers_orthogonal(dovetail_timber, receiving_timber):
         raise ValueError(
             "Timbers must be orthogonal (perpendicular) for dovetail butt joint. "
-            f"Got dovetail_timber length_direction: {dovetail_timber.length_direction.T}, "
-            f"receiving_timber length_direction: {receiving_timber.length_direction.T}"
+            f"Got dovetail_timber length_direction: {dovetail_timber.get_length_direction_global().T}, "
+            f"receiving_timber length_direction: {receiving_timber.get_length_direction_global().T}"
         )
 
     # Assert timbers are face aligned
@@ -481,14 +481,14 @@ def cut_lapped_dovetail_butt_joint(
         )
 
 
-    # assert that dovetail_timber_face is perpendicular to receiving_timber.length_direction
-    if are_vectors_parallel(dovetail_timber.get_face_direction(dovetail_timber_face), receiving_timber.length_direction):
+    # assert that dovetail_timber_face is perpendicular to receiving_timber.get_length_direction_global()
+    if are_vectors_parallel(dovetail_timber.get_face_direction(dovetail_timber_face), receiving_timber.get_length_direction_global()):
         raise ValueError(
             "Dovetail timber face must be perpendicular to receiving timber length direction for dovetail butt joint. "
             "The face should be oriented such that the dovetail profile is visible when looking along the receiving timber. "
             "Try rotating the dovetail face by 90 degrees. "
             f"Got dovetail_timber_face direction: {dovetail_timber.get_face_direction(dovetail_timber_face).T}, "
-            f"receiving_timber length_direction: {receiving_timber.length_direction.T}"
+            f"receiving_timber length_direction: {receiving_timber.get_length_direction_global().T}"
         )
     
     # ========================================================================
@@ -533,7 +533,7 @@ def cut_lapped_dovetail_butt_joint(
 
     offset_to_dovetail_face = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face) / Rational(2) * dovetail_timber.get_face_direction(dovetail_timber_face)
     
-    marking_transform_position = dovetail_timber.bottom_position + shoulder_distance_from_end * dovetail_timber.length_direction + offset_to_dovetail_face
+    marking_transform_position = dovetail_timber.bottom_position + shoulder_distance_from_end * dovetail_timber.get_length_direction_global() + offset_to_dovetail_face
     marking_transform_orientation = orientation_pointing_towards_face_sitting_on_face(towards_face=dovetail_timber_end.to_timber_face(), sitting_face=dovetail_timber_face.to_timber_face())
     dovetail_timber_marking_transform = Transform(position=marking_transform_position, orientation=marking_transform_orientation)
 

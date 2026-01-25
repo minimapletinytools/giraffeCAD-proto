@@ -136,9 +136,9 @@ class TestTimber:
         )
         
         # Verify that the property getters return the correct normalized directions
-        length_dir = timber.length_direction
-        width_dir = timber.width_direction
-        height_dir = timber.height_direction
+        length_dir = timber.get_length_direction_global()
+        width_dir = timber.get_width_direction_global()
+        height_dir = timber.get_height_direction_global()
         
         # Check that returned directions match input exactly (exact integers now)
         assert length_dir[0] == 0
@@ -168,9 +168,9 @@ class TestTimber:
             width_direction=input_width_dir
         )
         
-        length_dir = timber.length_direction
-        width_dir = timber.width_direction
-        height_dir = timber.height_direction
+        length_dir = timber.get_length_direction_global()
+        width_dir = timber.get_width_direction_global()
+        height_dir = timber.get_height_direction_global()
         
         # Check length direction (north) - exact integers now
         assert length_dir[0] == 0
@@ -197,9 +197,9 @@ class TestTimber:
             width_direction=create_v3(Rational(0), Rational(0), Rational(1))     # Up
         )
         
-        length_dir = timber.length_direction
-        width_dir = timber.width_direction
-        height_dir = timber.height_direction
+        length_dir = timber.get_length_direction_global()
+        width_dir = timber.get_width_direction_global()
+        height_dir = timber.get_height_direction_global()
         
         # Check that each vector has unit length
         assert_vector_normalized(length_dir)
@@ -226,8 +226,8 @@ class TestTimber:
         )
         
         # Despite non-normalized inputs, the output should be normalized
-        length_dir = timber.length_direction
-        width_dir = timber.width_direction
+        length_dir = timber.get_length_direction_global()
+        width_dir = timber.get_width_direction_global()
         
         # Check that directions are normalized (can be Rational(1) or Float(1))
         assert length_dir[0] == 0

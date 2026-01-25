@@ -348,18 +348,18 @@ def stretch_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Nume
     # Calculate new position based on end
     if end == TimberReferenceEnd.TOP:
         # Extend from top
-        extension_vector = timber.length_direction * (timber.length - overlap_length)
+        extension_vector = timber.get_length_direction_global() * (timber.length - overlap_length)
         new_bottom_position = timber.bottom_position + extension_vector
     else:  # BOTTOM
         # Extend from bottom
-        extension_vector = timber.length_direction * extend_length
+        extension_vector = timber.get_length_direction_global() * extend_length
         new_bottom_position = timber.bottom_position - extension_vector
     
     # Create new timber with extended length
     new_length = timber.length + extend_length + overlap_length
     
     return timber_from_directions(new_length, timber.size, new_bottom_position, 
-                                   timber.length_direction, timber.width_direction)
+                                   timber.get_length_direction_global(), timber.get_width_direction_global())
 
 # TODO add some sorta splice stickout parameter
 def split_timber(
@@ -407,22 +407,22 @@ def split_timber(
         length=distance_from_bottom,
         size=create_v2(timber.size[0], timber.size[1]),
         bottom_position=timber.bottom_position,
-        length_direction=timber.length_direction,
-        width_direction=timber.width_direction,
+        length_direction=timber.get_length_direction_global(),
+        width_direction=timber.get_width_direction_global(),
         name=bottom_name
     )
     
     # Calculate the bottom position of the second timber
     # It's at the top of the first timber
-    top_of_first = timber.bottom_position + distance_from_bottom * timber.length_direction
+    top_of_first = timber.bottom_position + distance_from_bottom * timber.get_length_direction_global()
     
     # Create second timber (top part)
     top_timber = timber_from_directions(
         length=timber.length - distance_from_bottom,
         size=create_v2(timber.size[0], timber.size[1]),
         bottom_position=top_of_first,
-        length_direction=timber.length_direction,
-        width_direction=timber.width_direction,
+        length_direction=timber.get_length_direction_global(),
+        width_direction=timber.get_width_direction_global(),
         name=top_name
     )
     
@@ -491,17 +491,17 @@ def join_timbers(timber1: Timber, timber2: Timber,
         reference_direction = orientation_width_vector
     else:
         # Default: use timber1's length direction
-        reference_direction = timber1.length_direction
+        reference_direction = timber1.get_length_direction_global()
     
     # Check if reference direction is parallel to the joining direction
     if _are_directions_parallel(reference_direction, length_direction):
         # If parallel, cannot project - use a perpendicular fallback
         if orientation_width_vector is not None:
             warnings.warn(f"orientation_width_vector {orientation_width_vector} is parallel to the joining direction {length_direction}. Using timber1's width direction instead.")
-            reference_direction = timber1.width_direction
+            reference_direction = timber1.get_width_direction_global()
         else:
             warnings.warn("timber1's length direction is parallel to the joining direction. Using timber1's width direction instead.")
-            reference_direction = timber1.width_direction
+            reference_direction = timber1.get_width_direction_global()
     
     # Project reference direction onto the plane perpendicular to the joining direction
     # Formula: v_perp = v - (v·n)n
@@ -514,7 +514,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
     if size is None:
         # Check the orientation of the created timber relative to timber1
         # Dot product of the created timber's face direction with timber1's length direction
-        dot_product = Abs(width_direction.dot(timber1.length_direction))
+        dot_product = Abs(width_direction.dot(timber1.get_length_direction_global()))
         
         if dot_product < Rational(1, 2):  # < 0.5, meaning more perpendicular than parallel
             # The created timber is joining perpendicular to timber1
@@ -538,7 +538,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
     # Apply lateral offset
     if lateral_offset != 0:
         # Calculate offset direction (cross product of length vectors)
-        offset_dir = normalize_vector(cross_product(timber1.length_direction, length_direction))
+        offset_dir = normalize_vector(cross_product(timber1.get_length_direction_global(), length_direction))
     
     # Calculate the bottom position (start of timber)
     # Start from pos1 and move backward by stickout1 (always centerline)
@@ -594,7 +594,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     to_pos1 = pos1 - timber2.bottom_position
     
     # Project this onto timber2's length direction to find the parameter t
-    location_on_timber2 = to_pos1.dot(timber2.length_direction) / timber2.length_direction.dot(timber2.length_direction)
+    location_on_timber2 = to_pos1.dot(timber2.get_length_direction_global()) / timber2.get_length_direction_global().dot(timber2.get_length_direction_global())
     
     # Clamp location_on_timber2 to be within the timber's length
     location_on_timber2 = max(0, min(timber2.length, location_on_timber2))
@@ -631,8 +631,8 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
             
             # Check which dimension is more perpendicular to timber1's length direction
             # This determines which face is "inside" (facing timber1)
-            face_dot = Abs(orientation_width_vector.dot(timber1.length_direction))
-            height_dot = Abs(height_direction.dot(timber1.length_direction))
+            face_dot = Abs(orientation_width_vector.dot(timber1.get_length_direction_global()))
+            height_dot = Abs(height_direction.dot(timber1.get_length_direction_global()))
             
             # Use the dimension that's more perpendicular to timber1's length
             if face_dot < height_dot:
@@ -708,7 +708,7 @@ def are_timbers_parallel(timber1: Timber, timber2: Timber, tolerance: Optional[N
     Returns:
         True if timbers have parallel length directions, False otherwise
     """
-    dot_product = Abs(timber1.length_direction.dot(timber2.length_direction))
+    dot_product = Abs(timber1.get_length_direction_global().dot(timber2.get_length_direction_global()))
     
     if tolerance is None:
         # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
@@ -730,7 +730,7 @@ def are_timbers_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional
     Returns:
         True if timbers have orthogonal length directions, False otherwise
     """
-    dot_product = timber1.length_direction.dot(timber2.length_direction)
+    dot_product = timber1.get_length_direction_global().dot(timber2.get_length_direction_global())
     
     if tolerance is None:
         # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
@@ -761,8 +761,8 @@ def are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Option
         True if timbers are face-aligned, False otherwise
     """
     # Get the three orthogonal direction vectors for each timber
-    dirs1 = [timber1.length_direction, timber1.width_direction, timber1.height_direction]
-    dirs2 = [timber2.length_direction, timber2.width_direction, timber2.height_direction]
+    dirs1 = [timber1.get_length_direction_global(), timber1.get_width_direction_global(), timber1.get_height_direction_global()]
+    dirs2 = [timber2.get_length_direction_global(), timber2.get_width_direction_global(), timber2.get_height_direction_global()]
     
     # Check all pairs of directions
     for dir1 in dirs1:
@@ -797,7 +797,7 @@ def do_xy_cross_section_on_parallel_timbers_overlap(timberA: Timber, timberB: Ti
     """
     from sympy import Rational
     
-    assert are_vectors_parallel(timberA.length_direction, timberB.length_direction), "Timbers must be parallel"
+    assert are_vectors_parallel(timberA.get_length_direction_global(), timberB.get_length_direction_global()), "Timbers must be parallel"
 
     # Convert timberB's bottom position into timberA's local space
     timberB_bottom_local = timberA.global_to_local(timberB.bottom_position)
@@ -815,8 +815,8 @@ def do_xy_cross_section_on_parallel_timbers_overlap(timberA: Timber, timberB: Ti
     # to determine the extents of timberB's cross section
     
     # Get timberB's width and height directions in global space
-    timberB_width_dir_global = timberB.width_direction
-    timberB_height_dir_global = timberB.height_direction
+    timberB_width_dir_global = timberB.get_width_direction_global()
+    timberB_height_dir_global = timberB.get_height_direction_global()
     
     # Convert to timberA's local space (just rotate, don't translate)
     timberB_width_dir_local = timberA.orientation.matrix.T * timberB_width_dir_global

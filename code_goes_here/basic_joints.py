@@ -40,17 +40,17 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     
     # Get the end directions for each timber (pointing outward from the timber)
     if timberA_end == TimberReferenceEnd.TOP:
-        directionA = timberA.length_direction
+        directionA = timberA.get_length_direction_global()
         endA_position = timberA.get_top_center_position()
     else:  # BOTTOM
-        directionA = -timberA.length_direction 
+        directionA = -timberA.get_length_direction_global() 
         endA_position = timberA.get_bottom_center_position()
     
     if timberB_end == TimberReferenceEnd.TOP:
-        directionB = timberB.length_direction
+        directionB = timberB.get_length_direction_global()
         endB_position = timberB.get_top_center_position()
     else:  # BOTTOM
-        directionB = -timberB.length_direction
+        directionB = -timberB.get_length_direction_global()
         endB_position = timberB.get_bottom_center_position()
     
     # Check that the timbers are not parallel
@@ -204,15 +204,15 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
         "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
     
     # Check that timbers are not parallel (butt joints require timbers to be at an angle)
-    assert not are_vectors_parallel(receiving_timber.length_direction, butt_timber.length_direction), \
+    assert not are_vectors_parallel(receiving_timber.get_length_direction_global(), butt_timber.get_length_direction_global()), \
         "Timbers cannot be parallel for a butt joint"
     
     # Get the direction of the butt end (pointing outward from the timber)
     if butt_end == TimberReferenceEnd.TOP:
-        butt_direction = butt_timber.length_direction
+        butt_direction = butt_timber.get_length_direction_global()
         butt_end_position = butt_timber.get_top_center_position()
     else:  # BOTTOM
-        butt_direction = -butt_timber.length_direction
+        butt_direction = -butt_timber.get_length_direction_global()
         butt_end_position = butt_timber.get_bottom_center_position()
     
     # Find which face of the receiving timber the butt is approaching
@@ -224,7 +224,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     face_center = _get_face_center_position(receiving_timber, receiving_face)
     
     # Calculate distance from the specified butt end to the receiving face
-    distance_from_bottom = ((face_center - butt_timber.bottom_position).T * butt_timber.length_direction)[0, 0]
+    distance_from_bottom = ((face_center - butt_timber.bottom_position).T * butt_timber.get_length_direction_global())[0, 0]
     distance_from_end = butt_timber.length - distance_from_bottom if butt_end == TimberReferenceEnd.TOP else distance_from_bottom
     
     # Create the HalfPlaneCut using the helper function
@@ -273,26 +273,26 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end:
     from code_goes_here.construction import _are_directions_parallel
     
     # Assert that the length axes are parallel
-    if not _are_directions_parallel(timberA.length_direction, timberB.length_direction):
+    if not _are_directions_parallel(timberA.get_length_direction_global(), timberB.get_length_direction_global()):
         raise ValueError("Timbers must have parallel length axes for a splice joint")
     
     # Get the end positions for each timber
     if timberA_end == TimberReferenceEnd.TOP:
         endA_position = timberA.get_top_center_position()
-        directionA = timberA.length_direction
+        directionA = timberA.get_length_direction_global()
     else:  # BOTTOM
         endA_position = timberA.get_bottom_center_position()
-        directionA = -timberA.length_direction
+        directionA = -timberA.get_length_direction_global()
     
     if timberB_end == TimberReferenceEnd.TOP:
         endB_position = timberB.get_top_center_position()
-        directionB = timberB.length_direction
+        directionB = timberB.get_length_direction_global()
     else:  # BOTTOM
         endB_position = timberB.get_bottom_center_position()
-        directionB = -timberB.length_direction
+        directionB = -timberB.get_length_direction_global()
     
     # Normalize length direction for later use
-    length_dir_norm = normalize_vector(timberA.length_direction)
+    length_dir_norm = normalize_vector(timberA.get_length_direction_global())
     
     # Calculate or validate the splice point
     if splice_point is None:
@@ -330,10 +330,10 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end:
         warnings.warn(f"Timber cross sections may not overlap (centerline distance: {float(centerline_distance)}). Check joint geometry.")
     
     # Calculate distance from each timber end to the splice point
-    distance_A_from_bottom = ((splice_point - timberA.bottom_position).T * timberA.length_direction)[0, 0]
+    distance_A_from_bottom = ((splice_point - timberA.bottom_position).T * timberA.get_length_direction_global())[0, 0]
     distance_A_from_end = timberA.length - distance_A_from_bottom if timberA_end == TimberReferenceEnd.TOP else distance_A_from_bottom
     
-    distance_B_from_bottom = ((splice_point - timberB.bottom_position).T * timberB.length_direction)[0, 0]
+    distance_B_from_bottom = ((splice_point - timberB.bottom_position).T * timberB.get_length_direction_global())[0, 0]
     distance_B_from_end = timberB.length - distance_B_from_bottom if timberB_end == TimberReferenceEnd.TOP else distance_B_from_bottom
     
     # Create the HalfPlaneCuts using the helper function
@@ -389,14 +389,14 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     assert 0 <= cut_ratio <= 1, f"cut_ratio must be in range [0, 1], got {cut_ratio}"
     
     # Verify that the timbers are not parallel (their length directions must differ)
-    dot_product = (timberA.length_direction.T * timberB.length_direction)[0, 0]
+    dot_product = (timberA.get_length_direction_global().T * timberB.get_length_direction_global())[0, 0]
     assert abs(abs(dot_product) - 1) > Rational(1, 1000000), \
         "Timbers must not be parallel (their length directions must differ)"
     
     # Check that the timbers intersect when extended infinitely
     # Calculate closest points between two lines in 3D
-    d1 = timberA.length_direction
-    d2 = timberB.length_direction
+    d1 = timberA.get_length_direction_global()
+    d2 = timberB.get_length_direction_global()
     p1 = timberA.bottom_position
     p2 = timberB.bottom_position
     w = p1 - p2
@@ -636,17 +636,17 @@ def _get_face_center_position(timber: Timber, face: TimberFace) -> V3:
     else:
         # For long faces (LEFT, RIGHT, FRONT, BACK), center is at mid-length
         from sympy import Rational
-        face_center = timber.bottom_position + (timber.length / Rational(2)) * timber.length_direction
+        face_center = timber.bottom_position + (timber.length / Rational(2)) * timber.get_length_direction_global()
         
         # Offset to the face surface
         if face == TimberFace.RIGHT:
-            face_center = face_center + (timber.size[0] / Rational(2)) * timber.width_direction
+            face_center = face_center + (timber.size[0] / Rational(2)) * timber.get_width_direction_global()
         elif face == TimberFace.LEFT:
-            face_center = face_center - (timber.size[0] / Rational(2)) * timber.width_direction
+            face_center = face_center - (timber.size[0] / Rational(2)) * timber.get_width_direction_global()
         elif face == TimberFace.FRONT:
-            face_center = face_center + (timber.size[1] / Rational(2)) * timber.height_direction
+            face_center = face_center + (timber.size[1] / Rational(2)) * timber.get_height_direction_global()
         else:  # BACK
-            face_center = face_center - (timber.size[1] / Rational(2)) * timber.height_direction
+            face_center = face_center - (timber.size[1] / Rational(2)) * timber.get_height_direction_global()
         
         return face_center
 
@@ -659,7 +659,7 @@ def _find_closest_face_to_timber(timber: Timber, other_timber: Timber) -> Timber
     """
     # Get the centerline point of other_timber (midpoint)
     from sympy import Rational
-    other_center = other_timber.bottom_position + other_timber.length_direction * (other_timber.length / Rational(2))
+    other_center = other_timber.bottom_position + other_timber.get_length_direction_global() * (other_timber.length / Rational(2))
     
     # Check distance from each side face to the other timber's center
     # Don't include TOP/BOTTOM as those are the end faces
@@ -742,7 +742,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     from code_goes_here.meowmeowcsg import Difference, Prism
     
     # Verify that the timbers are not parallel (their length directions must differ)
-    dot_product = (housing_timber.length_direction.T * housed_timber.length_direction)[0, 0]
+    dot_product = (housing_timber.get_length_direction_global().T * housed_timber.get_length_direction_global())[0, 0]
     assert abs(abs(dot_product) - 1) > Rational(1, 1000000), \
         "Timbers must not be parallel (their length directions must differ)"
     
@@ -756,8 +756,8 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     # If the distance is less than the sum of half their cross-sections, they overlap
     
     # Direction vectors
-    d1 = housing_timber.length_direction
-    d2 = housed_timber.length_direction
+    d1 = housing_timber.get_length_direction_global()
+    d2 = housed_timber.get_length_direction_global()
     
     # Points on each line (use bottom positions)
     p1 = housing_timber.bottom_position

@@ -220,7 +220,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # ========================================================================
     
     # Calculate the center of the tenon timber centerline
-    tenon_timber_center_global = tenon_timber.bottom_position + tenon_timber.length_direction * (tenon_timber.length / Rational(2))
+    tenon_timber_center_global = tenon_timber.bottom_position + tenon_timber.get_length_direction_global() * (tenon_timber.length / Rational(2))
     
     # Calculate signed distances from mortise face plane
     # Positive distance means on the side of the outward normal
@@ -323,9 +323,9 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Calculate the shoulder plane position in world coordinates
     if tenon_end == TimberReferenceEnd.TOP:
-        shoulder_plane_point_global = tenon_timber.get_top_center_position() - tenon_timber.length_direction * t
+        shoulder_plane_point_global = tenon_timber.get_top_center_position() - tenon_timber.get_length_direction_global() * t
     else:  # BOTTOM
-        shoulder_plane_point_global = tenon_timber.get_bottom_center_position() + tenon_timber.length_direction * t
+        shoulder_plane_point_global = tenon_timber.get_bottom_center_position() + tenon_timber.get_length_direction_global() * t
     
     # Apply tenon_position offset to shoulder plane point
     tenon_x_direction = tenon_timber.get_face_direction(TimberFace.RIGHT)
@@ -774,7 +774,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
     # Verify that the timbers are orthogonal (perpendicular length directions)
     # This is required for proper mortise and tenon joint geometry
     assert are_timbers_orthogonal(mortise_timber, tenon_timber), \
-        f"Timbers must be orthogonare_timbers_orthogonalal (perpendicular length directions) for this joint type. {mortise_timber.name} length_direction: {mortise_timber.length_direction}, {tenon_timber.name} length_direction: {tenon_timber.length_direction}"
+        f"Timbers must be orthogonare_timbers_orthogonalal (perpendicular length directions) for this joint type. {mortise_timber.name} length_direction: {mortise_timber.get_length_direction_global()}, {tenon_timber.name} length_direction: {tenon_timber.get_length_direction_global()}"
     
     # Verify that tenon size + position doesn't exceed timber cross-section
     # Tenon bounds: [position - tenon_size/2, position + tenon_size/2] must be within [-timber_size/2, +timber_size/2]
