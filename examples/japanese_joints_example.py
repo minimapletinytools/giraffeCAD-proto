@@ -197,7 +197,7 @@ def create_dovetail_butt_joint_example():
         dovetail_timber=dovetail_timber,
         receiving_timber=receiving_timber,
         dovetail_timber_end=TimberReferenceEnd.BOTTOM,  # Cut on the end pointing toward receiving timber
-        dovetail_timber_face=TimberReferenceLongFace.RIGHT,  # Dovetail visible on front face
+        dovetail_timber_face=TimberReferenceLongFace.RIGHT,  # Dovetail visible on right face
         receiving_timber_shoulder_inset=receiving_timber_shoulder_inset,
         dovetail_length=dovetail_length,
         dovetail_small_width=dovetail_small_width,

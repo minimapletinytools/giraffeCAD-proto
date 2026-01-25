@@ -480,13 +480,22 @@ def cut_lapped_dovetail_butt_joint(
             "Timbers must be face-aligned for dovetail butt joint. "
         )
 
+    print(f"dovetail_timber_face: {dovetail_timber_face}")
+    print(f"dovetail_timber.get_face_direction(dovetail_timber_face): {dovetail_timber.get_face_direction(dovetail_timber_face)}")
+    print(f"dovetail_timber.length_direction: {dovetail_timber.length_direction}")
+    print(f"receiving_timber.length_direction: {receiving_timber.length_direction}")
+
     # assert that dovetail_timber_face is not parallel to receiving_timber.length_direction
+    # TODO uncomment once you fix the chop_profile_on_timber_face function
+    """
     if are_vectors_parallel(dovetail_timber.get_face_direction(dovetail_timber_face), receiving_timber.length_direction):
         raise ValueError(
-            "Dovetail timber face must not be parallel to receiving timber length direction for dovetail butt joint. Try rotating the dovetail face by 90 degrees."
+            "Dovetail timber face must not be parallel to receiving timber length direction for dovetail butt joint. "
+            "Try rotating the dovetail face by 90 degrees. "
             f"Got dovetail_timber_face direction: {dovetail_timber.get_face_direction(dovetail_timber_face).T}, "
             f"receiving_timber length_direction: {receiving_timber.length_direction.T}"
         )
+    """
     
     # ========================================================================
     # Calculate default depth if not provided
@@ -494,11 +503,7 @@ def cut_lapped_dovetail_butt_joint(
     
     if dovetail_depth is None:
         # Default: half the timber dimension perpendicular to the dovetail face
-        face_enum = TimberFace(dovetail_timber_face.value)
-        if face_enum == TimberFace.LEFT or face_enum == TimberFace.RIGHT:
-            dovetail_depth = dovetail_timber.size[0] / Rational(2)
-        else:  # FRONT or BACK
-            dovetail_depth = dovetail_timber.size[1] / Rational(2)
+        dovetail_depth = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face.to_timber_face()) / Rational(2)
     
     # ========================================================================
     # Create the dovetail profile (simple trapezoid)
@@ -524,9 +529,9 @@ def cut_lapped_dovetail_butt_joint(
     # it is on the centerline of the dovetail face where it intersects the inset shoulder of the mortise timber
     # ========================================================================
 
-    shoulder_face = receiving_timber.get_closest_oriented_face(-dovetail_timber.get_face_direction(dovetail_timber_end.to_timber_face()))
+    receiving_timber_shoulder_face = receiving_timber.get_closest_oriented_face(-dovetail_timber.get_face_direction(dovetail_timber_end.to_timber_face()))
     shoulder_distance_from_end = find_face_plane_intersection_on_centerline(
-        face=shoulder_face,
+        face=receiving_timber_shoulder_face,
         face_timber=receiving_timber,
         to_timber=dovetail_timber,
         to_timber_end=dovetail_timber_end
@@ -536,7 +541,7 @@ def cut_lapped_dovetail_butt_joint(
     
     marking_transform_position = dovetail_timber.bottom_position + shoulder_distance_from_end * dovetail_timber.length_direction + offset_to_dovetail_face
     marking_transform_orientation = orientation_pointing_towards_face_sitting_on_face(towards_face=dovetail_timber_end.to_timber_face(), sitting_face=dovetail_timber_face.to_timber_face())
-    marking_transform = Transform(position=marking_transform_position, orientation=marking_transform_orientation)
+    dovetail_timber_marking_transform = Transform(position=marking_transform_position, orientation=marking_transform_orientation)
 
 
     # ========================================================================
@@ -562,106 +567,35 @@ def cut_lapped_dovetail_butt_joint(
     )
     
     # ========================================================================
-    # Find where the dovetail timber meets the receiving timber (shoulder position)
-    # ========================================================================
-    
-    # Get the end position and direction of the dovetail timber
-    if dovetail_timber_end == TimberReferenceEnd.TOP:
-        dovetail_end_position = dovetail_timber.get_top_center_position()
-        dovetail_direction = dovetail_timber.length_direction
-    else:  # BOTTOM
-        dovetail_end_position = dovetail_timber.get_bottom_center_position()
-        dovetail_direction = -dovetail_timber.length_direction
-    
-    # Find which face of the receiving timber the dovetail is approaching
-    # The dovetail approaches opposite to its end direction
-    receiving_face_for_shoulder = receiving_timber.get_closest_oriented_face(-dovetail_direction)
-    
-    # Calculate the center position of the receiving face (shoulder surface)
-    # For long faces (LEFT, RIGHT, FRONT, BACK), center is at mid-length
-    shoulder_face_center = receiving_timber.bottom_position + (receiving_timber.length / Rational(2)) * receiving_timber.length_direction
-    
-    # Offset to the face surface
-    if receiving_face_for_shoulder == TimberFace.RIGHT:
-        shoulder_face_center = shoulder_face_center + (receiving_timber.size[0] / Rational(2)) * receiving_timber.width_direction
-    elif receiving_face_for_shoulder == TimberFace.LEFT:
-        shoulder_face_center = shoulder_face_center - (receiving_timber.size[0] / Rational(2)) * receiving_timber.width_direction
-    elif receiving_face_for_shoulder == TimberFace.FRONT:
-        shoulder_face_center = shoulder_face_center + (receiving_timber.size[1] / Rational(2)) * receiving_timber.height_direction
-    elif receiving_face_for_shoulder == TimberFace.BACK:
-        shoulder_face_center = shoulder_face_center - (receiving_timber.size[1] / Rational(2)) * receiving_timber.height_direction
-    # For TOP/BOTTOM faces (shouldn't happen for orthogonal butt joints, but handle it)
-    elif receiving_face_for_shoulder == TimberFace.TOP:
-        shoulder_face_center = receiving_timber.get_top_center_position()
-    else:  # BOTTOM
-        shoulder_face_center = receiving_timber.get_bottom_center_position()
-    
-    # Calculate distance from dovetail timber's bottom to the shoulder surface
-    distance_from_dovetail_bottom_to_shoulder = (
-        (shoulder_face_center - dovetail_timber.bottom_position).T 
-        * dovetail_timber.length_direction
-    )[0, 0]
-    
-    # Calculate distance from the specified end to the shoulder (for the cuts)
-    if dovetail_timber_end == TimberReferenceEnd.TOP:
-        distance_from_end_to_shoulder = dovetail_timber.length - distance_from_dovetail_bottom_to_shoulder
-    else:  # BOTTOM
-        distance_from_end_to_shoulder = distance_from_dovetail_bottom_to_shoulder
-    
-    # The dovetail extends `dovetail_length` from the shoulder surface
-    # So we cut back to: shoulder_distance + dovetail_length
-    distance_from_end_to_cut = distance_from_end_to_shoulder + dovetail_length
-    
-    
-    # Distance along receiving timber from its bottom to the shoulder surface
-    # (We already calculated shoulder_face_center above)
-    distance_along_receiving = (
-        (shoulder_face_center - receiving_timber.bottom_position).T 
-        * receiving_timber.length_direction
-    )[0, 0]
-    
-    # ========================================================================
     # Cut shoulder notch on receiving timber
     # ========================================================================
     
-    # The shoulder notch is where the dovetail timber's body sits
-    # It should be inset by receiving_timber_shoulder_inset
-    # The notch should match the dovetail timber's cross-section
+    # Calculate where along the receiving timber the shoulder should be
+    (_, receiving_timber_notch_center) = find_projected_intersection_on_centerlines(dovetail_timber, receiving_timber)
     
-    # Determine which face of the receiving timber to notch
-    # This is the face that opposes the dovetail timber face direction
-    dovetail_face_direction = dovetail_timber.get_face_direction(dovetail_timber_end.to_timber_face())
-    receiving_notch_face = receiving_timber.get_closest_oriented_face(-dovetail_face_direction)
-    print(f"receiving_notch_face: {receiving_notch_face}")
-    
-    # Width of the shoulder notch is the width of the dovetail timber perpendicular to dovetail face
-    face_enum = TimberFace(dovetail_timber_face.value)
-    if face_enum == TimberFace.LEFT or face_enum == TimberFace.RIGHT:
-        # Dovetail is on a width face, so shoulder width is the height
-        shoulder_notch_width = dovetail_timber.size[1]
-    else:  # FRONT or BACK
-        # Dovetail is on a height face, so shoulder width is the width
-        shoulder_notch_width = dovetail_timber.size[0]
-    
-    # Create the shoulder notch
-    shoulder_notch_csg = chop_shoulder_notch_on_timber_face(
-        timber=receiving_timber,
-        notch_face=receiving_notch_face,
-        distance_along_timber=distance_along_receiving,
-        notch_width=shoulder_notch_width,
-        notch_depth=receiving_timber_shoulder_inset
-    ) if receiving_timber_shoulder_inset > 0 else None
+    # Create shoulder notch if inset is specified
+    if receiving_timber_shoulder_inset > 0:
+        # Notch dimensions match the dovetail timber's cross-section at the housing
+        # Width is the length of the housing (shoulder_distance_from_end on dovetail timber)
+        notch_width = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face.rotate_right().to_timber_face())
+        
+        # Depth is the amount of inset
+        notch_depth = receiving_timber_shoulder_inset
+        
+        receiving_timber_shoulder_notch = chop_shoulder_notch_on_timber_face(
+            timber=receiving_timber,
+            notch_face=receiving_timber_shoulder_face,
+            distance_along_timber=receiving_timber_notch_center,
+            notch_width=notch_width,
+            notch_depth=notch_depth
+        )
     
     # ========================================================================
     # Adopt the dovetail socket CSG to the receiving timber
     # ========================================================================
     
-    # The dovetail profile CSG needs to be transformed from dovetail timber coords
-    # to receiving timber coords to create the socket
+    # Transform the dovetail profile CSG from dovetail_timber coordinates to receiving_timber coordinates
     dovetail_socket_csg = adopt_csg(dovetail_timber, receiving_timber, dovetail_profile_csg)
-    
-    # Combine shoulder notch and dovetail socket
-    receiving_timber_combined_csg = CSGUnion([shoulder_notch_csg, dovetail_socket_csg]) if shoulder_notch_csg is not None else dovetail_socket_csg
     
     # ========================================================================
     # Create CSGCut objects for each timber
@@ -674,11 +608,17 @@ def cut_lapped_dovetail_butt_joint(
         negative_csg=Difference(dovetail_housing_prism, [dovetail_profile_csg])
     )
     
+    # Combine shoulder notch and dovetail socket if shoulder inset is specified
+    if receiving_timber_shoulder_inset > 0:
+        receiving_timber_negative_csg = CSGUnion([receiving_timber_shoulder_notch, dovetail_socket_csg])
+    else:
+        receiving_timber_negative_csg = dovetail_socket_csg
+    
     receiving_timber_cut_obj = CSGCut(
         timber=receiving_timber,
         transform=Transform.identity(),
         maybe_end_cut=None,  # No end cut on receiving timber
-        negative_csg=receiving_timber_combined_csg
+        negative_csg=receiving_timber_negative_csg
     )
     
     # Create CutTimber objects
