@@ -50,18 +50,6 @@ class TimberFace(Enum):
     LEFT = 5 # the face vector with normal vector in the -X axis direction
     BACK = 6 # the face vector with normal vector in the -Y axis direction
     
-    def __eq__(self, other):
-        """Override equality to handle FreeCAD module reloading. DELETE ME ANNOYING FRECAD STUFF"""
-        if isinstance(other, TimberFace):
-            return self.value == other.value
-        if isinstance(other, int):
-            return self.value == other
-        return False
-    
-    def __hash__(self):
-        """Override hash to be consistent with __eq__. DELETE ME ANNOYING FRECAD STUFF"""
-        return hash(self.value)
-    
     def get_direction(self) -> Direction3D:
         """Get the direction vector for this face in world coordinates."""
         if self == TimberFace.TOP:
@@ -131,18 +119,6 @@ class TimberReferenceEnd(Enum):
     TOP = 1
     BOTTOM = 2
     
-    def __eq__(self, other):
-        """Override equality to handle FreeCAD module reloading."""
-        if isinstance(other, TimberReferenceEnd):
-            return self.value == other.value
-        if isinstance(other, int):
-            return self.value == other
-        return False
-    
-    def __hash__(self):
-        """Override hash to be consistent with __eq__."""
-        return hash(self.value)
-    
     def to_timber_face(self) -> TimberFace:
         """Convert TimberReferenceEnd to TimberFace."""
         return TimberFace(self.value)
@@ -154,22 +130,6 @@ class TimberReferenceLongFace(Enum):
     FRONT = 4
     LEFT = 5
     BACK = 6
-    
-    def __eq__(self, other):
-        """
-        Override equality to handle FreeCAD module reloading.
-        Compare by value instead of identity to work across module reloads.
-        """
-        if isinstance(other, TimberReferenceLongFace):
-            return self.value == other.value
-        # Also handle comparison with raw values
-        if isinstance(other, int):
-            return self.value == other
-        return False
-    
-    def __hash__(self):
-        """Override hash to be consistent with __eq__."""
-        return hash(self.value)
     
     def to_timber_face(self) -> TimberFace:
         """Convert TimberReferenceLongFace to TimberFace."""
@@ -986,18 +946,6 @@ class PegShape(Enum):
     """Shape of a peg."""
     SQUARE = "square"
     ROUND = "round"
-    
-    def __eq__(self, other):
-        """Override equality to handle FreeCAD module reloading."""
-        if isinstance(other, PegShape):
-            return self.value == other.value
-        if isinstance(other, str):
-            return self.value == other
-        return False
-    
-    def __hash__(self):
-        """Override hash to be consistent with __eq__."""
-        return hash(self.value)
 
 
 # TODO add a get_local_csg function that returns the CSG of the peg at the origin 
