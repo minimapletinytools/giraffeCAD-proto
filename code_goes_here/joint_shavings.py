@@ -617,19 +617,18 @@ def chop_lap_on_timber_ends(
     return (top_lap_csg, bottom_lap_csg)
 
 
-# TODO add offset_origin_from_end parameter and then update call sites to ues it..
-def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: TypeUnion[List[V2], List[List[V2]]], depth: Numeric) -> TypeUnion[Union, ConvexPolygonExtrusion]:
+def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: TypeUnion[List[V2], List[List[V2]]], depth: Numeric, profile_y_offset_from_end: Numeric = 0) -> TypeUnion[Union, ConvexPolygonExtrusion]:
     """
     Create a CSG extrusion of a profile (or multiple profiles) on a timber face.
     See the diagram below for understanding how to interpret the profile in the timber's local space based on the end and face arguments.
 
 
                             end
-    timber                   v                          ^
-    ╔════════════════════════╗                          -x
-    ║face                    ║< (0,0) of the profile    +y ->
-    ╚════════════════════════╝                          +x
-                                                        v
+    timber                   v                                                  ^
+    ╔════════════════════════╗                                                  -x
+    ║face                    ║< (0,profile_y_offset_from_end) of the profile    +y ->
+    ╚════════════════════════╝                                                  +x
+                                                                                v
 
 
     Args:
@@ -640,6 +639,10 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
                  Multiple profiles are provided as a convenience for creating non-convex shapes
                  by unioning multiple convex polygon extrusions.
         depth: Depth to extrude the profile through the timber's face
+        profile_y_offset_from_end: Offset in the Y direction (along timber length from end).
+                                   The profile will be translated by -profile_y_offset_from_end,
+                                   so the origin (0,0) in profile coordinates corresponds to
+                                   (0, profile_y_offset_from_end) in the timber's end-face coordinate system.
 
     Returns:
         MeowMeowCSG representing the extruded profile(s) in the timber's local coordinates.
@@ -666,11 +669,15 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
         # Recursively call this function for each profile and union the results
         extrusions = []
         for single_profile in profile:
-            extrusion = chop_profile_on_timber_face(timber, end, face, single_profile, depth)
+            extrusion = chop_profile_on_timber_face(timber, end, face, single_profile, depth, profile_y_offset_from_end)
             extrusions.append(extrusion)
         return Union(extrusions)
     
     # Single profile case - continue with original logic
+    
+    # Translate the profile by -profile_y_offset_from_end in the Y direction
+    # This allows the user to specify profiles with arbitrary Y origins and position them correctly
+    translated_profile = [point + create_v2(0, -profile_y_offset_from_end) for point in profile]
     
     # ========================================================================
     # Step 1: Determine the origin position in timber local coordinates
@@ -757,7 +764,7 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
     # inward by depth along the profile's Z-axis
     
     extrusion = ConvexPolygonExtrusion(
-        points=profile,
+        points=translated_profile,
         transform=profile_transform,
         start_distance=Rational(0),
         end_distance=depth

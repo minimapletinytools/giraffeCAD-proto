@@ -260,8 +260,17 @@ DONE-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes
 DONE-do irrational joint test for rendering
 
 -fix or delete goosenecksplice example in japanese joints examples
-
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
+-come up with consisten import scheme....
+  -maybe rename Union to avoid confilct...
+-create all_joints.py 
+  -exports all joints
+-create potato_joints.py
+  -pass in sensible default parameters for all joints
+-examplify 
+  -create some map of example name to example function map so you can dynamiaclly get to all examples
+  -would be cool do deep link by into functions/docs in the future...
+
 
 -update morties and tenon to support
   -perpendicular but not face aligned
