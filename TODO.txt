@@ -1,3 +1,61 @@
+:: 1/25/2026 feature notes
+
+
+
+
+# FEATURE SCRATCH AREA
+# The tricky thing here is we have 2 use cases, 1 for timber marking/measuring
+# and the other is for doing CSG nonsense
+# the CSG nonsense stuff needs to support lines as intersections of 2 planes and stuff like that 
+# the timber stuff is way more simple like below
+
+class Plane:
+    """
+    Represents an oriented plane with origin in 3D space.
+    """
+    normal: Direction3D
+    point: V3
+
+    def __init__(self, normal: Direction3D, point: V3):
+        self.normal = normal
+        self.point = point
+
+    def __repr__(self) -> str:
+        return f"Plane(normal={self.normal}, point={self.point})"
+
+    @staticmethod
+    def from_transform_and_direction(transform: Transform, direction: Direction3D) -> 'Plane':
+        """
+        Create a plane from a transform and a direction.
+        """
+        return Plane(transform.orientation.matrix * direction, transform.position)
+
+class Line:
+    """
+    Represents an oriented line with origin in 3D space.
+    """
+    direction: Direction3D
+    point: V3
+
+    def __init__(self, direction: Direction3D, point: V3):
+        self.direction = direction
+        self.point = point
+
+    def __repr__(self) -> str:
+        return f"Line(direction={self.direction}, point={self.point})"
+class Point:
+    """
+    Represents a point in 3D space.
+    """
+    position: V3
+
+    def __init__(self, position: V3):
+        self.position = position
+
+    def __repr__(self) -> str:
+        return f"Point(position={self.position})"
+
+
 :: 1/23/2026 viewer planning notes
 
 use three.js to implement viewer as a VScode plugin
@@ -197,19 +255,13 @@ Here are some example of feature + basis
 -distance from end face on centerline
 -distance from shoulder plane on centerline (this gets converted to distance from end face internally)
 
-
 examples of things we want to do
 
 -using join timbers, we want to set lateral offest such that the outside face of the created timber is inset from the outside face of the timber to be joined:
   -how do we do this, the created timber doesn't exist yet???
-
 -position a rafter such that the bottom of of the rafter is 1 inch away from top of the beam
   -same issue as above...
-
 -size a tenon
-
--locate a
-
 
 
 -measure functions
@@ -221,7 +273,21 @@ examples of things we want to do
       -especially when it comes with all the timber end if statements
   
 
+----------------
+CLEANED UP VERSION OF GENERIC MEASURING FUNCTION
 
+SCRIBE functions
+in general we want a very generic scribe function
+def scribe1D(distance, from_feature, on_timber, to_timber, from_feature_on_to_timber) (you actually need to constrain by a 1/2 DOF for this to work on edges/points)
+notable challenges
+-directionality of distance may not be intuitive
+-how to constrain DOF on points/edges?
+
+!!!!actually what we'd really like is something like
+
+measure(measurement, feature, timber) -> global feature
+
+mark(golbal feature, timber) -> measurement from local feature
 
 
 :: documentation
@@ -259,8 +325,17 @@ DONE-add extrude polygon csg rendering to fusino 360
 DONE-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes_here/japanese_joints.py:221: UserWarning: Gooseneck joint configuration may not be sensible: Joint ends are pointing in the same direction (dot product = 1.000). For a splice joint, the ends should point in opposite directions (dot product should be -1) warning
 DONE-do irrational joint test for rendering
 
+-static method in orientation class
+-transform prob does not need to be frozen...
+
 -fix or delete goosenecksplice example in japanese joints examples
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
+  -oFAT on face aligned timbers
+  -oFAACaT on face aligned coaxial timbers
+  -oSCT on side coplaner timbers 
+  -oSAT on side aligned timbers
+  -oPT on parallel timbers
+  -oOT on orthognal timbers
 -come up with consisten import scheme....
   -maybe rename Union to avoid confilct...
 -create all_joints.py 
