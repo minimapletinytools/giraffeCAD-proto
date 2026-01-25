@@ -24,7 +24,7 @@ def find_opposing_face_on_another_timber(reference_timber: Timber, reference_fac
     
     return target_face
 
-def scribe_face_on_centerline(face: TimberFace, face_timber: Timber, to_timber: Timber, to_timber_end: TimberReferenceEnd) -> Numeric:
+def find_face_plane_intersection_on_centerline(face: TimberFace, face_timber: Timber, to_timber: Timber, to_timber_end: TimberReferenceEnd) -> Numeric:
     """
     Find the distance from to_timber_end on to_timber to the face on face_timber.
     
@@ -48,7 +48,7 @@ def scribe_face_on_centerline(face: TimberFace, face_timber: Timber, to_timber: 
     
     Example:
         >>> # Find where to place a shoulder on timber_a when it butts against timber_b's FRONT face
-        >>> shoulder_distance = scribe_face_on_centerline(
+        >>> shoulder_distance = find_face_plane_intersection_on_centerline(
         ...     face=TimberFace.FRONT,
         ...     face_timber=timber_b,
         ...     to_timber=timber_a,

@@ -12,7 +12,7 @@ from code_goes_here.joint_shavings import (
     measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber,
     find_opposing_face_on_another_timber,
     chop_shoulder_notch_on_timber_face,
-    scribe_face_on_centerline
+    find_face_plane_intersection_on_centerline
 )
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import create_v3, create_v2, inches, are_vectors_parallel
@@ -1085,7 +1085,7 @@ class TestChopShoulderNotchOnTimberFace:
 
 
 class TestScribeFaceOnCenterline:
-    """Tests for scribe_face_on_centerline function."""
+    """Tests for find_face_plane_intersection_on_centerline function."""
     
     def test_horizontal_timbers_butt_joint(self):
         """
@@ -1117,7 +1117,7 @@ class TestScribeFaceOnCenterline:
         # timber_a's centerline is at z=4" (its bottom position)
         
         # Scribe from timber_a's TOP end to timber_b's BOTTOM face
-        distance = scribe_face_on_centerline(
+        distance = find_face_plane_intersection_on_centerline(
             face=TimberFace.BOTTOM,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1163,7 +1163,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's LEFT face center (mid-length) is at (7", 0, 48")
         
         # Scribe from timber_a's TOP end to timber_b's LEFT face
-        distance = scribe_face_on_centerline(
+        distance = find_face_plane_intersection_on_centerline(
             face=TimberFace.LEFT,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1208,7 +1208,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's TOP face center: (48", 0, 0)
         
         # Scribe from timber_a's BOTTOM end to timber_b's TOP face
-        distance = scribe_face_on_centerline(
+        distance = find_face_plane_intersection_on_centerline(
             face=TimberFace.TOP,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1252,7 +1252,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's TOP face center: (120", 0, 0)
         
         # Scribe from timber_a's TOP end to timber_b's TOP face
-        distance = scribe_face_on_centerline(
+        distance = find_face_plane_intersection_on_centerline(
             face=TimberFace.TOP,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1296,7 +1296,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's LEFT face center (mid-length) is at (47", 0, 48")
         
         # Scribe from timber_a's TOP end to timber_b's LEFT face
-        distance = scribe_face_on_centerline(
+        distance = find_face_plane_intersection_on_centerline(
             face=TimberFace.LEFT,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1340,7 +1340,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's LEFT face center (mid-length) is at (7/2, 0, 10)
         
         # Scribe from timber_a's TOP end to timber_b's LEFT face
-        distance = scribe_face_on_centerline(
+        distance = find_face_plane_intersection_on_centerline(
             face=TimberFace.LEFT,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1383,7 +1383,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's BOTTOM face center: (36", 0, 0)
         
         # Scribe from timber_a's TOP end to timber_b's BOTTOM face
-        distance = scribe_face_on_centerline(
+        distance = find_face_plane_intersection_on_centerline(
             face=TimberFace.BOTTOM,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1427,7 +1427,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's BOTTOM face center: (0, 0, 36")
         
         # Scribe from timber_a's TOP end to timber_b's BOTTOM face
-        distance = scribe_face_on_centerline(
+        distance = find_face_plane_intersection_on_centerline(
             face=TimberFace.BOTTOM,
             face_timber=timber_b,
             to_timber=timber_a,
