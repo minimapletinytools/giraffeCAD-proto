@@ -878,19 +878,17 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
     # Get face normal direction in timber local coordinates
     face_normal_local = face.get_direction()  # This gives the outward normal
     
-    # Profile X-axis: depends on which end we're at
+    # Profile Y-axis: points towards the reference end
     if end == TimberReferenceEnd.TOP:
-        # At top, profile X points into timber (negative length direction)
         profile_y_axis = create_v3(0, 0, 1)
     else:  # BOTTOM
-        # At bottom, profile X points into timber (positive length direction)
         profile_y_axis = create_v3(0, 0, -1)
     
-    # Profile Z-axis (extrusion): points inward from face (negative of face normal)
-    profile_z_axis = -face_normal_local
+    # Profile Z-axis (extrusion): points outward from face (negative of face normal)
+    profile_z_axis = face_normal_local
     
     # Profile Y-axis: perpendicular to X and Z, using right-hand rule
-    # Y = Z × X (so that X, Y, Z form a right-handed system)
+    # X = Y × Z (so that X, Y, Z form a right-handed system)
     profile_x_axis = cross_product(profile_y_axis, profile_z_axis)
     profile_x_axis = normalize_vector(profile_x_axis)
     
@@ -914,8 +912,8 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
     extrusion = ConvexPolygonExtrusion(
         points=translated_profile,
         transform=profile_transform,
-        start_distance=Rational(0),
-        end_distance=depth
+        start_distance=-depth,
+        end_distance=Rational(0),
     )
     
     return extrusion

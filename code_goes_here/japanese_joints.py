@@ -336,10 +336,10 @@ def cut_lapped_gooseneck_joint(
     gooseneck_profile_csg = chop_profile_on_timber_face(
         timber=gooseneck_timber,
         end=gooseneck_timber_end,
-        face=TimberFace(gooseneck_timber_face.value),
+        face=gooseneck_timber_face.to_timber_face(),
         profile=gooseneck_shape,
         depth=gooseneck_depth,
-        profile_y_offset_from_end=gooseneck_profile_y_position
+        profile_y_offset_from_end=-gooseneck_profile_y_position
     )
 
     # use chop_timber_end_with_prism to create a prism starting from gooseneck_profile_y_position
@@ -480,17 +480,16 @@ def cut_lapped_dovetail_butt_joint(
             "Timbers must be face-aligned for dovetail butt joint. "
         )
 
-    # assert that dovetail_timber_face is not parallel to receiving_timber.length_direction
-    # TODO uncomment once you fix the chop_profile_on_timber_face function
-    """
+
+    # assert that dovetail_timber_face is perpendicular to receiving_timber.length_direction
     if are_vectors_parallel(dovetail_timber.get_face_direction(dovetail_timber_face), receiving_timber.length_direction):
         raise ValueError(
-            "Dovetail timber face must not be parallel to receiving timber length direction for dovetail butt joint. "
+            "Dovetail timber face must be perpendicular to receiving timber length direction for dovetail butt joint. "
+            "The face should be oriented such that the dovetail profile is visible when looking along the receiving timber. "
             "Try rotating the dovetail face by 90 degrees. "
             f"Got dovetail_timber_face direction: {dovetail_timber.get_face_direction(dovetail_timber_face).T}, "
             f"receiving_timber length_direction: {receiving_timber.length_direction.T}"
         )
-    """
     
     # ========================================================================
     # Calculate default depth if not provided
