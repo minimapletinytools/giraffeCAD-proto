@@ -41,7 +41,7 @@ if script_dir not in sys.path:
 EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
 #EXAMPLE_TO_RENDER = 'horsey'
-#EXAMPLE_TO_RENDER = 'japanese_joints'
+EXAMPLE_TO_RENDER = 'japanese_joints'
 #EXAMPLE_TO_RENDER = 'csg'
 
 # CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
@@ -69,10 +69,10 @@ def reload_all_modules():
         'code_goes_here.timber',
         'code_goes_here.construction',
         'code_goes_here.rendering_utils',
+        'code_goes_here.joint_shavings',
         'code_goes_here.basic_joints',
         'code_goes_here.mortise_and_tenon_joint',
         'code_goes_here.japanese_joints',
-        'code_goes_here.joint_shavings',
         'giraffe',
         'giraffe_render_freecad',
         'examples.reference.basic_joints_example',
