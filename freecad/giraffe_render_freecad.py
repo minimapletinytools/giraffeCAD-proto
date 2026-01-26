@@ -53,7 +53,7 @@ from giraffe import CutTimber, Timber, Frame
 from code_goes_here.timber import JointAccessory, Peg, Wedge, PegShape
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
-    MeowMeowCSG, HalfPlane, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
+    MeowMeowCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from code_goes_here.rendering_utils import (
     calculate_structure_extents,
@@ -437,7 +437,7 @@ def create_convex_polygon_extrusion_shape(extrusion: ConvexPolygonExtrusion) -> 
 
 def render_csg_shape(csg: MeowMeowCSG, timber: Optional[Timber] = None, 
                      infinite_extent: float = 10000.0,
-                     halfplane_as_solid: bool = False) -> Optional['Part.Shape']:
+                     halfspace_as_solid: bool = False) -> Optional['Part.Shape']:
     """
     Render a CSG object to a FreeCAD shape.
     
@@ -461,8 +461,8 @@ def render_csg_shape(csg: MeowMeowCSG, timber: Optional[Timber] = None,
     elif isinstance(csg, ConvexPolygonExtrusion):
         return create_convex_polygon_extrusion_shape(csg)
     
-    elif isinstance(csg, HalfPlane):
-        return create_halfplane_shape(csg, infinite_extent = infinite_extent, render_as_solid = True)
+    elif isinstance(csg, HalfSpace):
+        return create_halfspace_shape(csg, infinite_extent = infinite_extent, render_as_solid = True)
     
     elif isinstance(csg, SolidUnion):
         return render_union(csg, timber, infinite_extent)
@@ -516,14 +516,14 @@ def render_union(union: Union, timber: Optional[Timber] = None,
     return result_shape
 
 
-def create_halfplane_shape(half_plane: HalfPlane, infinite_extent: float = 10000.0, render_as_solid: bool = True) -> Optional['Part.Shape']:
+def create_halfspace_shape(half_plane: HalfSpace, infinite_extent: float = 10000.0, render_as_solid: bool = True) -> Optional['Part.Shape']:
     """
-    Create a shape representing the half-space defined by a HalfPlane.
+    Create a shape representing the half-space defined by a HalfSpace.
     
-    The HalfPlane keeps all points P where (P · normal) >= offset.
+    The HalfSpace keeps all points P where (P · normal) >= offset.
     
     Args:
-        half_plane: HalfPlane object defining the half-space
+        half_plane: HalfSpace object defining the half-space
         render_as_solid: If True, renders as a solid box filling the half-space.
                         If False, renders as a thin plane surface. Set to False for debugging only!
         infinite_extent: Extent to use for the plane/box (in meters)
@@ -533,7 +533,7 @@ def create_halfplane_shape(half_plane: HalfPlane, infinite_extent: float = 10000
         Part.Shape representing the half-space (plane or box), or None if creation failed
     """
     try:
-        # HalfPlane is in local coordinates
+        # HalfSpace is in local coordinates
         plane_normal = half_plane.normal
         plane_offset = distance_to_mm(half_plane.offset)  # Convert meters to mm
         
@@ -604,22 +604,22 @@ def create_halfplane_shape(half_plane: HalfPlane, infinite_extent: float = 10000
             return plane
         
     except Exception as e:
-        print(f"Error creating HalfPlane shape: {e}")
+        print(f"Error creating HalfSpace shape: {e}")
         traceback.print_exc()
         return None
 
 
-def apply_halfplane_cut(shape: 'Part.Shape', half_plane: HalfPlane, 
+def apply_halfspace_cut(shape: 'Part.Shape', half_plane: HalfSpace, 
                        timber: Optional[Timber] = None, 
                        infinite_extent: float = 10000.0) -> 'Part.Shape':
     """
-    Apply a HalfPlane cut to a shape using a large box and boolean difference.
+    Apply a HalfSpace cut to a shape using a large box and boolean difference.
     
-    The HalfPlane is defined in the timber's local coordinates.
+    The HalfSpace is defined in the timber's local coordinates.
     
     Args:
         shape: Shape to cut
-        half_plane: HalfPlane defining the cut (in timber's local coordinates)
+        half_plane: HalfSpace defining the cut (in timber's local coordinates)
         timber: Timber object (needed for coordinate transformation)
         infinite_extent: Extent to use for the cutting box (in meters)
         
@@ -627,7 +627,7 @@ def apply_halfplane_cut(shape: 'Part.Shape', half_plane: HalfPlane,
         Modified shape after cut
     """
     try:
-        # HalfPlane is already in local coordinates, use as-is
+        # HalfSpace is already in local coordinates, use as-is
         plane_normal = half_plane.normal
         plane_offset = distance_to_mm(half_plane.offset)  # Convert meters to mm
         
@@ -656,8 +656,8 @@ def apply_halfplane_cut(shape: 'Part.Shape', half_plane: HalfPlane,
         # Convert infinite_extent from meters to mm
         BOX_SIZE = meters_to_mm(infinite_extent) * 2  # Double for safety, in mm
         
-        # HalfPlane keeps points where (normal · P >= offset)
-        # When used in Difference(timber, halfplane), we SUBTRACT what the HalfPlane KEEPS
+        # HalfSpace keeps points where (normal · P >= offset)
+        # When used in Difference(timber, halfspace), we SUBTRACT what the HalfSpace KEEPS
         # So we need to remove the region where (normal · P >= offset)
         # 
         # Strategy: Create a box that fills the half-space where (normal · P >= offset)
@@ -700,7 +700,7 @@ def apply_halfplane_cut(shape: 'Part.Shape', half_plane: HalfPlane,
         return result_shape
         
     except Exception as e:
-        print(f"  Error applying HalfPlane cut: {e}")
+        print(f"  Error applying HalfSpace cut: {e}")
         traceback.print_exc()
         return shape  # Return original shape on error
 
@@ -710,7 +710,7 @@ def render_difference(difference: Difference, timber: Optional[Timber] = None,
     """
     Render a Difference CSG operation.
     
-    For HalfPlane cuts, uses large box and boolean operations.
+    For HalfSpace cuts, uses large box and boolean operations.
     For other CSG types, creates the solid and performs boolean difference.
     
     Args:
@@ -728,7 +728,7 @@ def render_difference(difference: Difference, timber: Optional[Timber] = None,
         return None
     
     # Flatten the subtract list to handle nested Unions
-    # This ensures HalfPlane objects within Unions are handled correctly
+    # This ensures HalfSpace objects within Unions are handled correctly
     flattened_subtracts = []
     for sub_csg in difference.subtract:
         if isinstance(sub_csg, Union):
@@ -745,9 +745,9 @@ def render_difference(difference: Difference, timber: Optional[Timber] = None,
     
     # Subtract each child from the flattened list
     for i, subtract_csg in enumerate(flattened_subtracts):
-        # Special handling for HalfPlane cuts
-        if isinstance(subtract_csg, HalfPlane):
-            base_shape = apply_halfplane_cut(base_shape, subtract_csg, timber, infinite_extent)
+        # Special handling for HalfSpace cuts
+        if isinstance(subtract_csg, HalfSpace):
+            base_shape = apply_halfspace_cut(base_shape, subtract_csg, timber, infinite_extent)
             continue
         
         # For other CSG types, render and perform boolean difference

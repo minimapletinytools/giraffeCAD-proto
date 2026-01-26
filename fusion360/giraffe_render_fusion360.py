@@ -23,11 +23,11 @@ from sympy import Matrix, Float
 from giraffe import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge, Frame
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
-    MeowMeowCSG, HalfPlane, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
+    MeowMeowCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from code_goes_here.rendering_utils import (
     calculate_structure_extents,
-    transform_halfplane_to_timber_local,
+    transform_halfspace_to_timber_local,
     sympy_to_float
 )
 
@@ -346,11 +346,11 @@ def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG
             app.log(f"  render_csg_in_local_space: Rendering ConvexPolygonExtrusion with orientation")
         return render_convex_polygon_extrusion_in_local_space(component, csg)
     
-    elif isinstance(csg, HalfPlane):
-        # HalfPlane is typically used for cutting operations, not standalone rendering
-        print("Warning: HalfPlane rendering not implemented (typically used in Difference operations)")
+    elif isinstance(csg, HalfSpace):
+        # HalfSpace is typically used for cutting operations, not standalone rendering
+        print("Warning: HalfSpace rendering not implemented (typically used in Difference operations)")
         if app:
-            app.log("Warning: HalfPlane standalone rendering not implemented")
+            app.log("Warning: HalfSpace standalone rendering not implemented")
         return None
     
     elif isinstance(csg, SolidUnion):
@@ -704,27 +704,27 @@ def render_union_at_origin(component: adsk.fusion.Component, union: Union, timbe
     return result_body
 
 
-def transform_halfplane_to_component_space(half_plane: HalfPlane, timber_orientation: Orientation) -> Tuple[adsk.core.Vector3D, float]:
+def transform_halfspace_to_component_space(half_plane: HalfSpace, timber_orientation: Orientation) -> Tuple[adsk.core.Vector3D, float]:
     """
-    Prepare a HalfPlane for rendering in Fusion 360's component space.
+    Prepare a HalfSpace for rendering in Fusion 360's component space.
     
     Uses the shared rendering utility function and converts to Fusion-specific types.
     
     Args:
-        half_plane: HalfPlane in timber's local coordinates
+        half_plane: HalfSpace in timber's local coordinates
         timber_orientation: Timber's orientation matrix (not used, kept for API compatibility)
         
     Returns:
         Tuple of (component_space_normal_vector, component_space_offset)
     """
     # Use shared utility function
-    component_normal, component_offset = transform_halfplane_to_timber_local(half_plane, timber_orientation)
+    component_normal, component_offset = transform_halfspace_to_timber_local(half_plane, timber_orientation)
     
     # Debug logging
     app = get_fusion_app()
     if app:
-        app.log(f"      HalfPlane normal (local/component): ({component_normal[0,0]:.4f}, {component_normal[1,0]:.4f}, {component_normal[2,0]:.4f})")
-        app.log(f"      HalfPlane offset (local/component): {component_offset:.4f}")
+        app.log(f"      HalfSpace normal (local/component): ({component_normal[0,0]:.4f}, {component_normal[1,0]:.4f}, {component_normal[2,0]:.4f})")
+        app.log(f"      HalfSpace offset (local/component): {component_offset:.4f}")
     
     # Convert to Fusion 360 types
     component_normal_vector = adsk.core.Vector3D.create(
@@ -736,17 +736,17 @@ def transform_halfplane_to_component_space(half_plane: HalfPlane, timber_orienta
     return component_normal_vector, float(component_offset)
 
 
-def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRepBody, half_plane: HalfPlane, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> bool:
+def apply_halfspace_cut(component: adsk.fusion.Component, body: adsk.fusion.BRepBody, half_plane: HalfSpace, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> bool:
     """
-    Apply a HalfPlane cut to a body using a large box and boolean difference.
+    Apply a HalfSpace cut to a body using a large box and boolean difference.
     
-    The HalfPlane is defined in global coordinates but must be transformed to the timber's
+    The HalfSpace is defined in global coordinates but must be transformed to the timber's
     local coordinate system for rendering.
     
     Args:
         component: Component containing the body
         body: Body to cut
-        half_plane: HalfPlane defining the cut (in global coordinates)
+        half_plane: HalfSpace defining the cut (in global coordinates)
         timber: Timber object (needed for coordinate transformation)
         infinite_extent: Extent to use for the cutting box (in cm)
         
@@ -757,7 +757,7 @@ def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRep
     
     try:
         if app:
-            app.log(f"    apply_halfplane_cut: Starting (global coords)")
+            app.log(f"    apply_halfspace_cut: Starting (global coords)")
             
         # Log global coordinates
         global_nx = float(half_plane.normal[0])
@@ -771,7 +771,7 @@ def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRep
         # The body is rendered axis-aligned, then the occurrence is transformed later
         # Cuts must be in the body's local space to be correct after transform
         if timber is not None:
-            plane_normal, plane_offset = transform_halfplane_to_component_space(half_plane, timber.orientation)
+            plane_normal, plane_offset = transform_halfspace_to_component_space(half_plane, timber.orientation)
             if app:
                 app.log(f"      Local:  normal=({plane_normal.x:.4f}, {plane_normal.y:.4f}, {plane_normal.z:.4f}), offset={plane_offset:.4f}")
         else:
@@ -860,8 +860,8 @@ def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRep
             # 2. Translate so the Z=0 face passes through plane_point
             
             # Build rotation matrix to align Z-axis with +plane_normal
-            # In giraffe.py, we do Difference(timber, [HalfPlane])
-            # HalfPlane represents points where normal · P >= offset (material to REMOVE)
+            # In giraffe.py, we do Difference(timber, [HalfSpace])
+            # HalfSpace represents points where normal · P >= offset (material to REMOVE)
             # Difference removes those points, so we remove where normal · P >= offset
             # Therefore, the cutting box should represent the region where normal · P >= offset
             # The box extends from Z=0 in the +Z direction
@@ -937,7 +937,7 @@ def apply_halfplane_cut(component: adsk.fusion.Component, body: adsk.fusion.BRep
         return True
         
     except Exception as e:
-        print(f"  Error applying HalfPlane cut: {e}")
+        print(f"  Error applying HalfSpace cut: {e}")
         traceback.print_exc()
         return False
 
@@ -946,7 +946,7 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
     """
     Render a Difference CSG operation at the origin.
     
-    For HalfPlane cuts, uses split operations instead of creating infinite solids.
+    For HalfSpace cuts, uses split operations instead of creating infinite solids.
     For other CSG types, creates the solid and performs boolean difference.
     
     Args:
@@ -975,7 +975,7 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
     if app:
         app.log(f"render_difference_at_origin: Base body created successfully, now applying {len(difference.subtract)} cuts (may be flattened)")
     
-    # Flatten the subtract list to handle Union objects that contain HalfPlanes
+    # Flatten the subtract list to handle Union objects that contain Halfspaces
     # A Union in a subtract list means "remove all these things", so we flatten it
     # to apply each child separately. We need to flatten recursively for nested Unions.
     def flatten_union_recursively(csg_list):
@@ -997,19 +997,19 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
     
     # Subtract each child
     for i, subtract_csg in enumerate(flattened_subtracts):
-        # Special handling for HalfPlane cuts
-        if isinstance(subtract_csg, HalfPlane):
-            print(f"  Applying HalfPlane cut {i+1}/{len(flattened_subtracts)} using split operation")
+        # Special handling for HalfSpace cuts
+        if isinstance(subtract_csg, HalfSpace):
+            print(f"  Applying HalfSpace cut {i+1}/{len(flattened_subtracts)} using split operation")
             if app:
-                app.log(f"  Applying HalfPlane cut {i+1}/{len(flattened_subtracts)} using split operation")
-            success = apply_halfplane_cut(component, base_body, subtract_csg, timber, infinite_extent)
+                app.log(f"  Applying HalfSpace cut {i+1}/{len(flattened_subtracts)} using split operation")
+            success = apply_halfspace_cut(component, base_body, subtract_csg, timber, infinite_extent)
             if not success:
-                print(f"  Failed to apply HalfPlane cut {i+1}")
+                print(f"  Failed to apply HalfSpace cut {i+1}")
                 if app:
-                    app.log(f"  ERROR: Failed to apply HalfPlane cut {i+1}")
+                    app.log(f"  ERROR: Failed to apply HalfSpace cut {i+1}")
             else:
                 if app:
-                    app.log(f"  SUCCESS: Applied HalfPlane cut {i+1}")
+                    app.log(f"  SUCCESS: Applied HalfSpace cut {i+1}")
             continue
         
         # For other CSG types, render and perform boolean difference

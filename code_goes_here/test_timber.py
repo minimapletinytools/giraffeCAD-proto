@@ -907,14 +907,14 @@ class TestCutTimber:
         timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         
         # Add a cut (a simple half-plane cut at z=50 in local coordinates)
-        from code_goes_here.meowmeowcsg import HalfPlane
+        from code_goes_here.meowmeowcsg import HalfSpace
         # Create a half plane that cuts perpendicular to the timber length
         # Normal pointing in +Z direction, offset at 50
-        half_plane = HalfPlane(
+        half_plane = HalfSpace(
             normal=Matrix([Rational(0), Rational(0), Rational(1)]),
             offset=Rational(50)
         )
-        cut = HalfPlaneCut(
+        cut = HalfSpaceCut(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -934,7 +934,7 @@ class TestCutTimber:
         assert isinstance(csg, Difference)
         assert isinstance(csg.base, RectangularPrism)
         assert len(csg.subtract) == 1
-        assert isinstance(csg.subtract[0], HalfPlane)
+        assert isinstance(csg.subtract[0], HalfSpace)
     
     def test_render_timber_with_cuts_multiple_cuts(self):
         """Test render_timber_with_cuts_csg_local with multiple cuts."""
@@ -947,12 +947,12 @@ class TestCutTimber:
         timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         
         # Add two cuts
-        from code_goes_here.meowmeowcsg import HalfPlane
-        half_plane1 = HalfPlane(
+        from code_goes_here.meowmeowcsg import HalfSpace
+        half_plane1 = HalfSpace(
             normal=Matrix([Rational(0), Rational(0), Rational(1)]),
             offset=Rational(25)
         )
-        cut1 = HalfPlaneCut(
+        cut1 = HalfSpaceCut(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -962,11 +962,11 @@ class TestCutTimber:
             maybe_end_cut=None
         )
         
-        half_plane2 = HalfPlane(
+        half_plane2 = HalfSpace(
             normal=Matrix([Rational(0), Rational(0), Rational(-1)]),
             offset=Rational(-75)
         )
-        cut2 = HalfPlaneCut(
+        cut2 = HalfSpaceCut(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -986,7 +986,7 @@ class TestCutTimber:
         assert isinstance(csg, Difference)
         assert isinstance(csg.base, RectangularPrism)
         assert len(csg.subtract) == 2
-        assert all(isinstance(sub, HalfPlane) for sub in csg.subtract)
+        assert all(isinstance(sub, HalfSpace) for sub in csg.subtract)
     
     def test_render_timber_with_cuts_with_end_cuts(self):
         """Test render_timber_with_cuts_csg_local with end cuts."""
@@ -999,12 +999,12 @@ class TestCutTimber:
         timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction)
         
         # Add an end cut at the top
-        from code_goes_here.meowmeowcsg import HalfPlane
-        half_plane = HalfPlane(
+        from code_goes_here.meowmeowcsg import HalfSpace
+        half_plane = HalfSpace(
             normal=Matrix([Rational(0), Rational(0), Rational(-1)]),
             offset=Rational(-50)
         )
-        end_cut = HalfPlaneCut(
+        end_cut = HalfSpaceCut(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -1030,7 +1030,7 @@ class TestCutTimber:
         
         # Should have one cut
         assert len(csg.subtract) == 1
-        assert isinstance(csg.subtract[0], HalfPlane)
+        assert isinstance(csg.subtract[0], HalfSpace)
 
 
 # ============================================================================

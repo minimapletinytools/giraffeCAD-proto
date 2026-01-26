@@ -8,7 +8,7 @@ These functions help ensure that joints are geometrically valid and sensibly con
 from typing import Optional, Tuple, List, Union
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation, V2, V3, are_vectors_perpendicular, zero_test
-from code_goes_here.meowmeowcsg import RectangularPrism, HalfPlane, MeowMeowCSG, SolidUnion, ConvexPolygonExtrusion
+from code_goes_here.meowmeowcsg import RectangularPrism, HalfSpace, MeowMeowCSG, SolidUnion, ConvexPolygonExtrusion
 from code_goes_here.construction import are_timbers_face_aligned, do_xy_cross_section_on_parallel_timbers_overlap
 from sympy import Abs, Rational
 
@@ -440,9 +440,9 @@ def chop_timber_end_with_prism(timber: Timber, end: TimberReferenceEnd, distance
     )
 
 
-def chop_timber_end_with_half_plane(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> HalfPlane:
+def chop_timber_end_with_half_plane(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> HalfSpace:
     """
-    Create a HalfPlane CSG for chopping off material from a timber end (in local coordinates).
+    Create a HalfSpace CSG for chopping off material from a timber end (in local coordinates).
     
     Creates a half-plane cut in the timber's local coordinate system, perpendicular to the 
     timber's length direction, positioned at distance_from_end_to_cut from the specified end.
@@ -457,7 +457,7 @@ def chop_timber_end_with_half_plane(timber: Timber, end: TimberReferenceEnd, dis
         distance_from_end_to_cut: Distance from the end where the cut plane is positioned
     
     Returns:
-        HalfPlane: A half-plane in local coordinates that removes material beyond 
+        HalfSpace: A half-plane in local coordinates that removes material beyond 
                    distance_from_end_to_cut from the end
     
     Example:
@@ -478,7 +478,7 @@ def chop_timber_end_with_half_plane(timber: Timber, end: TimberReferenceEnd, dis
         # - Cut plane is at (timber.length - distance_from_end_to_cut)
         # - Normal points in +Z direction (away from the timber body, toward the top)
         # - We want to remove everything beyond this point (in +Z direction)
-        # - HalfPlane keeps points where normal·P >= offset
+        # - HalfSpace keeps points where normal·P >= offset
         # - So normal should point in +Z and offset should be the cut position
         normal = create_v3(0, 0, 1)
         # note offset is measured from the timber bottom position, not the timber top end position
@@ -488,12 +488,12 @@ def chop_timber_end_with_half_plane(timber: Timber, end: TimberReferenceEnd, dis
         # - Cut plane is at distance_from_end_to_cut from bottom
         # - Normal points in -Z direction (away from the timber body, toward the bottom)
         # - We want to remove everything beyond this point (in -Z direction)
-        # - HalfPlane keeps points where normal·P >= offset
+        # - HalfSpace keeps points where normal·P >= offset
         # - So normal should point in -Z and offset should be negative of cut position
         normal = create_v3(0, 0, -1)
         offset = -distance_from_end_to_cut
     
-    return HalfPlane(normal=normal, offset=offset)
+    return HalfSpace(normal=normal, offset=offset)
 
 def chop_lap_on_timber_end(
     lap_timber: Timber,

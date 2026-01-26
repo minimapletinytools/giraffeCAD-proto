@@ -8,7 +8,7 @@ import pytest
 from sympy import Matrix, Rational, simplify, sqrt, cos, sin, pi
 from code_goes_here.moothymoth import Orientation, Transform, create_v3
 from code_goes_here.meowmeowcsg import (
-    HalfPlane, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
+    HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from .testing_shavings import assert_is_valid_rotation_matrix
 import random
@@ -49,7 +49,7 @@ def generate_random_cylinder():
                    start_distance=start_dist, end_distance=end_dist)
 
 
-def generate_random_halfplane():
+def generate_random_halfspace():
     """Generate a random half-plane with random normal and offset."""
     # Use simple normalized normals for predictability
     normals = [Matrix([1, 0, 0]), Matrix([0, 1, 0]), Matrix([0, 0, 1]),
@@ -57,7 +57,7 @@ def generate_random_halfplane():
     normal = random.choice(normals)
     offset = Rational(random.randint(-20, 20))
     
-    return HalfPlane(normal=normal, offset=offset)
+    return HalfSpace(normal=normal, offset=offset)
 
 
 def generate_random_convex_polygon_extrusion():
@@ -208,15 +208,15 @@ def generate_cylinder_non_boundary_points(cylinder):
     return points
 
 
-def generate_halfplane_boundary_points(halfplane):
+def generate_halfspace_boundary_points(halfspace):
     """Generate points on the half-plane boundary."""
     points = []
     
     # Plane origin
-    points.append(halfplane.normal * halfplane.offset)
+    points.append(halfspace.normal * halfspace.offset)
     
     # Find two perpendicular vectors in the plane
-    normal = halfplane.normal / halfplane.normal.norm()
+    normal = halfspace.normal / halfspace.normal.norm()
     if abs(normal[0]) < Rational(1, 2):
         perp1 = Matrix([1, 0, 0])
     else:
@@ -228,7 +228,7 @@ def generate_halfplane_boundary_points(halfplane):
     perp2 = perp2 / perp2.norm()
     
     # Random points on the plane
-    plane_origin = halfplane.normal * halfplane.offset
+    plane_origin = halfspace.normal * halfspace.offset
     for i in range(5):
         offset_x = Rational(random.randint(-20, 20))
         offset_y = Rational(random.randint(-20, 20))
@@ -237,11 +237,11 @@ def generate_halfplane_boundary_points(halfplane):
     return points
 
 
-def generate_halfplane_non_boundary_points(halfplane):
+def generate_halfspace_non_boundary_points(halfspace):
     """Generate points NOT on half-plane boundary: points on both sides of plane."""
     points = []
-    normal_normalized = halfplane.normal / halfplane.normal.norm()
-    plane_origin = halfplane.normal * halfplane.offset
+    normal_normalized = halfspace.normal / halfspace.normal.norm()
+    plane_origin = halfspace.normal * halfspace.offset
     
     # Point on positive side (in direction of normal, inside half-plane)
     points.append(plane_origin + normal_normalized * Rational(10))
@@ -455,69 +455,69 @@ class TestPrismPositionMethods:
             prism.get_top_position()
 
 
-class TestHalfPlaneContainsPoint:
-    """Test HalfPlane contains_point and is_point_on_boundary methods."""
+class TestHalfspaceContainsPoint:
+    """Test HalfSpace contains_point and is_point_on_boundary methods."""
     
-    def test_halfplane_contains_point_on_positive_side(self):
+    def test_halfspace_contains_point_on_positive_side(self):
         """Test that a point on the positive side is contained."""
         normal = Matrix([0, 0, 1])
         offset = Rational(5)
-        halfplane = HalfPlane(normal, offset)
+        halfspace = HalfSpace(normal, offset)
         
         # Point at z=10 (above the plane at z=5)
         point = Matrix([0, 0, 10])
-        assert halfplane.contains_point(point) == True
+        assert halfspace.contains_point(point) == True
     
-    def test_halfplane_contains_point_on_boundary(self):
+    def test_halfspace_contains_point_on_boundary(self):
         """Test that a point on the boundary is contained."""
         normal = Matrix([0, 0, 1])
         offset = Rational(5)
-        halfplane = HalfPlane(normal, offset)
+        halfspace = HalfSpace(normal, offset)
         
         # Point at z=5 (on the plane)
         point = Matrix([1, 2, 5])
-        assert halfplane.contains_point(point) == True
+        assert halfspace.contains_point(point) == True
     
-    def test_halfplane_contains_point_on_negative_side(self):
+    def test_halfspace_contains_point_on_negative_side(self):
         """Test that a point on the negative side is not contained."""
         normal = Matrix([0, 0, 1])
         offset = Rational(5)
-        halfplane = HalfPlane(normal, offset)
+        halfspace = HalfSpace(normal, offset)
         
         # Point at z=0 (below the plane at z=5)
         point = Matrix([0, 0, 0])
-        assert halfplane.contains_point(point) == False
+        assert halfspace.contains_point(point) == False
     
-    def test_halfplane_is_point_on_boundary(self):
+    def test_halfspace_is_point_on_boundary(self):
         """Test boundary detection."""
         normal = Matrix([0, 0, 1])
         offset = Rational(5)
-        halfplane = HalfPlane(normal, offset)
+        halfspace = HalfSpace(normal, offset)
         
         # Point on boundary
-        assert halfplane.is_point_on_boundary(Matrix([0, 0, 5])) == True
-        assert halfplane.is_point_on_boundary(Matrix([1, 1, 5])) == True
+        assert halfspace.is_point_on_boundary(Matrix([0, 0, 5])) == True
+        assert halfspace.is_point_on_boundary(Matrix([1, 1, 5])) == True
         
         # Point not on boundary
-        assert halfplane.is_point_on_boundary(Matrix([0, 0, 6])) == False
-        assert halfplane.is_point_on_boundary(Matrix([0, 0, 4])) == False
+        assert halfspace.is_point_on_boundary(Matrix([0, 0, 6])) == False
+        assert halfspace.is_point_on_boundary(Matrix([0, 0, 4])) == False
     
-    def test_halfplane_diagonal_normal(self):
+    def test_halfspace_diagonal_normal(self):
         """Test half-plane with diagonal normal."""
         normal = Matrix([1, 1, 1])
         offset = Rational(0)
-        halfplane = HalfPlane(normal, offset)
+        halfspace = HalfSpace(normal, offset)
         
         # Point where x+y+z > 0
-        assert halfplane.contains_point(Matrix([1, 0, 0])) == True
-        assert halfplane.contains_point(Matrix([1, 1, 1])) == True
+        assert halfspace.contains_point(Matrix([1, 0, 0])) == True
+        assert halfspace.contains_point(Matrix([1, 1, 1])) == True
         
         # Point where x+y+z = 0
-        assert halfplane.contains_point(Matrix([0, 0, 0])) == True
-        assert halfplane.is_point_on_boundary(Matrix([0, 0, 0])) == True
+        assert halfspace.contains_point(Matrix([0, 0, 0])) == True
+        assert halfspace.is_point_on_boundary(Matrix([0, 0, 0])) == True
         
         # Point where x+y+z < 0
-        assert halfplane.contains_point(Matrix([-1, 0, 0])) == False
+        assert halfspace.contains_point(Matrix([-1, 0, 0])) == False
 
 
 class TestPrismContainsPoint:
@@ -919,14 +919,14 @@ class TestDifferenceContainsPoint:
         assert diff.contains_point(point) == True
         assert diff.is_point_on_boundary(point) == True
     
-    def test_difference_with_halfplane_boundary(self):
+    def test_difference_with_halfspace_boundary(self):
         """Test boundary detection when subtracting with a half-plane."""
         size_base = Matrix([10, 10])
         orientation = Orientation()
         
         base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
         # Half-plane at z=5, normal pointing in +z direction
-        half_plane = HalfPlane(normal=Matrix([0, 0, 1]), offset=5)
+        half_plane = HalfSpace(normal=Matrix([0, 0, 1]), offset=5)
         
         diff = Difference(base, [half_plane])
         
@@ -1549,51 +1549,51 @@ class TestBoundaryDetectionComprehensive:
         assert cylinder.is_point_on_boundary(Matrix([0, 0, 11])) == False
     
     # ========================================================================
-    # HalfPlane Boundary Tests
+    # HalfSpace Boundary Tests
     # ========================================================================
     
-    def test_halfplane_origin_on_boundary(self):
+    def test_halfspace_origin_on_boundary(self):
         """Test that the plane origin is on the boundary."""
         normal = Matrix([0, 0, 1])
         offset = Rational(5)
-        halfplane = HalfPlane(normal=normal, offset=offset)
+        halfspace = HalfSpace(normal=normal, offset=offset)
         
         # Plane origin (normal * offset)
-        assert halfplane.is_point_on_boundary(Matrix([0, 0, 5])) == True
+        assert halfspace.is_point_on_boundary(Matrix([0, 0, 5])) == True
     
-    def test_halfplane_random_plane_points_on_boundary(self):
+    def test_halfspace_random_plane_points_on_boundary(self):
         """Test that random points on the plane are on the boundary."""
         normal = Matrix([0, 0, 1])
         offset = Rational(5)
-        halfplane = HalfPlane(normal=normal, offset=offset)
+        halfspace = HalfSpace(normal=normal, offset=offset)
         
         # Points on the plane (z = 5)
-        assert halfplane.is_point_on_boundary(Matrix([10, 20, 5])) == True
-        assert halfplane.is_point_on_boundary(Matrix([-15, 7, 5])) == True
-        assert halfplane.is_point_on_boundary(Matrix([0, 0, 5])) == True
-        assert halfplane.is_point_on_boundary(Matrix([100, -50, 5])) == True
+        assert halfspace.is_point_on_boundary(Matrix([10, 20, 5])) == True
+        assert halfspace.is_point_on_boundary(Matrix([-15, 7, 5])) == True
+        assert halfspace.is_point_on_boundary(Matrix([0, 0, 5])) == True
+        assert halfspace.is_point_on_boundary(Matrix([100, -50, 5])) == True
     
-    def test_halfplane_positive_side_not_on_boundary(self):
+    def test_halfspace_positive_side_not_on_boundary(self):
         """Test that points on the positive side (inside) are NOT on boundary."""
         normal = Matrix([0, 0, 1])
         offset = Rational(5)
-        halfplane = HalfPlane(normal=normal, offset=offset)
+        halfspace = HalfSpace(normal=normal, offset=offset)
         
         # Points above the plane (z > 5) are inside but not on boundary
-        assert halfplane.is_point_on_boundary(Matrix([0, 0, 6])) == False
-        assert halfplane.is_point_on_boundary(Matrix([0, 0, 10])) == False
-        assert halfplane.is_point_on_boundary(Matrix([5, 5, 20])) == False
+        assert halfspace.is_point_on_boundary(Matrix([0, 0, 6])) == False
+        assert halfspace.is_point_on_boundary(Matrix([0, 0, 10])) == False
+        assert halfspace.is_point_on_boundary(Matrix([5, 5, 20])) == False
     
-    def test_halfplane_negative_side_not_on_boundary(self):
+    def test_halfspace_negative_side_not_on_boundary(self):
         """Test that points on the negative side (outside) are NOT on boundary."""
         normal = Matrix([0, 0, 1])
         offset = Rational(5)
-        halfplane = HalfPlane(normal=normal, offset=offset)
+        halfspace = HalfSpace(normal=normal, offset=offset)
         
         # Points below the plane (z < 5) are outside and not on boundary
-        assert halfplane.is_point_on_boundary(Matrix([0, 0, 4])) == False
-        assert halfplane.is_point_on_boundary(Matrix([0, 0, 0])) == False
-        assert halfplane.is_point_on_boundary(Matrix([5, 5, -10])) == False
+        assert halfspace.is_point_on_boundary(Matrix([0, 0, 4])) == False
+        assert halfspace.is_point_on_boundary(Matrix([0, 0, 0])) == False
+        assert halfspace.is_point_on_boundary(Matrix([5, 5, -10])) == False
     
     # ========================================================================
     # ConvexPolygonExtrusion Boundary Tests
@@ -1759,28 +1759,28 @@ class TestBoundaryDetectionComprehensive:
                 assert cylinder.is_point_on_boundary(point) == False, \
                     f"Cylinder {i}: Point {point.T} should NOT be on boundary"
     
-    def test_random_halfplanes_boundary_points(self):
+    def test_random_halfspaces_boundary_points(self):
         """Test boundary detection on 25 random half-planes."""
         random.seed(44)  # For reproducibility
         
         for i in range(num_random_samples):
-            halfplane = generate_random_halfplane()
+            halfspace = generate_random_halfspace()
             
             # Get boundary points
-            boundary_points = generate_halfplane_boundary_points(halfplane)
+            boundary_points = generate_halfspace_boundary_points(halfspace)
             
             # All boundary points should be on boundary
             for point in boundary_points:
-                assert halfplane.is_point_on_boundary(point) == True, \
-                    f"HalfPlane {i}: Point {point.T} should be on boundary"
+                assert halfspace.is_point_on_boundary(point) == True, \
+                    f"HalfSpace {i}: Point {point.T} should be on boundary"
             
             # Get non-boundary points - these are NOT on boundary
-            non_boundary_points = generate_halfplane_non_boundary_points(halfplane)
+            non_boundary_points = generate_halfspace_non_boundary_points(halfspace)
             
             # Non-boundary points should NOT be on boundary
             for point in non_boundary_points:
-                assert halfplane.is_point_on_boundary(point) == False, \
-                    f"HalfPlane {i}: Point {point.T} should NOT be on boundary"
+                assert halfspace.is_point_on_boundary(point) == False, \
+                    f"HalfSpace {i}: Point {point.T} should NOT be on boundary"
     
     def test_random_convex_polygons_boundary_points(self):
         """Test boundary detection on 25 random convex polygon extrusions."""

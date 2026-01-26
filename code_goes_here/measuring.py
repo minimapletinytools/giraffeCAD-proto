@@ -8,7 +8,7 @@ in 3D space, useful for measurements and geometric calculations.
 from dataclasses import dataclass
 from .moothymoth import V3, Direction3D, Transform
 
-# TODO halfplane class
+# TODO halfspace class
 
 @dataclass(frozen=True)
 class Point:

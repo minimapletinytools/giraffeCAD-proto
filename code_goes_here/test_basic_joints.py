@@ -95,8 +95,8 @@ class TestMiterJoint:
         assert joint.cut_timbers["timberB"].cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
 
         # check that the two cuts are half plane cuts and the planes are opposite
-        assert isinstance(joint.cut_timbers["timberA"].cuts[0], HalfPlaneCut)
-        assert isinstance(joint.cut_timbers["timberB"].cuts[0], HalfPlaneCut)
+        assert isinstance(joint.cut_timbers["timberA"].cuts[0], HalfSpaceCut)
+        assert isinstance(joint.cut_timbers["timberB"].cuts[0], HalfSpaceCut)
 
         # Convert normals to global space and check if they are opposite
         self.assert_miter_joint_normals_are_opposite(joint, timberA, timberB)
@@ -148,8 +148,8 @@ class TestMiterJoint:
             assert len(joint.cut_timbers) == 2
             
             # Verify the cuts are half plane cuts
-            assert isinstance(joint.cut_timbers["timberA"].cuts[0], HalfPlaneCut)
-            assert isinstance(joint.cut_timbers["timberB"].cuts[0], HalfPlaneCut)
+            assert isinstance(joint.cut_timbers["timberA"].cuts[0], HalfSpaceCut)
+            assert isinstance(joint.cut_timbers["timberB"].cuts[0], HalfSpaceCut)
             
             # Verify normals are opposite in global space
             self.assert_miter_joint_normals_are_opposite(joint, timberA, timberB)
@@ -206,7 +206,7 @@ class TestButtJoint:
         assert joint.cut_timbers["butt_timber"].cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
 
         # Verify the cut is a half plane cut
-        assert isinstance(joint.cut_timbers["butt_timber"].cuts[0], HalfPlaneCut)
+        assert isinstance(joint.cut_timbers["butt_timber"].cuts[0], HalfSpaceCut)
 
         # Verify that the cut normal in global space is parallel or anti-parallel to timberB's length direction
         # For an end cut (butt joint), the cut plane is perpendicular to the timber's length axis,
@@ -462,7 +462,7 @@ class TestHouseJoint:
         
         # Get the negative CSG (the prism being cut away)
         # This is in the housing timber's LOCAL coordinate system
-        # Note: The new implementation uses a Difference(RectangularPrism, HalfPlane) for the cross lap joint
+        # Note: The new implementation uses a Difference(RectangularPrism, HalfSpace) for the cross lap joint
         from code_goes_here.meowmeowcsg import Difference
         cut_csg_local = cut.negative_csg
         assert isinstance(cut_csg_local, Difference), "Negative CSG should be a Difference (cross lap implementation)"

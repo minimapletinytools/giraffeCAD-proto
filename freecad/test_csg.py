@@ -2,7 +2,7 @@
 FreeCAD test script for CSG rendering.
 
 This script tests the FreeCAD CSG renderer with simple geometric examples
-to verify that CSG operations (Difference, Union, HalfPlane cuts) work correctly.
+to verify that CSG operations (Difference, Union, HalfSpace cuts) work correctly.
 
 Usage:
     1. Open FreeCAD
@@ -61,7 +61,7 @@ from examples.test_MeowMeowCSG_examples import EXAMPLES, get_example
 # ============================================================================
 # CONFIGURATION: Change this to test different examples
 # ============================================================================
-EXAMPLE_TO_RENDER = 'hexagon_extrusion'  # Options: 'cube_cutout', 'halfplane_cut', 'positioned_cube', 'union_cubes', 'hexagon_extrusion'
+EXAMPLE_TO_RENDER = 'hexagon_extrusion'  # Options: 'cube_cutout', 'halfspace_cut', 'positioned_cube', 'union_cubes', 'hexagon_extrusion'
 
 
 def render_csg_example(example_key: str):

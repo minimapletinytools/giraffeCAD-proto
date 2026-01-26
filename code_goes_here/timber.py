@@ -22,7 +22,7 @@ from .moothymoth import (
     vector_magnitude
 )
 from .footprint import Footprint, FootprintLocation
-from .meowmeowcsg import MeowMeowCSG, HalfPlane, RectangularPrism, Cylinder, SolidUnion as CSGUnion, Difference as CSGDifference
+from .meowmeowcsg import MeowMeowCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion as CSGUnion, Difference as CSGDifference
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict
 from dataclasses import dataclass, field
@@ -1211,10 +1211,10 @@ class Frame:
     
     def _check_cut_no_floats(self, cut: Cut):
         """Check a cut for float values."""
-        if isinstance(cut, HalfPlaneCut):
+        if isinstance(cut, HalfSpaceCut):
             half_plane = cut.half_plane
-            self._check_vector(half_plane.normal, "HalfPlaneCut normal")
-            self._check_numeric_value(half_plane.offset, "HalfPlaneCut offset")
+            self._check_vector(half_plane.normal, "HalfSpaceCut normal")
+            self._check_numeric_value(half_plane.offset, "HalfSpaceCut offset")
         elif isinstance(cut, CSGCut):
             # CSGCut contains arbitrary CSG - would need recursive checking
             # For now, we'll skip deep CSG validation
@@ -1254,11 +1254,11 @@ class Frame:
 # ============================================================================
 
 @dataclass(frozen=True)
-class HalfPlaneCut(Cut):
+class HalfSpaceCut(Cut):
     """
     A half plane cut is a cut that is defined by a half plane.
     """
-    half_plane: HalfPlane
+    half_plane: HalfSpace
     
     def get_negative_csg_local(self) -> MeowMeowCSG:
         return self.half_plane
