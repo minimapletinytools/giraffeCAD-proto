@@ -131,8 +131,8 @@ class TestMortiseAndTenonGeometry:
         # Test that center points are in the tenon at the bottom
         for z in [Rational(0), Rational(1), Rational(2), Rational(3)]:
             point_global = joint_shoulder_global - create_v3(Rational(0), Rational(0), z)
-            point_tenon_local = tenon_timber.global_to_local(point_global)
-            point_mortise_local = mortise_timber.global_to_local(point_global)
+            point_tenon_local = tenon_timber.transform.global_to_local(point_global)
+            point_mortise_local = mortise_timber.transform.global_to_local(point_global)
             assert tenon_csg.contains_point(point_tenon_local), \
                 f"Point at z={z} should be in tenon centerline"
             assert not mortise_csg.contains_point(point_mortise_local), \
@@ -140,8 +140,8 @@ class TestMortiseAndTenonGeometry:
         
         for z in [Rational(4.2), Rational(4.8)]:
             point_global = joint_shoulder_global - create_v3(Rational(0), Rational(0), z)
-            point_tenon_local = tenon_timber.global_to_local(point_global)
-            point_mortise_local = mortise_timber.global_to_local(point_global)
+            point_tenon_local = tenon_timber.transform.global_to_local(point_global)
+            point_mortise_local = mortise_timber.transform.global_to_local(point_global)
             assert not tenon_csg.contains_point(point_tenon_local), \
                 f"Point at z={z} should not be in tenon centerline"
             assert not mortise_csg.contains_point(point_mortise_local), \
@@ -149,8 +149,8 @@ class TestMortiseAndTenonGeometry:
         
         for z in [Rational(5), Rational(6)]:
             point_global = joint_shoulder_global - create_v3(Rational(0), Rational(0), z)
-            point_tenon_local = tenon_timber.global_to_local(point_global)
-            point_mortise_local = mortise_timber.global_to_local(point_global)
+            point_tenon_local = tenon_timber.transform.global_to_local(point_global)
+            point_mortise_local = mortise_timber.transform.global_to_local(point_global)
             assert not tenon_csg.contains_point(point_tenon_local), \
                 f"Point at z={z} should not be in tenon centerline"
             assert mortise_csg.contains_point(point_mortise_local), \
@@ -283,8 +283,8 @@ class TestPegStuff:
         for i in range(0,10):
             # Test that a point inside the peg hole is NOT contained in the timber CSGs
             point_in_peg_hole = peg.transform.position + peg.transform.orientation.matrix * Matrix([0, 0, Rational(i)])
-            point_in_peg_hole_tenon_local = tenon_timber.global_to_local(point_in_peg_hole)
-            point_in_peg_hole_mortise_local = mortise_timber.global_to_local(point_in_peg_hole)
+            point_in_peg_hole_tenon_local = tenon_timber.transform.global_to_local(point_in_peg_hole)
+            point_in_peg_hole_mortise_local = mortise_timber.transform.global_to_local(point_in_peg_hole)
             
             tenon_csg = joint.cut_timbers["tenon_timber"].render_timber_with_cuts_csg_local()
             mortise_csg = joint.cut_timbers["mortise_timber"].render_timber_with_cuts_csg_local()

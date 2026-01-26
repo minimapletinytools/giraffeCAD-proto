@@ -35,8 +35,8 @@ class TestMiterJoint:
         normal_B_local = joint.cut_timbers["timberB"].cuts[0].half_plane.normal
         
         # Convert to global coordinates
-        normal_A_global = timberA.local_direction_to_global(normal_A_local)
-        normal_B_global = timberB.local_direction_to_global(normal_B_local)
+        normal_A_global = timberA.orientation.matrix * normal_A_local
+        normal_B_global = timberB.orientation.matrix * normal_B_local
         
         # For a miter joint, the normals should be opposite in global space
         assert normal_A_global.equals(-normal_B_global), "Normals should be opposite in global space"
@@ -62,11 +62,11 @@ class TestMiterJoint:
         end_position_B_global = timberB.get_centerline_position_from_bottom_global(-3)
         
         # see that end_position_A_global is NOT in cut timberA but is in cut timberB
-        assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(end_position_A_global))
-        assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(end_position_A_global))
+        assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.transform.global_to_local(end_position_A_global))
+        assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.transform.global_to_local(end_position_A_global))
         # see that end_position_B_global is NOT in cut timberB but is in cut timberA
-        assert not joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(end_position_B_global))
-        assert joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(end_position_B_global))
+        assert not joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.transform.global_to_local(end_position_B_global))
+        assert joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.transform.global_to_local(end_position_B_global))
 
 
     @staticmethod
@@ -106,8 +106,8 @@ class TestMiterJoint:
 
         # check that the "corner" point of the miter is contained on the boundary of both half plane
         corner_point_global = create_v3(Rational(-3), Rational(-3), Rational(0))
-        corner_point_local_A = timberA.global_to_local(corner_point_global)
-        corner_point_local_B = timberB.global_to_local(corner_point_global)
+        corner_point_local_A = timberA.transform.global_to_local(corner_point_global)
+        corner_point_local_B = timberB.transform.global_to_local(corner_point_global)
         assert joint.cut_timbers["timberA"].cuts[0].half_plane.is_point_on_boundary(corner_point_local_A)
         assert joint.cut_timbers["timberB"].cuts[0].half_plane.is_point_on_boundary(corner_point_local_B)
 
@@ -116,8 +116,8 @@ class TestMiterJoint:
         # - On the "cut away" side of timber A (should NOT be contained)
         # - On the "kept" side of timber B (should be contained)
         bottom_point_A_after_cutting_global = create_v3(Rational(0), Rational(-3), Rational(0))
-        bottom_point_A_after_cutting_local_A = timberA.global_to_local(bottom_point_A_after_cutting_global)
-        bottom_point_A_after_cutting_local_B = timberB.global_to_local(bottom_point_A_after_cutting_global)
+        bottom_point_A_after_cutting_local_A = timberA.transform.global_to_local(bottom_point_A_after_cutting_global)
+        bottom_point_A_after_cutting_local_B = timberB.transform.global_to_local(bottom_point_A_after_cutting_global)
         assert not joint.cut_timbers["timberA"].cuts[0].half_plane.contains_point(bottom_point_A_after_cutting_local_A)
         assert joint.cut_timbers["timberB"].cuts[0].half_plane.contains_point(bottom_point_A_after_cutting_local_B)
 
@@ -212,7 +212,7 @@ class TestButtJoint:
         # For an end cut (butt joint), the cut plane is perpendicular to the timber's length axis,
         # so the normal is parallel/anti-parallel to the length direction
         cut_normal_local = joint.cut_timbers["butt_timber"].cuts[0].half_plane.normal
-        cut_normal_global = timberB.local_direction_to_global(cut_normal_local)
+        cut_normal_global = timberB.orientation.matrix * cut_normal_local
         
         dot_with_length = (cut_normal_global.T * timberB.get_length_direction_global())[0, 0]
         from sympy import simplify, Abs
@@ -230,8 +230,8 @@ class TestButtJoint:
         # pick a point that's on the boundary of the butt joint
         joint_point_global = create_v3(Rational(0), Rational(3), Rational(0))
 
-        assert joint.cut_timbers["receiving_timber"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberA.global_to_local(joint_point_global))
-        assert joint.cut_timbers["butt_timber"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberB.global_to_local(joint_point_global))
+        assert joint.cut_timbers["receiving_timber"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberA.transform.global_to_local(joint_point_global))
+        assert joint.cut_timbers["butt_timber"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberB.transform.global_to_local(joint_point_global))
         
 
 
@@ -423,8 +423,8 @@ class TestHouseJoint:
 
         # test that the origin point lies in the housed timber but not the housing timber
         origin = create_v3(Rational(0), Rational(0), Rational(0))
-        assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(housing_timber.global_to_local(origin))
-        assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(housed_timber.global_to_local(origin))
+        assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(housing_timber.transform.global_to_local(origin))
+        assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(housed_timber.transform.global_to_local(origin))
         
 
     def test_house_joint_prism_matches_housed_timber_global_space(self):
@@ -531,21 +531,21 @@ class TestCrossLapJoint:
 
         # test that the origin point lies on the boundary of both timbers
         origin = create_v3(Rational(0), Rational(0), Rational(0))
-        assert joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
-        assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
+        assert joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.transform.global_to_local(origin))
+        assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.transform.global_to_local(origin))
 
-        assert joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberA.global_to_local(origin))
-        assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberB.global_to_local(origin))
+        assert joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberA.transform.global_to_local(origin))
+        assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().is_point_on_boundary(timberB.transform.global_to_local(origin))
 
         # above origin
         origin = create_v3(Rational(0), Rational(0), Rational(1))
-        assert joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
-        assert not joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
+        assert joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.transform.global_to_local(origin))
+        assert not joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.transform.global_to_local(origin))
 
         # below origin
         origin = create_v3(Rational(0), Rational(0), Rational(-1))
-        assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.global_to_local(origin))
-        assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.global_to_local(origin))
+        assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.transform.global_to_local(origin))
+        assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(timberB.transform.global_to_local(origin))
 
 
 class TestSpliceLapJoint:
@@ -618,23 +618,23 @@ class TestSpliceLapJoint:
         
         # Test 1: Points outside the ends on centerline should not be contained
         point_before_A = create_v3(-5, 0, 0)
-        point_before_A_local = timberA.global_to_local(point_before_A)
+        point_before_A_local = timberA.transform.global_to_local(point_before_A)
         assert not csg_A.contains_point(point_before_A_local), \
             "Point before timberA should not be contained"
         
         point_after_B = create_v3(45, 0, 0)
-        point_after_B_local = timberB.global_to_local(point_after_B)
+        point_after_B_local = timberB.transform.global_to_local(point_after_B)
         assert not csg_B.contains_point(point_after_B_local), \
             "Point after timberB should not be contained"
         
         # Test 2: Points in the middle of each timber (before lap region) should be contained
         point_middle_A = create_v3(10, 0, 0)  # Well before lap at x=18
-        point_middle_A_local = timberA.global_to_local(point_middle_A)
+        point_middle_A_local = timberA.transform.global_to_local(point_middle_A)
         assert csg_A.contains_point(point_middle_A_local), \
             "Point in middle of timberA (before lap) should be contained"
         
         point_middle_B = create_v3(30, 0, 0)  # After lap region (lap ends at x=24)
-        point_middle_B_local = timberB.global_to_local(point_middle_B)
+        point_middle_B_local = timberB.transform.global_to_local(point_middle_B)
         assert csg_B.contains_point(point_middle_B_local), \
             "Point in middle of timberB (after lap) should be contained"
         
@@ -663,8 +663,8 @@ class TestSpliceLapJoint:
         # At z=-epsilon: Just inside timberA's kept region (BACK side), should be in timberA but not in timberB
         epsilon = Rational(1, 10)  # Small offset
         point_in_A = create_v3(x_in_lap, 0, -epsilon)  # Just below Z=0 (in timberA's kept region)
-        point_in_A_local = timberA.global_to_local(point_in_A)
-        point_in_A_as_B_local = timberB.global_to_local(point_in_A)
+        point_in_A_local = timberA.transform.global_to_local(point_in_A)
+        point_in_A_as_B_local = timberB.transform.global_to_local(point_in_A)
         
         assert csg_A.contains_point(point_in_A_local), \
             "Point in timberA's kept region (z=-epsilon) should be contained in timberA"
@@ -673,8 +673,8 @@ class TestSpliceLapJoint:
         
         # At z=0: on the boundary where the two timbers meet
         point_at_boundary = create_v3(x_in_lap, 0, 0)
-        point_at_boundary_A_local = timberA.global_to_local(point_at_boundary)
-        point_at_boundary_B_local = timberB.global_to_local(point_at_boundary)
+        point_at_boundary_A_local = timberA.transform.global_to_local(point_at_boundary)
+        point_at_boundary_B_local = timberB.transform.global_to_local(point_at_boundary)
         
         # At the boundary, the point should be contained in both (on their surfaces)
         assert csg_A.contains_point(point_at_boundary_A_local), \
@@ -684,8 +684,8 @@ class TestSpliceLapJoint:
         
         # At z=+epsilon: Just inside timberB's kept region (FRONT side), should be in timberB but not in timberA
         point_in_B = create_v3(x_in_lap, 0, epsilon)  # Just above Z=0 (in timberB's kept region)
-        point_in_B_as_A_local = timberA.global_to_local(point_in_B)
-        point_in_B_local = timberB.global_to_local(point_in_B)
+        point_in_B_as_A_local = timberA.transform.global_to_local(point_in_B)
+        point_in_B_local = timberB.transform.global_to_local(point_in_B)
         
         assert not csg_A.contains_point(point_in_B_as_A_local), \
             "Point in timberB's kept region (z=+epsilon) should NOT be contained in timberA"
@@ -694,8 +694,8 @@ class TestSpliceLapJoint:
         
         # A little further into timberB (beyond the lap boundary): should be in timberB only, not in timberA
         point_deeper_in_B = create_v3(x_in_lap, 0, lap_depth - epsilon)  # z = 2 - 0.1 = 1.9 (deep into timberB)
-        point_deeper_in_B_as_A_local = timberA.global_to_local(point_deeper_in_B)
-        point_deeper_in_B_local = timberB.global_to_local(point_deeper_in_B)
+        point_deeper_in_B_as_A_local = timberA.transform.global_to_local(point_deeper_in_B)
+        point_deeper_in_B_local = timberB.transform.global_to_local(point_deeper_in_B)
         
         assert not csg_A.contains_point(point_deeper_in_B_as_A_local), \
             "Point deep in timberB should NOT be contained in timberA"
