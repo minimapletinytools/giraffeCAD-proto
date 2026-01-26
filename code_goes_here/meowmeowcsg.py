@@ -103,9 +103,8 @@ class HalfPlane(MeowMeowCSG):
         return dot_product == self.offset
 
 
-# TODO rename to TimberPrism maybe?
 @dataclass(frozen=True)
-class Prism(MeowMeowCSG):
+class RectangularPrism(MeowMeowCSG):
     """
     A prism with rectangular cross-section, optionally infinite in one or both ends.
     Note,they are parameterized similar to the Timber class which is atypical for such a primitive.
@@ -167,7 +166,7 @@ class Prism(MeowMeowCSG):
         return self.transform.position + self.transform.orientation.matrix * Matrix([0, 0, self.end_distance])
     
     def __repr__(self) -> str:
-        return (f"Prism(size={self.size.T}, transform={self.transform}, "
+        return (f"RectangularPrism(size={self.size.T}, transform={self.transform}, "
                 f"start={self.start_distance}, end={self.end_distance})")
     
     def contains_point(self, point: V3) -> bool:
@@ -883,7 +882,7 @@ def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: MeowMeowCS
         return transform_halfplane(csg_in_orig_timber_space)
     
     elif hasattr(csg_in_orig_timber_space, 'transform'):
-        # For types with a transform property (Prism, ConvexPolygonExtrusion, etc.)
+        # For types with a transform property (RectangularPrism, ConvexPolygonExtrusion, etc.)
         # Transform the transform and return a new instance
         new_transform = transform_transform(csg_in_orig_timber_space.transform)
         return replace(csg_in_orig_timber_space, transform=new_transform)

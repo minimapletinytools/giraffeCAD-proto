@@ -8,7 +8,7 @@ These functions help ensure that joints are geometrically valid and sensibly con
 from typing import Optional, Tuple, List, Union
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation, V2, V3, are_vectors_perpendicular, zero_test
-from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, SolidUnion, ConvexPolygonExtrusion
+from code_goes_here.meowmeowcsg import RectangularPrism, HalfPlane, MeowMeowCSG, SolidUnion, ConvexPolygonExtrusion
 from code_goes_here.construction import are_timbers_face_aligned, do_xy_cross_section_on_parallel_timbers_overlap
 from sympy import Abs, Rational
 
@@ -388,9 +388,9 @@ def check_timber_overlap_for_splice_joint_is_sensible(
 
 
 # TODO when you add actual dimensions on top of perfect timber within dimensions, you probably want a version that sizes to the actual dimensions...
-def chop_timber_end_with_prism(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> Prism:
+def chop_timber_end_with_prism(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> RectangularPrism:
     """
-    Create a Prism CSG for chopping off material from a timber end (in local coordinates).
+    Create a RectangularPrism CSG for chopping off material from a timber end (in local coordinates).
     
     Creates a CSG prism in the timber's local coordinate system that starts at 
     distance_from_end_to_cut from the timber end and extends to infinity in the timber 
@@ -405,7 +405,7 @@ def chop_timber_end_with_prism(timber: Timber, end: TimberReferenceEnd, distance
         distance_from_end_to_cut: Distance from the end where the cut begins
     
     Returns:
-        Prism: A CSG prism in local coordinates representing the material beyond 
+        RectangularPrism: A CSG prism in local coordinates representing the material beyond 
                distance_from_end_to_cut from the end, extending to infinity
     
     Example:
@@ -432,7 +432,7 @@ def chop_timber_end_with_prism(timber: Timber, end: TimberReferenceEnd, distance
         end_distance_local = distance_from_end_to_cut
     
     # Create the prism with identity transform (local coordinates)
-    return Prism(
+    return RectangularPrism(
         size=timber.size,
         transform=Transform.identity(),
         start_distance=start_distance_local,
@@ -575,7 +575,7 @@ def chop_lap_on_timber_end(
     
     # Calculate the prism dimensions and position for top lap
     # Start and end distances in local coordinates
-    # Ensure start <= end for Prism
+    # Ensure start <= end for RectangularPrism
     prism_start = min(lap_shoulder_distance_from_bottom, lap_end_distance_from_bottom)
     prism_end = max(lap_shoulder_distance_from_bottom, lap_end_distance_from_bottom)
     
@@ -602,7 +602,7 @@ def chop_lap_on_timber_end(
             removal_width = lap_timber.size[0] - lap_depth
             x_offset = lap_timber.size[0] / Rational(2) - removal_width / Rational(2)
         
-        lap_prism = Prism(
+        lap_prism = RectangularPrism(
             size=create_v2(removal_width, lap_timber.size[1]),
             transform=Transform(position=create_v3(x_offset, 0, 0), orientation=Orientation.identity()),
             start_distance=prism_start,
@@ -623,7 +623,7 @@ def chop_lap_on_timber_end(
             removal_height = lap_timber.size[1] - lap_depth
             y_offset = lap_timber.size[1] / Rational(2) - removal_height / Rational(2)
         
-        lap_prism = Prism(
+        lap_prism = RectangularPrism(
             size=create_v2(lap_timber.size[0], removal_height),
             transform=Transform(position=create_v3(0, y_offset, 0), orientation=Orientation.identity()),
             start_distance=prism_start,
@@ -925,7 +925,7 @@ def chop_shoulder_notch_on_timber_face(
     distance_along_timber: Numeric,
     notch_width: Numeric,
     notch_depth: Numeric
-) -> Prism:
+) -> RectangularPrism:
     """
     Create a rectangular shoulder notch on a timber face.
     
@@ -940,7 +940,7 @@ def chop_shoulder_notch_on_timber_face(
         notch_depth: Depth of the notch (measured perpendicular to the face, into the timber)
     
     Returns:
-        Prism representing the material to remove (in timber's local coordinates)
+        RectangularPrism representing the material to remove (in timber's local coordinates)
     
     Example:
         >>> # Create a 2" wide, 1" deep notch on the front face, 6" from bottom
@@ -979,14 +979,14 @@ def chop_shoulder_notch_on_timber_face(
         # The notch removes material inward from the face
         if notch_face == TimberFace.RIGHT:
             # Notch starts at right face (-depth inward)
-            # Prism center: size[0]/2 - depth/2
+            # RectangularPrism center: size[0]/2 - depth/2
             x_offset = timber.size[0] / Rational(2) - notch_depth / Rational(2)
         else:  # LEFT
             # Notch starts at left face (-depth inward)
             # Prism center: -size[0]/2 + depth/2
             x_offset = -timber.size[0] / Rational(2) + notch_depth / Rational(2)
         
-        notch_prism = Prism(
+        notch_prism = RectangularPrism(
             size=create_v2(notch_depth, timber.size[1]),  # depth in X, full height in Y
             transform=Transform(position=create_v3(x_offset, 0, 0), orientation=Orientation.identity()),
             start_distance=prism_start,
@@ -1004,7 +1004,7 @@ def chop_shoulder_notch_on_timber_face(
             # Prism center: -size[1]/2 + depth/2
             y_offset = -timber.size[1] / Rational(2) + notch_depth / Rational(2)
         
-        notch_prism = Prism(
+        notch_prism = RectangularPrism(
             size=create_v2(timber.size[0], notch_depth),  # full width in X, depth in Y
             transform=Transform(position=create_v3(0, y_offset, 0), orientation=Orientation.identity()),
             start_distance=prism_start,

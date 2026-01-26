@@ -72,7 +72,7 @@ class TestMiterJoint:
     @staticmethod
     def get_timber_bottom_position_after_cutting_local(timber: CutTimber) -> V3:
         prism = timber._extended_timber_without_cuts_csg_local()
-        assert isinstance(prism, Prism)
+        assert isinstance(prism, RectangularPrism)
         return prism.get_bottom_position()
 
 
@@ -432,7 +432,7 @@ class TestHouseJoint:
         Test that the prism being cut from the housing timber matches the housed timber
         when both are compared in global coordinates.
         """
-        from code_goes_here.meowmeowcsg import Prism
+        from code_goes_here.meowmeowcsg import RectangularPrism
         
         # Create housing timber (vertical post)
         housing_timber = create_standard_vertical_timber(height=200, size=(10, 10), position=(0, 0, 0))
@@ -462,14 +462,14 @@ class TestHouseJoint:
         
         # Get the negative CSG (the prism being cut away)
         # This is in the housing timber's LOCAL coordinate system
-        # Note: The new implementation uses a Difference(Prism, HalfPlane) for the cross lap joint
+        # Note: The new implementation uses a Difference(RectangularPrism, HalfPlane) for the cross lap joint
         from code_goes_here.meowmeowcsg import Difference
         cut_csg_local = cut.negative_csg
         assert isinstance(cut_csg_local, Difference), "Negative CSG should be a Difference (cross lap implementation)"
         
         # Extract the base prism from the Difference
         cut_prism_local = cut_csg_local.base
-        assert isinstance(cut_prism_local, Prism), "Base of Difference should be a Prism"
+        assert isinstance(cut_prism_local, RectangularPrism), "Base of Difference should be a RectangularPrism"
         
         # ===================================================================
         # Compare the cut prism with the housed timber in GLOBAL space

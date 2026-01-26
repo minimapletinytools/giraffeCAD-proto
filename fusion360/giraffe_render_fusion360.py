@@ -23,7 +23,7 @@ from sympy import Matrix, Float
 from giraffe import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge, Frame
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
-    MeowMeowCSG, HalfPlane, Prism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
+    MeowMeowCSG, HalfPlane, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from code_goes_here.rendering_utils import (
     calculate_structure_extents,
@@ -331,7 +331,7 @@ def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG
     """
     app = get_fusion_app()
     
-    if isinstance(csg, Prism):
+    if isinstance(csg, RectangularPrism):
         if app:
             app.log(f"  render_csg_in_local_space: Rendering Prism with orientation")
         return render_prism_in_local_space(component, csg, infinite_extent)

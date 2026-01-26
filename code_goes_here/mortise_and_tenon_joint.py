@@ -270,7 +270,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
               f"is outside mortise timber face bounds (±{float(half_width):.4f}, ±{float(half_height):.4f})")
     
     # ========================================================================
-    # Create mortise cut (CSGCut with Prism)
+    # Create mortise cut (CSGCut with RectangularPrism)
     # Mortise is a rectangular hole cut into the mortise timber
     # The hole matches the shape of the tenon but the depth might be different 
     # ========================================================================
@@ -294,10 +294,10 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     tenon_origin_local = mortise_timber.orientation.matrix.T * (intersection_point_global - mortise_timber.get_bottom_position_global())
     
     # Create a prism representing the tenon volume (in mortise timber's local space)
-    from code_goes_here.meowmeowcsg import Prism
+    from code_goes_here.meowmeowcsg import RectangularPrism
     from code_goes_here.moothymoth import Transform
     tenon_transform = Transform(position=tenon_origin_local, orientation=relative_orientation)
-    tenon_prism_in_mortise_local = Prism(
+    tenon_prism_in_mortise_local = RectangularPrism(
         size=tenon_size,
         transform=tenon_transform,
         start_distance= -actual_mortise_depth if tenon_end == TimberReferenceEnd.BOTTOM else 0,
@@ -343,7 +343,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     if tenon_end == TimberReferenceEnd.TOP:
         # For top end, the timber end extends from shoulder to +infinity
-        timber_end_prism = Prism(
+        timber_end_prism = RectangularPrism(
             size=tenon_timber.size,
             transform=Transform.identity(),
             start_distance=shoulder_plane_point_with_offset_local[2],  # Z coordinate in local space (with offset)
@@ -351,7 +351,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         )
     else:  # BOTTOM
         # For bottom end, the timber end extends from -infinity to shoulder
-        timber_end_prism = Prism(
+        timber_end_prism = RectangularPrism(
             size=tenon_timber.size,
             transform=Transform.identity(),
             start_distance=None,  # Infinite
@@ -371,7 +371,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         position=Matrix([tenon_position[0], tenon_position[1], Rational(0)]),
         orientation=Orientation.identity()
     )
-    tenon_prism_local = Prism(
+    tenon_prism_local = RectangularPrism(
         size=tenon_size,
         transform=tenon_transform_local,
         start_distance=tenon_start,
@@ -525,7 +525,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
                 position=peg_pos_on_tenon_face_local_with_peg_offset,
                 orientation=peg_orientation_tenon_local
             )
-            peg_hole_tenon = Prism(
+            peg_hole_tenon = RectangularPrism(
                 size=Matrix([peg_size, peg_size]),
                 transform=peg_transform_tenon,
                 start_distance=0,
@@ -623,7 +623,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
                 position=peg_pos_on_mortise_face_local,
                 orientation=peg_orientation_mortise_local
             )
-            peg_hole_mortise = Prism(
+            peg_hole_mortise = RectangularPrism(
                 size=Matrix([peg_size, peg_size]),
                 transform=peg_transform_mortise,
                 start_distance=Rational(0),  # Starts at mortise face

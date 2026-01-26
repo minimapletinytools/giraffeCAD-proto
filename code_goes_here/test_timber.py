@@ -813,8 +813,8 @@ class TestCutTimber:
         csg = cut_timber._extended_timber_without_cuts_csg_local()
         
         # Should be a finite prism
-        from code_goes_here.meowmeowcsg import Prism
-        assert isinstance(csg, Prism)
+        from code_goes_here.meowmeowcsg import RectangularPrism
+        assert isinstance(csg, RectangularPrism)
         
         # In LOCAL coordinates (relative to bottom_position):
         # Start should be at 0 (local bottom)
@@ -889,9 +889,9 @@ class TestCutTimber:
         # Get the CSG with cuts applied (should be same as without cuts since there are none)
         csg = cut_timber.render_timber_with_cuts_csg_local()
         
-        # Should be a Prism (since no cuts means no Difference operation)
-        from code_goes_here.meowmeowcsg import Prism
-        assert isinstance(csg, Prism)
+        # Should be a RectangularPrism (since no cuts means no Difference operation)
+        from code_goes_here.meowmeowcsg import RectangularPrism
+        assert isinstance(csg, RectangularPrism)
         assert csg.size == size
         assert csg.start_distance == 0
         assert csg.end_distance == length
@@ -932,7 +932,7 @@ class TestCutTimber:
         # Should be a Difference operation
         from code_goes_here.meowmeowcsg import Difference
         assert isinstance(csg, Difference)
-        assert isinstance(csg.base, Prism)
+        assert isinstance(csg.base, RectangularPrism)
         assert len(csg.subtract) == 1
         assert isinstance(csg.subtract[0], HalfPlane)
     
@@ -984,7 +984,7 @@ class TestCutTimber:
         # Should be a Difference operation
         from code_goes_here.meowmeowcsg import Difference
         assert isinstance(csg, Difference)
-        assert isinstance(csg.base, Prism)
+        assert isinstance(csg.base, RectangularPrism)
         assert len(csg.subtract) == 2
         assert all(isinstance(sub, HalfPlane) for sub in csg.subtract)
     
@@ -1020,9 +1020,9 @@ class TestCutTimber:
         csg = cut_timber.render_timber_with_cuts_csg_local()
         
         # Should be a Difference operation
-        from code_goes_here.meowmeowcsg import Difference, Prism
+        from code_goes_here.meowmeowcsg import Difference, RectangularPrism
         assert isinstance(csg, Difference)
-        assert isinstance(csg.base, Prism)
+        assert isinstance(csg.base, RectangularPrism)
         
         # Base prism should be semi-infinite at the top (end_distance = None)
         assert csg.base.start_distance == 0
@@ -1094,9 +1094,9 @@ class TestPeg:
         
         csg = peg.render_csg_local()
         
-        # Should return a Prism
-        from .meowmeowcsg import Prism
-        assert isinstance(csg, Prism)
+        # Should return a RectangularPrism
+        from .meowmeowcsg import RectangularPrism
+        assert isinstance(csg, RectangularPrism)
         
         # Verify dimensions
         assert csg.size[0] == Rational(2)  # width
@@ -1187,9 +1187,9 @@ class TestWedge:
         
         csg = wedge.render_csg_local()
         
-        # Should return a Prism (simplified bounding box for now)
-        from .meowmeowcsg import Prism
-        assert isinstance(csg, Prism)
+        # Should return a RectangularPrism (simplified bounding box for now)
+        from .meowmeowcsg import RectangularPrism
+        assert isinstance(csg, RectangularPrism)
         
         # Verify dimensions match the base dimensions
         assert csg.size[0] == Rational(5)  # base_width

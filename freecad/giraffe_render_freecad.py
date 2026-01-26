@@ -53,7 +53,7 @@ from giraffe import CutTimber, Timber, Frame
 from code_goes_here.timber import JointAccessory, Peg, Wedge, PegShape
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
-    MeowMeowCSG, HalfPlane, Prism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
+    MeowMeowCSG, HalfPlane, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from code_goes_here.rendering_utils import (
     calculate_structure_extents,
@@ -452,7 +452,7 @@ def render_csg_shape(csg: MeowMeowCSG, timber: Optional[Timber] = None,
     Returns:
         Part.Shape, or None if creation failed
     """
-    if isinstance(csg, Prism):
+    if isinstance(csg, RectangularPrism):
         return create_prism_shape(csg, infinite_extent)
     
     elif isinstance(csg, Cylinder):
