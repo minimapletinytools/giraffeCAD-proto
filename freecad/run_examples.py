@@ -66,6 +66,7 @@ def reload_all_modules():
         'code_goes_here.footprint',
         'code_goes_here.meowmeowcsg',
         'code_goes_here.timber',
+        'code_goes_here.measuring',
         'code_goes_here.construction',
         'code_goes_here.rendering_utils',
         'code_goes_here.joint_shavings',

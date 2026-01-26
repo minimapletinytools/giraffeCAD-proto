@@ -10,6 +10,7 @@ from code_goes_here.timber import *
 from code_goes_here.moothymoth import *
 from code_goes_here.meowmeowcsg import *
 from code_goes_here.construction import *
+from code_goes_here.measuring import *
 from sympy import Abs, Rational
 
 
@@ -170,8 +171,6 @@ def find_projected_intersection_on_centerlines(timberA: Timber, timberB: Timber,
     
     return (distanceA, distanceB) 
 
-# TODO reimplement from measuring.py and rename to scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber
-# TODO this can be replaced with your magical scribe1d function lol
 def scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
     reference_timber: Timber,
     reference_face: TimberReferenceLongFace,
@@ -205,8 +204,6 @@ def scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
         ...     target_timber=bottom_timber
         ... )
     """
-    from sympy import Rational
-    
     # Assert that the target timber has a long face parallel to the reference face
     reference_face_direction = reference_timber.get_face_direction_global(reference_face)
     target_long_faces = [TimberReferenceLongFace.RIGHT, TimberReferenceLongFace.LEFT, 
@@ -223,26 +220,15 @@ def scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
         f"Target timber {target_timber.name} must have a long face parallel to reference face {reference_face.name} " \
         f"on timber {reference_timber.name}. Reference face direction: {reference_face_direction.T}"
     
-    # Get a point on the reference face
-    reference_face_offset = reference_timber.get_size_in_face_normal_axis(reference_face) / Rational(2)
-    reference_face_point = reference_timber.get_bottom_position_global() + reference_face_direction * reference_face_offset
-    
-    # Calculate the cutting plane point (moved inward by reference_depth_from_face)
-    cutting_plane_point = reference_face_point - reference_face_direction * reference_depth_from_face
-    cutting_plane_normal = reference_face_direction
+    # Create a plane at the given depth from the reference face
+    cutting_plane = measure_from_face(reference_depth_from_face, reference_face, reference_timber)
     
     # Find the opposing face on the target timber
     target_face_direction = -reference_face_direction  # Opposite direction
     target_face = target_timber.get_closest_oriented_face_from_global_direction(target_face_direction)
     
-    # Get a point on the target timber's opposing face
-    target_face_offset = target_timber.get_size_in_face_normal_axis(target_face) / Rational(2)
-    target_face_point = target_timber.get_bottom_position_global() + target_timber.get_face_direction_global(target_face) * target_face_offset
-    
-    # Calculate the signed distance from the cutting plane to the target face point
-    # Distance = (target_face_point - cutting_plane_point) · cutting_plane_normal
-    distance_vector = target_face_point - cutting_plane_point
-    signed_distance = (distance_vector.T * cutting_plane_normal)[0, 0]
+    # Measure from the target face to the cutting plane and return absolute value
+    signed_distance = mark_from_face(cutting_plane, target_face, target_timber)
     
     # Return the absolute distance (depth is always positive)
     return Abs(signed_distance)
