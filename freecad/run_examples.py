@@ -45,7 +45,7 @@ EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'csg'
 
 # CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
-CSG_EXAMPLE_TO_RENDER = 'shoulder_notch'  # Options: 'cube_cutout', 'halfplane_cut', 'positioned_cube', 'lap_cut_timber', 'union_cubes', 'hexagon_extrusion', 'gooseneck_profile', 'shoulder_notch'
+CSG_EXAMPLE_TO_RENDER = 'shoulder_notch'  # Options: 'cube_cutout', 'halfspace_cut', 'positioned_cube', 'lap_cut_timber', 'union_cubes', 'hexagon_extrusion', 'gooseneck_profile', 'shoulder_notch'
 
 # Japanese Joints Configuration (only used when EXAMPLE_TO_RENDER = 'japanese_joints')
 # Uncomment ONE of the following lines to select which joint example to render:

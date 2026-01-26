@@ -95,7 +95,7 @@ Each joint should have at least one "general" test that looks something like:
 2. validate that the joint object returned is as expected (right number of cuts for example)
 3. pick key points on key features in the joints and test those points to ensure they are/are not contained in the cut timbers or on the cut timber boundary as expected
     - this is often done by picking a line running through the joint and testing various points along the line
-4. If appropriate, break down the returned CSG objects and ensure certain cuts are where they are expecetd (e.g. look for a HalfPlane cut that matches the shoulder when doing a mortise and tenon cut)
+4. If appropriate, break down the returned CSG objects and ensure certain cuts are where they are expecetd (e.g. look for a HalfSpace cut that matches the shoulder when doing a mortise and tenon cut)
 
 In addition (but not required) we may add tests as follows:
 

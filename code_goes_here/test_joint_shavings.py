@@ -17,7 +17,7 @@ from code_goes_here.joint_shavings import (
 )
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import create_v3, create_v2, inches, are_vectors_parallel
-from code_goes_here.meowmeowcsg import SolidUnion, RectangularPrism, HalfPlane
+from code_goes_here.meowmeowcsg import SolidUnion, RectangularPrism, HalfSpace
 
 # TODO too many tests, just delete some lol... or combine into 1 test that varies only the timber length...
 class TestCheckTimberOverlapForSpliceJoint:
@@ -430,7 +430,7 @@ class TestChopTimberEndWithPrism:
         assert prism.end_distance is None
 
 
-class TestChopTimberEndWithHalfPlane:
+class TestChopTimberEndWithHalfspace:
     """Tests for chop_timber_end_with_half_plane function."""
     
     def test_chop_top_end(self):
@@ -539,26 +539,26 @@ class TestChopLapOnTimberEnd:
         
         # Verify the CSG is a SolidUnion
         assert isinstance(lap_csg, SolidUnion), "Lap CSG should be a SolidUnion"
-        assert len(lap_csg.children) == 2, "Lap CSG should have 2 children (RectangularPrism and HalfPlane)"
+        assert len(lap_csg.children) == 2, "Lap CSG should have 2 children (RectangularPrism and HalfSpace)"
         
-        # Find the RectangularPrism and HalfPlane in the union
+        # Find the RectangularPrism and HalfSpace in the union
         prism = None
         half_plane = None
         for child in lap_csg.children:
             if isinstance(child, RectangularPrism):
                 prism = child
-            elif isinstance(child, HalfPlane):
+            elif isinstance(child, HalfSpace):
                 half_plane = child
         
         assert prism is not None, "Lap CSG should contain a RectangularPrism"
-        assert half_plane is not None, "Lap CSG should contain a HalfPlane"
+        assert half_plane is not None, "Lap CSG should contain a HalfSpace"
         
         # Verify geometry based on the implementation:
         # For TOP end with shoulder_distance=6", lap_length=12":
         # - Timber end at 48" from bottom
         # - Shoulder at 48" - 6" = 42" from bottom
         # - Lap extends from shoulder in +Z direction by lap_length = 42" + 12" = 54" from bottom
-        # - RectangularPrism from 42" to 54", HalfPlane at 54"
+        # - RectangularPrism from 42" to 54", HalfSpace at 54"
         expected_shoulder_z = inches(42)  # 48" - 6"
         expected_lap_end_z = inches(54)   # 42" + 12"
         
@@ -570,7 +570,7 @@ class TestChopLapOnTimberEnd:
         
         # Check that half plane coincides with lap end
         assert half_plane.offset == expected_lap_end_z, \
-            f"HalfPlane should be at lap end (z={expected_lap_end_z}), got {half_plane.offset}"
+            f"HalfSpace should be at lap end (z={expected_lap_end_z}), got {half_plane.offset}"
         
         # Test point 1: 6" down from timber end (at shoulder), on the LEFT face (removed side)
         # Timber is 4" wide centered at x=0, so LEFT face is at x=-2"

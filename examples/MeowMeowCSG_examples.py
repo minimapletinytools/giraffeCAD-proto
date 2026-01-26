@@ -63,12 +63,12 @@ def example_cube_with_cube_cutout():
     return result
 
 
-def example_cube_with_halfplane_cut():
+def example_cube_with_halfspace_cut():
     """
-    1x1x1 cube with bottom half removed by HalfPlane at Z=0.5.
+    1x1x1 cube with bottom half removed by HalfSpace at Z=0.5.
     
     Cube: X=[-0.5, 0.5], Y=[-0.5, 0.5], Z=[0, 1] (centered at origin in XY)
-    HalfPlane keeps points where Z >= 0.5
+    HalfSpace keeps points where Z >= 0.5
     Result: Top half only, X=[-0.5, 0.5], Y=[-0.5, 0.5], Z=[0.5, 1]
     
     Returns:
@@ -85,11 +85,11 @@ def example_cube_with_halfplane_cut():
         )
     )
     
-    # Create a halfplane that removes Z < 0.5
+    # Create a halfspace that removes Z < 0.5
     # Plane equation: normal · P >= offset
-    # HalfPlane with normal=(0,0,1) and offset=0.5 keeps points where z >= 0.5
+    # HalfSpace with normal=(0,0,1) and offset=0.5 keeps points where z >= 0.5
     # When used in Difference, it removes points where z < 0.5
-    halfplane = HalfPlane(
+    halfspace = HalfSpace(
         normal=Matrix([0, 0, 1]),  # Normal pointing up (+Z)
         offset=Rational(1, 2)  # Plane at Z = 0.5
     )
@@ -97,7 +97,7 @@ def example_cube_with_halfplane_cut():
     # Create the difference (remove bottom half)
     result = Difference(
         base=cube,
-        subtract=[halfplane]
+        subtract=[halfspace]
     )
     
     return result
@@ -411,10 +411,10 @@ EXAMPLES = {
         'description': '2x2x2 cube with 1x1x1 cube removed (both centered at origin)',
         'function': example_cube_with_cube_cutout
     },
-    'halfplane_cut': {
-        'name': 'Cube with HalfPlane Cut',
-        'description': '1x1x1 cube with bottom half removed by HalfPlane at Z=0.5',
-        'function': example_cube_with_halfplane_cut
+    'halfspace_cut': {
+        'name': 'Cube with HalfSpace Cut',
+        'description': '1x1x1 cube with bottom half removed by HalfSpace at Z=0.5',
+        'function': example_cube_with_halfspace_cut
     },
     'positioned_cube': {
         'name': 'Positioned Cube',

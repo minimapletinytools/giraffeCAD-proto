@@ -108,7 +108,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # Both timbers will be cut by this same plane, but each timber needs its half-plane
     # normal oriented to point "away from" that timber (into the material to remove).
     
-    # For each timber, we need to create a HalfPlaneCut with the miter plane
+    # For each timber, we need to create a HalfSpaceCut with the miter plane
     # The key is that the half-plane normal must be oriented so that:
     # 1. It represents the miter plane (normal perpendicular to the bisector line)
     # 2. The normal points "away from" the timber (into the material to remove)
@@ -149,18 +149,18 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     local_normalB = timberB.orientation.matrix.T * normalB
     local_offsetB = (intersection_point.T * normalB)[0, 0] - (normalB.T * timberB.get_bottom_position_global())[0, 0]
     
-    # Create the HalfPlaneCuts (in LOCAL coordinates relative to each timber)
-    cutA = HalfPlaneCut(
+    # Create the HalfSpaceCuts (in LOCAL coordinates relative to each timber)
+    cutA = HalfSpaceCut(
         timber=timberA,
         transform=Transform(position=intersection_point, orientation=timberA.orientation),
-        half_plane=HalfPlane(normal=local_normalA, offset=local_offsetA),
+        half_plane=HalfSpace(normal=local_normalA, offset=local_offsetA),
         maybe_end_cut=timberA_end
     )
     
-    cutB = HalfPlaneCut(
+    cutB = HalfSpaceCut(
         timber=timberB,
         transform=Transform(position=intersection_point, orientation=timberB.orientation),
-        half_plane=HalfPlane(normal=local_normalB, offset=local_offsetB),
+        half_plane=HalfSpace(normal=local_normalB, offset=local_offsetB),
         maybe_end_cut=timberB_end
     )
     
@@ -227,8 +227,8 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     distance_from_bottom = ((face_center - butt_timber.get_bottom_position_global()).T * butt_timber.get_length_direction_global())[0, 0]
     distance_from_end = butt_timber.length - distance_from_bottom if butt_end == TimberReferenceEnd.TOP else distance_from_bottom
     
-    # Create the HalfPlaneCut using the helper function
-    cut = HalfPlaneCut(
+    # Create the HalfSpaceCut using the helper function
+    cut = HalfSpaceCut(
         timber=butt_timber,
         transform=Transform(position=face_center, orientation=butt_timber.orientation),
         half_plane=chop_timber_end_with_half_plane(butt_timber, butt_end, distance_from_end),
@@ -336,15 +336,15 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end:
     distance_B_from_bottom = ((splice_point - timberB.get_bottom_position_global()).T * timberB.get_length_direction_global())[0, 0]
     distance_B_from_end = timberB.length - distance_B_from_bottom if timberB_end == TimberReferenceEnd.TOP else distance_B_from_bottom
     
-    # Create the HalfPlaneCuts using the helper function
-    cutA = HalfPlaneCut(
+    # Create the HalfSpaceCuts using the helper function
+    cutA = HalfSpaceCut(
         timber=timberA,
         transform=Transform(position=splice_point, orientation=timberA.orientation),
         half_plane=chop_timber_end_with_half_plane(timberA, timberA_end, distance_A_from_end),
         maybe_end_cut=timberA_end
     )
     
-    cutB = HalfPlaneCut(
+    cutB = HalfSpaceCut(
         timber=timberB,
         transform=Transform(position=splice_point, orientation=timberB.orientation),
         half_plane=chop_timber_end_with_half_plane(timberB, timberB_end, distance_B_from_end),
@@ -383,7 +383,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     Raises:
         AssertionError: If timbers don't intersect, are parallel, or face normals are invalid
     """
-    from code_goes_here.meowmeowcsg import Difference, RectangularPrism, HalfPlane
+    from code_goes_here.meowmeowcsg import Difference, RectangularPrism, HalfSpace
     
     # Verify that cut_ratio is in valid range [0, 1]
     assert 0 <= cut_ratio <= 1, f"cut_ratio must be in range [0, 1], got {cut_ratio}"
@@ -485,7 +485,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     cuts_B = []
     
     # TimberA: Cut by (timberB prism) intersected with (region on the timberB side of cutting plane)
-    # The HalfPlane keeps points where normal·P >= offset
+    # The HalfSpace keeps points where normal·P >= offset
     # We want to keep the region on the timberB side (positive normal direction from A)
     # So we use the cutting plane as-is
     
@@ -508,9 +508,9 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         cutting_plane_position_in_A = timberA.orientation.matrix.T * (cutting_plane_position - timberA.get_bottom_position_global())
         cutting_plane_offset_in_A = (cutting_plane_normal_in_A.T * cutting_plane_position_in_A)[0, 0]
         
-        # Create HalfPlane that keeps the region on the positive side of the plane
+        # Create HalfSpace that keeps the region on the positive side of the plane
         # (toward timberB from the cutting plane)
-        half_plane_A = HalfPlane(
+        half_plane_A = HalfSpace(
             normal=cutting_plane_normal_in_A,
             offset=cutting_plane_offset_in_A
         )
@@ -520,20 +520,20 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         # Which simplifies to: Difference(timberA, timberB_prism ∩ half_plane_positive_region)
         # The CSG for this is: subtract (timberB_prism AND above_cutting_plane)
         # Which is: subtract Difference(timberB_prism, NOT(half_plane))
-        # Since HalfPlane keeps >= side, we want to subtract the >= side
+        # Since HalfSpace keeps >= side, we want to subtract the >= side
         # So: negative_csg = Difference(timberB_prism, half_plane) keeps the < side
         # Actually, we want to subtract: timberB_prism ∩ (normal·P >= offset region)
         # 
         # Let me think again: we want to remove from timberA the intersection of timberB_prism 
         # with the region on the timberB side of cutting plane.
         # The cutting plane normal points from A to B.
-        # HalfPlane(normal, offset) keeps points where normal·P >= offset (positive side)
+        # HalfSpace(normal, offset) keeps points where normal·P >= offset (positive side)
         # So we want to subtract: Difference(timberB_prism, NOT(half_plane))
         # Which is the same as: (timberB_prism) with everything on the negative side removed
         # That's just: subtract Difference(timberB_prism, inverse_half_plane)
         
         # Actually, simpler: subtract (timberB_prism ∩ positive_half_space)
-        # In CSG: we can't directly intersect with HalfPlane
+        # In CSG: we can't directly intersect with HalfSpace
         # But Difference(A, B) - Difference(A, C) = A ∩ C if B contains C...
         # 
         # Even simpler approach: use two cuts
@@ -541,11 +541,11 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         # Cut 2: Add back the negative side using inverse half plane
         # Actually that's complicated too.
         #
-        # Cleanest approach: Just use Difference(timberB_prism, inverse_halfplane)
-        # inverse_halfplane keeps points where normal·P < offset
-        # Which is HalfPlane(-normal, -offset) keeps points where -normal·P >= -offset, i.e., normal·P <= offset
+        # Cleanest approach: Just use Difference(timberB_prism, inverse_halfspace)
+        # inverse_halfspace keeps points where normal·P < offset
+        # Which is HalfSpace(-normal, -offset) keeps points where -normal·P >= -offset, i.e., normal·P <= offset
         
-        inverse_half_plane_A = HalfPlane(
+        inverse_half_plane_A = HalfSpace(
             normal=-cutting_plane_normal_in_A,
             offset=-cutting_plane_offset_in_A
         )
@@ -586,7 +586,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         
         # For timberB, we want to subtract the region on the negative side (timberA side) of the plane
         # So we use the inverse half plane (keeps normal·P <= offset, the negative side)
-        half_plane_B = HalfPlane(
+        half_plane_B = HalfSpace(
             normal=cutting_plane_normal_in_B,
             offset=cutting_plane_offset_in_B
         )

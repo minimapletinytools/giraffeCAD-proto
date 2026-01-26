@@ -48,9 +48,9 @@ class MeowMeowCSG(ABC):
         pass
 
 
-# TODO rename to HalfSpace or something? Maybe HalfPlane is fine...
+# TODO rename to HalfSpace or something? Maybe HalfSpace is fine...
 @dataclass(frozen=True)
-class HalfPlane(MeowMeowCSG):
+class HalfSpace(MeowMeowCSG):
     """
     An infinite half-plane defined by a normal vector and offset from origin.
     
@@ -68,7 +68,7 @@ class HalfPlane(MeowMeowCSG):
     offset: Numeric = 0
     
     def __repr__(self) -> str:
-        return f"HalfPlane(normal={self.normal.T}, offset={self.offset})"
+        return f"HalfSpace(normal={self.normal.T}, offset={self.offset})"
     
     def contains_point(self, point: V3) -> bool:
         """
@@ -826,9 +826,9 @@ def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: MeowMeowCS
         
         return Transform(position=local_position, orientation=local_orientation)
     
-    # Helper function to transform HalfPlane normal and offset
-    def transform_halfplane(hp: HalfPlane) -> HalfPlane:
-        """Transform a HalfPlane from orig_timber local coords to adopting_timber local coords."""
+    # Helper function to transform HalfSpace normal and offset
+    def transform_halfspace(hp: HalfSpace) -> HalfSpace:
+        """Transform a HalfSpace from orig_timber local coords to adopting_timber local coords."""
         # The half plane is defined by: normal · point >= offset (in local coords)
         # We need to transform this equation to the new coordinate system
         
@@ -877,9 +877,9 @@ def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: MeowMeowCS
         ]
         return Difference(base=transformed_base, subtract=transformed_subtract)
     
-    elif isinstance(csg_in_orig_timber_space, HalfPlane):
+    elif isinstance(csg_in_orig_timber_space, HalfSpace):
         # Transform the plane equation
-        return transform_halfplane(csg_in_orig_timber_space)
+        return transform_halfspace(csg_in_orig_timber_space)
     
     elif hasattr(csg_in_orig_timber_space, 'transform'):
         # For types with a transform property (RectangularPrism, ConvexPolygonExtrusion, etc.)

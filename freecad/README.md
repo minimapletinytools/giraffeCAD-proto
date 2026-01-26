@@ -110,7 +110,7 @@ Complete timber frame structure (8ft x 4ft):
 ### 4. CSG Tests (`csg`)
 Simple geometric tests for CSG operations:
 - `'cube_cutout'` - Box with a smaller box cut out
-- `'halfplane_cut'` - Box cut by a half-plane
+- `'halfspace_cut'` - Box cut by a half-plane
 - `'positioned_cube'` - Box positioned away from origin
 - `'union_cubes'` - Two boxes unioned together
 - `'hexagon_extrusion'` - Hexagonal prism

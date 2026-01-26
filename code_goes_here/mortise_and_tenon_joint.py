@@ -339,7 +339,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Create infinite prism representing the timber end beyond the shoulder
     # This extends from the shoulder to infinity in the tenon direction
-    from code_goes_here.meowmeowcsg import Difference, HalfPlane
+    from code_goes_here.meowmeowcsg import Difference, HalfSpace
     
     if tenon_end == TimberReferenceEnd.TOP:
         # For top end, the timber end extends from shoulder to +infinity
@@ -391,7 +391,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         shoulder_plane_normal = Matrix([Rational(0), Rational(0), Rational(1)])
         shoulder_plane_offset = shoulder_plane_point_with_offset_local[2]
     
-    shoulder_half_plane = HalfPlane(
+    shoulder_half_plane = HalfSpace(
         normal=shoulder_plane_normal,
         offset=shoulder_plane_offset
     )

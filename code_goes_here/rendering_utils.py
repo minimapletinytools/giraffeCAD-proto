@@ -155,11 +155,11 @@ def calculate_structure_extents(cut_timbers: List[CutTimber]) -> float:
     return extent
 
 
-def transform_halfplane_to_timber_local(half_plane, timber_orientation: Orientation) -> Tuple[V3, float]:
+def transform_halfspace_to_timber_local(half_plane, timber_orientation: Orientation) -> Tuple[V3, float]:
     """
-    Transform a HalfPlane from global coordinates to timber's local coordinate system.
+    Transform a HalfSpace from global coordinates to timber's local coordinate system.
     
-    The HalfPlane is already in the timber's LOCAL coordinate system where:
+    The HalfSpace is already in the timber's LOCAL coordinate system where:
     - X-component is along width direction
     - Y-component is along height direction
     - Z-component is along length direction
@@ -169,7 +169,7 @@ def transform_halfplane_to_timber_local(half_plane, timber_orientation: Orientat
     transformation.
     
     Args:
-        half_plane: HalfPlane object with normal and offset
+        half_plane: HalfSpace object with normal and offset
         timber_orientation: Timber's orientation matrix (kept for API compatibility)
         
     Returns:
