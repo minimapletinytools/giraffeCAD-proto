@@ -9,7 +9,7 @@ from code_goes_here.joint_shavings import (
     chop_timber_end_with_prism,
     chop_timber_end_with_half_plane,
     chop_lap_on_timber_end,
-    measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber,
+    scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber,
     find_opposing_face_on_another_timber,
     chop_shoulder_notch_on_timber_face,
     find_face_plane_intersection_on_centerline,
@@ -600,7 +600,7 @@ class TestChopLapOnTimberEnd:
 
 
 class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
-    """Tests for measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber function."""
+    """Tests for scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber function."""
     
     def test_aligned_parallel_timbers_same_size(self):
         """Test measuring distance between two aligned, parallel timbers of the same size."""
@@ -633,7 +633,7 @@ class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
         # Bottom timber's FRONT face points in +Z direction (up): (0, 0, 1)
         depth_from_top = inches(2)
         
-        distance = measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+        distance = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
             reference_timber=top_timber,
             reference_face=TimberReferenceLongFace.BACK,
             reference_depth_from_face=depth_from_top,
@@ -677,7 +677,7 @@ class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
         # Measure distance from BACK face of top timber with 3" depth
         depth_from_top = inches(3)
         
-        distance = measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+        distance = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
             reference_timber=top_timber,
             reference_face=TimberReferenceLongFace.BACK,
             reference_depth_from_face=depth_from_top,
@@ -719,7 +719,7 @@ class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
         # Measure distance from RIGHT face of top timber with 2" depth
         depth_from_top = inches(2)
         
-        distance = measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+        distance = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
             reference_timber=top_timber,
             reference_face=TimberReferenceLongFace.RIGHT,
             reference_depth_from_face=depth_from_top,
@@ -770,7 +770,7 @@ class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
         
         # Should raise an AssertionError
         with pytest.raises(AssertionError) as excinfo:
-            measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+            scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
                 reference_timber=top_timber,
                 reference_face=TimberReferenceLongFace.BACK,
                 reference_depth_from_face=inches(2),
@@ -804,7 +804,7 @@ class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
         # Measure with Rational depth
         depth = Rational(1, 2)
         
-        distance = measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+        distance = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
             reference_timber=top_timber,
             reference_face=TimberReferenceLongFace.BACK,
             reference_depth_from_face=depth,

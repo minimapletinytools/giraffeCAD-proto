@@ -170,8 +170,9 @@ def find_projected_intersection_on_centerlines(timberA: Timber, timberB: Timber,
     
     return (distanceA, distanceB) 
 
+# TODO reimplement from measuring.py and rename to scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber
 # TODO this can be replaced with your magical scribe1d function lol
-def measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+def scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
     reference_timber: Timber,
     reference_face: TimberReferenceLongFace,
     reference_depth_from_face: Numeric,
@@ -197,7 +198,7 @@ def measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
         
     Example:
         >>> # Measure how deep to cut the bottom timber based on where the top timber's cut plane is
-        >>> bottom_depth = measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+        >>> bottom_depth = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
         ...     reference_timber=top_timber,
         ...     reference_face=TimberReferenceLongFace.BACK,
         ...     reference_depth_from_face=lap_depth,
@@ -717,7 +718,7 @@ def chop_lap_on_timber_ends(
     # Step 3: Calculate the depth for the bottom lap
     # The bottom lap depth is measured from the bottom timber's face to the top timber's cutting plane
     # This accounts for any rotation or offset between the timbers
-    bottom_lap_depth = measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+    bottom_lap_depth = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
         reference_timber=top_lap_timber,
         reference_face=TimberReferenceLongFace(top_lap_timber_face.value),
         reference_depth_from_face=lap_depth,
