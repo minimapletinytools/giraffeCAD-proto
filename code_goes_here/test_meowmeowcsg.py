@@ -8,7 +8,7 @@ import pytest
 from sympy import Matrix, Rational, simplify, sqrt, cos, sin, pi
 from code_goes_here.moothymoth import Orientation, Transform, create_v3
 from code_goes_here.meowmeowcsg import (
-    HalfPlane, Prism, Cylinder, Union, Difference, ConvexPolygonExtrusion
+    HalfPlane, Prism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from .testing_shavings import assert_is_valid_rotation_matrix
 import random
@@ -685,7 +685,7 @@ class TestCylinderContainsPoint:
 
 
 class TestUnionContainsPoint:
-    """Test Union contains_point and is_point_on_boundary methods."""
+    """Test SolidUnion contains_point and is_point_on_boundary methods."""
     
     def test_union_contains_point_in_first_child(self):
         """Test that a point in the first child is contained."""
@@ -695,7 +695,7 @@ class TestUnionContainsPoint:
         prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
         prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
-        union = Union([prism1, prism2])
+        union = SolidUnion([prism1, prism2])
         
         # Point in first prism
         assert union.contains_point(Matrix([0, 0, 3])) == True
@@ -708,7 +708,7 @@ class TestUnionContainsPoint:
         prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
         prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
-        union = Union([prism1, prism2])
+        union = SolidUnion([prism1, prism2])
         
         # Point in second prism
         assert union.contains_point(Matrix([0, 0, 12])) == True
@@ -721,7 +721,7 @@ class TestUnionContainsPoint:
         prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
         prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
-        union = Union([prism1, prism2])
+        union = SolidUnion([prism1, prism2])
         
         # Point between the two prisms
         assert union.contains_point(Matrix([0, 0, 7])) == False
@@ -734,7 +734,7 @@ class TestUnionContainsPoint:
         prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
         prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
-        union = Union([prism1, prism2])
+        union = SolidUnion([prism1, prism2])
         
         # Point on boundary of first prism
         assert union.is_point_on_boundary(Matrix([1, 0, 3])) == True
@@ -750,7 +750,7 @@ class TestUnionContainsPoint:
         prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         prism2 = Prism(size=size, transform=Transform.identity(), start_distance=5, end_distance=15)
         
-        union = Union([prism1, prism2])
+        union = SolidUnion([prism1, prism2])
         
         # Point strictly inside first prism (not on boundary)
         assert union.is_point_on_boundary(Matrix([0, 0, 3])) == False
@@ -767,7 +767,7 @@ class TestUnionContainsPoint:
         prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         prism2 = Prism(size=size, transform=Transform.identity(), start_distance=5, end_distance=15)
         
-        union = Union([prism1, prism2])
+        union = SolidUnion([prism1, prism2])
         
         # Point on outer boundary of union (on prism1 face, not inside prism2)
         assert union.is_point_on_boundary(Matrix([2, 0, 3])) == True
@@ -788,7 +788,7 @@ class TestUnionContainsPoint:
         prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
         prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
-        union = Union([prism1, prism2])
+        union = SolidUnion([prism1, prism2])
         
         # Point between the two prisms (not on boundary)
         assert union.is_point_on_boundary(Matrix([0, 0, 7])) == False

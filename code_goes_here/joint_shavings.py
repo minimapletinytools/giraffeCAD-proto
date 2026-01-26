@@ -5,10 +5,10 @@ Collection of helper functions for validating and checking timber joint configur
 These functions help ensure that joints are geometrically valid and sensibly constructed.
 """
 
-from typing import Optional, Tuple, List, Union as TypeUnion
+from typing import Optional, Tuple, List, Union
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import EPSILON_GENERIC, are_vectors_parallel, Numeric, Transform, create_v3, create_v2, Orientation, V2, V3, are_vectors_perpendicular, zero_test
-from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, Union, ConvexPolygonExtrusion
+from code_goes_here.meowmeowcsg import Prism, HalfPlane, MeowMeowCSG, SolidUnion, ConvexPolygonExtrusion
 from code_goes_here.construction import are_timbers_face_aligned, do_xy_cross_section_on_parallel_timbers_overlap
 from sympy import Abs, Rational
 
@@ -631,7 +631,7 @@ def chop_lap_on_timber_end(
         )
     
     # Step 7: Union the half-plane cuts with the prism cuts
-    lap_csg = Union([lap_prism, lap_half_plane])
+    lap_csg = SolidUnion([lap_prism, lap_half_plane])
 
     return lap_csg
 
@@ -765,7 +765,7 @@ def chop_lap_on_timber_ends(
 
 
 # TODO I think this is cutting on the wrong face...
-def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: TypeUnion[List[V2], List[List[V2]]], depth: Numeric, profile_y_offset_from_end: Numeric = 0) -> TypeUnion[Union, ConvexPolygonExtrusion]:
+def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: Union[List[V2], List[List[V2]]], depth: Numeric, profile_y_offset_from_end: Numeric = 0) -> Union[SolidUnion, ConvexPolygonExtrusion]:
     """
     Create a CSG extrusion of a profile (or multiple profiles) on a timber face.
     See the diagram below for understanding how to interpret the profile in the timber's local space based on the end and face arguments.
@@ -794,7 +794,7 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
 
     Returns:
         MeowMeowCSG representing the extruded profile(s) in the timber's local coordinates.
-        If multiple profiles are provided, returns a Union of all extruded profiles.
+        If multiple profiles are provided, returns a SolidUnion of all extruded profiles.
         
     Notes:
         - The profile is positioned at the intersection of the specified end and face
@@ -819,7 +819,7 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
         for single_profile in profile:
             extrusion = chop_profile_on_timber_face(timber, end, face, single_profile, depth, profile_y_offset_from_end)
             extrusions.append(extrusion)
-        return Union(extrusions)
+        return SolidUnion(extrusions)
     
     # Single profile case - continue with original logic
     
