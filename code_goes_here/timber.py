@@ -22,7 +22,7 @@ from .moothymoth import (
     vector_magnitude
 )
 from .footprint import Footprint, FootprintLocation
-from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, SolidUnion as CSGUnion, Difference as CSGDifference
+from .meowmeowcsg import MeowMeowCSG, HalfPlane, RectangularPrism, Cylinder, SolidUnion as CSGUnion, Difference as CSGDifference
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict
 from dataclasses import dataclass, field
@@ -744,9 +744,9 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
         cuts: List of cuts on this timber (used to determine if ends should be infinite)
         
     Returns:
-        Prism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
+        RectangularPrism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
     """
-    from .meowmeowcsg import Prism
+    from .meowmeowcsg import RectangularPrism
     
     # Check if bottom end has cuts
     has_bottom_cut = any(
@@ -771,7 +771,7 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     # Create a prism representing the timber in local coordinates
     # The prism needs to use the timber's orientation to properly represent
     # timbers in any direction (horizontal, vertical, diagonal, etc.)
-    return Prism(
+    return RectangularPrism(
         size=timber.size,
         transform=Transform.identity(),
         start_distance=start_distance,
@@ -816,7 +816,7 @@ class CutTimber:
         All cuts on this timber are also in LOCAL coordinates.
         
         Returns:
-            Prism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
+            RectangularPrism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
         """
         return _create_timber_prism_csg_local(self.timber, self.cuts)
 
@@ -916,8 +916,8 @@ class Peg(JointAccessory):
             MeowMeowCSG: The CSG representation of the peg
         """
         if self.shape == PegShape.SQUARE:
-            # Square peg - use Prism with square cross-section
-            return Prism(
+            # Square peg - use RectangularPrism with square cross-section
+            return RectangularPrism(
                 size=create_v2(self.size, self.size),
                 transform=Transform.identity(),
                 start_distance=-self.stickout_length,
@@ -1005,13 +1005,13 @@ class Wedge(JointAccessory):
         # Width (x): centered, so from -base_width/2 to +base_width/2
         # Height (y): from 0 to height
         
-        # For Prism, position is the center of the cross-section at the reference point
+        # For RectangularPrism, position is the center of the cross-section at the reference point
         # The cross-section is centered in XY, so position should be at the center
         wedge_transform = Transform(
             position=create_v3(0, self.height / Rational(2), 0),
             orientation=Orientation.identity()
         )
-        return Prism(
+        return RectangularPrism(
             size=create_v2(self.base_width, self.height),
             transform=wedge_transform,
             start_distance=0,

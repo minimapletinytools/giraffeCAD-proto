@@ -383,7 +383,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     Raises:
         AssertionError: If timbers don't intersect, are parallel, or face normals are invalid
     """
-    from code_goes_here.meowmeowcsg import Difference, Prism, HalfPlane
+    from code_goes_here.meowmeowcsg import Difference, RectangularPrism, HalfPlane
     
     # Verify that cut_ratio is in valid range [0, 1]
     assert 0 <= cut_ratio <= 1, f"cut_ratio must be in range [0, 1], got {cut_ratio}"
@@ -496,7 +496,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         
         # Create timberB prism in timberA's local coordinates (infinite extent)
         transform_B_in_A = Transform(position=timberB_origin_in_A_local, orientation=relative_orientation_B_in_A)
-        timberB_prism_in_A = Prism(
+        timberB_prism_in_A = RectangularPrism(
             size=timberB.size,
             transform=transform_B_in_A,
             start_distance=None,  # Infinite
@@ -572,7 +572,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         
         # Create timberA prism in timberB's local coordinates (infinite extent)
         transform_A_in_B = Transform(position=timberA_origin_in_B_local, orientation=relative_orientation_A_in_B)
-        timberA_prism_in_B = Prism(
+        timberA_prism_in_B = RectangularPrism(
             size=timberA.size,
             transform=transform_A_in_B,
             start_distance=None,  # Infinite
@@ -739,7 +739,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
         A shelf (housed_timber) fitting into the side of a cabinet (housing_timber).
         The cabinet side gets a groove cut into it to receive the shelf.
     """
-    from code_goes_here.meowmeowcsg import Difference, Prism
+    from code_goes_here.meowmeowcsg import Difference, RectangularPrism
     
     # Verify that the timbers are not parallel (their length directions must differ)
     dot_product = (housing_timber.get_length_direction_global().T * housed_timber.get_length_direction_global())[0, 0]
@@ -825,7 +825,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     
     # Create the housed prism in housing timber's LOCAL coordinate system
     housed_transform_local = Transform(position=housed_origin_local, orientation=relative_orientation)
-    housed_prism_local = Prism(
+    housed_prism_local = RectangularPrism(
         size=housed_timber.size,
         transform=housed_transform_local,
         start_distance=start_distance,

@@ -8,7 +8,7 @@ import pytest
 from sympy import Matrix, Rational, simplify, sqrt, cos, sin, pi
 from code_goes_here.moothymoth import Orientation, Transform, create_v3
 from code_goes_here.meowmeowcsg import (
-    HalfPlane, Prism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
+    HalfPlane, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from .testing_shavings import assert_is_valid_rotation_matrix
 import random
@@ -29,7 +29,7 @@ def generate_random_prism():
     end_dist = Rational(random.randint(15, 30))
     
     transform = Transform(position=position, orientation=orientation)
-    return Prism(size=size, transform=transform,
+    return RectangularPrism(size=size, transform=transform,
                 start_distance=start_dist, end_distance=end_dist)
 
 
@@ -321,13 +321,13 @@ def generate_convex_polygon_non_boundary_points(extrusion):
 
 
 class TestConstructors:
-    """Test the Prism and Cylinder constructors."""
+    """Test the RectangularPrism and Cylinder constructors."""
     
     def test_prism_constructor_finite(self):
         """Test creating a finite prism."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
+        prism = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         assert prism.size == size
         assert prism.transform.orientation == orientation
@@ -338,7 +338,7 @@ class TestConstructors:
         """Test creating a semi-infinite prism."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, transform=Transform.identity(), end_distance=10)
+        prism = RectangularPrism(size=size, transform=Transform.identity(), end_distance=10)
         
         assert prism.start_distance is None
         assert prism.end_distance == 10
@@ -346,7 +346,7 @@ class TestConstructors:
     def test_prism_constructor_infinite(self):
         """Test creating an infinite prism."""
         size = Matrix([4, 6])
-        prism = Prism(size=size, transform=Transform.identity())
+        prism = RectangularPrism(size=size, transform=Transform.identity())
         
         assert prism.start_distance is None
         assert prism.end_distance is None
@@ -373,7 +373,7 @@ class TestConstructors:
 
 
 class TestPrismPositionMethods:
-    """Test Prism get_bottom_position and get_top_position methods."""
+    """Test RectangularPrism get_bottom_position and get_top_position methods."""
     
     def test_get_bottom_position_finite_prism(self):
         """Test get_bottom_position on a finite prism."""
@@ -384,7 +384,7 @@ class TestPrismPositionMethods:
         start_distance = Rational(5)
         end_distance = Rational(15)
         transform = Transform(position=position, orientation=orientation)
-        prism = Prism(size=size, transform=transform, 
+        prism = RectangularPrism(size=size, transform=transform, 
                      start_distance=start_distance, end_distance=end_distance)
         
         # Bottom position should be position - (0, 0, start_distance) in local frame
@@ -402,7 +402,7 @@ class TestPrismPositionMethods:
         start_distance = Rational(5)
         end_distance = Rational(15)
         transform = Transform(position=position, orientation=orientation)
-        prism = Prism(size=size, transform=transform, 
+        prism = RectangularPrism(size=size, transform=transform, 
                      start_distance=start_distance, end_distance=end_distance)
         
         # Top position should be position + (0, 0, end_distance) in local frame
@@ -427,7 +427,7 @@ class TestPrismPositionMethods:
         start_distance = Rational(5)
         end_distance = Rational(15)
         transform = Transform(position=position, orientation=orientation)
-        prism = Prism(size=size, transform=transform,
+        prism = RectangularPrism(size=size, transform=transform,
                      start_distance=start_distance, end_distance=end_distance)
         
         # With this rotation: local Z becomes global X
@@ -441,7 +441,7 @@ class TestPrismPositionMethods:
     def test_get_bottom_position_infinite_prism_raises_error(self):
         """Test that get_bottom_position raises error for infinite prism."""
         size = Matrix([4, 6])
-        prism = Prism(size=size, transform=Transform.identity(), start_distance=None, end_distance=10)
+        prism = RectangularPrism(size=size, transform=Transform.identity(), start_distance=None, end_distance=10)
         
         with pytest.raises(ValueError, match="infinite prism"):
             prism.get_bottom_position()
@@ -449,7 +449,7 @@ class TestPrismPositionMethods:
     def test_get_top_position_infinite_prism_raises_error(self):
         """Test that get_top_position raises error for infinite prism."""
         size = Matrix([4, 6])
-        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=None)
+        prism = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=None)
         
         with pytest.raises(ValueError, match="infinite prism"):
             prism.get_top_position()
@@ -521,13 +521,13 @@ class TestHalfPlaneContainsPoint:
 
 
 class TestPrismContainsPoint:
-    """Test Prism contains_point and is_point_on_boundary methods."""
+    """Test RectangularPrism contains_point and is_point_on_boundary methods."""
     
     def test_prism_contains_point_inside(self):
         """Test that a point inside the prism is contained."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
+        prism = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         # Point inside: within ±2 in x, ±3 in y, 0-10 in z
         point = Matrix([0, 0, 5])
@@ -537,7 +537,7 @@ class TestPrismContainsPoint:
         """Test that a point on a face is contained."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
+        prism = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         # Point on face (x = 2, which is half-width)
         point = Matrix([2, 0, 5])
@@ -547,7 +547,7 @@ class TestPrismContainsPoint:
         """Test that a point outside the prism is not contained."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
+        prism = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         # Point outside in x direction
         point = Matrix([3, 0, 5])
@@ -561,7 +561,7 @@ class TestPrismContainsPoint:
         """Test boundary detection on prism faces."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
+        prism = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         # On width face (x = ±2)
         assert prism.is_point_on_boundary(Matrix([2, 0, 5])) == True
@@ -579,7 +579,7 @@ class TestPrismContainsPoint:
         """Test that interior points are not on boundary."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
+        prism = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
         
         # Interior point
         assert prism.is_point_on_boundary(Matrix([0, 0, 5])) == False
@@ -588,7 +588,7 @@ class TestPrismContainsPoint:
         """Test semi-infinite prism containment."""
         size = Matrix([4, 6])
         orientation = Orientation()  # Identity orientation
-        prism = Prism(size=size, transform=Transform.identity(), end_distance=10)  # Infinite in negative direction
+        prism = RectangularPrism(size=size, transform=Transform.identity(), end_distance=10)  # Infinite in negative direction
         
         # Point at z = -100 should be contained
         assert prism.contains_point(Matrix([0, 0, -100])) == True
@@ -692,8 +692,8 @@ class TestUnionContainsPoint:
         size = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
-        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
+        prism1 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
+        prism2 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
         union = SolidUnion([prism1, prism2])
         
@@ -705,8 +705,8 @@ class TestUnionContainsPoint:
         size = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
-        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
+        prism1 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
+        prism2 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
         union = SolidUnion([prism1, prism2])
         
@@ -718,8 +718,8 @@ class TestUnionContainsPoint:
         size = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
-        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
+        prism1 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
+        prism2 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
         union = SolidUnion([prism1, prism2])
         
@@ -731,8 +731,8 @@ class TestUnionContainsPoint:
         size = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
-        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
+        prism1 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
+        prism2 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
         union = SolidUnion([prism1, prism2])
         
@@ -747,8 +747,8 @@ class TestUnionContainsPoint:
         size = Matrix([4, 4])
         orientation = Orientation()
         
-        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
-        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=5, end_distance=15)
+        prism1 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
+        prism2 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=5, end_distance=15)
         
         union = SolidUnion([prism1, prism2])
         
@@ -764,8 +764,8 @@ class TestUnionContainsPoint:
         orientation = Orientation()
         
         # Two overlapping prisms
-        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
-        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=5, end_distance=15)
+        prism1 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=10)
+        prism2 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=5, end_distance=15)
         
         union = SolidUnion([prism1, prism2])
         
@@ -785,8 +785,8 @@ class TestUnionContainsPoint:
         size = Matrix([2, 2])
         orientation = Orientation()
         
-        prism1 = Prism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
-        prism2 = Prism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
+        prism1 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=0, end_distance=5)
+        prism2 = RectangularPrism(size=size, transform=Transform.identity(), start_distance=10, end_distance=15)
         
         union = SolidUnion([prism1, prism2])
         
@@ -808,8 +808,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
+        base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = RectangularPrism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -822,8 +822,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
+        base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = RectangularPrism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -836,8 +836,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
+        base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = RectangularPrism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -850,8 +850,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
+        base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = RectangularPrism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -864,8 +864,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()  # Identity orientation
         
-        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
+        base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = RectangularPrism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -879,8 +879,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([2, 2])
         orientation = Orientation()
         
-        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
+        base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = RectangularPrism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -893,8 +893,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([4, 4])
         orientation = Orientation()
         
-        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
+        base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = RectangularPrism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -909,8 +909,8 @@ class TestDifferenceContainsPoint:
         size_subtract = Matrix([4, 4])
         orientation = Orientation()
         
-        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
-        subtract = Prism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
+        base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        subtract = RectangularPrism(size=size_subtract, transform=Transform.identity(), start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract])
         
@@ -924,7 +924,7 @@ class TestDifferenceContainsPoint:
         size_base = Matrix([10, 10])
         orientation = Orientation()
         
-        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
         # Half-plane at z=5, normal pointing in +z direction
         half_plane = HalfPlane(normal=Matrix([0, 0, 1]), offset=5)
         
@@ -945,11 +945,11 @@ class TestDifferenceContainsPoint:
         size_base = Matrix([10, 10])
         orientation = Orientation()
         
-        base = Prism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
+        base = RectangularPrism(size=size_base, transform=Transform.identity(), start_distance=0, end_distance=10)
         # Two small prisms to subtract
-        subtract1 = Prism(size=Matrix([2, 2]), transform=Transform(position=Matrix([2, 2, 0]), orientation=Orientation()), 
+        subtract1 = RectangularPrism(size=Matrix([2, 2]), transform=Transform(position=Matrix([2, 2, 0]), orientation=Orientation()), 
                          start_distance=2, end_distance=8)
-        subtract2 = Prism(size=Matrix([2, 2]), transform=Transform(position=Matrix([-2, -2, 0]), orientation=Orientation()),
+        subtract2 = RectangularPrism(size=Matrix([2, 2]), transform=Transform(position=Matrix([-2, -2, 0]), orientation=Orientation()),
                          start_distance=2, end_distance=8)
         
         diff = Difference(base, [subtract1, subtract2])
@@ -968,11 +968,11 @@ class TestDifferenceContainsPoint:
         orientation = Orientation()
         
         # Create base prism
-        base = Prism(size=Matrix([10, 10]), transform=Transform.identity(), 
+        base = RectangularPrism(size=Matrix([10, 10]), transform=Transform.identity(), 
                     start_distance=0, end_distance=10)
         
         # Create a subtract prism at the center
-        subtract_inner = Prism(size=Matrix([2, 2]), transform=Transform.identity(),
+        subtract_inner = RectangularPrism(size=Matrix([2, 2]), transform=Transform.identity(),
                               start_distance=3, end_distance=7)
         
         # Create a nested difference (prism with hole in center)
@@ -980,7 +980,7 @@ class TestDifferenceContainsPoint:
         
         # Now subtract another prism from a different location
         # Place it off to the side so it doesn't overlap with subtract_inner
-        subtract_outer = Prism(size=Matrix([2, 2]), transform=Transform(position=Matrix([4, 0, 0]), orientation=orientation),
+        subtract_outer = RectangularPrism(size=Matrix([2, 2]), transform=Transform(position=Matrix([4, 0, 0]), orientation=orientation),
                               start_distance=1, end_distance=9)
         
         outer_diff = Difference(inner_diff, [subtract_outer])
@@ -1005,7 +1005,7 @@ class TestDifferenceContainsPoint:
         orientation = Orientation()
         
         # Create a prism
-        prism = Prism(size=Matrix([10, 10]), transform=Transform(position=create_v3(0, 0, 0), orientation=orientation),
+        prism = RectangularPrism(size=Matrix([10, 10]), transform=Transform(position=create_v3(0, 0, 0), orientation=orientation),
                      start_distance=Rational(0), end_distance=Rational(10))
         
         # Subtract the prism from itself
@@ -1366,14 +1366,14 @@ class TestBoundaryDetectionComprehensive:
     """Comprehensive tests for is_point_on_boundary across all CSG shapes."""
     
     # ========================================================================
-    # Prism Boundary Tests
+    # RectangularPrism Boundary Tests
     # ========================================================================
     
     def test_prism_all_corners_on_boundary(self):
         """Test that all 8 corners of a finite prism are on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
-        prism = Prism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
+        prism = RectangularPrism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
         
         # Generate all 8 corners
         hw, hh = Rational(2), Rational(3)
@@ -1392,7 +1392,7 @@ class TestBoundaryDetectionComprehensive:
         """Test that points along prism edges are on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
-        prism = Prism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
+        prism = RectangularPrism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
         
         hw, hh = Rational(2), Rational(3)
         
@@ -1419,7 +1419,7 @@ class TestBoundaryDetectionComprehensive:
         """Test that face centers are on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
-        prism = Prism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
+        prism = RectangularPrism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
         
         hw, hh = Rational(2), Rational(3)
         
@@ -1435,7 +1435,7 @@ class TestBoundaryDetectionComprehensive:
         """Test that interior points are NOT on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
-        prism = Prism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
+        prism = RectangularPrism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
         
         # Center point should not be on boundary
         assert prism.is_point_on_boundary(Matrix([0, 0, 5])) == False
@@ -1447,7 +1447,7 @@ class TestBoundaryDetectionComprehensive:
         """Test that exterior points are NOT on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
-        prism = Prism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
+        prism = RectangularPrism(size=size, transform=Transform(position=create_v3(0, 0, 0), orientation=orientation), start_distance=Rational(0), end_distance=Rational(10))
         
         # Far-away point
         assert prism.is_point_on_boundary(Matrix([100, 100, 100])) == False
@@ -1726,7 +1726,7 @@ class TestBoundaryDetectionComprehensive:
             # All boundary points should be on boundary
             for point in boundary_points:
                 assert prism.is_point_on_boundary(point) == True, \
-                    f"Prism {i}: Point {point.T} should be on boundary"
+                    f"RectangularPrism {i}: Point {point.T} should be on boundary"
             
             # Get non-boundary points
             non_boundary_points = generate_prism_non_boundary_points(prism)
@@ -1734,7 +1734,7 @@ class TestBoundaryDetectionComprehensive:
             # Non-boundary points should NOT be on boundary
             for point in non_boundary_points:
                 assert prism.is_point_on_boundary(point) == False, \
-                    f"Prism {i}: Point {point.T} should NOT be on boundary"
+                    f"RectangularPrism {i}: Point {point.T} should NOT be on boundary"
     
     def test_random_cylinders_boundary_points(self):
         """Test boundary detection on 25 random cylinders."""

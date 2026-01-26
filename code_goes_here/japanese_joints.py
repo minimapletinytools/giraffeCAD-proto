@@ -17,7 +17,7 @@ from code_goes_here.moothymoth import (
 )
 from code_goes_here.meowmeowcsg import (
     ConvexPolygonExtrusion,
-    Prism,
+    RectangularPrism,
     Difference,
     SolidUnion as CSGUnion,
     translate_profiles,
@@ -358,7 +358,7 @@ def cut_lapped_gooseneck_joint(
 
 
     # Transform the gooseneck profile CSG from gooseneck_timber coordinates to receiving_timber coordinates
-    # Use the generic adopt_csg function to handle all CSG types (SolidUnion, Difference, Prism, etc.)
+    # Use the generic adopt_csg function to handle all CSG types (SolidUnion, Difference, RectangularPrism, etc.)
     gooseneck_csg_on_receiving_timber = adopt_csg(gooseneck_timber, receiving_timber, gooseneck_profile_csg) 
 
 
