@@ -306,27 +306,6 @@ mark(golbal feature, timber) -> measurement from local feature
 
 :: TODO
 
-DONE-allow extrude polygon to extrude in both directions
-DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can reference joint pieces by name rather than index
-DONE-add back post joints to oscar shed
-DONE-delete rhino for now
-IGNORE-update fusino 360 to similar as run_examples
-DONE-Update Frame to be built from joints
-DONE-be consistent about V2 vs (Numeric,Numeric) tuple
-DONE-I tihnk the pointing constants in moothymoth are wrong (the comments are certainly wrong)
-DONE-fix morties_and_tenon_joint_example
-DONE-pull out logic into joint_helperonis.py
-  -split the lap helper to do the lap cut on just 1 timber...
-IGNORE-add optional key to lap helper?
-DONE-gooseneck lap joint
-DONE-change gooseneck to return 2 Convex CSGs or support non convex polygon extrusion CSG (errors on some functions or returns None or whatever)
-DONE-rafters get added twice in oscar shed
-DONE-add extrude polygon csg rendering to fusino 360
-DONE-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes_here/japanese_joints.py:221: UserWarning: Gooseneck joint configuration may not be sensible: Joint ends are pointing in the same direction (dot product = 1.000). For a splice joint, the ends should point in opposite directions (dot product should be -1) warning
-DONE-do irrational joint test for rendering
-DONE/IGNORE-static method in orientation class
-DONE-fix or delete goosenecksplice example in japanese joints examples
--do refactors in timber as well...
 -transform prob does not need to be frozen...
 
 
@@ -354,12 +333,6 @@ DONE-fix or delete goosenecksplice example in japanese joints examples
     -maybe have an add brace function?
   -neither perpendicular nor face aligned
 
--REFACTOR TIME
-  DONE-create Transform class in moothymoth
-  DONE-rename helperonis to something more cute
-  IGNORE-make global/local var naming consistent
-    DONE-add cursor rules for this
-  -update places to use teh local/global stuff in Transform class
   
 
 -RENAME TIME
@@ -504,6 +477,36 @@ DONE-fix or delete goosenecksplice example in japanese joints examples
 
 
 :: TODONE
+
+
+DONE-allow extrude polygon to extrude in both directions
+DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can reference joint pieces by name rather than index
+DONE-add back post joints to oscar shed
+DONE-delete rhino for now
+IGNORE-update fusino 360 to similar as run_examples
+DONE-Update Frame to be built from joints
+DONE-be consistent about V2 vs (Numeric,Numeric) tuple
+DONE-I tihnk the pointing constants in moothymoth are wrong (the comments are certainly wrong)
+DONE-fix morties_and_tenon_joint_example
+DONE-pull out logic into joint_helperonis.py
+  -split the lap helper to do the lap cut on just 1 timber...
+IGNORE-add optional key to lap helper?
+DONE-gooseneck lap joint
+DONE-change gooseneck to return 2 Convex CSGs or support non convex polygon extrusion CSG (errors on some functions or returns None or whatever)
+DONE-rafters get added twice in oscar shed
+DONE-add extrude polygon csg rendering to fusino 360
+DONE-fix the 13:43:54  /Users/peter.lu/kitchen/faucet/giraffeCAD-proto/code_goes_here/japanese_joints.py:221: UserWarning: Gooseneck joint configuration may not be sensible: Joint ends are pointing in the same direction (dot product = 1.000). For a splice joint, the ends should point in opposite directions (dot product should be -1) warning
+DONE-do irrational joint test for rendering
+DONE/IGNORE-static method in orientation class
+DONE-fix or delete goosenecksplice example in japanese joints examples
+DONE-do refactors in timber as well...
+DONE-REFACTOR TIME
+  DONE-create Transform class in moothymoth
+  DONE-rename helperonis to something more cute
+  IGNORE-make global/local var naming consistent
+    DONE-add cursor rules for this
+  DONE-update places to use teh local/global stuff in Transform class
+
 
 DONE-cleanup
   DONE-make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
