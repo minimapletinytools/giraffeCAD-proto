@@ -53,7 +53,7 @@ from giraffe import CutTimber, Timber, Frame
 from code_goes_here.timber import JointAccessory, Peg, Wedge, PegShape
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
-    MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference, ConvexPolygonExtrusion
+    MeowMeowCSG, HalfPlane, Prism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from code_goes_here.rendering_utils import (
     calculate_structure_extents,
@@ -464,7 +464,7 @@ def render_csg_shape(csg: MeowMeowCSG, timber: Optional[Timber] = None,
     elif isinstance(csg, HalfPlane):
         return create_halfplane_shape(csg, infinite_extent = infinite_extent, render_as_solid = True)
     
-    elif isinstance(csg, Union):
+    elif isinstance(csg, SolidUnion):
         return render_union(csg, timber, infinite_extent)
     
     elif isinstance(csg, Difference):

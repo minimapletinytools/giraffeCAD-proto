@@ -23,7 +23,7 @@ from sympy import Matrix, Float
 from giraffe import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge, Frame
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.meowmeowcsg import (
-    MeowMeowCSG, HalfPlane, Prism, Cylinder, Union, Difference, ConvexPolygonExtrusion
+    MeowMeowCSG, HalfPlane, Prism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from code_goes_here.rendering_utils import (
     calculate_structure_extents,
@@ -353,7 +353,7 @@ def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG
             app.log("Warning: HalfPlane standalone rendering not implemented")
         return None
     
-    elif isinstance(csg, Union):
+    elif isinstance(csg, SolidUnion):
         if app:
             app.log(f"  render_csg_in_local_space: Rendering Union with {len(csg.children)} children")
         return render_union_at_origin(component, csg, timber, infinite_extent)

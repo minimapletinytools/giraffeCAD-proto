@@ -654,7 +654,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         
         # Union the peg holes to the existing tenon/mortise timber cut CSGs
         if peg_holes_in_tenon_local or peg_holes_in_mortise_local:
-            from code_goes_here.meowmeowcsg import Union
+            from code_goes_here.meowmeowcsg import SolidUnion
         
         if peg_holes_in_tenon_local:
             # Union peg holes into the negative cut CSG for tenon (single union with all children)

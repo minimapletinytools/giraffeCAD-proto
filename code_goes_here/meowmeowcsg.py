@@ -6,7 +6,7 @@ and geometry operations. All operations use SymPy symbolic math for exact comput
 """
 
 from sympy import Matrix, Rational, Expr, sqrt, oo
-from typing import List, Optional, Union as TypeUnion
+from typing import List, Optional, Union
 from dataclasses import dataclass, field, replace
 from abc import ABC, abstractmethod
 from .moothymoth import Orientation, Transform, V2, V3, Direction3D, Numeric
@@ -396,7 +396,7 @@ class Cylinder(MeowMeowCSG):
 
 
 @dataclass(frozen=True)
-class Union(MeowMeowCSG):
+class SolidUnion(MeowMeowCSG):
     """
     CSG union operation - combines multiple CSG objects.
     
@@ -408,7 +408,7 @@ class Union(MeowMeowCSG):
     children: List[MeowMeowCSG]
     
     def __repr__(self) -> str:
-        return f"Union({len(self.children)} children)"
+        return f"SolidUnion({len(self.children)} children)"
     
     def contains_point(self, point: V3) -> bool:
         """
@@ -861,13 +861,13 @@ def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: MeowMeowCS
         return replace(hp, normal=new_local_normal, offset=new_offset)
     
     # Recursively transform based on CSG type
-    if isinstance(csg_in_orig_timber_space, Union):
+    if isinstance(csg_in_orig_timber_space, SolidUnion):
         # Transform each child recursively
         transformed_children = [
             adopt_csg(orig_timber, adopting_timber, child)
             for child in csg_in_orig_timber_space.children
         ]
-        return Union(transformed_children)
+        return SolidUnion(transformed_children)
     
     elif isinstance(csg_in_orig_timber_space, Difference):
         # Transform base and all subtract elements recursively

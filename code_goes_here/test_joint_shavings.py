@@ -17,7 +17,7 @@ from code_goes_here.joint_shavings import (
 )
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
 from code_goes_here.moothymoth import create_v3, create_v2, inches, are_vectors_parallel
-from code_goes_here.meowmeowcsg import Union, Prism, HalfPlane
+from code_goes_here.meowmeowcsg import SolidUnion, Prism, HalfPlane
 
 # TODO too many tests, just delete some lol... or combine into 1 test that varies only the timber length...
 class TestCheckTimberOverlapForSpliceJoint:
@@ -537,8 +537,8 @@ class TestChopLapOnTimberEnd:
             lap_depth=lap_depth
         )
         
-        # Verify the CSG is a Union
-        assert isinstance(lap_csg, Union), "Lap CSG should be a Union"
+        # Verify the CSG is a SolidUnion
+        assert isinstance(lap_csg, SolidUnion), "Lap CSG should be a SolidUnion"
         assert len(lap_csg.children) == 2, "Lap CSG should have 2 children (Prism and HalfPlane)"
         
         # Find the Prism and HalfPlane in the union

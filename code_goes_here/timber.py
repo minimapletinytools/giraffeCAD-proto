@@ -22,7 +22,7 @@ from .moothymoth import (
     vector_magnitude
 )
 from .footprint import Footprint, FootprintLocation
-from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, Union as CSGUnion, Difference as CSGDifference
+from .meowmeowcsg import MeowMeowCSG, HalfPlane, Prism, Cylinder, SolidUnion as CSGUnion, Difference as CSGDifference
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict
 from dataclasses import dataclass, field
