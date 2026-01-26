@@ -250,7 +250,7 @@ def cut_lapped_gooseneck_joint(
     
     # Compute gooseneck depth relative to the opposing face on the receiving timber
     # This accounts for any offset or rotation between the timbers
-    receiving_timber_lap_depth = measure_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
+    receiving_timber_lap_depth = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
         reference_timber=gooseneck_timber,
         reference_face=gooseneck_timber_face,
         reference_depth_from_face=gooseneck_depth,
