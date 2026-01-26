@@ -249,6 +249,8 @@ mark(golbal feature, timber) -> measurement from local feature
 
 
 :: TODO
+-cleanup where to put get_point_on_face and project_point_onto_face
+  -probably move these into timber_shavings or something
 
 -transform prob does not need to be frozen...
 
