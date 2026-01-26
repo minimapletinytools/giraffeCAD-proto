@@ -800,7 +800,7 @@ def do_xy_cross_section_on_parallel_timbers_overlap(timberA: Timber, timberB: Ti
     assert are_vectors_parallel(timberA.get_length_direction_global(), timberB.get_length_direction_global()), "Timbers must be parallel"
 
     # Convert timberB's bottom position into timberA's local space
-    timberB_bottom_local = timberA.global_to_local(timberB.get_bottom_position_global())
+    timberB_bottom_local = timberA.transform.global_to_local(timberB.get_bottom_position_global())
     
     # In timberA's local space:
     # - timberA's cross section is centered at (0, 0) in XY plane
