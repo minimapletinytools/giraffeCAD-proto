@@ -4,29 +4,17 @@ Contains all core data structures and type definitions for the timber framing sy
 """
 
 from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify
-from .moothymoth import (
-    Orientation,
-    Transform,
-    EPSILON_GENERIC,
-    zero_test,
-    are_vectors_parallel,
-    are_vectors_perpendicular,
-    V2,
-    V3,
-    Direction3D,
-    Numeric,
-    create_v2,
-    create_v3,
-    normalize_vector,
-    cross_product,
-    vector_magnitude
-)
-from .footprint import Footprint, FootprintLocation
-from .meowmeowcsg import MeowMeowCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion as CSGUnion, Difference as CSGDifference
+from .moothymoth import *
+from .footprint import *
+from .meowmeowcsg import *
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+
+# Aliases for backwards compatibility
+CSGUnion = SolidUnion
+CSGDifference = Difference
 
 # ============================================================================
 # Constants

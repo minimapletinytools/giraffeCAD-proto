@@ -8,21 +8,11 @@ from code_goes_here.timber import *
 from code_goes_here.timber import _compute_timber_orientation  # Private function, needs explicit import
 from code_goes_here.construction import *
 from code_goes_here.joint_shavings import *
-from code_goes_here.moothymoth import (
-    Orientation,
-    EPSILON_GENERIC,
-    zero_test,
-    are_vectors_parallel,
-    are_vectors_perpendicular
-)
-from code_goes_here.meowmeowcsg import (
-    ConvexPolygonExtrusion,
-    RectangularPrism,
-    Difference,
-    SolidUnion as CSGUnion,
-    translate_profiles,
-    adopt_csg
-)
+from code_goes_here.moothymoth import *
+from code_goes_here.meowmeowcsg import *
+
+# Aliases for backwards compatibility
+CSGUnion = SolidUnion
 
 
 # ============================================================================

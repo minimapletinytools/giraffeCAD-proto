@@ -5,13 +5,7 @@ Contains functions for creating and manipulating timbers
 
 import warnings
 from code_goes_here.timber import *
-from code_goes_here.moothymoth import (
-    EPSILON_GENERIC,
-    zero_test,
-    equality_test,
-    are_vectors_parallel,
-    are_vectors_perpendicular
-)
+from code_goes_here.moothymoth import *
 
 # ============================================================================
 # Timber Creation Functions

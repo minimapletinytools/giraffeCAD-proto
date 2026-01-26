@@ -5,14 +5,8 @@ Contains functions for creating joints between timbers
 
 from code_goes_here.timber import *
 from code_goes_here.construction import *
-from code_goes_here.moothymoth import (
-    Orientation,
-    EPSILON_GENERIC,
-    zero_test,
-    are_vectors_parallel,
-    are_vectors_perpendicular
-)
-from code_goes_here.joint_shavings import chop_timber_end_with_half_plane, chop_lap_on_timber_ends, find_opposing_face_on_another_timber
+from code_goes_here.moothymoth import *
+from code_goes_here.joint_shavings import *
 
 
 # ============================================================================

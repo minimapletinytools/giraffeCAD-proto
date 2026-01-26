@@ -9,7 +9,7 @@ from sympy import Matrix, Rational, Expr, sqrt, oo
 from typing import List, Optional, Union
 from dataclasses import dataclass, field, replace
 from abc import ABC, abstractmethod
-from .moothymoth import Orientation, Transform, V2, V3, Direction3D, Numeric
+from .moothymoth import *
 
 
 class MeowMeowCSG(ABC):
@@ -48,7 +48,6 @@ class MeowMeowCSG(ABC):
         pass
 
 
-# TODO rename to HalfSpace or something? Maybe HalfSpace is fine...
 @dataclass(frozen=True)
 class HalfSpace(MeowMeowCSG):
     """
