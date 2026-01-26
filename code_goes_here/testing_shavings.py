@@ -15,7 +15,7 @@ import random
 import math
 from typing import Optional, Tuple
 from sympy import Matrix, Rational, simplify, det, eye
-from code_goes_here.moothymoth import Orientation, inches
+from code_goes_here.moothymoth import *
 from giraffe import *
 
 

@@ -7,13 +7,7 @@ from __future__ import annotations  # Enable deferred annotation evaluation
 
 from code_goes_here.timber import *
 from code_goes_here.construction import *
-from code_goes_here.moothymoth import (
-    Orientation,
-    EPSILON_GENERIC,
-    zero_test,
-    are_vectors_parallel,
-    are_vectors_perpendicular
-)
+from code_goes_here.moothymoth import *
 
 # ============================================================================
 # Parameter Classes for Mortise and Tenon Joints
