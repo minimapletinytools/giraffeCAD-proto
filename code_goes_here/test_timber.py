@@ -724,56 +724,56 @@ class TestEnumsAndDataStructures:
             face1=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(2))
         )
-        assert edge1.get_long_edge() == TimberReferenceLongEdge.RIGHT_FRONT
+        assert edge1.get_long_edge() == TimberLongEdge.RIGHT_FRONT
         
         # FRONT + LEFT -> FRONT_LEFT
         edge2 = DistanceFromLongEdge(
             face1=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(2))
         )
-        assert edge2.get_long_edge() == TimberReferenceLongEdge.FRONT_LEFT
+        assert edge2.get_long_edge() == TimberLongEdge.FRONT_LEFT
         
         # LEFT + BACK -> LEFT_BACK
         edge3 = DistanceFromLongEdge(
             face1=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberLongFace.BACK, distance=Rational(2))
         )
-        assert edge3.get_long_edge() == TimberReferenceLongEdge.LEFT_BACK
+        assert edge3.get_long_edge() == TimberLongEdge.LEFT_BACK
         
         # BACK + RIGHT -> BACK_RIGHT
         edge4 = DistanceFromLongEdge(
             face1=DistanceFromLongFace(face=TimberLongFace.BACK, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(2))
         )
-        assert edge4.get_long_edge() == TimberReferenceLongEdge.BACK_RIGHT
+        assert edge4.get_long_edge() == TimberLongEdge.BACK_RIGHT
         
         # FRONT + RIGHT -> FRONT_RIGHT
         edge5 = DistanceFromLongEdge(
             face1=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(2))
         )
-        assert edge5.get_long_edge() == TimberReferenceLongEdge.FRONT_RIGHT
+        assert edge5.get_long_edge() == TimberLongEdge.FRONT_RIGHT
         
         # RIGHT + BACK -> RIGHT_BACK
         edge6 = DistanceFromLongEdge(
             face1=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberLongFace.BACK, distance=Rational(2))
         )
-        assert edge6.get_long_edge() == TimberReferenceLongEdge.RIGHT_BACK
+        assert edge6.get_long_edge() == TimberLongEdge.RIGHT_BACK
         
         # BACK + LEFT -> BACK_LEFT
         edge7 = DistanceFromLongEdge(
             face1=DistanceFromLongFace(face=TimberLongFace.BACK, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(2))
         )
-        assert edge7.get_long_edge() == TimberReferenceLongEdge.BACK_LEFT
+        assert edge7.get_long_edge() == TimberLongEdge.BACK_LEFT
         
         # LEFT + FRONT -> LEFT_FRONT
         edge8 = DistanceFromLongEdge(
             face1=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(1)),
             face2=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(2))
         )
-        assert edge8.get_long_edge() == TimberReferenceLongEdge.LEFT_FRONT
+        assert edge8.get_long_edge() == TimberLongEdge.LEFT_FRONT
     
     def test_distance_from_long_edge_get_long_edge_invalid(self):
         """Test DistanceFromLongEdge.get_long_edge() with invalid face combinations."""

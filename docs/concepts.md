@@ -85,7 +85,7 @@ class TimberReferenceEnd(Enum):
 ```
 
 ```
-class TimberReferenceLongEdge(Enum):
+class TimberLongEdge(Enum):
     RIGHT_FORWARD = 7
     FORWARD_LEFT = 8
     LEFT_BACK = 9
@@ -119,7 +119,7 @@ struct DistanceFromEnd(Enum):
     distance : float
 
 struct DistanceFromLongEdge(Enum):
-    edge : TimberReferenceLongEdge
+    edge : TimberLongEdge
     distance1 : float
     distance2 : float
 ```
