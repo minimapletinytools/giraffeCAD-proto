@@ -24,6 +24,9 @@ from typing import Union
 from .moothymoth import *
 from .timber import *
 
+# Type alias for all measurable geometric features on timbers
+TimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane']
+
 @dataclass(frozen=True)
 class Point:
     """
@@ -170,6 +173,120 @@ def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
         return feature.position
 
     raise ValueError(f"Unsupported feature type: {type(feature)}")
+
+
+def measure_face(timber: Timber, face: TimberFace) -> Plane:
+    """
+    Measure a face on a timber, returning a Plane centered on the face pointing outward.
+    
+    The plane's normal points OUT of the timber (away from the timber's interior),
+    and the plane's point is positioned at the center of the face surface.
+    
+    Args:
+        timber: The timber to measure
+        face: The face to measure
+        
+    Returns:
+        Plane with normal pointing outward from the face and point at the face center
+        
+    Example:
+        >>> plane = measure_face(timber, TimberFace.RIGHT)
+        >>> # plane.normal points in +X direction (outward from RIGHT face)
+        >>> # plane.point is at the center of the RIGHT face surface
+    """
+    # Get the face normal (pointing OUT of the timber)
+    face_normal = timber.get_face_direction_global(face)
+    
+    # Get a point on the face surface (at the center)
+    face_point = get_point_on_face_global(face, timber)
+    
+    return Plane(face_normal, face_point)
+
+
+def measure_long_edge(timber: Timber, edge: TimberLongEdge) -> Line:
+    """
+    Measure a long edge on a timber, returning a Line centered on the edge pointing in +Z.
+    
+    The line runs along the timber's length direction (+Z in timber local coordinates),
+    positioned at the specified edge (intersection of two long faces).
+    
+    Args:
+        timber: The timber to measure
+        edge: The long edge to measure
+        
+    Returns:
+        Line with direction pointing in the timber's +Z direction and point at the edge center
+        
+    Example:
+        >>> line = measure_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
+        >>> # line.direction points in the timber's length direction
+        >>> # line.point is at the RIGHT_FRONT edge, halfway along the length
+    """
+    # Map edge enum to the two faces it connects
+    edge_to_faces = {
+        TimberLongEdge.RIGHT_FRONT: (TimberFace.RIGHT, TimberFace.FRONT),
+        TimberLongEdge.FRONT_LEFT: (TimberFace.FRONT, TimberFace.LEFT),
+        TimberLongEdge.LEFT_BACK: (TimberFace.LEFT, TimberFace.BACK),
+        TimberLongEdge.BACK_RIGHT: (TimberFace.BACK, TimberFace.RIGHT),
+        TimberLongEdge.FRONT_RIGHT: (TimberFace.FRONT, TimberFace.RIGHT),
+        TimberLongEdge.RIGHT_BACK: (TimberFace.RIGHT, TimberFace.BACK),
+        TimberLongEdge.BACK_LEFT: (TimberFace.BACK, TimberFace.LEFT),
+        TimberLongEdge.LEFT_FRONT: (TimberFace.LEFT, TimberFace.FRONT),
+    }
+    
+    if edge not in edge_to_faces:
+        raise ValueError(f"Unknown edge: {edge}")
+    
+    face1, face2 = edge_to_faces[edge]
+    
+    # Get the timber's length direction (always +Z in local coords, the direction from BOTTOM to TOP)
+    length_direction = timber.get_length_direction_global()
+    
+    # Calculate edge position by finding the intersection of the two faces
+    # The edge is at the corner where both face normals point away from
+    face1_normal = timber.get_face_direction_global(face1)
+    face2_normal = timber.get_face_direction_global(face2)
+    
+    # Get the timber's bottom center position
+    bottom_center = timber.get_bottom_position_global()
+    
+    # Calculate offset from center to edge
+    # Edge is at +/- (size/2) in the directions of both face normals
+    face1_offset = face1_normal * timber.get_size_in_face_normal_axis(face1) / 2
+    face2_offset = face2_normal * timber.get_size_in_face_normal_axis(face2) / 2
+    
+    # Edge position is at the corner (both offsets applied)
+    edge_position = bottom_center + face1_offset + face2_offset
+    
+    return Line(length_direction, edge_position)
+
+
+def measure_center_line(timber: Timber) -> Line:
+    """
+    Measure the center line of a timber, returning a Line through the timber's center.
+    
+    The line runs along the timber's length direction (+Z in timber local coordinates),
+    positioned at the center of the timber's cross-section.
+    
+    Args:
+        timber: The timber to measure
+        
+    Returns:
+        Line with direction pointing in the timber's +Z direction and point at the centerline
+        
+    Example:
+        >>> line = measure_center_line(timber)
+        >>> # line.direction points in the timber's length direction
+        >>> # line.point is at the center of the timber (halfway along length, centered in cross-section)
+    """
+    # Get the timber's length direction
+    length_direction = timber.get_length_direction_global()
+    
+    # Get the center position (at mid-length)
+    center_position = timber.get_bottom_position_global() + length_direction * timber.length / 2
+    
+    return Line(length_direction, center_position)
+
 
 # TODO rename to measure_distance_from_face
 def measure_from_face(distance: Numeric, face: TimberFace, timber: Timber) -> UnsignedPlane:

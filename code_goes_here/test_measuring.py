@@ -3,8 +3,8 @@ Tests for the measuring module (geometric primitives).
 """
 
 import pytest
-from code_goes_here.measuring import Point, Line, Plane, UnsignedPlane, get_point_on_face_global, get_point_on_feature, measure_from_face, mark_from_face, gauge_distance_between_faces
-from code_goes_here.timber import timber_from_directions, TimberFace
+from code_goes_here.measuring import Point, Line, Plane, UnsignedPlane, get_point_on_face_global, get_point_on_feature, measure_from_face, mark_from_face, gauge_distance_between_faces, measure_face, measure_long_edge, measure_center_line
+from code_goes_here.timber import timber_from_directions, TimberFace, TimberLongEdge
 from code_goes_here.moothymoth import create_v3, create_v2, Transform, Orientation
 from sympy import Matrix, Rational
 
@@ -398,3 +398,185 @@ class TestGaugeDistanceBetweenFaces:
                     # Non-parallel faces - should raise assertion
                     with pytest.raises(AssertionError, match="Faces must be parallel"):
                         gauge_distance_between_faces(timber1, face1, timber2, face2)
+
+
+class TestMeasureFace:
+    """Tests for measure_face function"""
+    
+    def test_measure_face_right(self):
+        """Test measuring the RIGHT face of a vertical timber"""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),  # 10" wide (X), 20" height (Y)
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Vertical
+            width_direction=create_v3(1, 0, 0),   # Width along X
+            name="test_timber"
+        )
+        
+        plane = measure_face(timber, TimberFace.RIGHT)
+        
+        # Should be a Plane
+        assert isinstance(plane, Plane)
+        # Normal should point outward (+X for RIGHT face)
+        assert plane.normal.equals(create_v3(1, 0, 0))
+        # Point should be at the face surface (x=5, y=0, z=0)
+        assert plane.point[0] == Rational(5)
+        assert plane.point[1] == Rational(0)
+        assert plane.point[2] == Rational(0)
+    
+    def test_measure_face_front(self):
+        """Test measuring the FRONT face of a vertical timber"""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            name="test_timber"
+        )
+        
+        plane = measure_face(timber, TimberFace.FRONT)
+        
+        # Normal should point outward (+Y for FRONT face)
+        assert plane.normal.equals(create_v3(0, 1, 0))
+        # Point should be at the face surface (x=0, y=10, z=0)
+        assert plane.point[0] == Rational(0)
+        assert plane.point[1] == Rational(10)
+        assert plane.point[2] == Rational(0)
+
+
+class TestMeasureLongEdge:
+    """Tests for measure_long_edge function"""
+    
+    def test_measure_long_edge_right_front(self):
+        """Test measuring the RIGHT_FRONT edge of a vertical timber"""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),  # 10" wide (X), 20" height (Y)
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Vertical
+            width_direction=create_v3(1, 0, 0),   # Width along X
+            name="test_timber"
+        )
+        
+        line = measure_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
+        
+        # Should be a Line
+        assert isinstance(line, Line)
+        # Direction should be along timber length (+Z)
+        assert line.direction.equals(create_v3(0, 0, 1))
+        # Point should be at the edge (x=5, y=10, z=0)
+        assert line.point[0] == Rational(5)   # Right face at x=5
+        assert line.point[1] == Rational(10)  # Front face at y=10
+        assert line.point[2] == Rational(0)   # At bottom
+    
+    def test_measure_long_edge_left_back(self):
+        """Test measuring the LEFT_BACK edge of a vertical timber"""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            name="test_timber"
+        )
+        
+        line = measure_long_edge(timber, TimberLongEdge.LEFT_BACK)
+        
+        # Direction should be along timber length (+Z)
+        assert line.direction.equals(create_v3(0, 0, 1))
+        # Point should be at the edge (x=-5, y=-10, z=0)
+        assert line.point[0] == Rational(-5)   # Left face at x=-5
+        assert line.point[1] == Rational(-10)  # Back face at y=-10
+        assert line.point[2] == Rational(0)    # At bottom
+    
+    def test_measure_long_edge_horizontal_timber(self):
+        """Test measuring edge on a horizontal timber"""
+        # Horizontal timber pointing in +X direction
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(4, 6),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # Horizontal, pointing east
+            width_direction=create_v3(0, 1, 0),
+            name="test_timber"
+        )
+        
+        line = measure_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
+        
+        # Direction should be along timber length (+X in this case)
+        assert line.direction.equals(create_v3(1, 0, 0))
+        # Point should be at the edge
+        assert line.point[0] == Rational(0)   # At bottom
+        assert line.point[1] == Rational(2)   # Right face (width/2)
+        assert line.point[2] == Rational(3)   # Front face (height/2)
+
+
+class TestMeasureCenterLine:
+    """Tests for measure_center_line function"""
+    
+    def test_measure_center_line_vertical(self):
+        """Test measuring the center line of a vertical timber"""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Vertical
+            width_direction=create_v3(1, 0, 0),
+            name="test_timber"
+        )
+        
+        line = measure_center_line(timber)
+        
+        # Should be a Line
+        assert isinstance(line, Line)
+        # Direction should be along timber length (+Z)
+        assert line.direction.equals(create_v3(0, 0, 1))
+        # Point should be at the center (x=0, y=0, z=50)
+        assert line.point[0] == Rational(0)
+        assert line.point[1] == Rational(0)
+        assert line.point[2] == Rational(50)  # Mid-length
+    
+    def test_measure_center_line_horizontal(self):
+        """Test measuring the center line of a horizontal timber"""
+        timber = timber_from_directions(
+            length=Rational(48),
+            size=create_v2(4, 6),
+            bottom_position=create_v3(10, 20, 5),  # Offset position
+            length_direction=create_v3(1, 0, 0),   # Horizontal, pointing east
+            width_direction=create_v3(0, 1, 0),
+            name="test_timber"
+        )
+        
+        line = measure_center_line(timber)
+        
+        # Direction should be along timber length (+X)
+        assert line.direction.equals(create_v3(1, 0, 0))
+        # Point should be at the center
+        assert line.point[0] == Rational(34)  # 10 + 48/2 = 34
+        assert line.point[1] == Rational(20)  # Centered in Y
+        assert line.point[2] == Rational(5)   # Centered in Z
+    
+    def test_measure_center_line_diagonal(self):
+        """Test measuring the center line of a diagonally oriented timber"""
+        # Timber pointing in diagonal direction
+        from code_goes_here.moothymoth import normalize_vector
+        
+        direction = normalize_vector(create_v3(1, 1, 1))  # Diagonal
+        timber = timber_from_directions(
+            length=Rational(60),
+            size=create_v2(4, 4),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=direction,
+            width_direction=create_v3(1, 0, 0),
+            name="test_timber"
+        )
+        
+        line = measure_center_line(timber)
+        
+        # Direction should be along timber length (diagonal)
+        assert line.direction.equals(direction)
+        # Point should be at mid-length along the diagonal
+        expected_point = direction * Rational(30)  # 60/2 = 30
+        assert line.point.equals(expected_point)
