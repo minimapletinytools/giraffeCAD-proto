@@ -171,6 +171,7 @@ def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
 
     raise ValueError(f"Unsupported feature type: {type(feature)}")
 
+# TODO rename to measure_distance_from_face
 def measure_from_face(distance: Numeric, face: TimberFace, timber: Timber) -> UnsignedPlane:
     """
     Measure a distance from a face on a timber.
@@ -184,6 +185,7 @@ def measure_from_face(distance: Numeric, face: TimberFace, timber: Timber) -> Un
 
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
+# TODO rename mark_distance_onto_face
 def mark_from_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], face: TimberFace, timber: Timber) -> Numeric:
     """
     Mark a feature from a face on a timber.
@@ -201,5 +203,49 @@ def mark_from_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane],
 
     # Project the feature point onto the face to get the signed distance
     distance = project_point_onto_face_global(feature_point, face, timber)
+    
+    return distance
+
+
+def gauge_distance_between_faces(reference_timber: Timber, reference_timber_face: TimberFace, target_timber: Timber, target_timber_face: TimberFace) -> Numeric:
+    """
+    Gauge the distance between two faces on two timbers.
+    
+    Measures the signed distance from the reference face to the target face along the reference face's normal.
+    Positive distance means the target face is in the direction INTO the reference timber (along the inward normal).
+    Negative distance means the target face is in the opposite direction (away from the reference timber).
+    
+    The two faces must be parallel or antiparallel (facing each other or facing the same direction).
+    
+    Args:
+        reference_timber: The timber with the reference face
+        reference_timber_face: The face on the reference timber to measure from
+        target_timber: The timber with the target face
+        target_timber_face: The face on the target timber to measure to
+        
+    Returns:
+        Signed distance from reference face to target face (positive = into reference timber)
+        
+    Example:
+        >>> # Two face-aligned timbers with a 5" gap between their FRONT faces
+        >>> distance = gauge_distance_between_faces(timber1, TimberFace.FRONT, timber2, TimberFace.BACK)
+    """
+    from code_goes_here.construction import are_vectors_parallel
+    
+    # Get face normals
+    reference_face_normal = reference_timber.get_face_direction_global(reference_timber_face)
+    target_face_normal = target_timber.get_face_direction_global(target_timber_face)
+    
+    # Assert that the faces are parallel (or antiparallel)
+    assert are_vectors_parallel(reference_face_normal, target_face_normal), \
+        f"Faces must be parallel. Reference face {reference_timber_face.name} on {reference_timber.name} " \
+        f"has normal {reference_face_normal.T}, target face {target_timber_face.name} on {target_timber.name} " \
+        f"has normal {target_face_normal.T}"
+    
+    # Create a plane at the target face
+    target_face_plane = Plane(target_face_normal, get_point_on_face_global(target_timber_face, target_timber))
+    
+    # Measure the distance from the reference face to the target face plane
+    distance = mark_from_face(target_face_plane, reference_timber_face, reference_timber)
     
     return distance

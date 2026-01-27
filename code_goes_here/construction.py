@@ -544,6 +544,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
     
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction, name=name)
 
+# TODO change offset_from_timber1 to lateral_offset_from_timber1
 # TODO rename to create/raise_joining_timber_perpendicular_on_face_parallel_timbers
 def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber,
                                                 location_on_timber1: Numeric,
