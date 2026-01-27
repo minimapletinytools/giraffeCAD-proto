@@ -151,36 +151,32 @@ class TimberLongEdge(Enum):
     BACK_LEFT = 13
     LEFT_FRONT = 14
 
-class StickoutReference(Enum):
-    """
-    Defines how stickout is measured relative to timber connection points.
+class TimberFeature(Enum):
+    TOP_FACE = 1
+    BOTTOM_FACE = 2
+    RIGHT_FACE = 3
+    LEFT_FACE = 4
+    FRONT_FACE = 5
+    BACK_FACE = 6
+    RIGHT_FRONT_EDGE = 7
+    FRONT_LEFT_EDGE = 8
+    LEFT_BACK_EDGE = 9
+    BACK_RIGHT_EDGE = 10
+    FRONT_RIGHT_EDGE = 11
+    RIGHT_BACK_EDGE = 12
+    BACK_LEFT_EDGE = 13
+    LEFT_FRONT_EDGE = 14
+    # TODO do the other edges lol
+    CENTERLINE = 99999
+    # TODO maybe do the corners?
     
-    CENTER_LINE: Stickout measured from centerline of the timber (default)
-        joined timber
-        | |
-        |||===== created timber
-        | |
-    
-    INSIDE: Stickout measured from inside face of the timber
-        joined timber
-        | |
-        | |===== created timber
-        | |
-    
-    OUTSIDE: Stickout measured from outside face of the timber
-        joined timber
-        | |
-        |====== created timber
-        | |
-    """
-    CENTER_LINE = 1
-    INSIDE = 2
-    OUTSIDE = 3
 
 # ============================================================================
 # Joint Construction Data Structures
+# TODO move to construction
 # ============================================================================
 
+# TODO DELETE THESE replaced with measuring
 @dataclass(frozen=True)
 class DistanceFromFace:
     face: TimberFace
@@ -245,6 +241,33 @@ class FaceAlignedJoinedTimberOffset:
     centerline_offset: Optional[Numeric]
     face_offset: Optional[Numeric]
 
+
+
+class StickoutReference(Enum):
+    """
+    Defines how stickout is measured relative to timber connection points.
+    
+    CENTER_LINE: Stickout measured from centerline of the timber (default)
+        joined timber
+        | |
+        |||===== created timber
+        | |
+    
+    INSIDE: Stickout measured from inside face of the timber
+        joined timber
+        | |
+        | |===== created timber
+        | |
+    
+    OUTSIDE: Stickout measured from outside face of the timber
+        joined timber
+        | |
+        |====== created timber
+        | |
+    """
+    CENTER_LINE = 1
+    INSIDE = 2
+    OUTSIDE = 3
 
 # TODO this is really only needed for JoinTimbers so move it near that function
 # TODO rename to ButtStickout or something like that...
