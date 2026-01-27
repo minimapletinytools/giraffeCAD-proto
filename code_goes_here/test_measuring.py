@@ -3,7 +3,7 @@ Tests for the measuring module (geometric primitives).
 """
 
 import pytest
-from code_goes_here.measuring import Point, Line, Plane, UnsignedPlane, get_point_on_face_global, get_point_on_feature, measure_from_face, mark_from_face
+from code_goes_here.measuring import Point, Line, Plane, UnsignedPlane, get_point_on_face_global, get_point_on_feature, measure_from_face, mark_from_face, gauge_distance_between_faces
 from code_goes_here.timber import timber_from_directions, TimberFace
 from code_goes_here.moothymoth import create_v3, create_v2, Transform, Orientation
 from sympy import Matrix, Rational
@@ -275,3 +275,126 @@ class TestMarkFromFace:
         distance = mark_from_face(point, TimberFace.RIGHT, timber)
         
         assert distance == Rational(3)
+
+
+class TestGaugeDistanceBetweenFaces:
+    """Tests for gauge_distance_between_faces function"""
+    
+    def test_gauge_all_face_combinations_on_face_aligned_timbers(self):
+        """
+        Test gauging distance between all face combinations on two face-aligned vertical timbers.
+        
+        Creates two vertical 4x6 timbers side by side:
+        - timber1 centered at x=0, y=0 (width=4" along X, height=6" along Y)
+        - timber2 centered at x=10", y=0 (width=4" along X, height=6" along Y)
+        
+        Tests all 36 face combinations (6 faces × 6 faces) to verify:
+        - Parallel face pairs return correct distances
+        - Non-parallel face pairs raise assertions
+        """
+        # Create timber1: vertical 4x6 at origin
+        # - Width (X): from -2 to +2 (4 inches)
+        # - Height (Y): from -3 to +3 (6 inches)
+        # - Length (Z): from 0 to 100
+        timber1 = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(4, 6),  # 4" wide (X), 6" height (Y)
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Vertical
+            width_direction=create_v3(1, 0, 0),   # Width along X
+            name="timber1"
+        )
+        
+        # Create timber2: vertical 4x6 at x=10
+        # - Width (X): from 8 to 12 (4 inches)
+        # - Height (Y): from -3 to +3 (6 inches)
+        # - Length (Z): from 0 to 100
+        timber2 = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(4, 6),  # 4" wide (X), 6" height (Y)
+            bottom_position=create_v3(10, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Vertical
+            width_direction=create_v3(1, 0, 0),   # Width along X
+            name="timber2"
+        )
+        
+        # Define expected distances for parallel face pairs
+        # Distance is measured from reference face INTO the reference timber
+        expected_results = {
+            # RIGHT face of timber1 (at x=2) to LEFT face of timber2 (at x=8): gap = 6"
+            # From RIGHT face, positive INTO timber1 means going in -X direction
+            # Target at x=8, reference at x=2, so distance = 2-8 = -6 (target is away from timber)
+            (TimberFace.RIGHT, TimberFace.LEFT): Rational(-6),
+            
+            # LEFT face of timber1 (at x=-2) to RIGHT face of timber2 (at x=12)
+            # From LEFT face, positive INTO timber1 means going in +X direction
+            # Target at x=12, reference at x=-2, so distance = 12-(-2) = 14
+            (TimberFace.LEFT, TimberFace.RIGHT): Rational(14),
+            
+            # RIGHT faces (both at x=2 and x=12, parallel, facing same direction +X)
+            # From RIGHT of timber1 (x=2) to RIGHT of timber2 (x=12)
+            # Into timber1 from RIGHT means -X, target at x=12, ref at x=2: distance = 2-12 = -10
+            (TimberFace.RIGHT, TimberFace.RIGHT): Rational(-10),
+            
+            # LEFT faces (both at x=-2 and x=8, parallel, facing same direction -X)
+            # From LEFT of timber1 (x=-2) to LEFT of timber2 (x=8)
+            # Into timber1 from LEFT means +X, target at x=8, ref at x=-2: distance = 8-(-2) = 10
+            (TimberFace.LEFT, TimberFace.LEFT): Rational(10),
+            
+            # FRONT faces (both at y=3, parallel, facing same direction +Y)
+            # From FRONT of timber1 to FRONT of timber2 (both at y=3)
+            # Into timber1 from FRONT means -Y, target at y=3, ref at y=3: distance = 0
+            (TimberFace.FRONT, TimberFace.FRONT): Rational(0),
+            
+            # BACK faces (both at y=-3, parallel, facing same direction -Y)
+            # From BACK of timber1 to BACK of timber2 (both at y=-3)
+            # Into timber1 from BACK means +Y, target at y=-3, ref at y=-3: distance = 0
+            (TimberFace.BACK, TimberFace.BACK): Rational(0),
+            
+            # FRONT to BACK (antiparallel, facing each other)
+            # FRONT at y=3, BACK at y=-3 (same for both timbers since they're aligned)
+            # From FRONT (y=3) of timber1, into timber means -Y direction
+            # Target BACK of timber2 at y=-3, ref FRONT at y=3: distance = 3-(-3) = 6
+            (TimberFace.FRONT, TimberFace.BACK): Rational(6),
+            
+            # BACK to FRONT (antiparallel, facing each other)
+            # From BACK (y=-3) of timber1, into timber means +Y direction
+            # Target FRONT of timber2 at y=3, ref BACK at y=-3: distance = 3-(-3) = 6
+            (TimberFace.BACK, TimberFace.FRONT): Rational(6),
+            
+            # TOP faces (both at z=50, parallel, facing same direction +Z)
+            (TimberFace.TOP, TimberFace.TOP): Rational(0),
+            
+            # BOTTOM faces (both at z=-50, parallel, facing same direction -Z)
+            (TimberFace.BOTTOM, TimberFace.BOTTOM): Rational(0),
+            
+            # TOP to BOTTOM (antiparallel)
+            # TOP face point at z=50, BOTTOM face point at z=-50
+            # From TOP of timber1, into timber means -Z direction
+            # Target BOTTOM of timber2 at z=-50, ref TOP at z=50
+            # distance = 50-(-50) = 100
+            (TimberFace.TOP, TimberFace.BOTTOM): Rational(100),
+            
+            # BOTTOM to TOP (antiparallel)
+            # From BOTTOM of timber1, into timber means +Z direction
+            # Target TOP of timber2 at z=50, ref BOTTOM at z=-50
+            # distance = 50-(-50) = 100
+            (TimberFace.BOTTOM, TimberFace.TOP): Rational(100),
+        }
+        
+        # Test all 36 face combinations
+        all_faces = [TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FRONT, 
+                     TimberFace.BACK, TimberFace.TOP, TimberFace.BOTTOM]
+        
+        for face1 in all_faces:
+            for face2 in all_faces:
+                if (face1, face2) in expected_results:
+                    # Parallel faces - should return expected distance
+                    distance = gauge_distance_between_faces(timber1, face1, timber2, face2)
+                    expected = expected_results[(face1, face2)]
+                    assert distance == expected, \
+                        f"gauge_distance_between_faces({face1.name}, {face2.name}) = {distance}, expected {expected}"
+                else:
+                    # Non-parallel faces - should raise assertion
+                    with pytest.raises(AssertionError, match="Faces must be parallel"):
+                        gauge_distance_between_faces(timber1, face1, timber2, face2)
