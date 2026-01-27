@@ -169,16 +169,19 @@ CSGTimber?
 IGNORE-transform prob does not need to be frozen...
 DONE-come up with consisten import scheme....
   DONE-maybe rename Union to avoid confilct...
-
--double dildo joint seems to broken in fusion 360
-  -fusion 360 broken in general...
 DONE-see if you can get rid of FaceAlignedJoinedTimberOffset with a measuring function
   DONE-implementation
   DONE?-do better testing 
 
+UGH
+-double dildo joint seems to broken in fusion 360
+  -fusion 360 broken in general...
+-do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
+
+
+RENAME
 -cleanup where to put get_point_on_face and project_point_onto_face
   -probably move these into timber_shavings or something
-
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
   -oFAT on face aligned timbers
   -oFAACaT on face aligned coaxial timbers
@@ -186,25 +189,7 @@ DONE-see if you can get rid of FaceAlignedJoinedTimberOffset with a measuring fu
   -oSAT on side aligned timbers
   -oPT on parallel timbers
   -oOT on orthognal timbers
-
-
--create all_joints.py 
-  -exports all joints
--create potato_joints.py and potato_joints_examples.py
-  -pass in sensible default parameters for all joints
--examplify 
-  -create some map of example name to example function map so you can dynamiaclly get to all examples
-  -would be cool do deep link by into functions/docs in the future...
-
--update morties and tenon to support
-  -perpendicular but not face aligned
-  -not perpendicular but partially face aligned (for braces)
-    -maybe have an add brace function?
-  -neither perpendicular nor face aligned
-
-  
--RENAME TIME
-  -do the horseCAD rename
+-do the horseCAD rename
   -rename meowmeocsg and moothymoth?
   -change cut_ to layout_? or plan_
   -rename create_timber to hew or raise timber?
@@ -214,12 +199,27 @@ DONE-see if you can get rid of FaceAlignedJoinedTimberOffset with a measuring fu
 
 
 
--new joints using methodology 
-  DONE-dovetail lap joint
-  -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)
+EXEMPLIFY
+-create all_joints.py 
+  -exports all joints
+-create potato_joints.py and potato_joints_examples.py
+  -pass in sensible default parameters for all joints
+-examplify 
+  -create some map of example name to example function map so you can dynamiaclly get to all examples
+  -would be cool do deep link by into functions/docs in the future...
 
 
+IMPLEMENT
+-update morties and tenon to support
+  -perpendicular but not face aligned
+  -not perpendicular but partially face aligned (for braces)
+    -maybe have an add brace function?
+  -neither perpendicular nor face aligned
+-Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)
+  
 
+DONE-dovetail lap joint
+  
 -3 major features
   -measure functions
   -refactor timber class
