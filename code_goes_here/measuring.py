@@ -25,7 +25,7 @@ from .moothymoth import *
 from .timber import *
 
 # Type alias for all measurable geometric features on timbers
-TimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane']
+FeatureT = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane']
 
 @dataclass(frozen=True)
 class Point:
