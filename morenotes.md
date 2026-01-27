@@ -133,7 +133,7 @@ A standard tenon is a rectangular cross section that extrudes from the shoulder 
 class StandardTenon:
     shoulder_plane : ShoulderPlane
     # if not provided, the cross section is centered on the centerline of the timber
-    pos_rel_to_long_edge : (TimberReferenceLongEdge, V2)?
+    pos_rel_to_long_edge : (TimberLongEdge, V2)?
     # in the X axis
     width : float 
     # in the Y axis
@@ -232,7 +232,7 @@ class CutTimber:
 
 Currently we have
 
-TimberReferenceLongEdge (X/Y axis faces)
+TimberLongEdge (X/Y axis faces)
 TimberReferenceEnd (Z axis faces)
 
 We can generalize to arbitrary faces with 

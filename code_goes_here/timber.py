@@ -111,8 +111,6 @@ class TimberReferenceEnd(Enum):
         """Convert TimberReferenceEnd to TimberFace."""
         return TimberFace(self.value)
 
-
-# TODO rename to TimberLongFace
 class TimberLongFace(Enum):
     RIGHT = 3
     FRONT = 4
@@ -143,8 +141,7 @@ class TimberLongFace(Enum):
         # Map from 3-6 to 0-3, rotate, then map back to 3-6
         return TimberLongFace((self.value - 3 - 1) % 4 + 3)
 
-# TODO rename to TimberLongEdge
-class TimberReferenceLongEdge(Enum):
+class TimberLongEdge(Enum):
     RIGHT_FRONT = 7
     FRONT_LEFT = 8
     LEFT_BACK = 9
@@ -206,7 +203,7 @@ class DistanceFromLongEdge:
     face1: DistanceFromLongFace
     face2: DistanceFromLongFace
 
-    def get_long_edge(self) -> TimberReferenceLongEdge:
+    def get_long_edge(self) -> TimberLongEdge:
         """
         Get the long edge from the two faces.
         """
@@ -214,21 +211,21 @@ class DistanceFromLongEdge:
         f2 = self.face2.face
         
         if f1 == TimberLongFace.RIGHT and f2 == TimberLongFace.FRONT:
-            return TimberReferenceLongEdge.RIGHT_FRONT
+            return TimberLongEdge.RIGHT_FRONT
         elif f1 == TimberLongFace.FRONT and f2 == TimberLongFace.LEFT:
-            return TimberReferenceLongEdge.FRONT_LEFT
+            return TimberLongEdge.FRONT_LEFT
         elif f1 == TimberLongFace.LEFT and f2 == TimberLongFace.BACK:
-            return TimberReferenceLongEdge.LEFT_BACK
+            return TimberLongEdge.LEFT_BACK
         elif f1 == TimberLongFace.BACK and f2 == TimberLongFace.RIGHT:
-            return TimberReferenceLongEdge.BACK_RIGHT
+            return TimberLongEdge.BACK_RIGHT
         elif f1 == TimberLongFace.FRONT and f2 == TimberLongFace.RIGHT:
-            return TimberReferenceLongEdge.FRONT_RIGHT
+            return TimberLongEdge.FRONT_RIGHT
         elif f1 == TimberLongFace.RIGHT and f2 == TimberLongFace.BACK:
-            return TimberReferenceLongEdge.RIGHT_BACK
+            return TimberLongEdge.RIGHT_BACK
         elif f1 == TimberLongFace.BACK and f2 == TimberLongFace.LEFT:
-            return TimberReferenceLongEdge.BACK_LEFT
+            return TimberLongEdge.BACK_LEFT
         elif f1 == TimberLongFace.LEFT and f2 == TimberLongFace.FRONT:
-            return TimberReferenceLongEdge.LEFT_FRONT
+            return TimberLongEdge.LEFT_FRONT
         else:
             raise ValueError(f"Invalid faces: {f1} and {f2}")
     
