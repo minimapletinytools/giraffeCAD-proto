@@ -221,14 +221,14 @@ def scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
         f"on timber {reference_timber.name}. Reference face direction: {reference_face_direction.T}"
     
     # Create a plane at the given depth from the reference face
-    cutting_plane = measure_from_face(reference_depth_from_face, reference_face, reference_timber)
+    cutting_plane = measure_into_face(reference_depth_from_face, reference_face, reference_timber)
     
     # Find the opposing face on the target timber
     target_face_direction = -reference_face_direction  # Opposite direction
     target_face = target_timber.get_closest_oriented_face_from_global_direction(target_face_direction)
     
     # Measure from the target face to the cutting plane and return absolute value
-    signed_distance = mark_from_face(cutting_plane, target_face, target_timber)
+    signed_distance = mark_onto_face(cutting_plane, target_face, target_timber)
     
     # Return the absolute distance (depth is always positive)
     return Abs(signed_distance)
