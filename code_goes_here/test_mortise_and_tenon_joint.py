@@ -7,7 +7,7 @@ from typing import List
 from sympy import Matrix, Rational, simplify
 from code_goes_here.moothymoth import Orientation
 from code_goes_here.timber import (
-    Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace,
+    Timber, TimberReferenceEnd, TimberFace, TimberLongFace,
     V2, V3, Numeric, PegShape, WedgeShape, Peg,
     timber_from_directions, create_v3
 )
@@ -175,7 +175,7 @@ class TestPegStuff:
         shoulder_plane_x_global = mortise_timber_x_size / Rational(2)
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FRONT,
+            tenon_face=TimberLongFace.FRONT,
             peg_positions=[(distance_from_shoulder, Rational(0))],
             depth=peg_depth,
             size=Rational(1, 2)
@@ -228,7 +228,7 @@ class TestPegStuff:
         peg_size = Rational(1, 2)
         peg_params = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FRONT,
+            tenon_face=TimberLongFace.FRONT,
             peg_positions=[(Rational(2), Rational(0))],
             depth=None,
             size=peg_size
@@ -303,7 +303,7 @@ class TestPegStuff:
         
         peg_params = SimplePegParameters(
             shape=PegShape.ROUND,
-            tenon_face=TimberReferenceLongFace.FRONT,
+            tenon_face=TimberLongFace.FRONT,
             peg_positions=[
                 (Rational(1), Rational(0)),
                 (Rational(2), Rational(1, 2)),
@@ -348,7 +348,7 @@ class TestPegStuff:
         # Create joint with offset
         peg_params_with_offset = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FRONT,
+            tenon_face=TimberLongFace.FRONT,
             peg_positions=[(distance_from_shoulder, Rational(0))],
             depth=Rational(5),
             size=Rational(1, 2),
@@ -368,7 +368,7 @@ class TestPegStuff:
         # Create joint without offset for comparison
         peg_params_no_offset = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=TimberReferenceLongFace.FRONT,
+            tenon_face=TimberLongFace.FRONT,
             peg_positions=[(distance_from_shoulder, Rational(0))],
             depth=Rational(5),
             size=Rational(1, 2),

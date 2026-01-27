@@ -33,7 +33,7 @@ class SimplePegParameters:
     """
     shape: PegShape
     # TODO rename to peg_face_on_tenon
-    tenon_face: TimberReferenceLongFace
+    tenon_face: TimberLongFace
     peg_positions: List[Tuple[Numeric, Numeric]]
     size: Numeric
     depth: Optional[Numeric] = None
@@ -425,18 +425,18 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         
         # Determine which axis the peg travels along and offset axes
         # For simplicity with face-aligned timbers, work directly in local coords
-        if peg_parameters.tenon_face in [TimberReferenceLongFace.RIGHT, TimberReferenceLongFace.LEFT]:
+        if peg_parameters.tenon_face in [TimberLongFace.RIGHT, TimberLongFace.LEFT]:
             # Peg travels along X axis
             peg_length_axis_index = 0
             lateral_position_index = 1  # Y for distance_from_centerline
             shoulder_offset_axis_index = 2  # Z for distance_from_shoulder
-            peg_sign = 1 if peg_parameters.tenon_face == TimberReferenceLongFace.RIGHT else -1
-        elif peg_parameters.tenon_face in [TimberReferenceLongFace.FRONT, TimberReferenceLongFace.BACK]:
+            peg_sign = 1 if peg_parameters.tenon_face == TimberLongFace.RIGHT else -1
+        elif peg_parameters.tenon_face in [TimberLongFace.FRONT, TimberLongFace.BACK]:
             # Peg travels along Y axis
             peg_length_axis_index = 1
             lateral_position_index = 0  # X for distance_from_centerline
             shoulder_offset_axis_index = 2  # Z for distance_from_shoulder
-            peg_sign = 1 if peg_parameters.tenon_face == TimberReferenceLongFace.FRONT else -1
+            peg_sign = 1 if peg_parameters.tenon_face == TimberLongFace.FRONT else -1
         else:
             raise ValueError(f"Invalid peg face: {peg_parameters.tenon_face}")
         
@@ -486,13 +486,13 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             peg_pos_on_tenon_face_local[lateral_position_index] = peg_pos_on_tenon_face_local[lateral_position_index] + distance_from_centerline
             
             # Move to the tenon face surface (where peg enters)
-            if peg_parameters.tenon_face == TimberReferenceLongFace.RIGHT:
+            if peg_parameters.tenon_face == TimberLongFace.RIGHT:
                 peg_pos_on_tenon_face_local[0] = tenon_timber.size[0] / 2
-            elif peg_parameters.tenon_face == TimberReferenceLongFace.LEFT:
+            elif peg_parameters.tenon_face == TimberLongFace.LEFT:
                 peg_pos_on_tenon_face_local[0] = -tenon_timber.size[0] / 2
-            elif peg_parameters.tenon_face == TimberReferenceLongFace.FRONT:
+            elif peg_parameters.tenon_face == TimberLongFace.FRONT:
                 peg_pos_on_tenon_face_local[1] = tenon_timber.size[1] / 2
-            elif peg_parameters.tenon_face == TimberReferenceLongFace.BACK:
+            elif peg_parameters.tenon_face == TimberLongFace.BACK:
                 peg_pos_on_tenon_face_local[1] = -tenon_timber.size[1] / 2
             
             # Calculate the peg depth into the mortise timber

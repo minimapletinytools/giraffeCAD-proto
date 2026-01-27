@@ -572,146 +572,146 @@ class TestEnumsAndDataStructures:
         assert not TimberFace.BOTTOM.is_perpendicular(TimberFace.BOTTOM)
     
     def test_timber_reference_long_face_to_timber_face(self):
-        """Test TimberReferenceLongFace.to_timber_face() method."""
-        assert TimberReferenceLongFace.RIGHT.to_timber_face() == TimberFace.RIGHT
-        assert TimberReferenceLongFace.FRONT.to_timber_face() == TimberFace.FRONT
-        assert TimberReferenceLongFace.LEFT.to_timber_face() == TimberFace.LEFT
-        assert TimberReferenceLongFace.BACK.to_timber_face() == TimberFace.BACK
+        """Test TimberLongFace.to_timber_face() method."""
+        assert TimberLongFace.RIGHT.to_timber_face() == TimberFace.RIGHT
+        assert TimberLongFace.FRONT.to_timber_face() == TimberFace.FRONT
+        assert TimberLongFace.LEFT.to_timber_face() == TimberFace.LEFT
+        assert TimberLongFace.BACK.to_timber_face() == TimberFace.BACK
     
     def test_timber_reference_long_face_is_perpendicular(self):
-        """Test TimberReferenceLongFace.is_perpendicular() method."""
+        """Test TimberLongFace.is_perpendicular() method."""
         # Test perpendicular pairs
-        assert TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.FRONT)
-        assert TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.BACK)
-        assert TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.FRONT)
-        assert TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.BACK)
-        assert TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.RIGHT)
-        assert TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.LEFT)
-        assert TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.RIGHT)
-        assert TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.LEFT)
+        assert TimberLongFace.RIGHT.is_perpendicular(TimberLongFace.FRONT)
+        assert TimberLongFace.RIGHT.is_perpendicular(TimberLongFace.BACK)
+        assert TimberLongFace.LEFT.is_perpendicular(TimberLongFace.FRONT)
+        assert TimberLongFace.LEFT.is_perpendicular(TimberLongFace.BACK)
+        assert TimberLongFace.FRONT.is_perpendicular(TimberLongFace.RIGHT)
+        assert TimberLongFace.FRONT.is_perpendicular(TimberLongFace.LEFT)
+        assert TimberLongFace.BACK.is_perpendicular(TimberLongFace.RIGHT)
+        assert TimberLongFace.BACK.is_perpendicular(TimberLongFace.LEFT)
         
         # Test non-perpendicular pairs (opposite faces)
-        assert not TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.LEFT)
-        assert not TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.RIGHT)
-        assert not TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.BACK)
-        assert not TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.FRONT)
+        assert not TimberLongFace.RIGHT.is_perpendicular(TimberLongFace.LEFT)
+        assert not TimberLongFace.LEFT.is_perpendicular(TimberLongFace.RIGHT)
+        assert not TimberLongFace.FRONT.is_perpendicular(TimberLongFace.BACK)
+        assert not TimberLongFace.BACK.is_perpendicular(TimberLongFace.FRONT)
         
         # Test same face (not perpendicular to itself)
-        assert not TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.RIGHT)
-        assert not TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.LEFT)
-        assert not TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.FRONT)
-        assert not TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.BACK)
+        assert not TimberLongFace.RIGHT.is_perpendicular(TimberLongFace.RIGHT)
+        assert not TimberLongFace.LEFT.is_perpendicular(TimberLongFace.LEFT)
+        assert not TimberLongFace.FRONT.is_perpendicular(TimberLongFace.FRONT)
+        assert not TimberLongFace.BACK.is_perpendicular(TimberLongFace.BACK)
     
     def test_timber_reference_long_face_rotate_right(self):
-        """Test TimberReferenceLongFace.rotate_right() method."""
+        """Test TimberLongFace.rotate_right() method."""
         # Test single rotation clockwise (when viewed from above/+Z)
         # RIGHT (3) -> FRONT (4) -> LEFT (5) -> BACK (6) -> RIGHT (3)
-        assert TimberReferenceLongFace.RIGHT.rotate_right() == TimberReferenceLongFace.FRONT
-        assert TimberReferenceLongFace.FRONT.rotate_right() == TimberReferenceLongFace.LEFT
-        assert TimberReferenceLongFace.LEFT.rotate_right() == TimberReferenceLongFace.BACK
-        assert TimberReferenceLongFace.BACK.rotate_right() == TimberReferenceLongFace.RIGHT
+        assert TimberLongFace.RIGHT.rotate_right() == TimberLongFace.FRONT
+        assert TimberLongFace.FRONT.rotate_right() == TimberLongFace.LEFT
+        assert TimberLongFace.LEFT.rotate_right() == TimberLongFace.BACK
+        assert TimberLongFace.BACK.rotate_right() == TimberLongFace.RIGHT
         
         # Test chaining: rotating right 4 times should return to original
-        assert TimberReferenceLongFace.RIGHT.rotate_right().rotate_right().rotate_right().rotate_right() == TimberReferenceLongFace.RIGHT
-        assert TimberReferenceLongFace.FRONT.rotate_right().rotate_right().rotate_right().rotate_right() == TimberReferenceLongFace.FRONT
-        assert TimberReferenceLongFace.LEFT.rotate_right().rotate_right().rotate_right().rotate_right() == TimberReferenceLongFace.LEFT
-        assert TimberReferenceLongFace.BACK.rotate_right().rotate_right().rotate_right().rotate_right() == TimberReferenceLongFace.BACK
+        assert TimberLongFace.RIGHT.rotate_right().rotate_right().rotate_right().rotate_right() == TimberLongFace.RIGHT
+        assert TimberLongFace.FRONT.rotate_right().rotate_right().rotate_right().rotate_right() == TimberLongFace.FRONT
+        assert TimberLongFace.LEFT.rotate_right().rotate_right().rotate_right().rotate_right() == TimberLongFace.LEFT
+        assert TimberLongFace.BACK.rotate_right().rotate_right().rotate_right().rotate_right() == TimberLongFace.BACK
         
         # Test rotating right twice (180 degrees) gives opposite face
-        assert TimberReferenceLongFace.RIGHT.rotate_right().rotate_right() == TimberReferenceLongFace.LEFT
-        assert TimberReferenceLongFace.LEFT.rotate_right().rotate_right() == TimberReferenceLongFace.RIGHT
-        assert TimberReferenceLongFace.FRONT.rotate_right().rotate_right() == TimberReferenceLongFace.BACK
-        assert TimberReferenceLongFace.BACK.rotate_right().rotate_right() == TimberReferenceLongFace.FRONT
+        assert TimberLongFace.RIGHT.rotate_right().rotate_right() == TimberLongFace.LEFT
+        assert TimberLongFace.LEFT.rotate_right().rotate_right() == TimberLongFace.RIGHT
+        assert TimberLongFace.FRONT.rotate_right().rotate_right() == TimberLongFace.BACK
+        assert TimberLongFace.BACK.rotate_right().rotate_right() == TimberLongFace.FRONT
     
     def test_timber_reference_long_face_rotate_left(self):
-        """Test TimberReferenceLongFace.rotate_left() method."""
+        """Test TimberLongFace.rotate_left() method."""
         # Test single rotation counter-clockwise (when viewed from above/+Z)
         # RIGHT (3) -> BACK (6) -> LEFT (5) -> FRONT (4) -> RIGHT (3)
-        assert TimberReferenceLongFace.RIGHT.rotate_left() == TimberReferenceLongFace.BACK
-        assert TimberReferenceLongFace.BACK.rotate_left() == TimberReferenceLongFace.LEFT
-        assert TimberReferenceLongFace.LEFT.rotate_left() == TimberReferenceLongFace.FRONT
-        assert TimberReferenceLongFace.FRONT.rotate_left() == TimberReferenceLongFace.RIGHT
+        assert TimberLongFace.RIGHT.rotate_left() == TimberLongFace.BACK
+        assert TimberLongFace.BACK.rotate_left() == TimberLongFace.LEFT
+        assert TimberLongFace.LEFT.rotate_left() == TimberLongFace.FRONT
+        assert TimberLongFace.FRONT.rotate_left() == TimberLongFace.RIGHT
         
         # Test chaining: rotating left 4 times should return to original
-        assert TimberReferenceLongFace.RIGHT.rotate_left().rotate_left().rotate_left().rotate_left() == TimberReferenceLongFace.RIGHT
-        assert TimberReferenceLongFace.FRONT.rotate_left().rotate_left().rotate_left().rotate_left() == TimberReferenceLongFace.FRONT
-        assert TimberReferenceLongFace.LEFT.rotate_left().rotate_left().rotate_left().rotate_left() == TimberReferenceLongFace.LEFT
-        assert TimberReferenceLongFace.BACK.rotate_left().rotate_left().rotate_left().rotate_left() == TimberReferenceLongFace.BACK
+        assert TimberLongFace.RIGHT.rotate_left().rotate_left().rotate_left().rotate_left() == TimberLongFace.RIGHT
+        assert TimberLongFace.FRONT.rotate_left().rotate_left().rotate_left().rotate_left() == TimberLongFace.FRONT
+        assert TimberLongFace.LEFT.rotate_left().rotate_left().rotate_left().rotate_left() == TimberLongFace.LEFT
+        assert TimberLongFace.BACK.rotate_left().rotate_left().rotate_left().rotate_left() == TimberLongFace.BACK
         
         # Test rotating left twice (180 degrees) gives opposite face
-        assert TimberReferenceLongFace.RIGHT.rotate_left().rotate_left() == TimberReferenceLongFace.LEFT
-        assert TimberReferenceLongFace.LEFT.rotate_left().rotate_left() == TimberReferenceLongFace.RIGHT
-        assert TimberReferenceLongFace.FRONT.rotate_left().rotate_left() == TimberReferenceLongFace.BACK
-        assert TimberReferenceLongFace.BACK.rotate_left().rotate_left() == TimberReferenceLongFace.FRONT
+        assert TimberLongFace.RIGHT.rotate_left().rotate_left() == TimberLongFace.LEFT
+        assert TimberLongFace.LEFT.rotate_left().rotate_left() == TimberLongFace.RIGHT
+        assert TimberLongFace.FRONT.rotate_left().rotate_left() == TimberLongFace.BACK
+        assert TimberLongFace.BACK.rotate_left().rotate_left() == TimberLongFace.FRONT
     
     def test_timber_reference_long_face_rotate_right_left_inverse(self):
         """Test that rotate_right() and rotate_left() are inverses of each other."""
         # Test that rotating right then left returns to original
-        assert TimberReferenceLongFace.RIGHT.rotate_right().rotate_left() == TimberReferenceLongFace.RIGHT
-        assert TimberReferenceLongFace.FRONT.rotate_right().rotate_left() == TimberReferenceLongFace.FRONT
-        assert TimberReferenceLongFace.LEFT.rotate_right().rotate_left() == TimberReferenceLongFace.LEFT
-        assert TimberReferenceLongFace.BACK.rotate_right().rotate_left() == TimberReferenceLongFace.BACK
+        assert TimberLongFace.RIGHT.rotate_right().rotate_left() == TimberLongFace.RIGHT
+        assert TimberLongFace.FRONT.rotate_right().rotate_left() == TimberLongFace.FRONT
+        assert TimberLongFace.LEFT.rotate_right().rotate_left() == TimberLongFace.LEFT
+        assert TimberLongFace.BACK.rotate_right().rotate_left() == TimberLongFace.BACK
         
         # Test that rotating left then right returns to original
-        assert TimberReferenceLongFace.RIGHT.rotate_left().rotate_right() == TimberReferenceLongFace.RIGHT
-        assert TimberReferenceLongFace.FRONT.rotate_left().rotate_right() == TimberReferenceLongFace.FRONT
-        assert TimberReferenceLongFace.LEFT.rotate_left().rotate_right() == TimberReferenceLongFace.LEFT
-        assert TimberReferenceLongFace.BACK.rotate_left().rotate_right() == TimberReferenceLongFace.BACK
+        assert TimberLongFace.RIGHT.rotate_left().rotate_right() == TimberLongFace.RIGHT
+        assert TimberLongFace.FRONT.rotate_left().rotate_right() == TimberLongFace.FRONT
+        assert TimberLongFace.LEFT.rotate_left().rotate_right() == TimberLongFace.LEFT
+        assert TimberLongFace.BACK.rotate_left().rotate_right() == TimberLongFace.BACK
         
         # Test multiple rotations in opposite directions cancel out
-        assert TimberReferenceLongFace.RIGHT.rotate_right().rotate_right().rotate_left().rotate_left() == TimberReferenceLongFace.RIGHT
-        assert TimberReferenceLongFace.FRONT.rotate_left().rotate_left().rotate_left().rotate_right().rotate_right().rotate_right() == TimberReferenceLongFace.FRONT
+        assert TimberLongFace.RIGHT.rotate_right().rotate_right().rotate_left().rotate_left() == TimberLongFace.RIGHT
+        assert TimberLongFace.FRONT.rotate_left().rotate_left().rotate_left().rotate_right().rotate_right().rotate_right() == TimberLongFace.FRONT
     
     def test_timber_reference_long_face_rotate_perpendicularity(self):
         """Test that rotating by 90 degrees produces perpendicular faces."""
         # Single rotation should produce perpendicular face
-        assert TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.RIGHT.rotate_right())
-        assert TimberReferenceLongFace.RIGHT.is_perpendicular(TimberReferenceLongFace.RIGHT.rotate_left())
-        assert TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.FRONT.rotate_right())
-        assert TimberReferenceLongFace.FRONT.is_perpendicular(TimberReferenceLongFace.FRONT.rotate_left())
-        assert TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.LEFT.rotate_right())
-        assert TimberReferenceLongFace.LEFT.is_perpendicular(TimberReferenceLongFace.LEFT.rotate_left())
-        assert TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.BACK.rotate_right())
-        assert TimberReferenceLongFace.BACK.is_perpendicular(TimberReferenceLongFace.BACK.rotate_left())
+        assert TimberLongFace.RIGHT.is_perpendicular(TimberLongFace.RIGHT.rotate_right())
+        assert TimberLongFace.RIGHT.is_perpendicular(TimberLongFace.RIGHT.rotate_left())
+        assert TimberLongFace.FRONT.is_perpendicular(TimberLongFace.FRONT.rotate_right())
+        assert TimberLongFace.FRONT.is_perpendicular(TimberLongFace.FRONT.rotate_left())
+        assert TimberLongFace.LEFT.is_perpendicular(TimberLongFace.LEFT.rotate_right())
+        assert TimberLongFace.LEFT.is_perpendicular(TimberLongFace.LEFT.rotate_left())
+        assert TimberLongFace.BACK.is_perpendicular(TimberLongFace.BACK.rotate_right())
+        assert TimberLongFace.BACK.is_perpendicular(TimberLongFace.BACK.rotate_left())
     
     def test_distance_from_long_edge_is_valid(self):
         """Test DistanceFromLongEdge.is_valid() method."""
         # Valid cases - perpendicular faces
         valid_edge1 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(2))
         )
         assert valid_edge1.is_valid()
         
         valid_edge2 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.BACK, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.BACK, distance=Rational(2))
         )
         assert valid_edge2.is_valid()
         
         valid_edge3 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(2))
         )
         assert valid_edge3.is_valid()
         
         # Invalid cases - opposite faces (not perpendicular)
         invalid_edge1 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(2))
         )
         assert not invalid_edge1.is_valid()
         
         invalid_edge2 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.BACK, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.BACK, distance=Rational(2))
         )
         assert not invalid_edge2.is_valid()
         
         # Invalid cases - same face
         invalid_edge3 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(2))
         )
         assert not invalid_edge3.is_valid()
     
@@ -721,57 +721,57 @@ class TestEnumsAndDataStructures:
         
         # RIGHT + FRONT -> RIGHT_FRONT
         edge1 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(2))
         )
         assert edge1.get_long_edge() == TimberReferenceLongEdge.RIGHT_FRONT
         
         # FRONT + LEFT -> FRONT_LEFT
         edge2 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(2))
         )
         assert edge2.get_long_edge() == TimberReferenceLongEdge.FRONT_LEFT
         
         # LEFT + BACK -> LEFT_BACK
         edge3 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.BACK, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.BACK, distance=Rational(2))
         )
         assert edge3.get_long_edge() == TimberReferenceLongEdge.LEFT_BACK
         
         # BACK + RIGHT -> BACK_RIGHT
         edge4 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.BACK, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.BACK, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(2))
         )
         assert edge4.get_long_edge() == TimberReferenceLongEdge.BACK_RIGHT
         
         # FRONT + RIGHT -> FRONT_RIGHT
         edge5 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(2))
         )
         assert edge5.get_long_edge() == TimberReferenceLongEdge.FRONT_RIGHT
         
         # RIGHT + BACK -> RIGHT_BACK
         edge6 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.BACK, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.BACK, distance=Rational(2))
         )
         assert edge6.get_long_edge() == TimberReferenceLongEdge.RIGHT_BACK
         
         # BACK + LEFT -> BACK_LEFT
         edge7 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.BACK, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.BACK, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(2))
         )
         assert edge7.get_long_edge() == TimberReferenceLongEdge.BACK_LEFT
         
         # LEFT + FRONT -> LEFT_FRONT
         edge8 = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.FRONT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.FRONT, distance=Rational(2))
         )
         assert edge8.get_long_edge() == TimberReferenceLongEdge.LEFT_FRONT
     
@@ -779,8 +779,8 @@ class TestEnumsAndDataStructures:
         """Test DistanceFromLongEdge.get_long_edge() with invalid face combinations."""
         # Test invalid combination (opposite faces)
         invalid_edge = DistanceFromLongEdge(
-            face1=DistanceFromLongFace(face=TimberReferenceLongFace.RIGHT, distance=Rational(1)),
-            face2=DistanceFromLongFace(face=TimberReferenceLongFace.LEFT, distance=Rational(2))
+            face1=DistanceFromLongFace(face=TimberLongFace.RIGHT, distance=Rational(1)),
+            face2=DistanceFromLongFace(face=TimberLongFace.LEFT, distance=Rational(2))
         )
         
         try:
@@ -1215,7 +1215,7 @@ class TestCreatePegGoingIntoFace:
         """Test creating a peg going into the RIGHT face."""
         peg = create_peg_going_into_face(
             timber=self.timber,
-            face=TimberReferenceLongFace.RIGHT,
+            face=TimberLongFace.RIGHT,
             distance_from_bottom=Rational(50),
             distance_from_centerline=Rational(0),
             peg_size=Rational(2),
@@ -1238,7 +1238,7 @@ class TestCreatePegGoingIntoFace:
         """Test creating a peg going into the LEFT face."""
         peg = create_peg_going_into_face(
             timber=self.timber,
-            face=TimberReferenceLongFace.LEFT,
+            face=TimberLongFace.LEFT,
             distance_from_bottom=Rational(30),
             distance_from_centerline=Rational(2),
             peg_size=Rational(2),
@@ -1256,7 +1256,7 @@ class TestCreatePegGoingIntoFace:
         """Test creating a peg going into the FRONT face."""
         peg = create_peg_going_into_face(
             timber=self.timber,
-            face=TimberReferenceLongFace.FRONT,
+            face=TimberLongFace.FRONT,
             distance_from_bottom=Rational(40),
             distance_from_centerline=Rational(-1),
             peg_size=Rational(2),
@@ -1274,7 +1274,7 @@ class TestCreatePegGoingIntoFace:
         """Test creating a peg going into the BACK face."""
         peg = create_peg_going_into_face(
             timber=self.timber,
-            face=TimberReferenceLongFace.BACK,
+            face=TimberLongFace.BACK,
             distance_from_bottom=Rational(60),
             distance_from_centerline=Rational(3),
             peg_size=Rational(2),
@@ -1292,7 +1292,7 @@ class TestCreatePegGoingIntoFace:
         """Test creating a square peg."""
         peg = create_peg_going_into_face(
             timber=self.timber,
-            face=TimberReferenceLongFace.RIGHT,
+            face=TimberLongFace.RIGHT,
             distance_from_bottom=Rational(50),
             distance_from_centerline=Rational(0),
             peg_size=Rational(3),

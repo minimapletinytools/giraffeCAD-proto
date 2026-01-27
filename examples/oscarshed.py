@@ -392,7 +392,7 @@ def create_oscarshed():
     # Peg parameters: 5/8" square peg, 1" from shoulder, on centerline
     side_girt_peg_params_left = SimplePegParameters(
         shape=PegShape.SQUARE,
-        tenon_face=TimberReferenceLongFace.FRONT,
+        tenon_face=TimberLongFace.FRONT,
         peg_positions=[(inches(1), Rational(0))],  # 1" from shoulder, centered
         size=inches(Rational(5, 8)),  # 5/8" square
         depth=inches(Rational(7, 2)),
@@ -401,7 +401,7 @@ def create_oscarshed():
     # Create right side params by replacing just the tenon_face
     side_girt_peg_params_right = replace(
         side_girt_peg_params_left,
-        tenon_face=TimberReferenceLongFace.BACK
+        tenon_face=TimberLongFace.BACK
     )
     
     # Left side girt TOP end meets front left post
@@ -506,7 +506,7 @@ def create_oscarshed():
         gooseneck_timber=front_girt_middle,
         receiving_timber=front_girt_left,
         receiving_timber_end=TimberReferenceEnd.TOP,
-        gooseneck_timber_face=TimberReferenceLongFace.FRONT,
+        gooseneck_timber_face=TimberLongFace.FRONT,
         gooseneck_length=gooseneck_length,
         gooseneck_small_width=gooseneck_narrow_width,
         gooseneck_large_width=gooseneck_wide_width,
@@ -521,7 +521,7 @@ def create_oscarshed():
         gooseneck_timber=front_girt_middle,
         receiving_timber=front_girt_right,
         receiving_timber_end=TimberReferenceEnd.BOTTOM,
-        gooseneck_timber_face=TimberReferenceLongFace.FRONT,
+        gooseneck_timber_face=TimberLongFace.FRONT,
         gooseneck_length=gooseneck_length,
         gooseneck_small_width=gooseneck_narrow_width,
         gooseneck_large_width=gooseneck_wide_width,
@@ -546,7 +546,7 @@ def create_oscarshed():
     # Peg parameters: 5/8" square peg, 1" from shoulder, on centerline
     front_girt_peg_params = SimplePegParameters(
         shape=PegShape.SQUARE,
-        tenon_face=TimberReferenceLongFace.FRONT,
+        tenon_face=TimberLongFace.FRONT,
         peg_positions=[(inches(1), Rational(0))],  # 1" from shoulder, centered
         size=inches(Rational(5, 8)),  # 5/8" square
         depth=inches(Rational(7, 2)),
@@ -834,7 +834,7 @@ def create_oscarshed():
             dovetail_timber=joist,
             receiving_timber=mudsill_front,
             dovetail_timber_end=TimberReferenceEnd.BOTTOM,
-            dovetail_timber_face=TimberReferenceLongFace.RIGHT,  # Perpendicular to receiving timber
+            dovetail_timber_face=TimberLongFace.RIGHT,  # Perpendicular to receiving timber
             receiving_timber_shoulder_inset=dovetail_shoulder_inset,
             dovetail_length=dovetail_length,
             dovetail_small_width=dovetail_small_width,
@@ -848,7 +848,7 @@ def create_oscarshed():
             dovetail_timber=joist,
             receiving_timber=mudsill_back,
             dovetail_timber_end=TimberReferenceEnd.TOP,
-            dovetail_timber_face=TimberReferenceLongFace.RIGHT,  # Perpendicular to receiving timber
+            dovetail_timber_face=TimberLongFace.RIGHT,  # Perpendicular to receiving timber
             receiving_timber_shoulder_inset=dovetail_shoulder_inset,
             dovetail_length=dovetail_length,
             dovetail_small_width=dovetail_small_width,

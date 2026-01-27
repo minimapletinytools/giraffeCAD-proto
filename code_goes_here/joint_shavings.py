@@ -27,7 +27,7 @@ def orientation_pointing_towards_face_sitting_on_face(towards_face : TimberFace,
 
     
 
-def find_opposing_face_on_another_timber(reference_timber: Timber, reference_face: TimberReferenceLongFace, target_timber: Timber) -> TimberFace:
+def find_opposing_face_on_another_timber(reference_timber: Timber, reference_face: TimberLongFace, target_timber: Timber) -> TimberFace:
     """
     Find the opposing face on another timber. Assumes that the target_timber has a face parallel to the reference face on the reference_timber.
     """
@@ -173,7 +173,7 @@ def find_projected_intersection_on_centerlines(timberA: Timber, timberB: Timber,
 
 def scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
     reference_timber: Timber,
-    reference_face: TimberReferenceLongFace,
+    reference_face: TimberLongFace,
     reference_depth_from_face: Numeric,
     target_timber: Timber
 ) -> Numeric:
@@ -199,15 +199,15 @@ def scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
         >>> # Measure how deep to cut the bottom timber based on where the top timber's cut plane is
         >>> bottom_depth = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
         ...     reference_timber=top_timber,
-        ...     reference_face=TimberReferenceLongFace.BACK,
+        ...     reference_face=TimberLongFace.BACK,
         ...     reference_depth_from_face=lap_depth,
         ...     target_timber=bottom_timber
         ... )
     """
     # Assert that the target timber has a long face parallel to the reference face
     reference_face_direction = reference_timber.get_face_direction_global(reference_face)
-    target_long_faces = [TimberReferenceLongFace.RIGHT, TimberReferenceLongFace.LEFT, 
-                         TimberReferenceLongFace.FRONT, TimberReferenceLongFace.BACK]
+    target_long_faces = [TimberLongFace.RIGHT, TimberLongFace.LEFT, 
+                         TimberLongFace.FRONT, TimberLongFace.BACK]
     
     has_parallel_face = False
     for target_face in target_long_faces:
@@ -706,7 +706,7 @@ def chop_lap_on_timber_ends(
     # This accounts for any rotation or offset between the timbers
     bottom_lap_depth = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
         reference_timber=top_lap_timber,
-        reference_face=TimberReferenceLongFace(top_lap_timber_face.value),
+        reference_face=TimberLongFace(top_lap_timber_face.value),
         reference_depth_from_face=lap_depth,
         target_timber=bottom_lap_timber
     )
