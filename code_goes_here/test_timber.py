@@ -443,7 +443,7 @@ class TestEnumsAndDataStructures:
     
     def test_stickout_reference_inside_face_aligned(self):
         """Test INSIDE stickout reference with face-aligned timbers."""
-        from giraffe import StickoutReference, join_perpendicular_on_face_parallel_timbers, FaceAlignedJoinedTimberOffset, TimberFace
+        from giraffe import StickoutReference, join_perpendicular_on_face_parallel_timbers, TimberFace
         
         # Create two parallel horizontal posts 2.0 meters apart
         post1 = timber_from_directions(
@@ -463,18 +463,13 @@ class TestEnumsAndDataStructures:
         )
         
         # Join with INSIDE reference
-        offset = FaceAlignedJoinedTimberOffset(
-            reference_face=TimberFace.TOP,
-            centerline_offset=None,
-            face_offset=None
-        )
-        
         beam = join_perpendicular_on_face_parallel_timbers(
             post1, post2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("0.1"), Rational("0.1"), StickoutReference.INSIDE, StickoutReference.INSIDE),
-            offset_from_timber1=offset,
+            lateral_offset_from_centerline_timber1=Rational(0),
             size=create_v2(Rational("0.2"), Rational("0.2")),
+            feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP
         )
         
@@ -484,7 +479,7 @@ class TestEnumsAndDataStructures:
     
     def test_stickout_reference_outside_face_aligned(self):
         """Test OUTSIDE stickout reference with face-aligned timbers."""
-        from giraffe import StickoutReference, join_perpendicular_on_face_parallel_timbers, FaceAlignedJoinedTimberOffset, TimberFace
+        from giraffe import StickoutReference, join_perpendicular_on_face_parallel_timbers, TimberFace
         
         # Create two parallel horizontal posts 2.0 meters apart
         post1 = timber_from_directions(
@@ -504,18 +499,13 @@ class TestEnumsAndDataStructures:
         )
         
         # Join with OUTSIDE reference
-        offset = FaceAlignedJoinedTimberOffset(
-            reference_face=TimberFace.TOP,
-            centerline_offset=None,
-            face_offset=None
-        )
-        
         beam = join_perpendicular_on_face_parallel_timbers(
             post1, post2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("0.2"), Rational("0.2"), StickoutReference.OUTSIDE, StickoutReference.OUTSIDE),
-            offset_from_timber1=offset,
+            lateral_offset_from_centerline_timber1=Rational(0),
             size=create_v2(Rational("0.2"), Rational("0.2")),
+            feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP
         )
         

@@ -6,7 +6,7 @@ Contains functions for creating and manipulating timbers
 import warnings
 from code_goes_here.timber import *
 from code_goes_here.moothymoth import *
-
+from code_goes_here.measuring import *
 # ============================================================================
 # Timber Creation Functions
 # ============================================================================
@@ -544,16 +544,17 @@ def join_timbers(timber1: Timber, timber2: Timber,
     
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction, name=name)
 
+# TODO rename to create/raise_joining_timber_perpendicular_on_face_parallel_timbers
 # TODO change offset_from_timber1 to lateral_offset_from_timber1
 # TODO well the tricky part is we haven't created the joining timber yet so how can we measure from it?
 # TODO so you sorta need imaginary timbers??? Or the ctor needs to take a fetaure on the joined timber to align to
 # TOOD e.g. feature_to_position_on_joining_timber (which defaults to centerline)
-# TODO rename to create/raise_joining_timber_perpendicular_on_face_parallel_timbers
 def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber,
                                                 location_on_timber1: Numeric,
                                                 stickout: Stickout,
-                                                offset_from_timber1: FaceAlignedJoinedTimberOffset,
+                                                lateral_offset_from_centerline_timber1: Numeric,
                                                 size: V2,
+                                                feature_to_mark_on_joining_timber: Optional[TimberFeature] = None,
                                                 orientation_face_on_timber1: Optional[TimberFace] = None, 
                                                 name: Optional[str] = None) -> Timber:
     """
@@ -564,7 +565,11 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         timber2: Second timber to join (face-aligned with timber1)
         location_on_timber1: Position along timber1's length where the joining timber attaches
         stickout: How much the joining timber extends beyond each connection point
-        offset_from_timber1: Offset configuration from timber1
+        lateral_offset_from_centerline_timber1: the lateral position of the joining timber will be aligned to this
+        feature_to_mark_on_joining_timber: Optional feature on the create timber to use as the reference for the lateral offset.
+                                           It is intended for you to use the measure_face or measure_long_edge functions to create a plane or line on a timber.
+                                           If not provided, uses the centerline. If a plane is provided, the "origin" of the plane is used for longitudinal positioning (i.e. location_on_timber1). In the case of measure_face, the origin aligns with the center of the created timber.
+                                           
         size: Cross-sectional size (width, height) of the joining timber
         orientation_face_on_timber1: Optional face of timber1 to orient against. If provided,
                                      the width direction of the created timber will align with this face.
@@ -597,14 +602,161 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
     # Clamp location_on_timber2 to be within the timber's length
     location_on_timber2 = max(0, min(timber2.length, location_on_timber2))
     
+    # Calculate position on timber2 to determine joining direction
+    pos2 = timber2.get_centerline_position_from_bottom_global(location_on_timber2)
+    joining_direction = normalize_vector(pos2 - pos1)
+    
     # Convert TimberFace to a direction vector for orientation (if provided)
     orientation_width_vector = orientation_face_on_timber1.get_direction() if orientation_face_on_timber1 is not None else None
     
-    # Extract the centerline offset (use 0 if not provided)
-    offset_value = offset_from_timber1.centerline_offset if offset_from_timber1.centerline_offset is not None else 0
+    # Calculate the width_direction for the joining timber (needed for feature offset calculation)
+    if orientation_width_vector is not None:
+        reference_direction = orientation_width_vector
+    else:
+        # Default: use timber1's length direction
+        reference_direction = timber1.get_length_direction_global()
     
-    # Convert INSIDE/OUTSIDE stickout references to CENTER_LINE
-    # For face-aligned timbers, we know the joining direction
+    # Check if reference direction is parallel to the joining direction
+    if _are_directions_parallel(reference_direction, joining_direction):
+        # If parallel, use a perpendicular fallback
+        reference_direction = timber1.get_width_direction_global()
+    
+    # Project reference direction onto the plane perpendicular to the joining direction
+    dot_product = reference_direction.dot(joining_direction)
+    width_direction = reference_direction - dot_product * joining_direction
+    width_direction = normalize_vector(width_direction)
+    
+    # Calculate height direction (perpendicular to both length and width)
+    height_direction = normalize_vector(cross_product(joining_direction, width_direction))
+    
+    # Now convert feature-relative measurements to centerline-relative measurements
+    longitudinal_offset = Rational(0)
+    lateral_offset_adjustment = Rational(0)
+    
+    # Convert TimberFeature enum to geometric object if provided
+    feature_geometry = None
+    if feature_to_mark_on_joining_timber is not None:
+        # Create a temporary timber to measure the feature on
+        # This timber has the same cross-section and orientation as the final joining timber
+        temp_timber_center = pos1  # Arbitrary position for temp timber
+        temp_timber = create_timber(
+            bottom_position=temp_timber_center,
+            length=Rational(1),  # Arbitrary length
+            size=size,
+            length_direction=joining_direction,
+            width_direction=width_direction
+        )
+        
+        # Convert TimberFeature enum to the corresponding geometric object
+        if feature_to_mark_on_joining_timber == TimberFeature.CENTERLINE:
+            # No offset needed for centerline
+            feature_geometry = None
+        elif feature_to_mark_on_joining_timber == TimberFeature.TOP_FACE:
+            feature_geometry = measure_face(temp_timber, TimberFace.TOP)
+        elif feature_to_mark_on_joining_timber == TimberFeature.BOTTOM_FACE:
+            feature_geometry = measure_face(temp_timber, TimberFace.BOTTOM)
+        elif feature_to_mark_on_joining_timber == TimberFeature.RIGHT_FACE:
+            feature_geometry = measure_face(temp_timber, TimberFace.RIGHT)
+        elif feature_to_mark_on_joining_timber == TimberFeature.LEFT_FACE:
+            feature_geometry = measure_face(temp_timber, TimberFace.LEFT)
+        elif feature_to_mark_on_joining_timber == TimberFeature.FRONT_FACE:
+            feature_geometry = measure_face(temp_timber, TimberFace.FRONT)
+        elif feature_to_mark_on_joining_timber == TimberFeature.BACK_FACE:
+            feature_geometry = measure_face(temp_timber, TimberFace.BACK)
+        elif feature_to_mark_on_joining_timber == TimberFeature.RIGHT_FRONT_EDGE:
+            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.RIGHT_FRONT)
+        elif feature_to_mark_on_joining_timber == TimberFeature.FRONT_LEFT_EDGE:
+            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.FRONT_LEFT)
+        elif feature_to_mark_on_joining_timber == TimberFeature.LEFT_BACK_EDGE:
+            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.LEFT_BACK)
+        elif feature_to_mark_on_joining_timber == TimberFeature.BACK_RIGHT_EDGE:
+            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.BACK_RIGHT)
+        elif feature_to_mark_on_joining_timber == TimberFeature.FRONT_RIGHT_EDGE:
+            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.FRONT_RIGHT)
+        elif feature_to_mark_on_joining_timber == TimberFeature.RIGHT_BACK_EDGE:
+            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.RIGHT_BACK)
+        elif feature_to_mark_on_joining_timber == TimberFeature.BACK_LEFT_EDGE:
+            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.BACK_LEFT)
+        elif feature_to_mark_on_joining_timber == TimberFeature.LEFT_FRONT_EDGE:
+            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.LEFT_FRONT)
+        else:
+            raise ValueError(f"Unsupported TimberFeature: {feature_to_mark_on_joining_timber}")
+    
+    if isinstance(feature_geometry, Plane):
+        # Feature is a face plane - need to calculate both longitudinal and lateral offsets
+        # Determine which face this plane represents by comparing normals using dot product
+        
+        # Normalize the plane normal for comparison
+        plane_normal = normalize_vector(feature_geometry.normal)
+        
+        # Check dot products to determine which direction the normal points
+        # dot product ≈ +1 means same direction, ≈ -1 means opposite direction
+        width_dot = (plane_normal.T * width_direction)[0, 0]
+        height_dot = (plane_normal.T * height_direction)[0, 0]
+        
+        # Determine which axis has the strongest alignment (should be close to ±1)
+        if Abs(width_dot) > Abs(height_dot):
+            # Normal is aligned with width_direction (RIGHT/LEFT faces)
+            if width_dot > 0:
+                # RIGHT face (normal = +width_direction)
+                longitudinal_offset = size[0] / 2
+                lateral_offset_adjustment = Rational(0)
+            else:
+                # LEFT face (normal = -width_direction)
+                longitudinal_offset = -size[0] / 2
+                lateral_offset_adjustment = Rational(0)
+        else:
+            # Normal is aligned with height_direction (FRONT/BACK faces)
+            if height_dot > 0:
+                # FRONT face (normal = +height_direction)
+                longitudinal_offset = Rational(0)
+                lateral_offset_adjustment = size[1] / 2
+            else:
+                # BACK face (normal = -height_direction)
+                longitudinal_offset = Rational(0)
+                lateral_offset_adjustment = -size[1] / 2
+    
+    elif isinstance(feature_geometry, Line):
+        # Feature is an edge line - need to calculate lateral offset only
+        # The edge position is determined by offsets in both width and height directions
+        
+        # Create an imaginary centerline at pos1 for comparison
+        centerline_point = pos1
+        
+        # Calculate the offset of the line's point from the centerline
+        offset_vector = feature_geometry.point - centerline_point
+        
+        # Project onto width and height directions to get the edge position
+        width_offset = offset_vector.dot(width_direction)
+        height_offset = offset_vector.dot(height_direction)
+        
+        # The lateral offset is the distance in the lateral direction (perpendicular to joining direction)
+        # For a joining timber, the lateral direction is typically the cross product of
+        # timber1's length direction and the joining direction
+        lateral_direction = normalize_vector(cross_product(timber1.get_length_direction_global(), joining_direction))
+        
+        # Calculate total lateral offset from the edge position
+        # The edge has offsets in both width and height directions
+        lateral_offset_adjustment = width_offset * width_direction.dot(lateral_direction) + \
+                                   height_offset * height_direction.dot(lateral_direction)
+        
+        # No longitudinal offset for edge lines (they run along the length)
+        longitudinal_offset = Rational(0)
+    
+    # Adjust location_on_timber1 for longitudinal offset (along joining_direction)
+    # The longitudinal offset affects where along timber1's length we measure from
+    adjusted_location_on_timber1 = location_on_timber1 + longitudinal_offset
+    
+    # Adjust lateral offset
+    adjusted_lateral_offset = lateral_offset_from_centerline_timber1 + lateral_offset_adjustment
+    
+    # Recalculate pos1 with the adjusted location
+    pos1 = timber1.get_centerline_position_from_bottom_global(adjusted_location_on_timber1)
+    
+    # Recalculate location_on_timber2 and pos2 based on adjusted pos1
+    to_pos1 = pos1 - timber2.get_bottom_position_global()
+    location_on_timber2 = to_pos1.dot(timber2.get_length_direction_global()) / timber2.get_length_direction_global().dot(timber2.get_length_direction_global())
+    location_on_timber2 = max(0, min(timber2.length, location_on_timber2))
     pos2 = timber2.get_centerline_position_from_bottom_global(location_on_timber2)
     joining_direction = normalize_vector(pos2 - pos1)
     
@@ -674,14 +826,14 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         StickoutReference.CENTER_LINE
     )
     
-    # Call join_timbers to do the actual work
+    # Call join_timbers to do the actual work with adjusted centerline-based parameters
     return join_timbers(
         timber1=timber1,
         timber2=timber2,
-        location_on_timber1=location_on_timber1,
+        location_on_timber1=adjusted_location_on_timber1,
         stickout=centerline_stickout,
         location_on_timber2=location_on_timber2,
-        lateral_offset=offset_value,
+        lateral_offset=adjusted_lateral_offset,
         orientation_width_vector=orientation_width_vector,
         size=size,
         name=name
