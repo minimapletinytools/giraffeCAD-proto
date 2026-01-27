@@ -100,15 +100,19 @@ def reload_all_modules():
         'examples.MeowMeowCSG_examples',
     ]
     
+    # FIRST PASS: Delete all modules to ensure clean reload (fixes enum identity issues)
     for module_name in modules_to_reload:
         if module_name in sys.modules:
-            try:
-                importlib.reload(sys.modules[module_name])
-            except Exception as e:
-                print(f"  ⚠ Error reloading {module_name}: {e}")
-                app.log(f"  ⚠ Error reloading {module_name}: {e}")
-        else:
-            print(f"  - {module_name} not loaded yet")
+            del sys.modules[module_name]
+    
+    # SECOND PASS: Re-import all modules in dependency order
+    for module_name in modules_to_reload:
+        try:
+            # Use __import__ to load the module fresh
+            importlib.import_module(module_name)
+        except Exception as e:
+            print(f"  ⚠ Error reloading {module_name}: {e}")
+            app.log(f"  ⚠ Error reloading {module_name}: {e}")
     
     print("\nModule reload complete.\n")
     app.log("Module reload complete.")
@@ -237,8 +241,24 @@ def render_gooseneck():
 
 def render_oscar_shed():
     """Render Oscar's Shed - a complete timber frame structure."""
-    from giraffe_render_fusion360 import render_frame, clear_design
-    from examples.oscarshed import create_oscarshed
+    # Import after reload to get fresh module references
+    import importlib
+    import sys
+    
+    # Re-import to ensure we get the freshly reloaded modules
+    if 'giraffe_render_fusion360' in sys.modules:
+        giraffe_render_fusion360 = sys.modules['giraffe_render_fusion360']
+    else:
+        import giraffe_render_fusion360
+        
+    if 'examples.oscarshed' in sys.modules:
+        oscarshed = sys.modules['examples.oscarshed']
+    else:
+        import examples.oscarshed as oscarshed
+    
+    render_frame = giraffe_render_fusion360.render_frame
+    clear_design = giraffe_render_fusion360.clear_design
+    create_oscarshed = oscarshed.create_oscarshed
     
     print("="*60)
     print("GiraffeCAD Fusion 360 - Oscar's Shed")
