@@ -143,6 +143,7 @@ class TimberReferenceLongFace(Enum):
         # Map from 3-6 to 0-3, rotate, then map back to 3-6
         return TimberReferenceLongFace((self.value - 3 - 1) % 4 + 3)
 
+# TODO rename to TimberLongEdge
 class TimberReferenceLongEdge(Enum):
     RIGHT_FRONT = 7
     FRONT_LEFT = 8
