@@ -124,7 +124,7 @@ def create_sawhorse() -> Frame:
     # Base peg parameters: 5/8" diameter, 1" from shoulder, centered on tenon
     base_peg_params = SimplePegParameters(
         shape=PegShape.ROUND,
-        tenon_face=TimberReferenceLongFace.RIGHT,  # Will be customized per joint
+        tenon_face=TimberLongFace.RIGHT,  # Will be customized per joint
         peg_positions=[(peg_distance_from_shoulder, Rational(0))],  # 1" from shoulder, centered
         size=peg_diameter,
         depth=None,  # Through peg
@@ -165,7 +165,7 @@ def create_sawhorse() -> Frame:
     # Try LEFT face for pegs
     peg_params_stretcher = replace(
         base_peg_params,
-        tenon_face=TimberReferenceLongFace.LEFT
+        tenon_face=TimberLongFace.LEFT
     )
     
     left_post_stretcher_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
@@ -195,7 +195,7 @@ def create_sawhorse() -> Frame:
     # Tenon at post TOP going up into plate - peg goes through FRONT face
     peg_params_post_plate = replace(
         base_peg_params,
-        tenon_face=TimberReferenceLongFace.FRONT
+        tenon_face=TimberLongFace.FRONT
     )
     
     left_post_plate_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(

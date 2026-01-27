@@ -165,8 +165,8 @@ a standard mortise consists of a rectangular cross section on a long face of the
 class StandardMortise:
     mortise_face : TimberFace
     pos_rel_to_end : (TimberReferenceEnd, float)
-    # if TimberReferenceLongFace is not provided, then the mortise is centered on the centerline of the timber
-    pos_rel_to_long_face : (TimberReferenceLongFace, float)?
+    # if TimberLongFace is not provided, then the mortise is centered on the centerline of the timber
+    pos_rel_to_long_face : (TimberLongFace, float)?
     # in the reference_long_face axis
     width : float 
     # in the reference_end axis

@@ -5,7 +5,7 @@ Example usage of mortise and tenon joint functions
 from sympy import Matrix, Rational
 from code_goes_here.moothymoth import inches, Transform
 from code_goes_here.timber import (
-    Timber, TimberReferenceEnd, TimberFace, TimberReferenceLongFace, Peg,
+    Timber, TimberReferenceEnd, TimberFace, TimberLongFace, Peg,
     PegShape, timber_from_directions,
     create_v3, V2, CutTimber, Frame
 )
@@ -346,7 +346,7 @@ def example_mortise_and_tenon_with_pegs(position=None):
     # - Second peg: 2" from shoulder, +0.5" from centerline
     peg_params = SimplePegParameters(
         shape=PegShape.SQUARE,
-        tenon_face=TimberReferenceLongFace.FRONT,
+        tenon_face=TimberLongFace.FRONT,
         # LOLOL 2 pegs...
         peg_positions=[
             (inches(1), inches(-1, 2)),  # 1" from shoulder, -0.5" from centerline

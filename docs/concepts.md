@@ -93,7 +93,7 @@ class TimberReferenceLongEdge(Enum):
 ```
 
 ```
-class TimberReferenceLongFace(Enum):
+class TimberLongFace(Enum):
     RIGHT = 3
     FRONT = 4
     LEFT = 5
@@ -111,7 +111,7 @@ struct DistanceFromFace(Enum):
     distance : float
 
 struct DistanceFromLongFace(Enum):
-    face : TimberReferenceLongFace
+    face : TimberLongFace
     distance : float
 
 struct DistanceFromEnd(Enum):

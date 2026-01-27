@@ -15,7 +15,7 @@ from code_goes_here.joint_shavings import (
     find_face_plane_intersection_on_centerline,
     find_projected_intersection_on_centerlines
 )
-from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberReferenceLongFace
+from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberLongFace
 from code_goes_here.moothymoth import create_v3, create_v2, inches, are_vectors_parallel
 from code_goes_here.meowmeowcsg import SolidUnion, RectangularPrism, HalfSpace
 
@@ -635,7 +635,7 @@ class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
         
         distance = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
             reference_timber=top_timber,
-            reference_face=TimberReferenceLongFace.BACK,
+            reference_face=TimberLongFace.BACK,
             reference_depth_from_face=depth_from_top,
             target_timber=bottom_timber
         )
@@ -679,7 +679,7 @@ class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
         
         distance = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
             reference_timber=top_timber,
-            reference_face=TimberReferenceLongFace.BACK,
+            reference_face=TimberLongFace.BACK,
             reference_depth_from_face=depth_from_top,
             target_timber=bottom_timber
         )
@@ -721,7 +721,7 @@ class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
         
         distance = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
             reference_timber=top_timber,
-            reference_face=TimberReferenceLongFace.RIGHT,
+            reference_face=TimberLongFace.RIGHT,
             reference_depth_from_face=depth_from_top,
             target_timber=bottom_timber
         )
@@ -772,7 +772,7 @@ class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
         with pytest.raises(AssertionError) as excinfo:
             scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
                 reference_timber=top_timber,
-                reference_face=TimberReferenceLongFace.BACK,
+                reference_face=TimberLongFace.BACK,
                 reference_depth_from_face=inches(2),
                 target_timber=bottom_timber
             )
@@ -806,7 +806,7 @@ class TestMeasureDistanceFromFaceOnTimberWrtOpposingFaceOnAnotherTimber:
         
         distance = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
             reference_timber=top_timber,
-            reference_face=TimberReferenceLongFace.BACK,
+            reference_face=TimberLongFace.BACK,
             reference_depth_from_face=depth,
             target_timber=bottom_timber
         )
@@ -865,7 +865,7 @@ class TestFindOpposingFaceOnAnotherTimber:
         # Find opposing face: Timber A's RIGHT face (North) should oppose Timber B's LEFT face (South)
         opposing_face = find_opposing_face_on_another_timber(
             reference_timber=timber_a,
-            reference_face=TimberReferenceLongFace.RIGHT,
+            reference_face=TimberLongFace.RIGHT,
             target_timber=timber_b
         )
         
@@ -874,7 +874,7 @@ class TestFindOpposingFaceOnAnotherTimber:
             f"Expected LEFT face, got {opposing_face}"
         
         # Verify the faces are parallel by checking their directions
-        reference_direction = timber_a.get_face_direction_global(TimberReferenceLongFace.RIGHT)
+        reference_direction = timber_a.get_face_direction_global(TimberLongFace.RIGHT)
         target_direction = timber_b.get_face_direction_global(opposing_face)
         assert are_vectors_parallel(reference_direction, target_direction), \
             "Reference and target faces should be parallel"
@@ -929,7 +929,7 @@ class TestFindOpposingFaceOnAnotherTimber:
         # Find opposing face: Timber A's FRONT face (Up) should oppose Timber B's BACK face (Down)
         opposing_face = find_opposing_face_on_another_timber(
             reference_timber=timber_a,
-            reference_face=TimberReferenceLongFace.FRONT,
+            reference_face=TimberLongFace.FRONT,
             target_timber=timber_b
         )
         
@@ -938,7 +938,7 @@ class TestFindOpposingFaceOnAnotherTimber:
             f"Expected BACK face, got {opposing_face}"
         
         # Verify the faces are parallel by checking their directions
-        reference_direction = timber_a.get_face_direction_global(TimberReferenceLongFace.FRONT)
+        reference_direction = timber_a.get_face_direction_global(TimberLongFace.FRONT)
         target_direction = timber_b.get_face_direction_global(opposing_face)
         assert are_vectors_parallel(reference_direction, target_direction), \
             "Reference and target faces should be parallel"
@@ -999,7 +999,7 @@ class TestFindOpposingFaceOnAnotherTimber:
         with pytest.raises(AssertionError) as excinfo:
             find_opposing_face_on_another_timber(
                 reference_timber=timber_a,
-                reference_face=TimberReferenceLongFace.RIGHT,
+                reference_face=TimberLongFace.RIGHT,
                 target_timber=timber_b
             )
         

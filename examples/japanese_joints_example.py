@@ -47,7 +47,7 @@ def create_simple_gooseneck_example():
         gooseneck_timber=gooseneck_timber,
         receiving_timber=receiving_timber,
         receiving_timber_end=TimberReferenceEnd.BOTTOM,
-        gooseneck_timber_face=TimberReferenceLongFace.RIGHT,
+        gooseneck_timber_face=TimberLongFace.RIGHT,
         gooseneck_length=inches(4),
         gooseneck_small_width=inches("0.75"),
         gooseneck_large_width=inches(2),
@@ -127,7 +127,7 @@ def create_dovetail_butt_joint_example():
         dovetail_timber=dovetail_timber,
         receiving_timber=receiving_timber,
         dovetail_timber_end=TimberReferenceEnd.BOTTOM,  # Cut on the end pointing toward receiving timber
-        dovetail_timber_face=TimberReferenceLongFace.RIGHT,  # Dovetail visible on right face (perpendicular to receiving timber Z-axis)
+        dovetail_timber_face=TimberLongFace.RIGHT,  # Dovetail visible on right face (perpendicular to receiving timber Z-axis)
         receiving_timber_shoulder_inset=receiving_timber_shoulder_inset,
         dovetail_length=dovetail_length,
         dovetail_small_width=dovetail_small_width,

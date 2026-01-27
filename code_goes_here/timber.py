@@ -113,17 +113,17 @@ class TimberReferenceEnd(Enum):
 
 
 # TODO rename to TimberLongFace
-class TimberReferenceLongFace(Enum):
+class TimberLongFace(Enum):
     RIGHT = 3
     FRONT = 4
     LEFT = 5
     BACK = 6
     
     def to_timber_face(self) -> TimberFace:
-        """Convert TimberReferenceLongFace to TimberFace."""
+        """Convert TimberLongFace to TimberFace."""
         return TimberFace(self.value)
     
-    def is_perpendicular(self, other: 'TimberReferenceLongFace') -> bool:
+    def is_perpendicular(self, other: 'TimberLongFace') -> bool:
         """
         Check if two long faces are perpendicular to each other.
         
@@ -133,15 +133,15 @@ class TimberReferenceLongFace(Enum):
         """
         return self.to_timber_face().is_perpendicular(other.to_timber_face())
 
-    def rotate_right(self) -> 'TimberReferenceLongFace':
+    def rotate_right(self) -> 'TimberLongFace':
         """Rotate the long face right (90 degrees clockwise)."""
         # Map from 3-6 to 0-3, rotate, then map back to 3-6
-        return TimberReferenceLongFace((self.value - 3 + 1) % 4 + 3)
+        return TimberLongFace((self.value - 3 + 1) % 4 + 3)
     
-    def rotate_left(self) -> 'TimberReferenceLongFace':
+    def rotate_left(self) -> 'TimberLongFace':
         """Rotate the long face left (90 degrees counter-clockwise)."""
         # Map from 3-6 to 0-3, rotate, then map back to 3-6
-        return TimberReferenceLongFace((self.value - 3 - 1) % 4 + 3)
+        return TimberLongFace((self.value - 3 - 1) % 4 + 3)
 
 # TODO rename to TimberLongEdge
 class TimberReferenceLongEdge(Enum):
@@ -190,7 +190,7 @@ class DistanceFromFace:
     distance: Numeric
 @dataclass(frozen=True)
 class DistanceFromLongFace:
-    face: TimberReferenceLongFace
+    face: TimberLongFace
     distance: Numeric
 @dataclass(frozen=True)
 class DistanceFromEnd:
@@ -213,21 +213,21 @@ class DistanceFromLongEdge:
         f1 = self.face1.face
         f2 = self.face2.face
         
-        if f1 == TimberReferenceLongFace.RIGHT and f2 == TimberReferenceLongFace.FRONT:
+        if f1 == TimberLongFace.RIGHT and f2 == TimberLongFace.FRONT:
             return TimberReferenceLongEdge.RIGHT_FRONT
-        elif f1 == TimberReferenceLongFace.FRONT and f2 == TimberReferenceLongFace.LEFT:
+        elif f1 == TimberLongFace.FRONT and f2 == TimberLongFace.LEFT:
             return TimberReferenceLongEdge.FRONT_LEFT
-        elif f1 == TimberReferenceLongFace.LEFT and f2 == TimberReferenceLongFace.BACK:
+        elif f1 == TimberLongFace.LEFT and f2 == TimberLongFace.BACK:
             return TimberReferenceLongEdge.LEFT_BACK
-        elif f1 == TimberReferenceLongFace.BACK and f2 == TimberReferenceLongFace.RIGHT:
+        elif f1 == TimberLongFace.BACK and f2 == TimberLongFace.RIGHT:
             return TimberReferenceLongEdge.BACK_RIGHT
-        elif f1 == TimberReferenceLongFace.FRONT and f2 == TimberReferenceLongFace.RIGHT:
+        elif f1 == TimberLongFace.FRONT and f2 == TimberLongFace.RIGHT:
             return TimberReferenceLongEdge.FRONT_RIGHT
-        elif f1 == TimberReferenceLongFace.RIGHT and f2 == TimberReferenceLongFace.BACK:
+        elif f1 == TimberLongFace.RIGHT and f2 == TimberLongFace.BACK:
             return TimberReferenceLongEdge.RIGHT_BACK
-        elif f1 == TimberReferenceLongFace.BACK and f2 == TimberReferenceLongFace.LEFT:
+        elif f1 == TimberLongFace.BACK and f2 == TimberLongFace.LEFT:
             return TimberReferenceLongEdge.BACK_LEFT
-        elif f1 == TimberReferenceLongFace.LEFT and f2 == TimberReferenceLongFace.FRONT:
+        elif f1 == TimberLongFace.LEFT and f2 == TimberLongFace.FRONT:
             return TimberReferenceLongEdge.LEFT_FRONT
         else:
             raise ValueError(f"Invalid faces: {f1} and {f2}")
@@ -523,18 +523,18 @@ class Timber:
             3D position vector at the center of the top cross-section
         """
         return self.get_bottom_position_global() + self.get_length_direction_global() * self.length
-    def get_face_direction_global(self, face: Union[TimberFace, TimberReferenceEnd, TimberReferenceLongFace]) -> Direction3D:
+    def get_face_direction_global(self, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]) -> Direction3D:
         """
         Get the world direction vector for a specific face of this timber.
         
         Args:
-            face: The face to get the direction for (can be TimberFace, TimberReferenceEnd, or TimberReferenceLongFace)
+            face: The face to get the direction for (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
             
         Returns:
             Direction vector pointing outward from the specified face in world coordinates
         """
-        # Convert TimberReferenceEnd or TimberReferenceLongFace to TimberFace if needed
-        if isinstance(face, (TimberReferenceEnd, TimberReferenceLongFace)):
+        # Convert TimberReferenceEnd or TimberLongFace to TimberFace if needed
+        if isinstance(face, (TimberReferenceEnd, TimberLongFace)):
             face = face.to_timber_face()
         
         if face == TimberFace.TOP:
@@ -550,15 +550,15 @@ class Timber:
         else:  # BACK
             return -self.get_height_direction_global()
 
-    def get_size_in_face_normal_axis(self, face: Union[TimberFace, TimberReferenceEnd, TimberReferenceLongFace]) -> Numeric:
+    def get_size_in_face_normal_axis(self, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]) -> Numeric:
         """
         Get the size of the timber in the direction normal to the specified face.
         
         Args:
-            face: The face to get the size for (can be TimberFace, TimberReferenceEnd, or TimberReferenceLongFace)
+            face: The face to get the size for (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
         """
-        # Convert TimberReferenceEnd or TimberReferenceLongFace to TimberFace if needed
-        if isinstance(face, (TimberReferenceEnd, TimberReferenceLongFace)):
+        # Convert TimberReferenceEnd or TimberLongFace to TimberFace if needed
+        if isinstance(face, (TimberReferenceEnd, TimberLongFace)):
             face = face.to_timber_face()
         
         if face == TimberFace.TOP or face == TimberFace.BOTTOM:
@@ -672,16 +672,16 @@ class Timber:
         return transform
 
 
-    def project_global_point_onto_timber_face_global(self, global_point: V3, face: Union[TimberFace, TimberReferenceEnd, TimberReferenceLongFace]) -> V3:
+    def project_global_point_onto_timber_face_global(self, global_point: V3, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]) -> V3:
         """
         Project a point from global coordinates onto the timber's face and return result in global coordinates.
         
         Args:
             global_point: The point to project in global coordinates (3x1 Matrix)
-            face: The face to project onto (can be TimberFace, TimberReferenceEnd, or TimberReferenceLongFace)
+            face: The face to project onto (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
         """
-        # Convert TimberReferenceEnd or TimberReferenceLongFace to TimberFace if needed
-        if isinstance(face, (TimberReferenceEnd, TimberReferenceLongFace)):
+        # Convert TimberReferenceEnd or TimberLongFace to TimberFace if needed
+        if isinstance(face, (TimberReferenceEnd, TimberLongFace)):
             face = face.to_timber_face()
         
         # Convert global point to local coordinates
@@ -1274,7 +1274,7 @@ class CSGCut(Cut):
 
 def create_peg_going_into_face(
     timber: Timber,
-    face: TimberReferenceLongFace,
+    face: TimberLongFace,
     distance_from_bottom: Numeric,
     distance_from_centerline: Numeric,
     peg_size: Numeric,
@@ -1310,7 +1310,7 @@ def create_peg_going_into_face(
     position_local = create_v3(0, 0, distance_from_bottom)
     
     # Offset from centerline depends on which face we're on
-    if face == TimberReferenceLongFace.RIGHT:
+    if face == TimberLongFace.RIGHT:
         # RIGHT face: offset in +X (width) direction, surface at +width/2
         position_local = create_v3(
             timber.size[0] / Rational(2),  # At right surface
@@ -1321,7 +1321,7 @@ def create_peg_going_into_face(
         length_dir = create_v3(-1, 0, 0)
         width_dir = create_v3(0, 1, 0)
         
-    elif face == TimberReferenceLongFace.LEFT:
+    elif face == TimberLongFace.LEFT:
         # LEFT face: offset in -X (width) direction
         position_local = create_v3(
             -timber.size[0] / Rational(2),  # At left surface
@@ -1332,7 +1332,7 @@ def create_peg_going_into_face(
         length_dir = create_v3(1, 0, 0)
         width_dir = create_v3(0, 1, 0)
         
-    elif face == TimberReferenceLongFace.FRONT:
+    elif face == TimberLongFace.FRONT:
         # FRONT face: offset in +Y (height) direction
         position_local = create_v3(
             distance_from_centerline,  # Offset in width direction
