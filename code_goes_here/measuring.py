@@ -287,9 +287,7 @@ def measure_center_line(timber: Timber) -> Line:
     
     return Line(length_direction, center_position)
 
-
-# TODO rename to measure_distance_from_face
-def measure_from_face(distance: Numeric, face: TimberFace, timber: Timber) -> UnsignedPlane:
+def measure_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> UnsignedPlane:
     """
     Measure a distance from a face on a timber.
     """
@@ -302,8 +300,7 @@ def measure_from_face(distance: Numeric, face: TimberFace, timber: Timber) -> Un
 
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
-# TODO rename mark_distance_onto_face
-def mark_from_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], face: TimberFace, timber: Timber) -> Numeric:
+def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], face: TimberFace, timber: Timber) -> Numeric:
     """
     Mark a feature from a face on a timber.
     
@@ -311,8 +308,8 @@ def mark_from_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane],
     Positive means the feature is inside the timber (deeper than the face surface).
     Negative means the feature is outside the timber (shallower than the face surface).
     
-    This is the inverse of measure_from_face:
-    If feature = measure_from_face(d, face, timber), then mark_from_face(feature, face, timber) = d
+    This is the inverse of measure_into_face:
+    If feature = measure_into_face(d, face, timber), then mark_onto_face(feature, face, timber) = d
     """
 
     # Pick a point on the feature
@@ -363,6 +360,6 @@ def gauge_distance_between_faces(reference_timber: Timber, reference_timber_face
     target_face_plane = Plane(target_face_normal, get_point_on_face_global(target_timber_face, target_timber))
     
     # Measure the distance from the reference face to the target face plane
-    distance = mark_from_face(target_face_plane, reference_timber_face, reference_timber)
+    distance = mark_onto_face(target_face_plane, reference_timber_face, reference_timber)
     
     return distance
