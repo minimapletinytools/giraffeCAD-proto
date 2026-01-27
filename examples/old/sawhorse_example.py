@@ -66,55 +66,40 @@ def create_sawhorse() -> Frame:
     # connect the 2 feet to the beam with posts. The posts are centered on the feet
     
     # Connect left foot to beam
-    offset_left = FaceAlignedJoinedTimberOffset(
-        reference_face=TimberFace.TOP,
-        centerline_offset=None,
-        face_offset=None
-    )
-    
     left_post = join_perpendicular_on_face_parallel_timbers(
         timber1=left_mudsill,
         timber2=beam,
         location_on_timber1=left_mudsill.length / 2,  # Center of the mudsill
         stickout=Stickout(post_size[0] / 2, post_size[0] / 2),  # Symmetric: half the post width on each side
-        offset_from_timber1=offset_left,
+        lateral_offset_from_centerline_timber1=Rational(0),
         size=post_size,
+        feature_to_mark_on_joining_timber=None,
         orientation_face_on_timber1=TimberFace.TOP,
         name="Left Post"
     )
     
     # Connect right foot to beam
-    offset_right = FaceAlignedJoinedTimberOffset(
-        reference_face=TimberFace.TOP,
-        centerline_offset=None,
-        face_offset=None
-    )
-    
     right_post = join_perpendicular_on_face_parallel_timbers(
         timber1=right_mudsill,
         timber2=beam,
         location_on_timber1=right_mudsill.length / 2,  # Center of the mudsill
         stickout=Stickout(post_size[0] / 2, post_size[0] / 2),  # Symmetric: half the post width on each side
-        offset_from_timber1=offset_right,
+        lateral_offset_from_centerline_timber1=Rational(0),
         size=post_size,
+        feature_to_mark_on_joining_timber=None,
         orientation_face_on_timber1=TimberFace.TOP,
         name="Right Post"
     )
 
     # now create the stretcher that runs between the middle of the 2 posts using the join_perpendicular_on_face_parallel_timbers
-    offset_stretcher = FaceAlignedJoinedTimberOffset(
-        reference_face=TimberFace.TOP,
-        centerline_offset=None,
-        face_offset=None
-    )
-    
     stretcher = join_perpendicular_on_face_parallel_timbers(
         timber1=left_post,
         timber2=right_post,
         location_on_timber1=left_post.length / 2,  # Middle of the post
         stickout=Stickout(stretcher_size[0] / 2, stretcher_size[0] / 2),  # Symmetric: half the stretcher width on each side
-        offset_from_timber1=offset_stretcher,
+        lateral_offset_from_centerline_timber1=Rational(0),
         size=stretcher_size,
+        feature_to_mark_on_joining_timber=None,
         orientation_face_on_timber1=TimberFace.TOP,
         name="Stretcher"
     )

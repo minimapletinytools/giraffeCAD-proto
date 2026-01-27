@@ -395,7 +395,7 @@ class TestHelperFunctions:
         assert left[0] == -Rational(1)
         
         front = TimberFace.FRONT.get_direction()
-        assert forward[1] == Rational(1)
+        assert front[1] == Rational(1)
         
         back = TimberFace.BACK.get_direction()
         assert back[1] == -Rational(1)
@@ -516,18 +516,14 @@ class TestJoinTimbers:
     def test_join_perpendicular_on_face_parallel_timbers_position_is_correct(self):
         """Test perpendicular joining of face-aligned timbers."""
         timber1, timber2 = self.make_parallel_timbers()
-        offset = FaceAlignedJoinedTimberOffset(
-            reference_face=TimberFace.TOP,
-            centerline_offset=None,
-            face_offset=None
-        )
 
         joining_timber2 = join_perpendicular_on_face_parallel_timbers(
             timber1, timber2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(0, 0),  # No stickout
-            offset_from_timber1=offset,
+            lateral_offset_from_centerline_timber1=Rational(0),
             size=create_v2(Rational("0.15"), Rational("0.15")),
+            feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP
         )
    
@@ -539,18 +535,13 @@ class TestJoinTimbers:
         """Test perpendicular joining of face-aligned timbers."""
         timber1, timber2 = self.make_parallel_timbers()
         
-        offset = FaceAlignedJoinedTimberOffset(
-            reference_face=TimberFace.TOP,
-            centerline_offset=None,
-            face_offset=None
-        )
-        
         joining_timber2 = join_perpendicular_on_face_parallel_timbers(
             timber1, timber2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("1.2"), Rational("1.2")),  # Symmetric stickout
-            offset_from_timber1=offset,
+            lateral_offset_from_centerline_timber1=Rational(0),
             size=create_v2(Rational("0.15"), Rational("0.15")),
+            feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP
         )
         
@@ -579,19 +570,14 @@ class TestJoinTimbers:
         assert not are_timbers_face_aligned(timber1, timber2), "Timbers should not be face-aligned"
         
         # Now try to join them - should raise AssertionError
-        offset = FaceAlignedJoinedTimberOffset(
-            reference_face=TimberFace.TOP,
-            centerline_offset=None,
-            face_offset=None
-        )
-        
         with pytest.raises(AssertionError, match="must be face-aligned"):
             join_perpendicular_on_face_parallel_timbers(
                 timber1, timber2,
                 location_on_timber1=Rational("1.5"),
                 stickout=Stickout(Rational(0), Rational(0)),
-                offset_from_timber1=offset,
+                lateral_offset_from_centerline_timber1=Rational(0),
                 size=create_v2(Rational("0.15"), Rational("0.15")),
+                feature_to_mark_on_joining_timber=None,
                 orientation_face_on_timber1=TimberFace.TOP
             )
     
@@ -603,19 +589,14 @@ class TestJoinTimbers:
         post2 = create_standard_vertical_timber(height=3, size=(inches(1), inches(2)), position=(feet(5), 0, 0))
         
         # Join perpendicular with size=None (auto-determine)
-        offset = FaceAlignedJoinedTimberOffset(
-            reference_face=TimberFace.TOP,
-            centerline_offset=None,
-            face_offset=None
-        )
-        
         beam = join_perpendicular_on_face_parallel_timbers(
             timber1=post1,
             timber2=post2,
             location_on_timber1=Rational(3, 2),  # 1.5m up the post (exact rational)
             stickout=Stickout.nostickout(),
-            offset_from_timber1=offset,
+            lateral_offset_from_centerline_timber1=Rational(0),
             size=None,  # Auto-determine size
+            feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP
         )
         
@@ -830,13 +811,6 @@ class TestJoinTimbers:
             # Use exact rational stickout
             stickout = rational_stickouts[i]
             
-            # Create offset configuration
-            offset = FaceAlignedJoinedTimberOffset(
-                reference_face=TimberFace.TOP,
-                centerline_offset=None,
-                face_offset=None
-            )
-            
             # Join base timber to beam
             # Let the function determine the orientation automatically by projecting
             # timber1's length direction onto the perpendicular plane
@@ -845,8 +819,9 @@ class TestJoinTimbers:
                 timber2=beam,
                 location_on_timber1=location_on_base,
                 stickout=Stickout(stickout, stickout),  # Symmetric stickout
-                offset_from_timber1=offset,
-                size=create_v2(Rational(8, 100), Rational(8, 100))  # 8cm x 8cm posts
+                lateral_offset_from_centerline_timber1=Rational(0),
+                size=create_v2(Rational(8, 100), Rational(8, 100)),  # 8cm x 8cm posts
+                feature_to_mark_on_joining_timber=None
                 # Note: orientation_face_on_timber1 not specified - uses default projection
             )
             # Note: Cannot set name after construction since Timber is frozen
@@ -913,19 +888,14 @@ class TestJoinTimbers:
             timber1 = base_timbers[timber1_idx]
             timber2 = base_timbers[timber2_idx]
             
-            offset = FaceAlignedJoinedTimberOffset(
-                reference_face=TimberFace.TOP,
-                centerline_offset=None,
-                face_offset=None
-            )
-            
             cross_timber = join_perpendicular_on_face_parallel_timbers(
                 timber1=timber1,
                 timber2=timber2,
                 location_on_timber1=loc1,
                 stickout=Stickout(stickout, stickout),  # Symmetric stickout
-                offset_from_timber1=offset,
+                lateral_offset_from_centerline_timber1=Rational(0),
                 size=create_v2(Rational(6, 100), Rational(6, 100)),  # 6cm x 6cm
+                feature_to_mark_on_joining_timber=None,
                 orientation_face_on_timber1=TimberFace.TOP
             )
             # Note: Cannot set name after construction since Timber is frozen
@@ -954,6 +924,128 @@ class TestJoinTimbers:
         
         print(f"✅ Successfully tested {len(joining_timbers)} vertical posts and {len(cross_connections)} cross-connections")
         print(f"   All joining timbers maintain proper face alignment and orthogonal orientation matrices")
+    
+    def test_join_perpendicular_with_different_face_features(self):
+        """Test that using different TimberFeature face references results in different beam positions."""
+        # Create two vertical posts 8" apart (similar to construction_examples)
+        post_size = create_v2(inches(4), inches(4))
+        post_height = inches(96)  # 8 feet
+        beam_size = create_v2(inches(4), inches(4))
+        
+        # Left post at origin
+        post_left = timber_from_directions(
+            length=post_height,
+            size=post_size,
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Vertical (up)
+            width_direction=create_v3(1, 0, 0),    # Width points East
+            name="Post_Left"
+        )
+        
+        # Right post 8" away in X direction
+        post_right = timber_from_directions(
+            length=post_height,
+            size=post_size,
+            bottom_position=create_v3(inches(8), 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Vertical (up)
+            width_direction=create_v3(1, 0, 0),    # Width points East
+            name="Post_Right"
+        )
+        
+        # Create beams using all 4 lateral face features
+        face_features = [
+            TimberFeature.RIGHT_FACE,
+            TimberFeature.LEFT_FACE,
+            TimberFeature.FRONT_FACE,
+            TimberFeature.BACK_FACE,
+        ]
+        
+        beams = {}
+        for feature in face_features:
+            beam = join_perpendicular_on_face_parallel_timbers(
+                timber1=post_left,
+                timber2=post_right,
+                location_on_timber1=inches(48),  # Mid-height
+                stickout=Stickout.nostickout(),
+                lateral_offset_from_centerline_timber1=Rational(0),  # No additional offset
+                size=beam_size,
+                feature_to_mark_on_joining_timber=feature,
+                orientation_face_on_timber1=TimberFace.TOP,
+                name=f"Beam_{feature.name}"
+            )
+            beams[feature] = beam
+        
+        # Verify all beams are different
+        beam_list = list(beams.values())
+        for i in range(len(beam_list)):
+            for j in range(i + 1, len(beam_list)):
+                beam_i = beam_list[i]
+                beam_j = beam_list[j]
+                
+                # Check that bottom positions are different
+                pos_i = beam_i.get_bottom_position_global()
+                pos_j = beam_j.get_bottom_position_global()
+                
+                diff = pos_i - pos_j
+                magnitude = float((diff.T * diff)[0, 0] ** Rational("0.5"))
+                
+                assert magnitude > 1e-6, \
+                    f"Beams {beam_i.name} and {beam_j.name} should be at different positions, " \
+                    f"but positions differ by only {magnitude}"
+        
+        # Verify specific geometric properties
+        # For a beam joining horizontally between vertical posts with orientation_face_on_timber1=TOP:
+        # - The beam's length direction should be horizontal (pointing from post_left to post_right)
+        # - The beam's width direction should be vertical (pointing up, aligned with TOP face)
+        # - The beam's height direction should be horizontal (perpendicular to both)
+        
+        # RIGHT_FACE and LEFT_FACE: These affect the width dimension (vertical for our beam)
+        # The difference should be along the beam's width direction (which is vertical)
+        beam_right = beams[TimberFeature.RIGHT_FACE]
+        beam_left = beams[TimberFeature.LEFT_FACE]
+        
+        right_center = beam_right.get_centerline_position_from_bottom_global(beam_right.length / 2)
+        left_center = beam_left.get_centerline_position_from_bottom_global(beam_left.length / 2)
+        
+        # The difference should be along the Z axis (vertical, which is the beam's width direction)
+        diff_right_left = right_center - left_center
+        # Width of beam is 4", so RIGHT should be 4" higher than LEFT (since RIGHT is +width, LEFT is -width)
+        expected_z_diff = beam_size[0]  # 4 inches in width direction (vertical)
+        
+        actual_z_diff = diff_right_left[2]
+        assert abs(float(actual_z_diff - expected_z_diff)) < 1e-10, \
+            f"RIGHT_FACE beam should be {float(expected_z_diff)}m higher than LEFT_FACE beam, " \
+            f"but difference is {float(actual_z_diff)}m"
+        
+        # FRONT_FACE and BACK_FACE: These affect the height dimension (Y direction for our beam)
+        # The difference should be along the beam's height direction (Y axis)
+        beam_front = beams[TimberFeature.FRONT_FACE]
+        beam_back = beams[TimberFeature.BACK_FACE]
+        
+        front_center = beam_front.get_centerline_position_from_bottom_global(beam_front.length / 2)
+        back_center = beam_back.get_centerline_position_from_bottom_global(beam_back.length / 2)
+        
+        # The difference should be along the Y axis (beam's height direction)
+        diff_front_back = front_center - back_center
+        # Height of beam is 4", so FRONT should be 4" forward (positive Y) from BACK
+        expected_y_diff = beam_size[1]  # 4 inches in height direction (Y axis)
+        
+        actual_y_diff = diff_front_back[1]
+        assert abs(float(actual_y_diff - expected_y_diff)) < 1e-10, \
+            f"FRONT_FACE beam should be {float(expected_y_diff)}m forward from BACK_FACE beam, " \
+            f"but difference is {float(actual_y_diff)}m"
+        
+        # Verify that RIGHT/LEFT don't affect Y position (they should only differ in Z)
+        assert abs(float(diff_right_left[1])) < 1e-10, \
+            "RIGHT_FACE and LEFT_FACE beams should have the same Y coordinate"
+        
+        # Verify that FRONT/BACK don't affect Z position (they should only differ in Y)
+        assert abs(float(diff_front_back[2])) < 1e-10, \
+            "FRONT_FACE and BACK_FACE beams should have the same Z coordinate"
+        
+        print(f"✅ Successfully verified 4 beams with different face features are positioned correctly")
+        print(f"   RIGHT vs LEFT: {float(actual_z_diff):.6f}m Z difference (expected {float(expected_z_diff):.6f}m)")
+        print(f"   FRONT vs BACK: {float(actual_y_diff):.6f}m Y difference (expected {float(expected_y_diff):.6f}m)")
 
 
 

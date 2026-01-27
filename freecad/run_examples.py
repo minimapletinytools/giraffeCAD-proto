@@ -38,8 +38,9 @@ if script_dir not in sys.path:
 # CONFIGURATION: Change this to render different examples
 # ============================================================================
 #EXAMPLE_TO_RENDER = 'basic_joints' 
-EXAMPLE_TO_RENDER = 'oscar_shed'
+#EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
+EXAMPLE_TO_RENDER = 'construction'
 #EXAMPLE_TO_RENDER = 'horsey'
 #EXAMPLE_TO_RENDER = 'japanese_joints'
 #EXAMPLE_TO_RENDER = 'csg'
@@ -80,6 +81,7 @@ def reload_all_modules():
         'examples.horsey_example',
         'examples.oscarshed',
         'examples.japanese_joints_example',
+        'examples.construction_examples',
         'examples.MeowMeowCSG_examples',
     ]
     
@@ -171,6 +173,61 @@ def render_mortise_and_tenon():
     print("\nExamples rendered (configured in mortise_and_tenon_joint_examples.py):")
     print("  - Mortise and tenon joints with pegs")
     print("\nCheck the Model tree on the left to see all timbers, cuts, and accessories")
+
+
+def render_construction():
+    """
+    Render construction examples - testing join_perpendicular with different features.
+    
+    Tests various reference features (centerline, faces, edges) for positioning.
+    """
+    from giraffe_render_freecad import render_frame, clear_document
+    from examples.construction_examples import (
+        create_test_posts_with_beam_centerline,
+        create_test_posts_with_beam_right_face,
+        create_test_posts_with_beam_front_face,
+        create_test_posts_with_beam_edge
+    )
+    
+    print("="*70)
+    print("GiraffeCAD FreeCAD - Construction Examples")
+    print("="*70)
+    
+    # Create all examples
+    print("\nCreating construction examples...")
+    examples = {
+        'centerline': create_test_posts_with_beam_centerline,
+        'right_face': create_test_posts_with_beam_right_face,
+        'front_face': create_test_posts_with_beam_front_face,
+        'edge': create_test_posts_with_beam_edge,
+    }
+    
+    # For now, render just the centerline example
+    # You can change this to render different examples
+    example_name = 'centerline'
+    print(f"Rendering example: {example_name}")
+    frame = examples[example_name]()
+    
+    print(f"Total timbers created: {len(frame.cut_timbers)}")
+    
+    # Clear and render
+    print("\nClearing FreeCAD document...")
+    clear_document()
+    
+    print("\nRendering timbers in FreeCAD...")
+    success_count = render_frame(frame)
+    
+    print("\n" + "="*70)
+    print(f"Rendering Complete!")
+    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
+    print("="*70)
+    print("\nExample rendered:")
+    print(f"  - {example_name}: Two 4x4x8 posts with beam using {example_name} reference")
+    print("\nAvailable examples in construction_examples.py:")
+    print("  - centerline: Default centerline reference")
+    print("  - right_face: Reference to RIGHT face of beam")
+    print("  - front_face: Reference to FRONT face with offset")
+    print("  - edge: Reference to RIGHT_FRONT edge")
 
 
 def render_oscar_shed():
@@ -442,6 +499,7 @@ def main():
     examples = {
         'basic_joints': render_basic_joints,
         'mortise_and_tenon': render_mortise_and_tenon,
+        'construction': render_construction,
         'horsey': render_horsey,
         'oscar_shed': render_oscar_shed,
         'japanese_joints': render_japanese_joints,

@@ -172,10 +172,10 @@ DONE-come up with consisten import scheme....
 
 -double dildo joint seems to broken in fusion 360
   -fusion 360 broken in general...
--see if you can get rid of FaceAlignedJoinedTimberOffset with a measuring function
+DONE-see if you can get rid of FaceAlignedJoinedTimberOffset with a measuring function
   DONE-implementation
-  -do better testing 
-  
+  DONE?-do better testing 
+
 -cleanup where to put get_point_on_face and project_point_onto_face
   -probably move these into timber_shavings or something
 
