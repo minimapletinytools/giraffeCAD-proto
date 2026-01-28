@@ -127,7 +127,7 @@ def get_point_on_face_global(face: TimberFace, timber: Timber) -> V3:
     return timber.get_bottom_position_global() + timber.get_face_direction_global(face) * timber.get_size_in_face_normal_axis(face) / 2
 
 
-def project_point_onto_face_global(point: V3, face: TimberFace, timber: Timber) -> Numeric:
+def project_point_onto_face_global(point_global: V3, face: TimberFace, timber: Timber) -> Numeric:
     """
     Project a point onto a timber face and return the signed distance.
     
@@ -144,15 +144,15 @@ def project_point_onto_face_global(point: V3, face: TimberFace, timber: Timber) 
         Signed distance from face to point along the face normal (positive = into timber)
     """
     # Get a reference point on the face surface
-    face_point = get_point_on_face_global(face, timber)
+    face_point_global = get_point_on_face_global(face, timber)
     
     # Get the face normal (pointing OUT of the timber)
-    face_direction = timber.get_face_direction_global(face)
+    face_direction_global = timber.get_face_direction_global(face)
     
     # Calculate signed distance: how far from the face is the point?
     # Positive if point is in the direction opposite to face_direction (inside timber)
     # Negative if point is in the direction of face_direction (outside timber)
-    distance = (face_direction.T * (face_point - point))[0, 0]
+    distance = (face_direction_global.T * (face_point_global - point_global))[0, 0]
     
     return distance
 
