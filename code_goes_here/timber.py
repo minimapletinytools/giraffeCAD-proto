@@ -467,6 +467,10 @@ class Timber:
         """Get the orientation from the transform."""
         return self.transform.orientation
 
+    def get_orientation_global(self) -> Orientation:
+        """Get the orientation from the transform."""
+        return self.orientation
+
     def get_bottom_position_global(self) -> V3:
         """Get the bottom position (center of bottom cross-section) in global coordinates from the transform."""
         return self.transform.position
@@ -692,6 +696,7 @@ class Timber:
         return transform
 
 
+    # TODO DELETE this is duplicated in timber_shavings.py which you should also delete and replce with smothenig in measuring
     def project_global_point_onto_timber_face_global(self, global_point: V3, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]) -> V3:
         """
         Project a point from global coordinates onto the timber's face and return result in global coordinates.

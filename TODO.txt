@@ -155,11 +155,40 @@ CSGTimber?
 
 -We need a better system for naming measure/mark, we have scenarios like
   -timber -> feature 
+    -MARK
   -timber/feature -> distance
+    -MEASURE_FROM
   -timber/feature -> feature
+    -MARK_FROM
   -timber -> distance
+    -MEASURE
   -timber/timber -> distance
+    -MEASURE_BETWEEN
+    -gauge?
   -timber/feature/timber/distance -> distance
+    -MEASURE_BETWEEN
+    -scribe?
+
+So I think the general rule is 
+mark -> outputs fetaure that isn't a point 
+scribe -> outputs V3? (and not a Point... probably just get rid of Point? or have point be V3 or whatever?)
+measure -> outputs distance
+??? -> outputs direction
+~gauge -> inputs 2 timbers, outputs distance~
+~scribe -> inputs 2 timbers, outputs distance~
+
+
+Or rather
+- mark takes measurements in LOCAL space and outputs features in GLOBAL space
+- measure takes features in GLOBAL space and outputs measurements relative to (LOCAL) features
+- scribe takes features in LOCAL space and outputs features relative to (LOCAL) features
+
+note we have the following
+
+distance: always taken relative to a feature and can be converted to a feature itself
+point: a special case of a feature
+feature: everything is a feature at the end of the day :O
+
 
 -prefixes we could use
   -measure
@@ -177,8 +206,7 @@ CSGTimber?
   -find -> requries some computation
 -figuer out how to consistently rename functions whether they are global or whatever
   -always flag input var names with _local
-  -functions that return in global space should be flagged with _global
-    -****except this sucks for your measuring functions :(, so maybe instead we should flag stuff _local and otherwise assume it's _global
+  -functions return things in golbal space by default unless _local suffix
 -don't forget to rename class methods in timber.py
 -move 
   -more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
@@ -207,17 +235,20 @@ CSGTimber?
 
 
 :: TODO
-IGNORE-transform prob does not need to be frozen...
-DONE-come up with consisten import scheme....
-  DONE-maybe rename Union to avoid confilct...
-DONE-see if you can get rid of FaceAlignedJoinedTimberOffset with a measuring function
-  DONE-implementation
-  DONE?-do better testing 
-DONE-double dildo joint seems to broken in fusion 360
-  DONE-fusion 360 broken in general...
 
+-all methods have a property `as` that returns TimberFeature 
+  -TimberFeature has methods `face` `reference_end` `long_face` etc 
+  -so you do long_face.as.face() to do your enum castings
+-MeasuredTimberFeature -> MarkedTimberFeature
 
-
+-do rename on Timber.py (do I keep the get_ member functions or do I make them into scribe functions?)
+-Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
+-update morties and tenon to support
+  -perpendicular but not face aligned
+  -not perpendicular but partially face aligned (for braces)
+    -maybe have an add brace function?
+  -neither perpendicular nor face aligned
+-think about how you want to make example selector and make it future proof or useful as reference
 -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
 
 
@@ -251,16 +282,7 @@ EXEMPLIFY
   -would be cool do deep link by into functions/docs in the future...
 
 
-IMPLEMENT
--update morties and tenon to support
-  -perpendicular but not face aligned
-  -not perpendicular but partially face aligned (for braces)
-    -maybe have an add brace function?
-  -neither perpendicular nor face aligned
--Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)
-  
 
-DONE-dovetail lap joint
   
 -3 major features
   -measure functions
@@ -388,7 +410,15 @@ DONE-dovetail lap joint
 
 :: TODONE
 
-
+IGNORE-transform prob does not need to be frozen...
+DONE-come up with consisten import scheme....
+  DONE-maybe rename Union to avoid confilct...
+DONE-see if you can get rid of FaceAlignedJoinedTimberOffset with a measuring function
+  DONE-implementation
+  DONE?-do better testing 
+DONE-double dildo joint seems to broken in fusion 360
+  DONE-fusion 360 broken in general...
+DONE-dovetail lap joint
 DONE-allow extrude polygon to extrude in both directions
 DONE-change joint cut_timbers: Tuple[CutTimber, ...] into a map so you can reference joint pieces by name rather than index
 DONE-add back post joints to oscar shed
