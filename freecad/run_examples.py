@@ -38,9 +38,9 @@ if script_dir not in sys.path:
 # CONFIGURATION: Change this to render different examples
 # ============================================================================
 #EXAMPLE_TO_RENDER = 'basic_joints' 
-#EXAMPLE_TO_RENDER = 'oscar_shed'
+EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
-EXAMPLE_TO_RENDER = 'construction'
+#EXAMPLE_TO_RENDER = 'construction'
 #EXAMPLE_TO_RENDER = 'horsey'
 #EXAMPLE_TO_RENDER = 'japanese_joints'
 #EXAMPLE_TO_RENDER = 'csg'
@@ -61,8 +61,26 @@ def reload_all_modules():
     print("="*70)
     print("\nReloading all GiraffeCAD modules...")
     
+    # AGGRESSIVE MODULE CLEANUP: Delete ALL GiraffeCAD-related modules
+    # This ensures no stale class references remain after reload
+    modules_to_delete = []
+    for module_name in list(sys.modules.keys()):
+        # Delete any module that starts with our project prefixes
+        if (module_name.startswith('code_goes_here') or 
+            module_name.startswith('examples') or 
+            module_name == 'giraffe' or
+            module_name.startswith('giraffe.') or
+            module_name == 'giraffe_render_freecad'):
+            modules_to_delete.append(module_name)
+    
+    print(f"  Deleting {len(modules_to_delete)} cached modules...")
+    
+    for module_name in modules_to_delete:
+        del sys.modules[module_name]
+    
     # List of modules to reload in dependency order
     modules_to_reload = [
+        'code_goes_here',  # Reload the package itself first
         'code_goes_here.moothymoth',
         'code_goes_here.footprint',
         'code_goes_here.meowmeowcsg',
@@ -75,6 +93,8 @@ def reload_all_modules():
         'code_goes_here.mortise_and_tenon_joint',
         'code_goes_here.japanese_joints',
         'giraffe',
+        'examples',  # Reload the examples package
+        'examples.reference',  # Reload examples.reference subpackage
         'giraffe_render_freecad',
         'examples.reference.basic_joints_example',
         'examples.mortise_and_tenon_joint_examples',
@@ -85,15 +105,13 @@ def reload_all_modules():
         'examples.MeowMeowCSG_examples',
     ]
     
+    # Re-import all modules in dependency order
     for module_name in modules_to_reload:
-        if module_name in sys.modules:
-            try:
-                importlib.reload(sys.modules[module_name])
-                #print(f"  ✓ Reloaded {module_name}")
-            except Exception as e:
-                print(f"  ⚠ Error reloading {module_name}: {e}")
-        else:
-            print(f"  - {module_name} not loaded yet")
+        try:
+            # Use __import__ to load the module fresh
+            importlib.import_module(module_name)
+        except Exception as e:
+            print(f"  ⚠ Error reloading {module_name}: {e}")
     
     print("\nModule reload complete.\n")
 
@@ -182,31 +200,15 @@ def render_construction():
     Tests various reference features (centerline, faces, edges) for positioning.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.construction_examples import (
-        create_test_posts_with_beam_centerline,
-        create_test_posts_with_beam_right_face,
-        create_test_posts_with_beam_front_face,
-        create_test_posts_with_beam_edge
-    )
+    from examples.construction_examples import create_all_construction_examples
     
     print("="*70)
     print("GiraffeCAD FreeCAD - Construction Examples")
     print("="*70)
     
-    # Create all examples
+    # Create construction example
     print("\nCreating construction examples...")
-    examples = {
-        'centerline': create_test_posts_with_beam_centerline,
-        'right_face': create_test_posts_with_beam_right_face,
-        'front_face': create_test_posts_with_beam_front_face,
-        'edge': create_test_posts_with_beam_edge,
-    }
-    
-    # For now, render just the centerline example
-    # You can change this to render different examples
-    example_name = 'centerline'
-    print(f"Rendering example: {example_name}")
-    frame = examples[example_name]()
+    frame = create_all_construction_examples()
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -222,12 +224,7 @@ def render_construction():
     print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
     print("="*70)
     print("\nExample rendered:")
-    print(f"  - {example_name}: Two 4x4x8 posts with beam using {example_name} reference")
-    print("\nAvailable examples in construction_examples.py:")
-    print("  - centerline: Default centerline reference")
-    print("  - right_face: Reference to RIGHT face of beam")
-    print("  - front_face: Reference to FRONT face with offset")
-    print("  - edge: Reference to RIGHT_FRONT edge")
+    print("  - Construction example: Two 4x4x8 posts with beam using centerline reference")
 
 
 def render_oscar_shed():

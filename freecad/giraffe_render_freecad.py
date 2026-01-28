@@ -209,9 +209,9 @@ def create_placement_from_orientation(position: Matrix, orientation: Orientation
     return placement
 
 
-def create_prism_shape(prism: Prism, infinite_extent: float = 10000.0) -> 'Part.Shape':
+def create_prism_shape(prism: RectangularPrism, infinite_extent: float = 10000.0) -> 'Part.Shape':
     """
-    Create a FreeCAD shape from a Prism CSG.
+    Create a FreeCAD shape from a RectangularPrism CSG.
     
     The prism is created axis-aligned where:
     - Width (size[0]) is along X axis
@@ -221,7 +221,7 @@ def create_prism_shape(prism: Prism, infinite_extent: float = 10000.0) -> 'Part.
     Then the prism's orientation and position are applied.
     
     Args:
-        prism: Prism CSG object
+        prism: RectangularPrism CSG object
         infinite_extent: Extent to use for infinite dimensions (in meters)
         
     Returns:
@@ -474,13 +474,13 @@ def render_csg_shape(csg: MeowMeowCSG, timber: Optional[Timber] = None,
         return None
 
 
-def render_union(union: Union, timber: Optional[Timber] = None, 
+def render_union(union: SolidUnion, timber: Optional[Timber] = None, 
                  infinite_extent: float = 10000.0) -> Optional['Part.Shape']:
     """
-    Render a Union CSG operation.
+    Render a SolidUnion CSG operation.
     
     Args:
-        union: Union CSG object
+        union: SolidUnion CSG object
         timber: Optional timber object
         infinite_extent: Extent to use for infinite geometry
         
@@ -727,15 +727,15 @@ def render_difference(difference: Difference, timber: Optional[Timber] = None,
     if base_shape is None:
         return None
     
-    # Flatten the subtract list to handle nested Unions
-    # This ensures HalfSpace objects within Unions are handled correctly
+    # Flatten the subtract list to handle nested SolidUnions
+    # This ensures HalfSpace objects within SolidUnions are handled correctly
     flattened_subtracts = []
     for sub_csg in difference.subtract:
-        if isinstance(sub_csg, Union):
+        if isinstance(sub_csg, SolidUnion):
             # Recursively flatten nested unions
             def _flatten_union_recursive(union_csg, result_list):
                 for child in union_csg.children:
-                    if isinstance(child, Union):
+                    if isinstance(child, SolidUnion):
                         _flatten_union_recursive(child, result_list)
                     else:
                         result_list.append(child)
