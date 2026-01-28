@@ -151,6 +151,36 @@ CSGTimber?
     
 
 
+:: 1/27 THE BIG SHAVING/MEASURING RENAME
+
+-We need a better system for naming measure/mark, we have scenarios like
+  -timber -> feature 
+  -timber/feature -> distance
+  -timber/feature -> feature
+  -timber -> distance
+  -timber/timber -> distance
+  -timber/feature/timber/distance -> distance
+
+-prefixes we could use
+  -measure
+  -mark
+  -gauge
+  -scribe
+  -get
+  -find
+  -compute
+
+-figuer out how to consistently rename functions whether they are global or whatever
+  -always flag input var names with _local
+  -functions that return in global space should be flagged with _global
+    -****except this sucks for your measuring functions :(, so maybe instead we should flag stuff _local and otherwise assume it's _global
+
+-don't forget to rename class methods in timber.py
+-move 
+  -more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
+  -move TODO stuff in timber into timber shavings
+
+
 :: documentation
 
 -installation
@@ -179,14 +209,11 @@ UGH
 -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
 
 
--We need a better system for naming measure/mark, we have scenarios like
-  -timber -> feature 
-  -timber/feature -> distance
-  -timber/feature -> feature
-  -timber -> distance
+
+
 
 RENAME
--cleanup where to put get_point_on_face and project_point_onto_face
+DONE-cleanup where to put get_point_on_face and project_point_onto_face
   -probably move these into timber_shavings or something
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
   -oFAT on face aligned timbers

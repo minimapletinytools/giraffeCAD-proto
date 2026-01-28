@@ -1262,6 +1262,7 @@ class Frame:
 # Cut Classes
 # ============================================================================
 
+# TODO DELETE ME wtf is this, just use HalfSpace CSG... omg
 @dataclass(frozen=True)
 class HalfSpaceCut(Cut):
     """
@@ -1273,6 +1274,7 @@ class HalfSpaceCut(Cut):
         return self.half_plane
 
 
+# TODO you can also delet this, just store the the negative_csg directly... actually keep this and add metadata to it!!!
 @dataclass(frozen=True)
 class CSGCut(Cut):
     """
@@ -1288,6 +1290,7 @@ class CSGCut(Cut):
         return self.negative_csg
 
 
+# TODO move into timber_shavings
 # ============================================================================
 # Helper Functions for Creating Joint Accessories
 # ============================================================================
