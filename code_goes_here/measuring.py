@@ -258,6 +258,7 @@ def measure_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> Un
 
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
+
 def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], face: TimberFace, timber: Timber) -> Numeric:
     """
     Mark a feature from a face on a timber.

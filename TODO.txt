@@ -179,6 +179,12 @@ UGH
 -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
 
 
+-We need a better system for naming measure/mark, we have scenarios like
+  -timber -> feature 
+  -timber/feature -> distance
+  -timber/feature -> feature
+  -timber -> distance
+
 RENAME
 -cleanup where to put get_point_on_face and project_point_onto_face
   -probably move these into timber_shavings or something
