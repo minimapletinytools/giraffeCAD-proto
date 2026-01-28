@@ -37,22 +37,12 @@ if parent_dir not in sys.path:
 EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'irrational_angles'
 
-# Import our GiraffeCAD modules from parent directory
+# DO NOT import GiraffeCAD modules here at the top level!
+# They will be imported AFTER reload inside the render functions.
+# Importing here would create references to old classes that become stale after reload.
 try:
-    # Import from parent directory - these files are NOT copied locally
-    # Note: We only import basic functions here, the rest are imported after reload
-    from examples.oscarshed import create_oscarshed
-    from examples.reference.basic_joints_example import create_all_joint_examples
-    # Import just one function from mortise_and_tenon_joint_examples to test module accessibility
-    from examples.mortise_and_tenon_joint_examples import example_basic_mortise_and_tenon
-    from examples.japanese_joints_example import create_simple_gooseneck_example
-    from examples.irrational_angles_example import create_all_irrational_examples
-    from giraffe_render_fusion360 import get_active_design, clear_design, render_frame
-    
-    # Test that core dependencies are available
+    # Only test that sympy is available (it won't be reloaded)
     import sympy
-    from code_goes_here.moothymoth import Orientation
-    from giraffe import CutTimber
     
     import_success = True
     import_error = None
@@ -76,8 +66,27 @@ def reload_all_modules():
     
     import importlib
     
+    # AGGRESSIVE MODULE CLEANUP: Delete ALL GiraffeCAD-related modules
+    # This ensures no stale class references remain after reload
+    modules_to_delete = []
+    for module_name in list(sys.modules.keys()):
+        # Delete any module that starts with our project prefixes
+        if (module_name.startswith('code_goes_here') or 
+            module_name.startswith('examples') or 
+            module_name == 'giraffe' or
+            module_name.startswith('giraffe.') or
+            module_name == 'giraffe_render_fusion360'):
+            modules_to_delete.append(module_name)
+    
+    if app:
+        app.log(f"  Deleting {len(modules_to_delete)} cached modules...")
+    
+    for module_name in modules_to_delete:
+        del sys.modules[module_name]
+    
     # List of modules to reload in dependency order
     modules_to_reload = [
+        'code_goes_here',  # Reload the package itself first
         'code_goes_here.moothymoth',
         'code_goes_here.footprint',
         'code_goes_here.meowmeowcsg',
@@ -85,11 +94,13 @@ def reload_all_modules():
         'code_goes_here.construction',
         'code_goes_here.rendering_utils',
         'code_goes_here.joint_shavings',
+        'code_goes_here.measuring',
         'code_goes_here.basic_joints',
         'code_goes_here.mortise_and_tenon_joint',
         'code_goes_here.japanese_joints',
         'giraffe',
-        'giraffe_render_freecad',
+        'examples',  # Reload the examples package
+        'examples.reference',  # Reload examples.reference subpackage
         'giraffe_render_fusion360',  # Add this so the rendering module itself gets reloaded
         'examples.reference.basic_joints_example',
         'examples.mortise_and_tenon_joint_examples',
@@ -100,12 +111,7 @@ def reload_all_modules():
         'examples.MeowMeowCSG_examples',
     ]
     
-    # FIRST PASS: Delete all modules to ensure clean reload (fixes enum identity issues)
-    for module_name in modules_to_reload:
-        if module_name in sys.modules:
-            del sys.modules[module_name]
-    
-    # SECOND PASS: Re-import all modules in dependency order
+    # Re-import all modules in dependency order
     for module_name in modules_to_reload:
         try:
             # Use __import__ to load the module fresh

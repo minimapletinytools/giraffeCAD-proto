@@ -149,7 +149,7 @@ def create_matrix3d_from_orientation(position: Matrix, orientation: Orientation)
     return matrix3d
 
 
-def render_prism_in_local_space(component: adsk.fusion.Component, prism: Prism, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
+def render_prism_in_local_space(component: adsk.fusion.Component, prism: RectangularPrism, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
     Render a Prism CSG in the component's local coordinate system with its orientation and position applied.
     
@@ -615,7 +615,7 @@ def render_convex_polygon_extrusion_in_local_space(component: adsk.fusion.Compon
         return None
 
 
-def render_union_at_origin(component: adsk.fusion.Component, union: Union, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
+def render_union_at_origin(component: adsk.fusion.Component, union: SolidUnion, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
     Render a Union CSG operation at the origin.
     
@@ -919,7 +919,13 @@ def apply_halfspace_cut(component: adsk.fusion.Component, body: adsk.fusion.BRep
             combine_input.operation = adsk.fusion.FeatureOperations.CutFeatureOperation
             combine_input.isKeepToolBodies = False
             
-            combine_features.add(combine_input)
+            combine_feature = combine_features.add(combine_input)
+            
+            if combine_feature is None:
+                print(f"    ERROR: Halfspace boolean cut returned None")
+                if app:
+                    app.log(f"    ERROR: Halfspace combine_features.add() returned None")
+                return False
             
             if app:
                 app.log(f"    Boolean cut complete")
@@ -975,15 +981,15 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
     if app:
         app.log(f"render_difference_at_origin: Base body created successfully, now applying {len(difference.subtract)} cuts (may be flattened)")
     
-    # Flatten the subtract list to handle Union objects that contain Halfspaces
-    # A Union in a subtract list means "remove all these things", so we flatten it
-    # to apply each child separately. We need to flatten recursively for nested Unions.
+    # Flatten the subtract list to handle SolidUnion objects that contain Halfspaces
+    # A SolidUnion in a subtract list means "remove all these things", so we flatten it
+    # to apply each child separately. We need to flatten recursively for nested SolidUnions.
     def flatten_union_recursively(csg_list):
-        """Recursively flatten Union objects in a list"""
+        """Recursively flatten SolidUnion objects in a list"""
         result = []
         for csg in csg_list:
-            if isinstance(csg, Union):
-                # Recursively flatten the Union's children
+            if isinstance(csg, SolidUnion):
+                # Recursively flatten the SolidUnion's children
                 result.extend(flatten_union_recursively(csg.children))
             else:
                 result.append(csg)
@@ -1025,9 +1031,6 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
                 app.log(f"  ERROR: Failed to render subtract child {i+1}")
             continue
         
-        if app:
-            app.log(f"    Subtract body created, performing combine cut operation...")
-        
         # Perform difference operation
         try:
             combine_features = component.features.combineFeatures
@@ -1042,9 +1045,13 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
             combine_input.isKeepToolBodies = False
             
             # Execute the combine
-            combine_features.add(combine_input)
+            combine_feature = combine_features.add(combine_input)
             
-            if app:
+            if combine_feature is None:
+                print(f"  ✗ Boolean cut failed for child {i+1}")
+                if app:
+                    app.log(f"    ERROR: combine_features.add() returned None")
+            elif app:
                 app.log(f"    SUCCESS: Boolean cut applied for child {i+1}")
             
             # Give Fusion 360 time to process the difference
@@ -1052,9 +1059,12 @@ def render_difference_at_origin(component: adsk.fusion.Component, difference: Di
             adsk.doEvents()
             
         except Exception as e:
-            print(f"  Error performing difference with child {i+1}: {e}")
+            print(f"  ✗ Error performing difference with child {i+1}: {e}")
             if app:
                 app.log(f"  ERROR performing difference with child {i+1}: {e}")
+                app.log(f"  Exception type: {type(e).__name__}")
+                app.log(f"  Exception details: {str(e)}")
+            traceback.print_exc()
             continue
     
     if app:
