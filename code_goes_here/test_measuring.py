@@ -3,7 +3,7 @@ Tests for the measuring module (geometric primitives).
 """
 
 import pytest
-from code_goes_here.measuring import Point, Line, Plane, UnsignedPlane, get_point_on_face_global, get_point_on_feature, measure_into_face, mark_onto_face, gauge_distance_between_faces, measure_face, measure_long_edge, measure_center_line
+from code_goes_here.measuring import Point, Line, Plane, UnsignedPlane, get_point_on_feature, measure_into_face, mark_onto_face, gauge_distance_between_faces, measure_face, measure_long_edge, measure_center_line
 from code_goes_here.timber import timber_from_directions, TimberFace, TimberLongEdge
 from code_goes_here.moothymoth import create_v3, create_v2, Transform, Orientation
 from sympy import Matrix, Rational
@@ -125,45 +125,6 @@ class TestPlane:
         
         assert plane.point.equals(position)
         assert plane.normal.equals(local_direction)
-
-
-class TestGetPointOnFace:
-    """Tests for get_point_on_face_global helper function"""
-    
-    def test_get_point_on_right_face(self):
-        """Test getting a point on the RIGHT face of a vertical timber"""
-        timber = timber_from_directions(
-            length=Rational(100),
-            size=create_v2(10, 10),
-            bottom_position=create_v3(0, 0, 0),
-            length_direction=create_v3(0, 0, 1),
-            width_direction=create_v3(1, 0, 0)
-        )
-        
-        point = get_point_on_face_global(TimberFace.RIGHT, timber)
-        
-        # RIGHT face is at x=5 (half the width), should be at the center
-        assert point[0] == Rational(5)
-        assert point[1] == Rational(0)  # Centered in height
-        assert point[2] == Rational(0)  # At bottom in length
-    
-    def test_get_point_on_top_face(self):
-        """Test getting a point on the TOP face of a vertical timber"""
-        timber = timber_from_directions(
-            length=Rational(100),
-            size=create_v2(10, 10),
-            bottom_position=create_v3(0, 0, 0),
-            length_direction=create_v3(0, 0, 1),
-            width_direction=create_v3(1, 0, 0)
-        )
-        
-        point = get_point_on_face_global(TimberFace.TOP, timber)
-        
-        # get_point_on_face_global returns a point at the center of the face
-        # For TOP face, it's at the centerline (z=50) plus half the timber length
-        assert point[0] == Rational(0)  # Centered in width
-        assert point[1] == Rational(0)  # Centered in height
-        assert point[2] == Rational(50)  # At centerline along length axis
 
 
 class TestGetPointOnFeature:
