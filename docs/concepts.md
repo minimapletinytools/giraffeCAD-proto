@@ -101,28 +101,8 @@ class TimberLongFace(Enum):
 ```
 
 
-### measuring from reference features (TODO DELETE this section, these classes don't exist yet)
-
-Measurements are then taken from these faces 
-
-```
-struct DistanceFromFace(Enum):
-    face : TimberFace
-    distance : float
-
-struct DistanceFromLongFace(Enum):
-    face : TimberLongFace
-    distance : float
-
-struct DistanceFromEnd(Enum):
-    end : TimberReferenceEnd
-    distance : float
-
-struct DistanceFromLongEdge(Enum):
-    edge : TimberLongEdge
-    distance1 : float
-    distance2 : float
-```
+### marking and measuring 
+TODO
 
 ## member names
 
