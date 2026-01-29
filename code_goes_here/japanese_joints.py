@@ -229,7 +229,7 @@ def cut_lapped_gooseneck_joint(
     if gooseneck_depth is None:
         # Default to half the dimension perpendicular to the specified face
         gooseneck_depth = gooseneck_timber.get_size_in_face_normal_axis(
-            gooseneck_timber_face.to_timber_face()
+            gooseneck_timber_face.to.face()
         ) / 2
 
     # ========================================================================
@@ -326,7 +326,7 @@ def cut_lapped_gooseneck_joint(
     gooseneck_profile_csg = chop_profile_on_timber_face(
         timber=gooseneck_timber,
         end=gooseneck_timber_end,
-        face=gooseneck_timber_face.to_timber_face(),
+        face=gooseneck_timber_face.to.face(),
         profile=gooseneck_shape,
         depth=gooseneck_depth,
         profile_y_offset_from_end=-gooseneck_profile_y_position
@@ -487,7 +487,7 @@ def cut_lapped_dovetail_butt_joint(
     
     if dovetail_depth is None:
         # Default: half the timber dimension perpendicular to the dovetail face
-        dovetail_depth = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face.to_timber_face()) / Rational(2)
+        dovetail_depth = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face.to.face()) / Rational(2)
     
     # ========================================================================
     # Create the dovetail profile (simple trapezoid)
@@ -513,7 +513,7 @@ def cut_lapped_dovetail_butt_joint(
     # it is on the centerline of the dovetail face where it intersects the inset shoulder of the mortise timber
     # ========================================================================
 
-    receiving_timber_shoulder_face = receiving_timber.get_closest_oriented_face_from_global_direction(-dovetail_timber.get_face_direction_global(dovetail_timber_end.to_timber_face()))
+    receiving_timber_shoulder_face = receiving_timber.get_closest_oriented_face_from_global_direction(-dovetail_timber.get_face_direction_global(dovetail_timber_end.to.face()))
     shoulder_distance_from_end = find_face_plane_intersection_on_centerline(
         face=receiving_timber_shoulder_face,
         face_timber=receiving_timber,
@@ -524,7 +524,7 @@ def cut_lapped_dovetail_butt_joint(
     offset_to_dovetail_face = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face) / Rational(2) * dovetail_timber.get_face_direction_global(dovetail_timber_face)
     
     marking_transform_position = dovetail_timber.get_bottom_position_global() + shoulder_distance_from_end * dovetail_timber.get_length_direction_global() + offset_to_dovetail_face
-    marking_transform_orientation = orientation_pointing_towards_face_sitting_on_face(towards_face=dovetail_timber_end.to_timber_face(), sitting_face=dovetail_timber_face.to_timber_face())
+    marking_transform_orientation = orientation_pointing_towards_face_sitting_on_face(towards_face=dovetail_timber_end.to.face(), sitting_face=dovetail_timber_face.to.face())
     dovetail_timber_marking_transform = Transform(position=marking_transform_position, orientation=marking_transform_orientation)
 
 
@@ -537,7 +537,7 @@ def cut_lapped_dovetail_butt_joint(
     dovetail_profile_csg = chop_profile_on_timber_face(
         timber=dovetail_timber,
         end=dovetail_timber_end,
-        face=dovetail_timber_face.to_timber_face(),
+        face=dovetail_timber_face.to.face(),
         profile=dovetail_profile,
         depth=dovetail_depth,
         profile_y_offset_from_end=shoulder_distance_from_end
@@ -561,7 +561,7 @@ def cut_lapped_dovetail_butt_joint(
     if receiving_timber_shoulder_inset > 0:
         # Notch dimensions match the dovetail timber's cross-section at the housing
         # Width is the length of the housing (shoulder_distance_from_end on dovetail timber)
-        notch_width = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face.rotate_right().to_timber_face())
+        notch_width = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face.rotate_right().to.face())
         
         # Depth is the amount of inset
         notch_depth = receiving_timber_shoulder_inset

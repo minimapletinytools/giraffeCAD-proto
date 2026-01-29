@@ -26,10 +26,29 @@ CSGDifference = Difference
 OFFSET_TEST_POINT = Rational(1, 1000)  # Small offset (0.001) for testing inward direction on footprint
 
 # ============================================================================
-# Enums and Basic Types
+# Timber Feature Enums
 # ============================================================================
 
 
+class TimberFeature(Enum):
+    TOP_FACE = 1
+    BOTTOM_FACE = 2
+    RIGHT_FACE = 3
+    LEFT_FACE = 4
+    FRONT_FACE = 5
+    BACK_FACE = 6
+    RIGHT_FRONT_EDGE = 7
+    FRONT_LEFT_EDGE = 8
+    LEFT_BACK_EDGE = 9
+    BACK_RIGHT_EDGE = 10
+    FRONT_RIGHT_EDGE = 11
+    RIGHT_BACK_EDGE = 12
+    BACK_LEFT_EDGE = 13
+    LEFT_FRONT_EDGE = 14
+    # TODO do the other edges lol
+    CENTERLINE = 99999
+    # TODO maybe do the corners?
+    
 class TimberFace(Enum):
     TOP = 1 # the face vector with normal vector in the +Z axis direction
     BOTTOM = 2 # the face vector with normal vector in the -Z axis direction
@@ -107,9 +126,10 @@ class TimberReferenceEnd(Enum):
     TOP = 1
     BOTTOM = 2
     
-    def to_timber_face(self) -> TimberFace:
-        """Convert TimberReferenceEnd to TimberFace."""
-        return TimberFace(self.value)
+    @property
+    def to(self) -> 'TimberReferenceEndConverter':
+        """Get converter for casting to other timber feature types."""
+        return TimberReferenceEndConverter(self)
 
 class TimberLongFace(Enum):
     RIGHT = 3
@@ -117,9 +137,10 @@ class TimberLongFace(Enum):
     LEFT = 5
     BACK = 6
     
-    def to_timber_face(self) -> TimberFace:
-        """Convert TimberLongFace to TimberFace."""
-        return TimberFace(self.value)
+    @property
+    def to(self) -> 'TimberLongFaceConverter':
+        """Get converter for casting to other timber feature types."""
+        return TimberLongFaceConverter(self)
     
     def is_perpendicular(self, other: 'TimberLongFace') -> bool:
         """
@@ -129,7 +150,7 @@ class TimberLongFace(Enum):
         - RIGHT <-> FRONT, RIGHT <-> BACK
         - LEFT <-> FRONT, LEFT <-> BACK
         """
-        return self.to_timber_face().is_perpendicular(other.to_timber_face())
+        return self.to.face().is_perpendicular(other.to.face())
 
     def rotate_right(self) -> 'TimberLongFace':
         """Rotate the long face right (90 degrees clockwise)."""
@@ -150,26 +171,42 @@ class TimberLongEdge(Enum):
     RIGHT_BACK = 12
     BACK_LEFT = 13
     LEFT_FRONT = 14
-
-class TimberFeature(Enum):
-    TOP_FACE = 1
-    BOTTOM_FACE = 2
-    RIGHT_FACE = 3
-    LEFT_FACE = 4
-    FRONT_FACE = 5
-    BACK_FACE = 6
-    RIGHT_FRONT_EDGE = 7
-    FRONT_LEFT_EDGE = 8
-    LEFT_BACK_EDGE = 9
-    BACK_RIGHT_EDGE = 10
-    FRONT_RIGHT_EDGE = 11
-    RIGHT_BACK_EDGE = 12
-    BACK_LEFT_EDGE = 13
-    LEFT_FRONT_EDGE = 14
-    # TODO do the other edges lol
-    CENTERLINE = 99999
-    # TODO maybe do the corners?
     
+    @property
+    def to(self) -> 'TimberLongEdgeConverter':
+        """Get converter for casting to other timber feature types."""
+        return TimberLongEdgeConverter(self)
+
+
+# ============================================================================
+# Timber Feature Converters
+# ============================================================================
+
+class TimberReferenceEndConverter:
+    """Helper class for converting TimberReferenceEnd to other feature types."""
+    def __init__(self, reference_end: TimberReferenceEnd):
+        self._reference_end = reference_end
+    
+    def face(self) -> TimberFace:
+        """Convert to TimberFace."""
+        return TimberFace(self._reference_end.value)
+
+
+class TimberLongFaceConverter:
+    """Helper class for converting TimberLongFace to other feature types."""
+    def __init__(self, long_face: TimberLongFace):
+        self._long_face = long_face
+    
+    def face(self) -> TimberFace:
+        """Convert to TimberFace."""
+        return TimberFace(self._long_face.value)
+
+
+class TimberLongEdgeConverter:
+    """Helper class for converting TimberLongEdge to other feature types."""
+    def __init__(self, long_edge: TimberLongEdge):
+        self._long_edge = long_edge
+
 
 # ============================================================================
 # Joint Construction Data Structures
@@ -558,8 +595,10 @@ class Timber:
             Direction vector pointing outward from the specified face in world coordinates
         """
         # Convert TimberReferenceEnd or TimberLongFace to TimberFace if needed
-        if isinstance(face, (TimberReferenceEnd, TimberLongFace)):
-            face = face.to_timber_face()
+        if isinstance(face, TimberReferenceEnd):
+            face = face.to.face()
+        elif isinstance(face, TimberLongFace):
+            face = face.to.face()
         
         if face == TimberFace.TOP:
             return self.get_length_direction_global()
@@ -582,8 +621,10 @@ class Timber:
             face: The face to get the size for (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
         """
         # Convert TimberReferenceEnd or TimberLongFace to TimberFace if needed
-        if isinstance(face, (TimberReferenceEnd, TimberLongFace)):
-            face = face.to_timber_face()
+        if isinstance(face, TimberReferenceEnd):
+            face = face.to.face()
+        elif isinstance(face, TimberLongFace):
+            face = face.to.face()
         
         if face == TimberFace.TOP or face == TimberFace.BOTTOM:
             return self.length
@@ -706,8 +747,10 @@ class Timber:
             face: The face to project onto (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
         """
         # Convert TimberReferenceEnd or TimberLongFace to TimberFace if needed
-        if isinstance(face, (TimberReferenceEnd, TimberLongFace)):
-            face = face.to_timber_face()
+        if isinstance(face, TimberReferenceEnd):
+            face = face.to.face()
+        elif isinstance(face, TimberLongFace):
+            face = face.to.face()
         
         # Convert global point to local coordinates
         local_point = self.transform.global_to_local(global_point)
@@ -1331,7 +1374,7 @@ def create_peg_going_into_face(
     """
     # Get the face direction in local space (timber coordinate system)
     # In local coords: X = width, Y = height, Z = length
-    face_normal_local = face.to_timber_face().get_direction()
+    face_normal_local = face.to.face().get_direction()
     
     # Position the peg on the timber's surface
     # Start at centerline, then move along length and offset from centerline

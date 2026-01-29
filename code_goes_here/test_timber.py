@@ -562,11 +562,11 @@ class TestEnumsAndDataStructures:
         assert not TimberFace.BOTTOM.is_perpendicular(TimberFace.BOTTOM)
     
     def test_timber_reference_long_face_to_timber_face(self):
-        """Test TimberLongFace.to_timber_face() method."""
-        assert TimberLongFace.RIGHT.to_timber_face() == TimberFace.RIGHT
-        assert TimberLongFace.FRONT.to_timber_face() == TimberFace.FRONT
-        assert TimberLongFace.LEFT.to_timber_face() == TimberFace.LEFT
-        assert TimberLongFace.BACK.to_timber_face() == TimberFace.BACK
+        """Test TimberLongFace.to.face() conversion method."""
+        assert TimberLongFace.RIGHT.to.face() == TimberFace.RIGHT
+        assert TimberLongFace.FRONT.to.face() == TimberFace.FRONT
+        assert TimberLongFace.LEFT.to.face() == TimberFace.LEFT
+        assert TimberLongFace.BACK.to.face() == TimberFace.BACK
     
     def test_timber_reference_long_face_is_perpendicular(self):
         """Test TimberLongFace.is_perpendicular() method."""
