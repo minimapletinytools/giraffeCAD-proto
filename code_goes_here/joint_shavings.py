@@ -26,7 +26,7 @@ def orientation_pointing_towards_face_sitting_on_face(towards_face : TimberFace,
     return Orientation.from_z_and_y(towards_face.get_direction(), -sitting_face.get_direction())
 
     
-
+# TODO move to timber_shavings.py
 def find_opposing_face_on_another_timber(reference_timber: Timber, reference_face: TimberLongFace, target_timber: Timber) -> TimberFace:
     """
     Find the opposing face on another timber. Assumes that the target_timber has a face parallel to the reference face on the reference_timber.
@@ -39,6 +39,7 @@ def find_opposing_face_on_another_timber(reference_timber: Timber, reference_fac
     
     return target_face
 
+# TODO rename to scribe_face_plane_onto_centerline and replace with mark/measure function in implementation
 def find_face_plane_intersection_on_centerline(face: TimberFace, face_timber: Timber, to_timber: Timber, to_timber_end: TimberReferenceEnd) -> Numeric:
     """
     Find the distance from to_timber_end on to_timber to the face on face_timber.
@@ -109,6 +110,7 @@ def find_face_plane_intersection_on_centerline(face: TimberFace, face_timber: Ti
     
     return signed_distance
 
+# TODO rename to scribe_centerline_onto_centerline and replace with mark/measure function in implementation
 def find_projected_intersection_on_centerlines(timberA: Timber, timberB: Timber, timberA_end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM, timberB_end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> (Numeric, Numeric):
     """
     Find the projected intersection of the centerlines of two timbers.
