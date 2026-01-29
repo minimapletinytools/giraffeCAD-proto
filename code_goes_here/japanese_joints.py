@@ -514,7 +514,7 @@ def cut_lapped_dovetail_butt_joint(
     # ========================================================================
 
     receiving_timber_shoulder_face = receiving_timber.get_closest_oriented_face_from_global_direction(-dovetail_timber.get_face_direction_global(dovetail_timber_end.to.face()))
-    shoulder_distance_from_end = find_face_plane_intersection_on_centerline(
+    shoulder_distance_from_end = deprecated_find_face_plane_intersection_on_centerline(
         face=receiving_timber_shoulder_face,
         face_timber=receiving_timber,
         to_timber=dovetail_timber,

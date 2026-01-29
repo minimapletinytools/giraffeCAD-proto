@@ -12,7 +12,7 @@ from code_goes_here.joint_shavings import (
     scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber,
     find_opposing_face_on_another_timber,
     chop_shoulder_notch_on_timber_face,
-    find_face_plane_intersection_on_centerline,
+    deprecated_find_face_plane_intersection_on_centerline,
     find_projected_intersection_on_centerlines
 )
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberLongFace
@@ -1086,7 +1086,7 @@ class TestChopShoulderNotchOnTimberFace:
 
 
 class TestScribeFaceOnCenterline:
-    """Tests for find_face_plane_intersection_on_centerline function."""
+    """Tests for deprecated_find_face_plane_intersection_on_centerline function."""
     
     def test_horizontal_timbers_butt_joint(self):
         """
@@ -1118,7 +1118,7 @@ class TestScribeFaceOnCenterline:
         # timber_a's centerline is at z=4" (its bottom position)
         
         # Scribe from timber_a's TOP end to timber_b's BOTTOM face
-        distance = find_face_plane_intersection_on_centerline(
+        distance = deprecated_find_face_plane_intersection_on_centerline(
             face=TimberFace.BOTTOM,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1164,7 +1164,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's LEFT face center (mid-length) is at (7", 0, 48")
         
         # Scribe from timber_a's TOP end to timber_b's LEFT face
-        distance = find_face_plane_intersection_on_centerline(
+        distance = deprecated_find_face_plane_intersection_on_centerline(
             face=TimberFace.LEFT,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1209,7 +1209,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's TOP face center: (48", 0, 0)
         
         # Scribe from timber_a's BOTTOM end to timber_b's TOP face
-        distance = find_face_plane_intersection_on_centerline(
+        distance = deprecated_find_face_plane_intersection_on_centerline(
             face=TimberFace.TOP,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1253,7 +1253,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's TOP face center: (120", 0, 0)
         
         # Scribe from timber_a's TOP end to timber_b's TOP face
-        distance = find_face_plane_intersection_on_centerline(
+        distance = deprecated_find_face_plane_intersection_on_centerline(
             face=TimberFace.TOP,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1297,7 +1297,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's LEFT face center (mid-length) is at (47", 0, 48")
         
         # Scribe from timber_a's TOP end to timber_b's LEFT face
-        distance = find_face_plane_intersection_on_centerline(
+        distance = deprecated_find_face_plane_intersection_on_centerline(
             face=TimberFace.LEFT,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1341,7 +1341,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's LEFT face center (mid-length) is at (7/2, 0, 10)
         
         # Scribe from timber_a's TOP end to timber_b's LEFT face
-        distance = find_face_plane_intersection_on_centerline(
+        distance = deprecated_find_face_plane_intersection_on_centerline(
             face=TimberFace.LEFT,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1384,7 +1384,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's BOTTOM face center: (36", 0, 0)
         
         # Scribe from timber_a's TOP end to timber_b's BOTTOM face
-        distance = find_face_plane_intersection_on_centerline(
+        distance = deprecated_find_face_plane_intersection_on_centerline(
             face=TimberFace.BOTTOM,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1428,7 +1428,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's BOTTOM face center: (0, 0, 36")
         
         # Scribe from timber_a's TOP end to timber_b's BOTTOM face
-        distance = find_face_plane_intersection_on_centerline(
+        distance = deprecated_find_face_plane_intersection_on_centerline(
             face=TimberFace.BOTTOM,
             face_timber=timber_b,
             to_timber=timber_a,
