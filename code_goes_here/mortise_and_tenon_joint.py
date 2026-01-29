@@ -541,7 +541,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             
             # Get the tenon face normal (where the peg enters the tenon timber)
             # TODO rename to tenon_peg_entry_face
-            tenon_face = peg_parameters.tenon_face.to_timber_face()
+            tenon_face = peg_parameters.tenon_face.to.face()
             tenon_face_direction = tenon_timber.get_face_direction_global(tenon_face)
             tenon_face_normal = tenon_face_direction
             

@@ -1300,12 +1300,12 @@ class TestHelperFunctions:
         assert timber.get_size_in_face_normal_axis(TimberReferenceEnd.BOTTOM) == timber.get_size_in_face_normal_axis(TimberFace.BOTTOM)
     
     def test_timber_reference_end_to_timber_face_conversion(self):
-        """Test TimberReferenceEnd.to_timber_face() conversion method."""
+        """Test TimberReferenceEnd.to.face() conversion method."""
         # Test TOP conversion
-        assert TimberReferenceEnd.TOP.to_timber_face() == TimberFace.TOP
+        assert TimberReferenceEnd.TOP.to.face() == TimberFace.TOP
         
         # Test BOTTOM conversion
-        assert TimberReferenceEnd.BOTTOM.to_timber_face() == TimberFace.BOTTOM
+        assert TimberReferenceEnd.BOTTOM.to.face() == TimberFace.BOTTOM
     
     def testare_timbers_parallel(self):
         """Test are_timbers_parallel helper function."""
