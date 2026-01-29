@@ -9,16 +9,18 @@ When marking on timbers, we want to do things like measure from a reference edge
 
 All measuring functions should follow the following naming convention:
 
-- mark_* : functions that take measurements relative to a (LOCAL) feature of a timber and outputs a feature in GLOBAL space
-- measure_* : functions that take a feature in GLOBAL space and outputs a measurement relative to a (LOCAL) feature of a timber
-- scribe_* : functions that take multiple measurements relative to (LOCAL) features of timbers and outputs a measurement relative to a (LOCAL) feature of a timber
-- ???_* : functions that take features in GLOBAL space and outputs features in GLOBAL space
+- `mark_*` : functions that take measurements relative to a (LOCAL) feature of a timber and outputs a feature in GLOBAL space
+- `measure_*` : functions that take a feature in GLOBAL space and outputs a measurement relative to a (LOCAL) feature of a timber
+- `scribe_*` : functions that take multiple measurements relative to (LOCAL) features of timbers and outputs a measurement relative to a (LOCAL) feature of a timber
+- `???_*` : functions that take features in GLOBAL space and outputs features in GLOBAL space
 
 OR put more simply: 
-- mark_* means LOCAL to GLOBAL
-- measure_* means GLOBAL to LOCAL
-- scribe_* means LOCAL to LOCAL
-- ???_* means GLOBAL to GLOBAL
+- `mark_*` means LOCAL to GLOBAL
+- `measure_*` means GLOBAL to LOCAL
+- `scribe_*` means LOCAL to LOCAL
+- `???_*` means GLOBAL to GLOBAL
+
+In addition we have `measure_by_*` methods which take specific features where as `measure_*` methods tend to be more generic and work with any feature.
 
 Using these functions, we can take measurements relative to features on one timber and mark them onto another timber. Measurements always exist in some context, and together with their context, they become colloqial ways to refer to features as it is easier to understand and work with measurements than it is to work with features directly. So measuring and marking functions are precisely used to convert between these expressions!
 
@@ -209,6 +211,10 @@ def mark_long_edge(timber: Timber, edge: TimberLongEdge) -> Line:
         >>> # line.direction points in the timber's length direction
         >>> # line.point is at the RIGHT_FRONT edge, halfway along the length
     """
+    
+    if edge == TimberLongEdge.CENTERLINE:
+        return mark_centerline(timber)
+    
     # Map edge enum to the two faces it connects
     edge_to_faces = {
         TimberLongEdge.RIGHT_FRONT: (TimberFace.RIGHT, TimberFace.FRONT),
@@ -345,6 +351,7 @@ def mark_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> Unsig
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
 
+# TODO swap timber and face args
 def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], face: TimberFace, timber: Timber) -> Numeric:
     """
     Mark a feature from a face on a timber.
@@ -373,6 +380,67 @@ def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlan
     
     return distance
 
+
+def measure_by_intersecting_plane_onto_long_edge(plane: Union[UnsignedPlane, Plane], timber: Timber, edge: TimberLongEdge, end: TimberReferenceEnd) -> Numeric:
+    """
+    Intersect a plane with a long edge of a timber.
+
+    Computes the true geometric intersection between the plane and the edge line,
+    returning the signed distance from the specified end to the intersection point.
+
+    Args:
+        plane: the plane to intersect with
+        timber: the timber whose edge we're intersecting
+        edge: the edge to intersect with
+        end: the end of the timber to measure from
+
+    Returns the distance from timber_end to where the plane intersects the timber's long edge.
+    Positive distance means the intersection is in the direction away from the end (into the timber).
+    """
+    
+    # Get the edge line
+    edge_line = mark_long_edge(timber, edge)
+    
+    # Get the end position on the edge
+    # edge_line.point is at mid-length, so we need to offset by half the length
+    if end == TimberReferenceEnd.TOP:
+        end_position = edge_line.point + edge_line.direction * (timber.length / 2)
+        # Direction from end into timber is negative length direction
+        into_timber_direction = -timber.get_length_direction_global()
+    else:  # BOTTOM
+        end_position = edge_line.point - edge_line.direction * (timber.length / 2)
+        # Direction from end into timber is positive length direction
+        into_timber_direction = timber.get_length_direction_global()
+    
+    # Compute line-plane intersection using the standard formula
+    # Line: P = end_position + t * into_timber_direction
+    # Plane: plane.normal · (P - plane.point) = 0
+    # Solving for t: t = plane.normal · (plane.point - end_position) / (plane.normal · into_timber_direction)
+    
+    numerator = (plane.normal.T * (plane.point - end_position))[0, 0]
+    denominator = (plane.normal.T * into_timber_direction)[0, 0]
+    
+    # If denominator is zero, the line is parallel to the plane (no intersection)
+    if zero_test(denominator):
+        # Line is parallel to plane - this shouldn't happen in normal usage
+        # Return None or raise an error to indicate no intersection
+        raise ValueError(f"Edge is parallel to plane - no intersection exists")
+    
+    # Distance along the line from end_position to intersection
+    signed_distance = numerator / denominator
+    
+    return signed_distance
+
+def measure_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber) -> Numeric:
+    """
+    Measure a feature onto the centerline of a timber.
+
+    Returns the distance from the bottom of the timber 
+    """
+    if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane):
+        return measure_by_intersecting_plane_onto_long_edge(feature, timber, TimberLongEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
+
+    assert False, "Not implemented"
 
 # TODO delete me or move to timber_shavings.py
 def gauge_distance_between_faces(reference_timber: Timber, reference_timber_face: TimberFace, target_timber: Timber, target_timber_face: TimberFace) -> Numeric:

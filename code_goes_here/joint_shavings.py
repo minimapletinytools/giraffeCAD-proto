@@ -39,7 +39,44 @@ def find_opposing_face_on_another_timber(reference_timber: Timber, reference_fac
     
     return target_face
 
-# TODO rename to scribe_face_plane_onto_centerline and replace with mark/measure function in implementation
+def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: Timber, to_timber: Timber, to_timber_end: TimberReferenceEnd) -> Numeric:
+    """
+    Find the distance from to_timber_end on to_timber to where the centerline intersects the face plane on face_timber.
+    
+    This computes the true geometric intersection between to_timber's centerline and 
+    the plane defined by the face on face_timber. This is useful for finding shoulder 
+    plane positions in various butt joints.
+    
+    The distance is measured along to_timber's length direction from the specified end.
+    Positive distance means the intersection is in the direction away from the end (into the timber).
+    
+    Args:
+        face: The face on face_timber to measure to
+        face_timber: The timber whose face defines the plane
+        to_timber: The timber we're measuring from
+        to_timber_end: Which end of to_timber to measure from (TOP or BOTTOM)
+    
+    Returns:
+        The signed distance along to_timber's centerline from to_timber_end to 
+        where the centerline intersects the face plane
+    
+    Raises:
+        ValueError: If the centerline is parallel to the face plane (no intersection)
+    
+    Example:
+        >>> # Find where to place a shoulder on timber_a when it butts against timber_b's FRONT face
+        >>> shoulder_distance = scribe_face_plane_onto_centerline(
+        ...     face=TimberFace.FRONT,
+        ...     face_timber=timber_b,
+        ...     to_timber=timber_a,
+        ...     to_timber_end=TimberReferenceEnd.TOP
+        ... )
+    """
+    # Get the face plane (any point on the face works - we use mark_into_face for simplicity)
+    face_plane = mark_into_face(0, face, face_timber)
+    return measure_by_intersecting_plane_onto_long_edge(face_plane, to_timber, TimberLongEdge.CENTERLINE, to_timber_end)
+
+    
 def deprecated_find_face_plane_intersection_on_centerline(face: TimberFace, face_timber: Timber, to_timber: Timber, to_timber_end: TimberReferenceEnd) -> Numeric:
     """
     Find the distance from to_timber_end on to_timber to the face on face_timber.

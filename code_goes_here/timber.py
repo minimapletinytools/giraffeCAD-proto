@@ -66,6 +66,12 @@ class TimberFeature(Enum):
         if self.value not in range(3, 7):
             raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberLongFace. Only values 3-6 are valid long faces.")
         return TimberLongFace(self.value)
+
+    def edge(self) -> 'TimberEdge':
+        """Convert to TimberLongEdge. Values 7-14 map to long edges."""
+        if (self.value not in range(7, 15))  and self.value != TimberFeature.CENTERLINE.value:
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberLongEdge. Only values 7-14 are valid long edges.")
+        return TimberEdge(self.value)
     
     def long_edge(self) -> 'TimberLongEdge':
         """Convert to TimberLongEdge. Values 7-14 map to long edges."""
@@ -186,6 +192,24 @@ class TimberLongFace(Enum):
         # Map from 3-6 to 0-3, rotate, then map back to 3-6
         return TimberLongFace((self.value - 3 - 1) % 4 + 3)
 
+class TimberEdge(Enum):
+    RIGHT_FRONT = 7
+    FRONT_LEFT = 8
+    LEFT_BACK = 9
+    BACK_RIGHT = 10
+    FRONT_RIGHT = 11
+    RIGHT_BACK = 12
+    BACK_LEFT = 13
+    LEFT_FRONT = 14
+    # TODO do the short edges too...
+    CENTERLINE = TimberFeature.CENTERLINE.value
+    
+    @property
+    def to(self) -> TimberFeature:
+        """Convert to TimberFeature for further conversions."""
+        return TimberFeature(self.value)
+
+    
 class TimberLongEdge(Enum):
     RIGHT_FRONT = 7
     FRONT_LEFT = 8
@@ -195,6 +219,7 @@ class TimberLongEdge(Enum):
     RIGHT_BACK = 12
     BACK_LEFT = 13
     LEFT_FRONT = 14
+    CENTERLINE = TimberFeature.CENTERLINE.value
     
     @property
     def to(self) -> TimberFeature:
@@ -204,7 +229,7 @@ class TimberLongEdge(Enum):
 
 # ============================================================================
 # Core Classes
-# ============================================================================
+#============================================================================
 
 
 def compute_timber_orientation(length_direction: Direction3D, width_direction: Direction3D) -> Orientation:
