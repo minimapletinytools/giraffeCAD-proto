@@ -567,8 +567,8 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         stickout: How much the joining timber extends beyond each connection point
         lateral_offset_from_centerline_timber1: the lateral position of the joining timber will be aligned to this
         feature_to_mark_on_joining_timber: Optional feature on the create timber to use as the reference for the lateral offset.
-                                           It is intended for you to use the measure_face or measure_long_edge functions to create a plane or line on a timber.
-                                           If not provided, uses the centerline. If a plane is provided, the "origin" of the plane is used for longitudinal positioning (i.e. location_on_timber1). In the case of measure_face, the origin aligns with the center of the created timber.
+                                           It is intended for you to use the mark_face or mark_long_edge functions to create a plane or line on a timber.
+                                           If not provided, uses the centerline. If a plane is provided, the "origin" of the plane is used for longitudinal positioning (i.e. location_on_timber1). In the case of mark_face, the origin aligns with the center of the created timber.
                                            
         size: Cross-sectional size (width, height) of the joining timber
         orientation_face_on_timber1: Optional face of timber1 to orient against. If provided,
@@ -652,33 +652,33 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
             # No offset needed for centerline
             feature_geometry = None
         elif feature_to_mark_on_joining_timber == TimberFeature.TOP_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.TOP)
+            feature_geometry = mark_face(temp_timber, TimberFace.TOP)
         elif feature_to_mark_on_joining_timber == TimberFeature.BOTTOM_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.BOTTOM)
+            feature_geometry = mark_face(temp_timber, TimberFace.BOTTOM)
         elif feature_to_mark_on_joining_timber == TimberFeature.RIGHT_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.RIGHT)
+            feature_geometry = mark_face(temp_timber, TimberFace.RIGHT)
         elif feature_to_mark_on_joining_timber == TimberFeature.LEFT_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.LEFT)
+            feature_geometry = mark_face(temp_timber, TimberFace.LEFT)
         elif feature_to_mark_on_joining_timber == TimberFeature.FRONT_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.FRONT)
+            feature_geometry = mark_face(temp_timber, TimberFace.FRONT)
         elif feature_to_mark_on_joining_timber == TimberFeature.BACK_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.BACK)
+            feature_geometry = mark_face(temp_timber, TimberFace.BACK)
         elif feature_to_mark_on_joining_timber == TimberFeature.RIGHT_FRONT_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.RIGHT_FRONT)
+            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.RIGHT_FRONT)
         elif feature_to_mark_on_joining_timber == TimberFeature.FRONT_LEFT_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.FRONT_LEFT)
+            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.FRONT_LEFT)
         elif feature_to_mark_on_joining_timber == TimberFeature.LEFT_BACK_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.LEFT_BACK)
+            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.LEFT_BACK)
         elif feature_to_mark_on_joining_timber == TimberFeature.BACK_RIGHT_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.BACK_RIGHT)
+            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.BACK_RIGHT)
         elif feature_to_mark_on_joining_timber == TimberFeature.FRONT_RIGHT_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.FRONT_RIGHT)
+            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.FRONT_RIGHT)
         elif feature_to_mark_on_joining_timber == TimberFeature.RIGHT_BACK_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.RIGHT_BACK)
+            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.RIGHT_BACK)
         elif feature_to_mark_on_joining_timber == TimberFeature.BACK_LEFT_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.BACK_LEFT)
+            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.BACK_LEFT)
         elif feature_to_mark_on_joining_timber == TimberFeature.LEFT_FRONT_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.LEFT_FRONT)
+            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.LEFT_FRONT)
         else:
             raise ValueError(f"Unsupported TimberFeature: {feature_to_mark_on_joining_timber}")
     
