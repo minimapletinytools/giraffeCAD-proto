@@ -12,7 +12,6 @@ from code_goes_here.joint_shavings import (
     scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber,
     find_opposing_face_on_another_timber,
     chop_shoulder_notch_on_timber_face,
-    deprecated_find_face_plane_intersection_on_centerline,
     scribe_face_plane_onto_centerline,
     find_projected_intersection_on_centerlines
 )
