@@ -218,7 +218,7 @@ class TestMarkFromFace:
         # Test round trip for various distances
         for distance in [Rational(0), Rational(5), Rational(10), Rational(-2)]:
             plane = mark_into_face(distance, TimberFace.RIGHT, timber)
-            marked = measure_onto_face(plane, TimberFace.RIGHT, timber)
+            marked = measure_onto_face(plane, timber, TimberFace.RIGHT)
             assert marked == distance
     
     def test_mark_point_from_face(self):
@@ -233,7 +233,7 @@ class TestMarkFromFace:
         
         # Point at x=2 (3 units inside from RIGHT face which is at x=5)
         point = Point(create_v3(2, 0, 0))
-        distance = measure_onto_face(point, TimberFace.RIGHT, timber)
+        distance = measure_onto_face(point, timber, TimberFace.RIGHT)
         
         assert distance == Rational(3)
 

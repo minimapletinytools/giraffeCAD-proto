@@ -30,7 +30,7 @@ In addition we have `measure_by_*` methods which take specific features where as
 Using these functions, we can take measurements relative to features on one timber and mark them onto another timber. Measurements always exist in some context, and together with their context, they become colloqial ways to refer to features as it is easier to understand and work with measurements than it is to work with features directly. So measuring and marking functions are precisely used to convert between these expressions!
 
 For example, if we `my_feature = mark_into_face(mm(10), TimberFace.RIGHT, timberA)` we mean the feature that is a plane 10mm into and parallel with the right face of the timber.
-And then if we `measure_onto_face(my_feature, TimberFace.RIGHT, timberB)` we mean find the distance from the feature above to the right face of timberB
+And then if we `measure_onto_face(my_feature, timberB, TimberFace.RIGHT)` we mean find the distance from the feature above to the right face of timberB
 
 Measuring features assumes the features are "comparable". In most cases this means the features are parallel such that measurements can be taken in the orthognal axis. If the features are not "comparable" the functions will assert! 
 
@@ -356,8 +356,7 @@ def mark_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> Unsig
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
 
-# TODO swap timber and face args
-def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], face: TimberFace, timber: Timber) -> Numeric:
+def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, face: TimberFace) -> Numeric:
     """
     Mark a feature from a face on a timber.
     
@@ -366,7 +365,7 @@ def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlan
     Negative means the feature is outside the timber (shallower than the face surface).
     
     This is the inverse of mark_into_face:
-    If feature = mark_into_face(d, face, timber), then measure_onto_face(feature, face, timber) = d
+    If feature = mark_into_face(d, face, timber), then measure_onto_face(feature, timber, face) = d
     """
 
     # TODO assert that UnsignedPlane/Plane/HalfPlane/Line are parallel to the face
@@ -562,6 +561,6 @@ def gauge_distance_between_faces(reference_timber: Timber, reference_timber_face
     target_face_plane = Plane(target_face_normal, get_point_on_face_global(target_timber_face, target_timber))
     
     # Measure the distance from the reference face to the target face plane
-    distance = measure_onto_face(target_face_plane, reference_timber_face, reference_timber)
+    distance = measure_onto_face(target_face_plane, reference_timber, reference_timber_face)
     
     return distance

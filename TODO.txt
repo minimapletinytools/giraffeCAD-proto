@@ -183,7 +183,7 @@ DONE-move
   DONE-more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
   DONE-move TODO stuff in timber into timber shavings
 
--delete deprecated stuff in joint_shavings and replace with measuring function
+DONE-delete deprecated stuff in joint_shavings and replace with measuring function
 -get rid of CSGCut and HalfSpace CSG... omg
 -address TODOs in joint_shavings.py
 -be consistent about function local/golbal naming
