@@ -1840,6 +1840,134 @@ class TestHelperFunctions:
         except AssertionError as e:
             assert "must be parallel" in str(e)
 
+        
+    def test_stickout_with_join_timbers(self):
+        """Test that stickout produces correct timber length in join_timbers."""
+        # Create two vertical posts 2.5 meters apart
+        post1 = create_standard_vertical_timber(height=2, size=(0.15, 0.15), position=(0, 0, 0))
+        post2 = create_standard_vertical_timber(height=2, size=(0.15, 0.15), position=(2.5, 0, 0))
+        
+        # Join with asymmetric stickout: 0.1m on post1 side, 0.3m on post2 side
+        stickout1 = Rational("0.1")
+        stickout2 = Rational("0.3")
+        beam = join_timbers(
+            timber1=post1,
+            timber2=post2,
+            location_on_timber1=Rational(1),
+            stickout=Stickout(stickout1, stickout2),
+            location_on_timber2=Rational(1),
+            lateral_offset=Rational(0)
+        )
+        
+        # Expected length: distance between posts (2.5m) + stickout1 (0.1m) + stickout2 (0.3m)
+        expected_length = Rational("2.5") + stickout1 + stickout2
+        assert abs(beam.length - expected_length) < 1e-10
+        assert abs(beam.length - Rational("2.9")) < 1e-10
+    
+    def test_stickout_reference_assertions(self):
+        """Test that join_timbers asserts when non-CENTER_LINE references are used."""
+        import pytest
+        from giraffe import StickoutReference
+        
+        # Create two posts 2.0 meters apart
+        post1 = create_standard_vertical_timber(height=2, size=(0.2, 0.2), position=(0, 0, 0))
+        post2 = create_standard_vertical_timber(height=2, size=(0.2, 0.2), position=(2, 0, 0))
+        
+        # Try to use INSIDE reference - should assert
+        with pytest.raises(AssertionError, match="CENTER_LINE stickout reference"):
+            join_timbers(
+                timber1=post1,
+                timber2=post2,
+                location_on_timber1=Rational(1),
+                stickout=Stickout(Rational("0.1"), Rational("0.1"), StickoutReference.INSIDE, StickoutReference.CENTER_LINE),
+                location_on_timber2=Rational(1),
+                lateral_offset=Rational(0)
+            )
+        
+        # Try to use OUTSIDE reference - should assert
+        with pytest.raises(AssertionError, match="CENTER_LINE stickout reference"):
+            join_timbers(
+                timber1=post1,
+                timber2=post2,
+                location_on_timber1=Rational(1),
+                stickout=Stickout(Rational("0.1"), Rational("0.1"), StickoutReference.CENTER_LINE, StickoutReference.OUTSIDE),
+                location_on_timber2=Rational(1),
+                lateral_offset=Rational(0)
+            )
+    
+    def test_stickout_reference_inside_face_aligned(self):
+        """Test INSIDE stickout reference with face-aligned timbers."""
+        from giraffe import StickoutReference, join_perpendicular_on_face_parallel_timbers, TimberFace
+        
+        # Create two parallel horizontal posts 2.0 meters apart
+        post1 = timber_from_directions(
+            length=Rational(3),
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # East
+            width_direction=create_v3(0, 0, 1)     # Up
+        )
+        
+        post2 = timber_from_directions(
+            length=Rational(3),
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            bottom_position=create_v3(0, 2, 0),  # 2m north
+            length_direction=create_v3(1, 0, 0),  # East (parallel)
+            width_direction=create_v3(0, 0, 1)     # Up
+        )
+        
+        # Join with INSIDE reference
+        beam = join_perpendicular_on_face_parallel_timbers(
+            post1, post2,
+            location_on_timber1=Rational("1.5"),
+            stickout=Stickout(Rational("0.1"), Rational("0.1"), StickoutReference.INSIDE, StickoutReference.INSIDE),
+            lateral_offset_from_centerline_timber1=Rational(0),
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            feature_to_mark_on_joining_timber=None,
+            orientation_face_on_timber1=TimberFace.TOP
+        )
+        
+        # Expected length: distance (2.0) + effective_stickout1 (0.1 + 0.1) + effective_stickout2 (0.1 + 0.1)
+        # = 2.0 + 0.2 + 0.2 = 2.4
+        assert abs(beam.length - Rational("2.4")) < 1e-10
+    
+    def test_stickout_reference_outside_face_aligned(self):
+        """Test OUTSIDE stickout reference with face-aligned timbers."""
+        from giraffe import StickoutReference, join_perpendicular_on_face_parallel_timbers, TimberFace
+        
+        # Create two parallel horizontal posts 2.0 meters apart
+        post1 = timber_from_directions(
+            length=Rational(3),
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # East
+            width_direction=create_v3(0, 0, 1)     # Up
+        )
+        
+        post2 = timber_from_directions(
+            length=Rational(3),
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            bottom_position=create_v3(0, 2, 0),  # 2m north
+            length_direction=create_v3(1, 0, 0),  # East (parallel)
+            width_direction=create_v3(0, 0, 1)     # Up
+        )
+        
+        # Join with OUTSIDE reference
+        beam = join_perpendicular_on_face_parallel_timbers(
+            post1, post2,
+            location_on_timber1=Rational("1.5"),
+            stickout=Stickout(Rational("0.2"), Rational("0.2"), StickoutReference.OUTSIDE, StickoutReference.OUTSIDE),
+            lateral_offset_from_centerline_timber1=Rational(0),
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            feature_to_mark_on_joining_timber=None,
+            orientation_face_on_timber1=TimberFace.TOP
+        )
+        
+        # Expected length: distance (2.0) + effective_stickout1 (0.2 - 0.1) + effective_stickout2 (0.2 - 0.1)
+        # = 2.0 + 0.1 + 0.1 = 2.2
+        assert abs(beam.length - Rational("2.2")) < 1e-10
+    
+
 
 class TestTimberFootprintOrientation:
     """Test timber inside/outside face determination relative to footprint."""
