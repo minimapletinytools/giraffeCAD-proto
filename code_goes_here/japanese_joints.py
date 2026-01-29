@@ -7,6 +7,7 @@ import warnings
 from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.joint_shavings import *
+from code_goes_here.measuring import mark_top_center_position
 from code_goes_here.moothymoth import *
 from code_goes_here.meowmeowcsg import *
 
@@ -207,7 +208,7 @@ def cut_lapped_gooseneck_joint(
 
     # Get the receiving timber end position
     if receiving_timber_end == TimberReferenceEnd.TOP:
-        receiving_timber_end_position_global = receiving_timber.get_top_center_position_global()
+        receiving_timber_end_position_global = mark_top_center_position(receiving_timber).position
     else:  # BOTTOM
         receiving_timber_end_position_global = receiving_timber.get_bottom_position_global()
     

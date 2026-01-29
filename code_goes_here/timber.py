@@ -341,48 +341,6 @@ class Timber:
             self.orientation.matrix[1, 1],
             self.orientation.matrix[2, 1]
         ])
-    
-    def get_position_on_centerline_from_bottom_global(self, distance: Numeric) -> V3:
-        """
-        Get the 3D position at a specific point along the timber's centerline, measured from the bottom.
-        
-        Args:
-            distance: Distance along the timber's length direction from the bottom position
-            
-        Returns:
-            3D position vector on the timber's centerline at the specified distance from bottom
-        """
-        return self.get_bottom_position_global() + self.get_length_direction_global() * distance
-    
-    def get_position_on_centerline_from_top_global(self, distance: Numeric) -> V3:
-        """
-        Get the 3D position at a specific point along the timber's centerline, measured from the top.
-        
-        Args:
-            distance: Distance along the timber's length direction from the top position
-            
-        Returns:
-            3D position vector on the timber's centerline at the specified distance from top
-        """
-        return self.get_bottom_position_global() + self.get_length_direction_global() * (self.length - distance)
-    
-    def get_bottom_center_position_global(self) -> V3:
-        """
-        Get the 3D position of the center of the bottom cross-section of the timber.
-        
-        Returns:
-            3D position vector at the center of the bottom cross-section
-        """
-        return self.get_bottom_position_global()
-    
-    def get_top_center_position_global(self) -> V3:
-        """
-        Get the 3D position of the center of the top cross-section of the timber.
-        
-        Returns:
-            3D position vector at the center of the top cross-section
-        """
-        return self.get_bottom_position_global() + self.get_length_direction_global() * self.length
     def get_face_direction_global(self, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]) -> Direction3D:
         """
         Get the world direction vector for a specific face of this timber.
@@ -476,9 +434,11 @@ class Timber:
         Returns:
             The TimberFace that points toward the inside of the footprint
         """
+        from .measuring import mark_top_center_position
+        
         # Project timber's centerline onto XY plane for footprint comparison
         bottom_2d = create_v2(self.get_bottom_position_global()[0], self.get_bottom_position_global()[1])
-        top_position = self.get_top_center_position_global()
+        top_position = mark_top_center_position(self).position
         top_2d = create_v2(top_position[0], top_position[1])
         
         # Find nearest boundary to timber's centerline
@@ -508,9 +468,11 @@ class Timber:
         Returns:
             The TimberFace that points toward the outside of the footprint
         """
+        from .measuring import mark_top_center_position
+        
         # Project timber's centerline onto XY plane for footprint comparison
         bottom_2d = create_v2(self.get_bottom_position_global()[0], self.get_bottom_position_global()[1])
-        top_position = self.get_top_center_position_global()
+        top_position = mark_top_center_position(self).position
         top_2d = create_v2(top_position[0], top_position[1])
         
         # Find nearest boundary to timber's centerline

@@ -174,7 +174,8 @@ DONE-all methods have a property `as` that returns TimberFeature
   -so you do long_face.as.face() to do your enum castings
 DONE-MeasuredTimberFeature -> MarkedTimberFeature
 DONE-swap measure/mark
--move out all the get_ methods in Timber.py (change into mark functions)
+DONE-move out all the get_ methods in Timber.py (change into mark functions)
+
 -be consistent about get/find usage
   -get -> use when you might do an "@property" but we don't get properties so use get
   -find -> requries some computation

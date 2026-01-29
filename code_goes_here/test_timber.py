@@ -249,25 +249,25 @@ class TestTimber:
         )
         
         # Test at bottom position (position = 0)
-        pos_at_bottom = timber.get_position_on_centerline_from_bottom_global(Rational(0))
+        pos_at_bottom = mark_position_on_centerline_from_bottom(timber, Rational(0)).position
         assert pos_at_bottom[0] == 1
         assert pos_at_bottom[1] == 2
         assert pos_at_bottom[2] == 3
         
         # Test at midpoint (position = 2.5)
-        pos_at_middle = timber.get_position_on_centerline_from_bottom_global(Rational("2.5"))
+        pos_at_middle = mark_position_on_centerline_from_bottom(timber, Rational("2.5")).position
         assert pos_at_middle[0] == 1
         assert pos_at_middle[1] == Rational("4.5")  # 2.0 + 2.5 * 1.0
         assert pos_at_middle[2] == 3
         
         # Test at top (position = 5.0)
-        pos_at_top = timber.get_position_on_centerline_from_bottom_global(Rational(5))
+        pos_at_top = mark_position_on_centerline_from_bottom(timber, Rational(5)).position
         assert pos_at_top[0] == 1
         assert pos_at_top[1] == 7  # 2.0 + 5.0 * 1.0
         assert pos_at_top[2] == 3
         
         # Test with negative position (beyond bottom)
-        pos_neg = timber.get_position_on_centerline_from_bottom_global(-Rational(1))
+        pos_neg = mark_position_on_centerline_from_bottom(timber, -Rational(1)).position
         assert pos_neg[0] == 1
         assert pos_neg[1] == 1  # 2.0 + (-1.0) * 1.0
         assert pos_neg[2] == 3
@@ -283,19 +283,19 @@ class TestTimber:
         )
         
         # Test position at bottom (0)
-        pos_bottom = timber.get_position_on_centerline_from_bottom_global(Rational(0))
+        pos_bottom = mark_position_on_centerline_from_bottom(timber, Rational(0)).position
         assert pos_bottom[0] == 1
         assert pos_bottom[1] == 2
         assert pos_bottom[2] == 3
         
         # Test position at 3.0 from bottom
-        pos_3 = timber.get_position_on_centerline_from_bottom_global(Rational(3))
+        pos_3 = mark_position_on_centerline_from_bottom(timber, Rational(3)).position
         assert pos_3[0] == 1
         assert pos_3[1] == 2
         assert pos_3[2] == 6  # 3.0 + 3.0
         
         # Test position at top (10)
-        pos_top = timber.get_position_on_centerline_from_bottom_global(Rational(10))
+        pos_top = mark_position_on_centerline_from_bottom(timber, Rational(10)).position
         assert pos_top[0] == 1
         assert pos_top[1] == 2
         assert pos_top[2] == 13  # 3.0 + 10.0
@@ -311,19 +311,19 @@ class TestTimber:
         )
         
         # Test position at top (0 from top = 10 from bottom)
-        pos_top = timber.get_position_on_centerline_from_top_global(Rational(0))
+        pos_top = mark_position_on_centerline_from_top(timber, Rational(0)).position
         assert pos_top[0] == 1
         assert pos_top[1] == 2
         assert pos_top[2] == 13  # 3.0 + 10.0
         
         # Test position at 3.0 from top (= 7.0 from bottom)
-        pos_3 = timber.get_position_on_centerline_from_top_global(Rational(3))
+        pos_3 = mark_position_on_centerline_from_top(timber, Rational(3)).position
         assert pos_3[0] == 1
         assert pos_3[1] == 2
         assert pos_3[2] == 10  # 3.0 + 7.0
         
         # Test at bottom (10 from top = 0 from bottom)
-        pos_bottom = timber.get_position_on_centerline_from_top_global(Rational(10))
+        pos_bottom = mark_position_on_centerline_from_top(timber, Rational(10)).position
         assert pos_bottom[0] == 1
         assert pos_bottom[1] == 2
         assert pos_bottom[2] == 3  # 3.0 + 0.0
