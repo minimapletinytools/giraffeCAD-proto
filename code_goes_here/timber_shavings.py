@@ -61,6 +61,19 @@ def project_point_onto_face_global(point_global: V3, face: TimberFace, timber: T
 
 
 
+def find_opposing_face_on_another_timber(reference_timber: Timber, reference_face: TimberLongFace, target_timber: Timber) -> TimberFace:
+    """
+    Find the opposing face on another timber. Assumes that the target_timber has a face parallel to the reference face on the reference_timber.
+    """
+    target_face = target_timber.get_closest_oriented_face_from_global_direction(-reference_timber.get_face_direction_global(reference_face))
+
+    # assert that the target_face is parallel to the reference_face
+    assert are_vectors_parallel(reference_timber.get_face_direction_global(reference_face), target_timber.get_face_direction_global(target_face)), \
+        f"Target face {target_face} is not parallel to reference face {reference_face} on timber {reference_timber.name}"
+    
+    return target_face
+
+
 # ============================================================================
 # Helper Functions for Creating Joint Accessories
 # ============================================================================
