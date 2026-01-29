@@ -182,8 +182,15 @@ DONE-don't forget to rename class methods in timber.py
 DONE-move 
   DONE-more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
   DONE-move TODO stuff in timber into timber shavings
-
 DONE-delete deprecated stuff in joint_shavings and replace with measuring function
+
+-maybe revisit measuring naming conevntion
+  -we have situations where we want to scribe (multiple timbers) but work with a feature not a distance i.e. mark_closest_point_on_centerlines
+  -maybe measurements should be wrapped in an object?.... then you can just measure_face().mark() and then you would do mark_into_face().measure_from_face().distance
+  -and i guess then scribe means taking multiple things to one measurement and could by polymorphic to take either local measurements or global features 
+  -and we would still need something that takes multiple things to one marking (that marking might not hvae an analgous measure so we can't just scribe().mark())
+  -or jsut have scribe return markings that you need to measure... that's probably better... and get rid of the current scribe functions you have...
+
 -get rid of CSGCut and HalfSpace CSG... omg
 -address TODOs in joint_shavings.py
 -be consistent about function local/golbal naming
