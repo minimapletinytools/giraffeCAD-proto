@@ -186,7 +186,7 @@ def scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
     target_face = target_timber.get_closest_oriented_face_from_global_direction(target_face_direction)
     
     # Measure from the target face to the cutting plane and return absolute value
-    signed_distance = measure_onto_face(cutting_plane, target_face, target_timber)
+    signed_distance = measure_onto_face(cutting_plane, target_timber, target_face)
     
     # Return the absolute distance (depth is always positive)
     return Abs(signed_distance)
