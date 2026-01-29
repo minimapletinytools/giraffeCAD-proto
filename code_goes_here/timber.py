@@ -212,64 +212,6 @@ class TimberLongEdgeConverter:
 # Joint Construction Data Structures
 # TODO move to construction
 # ============================================================================
-
-# TODO DELETE THESE replaced with measuring
-@dataclass(frozen=True)
-class DistanceFromFace:
-    face: TimberFace
-    distance: Numeric
-@dataclass(frozen=True)
-class DistanceFromLongFace:
-    face: TimberLongFace
-    distance: Numeric
-@dataclass(frozen=True)
-class DistanceFromEnd:
-    end: TimberReferenceEnd
-    distance: Numeric
-@dataclass(frozen=True)
-class DistanceFromLongEdge:
-    """
-    Position defined by distances from two adjacent long faces.
-    This identifies a point on the cross-section by measuring from two perpendicular long faces.
-    The 2 faces MUST be perpendicular to each other.
-    """
-    face1: DistanceFromLongFace
-    face2: DistanceFromLongFace
-
-    def get_long_edge(self) -> TimberLongEdge:
-        """
-        Get the long edge from the two faces.
-        """
-        f1 = self.face1.face
-        f2 = self.face2.face
-        
-        if f1 == TimberLongFace.RIGHT and f2 == TimberLongFace.FRONT:
-            return TimberLongEdge.RIGHT_FRONT
-        elif f1 == TimberLongFace.FRONT and f2 == TimberLongFace.LEFT:
-            return TimberLongEdge.FRONT_LEFT
-        elif f1 == TimberLongFace.LEFT and f2 == TimberLongFace.BACK:
-            return TimberLongEdge.LEFT_BACK
-        elif f1 == TimberLongFace.BACK and f2 == TimberLongFace.RIGHT:
-            return TimberLongEdge.BACK_RIGHT
-        elif f1 == TimberLongFace.FRONT and f2 == TimberLongFace.RIGHT:
-            return TimberLongEdge.FRONT_RIGHT
-        elif f1 == TimberLongFace.RIGHT and f2 == TimberLongFace.BACK:
-            return TimberLongEdge.RIGHT_BACK
-        elif f1 == TimberLongFace.BACK and f2 == TimberLongFace.LEFT:
-            return TimberLongEdge.BACK_LEFT
-        elif f1 == TimberLongFace.LEFT and f2 == TimberLongFace.FRONT:
-            return TimberLongEdge.LEFT_FRONT
-        else:
-            raise ValueError(f"Invalid faces: {f1} and {f2}")
-    
-    def is_valid(self) -> bool:
-        """
-        Check if the two faces are perpendicular to each other.
-        """
-        return self.face1.face.is_perpendicular(self.face2.face)
-
-
-
 class StickoutReference(Enum):
     """
     Defines how stickout is measured relative to timber connection points.
