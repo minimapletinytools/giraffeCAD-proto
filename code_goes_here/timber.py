@@ -342,7 +342,7 @@ class Timber:
             self.orientation.matrix[2, 1]
         ])
     
-    def get_centerline_position_from_bottom_global(self, distance: Numeric) -> V3:
+    def get_position_on_centerline_from_bottom_global(self, distance: Numeric) -> V3:
         """
         Get the 3D position at a specific point along the timber's centerline, measured from the bottom.
         
@@ -354,7 +354,7 @@ class Timber:
         """
         return self.get_bottom_position_global() + self.get_length_direction_global() * distance
     
-    def get_centerline_position_from_top_global(self, distance: Numeric) -> V3:
+    def get_position_on_centerline_from_top_global(self, distance: Numeric) -> V3:
         """
         Get the 3D position at a specific point along the timber's centerline, measured from the top.
         

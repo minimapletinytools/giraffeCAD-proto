@@ -172,10 +172,7 @@ CSGTimber?
 DONE-all methods have a property `as` that returns TimberFeature 
   -TimberFeature has methods `face` `reference_end` `long_face` etc 
   -so you do long_face.as.face() to do your enum castings
--MeasuredTimberFeature -> MarkedTimberFeature
-
-
-
+DONE-MeasuredTimberFeature -> MarkedTimberFeature
 DONE-swap measure/mark
 -move out all the get_ methods in Timber.py (change into mark functions)
 -be consistent about get/find usage
