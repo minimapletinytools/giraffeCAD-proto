@@ -12,11 +12,13 @@ All measuring functions should follow the following naming convention:
 - mark_* : functions that take measurements relative to a (LOCAL) feature of a timber and outputs a feature in GLOBAL space
 - measure_* : functions that take a feature in GLOBAL space and outputs a measurement relative to a (LOCAL) feature of a timber
 - scribe_* : functions that take multiple measurements relative to (LOCAL) features of timbers and outputs a measurement relative to a (LOCAL) feature of a timber
+- ???_* : functions that take features in GLOBAL space and outputs features in GLOBAL space
 
 OR put more simply: 
 - mark_* means LOCAL to GLOBAL
 - measure_* means GLOBAL to LOCAL
 - scribe_* means LOCAL to LOCAL
+- ???_* means GLOBAL to GLOBAL
 
 Using these functions, we can take measurements relative to features on one timber and mark them onto another timber. Measurements always exist in some context, and together with their context, they become colloqial ways to refer to features as it is easier to understand and work with measurements than it is to work with features directly. So measuring and marking functions are precisely used to convert between these expressions!
 

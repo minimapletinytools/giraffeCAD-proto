@@ -5,7 +5,6 @@ Contains traditional Japanese timber joint implementations
 import warnings
 
 from code_goes_here.timber import *
-from code_goes_here.timber import _compute_timber_orientation  # Private function, needs explicit import
 from code_goes_here.construction import *
 from code_goes_here.joint_shavings import *
 from code_goes_here.moothymoth import *
