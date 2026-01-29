@@ -183,6 +183,8 @@ DONE-move
   DONE-more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
   DONE-move TODO stuff in timber into timber shavings
 DONE-delete deprecated stuff in joint_shavings and replace with measuring function
+DONE-get rid of CSGCut and HalfSpace CSG... omg
+
 
 -maybe revisit measuring naming conevntion
   -we have situations where we want to scribe (multiple timbers) but work with a feature not a distance i.e. mark_closest_point_on_centerlines
@@ -190,17 +192,11 @@ DONE-delete deprecated stuff in joint_shavings and replace with measuring functi
   -and i guess then scribe means taking multiple things to one measurement and could by polymorphic to take either local measurements or global features 
   -and we would still need something that takes multiple things to one marking (that marking might not hvae an analgous measure so we can't just scribe().mark())
   -or jsut have scribe return markings that you need to measure... that's probably better... and get rid of the current scribe functions you have...
-
--get rid of CSGCut and HalfSpace CSG... omg
 -address TODOs in joint_shavings.py
 -be consistent about function local/golbal naming
   -local input vars should have the suffix  _local
     -some things must be interpreted locally such as "face" or "distance", these d onot have the suffix
   -functions return things in golbal space by default unless _local suffix
-
-  
-
-
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
 -update morties and tenon to support
   -perpendicular but not face aligned

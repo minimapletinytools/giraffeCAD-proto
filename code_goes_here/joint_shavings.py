@@ -25,20 +25,6 @@ def orientation_pointing_towards_face_sitting_on_face(towards_face : TimberFace,
     assert are_vectors_perpendicular(towards_face.get_direction(), sitting_face.get_direction())
     return Orientation.from_z_and_y(towards_face.get_direction(), -sitting_face.get_direction())
 
-    
-# TODO move to timber_shavings.py
-def find_opposing_face_on_another_timber(reference_timber: Timber, reference_face: TimberLongFace, target_timber: Timber) -> TimberFace:
-    """
-    Find the opposing face on another timber. Assumes that the target_timber has a face parallel to the reference face on the reference_timber.
-    """
-    target_face = target_timber.get_closest_oriented_face_from_global_direction(-reference_timber.get_face_direction_global(reference_face))
-
-    # assert that the target_face is parallel to the reference_face
-    assert are_vectors_parallel(reference_timber.get_face_direction_global(reference_face), target_timber.get_face_direction_global(target_face)), \
-        f"Target face {target_face} is not parallel to reference face {reference_face} on timber {reference_timber.name}"
-    
-    return target_face
-
 def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: Timber, to_timber: Timber, to_timber_end: TimberReferenceEnd) -> Numeric:
     """
     Find the distance from to_timber_end on to_timber to where the centerline intersects the face plane on face_timber.
