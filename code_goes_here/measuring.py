@@ -10,9 +10,14 @@ When marking on timbers, we want to do things like measure from a reference edge
 All measuring functions should follow the following naming convention:
 
 - `mark_*` : functions that take measurements relative to a (LOCAL) feature of a timber and outputs a feature in GLOBAL space
+
+- `???_*` : functions that take feature(s) in GLOBAL space and outputs features in GLOBAL space
+
 - `measure_*` : functions that take a feature in GLOBAL space and outputs a measurement relative to a (LOCAL) feature of a timber
 - `scribe_*` : functions that take multiple measurements relative to (LOCAL) features of timbers and outputs a measurement relative to a (LOCAL) feature of a timber
-- `???_*` : functions that take features in GLOBAL space and outputs features in GLOBAL space
+
+
+- `???_*` : functions that take feature(s) in GLOBAL space and outputs features in GLOBAL space
 
 OR put more simply: 
 - `mark_*` means LOCAL to GLOBAL
@@ -431,16 +436,91 @@ def measure_by_intersecting_plane_onto_long_edge(plane: Union[UnsignedPlane, Pla
     
     return signed_distance
 
+def measure_by_finding_closest_point_on_line_to_edge(line: Line, timber: Timber, edge: TimberLongEdge, end: TimberReferenceEnd) -> Numeric:
+    """
+    Find the closest point between a line and a timber edge.
+
+    This computes the closest point on the timber edge to the given line, which is useful
+    for finding where two centerlines come closest to each other (even if they don't intersect).
+
+    Args:
+        line: The line feature to measure from
+        timber: The timber whose edge we're measuring to
+        edge: The edge to measure to
+        end: Which end of the timber to measure from
+
+    Returns:
+        The signed distance along the timber's length direction from the specified end to the closest point.
+        Positive means the closest point is in the direction of the timber's length_direction (toward TOP).
+        Negative means the closest point is opposite the timber's length_direction (toward BOTTOM).
+        
+        Asserts if lines are parallel
+    """
+
+    
+    
+    # Get the edge line
+    edge_line = mark_long_edge(timber, edge)
+
+    if are_vectors_parallel(line.direction, edge_line.direction):
+        raise ValueError(f"Lines are parallel - no intersection exists")
+    
+    # Get the end position on the edge
+    # edge_line.point is at mid-length, so we need to offset by half the length
+    # edge_line.direction is the timber's length direction (points from BOTTOM to TOP)
+    if end == TimberReferenceEnd.TOP:
+        edge_end_position = edge_line.point + edge_line.direction * (timber.length / 2)
+    else:  # BOTTOM
+        edge_end_position = edge_line.point - edge_line.direction * (timber.length / 2)
+    
+    # Solve for closest points on two 3D lines using the standard formula
+    # Line 1 (given line): line.point + s * line.direction
+    # Line 2 (edge): edge_end_position + t * edge_line.direction
+    # We need to find s and t such that the connecting vector is perpendicular to both directions
+    
+    w = line.point - edge_end_position  # Vector between starting points
+    
+    a = (line.direction.T * line.direction)[0, 0]  # Should be 1 for normalized directions
+    b = (line.direction.T * edge_line.direction)[0, 0]
+    c = (edge_line.direction.T * edge_line.direction)[0, 0]  # Should be 1 for normalized directions
+    d = (w.T * line.direction)[0, 0]
+    e = (w.T * edge_line.direction)[0, 0]
+    
+    denominator = a * c - b * b
+    
+    # Check if lines are parallel (denominator near zero)
+    if zero_test(denominator):
+        # Lines are parallel - any perpendicular works, use starting point (distance = 0)
+        return Rational(0)
+    
+    # Calculate parameter for closest point on the edge
+    # This gives us the distance along edge_line.direction from edge_end_position
+    # edge_line.direction is the timber's length_direction (from BOTTOM to TOP)
+    # So t is the signed distance along the timber's length direction from the specified end
+    t = (a * e - b * d) / denominator
+    
+    return t
+
 def measure_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber) -> Numeric:
     """
     Measure a feature onto the centerline of a timber.
 
-    Returns the distance from the bottom of the timber 
+    Returns the distance from the bottom of the timber to the intersection/closest point.
+    
+    Args:
+        feature: The feature to measure (Plane, Line, Point, etc.)
+        timber: The timber whose centerline we're measuring to
+        
+    Returns:
+        Distance from the BOTTOM end of the timber to where the feature intersects/is closest to the centerline.
+        Positive means into the timber from the bottom.
     """
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane):
         return measure_by_intersecting_plane_onto_long_edge(feature, timber, TimberLongEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
+    elif isinstance(feature, Line):
+        return measure_by_finding_closest_point_on_line_to_edge(feature, timber, TimberLongEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
 
-    assert False, "Not implemented"
+    assert False, f"Not implemented for feature type {type(feature)}"
 
 # TODO delete me or move to timber_shavings.py
 def gauge_distance_between_faces(reference_timber: Timber, reference_timber_face: TimberFace, target_timber: Timber, target_timber_face: TimberFace) -> Numeric:

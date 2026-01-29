@@ -13,7 +13,7 @@ from code_goes_here.joint_shavings import (
     find_opposing_face_on_another_timber,
     chop_shoulder_notch_on_timber_face,
     scribe_face_plane_onto_centerline,
-    find_projected_intersection_on_centerlines
+    scribe_centerline_onto_centerline
 )
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberLongFace
 from code_goes_here.moothymoth import create_v3, create_v2, inches, are_vectors_parallel
@@ -1440,7 +1440,7 @@ class TestScribeFaceOnCenterline:
 
 
 class TestFindProjectedIntersectionOnCenterlines:
-    """Tests for find_projected_intersection_on_centerlines function."""
+    """Tests for scribe_centerline_onto_centerline function."""
     
     def test_orthogonal_timbers_t_joint(self):
         """Test with orthogonal timbers forming a T-joint."""
@@ -1465,7 +1465,7 @@ class TestFindProjectedIntersectionOnCenterlines:
         )
         
         # Find closest points
-        distA, distB = find_projected_intersection_on_centerlines(
+        distA, distB = scribe_centerline_onto_centerline(
             timber_vertical, timber_horizontal,
             TimberReferenceEnd.BOTTOM, TimberReferenceEnd.BOTTOM
         )
@@ -1496,14 +1496,13 @@ class TestFindProjectedIntersectionOnCenterlines:
             name="timberB"
         )
         
-        distA, distB = find_projected_intersection_on_centerlines(
-            timberA, timberB,
-            TimberReferenceEnd.BOTTOM, TimberReferenceEnd.BOTTOM
-        )
+        # expect this to assert
+        with pytest.raises(ValueError):
+            distA, distB = scribe_centerline_onto_centerline(
+                timberA, timberB,
+                TimberReferenceEnd.BOTTOM, TimberReferenceEnd.BOTTOM
+            )
         
-        # For parallel lines, should return 0 (starting points)
-        assert distA == Rational(0)
-        assert distB == Rational(0)
     
     def test_with_different_reference_ends(self):
         """Test measuring from different reference ends (TOP vs BOTTOM)."""
@@ -1528,7 +1527,7 @@ class TestFindProjectedIntersectionOnCenterlines:
         )
         
         # Measure from TOP of vertical timber
-        distA, distB = find_projected_intersection_on_centerlines(
+        distA, distB = scribe_centerline_onto_centerline(
             timber_vertical, timber_horizontal,
             TimberReferenceEnd.TOP, TimberReferenceEnd.BOTTOM
         )
