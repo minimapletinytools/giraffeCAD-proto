@@ -58,7 +58,28 @@ from dataclasses import dataclass
 from typing import Union
 from .moothymoth import *
 from .timber import *
-from .timber_shavings import get_point_on_face_global, project_point_onto_face_global
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+def get_point_on_face_global(face: TimberFace, timber: Timber) -> V3:
+    """
+    Get a point on the timber face. Useful for projecting points onto the face.
+    
+    Args:
+        face: The face to get a point on
+        timber: The timber
+        
+    Returns:
+        A point on the face surface in global coordinates
+    """
+    return timber.get_bottom_position_global() + timber.get_face_direction_global(face) * timber.get_size_in_face_normal_axis(face) / 2
+
+
+# ============================================================================
+# Geometric Feature Types
+# ============================================================================
 
 # Type alias for all measurable geometric features on timbers
 MarkedTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane']
@@ -380,7 +401,16 @@ def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlan
     feature_point = get_point_on_feature(feature, timber)
 
     # Project the feature point onto the face to get the signed distance
-    distance = project_point_onto_face_global(feature_point, face, timber)
+    # Get a reference point on the face surface
+    face_point_global = get_point_on_face_global(face, timber)
+    
+    # Get the face normal (pointing OUT of the timber)
+    face_direction_global = timber.get_face_direction_global(face)
+    
+    # Calculate signed distance: how far from the face is the point?
+    # Positive if point is in the direction opposite to face_direction (inside timber)
+    # Negative if point is in the direction of face_direction (outside timber)
+    distance = (face_direction_global.T * (face_point_global - feature_point))[0, 0]
     
     return distance
 
