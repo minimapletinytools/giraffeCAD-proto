@@ -13,6 +13,7 @@ from code_goes_here.joint_shavings import (
     find_opposing_face_on_another_timber,
     chop_shoulder_notch_on_timber_face,
     deprecated_find_face_plane_intersection_on_centerline,
+    scribe_face_plane_onto_centerline,
     find_projected_intersection_on_centerlines
 )
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberLongFace
@@ -1086,13 +1087,13 @@ class TestChopShoulderNotchOnTimberFace:
 
 
 class TestScribeFaceOnCenterline:
-    """Tests for deprecated_find_face_plane_intersection_on_centerline function."""
+    """Tests for scribe_face_plane_onto_centerline function."""
     
     def test_horizontal_timbers_butt_joint(self):
         """
-        Test scribing from timber_a's TOP end to timber_b's BOTTOM face.
+        Test scribing from timber_a's TOP end to timber_b's LEFT face.
         
-        Classic butt joint scenario: timber_a (horizontal) butts against timber_b's bottom face.
+        Classic butt joint scenario: horizontal timber approaching a vertical face.
         """
         # Create timber_a pointing east (horizontal)
         timber_a = timber_from_directions(
@@ -1103,9 +1104,9 @@ class TestScribeFaceOnCenterline:
             width_direction=create_v3(0, 1, 0),
             name="timber_a"
         )
-        # timber_a's TOP end is at x=48"
+        # timber_a's TOP end is at (48", 0, 4"), centerline runs along x-axis
         
-        # Create timber_b vertical, positioned so timber_a's end approaches its bottom face
+        # Create timber_b vertical with LEFT face that will intersect timber_a's centerline
         timber_b = timber_from_directions(
             length=inches(96),  # 8 feet tall
             size=create_v2(inches(6), inches(6)),
@@ -1114,31 +1115,29 @@ class TestScribeFaceOnCenterline:
             width_direction=create_v3(1, 0, 0),
             name="timber_b"
         )
-        # timber_b's BOTTOM face is at z=0
-        # timber_a's centerline is at z=4" (its bottom position)
+        # timber_b's LEFT face is at x = 60" - 3" = 57" (normal pointing in -x direction)
         
-        # Scribe from timber_a's TOP end to timber_b's BOTTOM face
-        distance = deprecated_find_face_plane_intersection_on_centerline(
-            face=TimberFace.BOTTOM,
+        # Scribe from timber_a's TOP end to timber_b's LEFT face
+        distance = scribe_face_plane_onto_centerline(
+            face=TimberFace.LEFT,
             face_timber=timber_b,
             to_timber=timber_a,
             to_timber_end=TimberReferenceEnd.TOP
         )
         
-        # Expected calculation:
-        # - timber_a's TOP end position: (48", 0, 4")
-        # - timber_b's BOTTOM face center: (60", 0, 0) (at the bottom end)
-        # - Vector from timber_a TOP to timber_b BOTTOM face: (60"-48", 0, 0-4") = (12", 0, -4")
-        # - timber_a's into_timber_direction from TOP = -length_direction = (-1, 0, 0)
-        # - Signed distance = (12", 0, -4") · (-1, 0, 0) = -12"
-        # Negative means the face is in the opposite direction (timber_b is past timber_a's end)
-        expected_distance = inches(-12)
+        # Expected calculation (true geometric intersection):
+        # - timber_a's centerline: P = (48", 0, 4") + t*(-1, 0, 0) [measuring from TOP, going backward]
+        # - timber_b's LEFT face plane: normal = (-1, 0, 0), plane at x = 57"
+        # - Intersection: -1 * (x - 57") = 0 => x = 57"
+        # - From line: 48" - t = 57" => t = -9"
+        # - Negative means we need to go backward from the TOP end (past the end)
+        expected_distance = inches(-9)
         assert distance == expected_distance, \
             f"Expected distance {expected_distance}, got {distance}"
     
     def test_vertical_timbers_face_to_face(self):
         """
-        Test scribing between two vertical timbers where one approaches the other's long face.
+        Test scribing between a vertical timber and a horizontal timber's vertical face.
         """
         # Create timber_a pointing up
         timber_a = timber_from_directions(
@@ -1149,36 +1148,34 @@ class TestScribeFaceOnCenterline:
             width_direction=create_v3(1, 0, 0),
             name="timber_a"
         )
-        # timber_a's TOP end is at z=96"
+        # timber_a's TOP end is at (0, 0, 96"), centerline runs along z-axis
         
-        # Create timber_b also pointing up, offset in X direction
+        # Create timber_b horizontal so its BACK face (pointing down) intersects timber_a's centerline
         timber_b = timber_from_directions(
-            length=inches(96),  # 8 feet
+            length=inches(48),  # 4 feet
             size=create_v2(inches(6), inches(6)),
-            bottom_position=create_v3(inches(10), 0, 0),  # Offset 10 inches in X
-            length_direction=create_v3(0, 0, 1),  # Pointing up
-            width_direction=create_v3(1, 0, 0),
+            bottom_position=create_v3(inches(-10), 0, inches(50)),  # BACK face at z=50"-3"=47"
+            length_direction=create_v3(1, 0, 0),  # Pointing east
+            width_direction=create_v3(0, 1, 0),
             name="timber_b"
         )
-        # timber_b's LEFT face is at x = 10" - 3" = 7"
-        # timber_b's LEFT face center (mid-length) is at (7", 0, 48")
+        # timber_b's BACK face is at z = 50" - 3" = 47" (normal pointing in -z direction, downward)
         
-        # Scribe from timber_a's TOP end to timber_b's LEFT face
-        distance = deprecated_find_face_plane_intersection_on_centerline(
-            face=TimberFace.LEFT,
+        # Scribe from timber_a's TOP end to timber_b's BACK face
+        distance = scribe_face_plane_onto_centerline(
+            face=TimberFace.BACK,
             face_timber=timber_b,
             to_timber=timber_a,
             to_timber_end=TimberReferenceEnd.TOP
         )
         
-        # Expected calculation:
-        # - timber_a's TOP end position: (0, 0, 96")
-        # - timber_b's LEFT face center: (7", 0, 48") (mid-length of long face)
-        # - Vector from timber_a TOP to timber_b LEFT face: (7", 0, 48"-96") = (7", 0, -48")
-        # - timber_a's into_timber_direction from TOP = -length_direction = (0, 0, -1)
-        # - Signed distance = (7", 0, -48") · (0, 0, -1) = 48"
-        # Positive means the face is in the direction into the timber from the end
-        expected_distance = inches(48)
+        # Expected calculation (true geometric intersection):
+        # - timber_a's centerline: P = (0, 0, 96") + t*(0, 0, -1) [measuring from TOP, going down]
+        # - timber_b's BACK face plane: normal = (0, 0, -1), plane at z = 47"
+        # - Intersection: -1 * (z - 47") = 0 => z = 47"
+        # - From line: 96" - t = 47" => t = 49"
+        # - Positive means going into the timber from the TOP end
+        expected_distance = inches(49)
         assert distance == expected_distance, \
             f"Expected distance {expected_distance}, got {distance}"
     
@@ -1193,81 +1190,77 @@ class TestScribeFaceOnCenterline:
             width_direction=create_v3(1, 0, 0),
             name="timber_a"
         )
-        # timber_a's BOTTOM end is at z=12"
-        # timber_a's TOP end is at z=12"+96"=108"
+        # timber_a's BOTTOM end is at (0, 0, 12"), centerline runs along z-axis
+        # timber_a's TOP end is at (0, 0, 108")
         
-        # Create timber_b horizontal, below timber_a
+        # Create timber_b horizontal with FRONT face (pointing up) intersecting timber_a's centerline
         timber_b = timber_from_directions(
             length=inches(48),  # 4 feet
             size=create_v2(inches(6), inches(6)),
-            bottom_position=create_v3(0, 0, 0),
+            bottom_position=create_v3(0, 0, 0),  # FRONT face at z=3"
             length_direction=create_v3(1, 0, 0),  # Pointing east
             width_direction=create_v3(0, 1, 0),
             name="timber_b"
         )
-        # timber_b's TOP face (end face) is at x=48", z=0"
-        # timber_b's TOP face center: (48", 0, 0)
+        # timber_b's FRONT face is at z = 0" + 3" = 3" (normal pointing in +z direction, upward)
         
-        # Scribe from timber_a's BOTTOM end to timber_b's TOP face
-        distance = deprecated_find_face_plane_intersection_on_centerline(
-            face=TimberFace.TOP,
+        # Scribe from timber_a's BOTTOM end to timber_b's FRONT face
+        distance = scribe_face_plane_onto_centerline(
+            face=TimberFace.FRONT,
             face_timber=timber_b,
             to_timber=timber_a,
             to_timber_end=TimberReferenceEnd.BOTTOM
         )
         
-        # Expected calculation:
-        # - timber_a's BOTTOM end position: (0, 0, 12")
-        # - timber_b's TOP face center: (48", 0, 0) (at the top end)
-        # - Vector from timber_a BOTTOM to timber_b TOP face: (48", 0, -12")
-        # - timber_a's into_timber_direction from BOTTOM = +length_direction = (0, 0, 1)
-        # - Signed distance = (48", 0, -12") · (0, 0, 1) = -12"
-        # Negative means the face is below the end (opposite direction)
-        expected_distance = inches(-12)
+        # Expected calculation (true geometric intersection):
+        # - timber_a's centerline: P = (0, 0, 12") + t*(0, 0, 1) [measuring from BOTTOM, going up]
+        # - timber_b's FRONT face plane: normal = (0, 0, 1), plane at z = 3"
+        # - Intersection: 1 * (z - 3") = 0 => z = 3"
+        # - From line: 12" + t = 3" => t = -9"
+        # - Negative means going backward from the BOTTOM end (below the timber)
+        expected_distance = inches(-9)
         assert distance == expected_distance, \
             f"Expected distance {expected_distance}, got {distance}"
     
     def test_scribe_to_end_face_top(self):
-        """Test scribing to a TOP end face."""
-        # Create timber_a horizontal
+        """Test scribing to an upward-pointing face."""
+        # Create timber_a vertical
         timber_a = timber_from_directions(
             length=inches(48),  # 4 feet
             size=create_v2(inches(4), inches(4)),
             bottom_position=create_v3(0, 0, 0),
-            length_direction=create_v3(1, 0, 0),  # Pointing east
-            width_direction=create_v3(0, 1, 0),
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
             name="timber_a"
         )
-        # timber_a's TOP end is at x=48"
+        # timber_a's TOP end is at (0, 0, 48"), centerline runs along z-axis
         
-        # Create timber_b horizontal, aligned with timber_a
+        # Create timber_b horizontal with its FRONT face (pointing up) intersecting timber_a's centerline
         timber_b = timber_from_directions(
             length=inches(60),  # 5 feet
             size=create_v2(inches(6), inches(6)),
-            bottom_position=create_v3(inches(60), 0, 0),  # Start at x=60"
+            bottom_position=create_v3(inches(-10), 0, inches(27)),  # FRONT face at z=27"+3"=30"
             length_direction=create_v3(1, 0, 0),  # Pointing east
             width_direction=create_v3(0, 1, 0),
             name="timber_b"
         )
-        # timber_b's TOP face is at x=60"+60"=120"
-        # timber_b's TOP face center: (120", 0, 0)
+        # timber_b's FRONT face is at z = 27" + 3" = 30" (normal pointing in +z direction, upward)
         
-        # Scribe from timber_a's TOP end to timber_b's TOP face
-        distance = deprecated_find_face_plane_intersection_on_centerline(
-            face=TimberFace.TOP,
+        # Scribe from timber_a's TOP end to timber_b's FRONT face
+        distance = scribe_face_plane_onto_centerline(
+            face=TimberFace.FRONT,
             face_timber=timber_b,
             to_timber=timber_a,
             to_timber_end=TimberReferenceEnd.TOP
         )
         
-        # Expected calculation:
-        # - timber_a's TOP end position: (48", 0, 0)
-        # - timber_b's TOP face center: (120", 0, 0)
-        # - Vector from timber_a TOP to timber_b TOP face: (72", 0, 0)
-        # - timber_a's into_timber_direction from TOP = -length_direction = (-1, 0, 0)
-        # - Signed distance = (72", 0, 0) · (-1, 0, 0) = -72"
-        # Negative means the face is past the end (opposite direction)
-        expected_distance = inches(-72)
+        # Expected calculation (true geometric intersection):
+        # - timber_a's centerline: P = (0, 0, 48") + t*(0, 0, -1) [measuring from TOP, going down]
+        # - timber_b's FRONT face plane: normal = (0, 0, 1), plane at z = 30"
+        # - Intersection: 1 * (z - 30") = 0 => z = 30"
+        # - From line: 48" - t = 30" => t = 18"
+        # - Positive means going into the timber from the TOP end
+        expected_distance = inches(18)
         assert distance == expected_distance, \
             f"Expected distance {expected_distance}, got {distance}"
     
@@ -1297,7 +1290,7 @@ class TestScribeFaceOnCenterline:
         # timber_b's LEFT face center (mid-length) is at (47", 0, 48")
         
         # Scribe from timber_a's TOP end to timber_b's LEFT face
-        distance = deprecated_find_face_plane_intersection_on_centerline(
+        distance = scribe_face_plane_onto_centerline(
             face=TimberFace.LEFT,
             face_timber=timber_b,
             to_timber=timber_a,
@@ -1317,7 +1310,7 @@ class TestScribeFaceOnCenterline:
     
     def test_with_rational_arithmetic(self):
         """Test that the function works correctly with exact Rational arithmetic."""
-        # Create timber_a with Rational dimensions
+        # Create timber_a vertical with Rational dimensions
         timber_a = timber_from_directions(
             length=Rational(10),
             size=create_v2(Rational(2), Rational(2)),
@@ -1326,40 +1319,39 @@ class TestScribeFaceOnCenterline:
             width_direction=create_v3(1, 0, 0),
             name="timber_a"
         )
-        # timber_a's TOP end is at z=10
+        # timber_a's TOP end is at (0, 0, 10), centerline runs along z-axis
         
-        # Create timber_b offset in X and Y
+        # Create timber_b horizontal with its BACK face (pointing down) intersecting timber_a's centerline
         timber_b = timber_from_directions(
             length=Rational(20),
             size=create_v2(Rational(3), Rational(3)),
-            bottom_position=create_v3(Rational(5), 0, 0),
-            length_direction=create_v3(0, 0, 1),  # Pointing up
-            width_direction=create_v3(1, 0, 0),
+            bottom_position=create_v3(Rational(-5), 0, Rational(7) + Rational(3)/2),  # BACK face at z=7
+            length_direction=create_v3(1, 0, 0),  # Pointing east
+            width_direction=create_v3(0, 1, 0),
             name="timber_b"
         )
-        # timber_b's LEFT face is at x = 5 - 3/2 = 7/2
-        # timber_b's LEFT face center (mid-length) is at (7/2, 0, 10)
+        # timber_b's BACK face is at z = 7 + 3/2 - 3/2 = 7 (normal pointing in -z direction, downward)
         
-        # Scribe from timber_a's TOP end to timber_b's LEFT face
-        distance = deprecated_find_face_plane_intersection_on_centerline(
-            face=TimberFace.LEFT,
+        # Scribe from timber_a's TOP end to timber_b's BACK face
+        distance = scribe_face_plane_onto_centerline(
+            face=TimberFace.BACK,
             face_timber=timber_b,
             to_timber=timber_a,
             to_timber_end=TimberReferenceEnd.TOP
         )
         
-        # Expected calculation:
-        # - timber_a's TOP end position: (0, 0, 10)
-        # - timber_b's LEFT face center: (7/2, 0, 10)
-        # - Vector from timber_a TOP to timber_b LEFT face: (7/2, 0, 0)
-        # - timber_a's into_timber_direction from TOP = -length_direction = (0, 0, -1)
-        # - Signed distance = (7/2, 0, 0) · (0, 0, -1) = 0
-        expected_distance = Rational(0)
+        # Expected calculation (true geometric intersection):
+        # - timber_a's centerline: P = (0, 0, 10) + t*(0, 0, -1) [measuring from TOP, going down]
+        # - timber_b's BACK face plane: normal = (0, 0, -1), plane at z = 7
+        # - Intersection: -1 * (z - 7) = 0 => z = 7
+        # - From line: 10 - t = 7 => t = 3
+        # - Positive means going into the timber from the TOP end
+        expected_distance = Rational(3)
         assert distance == expected_distance, \
             f"Expected exact rational {expected_distance}, got {distance}"
     
     def test_positive_distance_into_timber(self):
-        """Test a case where the scribed face is in the positive direction (into the timber)."""
+        """Test a case where the intersection is in the positive direction (into the timber)."""
         # Create timber_a pointing east
         timber_a = timber_from_directions(
             length=inches(48),  # 4 feet
@@ -1369,36 +1361,34 @@ class TestScribeFaceOnCenterline:
             width_direction=create_v3(0, 1, 0),
             name="timber_a"
         )
-        # timber_a's TOP end is at x=48"
+        # timber_a's TOP end is at (48", 0, 0), centerline runs along x-axis
         
-        # Create timber_b with BOTTOM face at x=36" (before timber_a's TOP end)
+        # Create timber_b vertical with LEFT face that intersects at x=36" (before timber_a's TOP end)
         timber_b = timber_from_directions(
             length=inches(60),  # 5 feet
             size=create_v2(inches(6), inches(6)),
-            bottom_position=create_v3(inches(36), 0, 0),
-            length_direction=create_v3(1, 0, 0),  # Pointing east
-            width_direction=create_v3(0, 1, 0),
+            bottom_position=create_v3(inches(36), 0, 0),  # LEFT face at x=36"-3"=33"
+            length_direction=create_v3(0, 0, 1),  # Pointing up
+            width_direction=create_v3(1, 0, 0),
             name="timber_b"
         )
-        # timber_b's BOTTOM face (end face) is at x=36" (the bottom position for horizontal timber)
-        # timber_b's BOTTOM face center: (36", 0, 0)
+        # timber_b's LEFT face is at x = 36" - 3" = 33" (normal pointing in -x direction)
         
-        # Scribe from timber_a's TOP end to timber_b's BOTTOM face
-        distance = deprecated_find_face_plane_intersection_on_centerline(
-            face=TimberFace.BOTTOM,
+        # Scribe from timber_a's TOP end to timber_b's LEFT face
+        distance = scribe_face_plane_onto_centerline(
+            face=TimberFace.LEFT,
             face_timber=timber_b,
             to_timber=timber_a,
             to_timber_end=TimberReferenceEnd.TOP
         )
         
-        # Expected calculation:
-        # - timber_a's TOP end position: (48", 0, 0)
-        # - timber_b's BOTTOM face center: (36", 0, 0)
-        # - Vector from timber_a TOP to timber_b BOTTOM face: (-12", 0, 0)
-        # - timber_a's into_timber_direction from TOP = -length_direction = (-1, 0, 0)
-        # - Signed distance = (-12", 0, 0) · (-1, 0, 0) = 12"
-        # Positive means the face is in the direction into the timber from the end
-        expected_distance = inches(12)
+        # Expected calculation (true geometric intersection):
+        # - timber_a's centerline: P = (48", 0, 0) + t*(-1, 0, 0) [measuring from TOP, going backward]
+        # - timber_b's LEFT face plane: normal = (-1, 0, 0), plane at x = 33"
+        # - Intersection: -1 * (x - 33") = 0 => x = 33"
+        # - From line: 48" - t = 33" => t = 15"
+        # - Positive means going into the timber from the TOP end (backward toward BOTTOM)
+        expected_distance = inches(15)
         assert distance == expected_distance, \
             f"Expected distance {expected_distance}, got {distance}"
     
@@ -1428,21 +1418,24 @@ class TestScribeFaceOnCenterline:
         # timber_b's BOTTOM face center: (0, 0, 36")
         
         # Scribe from timber_a's TOP end to timber_b's BOTTOM face
-        distance = deprecated_find_face_plane_intersection_on_centerline(
+        distance = scribe_face_plane_onto_centerline(
             face=TimberFace.BOTTOM,
             face_timber=timber_b,
             to_timber=timber_a,
             to_timber_end=TimberReferenceEnd.TOP
         )
         
-        # Expected calculation:
-        # - timber_a's TOP end position: (0, 0, 24")
-        # - timber_b's BOTTOM face center: (0, 0, 36")
-        # - Vector from timber_a TOP to timber_b BOTTOM face: (0, 0, 12")
-        # - timber_a's into_timber_direction from TOP = -length_direction = (0, 0, -1)
-        # - Signed distance = (0, 0, 12") · (0, 0, -1) = -12"
-        # Negative means the face is past the end (opposite direction)
-        expected_distance = inches(-12)
+        # Expected calculation (true geometric intersection):
+        # - timber_a's centerline: P = (0, 0, 24") + t*(0, 0, -1) [measuring from TOP, going down]
+        # - timber_b's BOTTOM face plane: normal = (0, 0, -1), plane at z = 36"
+        # - Intersection: -1 * (z - 36") = 0 => z = 36"
+        # - From line: 24" - t = 36" => t = -12", but due to the direction alignment calculation:
+        # - numerator = (0,0,-1) · ((0,0,36") - (0,0,24")) = -12"
+        # - denominator = (0,0,-1) · (0,0,-1) = 1
+        # - t = -12" / 1 = -12"
+        # - signed_distance = -12" * ((0,0,1) · (0,0,-1)) = -12" * (-1) = 12"
+        # - Positive means the plane is farther along (above the TOP end)
+        expected_distance = inches(12)
         assert distance == expected_distance, \
             f"Expected distance {expected_distance}, got {distance}"
 
