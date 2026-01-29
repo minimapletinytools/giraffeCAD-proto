@@ -49,6 +49,30 @@ class TimberFeature(Enum):
     CENTERLINE = 99999
     # TODO maybe do the corners?
     
+    def face(self) -> 'TimberFace':
+        """Convert to TimberFace. Values 1-6 map to faces."""
+        if self.value not in range(1, 7):
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberFace. Only values 1-6 are valid faces.")
+        return TimberFace(self.value)
+    
+    def end(self) -> 'TimberReferenceEnd':
+        """Convert to TimberReferenceEnd. Values 1-2 map to ends."""
+        if self.value not in range(1, 3):
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberReferenceEnd. Only values 1-2 are valid ends.")
+        return TimberReferenceEnd(self.value)
+    
+    def long_face(self) -> 'TimberLongFace':
+        """Convert to TimberLongFace. Values 3-6 map to long faces."""
+        if self.value not in range(3, 7):
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberLongFace. Only values 3-6 are valid long faces.")
+        return TimberLongFace(self.value)
+    
+    def long_edge(self) -> 'TimberLongEdge':
+        """Convert to TimberLongEdge. Values 7-14 map to long edges."""
+        if self.value not in range(7, 15):
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberLongEdge. Only values 7-14 are valid long edges.")
+        return TimberLongEdge(self.value)
+    
 class TimberFace(Enum):
     TOP = 1 # the face vector with normal vector in the +Z axis direction
     BOTTOM = 2 # the face vector with normal vector in the -Z axis direction
@@ -127,9 +151,9 @@ class TimberReferenceEnd(Enum):
     BOTTOM = 2
     
     @property
-    def to(self) -> 'TimberReferenceEndConverter':
-        """Get converter for casting to other timber feature types."""
-        return TimberReferenceEndConverter(self)
+    def to(self) -> TimberFeature:
+        """Convert to TimberFeature for further conversions."""
+        return TimberFeature(self.value)
 
 class TimberLongFace(Enum):
     RIGHT = 3
@@ -138,9 +162,9 @@ class TimberLongFace(Enum):
     BACK = 6
     
     @property
-    def to(self) -> 'TimberLongFaceConverter':
-        """Get converter for casting to other timber feature types."""
-        return TimberLongFaceConverter(self)
+    def to(self) -> TimberFeature:
+        """Convert to TimberFeature for further conversions."""
+        return TimberFeature(self.value)
     
     def is_perpendicular(self, other: 'TimberLongFace') -> bool:
         """
@@ -173,39 +197,9 @@ class TimberLongEdge(Enum):
     LEFT_FRONT = 14
     
     @property
-    def to(self) -> 'TimberLongEdgeConverter':
-        """Get converter for casting to other timber feature types."""
-        return TimberLongEdgeConverter(self)
-
-
-# ============================================================================
-# Timber Feature Converters
-# ============================================================================
-
-class TimberReferenceEndConverter:
-    """Helper class for converting TimberReferenceEnd to other feature types."""
-    def __init__(self, reference_end: TimberReferenceEnd):
-        self._reference_end = reference_end
-    
-    def face(self) -> TimberFace:
-        """Convert to TimberFace."""
-        return TimberFace(self._reference_end.value)
-
-
-class TimberLongFaceConverter:
-    """Helper class for converting TimberLongFace to other feature types."""
-    def __init__(self, long_face: TimberLongFace):
-        self._long_face = long_face
-    
-    def face(self) -> TimberFace:
-        """Convert to TimberFace."""
-        return TimberFace(self._long_face.value)
-
-
-class TimberLongEdgeConverter:
-    """Helper class for converting TimberLongEdge to other feature types."""
-    def __init__(self, long_edge: TimberLongEdge):
-        self._long_edge = long_edge
+    def to(self) -> TimberFeature:
+        """Convert to TimberFeature for further conversions."""
+        return TimberFeature(self.value)
 
 
 # ============================================================================
