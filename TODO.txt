@@ -175,18 +175,21 @@ DONE-all methods have a property `as` that returns TimberFeature
 DONE-MeasuredTimberFeature -> MarkedTimberFeature
 DONE-swap measure/mark
 DONE-move out all the get_ methods in Timber.py (change into mark functions)
-
--be consistent about get/find usage
-  -get -> use when you might do an "@property" but we don't get properties so use get
+DONE-be consistent about get/find usage
+  -get -> use when you might do an "@property" but we don't get properties so use get, virtually no computation
   -find -> requries some computation
+DONE-don't forget to rename class methods in timber.py
+DONE-move 
+  DONE-more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
+  DONE-move TODO stuff in timber into timber shavings
+
+-delete deprecated stuff in joint_shavings and replace with measuring function
+-get rid of CSGCut and HalfSpace CSG... omg
+-address TODOs in joint_shavings.py
 -be consistent about function local/golbal naming
   -local input vars should have the suffix  _local
     -some things must be interpreted locally such as "face" or "distance", these d onot have the suffix
   -functions return things in golbal space by default unless _local suffix
--don't forget to rename class methods in timber.py
--move 
-  -more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
-  -move TODO stuff in timber into timber shavings
 
   
 
