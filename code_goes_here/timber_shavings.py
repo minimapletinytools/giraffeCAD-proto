@@ -14,7 +14,7 @@ from .timber import *
 # TODO DELETE ME 
 # ============================================================================
 
-# DEPRECATED
+# DELETE MEDEPRECATED
 def get_point_on_face_global(face: TimberFace, timber: Timber) -> V3:
     """
     Get a point on the timber face. Useful for projecting points onto the face.
@@ -29,7 +29,7 @@ def get_point_on_face_global(face: TimberFace, timber: Timber) -> V3:
     return timber.get_bottom_position_global() + timber.get_face_direction_global(face) * timber.get_size_in_face_normal_axis(face) / 2
 
 
-# DEPRECATED
+# DELETE ME DEPRECATED
 def project_point_onto_face_global(point_global: V3, face: TimberFace, timber: Timber) -> Numeric:
     """
     Project a point onto a timber face and return the signed distance.
