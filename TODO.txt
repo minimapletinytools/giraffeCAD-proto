@@ -151,74 +151,7 @@ CSGTimber?
     
 
 
-:: 1/27 THE BIG SHAVING/MEASURING RENAME
 
--We need a better system for naming measure/mark, we have scenarios like
-  -timber -> feature 
-    -MARK
-  -timber/feature -> distance
-    -MEASURE_FROM
-  -timber/feature -> feature
-    -MARK_FROM
-  -timber -> distance
-    -MEASURE
-  -timber/timber -> distance
-    -MEASURE_BETWEEN
-    -gauge?
-  -timber/feature/timber/distance -> distance
-    -MEASURE_BETWEEN
-    -scribe?
-
-So I think the general rule is 
-mark -> outputs fetaure that isn't a point 
-scribe -> outputs V3? (and not a Point... probably just get rid of Point? or have point be V3 or whatever?)
-measure -> outputs distance
-??? -> outputs direction
-~gauge -> inputs 2 timbers, outputs distance~
-~scribe -> inputs 2 timbers, outputs distance~
-
-
-Or rather
-- mark takes measurements in LOCAL space and outputs features in GLOBAL space
-- measure takes features in GLOBAL space and outputs measurements relative to (LOCAL) features
-- scribe takes features in LOCAL space and outputs features relative to (LOCAL) features
-
-note we have the following
-
-distance: always taken relative to a feature and can be converted to a feature itself
-point: a special case of a feature
-feature: everything is a feature at the end of the day :O
-
-
--prefixes we could use
-  -measure
-  -mark
-  -gauge
-  -scribe
-  -get
-  -find
-  -compute
-  -calculate
-  -adopt (currently just used in adopt_csg which maybe should be changed to scribe_csg?)
-
--be consistent about get/find usage
-  -get -> use when you might do an "@property" but we don't get properties so use get
-  -find -> requries some computation
--figuer out how to consistently rename functions whether they are global or whatever
-  -always flag input var names with _local
-  -functions return things in golbal space by default unless _local suffix
--don't forget to rename class methods in timber.py
--move 
-  -more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
-  -move TODO stuff in timber into timber shavings
-
--consider doing a pass on validitiy checkers  
-  -assert
-  -check
-  -is
-  -does
-  -contains (specific to meowmeowcsg...)
-  -are
 
 :: documentation
 
@@ -236,12 +169,30 @@ feature: everything is a feature at the end of the day :O
 
 :: TODO
 
--all methods have a property `as` that returns TimberFeature 
+DONE-all methods have a property `as` that returns TimberFeature 
   -TimberFeature has methods `face` `reference_end` `long_face` etc 
   -so you do long_face.as.face() to do your enum castings
 -MeasuredTimberFeature -> MarkedTimberFeature
 
--do rename on Timber.py (do I keep the get_ member functions or do I make them into scribe functions?)
+
+
+-swap measure/mark
+-move out all the get_ methods in Timber.py (change into mark functions)
+-be consistent about get/find usage
+  -get -> use when you might do an "@property" but we don't get properties so use get
+  -find -> requries some computation
+-be consistent about function local/golbal naming
+  -local input vars should have the suffix  _local
+    -some things must be interpreted locally such as "face" or "distance", these d onot have the suffix
+  -functions return things in golbal space by default unless _local suffix
+-don't forget to rename class methods in timber.py
+-move 
+  -more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
+  -move TODO stuff in timber into timber shavings
+
+  
+
+
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
 -update morties and tenon to support
   -perpendicular but not face aligned
@@ -268,7 +219,13 @@ DONE-cleanup where to put get_point_on_face and project_point_onto_face
   -rename create_timber to hew or raise timber?
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
-
+-consider doing a rename pass on validitiy checkers  
+  -assert
+  -check
+  -is
+  -does
+  -contains (specific to meowmeowcsg...)
+  -are
 
 
 
@@ -568,6 +525,57 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 
 :: END TODONE
+
+
+:: 1/27 THE BIG SHAVING/MEASURING RENAME
+
+-We need a better system for naming measure/mark, we have scenarios like
+  -timber -> feature 
+    -MARK
+  -timber/feature -> distance
+    -MEASURE_FROM
+  -timber/feature -> feature
+    -MARK_FROM
+  -timber -> distance
+    -MEASURE
+  -timber/timber -> distance
+    -MEASURE_BETWEEN
+    -gauge?
+  -timber/feature/timber/distance -> distance
+    -MEASURE_BETWEEN
+    -scribe?
+
+So I think the general rule is 
+mark -> outputs fetaure that isn't a point 
+scribe -> outputs V3? (and not a Point... probably just get rid of Point? or have point be V3 or whatever?)
+measure -> outputs distance
+??? -> outputs direction
+~gauge -> inputs 2 timbers, outputs distance~
+~scribe -> inputs 2 timbers, outputs distance~
+
+
+Or rather
+- mark takes measurements in LOCAL space and outputs features in GLOBAL space
+- measure takes features in GLOBAL space and outputs measurements relative to (LOCAL) features
+- scribe takes features in LOCAL space and outputs features relative to (LOCAL) features
+
+note we have the following
+
+distance: always taken relative to a feature and can be converted to a feature itself
+point: a special case of a feature
+feature: everything is a feature at the end of the day :O
+
+
+-prefixes we could use
+  -measure
+  -mark
+  -gauge
+  -scribe
+  -get
+  -find
+  -compute
+  -calculate
+  -adopt (currently just used in adopt_csg which maybe should be changed to scribe_csg?)
 
 
 :: 1/8/2026 reference dimension helper classes
