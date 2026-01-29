@@ -555,7 +555,7 @@ def cut_lapped_dovetail_butt_joint(
     # ========================================================================
     
     # Calculate where along the receiving timber the shoulder should be
-    (_, receiving_timber_notch_center) = find_projected_intersection_on_centerlines(dovetail_timber, receiving_timber)
+    (_, receiving_timber_notch_center) = scribe_centerline_onto_centerline(dovetail_timber, receiving_timber)
     
     # Create shoulder notch if inset is specified
     if receiving_timber_shoulder_inset > 0:

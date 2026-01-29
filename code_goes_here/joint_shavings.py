@@ -77,12 +77,16 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: Timber, to_
     return measure_by_intersecting_plane_onto_long_edge(face_plane, to_timber, TimberLongEdge.CENTERLINE, to_timber_end)
 
 
-# TODO rename to scribe_centerline_onto_centerline and replace with mark/measure function in implementation
-def find_projected_intersection_on_centerlines(timberA: Timber, timberB: Timber, timberA_end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM, timberB_end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> (Numeric, Numeric):
+def scribe_centerline_onto_centerline(timberA: Timber, timberB: Timber, timberA_end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM, timberB_end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> (Numeric, Numeric):
     """
-    Find the projected intersection of the centerlines of two timbers.
-    That is to say ,there is 1 unique line that connects the centerlines of the two timbers, 
-    this function finds the point on each centerline that is closest to the other centerline.
+    Find the closest points between the centerlines of two timbers.
+    
+    When two lines (centerlines) don't intersect in 3D space, there is a unique pair of points
+    (one on each line) that are closest to each other. This function finds those points and
+    returns the distances from the specified ends to those points.
+    
+    This is useful for positioning timbers relative to each other, especially in
+    complex 3D joints where centerlines may be skew (non-intersecting, non-parallel).
 
     Args:
         timberA: First timber
@@ -91,54 +95,39 @@ def find_projected_intersection_on_centerlines(timberA: Timber, timberB: Timber,
         timberB_end: Which end of timberB to measure from (defaults to BOTTOM)
 
     Returns:
-        a tuple of the respective points on each timber 
-        (distance from timberA_end, distance from timberB_end)
-    """
-    # Get the starting points for each centerline (at the specified ends)
-    if timberA_end == TimberReferenceEnd.TOP:
-        pointA = timberA.get_bottom_position_global() + timberA.length * timberA.get_length_direction_global()
-    else:  # BOTTOM
-        pointA = timberA.get_bottom_position_global()
-    
-    if timberB_end == TimberReferenceEnd.TOP:
-        pointB = timberB.get_bottom_position_global() + timberB.length * timberB.get_length_direction_global()
-    else:  # BOTTOM
-        pointB = timberB.get_bottom_position_global()
-    
-    # Direction vectors for each centerline
-    dirA = timberA.get_length_direction_global()
-    dirB = timberB.get_length_direction_global()
-    
-    # Solve for closest points on two 3D lines using the standard formula
-    # Line A: pointA + t_A * dirA
-    # Line B: pointB + t_B * dirB
-    # We need to find t_A and t_B such that the connecting vector is perpendicular to both directions
-    
-    w = pointA - pointB  # Vector between starting points
-    
-    a = dirA.dot(dirA)  # Should be 1 for normalized directions
-    b = dirA.dot(dirB)
-    c = dirB.dot(dirB)  # Should be 1 for normalized directions
-    d = w.dot(dirA)
-    e = w.dot(dirB)
-    
-    denominator = a * c - b * b
-    
-    # Check if lines are parallel (denominator near zero)
-    if zero_test(denominator):
-        # Lines are parallel - any perpendicular works, use starting points
-        distanceA = Rational(0)
-        distanceB = Rational(0)
-    else:
-        # Calculate parameters for closest points
-        t_A = (b * e - c * d) / denominator
-        t_B = (a * e - b * d) / denominator
+        A tuple of (distance_on_timberA, distance_on_timberB):
+        - distance_on_timberA: Distance from timberA_end to the closest point on timberA's centerline
+        - distance_on_timberB: Distance from timberB_end to the closest point on timberB's centerline
         
-        # Return distances from the specified ends
-        distanceA = t_A
-        distanceB = t_B
+    Raises:
+        ValueError: If the centerlines are parallel (infinitely many closest points)
+        
+    Example:
+        >>> # Find where two skew centerlines come closest
+        >>> dist_a, dist_b = scribe_centerline_onto_centerline(
+        ...     timber_a, timber_b,
+        ...     TimberReferenceEnd.BOTTOM, TimberReferenceEnd.BOTTOM
+        ... )
+    """
+    # Mark the centerline of timberB as a Line feature
+    centerline_b = mark_centerline(timberB)
     
-    return (distanceA, distanceB) 
+    # Measure from timberB's centerline to timberA's centerline
+    # This gives us the distance from timberA_end to the closest point
+    distance_on_timberA = measure_by_finding_closest_point_on_line_to_edge(
+        centerline_b, timberA, TimberLongEdge.CENTERLINE, timberA_end
+    )
+    
+    # Mark the centerline of timberA as a Line feature
+    centerline_a = mark_centerline(timberA)
+    
+    # Measure from timberA's centerline to timberB's centerline
+    # This gives us the distance from timberB_end to the closest point
+    distance_on_timberB = measure_by_finding_closest_point_on_line_to_edge(
+        centerline_a, timberB, TimberLongEdge.CENTERLINE, timberB_end
+    )
+    
+    return (distance_on_timberA, distance_on_timberB)
 
 def scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
     reference_timber: Timber,
