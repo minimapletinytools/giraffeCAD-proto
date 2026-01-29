@@ -144,19 +144,19 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     local_normalB = timberB.orientation.matrix.T * normalB
     local_offsetB = (intersection_point.T * normalB)[0, 0] - (normalB.T * timberB.get_bottom_position_global())[0, 0]
     
-    # Create the HalfSpaceCuts (in LOCAL coordinates relative to each timber)
-    cutA = HalfSpaceCut(
+    # Create the Cuts (in LOCAL coordinates relative to each timber)
+    cutA = Cut(
         timber=timberA,
         transform=Transform(position=intersection_point, orientation=timberA.orientation),
-        half_plane=HalfSpace(normal=local_normalA, offset=local_offsetA),
-        maybe_end_cut=timberA_end
+        maybe_end_cut=timberA_end,
+        negative_csg=HalfSpace(normal=local_normalA, offset=local_offsetA)
     )
     
-    cutB = HalfSpaceCut(
+    cutB = Cut(
         timber=timberB,
         transform=Transform(position=intersection_point, orientation=timberB.orientation),
-        half_plane=HalfSpace(normal=local_normalB, offset=local_offsetB),
-        maybe_end_cut=timberB_end
+        maybe_end_cut=timberB_end,
+        negative_csg=HalfSpace(normal=local_normalB, offset=local_offsetB)
     )
     
     # Create CutTimbers with cuts passed at construction
@@ -222,12 +222,12 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     distance_from_bottom = ((face_center - butt_timber.get_bottom_position_global()).T * butt_timber.get_length_direction_global())[0, 0]
     distance_from_end = butt_timber.length - distance_from_bottom if butt_end == TimberReferenceEnd.TOP else distance_from_bottom
     
-    # Create the HalfSpaceCut using the helper function
-    cut = HalfSpaceCut(
+    # Create the Cut using the helper function
+    cut = Cut(
         timber=butt_timber,
         transform=Transform(position=face_center, orientation=butt_timber.orientation),
-        half_plane=chop_timber_end_with_half_plane(butt_timber, butt_end, distance_from_end),
-        maybe_end_cut=butt_end
+        maybe_end_cut=butt_end,
+        negative_csg=chop_timber_end_with_half_plane(butt_timber, butt_end, distance_from_end)
     )
     
     # Create CutTimber for the butt timber with cut passed at construction
@@ -331,19 +331,19 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end:
     distance_B_from_bottom = ((splice_point - timberB.get_bottom_position_global()).T * timberB.get_length_direction_global())[0, 0]
     distance_B_from_end = timberB.length - distance_B_from_bottom if timberB_end == TimberReferenceEnd.TOP else distance_B_from_bottom
     
-    # Create the HalfSpaceCuts using the helper function
-    cutA = HalfSpaceCut(
+    # Create the Cuts using the helper function
+    cutA = Cut(
         timber=timberA,
         transform=Transform(position=splice_point, orientation=timberA.orientation),
-        half_plane=chop_timber_end_with_half_plane(timberA, timberA_end, distance_A_from_end),
-        maybe_end_cut=timberA_end
+        maybe_end_cut=timberA_end,
+        negative_csg=chop_timber_end_with_half_plane(timberA, timberA_end, distance_A_from_end)
     )
     
-    cutB = HalfSpaceCut(
+    cutB = Cut(
         timber=timberB,
         transform=Transform(position=splice_point, orientation=timberB.orientation),
-        half_plane=chop_timber_end_with_half_plane(timberB, timberB_end, distance_B_from_end),
-        maybe_end_cut=timberB_end
+        maybe_end_cut=timberB_end,
+        negative_csg=chop_timber_end_with_half_plane(timberB, timberB_end, distance_B_from_end)
     )
     
     # Create CutTimbers with cuts passed at construction
@@ -551,11 +551,11 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
             subtract=[inverse_half_plane_A]  # Remove the negative side, keeping positive side
         )
         
-        cut_A = CSGCut(
+        cut_A = Cut(
             timber=timberA,
             transform=Transform(position=timberA.get_bottom_position_global(), orientation=timberA.orientation),
-            negative_csg=negative_csg_A,
-            maybe_end_cut=None
+            maybe_end_cut=None,
+            negative_csg=negative_csg_A
         )
         cuts_A.append(cut_A)
     
@@ -592,11 +592,11 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
             subtract=[half_plane_B]  # Remove the positive side, keeping negative side
         )
         
-        cut_B = CSGCut(
+        cut_B = Cut(
             timber=timberB,
             transform=Transform(position=timberB.get_bottom_position_global(), orientation=timberB.orientation),
-            negative_csg=negative_csg_B,
-            maybe_end_cut=None
+            maybe_end_cut=None,
+            negative_csg=negative_csg_B
         )
         cuts_B.append(cut_B)
     
@@ -828,11 +828,11 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     )
     
     # Create the CSG cut for the housing timber
-    cut = CSGCut(
+    cut = Cut(
         timber=housing_timber,
         transform=Transform(position=housing_timber.get_bottom_position_global(), orientation=housing_timber.orientation),
-        negative_csg=housed_prism_local,  # Subtract the housed timber's volume
-        maybe_end_cut=None  # Not an end cut
+        maybe_end_cut=None,  # Not an end cut
+        negative_csg=housed_prism_local  # Subtract the housed timber's volume
     )
     
     # Create CutTimber for the housing timber (with cut)
@@ -927,19 +927,19 @@ def cut_basic_splice_lap_joint_on_aligned_timbers(
         top_lap_shoulder_position_from_top_lap_shoulder_timber_end=top_lap_shoulder_position_from_top_lap_shoulder_timber_end
     )
 
-    # Create CSGCuts for both timbers
-    cut_top = CSGCut(
+    # Create Cuts for both timbers
+    cut_top = Cut(
         timber=top_lap_timber,
         transform=Transform.identity(),
-        negative_csg=top_lap_csg,
-        maybe_end_cut=top_lap_timber_end
+        maybe_end_cut=top_lap_timber_end,
+        negative_csg=top_lap_csg
     )
     
-    cut_bottom = CSGCut(
+    cut_bottom = Cut(
         timber=bottom_lap_timber,
         transform=Transform.identity(),
-        negative_csg=bottom_lap_csg,
-        maybe_end_cut=bottom_lap_timber_end
+        maybe_end_cut=bottom_lap_timber_end,
+        negative_csg=bottom_lap_csg
     )
     
     # Create CutTimbers

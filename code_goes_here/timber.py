@@ -554,7 +554,13 @@ class Timber:
 
 
 @dataclass(frozen=True)
-class Cut(ABC):
+class Cut:
+    """
+    A cut on a timber, defined by a CSG object representing the volume to be removed.
+    
+    The CSG object represents the volume to be REMOVED from the timber (negative CSG),
+    in LOCAL coordinates (relative to timber.bottom_position).
+    """
     # debug reference to the base timber we are cutting
     # each Cut is tied to a timber so this is very reasonable to store here
     timber: Timber
@@ -566,11 +572,12 @@ class Cut(ABC):
     # you can only have an end cut on one end of the timber, you can't have an end cut on both ends at once (maybe we should support this?)
     maybe_end_cut: Optional[TimberReferenceEnd]
 
-    # returns the negative CSG of the cut (the part of the timber that is removed by the cut)
+    # The negative CSG of the cut (the part of the timber that is removed by the cut)
     # in LOCAL coordinates (relative to timber.bottom_position)
-    @abstractmethod
+    negative_csg: MeowMeowCSG
+    
     def get_negative_csg_local(self) -> MeowMeowCSG:
-        pass
+        return self.negative_csg
 
 
 def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
@@ -1054,14 +1061,13 @@ class Frame:
     
     def _check_cut_no_floats(self, cut: Cut):
         """Check a cut for float values."""
-        if isinstance(cut, HalfSpaceCut):
-            half_plane = cut.half_plane
-            self._check_vector(half_plane.normal, "HalfSpaceCut normal")
-            self._check_numeric_value(half_plane.offset, "HalfSpaceCut offset")
-        elif isinstance(cut, CSGCut):
-            # CSGCut contains arbitrary CSG - would need recursive checking
-            # For now, we'll skip deep CSG validation
-            pass
+        # Check the cut's transform
+        self._check_vector(cut.transform.position, "Cut transform.position")
+        self._check_matrix(cut.transform.orientation.matrix, "Cut transform.orientation")
+        
+        # Cut contains arbitrary CSG in negative_csg - would need recursive checking
+        # For now, we'll skip deep CSG validation of the negative_csg field
+        # (This could be extended to recursively check all CSG nodes if needed)
     
     def _check_numeric_value(self, value: Numeric, description: str):
         """Check that a numeric value is not a float."""
@@ -1096,30 +1102,4 @@ class Frame:
 # Cut Classes
 # ============================================================================
 
-# TODO DELETE ME wtf is this, just use HalfSpace CSG... omg
-@dataclass(frozen=True)
-class HalfSpaceCut(Cut):
-    """
-    A half plane cut is a cut that is defined by a half plane.
-    """
-    half_plane: HalfSpace
-    
-    def get_negative_csg_local(self) -> MeowMeowCSG:
-        return self.half_plane
-
-
-# TODO you can also delet this, just store the the negative_csg directly... actually keep this and add metadata to it!!!
-@dataclass(frozen=True)
-class CSGCut(Cut):
-    """
-    A CSG cut is a cut defined by an arbitrary CSG object.
-    This allows for more complex cuts like grooves, dados, and other shapes
-    that can't be represented by a simple half-plane.
-    
-    The CSG object represents the volume to be REMOVED from the timber (negative CSG).
-    """
-    negative_csg: MeowMeowCSG
-    
-    def get_negative_csg_local(self) -> MeowMeowCSG:
-        return self.negative_csg
 

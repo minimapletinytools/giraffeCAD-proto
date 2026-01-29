@@ -305,15 +305,18 @@ class MockCut:
             end_position: The end position of the cut
             maybe_end_cut: Optional indication of which end is being cut
         """
+        from code_goes_here.timber import Transform
         self.timber = timber
         self._end_position = end_position
         self.maybe_end_cut = maybe_end_cut
         self.origin = Matrix([0, 0, 0])
         self.orientation = Orientation()
+        self.transform = Transform(position=Matrix([0, 0, 0]), orientation=Orientation.identity())
+        self.negative_csg = None  # Mock CSG - not actually used
     
-    def get_negative_csg(self):
+    def get_negative_csg_local(self):
         """Get the negative CSG (not implemented for mock)."""
-        pass
+        return self.negative_csg
 
 
 # ============================================================================

@@ -647,14 +647,14 @@ class TestCutTimber:
             normal=Matrix([Rational(0), Rational(0), Rational(1)]),
             offset=Rational(50)
         )
-        cut = HalfSpaceCut(
+        cut = Cut(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
                 orientation=Orientation.identity()
             ),
-            half_plane=half_plane,
-            maybe_end_cut=None
+            maybe_end_cut=None,
+            negative_csg=half_plane
         )
         
         cut_timber = CutTimber(timber, cuts=[cut])
@@ -685,28 +685,28 @@ class TestCutTimber:
             normal=Matrix([Rational(0), Rational(0), Rational(1)]),
             offset=Rational(25)
         )
-        cut1 = HalfSpaceCut(
+        cut1 = Cut(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
                 orientation=Orientation.identity()
             ),
-            half_plane=half_plane1,
-            maybe_end_cut=None
+            maybe_end_cut=None,
+            negative_csg=half_plane1
         )
         
         half_plane2 = HalfSpace(
             normal=Matrix([Rational(0), Rational(0), Rational(-1)]),
             offset=Rational(-75)
         )
-        cut2 = HalfSpaceCut(
+        cut2 = Cut(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
                 orientation=Orientation.identity()
             ),
-            half_plane=half_plane2,
-            maybe_end_cut=None
+            maybe_end_cut=None,
+            negative_csg=half_plane2
         )
         
         cut_timber = CutTimber(timber, cuts=[cut1, cut2])
@@ -737,14 +737,14 @@ class TestCutTimber:
             normal=Matrix([Rational(0), Rational(0), Rational(-1)]),
             offset=Rational(-50)
         )
-        end_cut = HalfSpaceCut(
+        end_cut = Cut(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
                 orientation=Orientation.identity()
             ),
-            half_plane=half_plane,
-            maybe_end_cut=TimberReferenceEnd.TOP
+            maybe_end_cut=TimberReferenceEnd.TOP,
+            negative_csg=half_plane
         )
         
         cut_timber = CutTimber(timber, cuts=[end_cut])

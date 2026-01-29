@@ -31,8 +31,8 @@ class TestMiterJoint:
             timberB: Second timber in the joint
         """
         # Get the local normals from the cuts
-        normal_A_local = joint.cut_timbers["timberA"].cuts[0].half_plane.normal
-        normal_B_local = joint.cut_timbers["timberB"].cuts[0].half_plane.normal
+        normal_A_local = joint.cut_timbers["timberA"].cuts[0].negative_csg.normal
+        normal_B_local = joint.cut_timbers["timberB"].cuts[0].negative_csg.normal
         
         # Convert to global coordinates
         normal_A_global = timberA.orientation.matrix * normal_A_local
@@ -94,9 +94,9 @@ class TestMiterJoint:
         assert joint.cut_timbers["timberB"].timber == timberB
         assert joint.cut_timbers["timberB"].cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
 
-        # check that the two cuts are half plane cuts and the planes are opposite
-        assert isinstance(joint.cut_timbers["timberA"].cuts[0], HalfSpaceCut)
-        assert isinstance(joint.cut_timbers["timberB"].cuts[0], HalfSpaceCut)
+        # check that the two cuts are Cut objects
+        assert isinstance(joint.cut_timbers["timberA"].cuts[0], Cut)
+        assert isinstance(joint.cut_timbers["timberB"].cuts[0], Cut)
 
         # Convert normals to global space and check if they are opposite
         self.assert_miter_joint_normals_are_opposite(joint, timberA, timberB)
@@ -108,8 +108,8 @@ class TestMiterJoint:
         corner_point_global = create_v3(Rational(-3), Rational(-3), Rational(0))
         corner_point_local_A = timberA.transform.global_to_local(corner_point_global)
         corner_point_local_B = timberB.transform.global_to_local(corner_point_global)
-        assert joint.cut_timbers["timberA"].cuts[0].half_plane.is_point_on_boundary(corner_point_local_A)
-        assert joint.cut_timbers["timberB"].cuts[0].half_plane.is_point_on_boundary(corner_point_local_B)
+        assert joint.cut_timbers["timberA"].cuts[0].negative_csg.is_point_on_boundary(corner_point_local_A)
+        assert joint.cut_timbers["timberB"].cuts[0].negative_csg.is_point_on_boundary(corner_point_local_B)
 
         # check that the "bottom" point of timberA (after cutting) is contained in timberB but not timber A
         # This point is at (0, -3, 0) in global coordinates, which is:
@@ -118,8 +118,8 @@ class TestMiterJoint:
         bottom_point_A_after_cutting_global = create_v3(Rational(0), Rational(-3), Rational(0))
         bottom_point_A_after_cutting_local_A = timberA.transform.global_to_local(bottom_point_A_after_cutting_global)
         bottom_point_A_after_cutting_local_B = timberB.transform.global_to_local(bottom_point_A_after_cutting_global)
-        assert not joint.cut_timbers["timberA"].cuts[0].half_plane.contains_point(bottom_point_A_after_cutting_local_A)
-        assert joint.cut_timbers["timberB"].cuts[0].half_plane.contains_point(bottom_point_A_after_cutting_local_B)
+        assert not joint.cut_timbers["timberA"].cuts[0].negative_csg.contains_point(bottom_point_A_after_cutting_local_A)
+        assert joint.cut_timbers["timberB"].cuts[0].negative_csg.contains_point(bottom_point_A_after_cutting_local_B)
 
     # 🐪
     def test_basic_miter_joint_on_various_angles(self): 
@@ -147,9 +147,9 @@ class TestMiterJoint:
             assert joint is not None, f"Failed to create joint for {description}"
             assert len(joint.cut_timbers) == 2
             
-            # Verify the cuts are half plane cuts
-            assert isinstance(joint.cut_timbers["timberA"].cuts[0], HalfSpaceCut)
-            assert isinstance(joint.cut_timbers["timberB"].cuts[0], HalfSpaceCut)
+            # Verify the cuts are Cut objects
+            assert isinstance(joint.cut_timbers["timberA"].cuts[0], Cut)
+            assert isinstance(joint.cut_timbers["timberB"].cuts[0], Cut)
             
             # Verify normals are opposite in global space
             self.assert_miter_joint_normals_are_opposite(joint, timberA, timberB)
@@ -205,13 +205,13 @@ class TestButtJoint:
         assert len(joint.cut_timbers["butt_timber"].cuts) == 1, "Butt timber should have one cut"
         assert joint.cut_timbers["butt_timber"].cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
 
-        # Verify the cut is a half plane cut
-        assert isinstance(joint.cut_timbers["butt_timber"].cuts[0], HalfSpaceCut)
+        # Verify the cut is a Cut object
+        assert isinstance(joint.cut_timbers["butt_timber"].cuts[0], Cut)
 
         # Verify that the cut normal in global space is parallel or anti-parallel to timberB's length direction
         # For an end cut (butt joint), the cut plane is perpendicular to the timber's length axis,
         # so the normal is parallel/anti-parallel to the length direction
-        cut_normal_local = joint.cut_timbers["butt_timber"].cuts[0].half_plane.normal
+        cut_normal_local = joint.cut_timbers["butt_timber"].cuts[0].negative_csg.normal
         cut_normal_global = timberB.orientation.matrix * cut_normal_local
         
         dot_with_length = (cut_normal_global.T * timberB.get_length_direction_global())[0, 0]
@@ -300,8 +300,8 @@ class TestSpliceJoint:
         
         # Verify the cut planes are perpendicular to the timber axis (X axis)
         # In global coordinates, the plane normal should be ±(1, 0, 0)
-        global_normalA = timberA.orientation.matrix * cutA.half_plane.normal
-        global_normalB = timberB.orientation.matrix * cutB.half_plane.normal
+        global_normalA = timberA.orientation.matrix * cutA.negative_csg.normal
+        global_normalB = timberB.orientation.matrix * cutB.negative_csg.normal
         
         # For aligned timbers with same orientation:
         # - TimberA: cut at TOP, normal points +X (away from timber body)
@@ -458,7 +458,7 @@ class TestHouseJoint:
         housing_cut_timber = joint.cut_timbers["timberA"]
         cut = housing_cut_timber.cuts[0]
         
-        assert isinstance(cut, CSGCut), "Cut should be a CSGCut"
+        assert isinstance(cut, Cut), "Cut should be a Cut object"
         
         # Get the negative CSG (the prism being cut away)
         # This is in the housing timber's LOCAL coordinate system
