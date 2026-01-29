@@ -268,16 +268,6 @@ class DistanceFromLongEdge:
         """
         return self.face1.face.is_perpendicular(self.face2.face)
 
-    
-
-# TODO get rid of this, use measure/mark instead
-# TODO write better comments or give this a better name. wtf is this?
-@dataclass(frozen=True)
-class FaceAlignedJoinedTimberOffset:
-    reference_face: TimberFace
-    centerline_offset: Optional[Numeric]
-    face_offset: Optional[Numeric]
-
 
 
 class StickoutReference(Enum):
@@ -393,15 +383,6 @@ class Stickout:
             Stickout instance with stickout1 = stickout2 = 0
         """
         return cls(0, 0)
-
-# ============================================================================
-# Backward Compatibility Aliases
-# ============================================================================
-# These functions are now defined in moothymoth.py
-# Keep old names as aliases for backward compatibility
-
-create_v2 = create_v2  # Alias for backward compatibility
-create_v3 = create_v3  # Alias for backward compatibility
 
 # ============================================================================
 # Core Classes

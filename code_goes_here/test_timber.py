@@ -373,19 +373,6 @@ class TestEnumsAndDataStructures:
         assert TimberFace.FRONT.value == 4
         assert TimberFace.LEFT.value == 5
         assert TimberFace.BACK.value == 6
-
-    
-    def test_face_aligned_joined_timber_offset(self):
-        """Test FaceAlignedJoinedTimberOffset dataclass."""
-        offset = FaceAlignedJoinedTimberOffset(
-            reference_face=TimberFace.TOP,
-            centerline_offset=Rational("0.05"),
-            face_offset=Rational("0.02")
-        )
-        
-        assert offset.reference_face == TimberFace.TOP
-        assert offset.centerline_offset == Rational("0.05")
-        assert offset.face_offset == Rational("0.02")
     
     def test_stickout_with_join_timbers(self):
         """Test that stickout produces correct timber length in join_timbers."""
