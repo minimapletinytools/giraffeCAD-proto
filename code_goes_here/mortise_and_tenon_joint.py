@@ -6,6 +6,7 @@ Contains various mortise and tenon joint implementations
 from __future__ import annotations  # Enable deferred annotation evaluation
 
 from code_goes_here.timber import *
+from code_goes_here.measuring import mark_top_center_position, mark_bottom_center_position, mark_position_on_centerline_from_bottom, mark_position_on_centerline_from_top
 from code_goes_here.construction import *
 from code_goes_here.moothymoth import *
 
@@ -152,9 +153,9 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
 
     # Get the tenon end point in world coordinates
     if tenon_end == TimberReferenceEnd.TOP:
-        tenon_end_point = tenon_timber.get_top_center_position_global()
+        tenon_end_point = mark_top_center_position(tenon_timber).position
     else:  # BOTTOM
-        tenon_end_point = tenon_timber.get_bottom_center_position_global()
+        tenon_end_point = mark_bottom_center_position(tenon_timber).position
     
     # Apply tenon_position offset to get the actual tenon centerline start point
     tenon_x_direction = tenon_timber.get_face_direction_global(TimberFace.RIGHT)
@@ -317,9 +318,9 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Calculate the shoulder plane position in world coordinates
     if tenon_end == TimberReferenceEnd.TOP:
-        shoulder_plane_point_global = tenon_timber.get_top_center_position_global() - tenon_timber.get_length_direction_global() * t
+        shoulder_plane_point_global = mark_top_center_position(tenon_timber).position - tenon_timber.get_length_direction_global() * t
     else:  # BOTTOM
-        shoulder_plane_point_global = tenon_timber.get_bottom_center_position_global() + tenon_timber.get_length_direction_global() * t
+        shoulder_plane_point_global = mark_bottom_center_position(tenon_timber).position + tenon_timber.get_length_direction_global() * t
     
     # Apply tenon_position offset to shoulder plane point
     tenon_x_direction = tenon_timber.get_face_direction_global(TimberFace.RIGHT)

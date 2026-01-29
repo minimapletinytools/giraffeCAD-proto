@@ -104,6 +104,7 @@ class Plane:
         """
         return Plane(transform.orientation.matrix * direction, transform.position)
 
+@dataclass(frozen=True)
 class UnsignedPlane(Plane):
     """
     Same as Plane but the sign on the normal should be ignored.
@@ -272,6 +273,63 @@ def mark_centerline(timber: Timber) -> Line:
     center_position = timber.get_bottom_position_global() + length_direction * timber.length / 2
     
     return Line(length_direction, center_position)
+
+
+def mark_position_on_centerline_from_bottom(timber: Timber, distance: Numeric) -> Point:
+    """
+    Mark a position at a specific point along the timber's centerline, measured from the bottom.
+    
+    Args:
+        timber: The timber to mark on
+        distance: Distance along the timber's length direction from the bottom position
+        
+    Returns:
+        Point on the timber's centerline at the specified distance from bottom
+    """
+    position = timber.get_bottom_position_global() + timber.get_length_direction_global() * distance
+    return Point(position)
+
+
+def mark_position_on_centerline_from_top(timber: Timber, distance: Numeric) -> Point:
+    """
+    Mark a position at a specific point along the timber's centerline, measured from the top.
+    
+    Args:
+        timber: The timber to mark on
+        distance: Distance along the timber's length direction from the top position
+        
+    Returns:
+        Point on the timber's centerline at the specified distance from top
+    """
+    position = timber.get_bottom_position_global() + timber.get_length_direction_global() * (timber.length - distance)
+    return Point(position)
+
+
+def mark_bottom_center_position(timber: Timber) -> Point:
+    """
+    Mark the position of the center of the bottom cross-section of the timber.
+    
+    Args:
+        timber: The timber to mark on
+        
+    Returns:
+        Point at the center of the bottom cross-section
+    """
+    return Point(timber.get_bottom_position_global())
+
+
+def mark_top_center_position(timber: Timber) -> Point:
+    """
+    Mark the position of the center of the top cross-section of the timber.
+    
+    Args:
+        timber: The timber to mark on
+        
+    Returns:
+        Point at the center of the top cross-section
+    """
+    position = timber.get_bottom_position_global() + timber.get_length_direction_global() * timber.length
+    return Point(position)
 
 def mark_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> UnsignedPlane:
     """

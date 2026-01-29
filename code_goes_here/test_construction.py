@@ -440,7 +440,7 @@ class TestJoinTimbers:
         # Check that the timber actually spans the connection points correctly
         # The timber should start before pos1 and end after pos2 (or vice versa)
         timber_start = joining_timber.get_bottom_position_global()
-        timber_end = joining_timber.get_position_on_centerline_from_bottom_global(joining_timber.length)
+        timber_end = mark_position_on_centerline_from_bottom(joining_timber, joining_timber.length).position
         
         # Verify timber spans the connection region
         assert joining_timber.length > Rational(2)  # Should be longer than just the span between points
@@ -527,7 +527,7 @@ class TestJoinTimbers:
             orientation_face_on_timber1=TimberFace.TOP
         )
    
-        assert joining_timber2.get_bottom_position_global() == timber1.get_position_on_centerline_from_bottom_global(Rational("1.5"))
+        assert joining_timber2.get_bottom_position_global() == mark_position_on_centerline_from_bottom(timber1, Rational("1.5")).position
         print(joining_timber2.orientation)
         
         
@@ -839,7 +839,7 @@ class TestJoinTimbers:
             assert vertical_component > Rational("0.8"), f"Post_{i} should be mostly vertical, got length_direction={[float(x) for x in length_dir]}"
             
             # 2. Verify the joining timber connects to the correct position on the base timber
-            expected_base_pos = base_timber.get_position_on_centerline_from_bottom_global(location_used)
+            expected_base_pos = mark_position_on_centerline_from_bottom(base_timber, location_used).position
             
             # The joining timber should start from approximately the top face of the base timber
             expected_start_z = expected_base_pos[2] + base_timber.size[1]  # Top of base timber
@@ -851,7 +851,7 @@ class TestJoinTimbers:
             
             # 3. Verify the joining timber connects to the beam
             # The top of the joining timber should be near the beam
-            joining_top = joining_timber.get_top_center_position_global()
+            joining_top = mark_top_center_position(joining_timber).position
             beam_bottom_z = beam.get_bottom_position_global()[2]
             
             # Should connect somewhere on or near the beam - use exact comparison
@@ -1004,8 +1004,8 @@ class TestJoinTimbers:
         beam_right = beams[TimberFeature.RIGHT_FACE]
         beam_left = beams[TimberFeature.LEFT_FACE]
         
-        right_center = beam_right.get_position_on_centerline_from_bottom_global(beam_right.length / 2)
-        left_center = beam_left.get_position_on_centerline_from_bottom_global(beam_left.length / 2)
+        right_center = mark_position_on_centerline_from_bottom(beam_right, beam_right.length / 2).position
+        left_center = mark_position_on_centerline_from_bottom(beam_left, beam_left.length / 2).position
         
         # The difference should be along the Z axis (vertical, which is the beam's width direction)
         diff_right_left = right_center - left_center
@@ -1022,8 +1022,8 @@ class TestJoinTimbers:
         beam_front = beams[TimberFeature.FRONT_FACE]
         beam_back = beams[TimberFeature.BACK_FACE]
         
-        front_center = beam_front.get_position_on_centerline_from_bottom_global(beam_front.length / 2)
-        back_center = beam_back.get_position_on_centerline_from_bottom_global(beam_back.length / 2)
+        front_center = mark_position_on_centerline_from_bottom(beam_front, beam_front.length / 2).position
+        back_center = mark_position_on_centerline_from_bottom(beam_back, beam_back.length / 2).position
         
         # The difference should be along the Y axis (beam's height direction)
         diff_front_back = front_center - back_center
