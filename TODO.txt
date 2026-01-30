@@ -194,6 +194,7 @@ DONE-add short edges to the enum
   -and i guess then scribe means taking multiple things to one measurement and could by polymorphic to take either local measurements or global features 
   -and we would still need something that takes multiple things to one marking (that marking might not hvae an analgous measure so we can't just scribe().mark())
   -or jsut have scribe return markings that you need to measure... that's probably better... and get rid of the current scribe functions you have...
+    -it's just annoying to measure cuz then you need to specify the reference end... but I guess that's a good thing as there fewer args to the mark function!
 
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
 -update morties and tenon to support
