@@ -182,7 +182,7 @@ class DistanceFromFace(Measurement):
         """
         Convert the distance from a face to an unsigned plane.
         """
-        return UnsignedPlane(self.face.normal, self.timber.get_bottom_position_global() + self.face.normal * self.distance)
+        return mark_into_face(self.distance, self.face, self.timber)
 
 @dataclass(frozen=True)
 class DistanceFromPointAwayFromFace(Measurement):
@@ -440,16 +440,16 @@ def mark_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> Unsig
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
 
-def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, face: TimberFace) -> Numeric:
+def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, face: TimberFace) -> DistanceFromFace:
     """
     Mark a feature from a face on a timber.
     
-    Returns the distance from the face to the feature, measured INTO the timber.
+    Returns a DistanceFromFace measurement representing the distance from the face to the feature, measured INTO the timber.
     Positive means the feature is inside the timber (deeper than the face surface).
     Negative means the feature is outside the timber (shallower than the face surface).
     
     This is the inverse of mark_into_face:
-    If feature = mark_into_face(d, face, timber), then measure_onto_face(feature, timber, face) = d
+    If feature = mark_into_face(d, face, timber), then measure_onto_face(feature, timber, face).distance = d
     """
 
     # TODO assert that UnsignedPlane/Plane/HalfPlane/Line are parallel to the face
@@ -475,7 +475,7 @@ def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlan
     # Negative if point is in the direction of face_direction (outside timber)
     distance = (face_direction_global.T * (face_point_global - feature_point))[0, 0]
     
-    return distance
+    return DistanceFromFace(distance=distance, timber=timber, face=face)
 
 
 def measure_by_intersecting_plane_onto_long_edge(plane: Union[UnsignedPlane, Plane], timber: Timber, edge: TimberLongEdge, end: TimberReferenceEnd) -> Numeric:
@@ -654,6 +654,6 @@ def gauge_distance_between_faces(reference_timber: Timber, reference_timber_face
     target_face_plane = Plane(target_face_normal, get_point_on_face_global(target_timber_face, target_timber))
     
     # Measure the distance from the reference face to the target face plane
-    distance = measure_onto_face(target_face_plane, reference_timber, reference_timber_face)
+    measurement = measure_onto_face(target_face_plane, reference_timber, reference_timber_face)
     
-    return distance
+    return measurement.distance
