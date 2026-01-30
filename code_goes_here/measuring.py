@@ -185,9 +185,9 @@ class DistanceFromFace(Measurement):
         return mark_into_face(self.distance, self.face, self.timber)
 
 @dataclass(frozen=True)
-class DistanceFromPointAwayFromFace(Measurement):
+class DistanceFromPointIntoFace(Measurement):
     """
-    Represents a distance from a point away from a face on a timber with + being AWAY from the face (that is the negative face normal direction is the + axis of the measurement)
+    Represents a distance from a point into a face on a timber with + being INTO the timber (that is the negative face normal direction is the + axis of the measurement)
     If the point is not supplied, the center of the face is used.
     """
     distance: Numeric
@@ -197,10 +197,10 @@ class DistanceFromPointAwayFromFace(Measurement):
     
     def mark(self) -> Line:
         """
-        Convert the distance from a point away from a face to a line.
+        Convert the distance from a point into a face to a line.
         
         Returns a line perpendicular to the face, going through the specified point (or face center),
-        offset by the distance in the direction away from the face (-face_normal).
+        offset by the distance in the direction into the timber (-face_normal).
         
         Returns:
             Line perpendicular to the face at the specified distance from the starting point
@@ -673,26 +673,39 @@ def measure_by_finding_closest_point_on_line_to_edge(line: Line, timber: Timber,
     
     return t
 
-def measure_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber) -> Numeric:
+def measure_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber) -> DistanceFromPointIntoFace:
     """
     Measure a feature onto the centerline of a timber.
 
-    Returns the distance from the bottom of the timber to the intersection/closest point.
+    Returns a DistanceFromPointIntoFace measurement representing the distance from the bottom of the timber
+    to the intersection/closest point on the centerline.
     
     Args:
         feature: The feature to measure (Plane, Line, Point, etc.)
         timber: The timber whose centerline we're measuring to
         
     Returns:
-        Distance from the BOTTOM end of the timber to where the feature intersects/is closest to the centerline.
-        Positive means into the timber from the bottom.
+        DistanceFromPointIntoFace with distance from the BOTTOM end to where the feature intersects/is closest
+        to the centerline. Positive means into the timber from the bottom. The point is set to the bottom
+        centerline position.
     """
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane):
-        return measure_by_intersecting_plane_onto_long_edge(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
+        distance = measure_by_intersecting_plane_onto_long_edge(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
     elif isinstance(feature, Line):
-        return measure_by_finding_closest_point_on_line_to_edge(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
-
-    assert False, f"Not implemented for feature type {type(feature)}"
+        distance = measure_by_finding_closest_point_on_line_to_edge(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
+    else:
+        assert False, f"Not implemented for feature type {type(feature)}"
+    
+    # Get the bottom centerline position as the reference point
+    centerline = mark_centerline(timber)
+    bottom_centerline_position = timber.get_bottom_position_global()
+    
+    return DistanceFromPointIntoFace(
+        distance=distance,
+        timber=timber,
+        face=TimberFace.BOTTOM,
+        point=bottom_centerline_position
+    )
 
 # TODO delete me or move to timber_shavings.py
 def gauge_distance_between_faces(reference_timber: Timber, reference_timber_face: TimberFace, target_timber: Timber, target_timber_face: TimberFace) -> Numeric:
