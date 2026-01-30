@@ -41,10 +41,6 @@ class TimberFeature(Enum):
     FRONT_LEFT_EDGE = 8
     LEFT_BACK_EDGE = 9
     BACK_RIGHT_EDGE = 10
-    FRONT_RIGHT_EDGE = 11
-    RIGHT_BACK_EDGE = 12
-    BACK_LEFT_EDGE = 13
-    LEFT_FRONT_EDGE = 14
     # TODO do the other edges lol
     CENTERLINE = 99999
     # TODO maybe do the corners?
@@ -68,9 +64,9 @@ class TimberFeature(Enum):
         return TimberLongFace(self.value)
 
     def edge(self) -> 'TimberEdge':
-        """Convert to TimberLongEdge. Values 7-14 map to long edges."""
-        if (self.value not in range(7, 15))  and self.value != TimberFeature.CENTERLINE.value:
-            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberLongEdge. Only values 7-14 are valid long edges.")
+        """Convert to TimberEdge. Values 7-10 map to long edges."""
+        if (self.value not in range(7, 11))  and self.value != TimberFeature.CENTERLINE.value:
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberEdge. Only values 7-10 are valid long edges.")
         return TimberEdge(self.value)
     
     def long_edge(self) -> 'TimberLongEdge':
@@ -197,10 +193,6 @@ class TimberEdge(Enum):
     FRONT_LEFT = 8
     LEFT_BACK = 9
     BACK_RIGHT = 10
-    FRONT_RIGHT = 11
-    RIGHT_BACK = 12
-    BACK_LEFT = 13
-    LEFT_FRONT = 14
     # TODO do the short edges too...
     CENTERLINE = TimberFeature.CENTERLINE.value
     
@@ -215,10 +207,6 @@ class TimberLongEdge(Enum):
     FRONT_LEFT = 8
     LEFT_BACK = 9
     BACK_RIGHT = 10
-    FRONT_RIGHT = 11
-    RIGHT_BACK = 12
-    BACK_LEFT = 13
-    LEFT_FRONT = 14
     CENTERLINE = TimberFeature.CENTERLINE.value
     
     @property
