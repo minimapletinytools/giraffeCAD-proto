@@ -196,12 +196,38 @@ class DistanceFromPointAwayFromFace(Measurement):
     point: Optional[V3] = None
     
     def mark(self) -> Line:
-        pass
+        """
+        Convert the distance from a point away from a face to a line.
+        
+        Returns a line perpendicular to the face, going through the specified point (or face center),
+        offset by the distance in the direction away from the face (-face_normal).
+        
+        Returns:
+            Line perpendicular to the face at the specified distance from the starting point
+        """
+        # Determine the starting point (either provided point or face center)
+        if self.point is not None:
+            starting_point = self.point
+        else:
+            starting_point = get_point_on_face_global(self.face, self.timber)
+        
+        # Get the face normal (pointing OUT of the timber)
+        face_normal = self.timber.get_face_direction_global(self.face)
+        
+        # Direction AWAY from the face is -face_normal
+        away_direction = -face_normal
+        
+        # Calculate the line position by offsetting from the starting point
+        # Positive distance means away from the face
+        line_point = starting_point + away_direction * self.distance
+        
+        # The line direction is perpendicular to the face (away from it)
+        return Line(away_direction, line_point)
     
 @dataclass(frozen=True)
 class DistanceFromLongEdgeOnFace(Measurement):
     """
-    Represents a distance from a long edge on a timber with + being AWAY from the edge.
+    Represents a distance from a long edge on a timber with + being onto the face from the edge.
     """
     distance: Numeric
     timber: Timber
@@ -209,7 +235,58 @@ class DistanceFromLongEdgeOnFace(Measurement):
     face: TimberFace
     
     def mark(self) -> Line:
-        pass
+        """
+        Convert the distance from a long edge to a line on the specified face.
+        
+        Returns a line parallel to the edge, on the given face, at the specified distance from the edge.
+        The distance is measured along the face plane, perpendicular to the edge direction.
+        Positive distance means moving in the direction of the "other" face's normal (the face that 
+        defines the edge together with self.face).
+        
+        Returns:
+            Line parallel to the edge at the specified distance on the face
+        """
+        # Get the edge line
+        edge_line = mark_long_edge(self.timber, self.edge)
+        
+        # Check that the face is adjacent to the edge
+        # Long faces are RIGHT, FRONT, LEFT, BACK (not TOP or BOTTOM)
+        LONG_FACES = {TimberFace.RIGHT, TimberFace.FRONT, TimberFace.LEFT, TimberFace.BACK}
+        
+        assert self.face in LONG_FACES, \
+            f"Face must be a long face (RIGHT, FRONT, LEFT, BACK), got {self.face}"
+        
+        # Edge to faces mapping
+        edge_to_faces = {
+            TimberLongEdge.RIGHT_FRONT: (TimberFace.RIGHT, TimberFace.FRONT),
+            TimberLongEdge.FRONT_LEFT: (TimberFace.FRONT, TimberFace.LEFT),
+            TimberLongEdge.LEFT_BACK: (TimberFace.LEFT, TimberFace.BACK),
+            TimberLongEdge.BACK_RIGHT: (TimberFace.BACK, TimberFace.RIGHT),
+        }
+        
+        # The face must be one of the two faces that define the edge
+        if self.edge not in edge_to_faces:
+            raise ValueError(f"Unknown edge: {self.edge}")
+        
+        face1, face2 = edge_to_faces[self.edge]
+        assert self.face == face1 or self.face == face2, \
+            f"Face {self.face} is not adjacent to edge {self.edge}. Adjacent faces are {face1} and {face2}"
+        
+        # Calculate the direction to move on the face, parallel to the face plane
+        # This is perpendicular to both the edge direction and the face normal
+        # The "other" face defines this direction
+        other_face = face1 if self.face == face2 else face2
+        
+        # The offset direction is the normal of the other face (parallel to our face plane)
+        # Positive distance means moving in the direction of the other face's normal
+        offset_direction = self.timber.get_face_direction_global(other_face)
+        
+        # Calculate the new line position by offsetting from the edge
+        # Positive distance means moving in the offset direction (onto the face from the edge)
+        new_point = edge_line.point + offset_direction * self.distance
+        
+        # Return a line parallel to the edge at the new position
+        return Line(edge_line.direction, new_point)
 
 # ============================================================================
 # Helper Functions
@@ -301,9 +378,6 @@ def mark_long_edge(timber: Timber, edge: TimberLongEdge) -> Line:
         >>> # line.direction points in the timber's length direction
         >>> # line.point is at the RIGHT_FRONT edge, halfway along the length
     """
-    
-    if edge == TimberLongEdge.CENTERLINE:
-        return mark_centerline(timber)
     
     # Map edge enum to the two faces it connects
     edge_to_faces = {
@@ -478,9 +552,9 @@ def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlan
     return DistanceFromFace(distance=distance, timber=timber, face=face)
 
 
-def measure_by_intersecting_plane_onto_long_edge(plane: Union[UnsignedPlane, Plane], timber: Timber, edge: TimberLongEdge, end: TimberReferenceEnd) -> Numeric:
+def measure_by_intersecting_plane_onto_long_edge(plane: Union[UnsignedPlane, Plane], timber: Timber, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
     """
-    Intersect a plane with a long edge of a timber.
+    Intersect a plane with a long edge of a timber (including centerline).
 
     Computes the true geometric intersection between the plane and the edge line,
     returning the signed distance from the specified end to the intersection point.
@@ -488,7 +562,7 @@ def measure_by_intersecting_plane_onto_long_edge(plane: Union[UnsignedPlane, Pla
     Args:
         plane: the plane to intersect with
         timber: the timber whose edge we're intersecting
-        edge: the edge to intersect with
+        edge: the edge to intersect with (TimberLongEdge or TimberEdge.CENTERLINE)
         end: the end of the timber to measure from
 
     Returns the distance from timber_end to where the plane intersects the timber's long edge.
@@ -496,7 +570,10 @@ def measure_by_intersecting_plane_onto_long_edge(plane: Union[UnsignedPlane, Pla
     """
     
     # Get the edge line
-    edge_line = mark_long_edge(timber, edge)
+    if edge == TimberEdge.CENTERLINE:
+        edge_line = mark_centerline(timber)
+    else:
+        edge_line = mark_long_edge(timber, edge)
     
     # Get the end position on the edge
     # edge_line.point is at mid-length, so we need to offset by half the length
@@ -528,9 +605,9 @@ def measure_by_intersecting_plane_onto_long_edge(plane: Union[UnsignedPlane, Pla
     
     return signed_distance
 
-def measure_by_finding_closest_point_on_line_to_edge(line: Line, timber: Timber, edge: TimberLongEdge, end: TimberReferenceEnd) -> Numeric:
+def measure_by_finding_closest_point_on_line_to_edge(line: Line, timber: Timber, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
     """
-    Find the closest point between a line and a timber edge.
+    Find the closest point between a line and a timber edge (including centerline).
 
     This computes the closest point on the timber edge to the given line, which is useful
     for finding where two centerlines come closest to each other (even if they don't intersect).
@@ -538,7 +615,7 @@ def measure_by_finding_closest_point_on_line_to_edge(line: Line, timber: Timber,
     Args:
         line: The line feature to measure from
         timber: The timber whose edge we're measuring to
-        edge: The edge to measure to
+        edge: The edge to measure to (TimberLongEdge or TimberEdge.CENTERLINE)
         end: Which end of the timber to measure from
 
     Returns:
@@ -552,7 +629,10 @@ def measure_by_finding_closest_point_on_line_to_edge(line: Line, timber: Timber,
     
     
     # Get the edge line
-    edge_line = mark_long_edge(timber, edge)
+    if edge == TimberEdge.CENTERLINE:
+        edge_line = mark_centerline(timber)
+    else:
+        edge_line = mark_long_edge(timber, edge)
 
     if are_vectors_parallel(line.direction, edge_line.direction):
         raise ValueError(f"Lines are parallel - no intersection exists")
@@ -608,9 +688,9 @@ def measure_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, Ha
         Positive means into the timber from the bottom.
     """
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane):
-        return measure_by_intersecting_plane_onto_long_edge(feature, timber, TimberLongEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
+        return measure_by_intersecting_plane_onto_long_edge(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
     elif isinstance(feature, Line):
-        return measure_by_finding_closest_point_on_line_to_edge(feature, timber, TimberLongEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
+        return measure_by_finding_closest_point_on_line_to_edge(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
 
     assert False, f"Not implemented for feature type {type(feature)}"
 
