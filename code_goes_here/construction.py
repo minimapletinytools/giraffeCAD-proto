@@ -791,14 +791,6 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
             feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.LEFT_BACK)
         elif feature_to_mark_on_joining_timber == TimberFeature.BACK_RIGHT_EDGE:
             feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.BACK_RIGHT)
-        elif feature_to_mark_on_joining_timber == TimberFeature.FRONT_RIGHT_EDGE:
-            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.FRONT_RIGHT)
-        elif feature_to_mark_on_joining_timber == TimberFeature.RIGHT_BACK_EDGE:
-            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.RIGHT_BACK)
-        elif feature_to_mark_on_joining_timber == TimberFeature.BACK_LEFT_EDGE:
-            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.BACK_LEFT)
-        elif feature_to_mark_on_joining_timber == TimberFeature.LEFT_FRONT_EDGE:
-            feature_geometry = mark_long_edge(temp_timber, TimberLongEdge.LEFT_FRONT)
         else:
             raise ValueError(f"Unsupported TimberFeature: {feature_to_mark_on_joining_timber}")
     

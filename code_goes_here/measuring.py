@@ -56,25 +56,10 @@ Finally, note that the feature classes in this module should NOT be used for any
 
 from dataclasses import dataclass
 from typing import Union
+from abc import ABC, abstractmethod
 from .moothymoth import *
 from .timber import *
 
-# ============================================================================
-# Helper Functions
-# ============================================================================
-
-def get_point_on_face_global(face: TimberFace, timber: Timber) -> V3:
-    """
-    Get a point on the timber face. Useful for projecting points onto the face.
-    
-    Args:
-        face: The face to get a point on
-        timber: The timber
-        
-    Returns:
-        A point on the face surface in global coordinates
-    """
-    return timber.get_bottom_position_global() + timber.get_face_direction_global(face) * timber.get_size_in_face_normal_axis(face) / 2
 
 
 # ============================================================================
@@ -158,18 +143,76 @@ class UnsignedPlane(Plane):
         """
         return UnsignedPlane(transform.orientation.matrix * direction, transform.position)
 
+# TODO rename to LineOnPlane
 @dataclass(frozen=True)
 class HalfPlane:
     """
     Represents an oriented half-plane with origin in 3D space.
     """
-    normal: Direction3D
+    normal: Direction3D # this is the + direction of any measurements
     point_on_line: V3
     line_direction: Direction3D # MUST be perpendicular to the normal
 
     def __repr__(self) -> str:
         return f"HalfPlane(normal={self.normal}, point_on_line={self.point_on_line}, line_direction={self.line_direction})"
 
+
+
+# ============================================================================
+# Measurement Classes
+# ============================================================================
+
+@dataclass(frozen=True)
+class Measurement(ABC):
+    @abstractmethod
+    def mark(self) -> Union[UnsignedPlane, Plane, Line, Point, HalfPlane]:
+        pass
+
+@dataclass(frozen=True)
+class DistanceFromFace(Measurement):
+    """
+    Represents a distance from a face on a timber with + being AWAY from the face.
+    """
+    distance: Numeric
+    timber: Timber
+    face: TimberFace
+    
+
+    def mark(self) -> UnsignedPlane:
+        """
+        Convert the distance from a face to an unsigned plane.
+        """
+        return UnsignedPlane(self.face.normal, self.timber.get_bottom_position_global() + self.face.normal * self.distance)
+
+@dataclass(frozen=True)
+class DistanceFromLongEdgeOnFace(Measurement):
+    """
+    Represents a distance from a long edge on a timber with + being AWAY from the edge.
+    """
+    distance: Numeric
+    timber: Timber
+    edge: TimberLongEdge
+    face: TimberFace
+    
+    def mark(self) -> Line:
+        pass
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+def get_point_on_face_global(face: TimberFace, timber: Timber) -> V3:
+    """
+    Get a point on the timber face. Useful for projecting points onto the face.
+    
+    Args:
+        face: The face to get a point on
+        timber: The timber
+        
+    Returns:
+        A point on the face surface in global coordinates
+    """
+    return timber.get_bottom_position_global() + timber.get_face_direction_global(face) * timber.get_size_in_face_normal_axis(face) / 2
 
 def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber) -> V3:
     """
@@ -188,6 +231,12 @@ def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
         return feature.position
 
     raise ValueError(f"Unsupported feature type: {type(feature)}")
+
+# ============================================================================
+# Marking functions
+# ============================================================================
+
+
 
 
 def mark_face(timber: Timber, face: TimberFace) -> Plane:
@@ -218,6 +267,7 @@ def mark_face(timber: Timber, face: TimberFace) -> Plane:
     return Plane(face_normal, face_point)
 
 
+# TODO change this to just mark edge
 def mark_long_edge(timber: Timber, edge: TimberLongEdge) -> Line:
     """
     Measure a long edge on a timber, returning a Line centered on the edge pointing in +Z.
@@ -247,10 +297,6 @@ def mark_long_edge(timber: Timber, edge: TimberLongEdge) -> Line:
         TimberLongEdge.FRONT_LEFT: (TimberFace.FRONT, TimberFace.LEFT),
         TimberLongEdge.LEFT_BACK: (TimberFace.LEFT, TimberFace.BACK),
         TimberLongEdge.BACK_RIGHT: (TimberFace.BACK, TimberFace.RIGHT),
-        TimberLongEdge.FRONT_RIGHT: (TimberFace.FRONT, TimberFace.RIGHT),
-        TimberLongEdge.RIGHT_BACK: (TimberFace.RIGHT, TimberFace.BACK),
-        TimberLongEdge.BACK_LEFT: (TimberFace.BACK, TimberFace.LEFT),
-        TimberLongEdge.LEFT_FRONT: (TimberFace.LEFT, TimberFace.FRONT),
     }
     
     if edge not in edge_to_faces:
@@ -306,6 +352,9 @@ def mark_centerline(timber: Timber) -> Line:
     
     return Line(length_direction, center_position)
 
+def mark_edge_on_face(timber: Timber, edge: TimberLongEdge, face: TimberFace) -> HalfPlane:
+    # TODO
+    pass
 
 def mark_position_on_centerline_from_bottom(timber: Timber, distance: Numeric) -> Point:
     """

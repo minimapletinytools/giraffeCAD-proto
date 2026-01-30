@@ -184,7 +184,12 @@ DONE-move
   DONE-move TODO stuff in timber into timber shavings
 DONE-delete deprecated stuff in joint_shavings and replace with measuring function
 DONE-get rid of CSGCut and HalfSpace CSG... omg
+DONE-address TODOs in joint_shavings.py
 
+
+
+-get rid of extra long edge enums... we don't orient there..
+-add short edges to the enum
 
 -maybe revisit measuring naming conevntion
   -we have situations where we want to scribe (multiple timbers) but work with a feature not a distance i.e. mark_closest_point_on_centerlines
@@ -192,11 +197,7 @@ DONE-get rid of CSGCut and HalfSpace CSG... omg
   -and i guess then scribe means taking multiple things to one measurement and could by polymorphic to take either local measurements or global features 
   -and we would still need something that takes multiple things to one marking (that marking might not hvae an analgous measure so we can't just scribe().mark())
   -or jsut have scribe return markings that you need to measure... that's probably better... and get rid of the current scribe functions you have...
--address TODOs in joint_shavings.py
--be consistent about function local/golbal naming
-  -local input vars should have the suffix  _local
-    -some things must be interpreted locally such as "face" or "distance", these d onot have the suffix
-  -functions return things in golbal space by default unless _local suffix
+
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
 -update morties and tenon to support
   -perpendicular but not face aligned
@@ -205,6 +206,16 @@ DONE-get rid of CSGCut and HalfSpace CSG... omg
   -neither perpendicular nor face aligned
 -think about how you want to make example selector and make it future proof or useful as reference
 -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
+
+
+-be consistent about function local/golbal naming
+  -local input vars should have the suffix  _local
+    -some things must be interpreted locally such as "face" or "distance", these d onot have the suffix
+  -functions return things in golbal space by default unless _local suffix
+
+
+
+-is there some way to make orientation/direction generic more like a measuring function?
 
 
 RENAME
