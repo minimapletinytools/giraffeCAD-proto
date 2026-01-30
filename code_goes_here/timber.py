@@ -37,12 +37,21 @@ class TimberFeature(Enum):
     LEFT_FACE = 4
     FRONT_FACE = 5
     BACK_FACE = 6
-    RIGHT_FRONT_EDGE = 7
-    FRONT_LEFT_EDGE = 8
-    LEFT_BACK_EDGE = 9
-    BACK_RIGHT_EDGE = 10
-    # TODO do the other edges lol
-    CENTERLINE = 99999
+    CENTERLINE = 7
+    # Long edges (edges running along the length of the timber)
+    RIGHT_FRONT_EDGE = 8
+    FRONT_LEFT_EDGE = 9
+    LEFT_BACK_EDGE = 10
+    BACK_RIGHT_EDGE = 11
+    # Short edges (edges on the ends of the timber)
+    BOTTOM_RIGHT_EDGE = 12
+    BOTTOM_FRONT_EDGE = 13
+    BOTTOM_LEFT_EDGE = 14
+    BOTTOM_BACK_EDGE = 15
+    TOP_RIGHT_EDGE = 16
+    TOP_FRONT_EDGE = 17
+    TOP_LEFT_EDGE = 18
+    TOP_BACK_EDGE = 19
     # TODO maybe do the corners?
     
     def face(self) -> 'TimberFace':
@@ -64,15 +73,15 @@ class TimberFeature(Enum):
         return TimberLongFace(self.value)
 
     def edge(self) -> 'TimberEdge':
-        """Convert to TimberEdge. Values 7-10 map to long edges."""
-        if (self.value not in range(7, 11))  and self.value != TimberFeature.CENTERLINE.value:
-            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberEdge. Only values 7-10 are valid long edges.")
+        """Convert to TimberEdge. Value 7 is centerline, values 8-19 map to edges."""
+        if self.value not in range(7, 20):
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberEdge. Only values 7-19 are valid edges.")
         return TimberEdge(self.value)
     
     def long_edge(self) -> 'TimberLongEdge':
-        """Convert to TimberLongEdge. Values 7-14 map to long edges."""
-        if self.value not in range(7, 15):
-            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberLongEdge. Only values 7-14 are valid long edges.")
+        """Convert to TimberLongEdge. Value 7 is centerline, values 8-11 map to long edges."""
+        if self.value not in range(7, 12):
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberLongEdge. Only values 7-11 are valid long edges.")
         return TimberLongEdge(self.value)
     
 class TimberFace(Enum):
@@ -189,12 +198,21 @@ class TimberLongFace(Enum):
         return TimberLongFace((self.value - 3 - 1) % 4 + 3)
 
 class TimberEdge(Enum):
-    RIGHT_FRONT = 7
-    FRONT_LEFT = 8
-    LEFT_BACK = 9
-    BACK_RIGHT = 10
-    # TODO do the short edges too...
-    CENTERLINE = TimberFeature.CENTERLINE.value
+    CENTERLINE = 7
+    # Long edges (edges running along the length of the timber)
+    RIGHT_FRONT = 8
+    FRONT_LEFT = 9
+    LEFT_BACK = 10
+    BACK_RIGHT = 11
+    # Short edges (edges on the ends of the timber)
+    BOTTOM_RIGHT = 12
+    BOTTOM_FRONT = 13
+    BOTTOM_LEFT = 14
+    BOTTOM_BACK = 15
+    TOP_RIGHT = 16
+    TOP_FRONT = 17
+    TOP_LEFT = 18
+    TOP_BACK = 19
     
     @property
     def to(self) -> TimberFeature:
@@ -203,11 +221,11 @@ class TimberEdge(Enum):
 
     
 class TimberLongEdge(Enum):
-    RIGHT_FRONT = 7
-    FRONT_LEFT = 8
-    LEFT_BACK = 9
-    BACK_RIGHT = 10
-    CENTERLINE = TimberFeature.CENTERLINE.value
+    CENTERLINE = 7
+    RIGHT_FRONT = 8
+    FRONT_LEFT = 9
+    LEFT_BACK = 10
+    BACK_RIGHT = 11
     
     @property
     def to(self) -> TimberFeature:
