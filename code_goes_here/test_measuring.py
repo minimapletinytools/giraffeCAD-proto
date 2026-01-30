@@ -63,10 +63,10 @@ class TestMeasureOntoFace:
         
         # Point exactly on RIGHT face (x=5)
         point = create_v3(5, 0, 50)
-        distance = measure_onto_face(Point(point), timber, TimberFace.RIGHT)
+        measurement = measure_onto_face(Point(point), timber, TimberFace.RIGHT)
         
         # Should be 0 (on the surface)
-        assert distance == Rational(0)
+        assert measurement.distance == Rational(0)
     
     def test_project_point_inside_timber(self):
         """Test projecting a point inside the timber"""
@@ -80,10 +80,10 @@ class TestMeasureOntoFace:
         
         # Point at x=2 (3 units inside from RIGHT face which is at x=5)
         point = create_v3(2, 0, 50)
-        distance = measure_onto_face(Point(point), timber, TimberFace.RIGHT)
+        measurement = measure_onto_face(Point(point), timber, TimberFace.RIGHT)
         
         # Should be positive (inside the timber)
-        assert distance == Rational(3)
+        assert measurement.distance == Rational(3)
     
     def test_project_point_outside_timber(self):
         """Test projecting a point outside the timber"""
@@ -97,10 +97,10 @@ class TestMeasureOntoFace:
         
         # Point at x=8 (3 units outside from RIGHT face which is at x=5)
         point = create_v3(8, 0, 50)
-        distance = measure_onto_face(Point(point), timber, TimberFace.RIGHT)
+        measurement = measure_onto_face(Point(point), timber, TimberFace.RIGHT)
         
         # Should be negative (outside the timber)
-        assert distance == Rational(-3)
+        assert measurement.distance == Rational(-3)
     
     def test_project_point_on_left_face(self):
         """Test projection onto LEFT face"""
@@ -115,10 +115,10 @@ class TestMeasureOntoFace:
         # LEFT face is at x=-5
         # Point at x=-2 (3 units inside from LEFT face)
         point = create_v3(-2, 0, 50)
-        distance = measure_onto_face(Point(point), timber, TimberFace.LEFT)
+        measurement = measure_onto_face(Point(point), timber, TimberFace.LEFT)
         
         # Should be positive (inside the timber from LEFT face)
-        assert distance == Rational(3)
+        assert measurement.distance == Rational(3)
     
     def test_project_point_on_front_face(self):
         """Test projection onto FRONT face"""
@@ -133,10 +133,10 @@ class TestMeasureOntoFace:
         # FRONT face is at y=10
         # Point at y=5 (5 units inside from FRONT face)
         point = create_v3(0, 5, 50)
-        distance = measure_onto_face(Point(point), timber, TimberFace.FRONT)
+        measurement = measure_onto_face(Point(point), timber, TimberFace.FRONT)
         
         # Should be positive (inside the timber from FRONT face)
-        assert distance == Rational(5)
+        assert measurement.distance == Rational(5)
     
     def test_project_point_with_offset_timber(self):
         """Test projection on a timber not centered at origin"""
@@ -151,10 +151,10 @@ class TestMeasureOntoFace:
         # RIGHT face is at x=10+3=13
         # Point at x=11 (2 units inside from RIGHT face)
         point = create_v3(11, 20, 20)
-        distance = measure_onto_face(Point(point), timber, TimberFace.RIGHT)
+        measurement = measure_onto_face(Point(point), timber, TimberFace.RIGHT)
         
         # Should be positive (inside the timber)
-        assert distance == Rational(2)
+        assert measurement.distance == Rational(2)
 
 
 class TestPoint:
@@ -366,8 +366,8 @@ class TestMarkFromFace:
         # Test round trip for various distances
         for distance in [Rational(0), Rational(5), Rational(10), Rational(-2)]:
             plane = mark_into_face(distance, TimberFace.RIGHT, timber)
-            marked = measure_onto_face(plane, timber, TimberFace.RIGHT)
-            assert marked == distance
+            measurement = measure_onto_face(plane, timber, TimberFace.RIGHT)
+            assert measurement.distance == distance
     
     def test_mark_point_from_face(self):
         """Test marking a point feature from a face"""
@@ -381,9 +381,9 @@ class TestMarkFromFace:
         
         # Point at x=2 (3 units inside from RIGHT face which is at x=5)
         point = Point(create_v3(2, 0, 0))
-        distance = measure_onto_face(point, timber, TimberFace.RIGHT)
+        measurement = measure_onto_face(point, timber, TimberFace.RIGHT)
         
-        assert distance == Rational(3)
+        assert measurement.distance == Rational(3)
 
 
 class TestGaugeDistanceBetweenFaces:
