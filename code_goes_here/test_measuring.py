@@ -689,3 +689,112 @@ class TestMeasureCenterLine:
         # Point should be at mid-length along the diagonal
         expected_point = direction * Rational(30)  # 60/2 = 30
         assert line.point.equals(expected_point)
+
+
+class TestDistanceFromPointAwayFromFaceMark:
+    """Test DistanceFromPointAwayFromFace.mark() method"""
+    
+    def test_mark_from_face_center(self):
+        """Test marking a line from face center going away from face"""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 10),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        # Create measurement: 5 units away from RIGHT face center
+        measurement = DistanceFromPointAwayFromFace(
+            distance=Rational(5),
+            timber=timber,
+            face=TimberFace.RIGHT,
+            point=None  # Use face center
+        )
+        
+        line = measurement.mark()
+        
+        # Line should point away from RIGHT face (negative X direction)
+        assert line.direction.equals(create_v3(-1, 0, 0))
+        # Face center is at (5, 0, 0), moving 5 units in -X direction gives (0, 0, 0)
+        assert line.point.equals(create_v3(0, 0, 0))
+    
+    def test_mark_from_custom_point(self):
+        """Test marking a line from a custom point going away from face"""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 10),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        # Create measurement: 3 units away from FRONT face at custom point
+        custom_point = create_v3(2, 5, 30)  # FRONT face is at y=5
+        measurement = DistanceFromPointAwayFromFace(
+            distance=Rational(3),
+            timber=timber,
+            face=TimberFace.FRONT,
+            point=custom_point
+        )
+        
+        line = measurement.mark()
+        
+        # Line should point away from FRONT face (negative Y direction)
+        assert line.direction.equals(create_v3(0, -1, 0))
+        # Starting at (2, 5, 30), moving 3 units in -Y direction gives (2, 2, 30)
+        assert line.point.equals(create_v3(2, 2, 30))
+
+
+class TestDistanceFromLongEdgeOnFaceMark:
+    """Test DistanceFromLongEdgeOnFace.mark() method"""
+    
+    def test_mark_on_right_face(self):
+        """Test marking a line parallel to edge on RIGHT face"""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 10),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        # Create measurement: 2 units from RIGHT_FRONT edge onto RIGHT face
+        measurement = DistanceFromLongEdgeOnFace(
+            distance=Rational(2),
+            timber=timber,
+            edge=TimberLongEdge.RIGHT_FRONT,
+            face=TimberFace.RIGHT
+        )
+        
+        line = measurement.mark()
+        
+        # Line should be parallel to timber length (Z direction)
+        assert line.direction.equals(create_v3(0, 0, 1))
+        # RIGHT_FRONT edge is at (5, 5, 0), moving 2 units in +Y (FRONT) direction gives (5, 7, 0)
+        assert line.point.equals(create_v3(5, 7, 0))
+    
+    def test_mark_on_front_face(self):
+        """Test marking a line parallel to edge on FRONT face"""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 10),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        # Create measurement: 3 units from LEFT_BACK edge onto BACK face
+        measurement = DistanceFromLongEdgeOnFace(
+            distance=Rational(3),
+            timber=timber,
+            edge=TimberLongEdge.LEFT_BACK,
+            face=TimberFace.BACK
+        )
+        
+        line = measurement.mark()
+        
+        # Line should be parallel to timber length (Z direction)
+        assert line.direction.equals(create_v3(0, 0, 1))
+        # LEFT_BACK edge is at (-5, -5, 0), moving 3 units in -X (LEFT) direction gives (-8, -5, 0)
+        assert line.point.equals(create_v3(-8, -5, 0))
