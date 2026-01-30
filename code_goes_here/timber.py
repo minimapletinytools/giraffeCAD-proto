@@ -79,9 +79,9 @@ class TimberFeature(Enum):
         return TimberEdge(self.value)
     
     def long_edge(self) -> 'TimberLongEdge':
-        """Convert to TimberLongEdge. Value 7 is centerline, values 8-11 map to long edges."""
-        if self.value not in range(7, 12):
-            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberLongEdge. Only values 7-11 are valid long edges.")
+        """Convert to TimberLongEdge. Values 8-11 map to long edges."""
+        if self.value not in range(8, 12):
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberLongEdge. Only values 8-11 are valid long edges.")
         return TimberLongEdge(self.value)
     
 class TimberFace(Enum):
@@ -221,7 +221,6 @@ class TimberEdge(Enum):
 
     
 class TimberLongEdge(Enum):
-    CENTERLINE = 7
     RIGHT_FRONT = 8
     FRONT_LEFT = 9
     LEFT_BACK = 10

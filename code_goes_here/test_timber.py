@@ -116,7 +116,6 @@ class TestTimberEnumConversions:
     
     def test_timber_long_edge_to_feature(self):
         """Test TimberLongEdge to TimberFeature conversion."""
-        assert TimberLongEdge.CENTERLINE.to == TimberFeature.CENTERLINE
         assert TimberLongEdge.RIGHT_FRONT.to == TimberFeature.RIGHT_FRONT_EDGE
         assert TimberLongEdge.FRONT_LEFT.to == TimberFeature.FRONT_LEFT_EDGE
         assert TimberLongEdge.LEFT_BACK.to == TimberFeature.LEFT_BACK_EDGE
@@ -124,7 +123,6 @@ class TestTimberEnumConversions:
     
     def test_timber_feature_to_long_edge(self):
         """Test TimberFeature to TimberLongEdge conversion."""
-        assert TimberFeature.CENTERLINE.long_edge() == TimberLongEdge.CENTERLINE
         assert TimberFeature.RIGHT_FRONT_EDGE.long_edge() == TimberLongEdge.RIGHT_FRONT
         assert TimberFeature.FRONT_LEFT_EDGE.long_edge() == TimberLongEdge.FRONT_LEFT
         assert TimberFeature.LEFT_BACK_EDGE.long_edge() == TimberLongEdge.LEFT_BACK
@@ -202,6 +200,8 @@ class TestTimberEnumConversions:
         """Test that converting non-long-edge features to long edge raises error."""
         with pytest.raises(ValueError, match="Cannot convert.*to TimberLongEdge"):
             TimberFeature.TOP_FACE.long_edge()
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberLongEdge"):
+            TimberFeature.CENTERLINE.long_edge()
         with pytest.raises(ValueError, match="Cannot convert.*to TimberLongEdge"):
             TimberFeature.BOTTOM_RIGHT_EDGE.long_edge()
         with pytest.raises(ValueError, match="Cannot convert.*to TimberLongEdge"):
