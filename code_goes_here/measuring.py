@@ -25,7 +25,7 @@ OR put more simply:
 - `scribe_*` means LOCAL to LOCAL
 - `???_*` means GLOBAL to GLOBAL
 
-In addition we have `measure_by_*` methods which take specific features where as `measure_*` methods tend to be more generic and work with any feature.
+In addition we have `measure_*_by_*` methods which take specific features where as `measure_*` methods are generic and work with any feature and call measure_*_by_* methods internally.
 
 Using these functions, we can take measurements relative to features on one timber and mark them onto another timber. Measurements always exist in some context, and together with their context, they become colloqial ways to refer to features as it is easier to understand and work with measurements than it is to work with features directly. So measuring and marking functions are precisely used to convert between these expressions!
 
@@ -552,9 +552,9 @@ def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlan
     return DistanceFromFace(distance=distance, timber=timber, face=face)
 
 
-def measure_by_intersecting_plane_onto_long_edge(plane: Union[UnsignedPlane, Plane], timber: Timber, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
+def measure_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane], timber: Timber, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
     """
-    Intersect a plane with a long edge of a timber (including centerline).
+    Measure onto a long edge of a timber (including centerline) by intersecting a plane.
 
     Computes the true geometric intersection between the plane and the edge line,
     returning the signed distance from the specified end to the intersection point.
@@ -605,9 +605,9 @@ def measure_by_intersecting_plane_onto_long_edge(plane: Union[UnsignedPlane, Pla
     
     return signed_distance
 
-def measure_by_finding_closest_point_on_line_to_edge(line: Line, timber: Timber, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
+def measure_onto_edge_by_finding_closest_point_on_line(line: Line, timber: Timber, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
     """
-    Find the closest point between a line and a timber edge (including centerline).
+    Measure onto a timber edge (including centerline) by finding the closest point on a line.
 
     This computes the closest point on the timber edge to the given line, which is useful
     for finding where two centerlines come closest to each other (even if they don't intersect).
@@ -690,9 +690,9 @@ def measure_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, Ha
         centerline position.
     """
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane):
-        distance = measure_by_intersecting_plane_onto_long_edge(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
+        distance = measure_onto_long_edge_by_intersecting_plane(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
     elif isinstance(feature, Line):
-        distance = measure_by_finding_closest_point_on_line_to_edge(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
+        distance = measure_onto_edge_by_finding_closest_point_on_line(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
     else:
         assert False, f"Not implemented for feature type {type(feature)}"
     
