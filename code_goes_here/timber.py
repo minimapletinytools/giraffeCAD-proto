@@ -34,8 +34,8 @@ class TimberFeature(Enum):
     TOP_FACE = 1
     BOTTOM_FACE = 2
     RIGHT_FACE = 3
-    LEFT_FACE = 4
-    FRONT_FACE = 5
+    FRONT_FACE = 4
+    LEFT_FACE = 5
     BACK_FACE = 6
     CENTERLINE = 7
     # Long edges (edges running along the length of the timber)

@@ -77,6 +77,137 @@ class TestVectorHelpers:
         assert magnitude == 5
 
 
+class TestTimberEnumConversions:
+    """Test timber enum type conversions."""
+    
+    def test_timber_feature_to_face(self):
+        """Test TimberFeature to TimberFace conversion."""
+        # Note: TimberFeature face values (1-6) map directly to TimberFace values
+        assert TimberFeature.TOP_FACE.face() == TimberFace.TOP
+        assert TimberFeature.BOTTOM_FACE.face() == TimberFace.BOTTOM
+        assert TimberFeature.RIGHT_FACE.face() == TimberFace.RIGHT
+        assert TimberFeature.FRONT_FACE.face() == TimberFace.FRONT
+        assert TimberFeature.LEFT_FACE.face() == TimberFace.LEFT
+        assert TimberFeature.BACK_FACE.face() == TimberFace.BACK
+    
+    def test_timber_long_face_to_feature(self):
+        """Test TimberLongFace to TimberFeature conversion."""
+        assert TimberLongFace.RIGHT.to == TimberFeature.RIGHT_FACE
+        assert TimberLongFace.FRONT.to == TimberFeature.FRONT_FACE
+        assert TimberLongFace.LEFT.to == TimberFeature.LEFT_FACE
+        assert TimberLongFace.BACK.to == TimberFeature.BACK_FACE
+    
+    def test_timber_feature_to_long_face(self):
+        """Test TimberFeature to TimberLongFace conversion."""
+        assert TimberFeature.RIGHT_FACE.long_face() == TimberLongFace.RIGHT
+        assert TimberFeature.FRONT_FACE.long_face() == TimberLongFace.FRONT
+        assert TimberFeature.LEFT_FACE.long_face() == TimberLongFace.LEFT
+        assert TimberFeature.BACK_FACE.long_face() == TimberLongFace.BACK
+    
+    def test_timber_reference_end_to_feature(self):
+        """Test TimberReferenceEnd to TimberFeature conversion."""
+        assert TimberReferenceEnd.TOP.to == TimberFeature.TOP_FACE
+        assert TimberReferenceEnd.BOTTOM.to == TimberFeature.BOTTOM_FACE
+    
+    def test_timber_feature_to_end(self):
+        """Test TimberFeature to TimberReferenceEnd conversion."""
+        assert TimberFeature.TOP_FACE.end() == TimberReferenceEnd.TOP
+        assert TimberFeature.BOTTOM_FACE.end() == TimberReferenceEnd.BOTTOM
+    
+    def test_timber_long_edge_to_feature(self):
+        """Test TimberLongEdge to TimberFeature conversion."""
+        assert TimberLongEdge.CENTERLINE.to == TimberFeature.CENTERLINE
+        assert TimberLongEdge.RIGHT_FRONT.to == TimberFeature.RIGHT_FRONT_EDGE
+        assert TimberLongEdge.FRONT_LEFT.to == TimberFeature.FRONT_LEFT_EDGE
+        assert TimberLongEdge.LEFT_BACK.to == TimberFeature.LEFT_BACK_EDGE
+        assert TimberLongEdge.BACK_RIGHT.to == TimberFeature.BACK_RIGHT_EDGE
+    
+    def test_timber_feature_to_long_edge(self):
+        """Test TimberFeature to TimberLongEdge conversion."""
+        assert TimberFeature.CENTERLINE.long_edge() == TimberLongEdge.CENTERLINE
+        assert TimberFeature.RIGHT_FRONT_EDGE.long_edge() == TimberLongEdge.RIGHT_FRONT
+        assert TimberFeature.FRONT_LEFT_EDGE.long_edge() == TimberLongEdge.FRONT_LEFT
+        assert TimberFeature.LEFT_BACK_EDGE.long_edge() == TimberLongEdge.LEFT_BACK
+        assert TimberFeature.BACK_RIGHT_EDGE.long_edge() == TimberLongEdge.BACK_RIGHT
+    
+    def test_timber_edge_to_feature(self):
+        """Test TimberEdge to TimberFeature conversion."""
+        assert TimberEdge.CENTERLINE.to == TimberFeature.CENTERLINE
+        # Long edges
+        assert TimberEdge.RIGHT_FRONT.to == TimberFeature.RIGHT_FRONT_EDGE
+        assert TimberEdge.FRONT_LEFT.to == TimberFeature.FRONT_LEFT_EDGE
+        assert TimberEdge.LEFT_BACK.to == TimberFeature.LEFT_BACK_EDGE
+        assert TimberEdge.BACK_RIGHT.to == TimberFeature.BACK_RIGHT_EDGE
+        # Short edges - bottom
+        assert TimberEdge.BOTTOM_RIGHT.to == TimberFeature.BOTTOM_RIGHT_EDGE
+        assert TimberEdge.BOTTOM_FRONT.to == TimberFeature.BOTTOM_FRONT_EDGE
+        assert TimberEdge.BOTTOM_LEFT.to == TimberFeature.BOTTOM_LEFT_EDGE
+        assert TimberEdge.BOTTOM_BACK.to == TimberFeature.BOTTOM_BACK_EDGE
+        # Short edges - top
+        assert TimberEdge.TOP_RIGHT.to == TimberFeature.TOP_RIGHT_EDGE
+        assert TimberEdge.TOP_FRONT.to == TimberFeature.TOP_FRONT_EDGE
+        assert TimberEdge.TOP_LEFT.to == TimberFeature.TOP_LEFT_EDGE
+        assert TimberEdge.TOP_BACK.to == TimberFeature.TOP_BACK_EDGE
+    
+    def test_timber_feature_to_edge(self):
+        """Test TimberFeature to TimberEdge conversion."""
+        assert TimberFeature.CENTERLINE.edge() == TimberEdge.CENTERLINE
+        # Long edges
+        assert TimberFeature.RIGHT_FRONT_EDGE.edge() == TimberEdge.RIGHT_FRONT
+        assert TimberFeature.FRONT_LEFT_EDGE.edge() == TimberEdge.FRONT_LEFT
+        assert TimberFeature.LEFT_BACK_EDGE.edge() == TimberEdge.LEFT_BACK
+        assert TimberFeature.BACK_RIGHT_EDGE.edge() == TimberEdge.BACK_RIGHT
+        # Short edges - bottom
+        assert TimberFeature.BOTTOM_RIGHT_EDGE.edge() == TimberEdge.BOTTOM_RIGHT
+        assert TimberFeature.BOTTOM_FRONT_EDGE.edge() == TimberEdge.BOTTOM_FRONT
+        assert TimberFeature.BOTTOM_LEFT_EDGE.edge() == TimberEdge.BOTTOM_LEFT
+        assert TimberFeature.BOTTOM_BACK_EDGE.edge() == TimberEdge.BOTTOM_BACK
+        # Short edges - top
+        assert TimberFeature.TOP_RIGHT_EDGE.edge() == TimberEdge.TOP_RIGHT
+        assert TimberFeature.TOP_FRONT_EDGE.edge() == TimberEdge.TOP_FRONT
+        assert TimberFeature.TOP_LEFT_EDGE.edge() == TimberEdge.TOP_LEFT
+        assert TimberFeature.TOP_BACK_EDGE.edge() == TimberEdge.TOP_BACK
+    
+    def test_timber_feature_face_conversion_invalid(self):
+        """Test that converting non-face features to face raises error."""
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberFace"):
+            TimberFeature.CENTERLINE.face()
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberFace"):
+            TimberFeature.RIGHT_FRONT_EDGE.face()
+    
+    def test_timber_feature_long_face_conversion_invalid(self):
+        """Test that converting non-long-face features to long face raises error."""
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberLongFace"):
+            TimberFeature.TOP_FACE.long_face()
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberLongFace"):
+            TimberFeature.BOTTOM_FACE.long_face()
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberLongFace"):
+            TimberFeature.CENTERLINE.long_face()
+    
+    def test_timber_feature_end_conversion_invalid(self):
+        """Test that converting non-end features to end raises error."""
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberReferenceEnd"):
+            TimberFeature.RIGHT_FACE.end()
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberReferenceEnd"):
+            TimberFeature.CENTERLINE.end()
+    
+    def test_timber_feature_edge_conversion_invalid(self):
+        """Test that converting non-edge features to edge raises error."""
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberEdge"):
+            TimberFeature.TOP_FACE.edge()
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberEdge"):
+            TimberFeature.RIGHT_FACE.edge()
+    
+    def test_timber_feature_long_edge_conversion_invalid(self):
+        """Test that converting non-long-edge features to long edge raises error."""
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberLongEdge"):
+            TimberFeature.TOP_FACE.long_edge()
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberLongEdge"):
+            TimberFeature.BOTTOM_RIGHT_EDGE.long_edge()
+        with pytest.raises(ValueError, match="Cannot convert.*to TimberLongEdge"):
+            TimberFeature.TOP_BACK_EDGE.long_edge()
+
+
 
 class TestTimber:
     """Test Timber class."""
