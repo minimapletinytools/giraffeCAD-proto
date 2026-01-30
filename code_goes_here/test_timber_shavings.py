@@ -192,6 +192,8 @@ class TestFindOpposingFaceOnAnotherTimber:
         # Check that the error message mentions parallel
         assert "parallel" in str(excinfo.value).lower()
         
+
+
 # ============================================================================
 # Tests for Peg and Wedge Joint Accessories
 # ============================================================================
