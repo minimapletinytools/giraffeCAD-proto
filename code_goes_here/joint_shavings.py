@@ -60,7 +60,7 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: Timber, to_
     """
     # Get the face plane (any point on the face works - we use mark_into_face for simplicity)
     face_plane = mark_into_face(0, face, face_timber)
-    return measure_by_intersecting_plane_onto_long_edge(face_plane, to_timber, TimberEdge.CENTERLINE, to_timber_end)
+    return measure_onto_long_edge_by_intersecting_plane(face_plane, to_timber, TimberEdge.CENTERLINE, to_timber_end)
 
 
 def scribe_centerline_onto_centerline(timberA: Timber, timberB: Timber, timberA_end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM, timberB_end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> (Numeric, Numeric):
@@ -100,7 +100,7 @@ def scribe_centerline_onto_centerline(timberA: Timber, timberB: Timber, timberA_
     
     # Measure from timberB's centerline to timberA's centerline
     # This gives us the distance from timberA_end to the closest point
-    distance_on_timberA = measure_by_finding_closest_point_on_line_to_edge(
+    distance_on_timberA = measure_onto_edge_by_finding_closest_point_on_line(
         centerline_b, timberA, TimberEdge.CENTERLINE, timberA_end
     )
     
@@ -109,7 +109,7 @@ def scribe_centerline_onto_centerline(timberA: Timber, timberB: Timber, timberA_
     
     # Measure from timberA's centerline to timberB's centerline
     # This gives us the distance from timberB_end to the closest point
-    distance_on_timberB = measure_by_finding_closest_point_on_line_to_edge(
+    distance_on_timberB = measure_onto_edge_by_finding_closest_point_on_line(
         centerline_a, timberB, TimberEdge.CENTERLINE, timberB_end
     )
     
