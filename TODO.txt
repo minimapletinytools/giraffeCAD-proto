@@ -185,11 +185,8 @@ DONE-move
 DONE-delete deprecated stuff in joint_shavings and replace with measuring function
 DONE-get rid of CSGCut and HalfSpace CSG... omg
 DONE-address TODOs in joint_shavings.py
-
-
-
--get rid of extra long edge enums... we don't orient there..
--add short edges to the enum
+DONE-get rid of extra long edge enums... we don't orient there..
+DONE-add short edges to the enum
 
 -maybe revisit measuring naming conevntion
   -we have situations where we want to scribe (multiple timbers) but work with a feature not a distance i.e. mark_closest_point_on_centerlines
