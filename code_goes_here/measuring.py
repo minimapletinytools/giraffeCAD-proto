@@ -185,6 +185,20 @@ class DistanceFromFace(Measurement):
         return UnsignedPlane(self.face.normal, self.timber.get_bottom_position_global() + self.face.normal * self.distance)
 
 @dataclass(frozen=True)
+class DistanceFromPointAwayFromFace(Measurement):
+    """
+    Represents a distance from a point away from a face on a timber with + being AWAY from the face (that is the negative face normal direction is the + axis of the measurement)
+    If the point is not supplied, the center of the face is used.
+    """
+    distance: Numeric
+    timber: Timber
+    face: TimberFace
+    point: Optional[V3] = None
+    
+    def mark(self) -> Line:
+        pass
+    
+@dataclass(frozen=True)
 class DistanceFromLongEdgeOnFace(Measurement):
     """
     Represents a distance from a long edge on a timber with + being AWAY from the edge.
