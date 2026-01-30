@@ -691,11 +691,11 @@ class TestMeasureCenterLine:
         assert line.point.equals(expected_point)
 
 
-class TestDistanceFromPointAwayFromFaceMark:
-    """Test DistanceFromPointAwayFromFace.mark() method"""
+class TestDistanceFromPointIntoFaceMark:
+    """Test DistanceFromPointIntoFace.mark() method"""
     
     def test_mark_from_face_center(self):
-        """Test marking a line from face center going away from face"""
+        """Test marking a line from face center going into timber"""
         timber = timber_from_directions(
             length=Rational(100),
             size=create_v2(10, 10),
@@ -704,8 +704,8 @@ class TestDistanceFromPointAwayFromFaceMark:
             width_direction=create_v3(1, 0, 0)
         )
         
-        # Create measurement: 5 units away from RIGHT face center
-        measurement = DistanceFromPointAwayFromFace(
+        # Create measurement: 5 units into timber from RIGHT face center
+        measurement = DistanceFromPointIntoFace(
             distance=Rational(5),
             timber=timber,
             face=TimberFace.RIGHT,
@@ -720,7 +720,7 @@ class TestDistanceFromPointAwayFromFaceMark:
         assert line.point.equals(create_v3(0, 0, 0))
     
     def test_mark_from_custom_point(self):
-        """Test marking a line from a custom point going away from face"""
+        """Test marking a line from a custom point going into timber"""
         timber = timber_from_directions(
             length=Rational(100),
             size=create_v2(10, 10),
@@ -729,9 +729,9 @@ class TestDistanceFromPointAwayFromFaceMark:
             width_direction=create_v3(1, 0, 0)
         )
         
-        # Create measurement: 3 units away from FRONT face at custom point
+        # Create measurement: 3 units into timber from FRONT face at custom point
         custom_point = create_v3(2, 5, 30)  # FRONT face is at y=5
-        measurement = DistanceFromPointAwayFromFace(
+        measurement = DistanceFromPointIntoFace(
             distance=Rational(3),
             timber=timber,
             face=TimberFace.FRONT,
