@@ -278,15 +278,9 @@ def are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Option
     
     return False
 
-def are_timbers_coplanar(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+def are_timbers_plane_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
     """
-    Check if two timbers are coplanar
-    
-    Two timbers are coplanar if any long face of one timber is parallel to any long face
-    of the other timber. This is a weaker condition than face-aligned - only requires
-    one pair of long faces to be parallel, while the rest of the orientations don't matter.
-    
-    Long faces are the faces along the timber's length direction (RIGHT, LEFT, FRONT, BACK).
+    Check if two timbers are plane aligned
     
     Args:
         timber1: First timber

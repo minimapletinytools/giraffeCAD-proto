@@ -218,7 +218,7 @@ DONE-cleanup where to put get_point_on_face and project_point_onto_face
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
   -oFAT on face aligned timbers
   -oFAACaT on face aligned coaxial timbers
-  -oCT on coplaner timbers (one pair of faces are parallel)
+  -oPT on plane aligned timbers (one pair of faces are parallel)
   -oPT on parallel timbers
   -oOT on orthognal timbers
 -do the horseCAD rename
