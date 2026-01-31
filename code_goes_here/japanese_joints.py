@@ -250,12 +250,15 @@ def cut_lapped_gooseneck_joint(
     
     # Compute gooseneck depth relative to the opposing face on the receiving timber
     # This accounts for any offset or rotation between the timbers
-    receiving_timber_lap_depth = scribe_distance_from_face_on_timber_wrt_opposing_face_on_another_timber(
-        reference_timber=gooseneck_timber,
-        reference_face=gooseneck_timber_face,
-        reference_depth_from_face=gooseneck_depth,
-        target_timber=receiving_timber
-    )
+    # Create a plane at gooseneck_depth from the gooseneck timber's face
+    gooseneck_cutting_plane = mark_into_face(gooseneck_depth, gooseneck_timber_face, gooseneck_timber)
+    # Find the opposing face on the receiving timber
+    gooseneck_face_direction = gooseneck_timber.get_face_direction_global(gooseneck_timber_face)
+    receiving_face_direction = -gooseneck_face_direction
+    receiving_face = receiving_timber.get_closest_oriented_face_from_global_direction(receiving_face_direction)
+    # Measure from the receiving face to the cutting plane
+    measurement = measure_onto_face(gooseneck_cutting_plane, receiving_timber, receiving_face)
+    receiving_timber_lap_depth = Abs(measurement.distance)
     
     # ========================================================================
     # Cut laps on both timbers
