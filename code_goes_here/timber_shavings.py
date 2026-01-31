@@ -189,3 +189,207 @@ def create_wedge_in_timber_end(
         length=shape.length
     )
 
+
+# ============================================================================
+# Timber Relationship Helper Functions
+# ============================================================================
+
+def are_timbers_parallel(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+    """
+    Check if two timbers have parallel length directions.
+    
+    Args:
+        timber1: First timber
+        timber2: Second timber
+        tolerance: Optional tolerance for approximate comparison. If None, attempts exact comparison and uses default epsilon if not possible.
+                   
+    Returns:
+        True if timbers have parallel length directions, False otherwise
+    """
+    dot_product = Abs(timber1.get_length_direction_global().dot(timber2.get_length_direction_global()))
+    
+    if tolerance is None:
+        # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
+        return equality_test(dot_product, 1)
+    else:
+        # Use provided tolerance for approximate comparison
+        return Abs(dot_product - 1) < tolerance
+
+def are_timbers_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+    """
+    Check if two timbers have orthogonal (perpendicular) length directions.
+    
+    Args:
+        timber1: First timber
+        timber2: Second timber
+        tolerance: Optional tolerance for approximate comparison. If None, automatically
+                   uses exact comparison for rational values or fuzzy comparison for floats.
+                   
+    Returns:
+        True if timbers have orthogonal length directions, False otherwise
+    """
+    dot_product = timber1.get_length_direction_global().dot(timber2.get_length_direction_global())
+    
+    if tolerance is None:
+        # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
+        return zero_test(dot_product)
+    else:
+        # Use provided tolerance for approximate comparison
+        return Abs(dot_product) < tolerance
+
+def are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+    """
+    Check if two timbers are face-aligned.
+    
+    Two timbers are face-aligned if any face of one timber is parallel to any face 
+    of the other timber. This occurs when their orientations are related by 90-degree 
+    rotations around any axis (i.e., they share the same coordinate grid alignment).
+    
+    Mathematically, timbers are face-aligned if any of their orthogonal direction 
+    vectors (length_direction, width_direction, height_direction) are parallel to each other.
+    
+    Args:
+        timber1: First timber
+        timber2: Second timber  
+        tolerance: Optional numerical tolerance for parallel check. If None, uses exact
+                   equality (recommended when using SymPy Rational types). If provided,
+                   uses approximate floating-point comparison.
+        
+    Returns:
+        True if timbers are face-aligned, False otherwise
+    """
+    # Get the three orthogonal direction vectors for each timber
+    dirs1 = [timber1.get_length_direction_global(), timber1.get_width_direction_global(), timber1.get_height_direction_global()]
+    dirs2 = [timber2.get_length_direction_global(), timber2.get_width_direction_global(), timber2.get_height_direction_global()]
+    
+    # Check all pairs of directions
+    for dir1 in dirs1:
+        for dir2 in dirs2:
+            dot_product = Abs(dir1.dot(dir2))
+            
+            if tolerance is None:
+                # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
+                if equality_test(dot_product, 1):
+                    return True
+            else:
+                # Use provided tolerance for approximate comparison
+                if Abs(dot_product - 1) < tolerance:
+                    return True
+    
+    return False
+
+def are_timbers_coplanar(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+    """
+    Check if two timbers are coplanar
+    
+    Two timbers are coplanar if any long face of one timber is parallel to any long face
+    of the other timber. This is a weaker condition than face-aligned - only requires
+    one pair of long faces to be parallel, while the rest of the orientations don't matter.
+    
+    Long faces are the faces along the timber's length direction (RIGHT, LEFT, FRONT, BACK).
+    
+    Args:
+        timber1: First timber
+        timber2: Second timber  
+        tolerance: Optional numerical tolerance for parallel check. If None, uses exact
+                   equality (recommended when using SymPy Rational types). If provided,
+                   uses approximate floating-point comparison.
+        
+    Returns:
+        True if timbers have at least one pair of parallel long faces, False otherwise
+    """
+    # Long faces are determined by width_direction and height_direction
+    # RIGHT/LEFT faces are perpendicular to width_direction
+    # FRONT/BACK faces are perpendicular to height_direction
+    long_face_normals1 = [timber1.get_width_direction_global(), timber1.get_height_direction_global()]
+    long_face_normals2 = [timber2.get_width_direction_global(), timber2.get_height_direction_global()]
+    
+    # Check if any pair of long face normals are parallel
+    for normal1 in long_face_normals1:
+        for normal2 in long_face_normals2:
+            dot_product = Abs(normal1.dot(normal2))
+            
+            if tolerance is None:
+                # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
+                if equality_test(dot_product, 1):
+                    return True
+            else:
+                # Use provided tolerance for approximate comparison
+                if Abs(dot_product - 1) < tolerance:
+                    return True
+    
+    return False
+
+def do_xy_cross_section_on_parallel_timbers_overlap(timberA: Timber, timberB: Timber) -> bool:
+    """
+    Check if the cross-section of two parallel timbers overlap.
+    
+    Converts timberB into timberA's local space and checks if the XY cross-sections
+    (defined by bottom_position and size) overlap.
+
+    Args:
+        timberA: First timber
+        timberB: Second timber
+
+    Returns:
+        True if the cross-sections overlap, False otherwise
+    """
+    from sympy import Rational
+    
+    assert are_vectors_parallel(timberA.get_length_direction_global(), timberB.get_length_direction_global()), "Timbers must be parallel"
+
+    # Convert timberB's bottom position into timberA's local space
+    timberB_bottom_local = timberA.transform.global_to_local(timberB.get_bottom_position_global())
+    
+    # In timberA's local space:
+    # - timberA's cross section is centered at (0, 0) in XY plane
+    # - timberA spans from (-width/2, -height/2) to (width/2, height/2)
+    timberA_x_min = -timberA.size[0] / Rational(2)
+    timberA_x_max = timberA.size[0] / Rational(2)
+    timberA_y_min = -timberA.size[1] / Rational(2)
+    timberA_y_max = timberA.size[1] / Rational(2)
+    
+    # timberB's cross section is centered at (timberB_bottom_local.x, timberB_bottom_local.y)
+    # We need to transform timberB's width and height directions into timberA's local space
+    # to determine the extents of timberB's cross section
+    
+    # Get timberB's width and height directions in global space
+    timberB_width_dir_global = timberB.get_width_direction_global()
+    timberB_height_dir_global = timberB.get_height_direction_global()
+    
+    # Convert to timberA's local space (just rotate, don't translate)
+    timberB_width_dir_local = timberA.orientation.matrix.T * timberB_width_dir_global
+    timberB_height_dir_local = timberA.orientation.matrix.T * timberB_height_dir_global
+    
+    # Get the four corners of timberB's cross section in timberA's local space
+    # Start from timberB's center in local space
+    timberB_center_local_xy = create_v2(timberB_bottom_local[0], timberB_bottom_local[1])
+    
+    # Offset vectors for the corners (in timberA's local XY plane)
+    half_width = timberB.size[0] / Rational(2)
+    half_height = timberB.size[1] / Rational(2)
+    
+    # Corner offsets in timberA's local space
+    offset_width_local = create_v2(timberB_width_dir_local[0], timberB_width_dir_local[1]) * half_width
+    offset_height_local = create_v2(timberB_height_dir_local[0], timberB_height_dir_local[1]) * half_height
+    
+    # Four corners of timberB in timberA's local XY coordinates
+    corner1 = timberB_center_local_xy + offset_width_local + offset_height_local
+    corner2 = timberB_center_local_xy + offset_width_local - offset_height_local
+    corner3 = timberB_center_local_xy - offset_width_local + offset_height_local
+    corner4 = timberB_center_local_xy - offset_width_local - offset_height_local
+    
+    # Find axis-aligned bounding box of timberB in timberA's local space
+    from sympy import Min, Max
+    timberB_x_min = Min(corner1[0], corner2[0], corner3[0], corner4[0])
+    timberB_x_max = Max(corner1[0], corner2[0], corner3[0], corner4[0])
+    timberB_y_min = Min(corner1[1], corner2[1], corner3[1], corner4[1])
+    timberB_y_max = Max(corner1[1], corner2[1], corner3[1], corner4[1])
+    
+    # Check if the axis-aligned bounding boxes overlap
+    # Two rectangles overlap if they overlap in both X and Y dimensions
+    x_overlap = timberA_x_max >= timberB_x_min and timberB_x_max >= timberA_x_min
+    y_overlap = timberA_y_max >= timberB_y_min and timberB_y_max >= timberA_y_min
+    
+    return x_overlap and y_overlap
+

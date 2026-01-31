@@ -187,8 +187,7 @@ DONE-get rid of CSGCut and HalfSpace CSG... omg
 DONE-address TODOs in joint_shavings.py
 DONE-get rid of extra long edge enums... we don't orient there..
 DONE-add short edges to the enum
-
--maybe revisit measuring naming conevntion
+DONE-maybe revisit measuring naming conevntion
   -we have situations where we want to scribe (multiple timbers) but work with a feature not a distance i.e. mark_closest_point_on_centerlines
   -maybe measurements should be wrapped in an object?.... then you can just measure_face().mark() and then you would do mark_into_face().measure_from_face().distance
   -and i guess then scribe means taking multiple things to one measurement and could by polymorphic to take either local measurements or global features 
@@ -205,13 +204,10 @@ DONE-add short edges to the enum
 -think about how you want to make example selector and make it future proof or useful as reference
 -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
 
-
 -be consistent about function local/golbal naming
   -local input vars should have the suffix  _local
     -some things must be interpreted locally such as "face" or "distance", these d onot have the suffix
   -functions return things in golbal space by default unless _local suffix
-
-
 
 -is there some way to make orientation/direction generic more like a measuring function?
 
@@ -222,8 +218,7 @@ DONE-cleanup where to put get_point_on_face and project_point_onto_face
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
   -oFAT on face aligned timbers
   -oFAACaT on face aligned coaxial timbers
-  -oSCT on side coplaner timbers 
-  -oSAT on side aligned timbers
+  -oCT on coplaner timbers (one pair of faces are parallel)
   -oPT on parallel timbers
   -oOT on orthognal timbers
 -do the horseCAD rename
