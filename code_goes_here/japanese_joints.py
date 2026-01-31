@@ -10,6 +10,7 @@ from code_goes_here.joint_shavings import *
 from code_goes_here.measuring import mark_top_center_position
 from code_goes_here.moothymoth import *
 from code_goes_here.meowmeowcsg import *
+from code_goes_here.timber_shavings import are_timbers_coplanar
 
 # Aliases for backwards compatibility
 CSGUnion = SolidUnion
@@ -630,6 +631,35 @@ def cut_lapped_dovetail_butt_joint(
     )
 
 
+def cut_mitered_and_keyed_lap_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timberA_reference_miter_face: TimberLongFace, timberB: Timber, timberB_end: TimberReferenceEnd, lap_start_lap_thickness: Numeric = None, distance_between_lap_and_outside: Numeric = None, num_laps: int = 2, key_width: Numeric = None, key_thickness: Numeric = None) -> Joint:
+
+    # assert that num_laps is >= 2
+
+    # find timberB_reference_miter_face on timberB by looking for the face that has the same normal as timberA_reference_miter_face (use find closest oriented face and then assert that they are the same normal)
+
+    # see that timberA_reference_miter_face and timberB_reference_miter_face are on the same plane and if not give a warning
+    
+    # now determine the angle between the two timbers in the parallel plane
+    # assert that this angle is > 45 and < 135
+
+    # miter_face_depth = timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face())
+    # miter_face_width = timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.rotate_right().to.face())
+
+    # if lap_start_distance_from_reference_miter_face is none and lap_thickness is not none, set it to (miter_face_depth - lap_thickness*(num_laps))/
+    # if lap_thickness is none and lap_start_distance_from_reference_miter_face is not none, set it to the (miter_face_depth - lap_start_distance_from_reference_miter_face) / (num_laps+1)
+    # if both are none, set lap_start_distance_from_reference_miter_face and lap_thickness to the (miter_face_depth - lap_thickness*(num_laps))/2
+    # if distance_between_lap_and_outside is none, set it to the miter_face_width * Rational(0.2) 
+
+    # assert that lap_start_distance_from_reference_miter_face + lap_thickness*num_laps < miter_face_depth
+    # assert that the laps will fit on timberB, in particular, the positions from timberA refence miter face + (into the face) lap_start_distance_from_reference_miter_face to timberA refence miter face + (into the face) lap_start_distance_from_reference_miter_face + lap_thickness*num_laps falli n the range of the thickness oftimberB_reference_miter_face
+
+    # now determine the "inner" faces of each timber (on the inside of the angle)
+    # find where these "inner" faces intersect and call it the inner shoulder
+    
+    # create a marking transform on this intersection on timber A, the transform should point towards the timberA_end and it should start lap_start_distance_from_reference_miter_face from timberA_reference_miter_face
+    
+    pass
+
 
 # ============================================================================
 # Aliases for Japanese joint functions
@@ -640,3 +670,6 @@ cut_koshikake_kama_tsugi = cut_lapped_gooseneck_joint
 
 cut_蟻仕口 = cut_lapped_dovetail_butt_joint
 cut_ari_shiguchi = cut_lapped_dovetail_butt_joint
+
+cut_箱相欠き車知栓仕口 = cut_mitered_and_keyed_lap_joint
+cut_hako_aikaki_shachi_sen_shikuchi = cut_mitered_and_keyed_lap_joint
