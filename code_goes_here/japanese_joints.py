@@ -514,12 +514,12 @@ def cut_lapped_dovetail_butt_joint(
     # ========================================================================
 
     receiving_timber_shoulder_face = receiving_timber.get_closest_oriented_face_from_global_direction(-dovetail_timber.get_face_direction_global(dovetail_timber_end.to.face()))
-    shoulder_distance_from_end = scribe_face_plane_onto_centerline(
+    face_plane = scribe_face_plane_onto_centerline(
         face=receiving_timber_shoulder_face,
-        face_timber=receiving_timber,
-        to_timber=dovetail_timber,
-        to_timber_end=dovetail_timber_end
-    ) - receiving_timber_shoulder_inset
+        face_timber=receiving_timber
+    )
+    measurement = measure_onto_centerline(face_plane, dovetail_timber, dovetail_timber_end)
+    shoulder_distance_from_end = measurement.distance - receiving_timber_shoulder_inset
 
     offset_to_dovetail_face = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face) / Rational(2) * dovetail_timber.get_face_direction_global(dovetail_timber_face)
     
@@ -555,7 +555,9 @@ def cut_lapped_dovetail_butt_joint(
     # ========================================================================
     
     # Calculate where along the receiving timber the shoulder should be
-    (_, receiving_timber_notch_center) = scribe_centerline_onto_centerline(dovetail_timber, receiving_timber)
+    dovetail_centerline = scribe_centerline_onto_centerline(dovetail_timber)
+    measurement_receiving = measure_onto_centerline(dovetail_centerline, receiving_timber)
+    receiving_timber_notch_center = measurement_receiving.distance
     
     # Create shoulder notch if inset is specified
     if receiving_timber_shoulder_inset > 0:

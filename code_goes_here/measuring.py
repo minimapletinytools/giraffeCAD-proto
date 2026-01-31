@@ -673,36 +673,42 @@ def measure_onto_edge_by_finding_closest_point_on_line(line: Line, timber: Timbe
     
     return t
 
-def measure_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber) -> DistanceFromPointIntoFace:
+def measure_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> DistanceFromPointIntoFace:
     """
     Measure a feature onto the centerline of a timber.
 
-    Returns a DistanceFromPointIntoFace measurement representing the distance from the bottom of the timber
+    Returns a DistanceFromPointIntoFace measurement representing the distance from the specified end of the timber
     to the intersection/closest point on the centerline.
     
     Args:
         feature: The feature to measure (Plane, Line, Point, etc.)
         timber: The timber whose centerline we're measuring to
+        end: Which end of the timber to measure from (defaults to BOTTOM)
         
     Returns:
-        DistanceFromPointIntoFace with distance from the BOTTOM end to where the feature intersects/is closest
-        to the centerline. Positive means into the timber from the bottom. The point is set to the bottom
+        DistanceFromPointIntoFace with distance from the specified end to where the feature intersects/is closest
+        to the centerline. Positive means into the timber from the end. The point is set to the end's
         centerline position.
     """
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane):
-        distance = measure_onto_long_edge_by_intersecting_plane(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
+        distance = measure_onto_long_edge_by_intersecting_plane(feature, timber, TimberEdge.CENTERLINE, end)
     elif isinstance(feature, Line):
-        distance = measure_onto_edge_by_finding_closest_point_on_line(feature, timber, TimberEdge.CENTERLINE, TimberReferenceEnd.BOTTOM)
+        distance = measure_onto_edge_by_finding_closest_point_on_line(feature, timber, TimberEdge.CENTERLINE, end)
     else:
         assert False, f"Not implemented for feature type {type(feature)}"
     
-    # Get the bottom centerline position as the reference point
+    # Get the reference end's centerline position as the reference point
     centerline = mark_centerline(timber)
-    bottom_centerline_position = timber.get_bottom_position_global()
+    if end == TimberReferenceEnd.BOTTOM:
+        end_centerline_position = timber.get_bottom_position_global()
+        reference_face = TimberFace.BOTTOM
+    else:  # TOP
+        end_centerline_position = timber.get_bottom_position_global() + timber.get_length_direction_global() * timber.length
+        reference_face = TimberFace.TOP
     
     return DistanceFromPointIntoFace(
         distance=distance,
         timber=timber,
-        face=TimberFace.BOTTOM,
-        point=bottom_centerline_position
+        face=reference_face,
+        point=end_centerline_position
     )
