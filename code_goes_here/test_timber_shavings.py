@@ -6,6 +6,7 @@ import pytest
 from code_goes_here.timber_shavings import *
 from code_goes_here.timber import *
 from code_goes_here.moothymoth import create_v3, create_v2
+from code_goes_here.testing_shavings import create_standard_vertical_timber
 from sympy import Rational
 
 
@@ -756,4 +757,541 @@ class TestWedgeShape:
         
         with pytest.raises(Exception):  # FrozenInstanceError
             shape.base_width = Rational(7)
+
+
+class TestTimberRelationshipHelpers:
+    """Tests for timber relationship helper functions."""
+    
+    def testare_timbers_parallel(self):
+        """Test are_timbers_parallel helper function."""
+        from code_goes_here.timber_shavings import are_timbers_parallel
+        # Create two timbers with parallel length directions
+        timber1 = timber_from_directions(
+            length=Rational(2),
+            size=create_v2(Rational("0.2"), Rational("0.3")),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),   # Z-up
+            width_direction=create_v3(1, 0, 0)      # X-right
+        )
+        
+        timber2 = timber_from_directions(
+            length=Rational(3),
+            size=create_v2(Rational("0.15"), Rational("0.25")),
+            bottom_position=create_v3(2, 0, 0),
+            length_direction=create_v3(0, 0, 1),   # Same direction
+            width_direction=create_v3(0, 1, 0)      # Different face direction
+        )
+        
+        # Should be parallel (parallel length directions)
+        assert are_timbers_parallel(timber1, timber2)
+        
+        # Create a timber with opposite direction (still parallel)
+        timber3 = timber_from_directions(
+            length=Rational("1.5"),
+            size=create_v2(Rational("0.1"), Rational("0.2")),
+            bottom_position=create_v3(-1, 0, 0),
+            length_direction=create_v3(0, 0, -1),  # Opposite direction
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        # Should still be parallel (anti-parallel is still parallel)
+        assert are_timbers_parallel(timber1, timber3)
+        
+        # Create a timber with perpendicular direction
+        timber4 = timber_from_directions(
+            length=Rational("2.5"),
+            size=create_v2(Rational("0.3"), Rational("0.3")),
+            bottom_position=create_v3(1, 1, 0),
+            length_direction=create_v3(1, 0, 0),   # Perpendicular
+            width_direction=create_v3(0, 0, 1)
+        )
+        
+        # Should NOT be parallel
+        assert not are_timbers_parallel(timber1, timber4)
+    
+    def testare_timbers_orthogonal(self):
+        """Test are_timbers_orthogonal helper function."""
+        from code_goes_here.timber_shavings import are_timbers_orthogonal
+        # Create two timbers with perpendicular length directions
+        timber1 = timber_from_directions(
+            length=Rational(2),
+            size=create_v2(Rational("0.2"), Rational("0.3")),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),   # Z-up
+            width_direction=create_v3(1, 0, 0)      # X-right
+        )
+        
+        timber2 = timber_from_directions(
+            length=Rational(3),
+            size=create_v2(Rational("0.15"), Rational("0.25")),
+            bottom_position=create_v3(2, 0, 0),
+            length_direction=create_v3(1, 0, 0),   # X-right (perpendicular to timber1)
+            width_direction=create_v3(0, 0, 1)      # Z-up
+        )
+        
+        # Should be orthogonal
+        assert are_timbers_orthogonal(timber1, timber2)
+        
+        # Create a timber with parallel direction
+        timber3 = timber_from_directions(
+            length=Rational("1.5"),
+            size=create_v2(Rational("0.1"), Rational("0.2")),
+            bottom_position=create_v3(-1, 0, 0),
+            length_direction=create_v3(0, 0, 1),   # Same as timber1
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        # Should NOT be orthogonal
+        assert not are_timbers_orthogonal(timber1, timber3)
+        
+        # Test with Y-direction
+        timber4 = timber_from_directions(
+            length=Rational("2.5"),
+            size=create_v2(Rational("0.3"), Rational("0.3")),
+            bottom_position=create_v3(1, 1, 0),
+            length_direction=create_v3(0, 1, 0),   # Y-forward (perpendicular to timber1)
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        # Should be orthogonal
+        assert are_timbers_orthogonal(timber1, timber4)
+    
+    def testare_timbers_face_aligned(self):
+        """Test are_timbers_face_aligned helper function."""
+        from code_goes_here.timber_shavings import are_timbers_face_aligned
+        # Create a reference timber with standard orientation
+        timber1 = timber_from_directions(
+            length=Rational(2),
+            size=create_v2(Rational("0.2"), Rational("0.3")),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),   # Z-up
+            width_direction=create_v3(1, 0, 0)      # X-right
+        )
+        # timber1 directions: length=[0,0,1], face=[1,0,0], height=[0,1,0]
+        
+        # Test 1: Timber with same orientation - should be face-aligned
+        timber2 = timber_from_directions(
+            length=Rational(3),
+            size=create_v2(Rational("0.15"), Rational("0.25")),
+            bottom_position=create_v3(2, 0, 0),
+            length_direction=create_v3(0, 0, 1),   # Same as timber1
+            width_direction=create_v3(1, 0, 0)      # Same as timber1
+        )
+        assert are_timbers_face_aligned(timber1, timber2)
+        
+        # Test 2: Timber rotated 90° around Z - should be face-aligned  
+        # (length stays Z, but face becomes Y, height becomes -X)
+        timber3 = timber_from_directions(
+            length=Rational("1.5"),
+            size=create_v2(Rational("0.1"), Rational("0.2")),
+            bottom_position=create_v3(-1, 0, 0),
+            length_direction=create_v3(0, 0, 1),   # Same Z
+            width_direction=create_v3(0, 1, 0)      # Y direction
+        )
+        assert are_timbers_face_aligned(timber1, timber3)
+        
+        # Test 3: Timber rotated 90° around X - should be face-aligned
+        # (length becomes -Y, face stays X, height becomes Z) 
+        timber4 = timber_from_directions(
+            length=Rational("2.5"),
+            size=create_v2(Rational("0.3"), Rational("0.3")),
+            bottom_position=create_v3(1, 1, 0),
+            length_direction=create_v3(0, -1, 0),  # -Y direction
+            width_direction=create_v3(1, 0, 0)      # Same X
+        )
+        assert are_timbers_face_aligned(timber1, timber4)
+        
+        # Test 4: Timber with perpendicular orientation but face-aligned
+        # (length becomes X, face becomes Z, height becomes Y)
+        timber5 = timber_from_directions(
+            length=Rational("1.8"),
+            size=create_v2(Rational("0.2"), Rational("0.2")),
+            bottom_position=create_v3(0, 2, 0),
+            length_direction=create_v3(1, 0, 0),   # X direction  
+            width_direction=create_v3(0, 0, 1)      # Z direction
+        )
+        assert are_timbers_face_aligned(timber1, timber5)
+        
+        # Test 5: Timber with arbitrary 3D rotation - should NOT be face-aligned
+        # Using a rotation that doesn't align any direction with cardinal axes
+        import math
+        # Create a rotation that's 30° around X, then 45° around the new Y
+        cos30 = math.cos(math.pi/6)
+        sin30 = math.sin(math.pi/6)
+        cos45 = math.cos(math.pi/4)
+        sin45 = math.sin(math.pi/4)
+        
+        # This creates a timber whose directions don't align with any cardinal axes
+        timber6 = timber_from_directions(
+            length=Rational(1),
+            size=create_v2(Rational("0.1"), Rational("0.1")),
+            bottom_position=create_v3(0, 0, 2),
+            length_direction=create_v3(sin45*cos30, sin45*sin30, cos45),  # Complex 3D direction
+            width_direction=create_v3(cos45*cos30, cos45*sin30, -sin45)    # Perpendicular complex direction
+        )
+        assert not are_timbers_face_aligned(timber1, timber6)
+        
+        # Test 6: Verify that 45° rotation in XY plane IS face-aligned 
+        # (because height direction is still Z, parallel to timber1's length direction)
+        cos45_xy = math.cos(math.pi/4)
+        sin45_xy = math.sin(math.pi/4)
+        timber7 = timber_from_directions(
+            length=Rational(1),
+            size=create_v2(Rational("0.1"), Rational("0.1")),
+            bottom_position=create_v3(0, 0, 2),
+            length_direction=create_v3(cos45_xy, sin45_xy, 0),  # 45° in XY plane
+            width_direction=create_v3(-sin45_xy, cos45_xy, 0)    # Perpendicular in XY
+        )
+        # This SHOULD be face-aligned because height direction = [0,0,1] = timber1.get_length_direction_global()
+        assert are_timbers_face_aligned(timber1, timber7)
+        
+        # Test 8: Verify face-aligned timbers can be orthogonal
+        # timber1 length=[0,0,1], timber5 length=[1,0,0] - these are orthogonal but face-aligned
+        assert are_timbers_face_aligned(timber1, timber5)
+        assert are_timbers_orthogonal(timber1, timber5)
+        
+        # Test 9: Verify face-aligned timbers can be parallel  
+        # timber1 and timber2 have same length direction - parallel and face-aligned
+        assert are_timbers_face_aligned(timber1, timber2)
+        assert are_timbers_parallel(timber1, timber2)
+    
+    def testare_timbers_parallel_rational(self):
+        """Test are_timbers_parallel with rational (exact) values."""
+        from code_goes_here.timber_shavings import are_timbers_parallel
+        from sympy import Rational
+        
+        # Create timbers with exact rational directions
+        timber1 = timber_from_directions(
+            length=2,
+            size=create_v2(Rational(1, 5), Rational(3, 10)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        timber2 = timber_from_directions(
+            length=3,
+            size=create_v2(Rational(1, 10), Rational(1, 4)),
+            bottom_position=create_v3(2, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Parallel
+            width_direction=create_v3(0, 1, 0)
+        )
+        
+        # Should be parallel (exact comparison)
+        assert are_timbers_parallel(timber1, timber2)
+        
+        # Test anti-parallel (should still be parallel)
+        timber3 = timber_from_directions(
+            length=Rational(3, 2),
+            size=create_v2(Rational(1, 10), Rational(1, 5)),
+            bottom_position=create_v3(-1, 0, 0),
+            length_direction=create_v3(0, 0, -1),  # Anti-parallel
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        assert are_timbers_parallel(timber1, timber3)
+        
+        # Test perpendicular (should not be parallel)
+        timber4 = timber_from_directions(
+            length=2,
+            size=create_v2(Rational(3, 10), Rational(3, 10)),
+            bottom_position=create_v3(1, 1, 0),
+            length_direction=create_v3(1, 0, 0),  # Perpendicular
+            width_direction=create_v3(0, 0, 1)
+        )
+        
+        assert not are_timbers_parallel(timber1, timber4)
+    
+    def testare_timbers_parallel_float(self):
+        """Test are_timbers_parallel with float (fuzzy) values."""
+        from code_goes_here.timber_shavings import are_timbers_parallel
+        import math
+        
+        # Create timbers with float directions
+        timber1 = create_standard_vertical_timber(height=2, size=(0.2, 0.3), position=(0, 0, 0))
+        
+        # Slightly off parallel (within tolerance)
+        small_angle = 1e-11
+        timber2 = timber_from_directions(
+            length=Rational(3),
+            size=create_v2(Rational("0.15"), Rational("0.25")),
+            bottom_position=create_v3(Rational(2), Rational(0), Rational(0)),
+            length_direction=create_v3(math.sin(small_angle), Rational(0), math.cos(small_angle)),
+            width_direction=create_v3(math.cos(small_angle), Rational(0), -math.sin(small_angle))
+        )
+        
+        # Should be parallel (fuzzy comparison)
+        assert are_timbers_parallel(timber1, timber2)
+    
+    def testare_timbers_orthogonal_rational(self):
+        """Test are_timbers_orthogonal with rational (exact) values."""
+        from code_goes_here.timber_shavings import are_timbers_orthogonal
+        from sympy import Rational
+        
+        # Create timbers with exact rational perpendicular directions
+        timber1 = timber_from_directions(
+            length=2,
+            size=create_v2(Rational(1, 5), Rational(3, 10)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        timber2 = timber_from_directions(
+            length=3,
+            size=create_v2(Rational(15, 100), Rational(1, 4)),
+            bottom_position=create_v3(2, 0, 0),
+            length_direction=create_v3(1, 0, 0),  # Perpendicular
+            width_direction=create_v3(0, 0, 1)
+        )
+        
+        # Should be orthogonal (exact comparison)
+        assert are_timbers_orthogonal(timber1, timber2)
+        
+        # Test non-orthogonal
+        timber3 = timber_from_directions(
+            length=Rational(3, 2),
+            size=create_v2(Rational(1, 10), Rational(1, 5)),
+            bottom_position=create_v3(-1, 0, 0),
+            length_direction=create_v3(0, 0, 1),  # Parallel to timber1
+            width_direction=create_v3(1, 0, 0)
+        )
+        
+        assert not are_timbers_orthogonal(timber1, timber3)
+    
+    def testare_timbers_orthogonal_float(self):
+        """Test are_timbers_orthogonal with float (fuzzy) values."""
+        from code_goes_here.timber_shavings import are_timbers_orthogonal
+        import math
+        
+        # Create timbers with float perpendicular directions
+        timber1 = create_standard_vertical_timber(height=2, size=(0.2, 0.3), position=(0, 0, 0))
+        
+        # Nearly perpendicular (within tolerance)
+        small_offset = 1e-11
+        timber2 = timber_from_directions(
+            length=Rational(3),
+            size=create_v2(Rational("0.15"), Rational("0.25")),
+            bottom_position=create_v3(Rational(2), Rational(0), Rational(0)),
+            length_direction=create_v3(Rational(1), Rational(0), small_offset),
+            width_direction=create_v3(Rational(0), Rational(1), Rational(0))
+        )
+        
+        # Should be orthogonal (fuzzy comparison)
+        assert are_timbers_orthogonal(timber1, timber2)
+    
+    def testare_timbers_face_aligned_exact_equality(self):
+        """Test are_timbers_face_aligned with exact equality (no tolerance)."""
+        from code_goes_here.timber_shavings import are_timbers_face_aligned
+        # Create two face-aligned timbers using exact rational values
+        timber1 = timber_from_directions(
+            length=2,  # Integer
+            size=create_v2(Rational(1, 5), Rational(3, 10)),  # Exact rationals
+            bottom_position=create_v3(0, 0, 0),  # Integers
+            length_direction=create_v3(0, 0, 1),   # Vertical - integers
+            width_direction=create_v3(1, 0, 0)      # East - integers
+        )
+        
+        timber2 = timber_from_directions(
+            length=3,  # Integer
+            size=create_v2(Rational(3, 20), Rational(1, 4)),  # Exact rationals
+            bottom_position=create_v3(2, 0, 0),  # Integers
+            length_direction=create_v3(1, 0, 0),   # East (perpendicular to timber1) - integers
+            width_direction=create_v3(0, 0, 1)      # Up - integers
+        )
+        
+        # These should be face-aligned with exact equality (no tolerance)
+        assert are_timbers_face_aligned(timber1, timber2, tolerance=None)
+        
+        # Create a non-face-aligned timber (3D rotation with no aligned axes)
+        # Using a timber rotated in 3D such that none of its axes align with timber1's axes
+        timber3 = timber_from_directions(
+            length=2,  # Integer
+            size=create_v2(Rational(1, 5), Rational(1, 5)),  # Exact rationals
+            bottom_position=create_v3(3, 3, 0),  # Integers
+            length_direction=create_v3(1, 1, 1),   # 3D diagonal (will be normalized to Float)
+            width_direction=create_v3(1, -1, 0)     # Perpendicular in 3D (will be normalized to Float)
+        )
+        
+        # timber1 and timber3 should NOT be face-aligned
+        # Note: timber3's normalized directions contain Float values, but the new
+        # system automatically handles this without warnings
+        result = are_timbers_face_aligned(timber1, timber3, tolerance=None)
+        assert not result
+        
+        # Test with tolerance parameter (no warning)
+        assert are_timbers_face_aligned(timber1, timber2, tolerance=1e-10)
+
+    def test_do_xy_cross_section_on_parallel_timbers_overlap(self):
+        """Test do_xy_cross_section_on_parallel_timbers_overlap function."""
+        from code_goes_here.timber_shavings import do_xy_cross_section_on_parallel_timbers_overlap
+        from sympy import Rational
+        
+        # Test 1: Two aligned timbers that overlap
+        timber1 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber1'
+        )
+        
+        timber2 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(5, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber2'
+        )
+        
+        assert do_xy_cross_section_on_parallel_timbers_overlap(timber1, timber2), \
+            "Aligned timbers at same cross-section should overlap"
+        
+        # Test 2: Two aligned timbers that don't overlap (separated in Y)
+        timber3 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(5, 10, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber3'
+        )
+        
+        assert not do_xy_cross_section_on_parallel_timbers_overlap(timber1, timber3), \
+            "Timbers separated in Y should not overlap"
+        
+        # Test 3: Two rotated timbers that overlap
+        timber4 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber4'
+        )
+        
+        timber5 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 0, 1),  # Rotated 90 degrees
+            name='timber5'
+        )
+        
+        assert do_xy_cross_section_on_parallel_timbers_overlap(timber4, timber5), \
+            "Rotated timbers at same position should overlap"
+        
+        # Test 4: Timbers that just touch at edge (should overlap)
+        timber6 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber6'
+        )
+        
+        # timber6 spans Y: -2 to 2
+        # timber7 at Y=4 spans Y: 2 to 6, so they just touch
+        timber7 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, Rational(4), 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber7'
+        )
+        
+        assert do_xy_cross_section_on_parallel_timbers_overlap(timber6, timber7), \
+            "Timbers touching at edge should overlap"
+        
+        # Test 5: Timbers with small gap (should not overlap)
+        timber8 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, Rational(4) + Rational('0.01'), 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber8'
+        )
+        
+        assert not do_xy_cross_section_on_parallel_timbers_overlap(timber6, timber8), \
+            "Timbers with small gap should not overlap"
+        
+        # Test 6: Anti-parallel timbers (same direction but opposite ends)
+        timber9 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber9'
+        )
+        
+        timber10 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(20, 0, 0),
+            length_direction=create_v3(-1, 0, 0),  # Opposite direction
+            width_direction=create_v3(0, 1, 0),
+            name='timber10'
+        )
+        
+        assert do_xy_cross_section_on_parallel_timbers_overlap(timber9, timber10), \
+            "Anti-parallel timbers at same cross-section should overlap"
+        
+        # Test 7: Offset rotated timbers
+        timber11 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(6)),  # 4 wide, 6 high
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            name='timber11'
+        )
+        
+        # Rotated 90 degrees and offset
+        timber12 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(6), Rational(4)),  # 6 wide, 4 high
+            bottom_position=create_v3(Rational(4), 0, 0),  # Offset in X
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(0, 1, 0),  # Rotated 90 degrees
+            name='timber12'
+        )
+        
+        # timber11: X spans -2 to 2, Y spans -3 to 3
+        # timber12: X spans 1 to 7, Y spans -2 to 2
+        # They should overlap in the region X: 1 to 2, Y: -2 to 2
+        assert do_xy_cross_section_on_parallel_timbers_overlap(timber11, timber12), \
+            "Offset rotated timbers with partial overlap should overlap"
+        
+        # Test 8: Assertion error for non-parallel timbers
+        timber13 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name='timber13'
+        )
+        
+        timber14 = timber_from_directions(
+            length=Rational(10),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 1, 0),  # Perpendicular
+            width_direction=create_v3(1, 0, 0),
+            name='timber14'
+        )
+        
+        # Should raise assertion error for non-parallel timbers
+        try:
+            do_xy_cross_section_on_parallel_timbers_overlap(timber13, timber14)
+            assert False, "Should have raised AssertionError for non-parallel timbers"
+        except AssertionError as e:
+            assert "must be parallel" in str(e)
 
