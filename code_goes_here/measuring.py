@@ -163,13 +163,13 @@ class HalfPlane:
 # ============================================================================
 
 @dataclass(frozen=True)
-class Measurement(ABC):
+class Marking(ABC):
     @abstractmethod
     def measure(self) -> Union[UnsignedPlane, Plane, Line, Point, HalfPlane]:
         pass
 
 @dataclass(frozen=True)
-class DistanceFromFace(Measurement):
+class DistanceFromFace(Marking):
     """
     Represents a distance from a face on a timber with + being AWAY from the face.
     """
@@ -185,7 +185,7 @@ class DistanceFromFace(Measurement):
         return measure_into_face(self.distance, self.face, self.timber)
 
 @dataclass(frozen=True)
-class DistanceFromPointIntoFace(Measurement):
+class DistanceFromPointIntoFace(Marking):
     """
     Represents a distance from a point into a face on a timber with + being INTO the timber (that is the negative face normal direction is the + axis of the measurement)
     If the point is not supplied, the center of the face is used.
@@ -225,7 +225,7 @@ class DistanceFromPointIntoFace(Measurement):
         return Line(away_direction, line_point)
     
 @dataclass(frozen=True)
-class DistanceFromLongEdgeOnFace(Measurement):
+class DistanceFromLongEdgeOnFace(Marking):
     """
     Represents a distance from a long edge on a timber with + being onto the face from the edge.
     """
