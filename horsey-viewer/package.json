@@ -1,0 +1,33 @@
+{
+  "name": "horsey-viewer",
+  "displayName": "Horsey Viewer",
+  "description": "Timber frame viewer for GiraffeCAD",
+  "version": "0.0.1",
+  "publisher": "giraffeCAD",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:horsey-viewer.renderHorsey",
+    "onLanguage:python"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "horsey-viewer.renderHorsey",
+        "title": "Render Horsey"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "echo 'No build step needed'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0"
+  }
+}
