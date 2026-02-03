@@ -464,11 +464,11 @@ class Timber:
         Returns:
             The TimberFace that points toward the inside of the footprint
         """
-        from .measuring import mark_top_center_position
+        from .measuring import measure_top_center_position
         
         # Project timber's centerline onto XY plane for footprint comparison
         bottom_2d = create_v2(self.get_bottom_position_global()[0], self.get_bottom_position_global()[1])
-        top_position = mark_top_center_position(self).position
+        top_position = measure_top_center_position(self).position
         top_2d = create_v2(top_position[0], top_position[1])
         
         # Find nearest boundary to timber's centerline
@@ -498,11 +498,11 @@ class Timber:
         Returns:
             The TimberFace that points toward the outside of the footprint
         """
-        from .measuring import mark_top_center_position
+        from .measuring import measure_top_center_position
         
         # Project timber's centerline onto XY plane for footprint comparison
         bottom_2d = create_v2(self.get_bottom_position_global()[0], self.get_bottom_position_global()[1])
-        top_position = mark_top_center_position(self).position
+        top_position = measure_top_center_position(self).position
         top_2d = create_v2(top_position[0], top_position[1])
         
         # Find nearest boundary to timber's centerline

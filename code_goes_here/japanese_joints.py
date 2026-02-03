@@ -7,10 +7,9 @@ import warnings
 from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.joint_shavings import *
-from code_goes_here.measuring import mark_top_center_position
+from code_goes_here.measuring import measure_top_center_position
 from code_goes_here.moothymoth import *
 from code_goes_here.meowmeowcsg import *
-from code_goes_here.timber_shavings import are_timbers_coplanar
 
 # Aliases for backwards compatibility
 CSGUnion = SolidUnion
@@ -209,7 +208,7 @@ def cut_lapped_gooseneck_joint(
 
     # Get the receiving timber end position
     if receiving_timber_end == TimberReferenceEnd.TOP:
-        receiving_timber_end_position_global = mark_top_center_position(receiving_timber).position
+        receiving_timber_end_position_global = measure_top_center_position(receiving_timber).position
     else:  # BOTTOM
         receiving_timber_end_position_global = receiving_timber.get_bottom_position_global()
     
@@ -252,13 +251,13 @@ def cut_lapped_gooseneck_joint(
     # Compute gooseneck depth relative to the opposing face on the receiving timber
     # This accounts for any offset or rotation between the timbers
     # Create a plane at gooseneck_depth from the gooseneck timber's face
-    gooseneck_cutting_plane = mark_into_face(gooseneck_depth, gooseneck_timber_face, gooseneck_timber)
+    gooseneck_cutting_plane = measure_into_face(gooseneck_depth, gooseneck_timber_face, gooseneck_timber)
     # Find the opposing face on the receiving timber
     gooseneck_face_direction = gooseneck_timber.get_face_direction_global(gooseneck_timber_face)
     receiving_face_direction = -gooseneck_face_direction
     receiving_face = receiving_timber.get_closest_oriented_face_from_global_direction(receiving_face_direction)
     # Measure from the receiving face to the cutting plane
-    measurement = measure_onto_face(gooseneck_cutting_plane, receiving_timber, receiving_face)
+    measurement = mark_onto_face(gooseneck_cutting_plane, receiving_timber, receiving_face)
     receiving_timber_lap_depth = Abs(measurement.distance)
     
     # ========================================================================
@@ -522,7 +521,7 @@ def cut_lapped_dovetail_butt_joint(
         face=receiving_timber_shoulder_face,
         face_timber=receiving_timber
     )
-    measurement = measure_onto_centerline(face_plane, dovetail_timber, dovetail_timber_end)
+    measurement = mark_onto_centerline(face_plane, dovetail_timber, dovetail_timber_end)
     shoulder_distance_from_end = measurement.distance - receiving_timber_shoulder_inset
 
     offset_to_dovetail_face = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face) / Rational(2) * dovetail_timber.get_face_direction_global(dovetail_timber_face)
@@ -560,7 +559,7 @@ def cut_lapped_dovetail_butt_joint(
     
     # Calculate where along the receiving timber the shoulder should be
     dovetail_centerline = scribe_centerline_onto_centerline(dovetail_timber)
-    measurement_receiving = measure_onto_centerline(dovetail_centerline, receiving_timber)
+    measurement_receiving = mark_onto_centerline(dovetail_centerline, receiving_timber)
     receiving_timber_notch_center = measurement_receiving.distance
     
     # Create shoulder notch if inset is specified
