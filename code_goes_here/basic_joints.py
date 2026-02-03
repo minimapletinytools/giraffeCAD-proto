@@ -7,7 +7,7 @@ from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.moothymoth import *
 from code_goes_here.joint_shavings import *
-from code_goes_here.measuring import mark_top_center_position, mark_bottom_center_position
+from code_goes_here.measuring import measure_top_center_position, measure_bottom_center_position
 
 
 # ============================================================================
@@ -36,17 +36,17 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # Get the end directions for each timber (pointing outward from the timber)
     if timberA_end == TimberReferenceEnd.TOP:
         directionA = timberA.get_length_direction_global()
-        endA_position = mark_top_center_position(timberA).position
+        endA_position = measure_top_center_position(timberA).position
     else:  # BOTTOM
         directionA = -timberA.get_length_direction_global() 
-        endA_position = mark_bottom_center_position(timberA).position
+        endA_position = measure_bottom_center_position(timberA).position
     
     if timberB_end == TimberReferenceEnd.TOP:
         directionB = timberB.get_length_direction_global()
-        endB_position = mark_top_center_position(timberB).position
+        endB_position = measure_top_center_position(timberB).position
     else:  # BOTTOM
         directionB = -timberB.get_length_direction_global()
-        endB_position = mark_bottom_center_position(timberB).position
+        endB_position = measure_bottom_center_position(timberB).position
     
     # Check that the timbers are not parallel
     if are_vectors_parallel(directionA, directionB):
@@ -205,10 +205,10 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     # Get the direction of the butt end (pointing outward from the timber)
     if butt_end == TimberReferenceEnd.TOP:
         butt_direction = butt_timber.get_length_direction_global()
-        butt_end_position = mark_top_center_position(butt_timber).position
+        butt_end_position = measure_top_center_position(butt_timber).position
     else:  # BOTTOM
         butt_direction = -butt_timber.get_length_direction_global()
-        butt_end_position = mark_bottom_center_position(butt_timber).position
+        butt_end_position = measure_bottom_center_position(butt_timber).position
     
     # Find which face of the receiving timber the butt is approaching
     # The butt approaches opposite to its end direction
@@ -273,17 +273,17 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end:
     
     # Get the end positions for each timber
     if timberA_end == TimberReferenceEnd.TOP:
-        endA_position = mark_top_center_position(timberA).position
+        endA_position = measure_top_center_position(timberA).position
         directionA = timberA.get_length_direction_global()
     else:  # BOTTOM
-        endA_position = mark_bottom_center_position(timberA).position
+        endA_position = measure_bottom_center_position(timberA).position
         directionA = -timberA.get_length_direction_global()
     
     if timberB_end == TimberReferenceEnd.TOP:
-        endB_position = mark_top_center_position(timberB).position
+        endB_position = measure_top_center_position(timberB).position
         directionB = timberB.get_length_direction_global()
     else:  # BOTTOM
-        endB_position = mark_bottom_center_position(timberB).position
+        endB_position = measure_bottom_center_position(timberB).position
         directionB = -timberB.get_length_direction_global()
     
     # Normalize length direction for later use
@@ -625,9 +625,9 @@ def _get_face_center_position(timber: Timber, face: TimberFace) -> V3:
         3D position vector at the center of the specified face
     """
     if face == TimberFace.TOP:
-        return mark_top_center_position(timber).position
+        return measure_top_center_position(timber).position
     elif face == TimberFace.BOTTOM:
-        return mark_bottom_center_position(timber).position
+        return measure_bottom_center_position(timber).position
     else:
         # For long faces (LEFT, RIGHT, FRONT, BACK), center is at mid-length
         from sympy import Rational

@@ -1,47 +1,47 @@
 """
 Measuring and geometric primitives for GiraffeCAD.
 
-Geometric features are things like points, lines, planes, etc. 
+Geometric features are things like points, lines, planes, etc.
 
 Timber features are named geometric features on a timber, e.g. the centerline, the top face, etc. See `TimberFeature` enum in `timber.py` for a list of all timber features.
 
-When marking on timbers, we want to do things like measure from a reference edge, or measure into a face. The types defined in `MarkedTimberFeature` are exactly the features that we care about when marking on timbers.
+When measuring on timbers, we want to do things like mark from a reference edge, or mark into a face. The types defined in `MeasuredTimberFeature` are exactly the features that we care about when measuring on timbers.
 
 All measuring functions should follow the following naming convention:
 
-- `mark_*` : functions that take measurements relative to a (LOCAL) feature of a timber and outputs a feature in GLOBAL space
+- `measure_*` : functions that take measurements relative to a (LOCAL) feature of a timber and outputs a feature in GLOBAL space
 
 - `???_*` : functions that take feature(s) in GLOBAL space and outputs features in GLOBAL space
 
-- `measure_*` : functions that take a feature in GLOBAL space and outputs a measurement relative to a (LOCAL) feature of a timber
+- `mark_*` : functions that take a feature in GLOBAL space and outputs a measurement relative to a (LOCAL) feature of a timber
 - `scribe_*` : functions that take multiple measurements relative to (LOCAL) features of timbers and outputs a measurement relative to a (LOCAL) feature of a timber
 
 
 - `???_*` : functions that take feature(s) in GLOBAL space and outputs features in GLOBAL space
 
-OR put more simply: 
-- `mark_*` means LOCAL to GLOBAL
-- `measure_*` means GLOBAL to LOCAL
+OR put more simply:
+- `measure_*` means LOCAL to GLOBAL
+- `mark_*` means GLOBAL to LOCAL
 - `scribe_*` means LOCAL to LOCAL
 - `???_*` means GLOBAL to GLOBAL
 
-In addition we have `measure_*_by_*` methods which take specific features where as `measure_*` methods are generic and work with any feature and call measure_*_by_* methods internally.
+In addition we have `mark_*_by_*` methods which take specific features where as `mark_*` methods are generic and work with any feature and call mark_*_by_* methods internally.
 
-Using these functions, we can take measurements relative to features on one timber and mark them onto another timber. Measurements always exist in some context, and together with their context, they become colloqial ways to refer to features as it is easier to understand and work with measurements than it is to work with features directly. So measuring and marking functions are precisely used to convert between these expressions!
+Using these functions, we can take measurements relative to features on one timber and measure them onto another timber. Measurements always exist in some context, and together with their context, they become colloqial ways to refer to features as it is easier to understand and work with measurements than it is to work with features directly. So measuring and marking functions are precisely used to convert between these expressions!
 
-For example, if we `my_feature = mark_into_face(mm(10), TimberFace.RIGHT, timberA)` we mean the feature that is a plane 10mm into and parallel with the right face of the timber.
-And then if we `measure_onto_face(my_feature, timberB, TimberFace.RIGHT)` we mean find the distance from the feature above to the right face of timberB
+For example, if we `my_feature = measure_into_face(mm(10), TimberFace.RIGHT, timberA)` we mean the feature that is a plane 10mm into and parallel with the right face of the timber.
+And then if we `mark_onto_face(my_feature, timberB, TimberFace.RIGHT)` we mean find the distance from the feature above to the right face of timberB
 
-Measuring features assumes the features are "comparable". In most cases this means the features are parallel such that measurements can be taken in the orthognal axis. If the features are not "comparable" the functions will assert! 
+Measuring features assumes the features are "comparable". In most cases this means the features are parallel such that measurements can be taken in the orthognal axis. If the features are not "comparable" the functions will assert!
 
 Some features are signed and oriented. These features follow the following sign conventions:
 
-- markings from timber faces are along the normal pointing INTO the timber i.e. positive is into the face
-- markings from timber halfplanes aligning with a timber edge 
-    - positive X is towards the face 
+- measurements from timber faces are along the normal pointing INTO the timber i.e. positive is into the face
+- measurements from timber halfplanes aligning with a timber edge
+    - positive X is towards the face
     - for long faces postivie Y is (usually) in the direction of the timber, sometimes it's the opposite so watch out!
     - for end faces, use RHS rule with +Z ponting in the direction of the end
-- markings from timber corners
+- measurements from timber corners
     - TODO but also we never do this so who cares
 
 Features are also located (i.e. lines and planes have an "origin" point). This information is currently not used in any of these functions. Timber Features follow the following location conventions:
@@ -49,7 +49,7 @@ Features are also located (i.e. lines and planes have an "origin" point). This i
 - timber faces are located at the center of the face surface
 - timber edges are located on the bottom face of the timber
 
-A `Point` is just a `V3` and sometimes you might find yourself measuring a `Point` and simply using its contained `V3` directly! This is OK. We still wrap it in a `Point` to help ensure encapsulation of measuring and marking functions. In particular, some of these functions can take many different types of features and we want to be intentional about passing `Points` into these functions!
+A `Point` is just a `V3` and sometimes you might find yourself marking a `Point` and simply using its contained `V3` directly! This is OK. We still wrap it in a `Point` to help ensure encapsulation of measuring and marking functions. In particular, some of these functions can take many different types of features and we want to be intentional about passing `Points` into these functions!
 
 Finally, note that the feature classes in this module should NOT be used for anything besides measuring and marking!!
 """
@@ -67,7 +67,7 @@ from .timber import *
 # ============================================================================
 
 # Type alias for all measurable geometric features on timbers
-MarkedTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane']
+MeasuredTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane']
 
 @dataclass(frozen=True)
 class Point:
@@ -165,7 +165,7 @@ class HalfPlane:
 @dataclass(frozen=True)
 class Measurement(ABC):
     @abstractmethod
-    def mark(self) -> Union[UnsignedPlane, Plane, Line, Point, HalfPlane]:
+    def measure(self) -> Union[UnsignedPlane, Plane, Line, Point, HalfPlane]:
         pass
 
 @dataclass(frozen=True)
@@ -178,11 +178,11 @@ class DistanceFromFace(Measurement):
     face: TimberFace
     
 
-    def mark(self) -> UnsignedPlane:
+    def measure(self) -> UnsignedPlane:
         """
         Convert the distance from a face to an unsigned plane.
         """
-        return mark_into_face(self.distance, self.face, self.timber)
+        return measure_into_face(self.distance, self.face, self.timber)
 
 @dataclass(frozen=True)
 class DistanceFromPointIntoFace(Measurement):
@@ -195,13 +195,13 @@ class DistanceFromPointIntoFace(Measurement):
     face: TimberFace
     point: Optional[V3] = None
     
-    def mark(self) -> Line:
+    def measure(self) -> Line:
         """
         Convert the distance from a point into a face to a line.
-        
+
         Returns a line perpendicular to the face, going through the specified point (or face center),
         offset by the distance in the direction into the timber (-face_normal).
-        
+
         Returns:
             Line perpendicular to the face at the specified distance from the starting point
         """
@@ -210,17 +210,17 @@ class DistanceFromPointIntoFace(Measurement):
             starting_point = self.point
         else:
             starting_point = get_point_on_face_global(self.face, self.timber)
-        
+
         # Get the face normal (pointing OUT of the timber)
         face_normal = self.timber.get_face_direction_global(self.face)
-        
+
         # Direction AWAY from the face is -face_normal
         away_direction = -face_normal
-        
+
         # Calculate the line position by offsetting from the starting point
         # Positive distance means away from the face
         line_point = starting_point + away_direction * self.distance
-        
+
         # The line direction is perpendicular to the face (away from it)
         return Line(away_direction, line_point)
     
@@ -234,20 +234,20 @@ class DistanceFromLongEdgeOnFace(Measurement):
     edge: TimberLongEdge
     face: TimberFace
     
-    def mark(self) -> Line:
+    def measure(self) -> Line:
         """
         Convert the distance from a long edge to a line on the specified face.
-        
+
         Returns a line parallel to the edge, on the given face, at the specified distance from the edge.
         The distance is measured along the face plane, perpendicular to the edge direction.
-        Positive distance means moving in the direction of the "other" face's normal (the face that 
+        Positive distance means moving in the direction of the "other" face's normal (the face that
         defines the edge together with self.face).
-        
+
         Returns:
             Line parallel to the edge at the specified distance on the face
         """
         # Get the edge line
-        edge_line = mark_long_edge(self.timber, self.edge)
+        edge_line = measure_long_edge(self.timber, self.edge)
         
         # Check that the face is adjacent to the edge
         # Long faces are RIGHT, FRONT, LEFT, BACK (not TOP or BOTTOM)
@@ -324,28 +324,28 @@ def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
     raise ValueError(f"Unsupported feature type: {type(feature)}")
 
 # ============================================================================
-# Marking functions
+# Measuring functions
 # ============================================================================
 
 
 
 
-def mark_face(timber: Timber, face: TimberFace) -> Plane:
+def measure_face(timber: Timber, face: TimberFace) -> Plane:
     """
-    Measure a face on a timber, returning a Plane centered on the face pointing outward.
-    
+    Mark a face on a timber, returning a Plane centered on the face pointing outward.
+
     The plane's normal points OUT of the timber (away from the timber's interior),
     and the plane's point is positioned at the center of the face surface.
-    
+
     Args:
-        timber: The timber to measure
-        face: The face to measure
-        
+        timber: The timber to mark
+        face: The face to mark
+
     Returns:
         Plane with normal pointing outward from the face and point at the face center
-        
+
     Example:
-        >>> plane = mark_face(timber, TimberFace.RIGHT)
+        >>> plane = measure_face(timber, TimberFace.RIGHT)
         >>> # plane.normal points in +X direction (outward from RIGHT face)
         >>> # plane.point is at the center of the RIGHT face surface
     """
@@ -358,23 +358,23 @@ def mark_face(timber: Timber, face: TimberFace) -> Plane:
     return Plane(face_normal, face_point)
 
 
-# TODO change this to just mark edge
-def mark_long_edge(timber: Timber, edge: TimberLongEdge) -> Line:
+# TODO change this to just measure edge
+def measure_long_edge(timber: Timber, edge: TimberLongEdge) -> Line:
     """
-    Measure a long edge on a timber, returning a Line centered on the edge pointing in +Z.
-    
+    Mark a long edge on a timber, returning a Line centered on the edge pointing in +Z.
+
     The line runs along the timber's length direction (+Z in timber local coordinates),
     positioned at the specified edge (intersection of two long faces).
-    
+
     Args:
-        timber: The timber to measure
-        edge: The long edge to measure
-        
+        timber: The timber to mark
+        edge: The long edge to mark
+
     Returns:
         Line with direction pointing in the timber's +Z direction and point at the edge center
-        
+
     Example:
-        >>> line = mark_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
+        >>> line = measure_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
         >>> # line.direction points in the timber's length direction
         >>> # line.point is at the RIGHT_FRONT edge, halfway along the length
     """
@@ -414,21 +414,21 @@ def mark_long_edge(timber: Timber, edge: TimberLongEdge) -> Line:
     return Line(length_direction, edge_position)
 
 
-def mark_centerline(timber: Timber) -> Line:
+def measure_centerline(timber: Timber) -> Line:
     """
-    Measure the center line of a timber, returning a Line through the timber's center.
-    
+    Mark the center line of a timber, returning a Line through the timber's center.
+
     The line runs along the timber's length direction (+Z in timber local coordinates),
     positioned at the center of the timber's cross-section.
-    
+
     Args:
-        timber: The timber to measure
-        
+        timber: The timber to mark
+
     Returns:
         Line with direction pointing in the timber's +Z direction and point at the centerline
-        
+
     Example:
-        >>> line = mark_centerline(timber)
+        >>> line = measure_centerline(timber)
         >>> # line.direction points in the timber's length direction
         >>> # line.point is at the center of the timber (halfway along length, centered in cross-section)
     """
@@ -440,18 +440,18 @@ def mark_centerline(timber: Timber) -> Line:
     
     return Line(length_direction, center_position)
 
-def mark_edge_on_face(timber: Timber, edge: TimberLongEdge, face: TimberFace) -> HalfPlane:
+def measure_edge_on_face(timber: Timber, edge: TimberLongEdge, face: TimberFace) -> HalfPlane:
     # TODO
     pass
 
-def mark_position_on_centerline_from_bottom(timber: Timber, distance: Numeric) -> Point:
+def measure_position_on_centerline_from_bottom(timber: Timber, distance: Numeric) -> Point:
     """
     Mark a position at a specific point along the timber's centerline, measured from the bottom.
-    
+
     Args:
         timber: The timber to mark on
         distance: Distance along the timber's length direction from the bottom position
-        
+
     Returns:
         Point on the timber's centerline at the specified distance from bottom
     """
@@ -459,14 +459,14 @@ def mark_position_on_centerline_from_bottom(timber: Timber, distance: Numeric) -
     return Point(position)
 
 
-def mark_position_on_centerline_from_top(timber: Timber, distance: Numeric) -> Point:
+def measure_position_on_centerline_from_top(timber: Timber, distance: Numeric) -> Point:
     """
     Mark a position at a specific point along the timber's centerline, measured from the top.
-    
+
     Args:
         timber: The timber to mark on
         distance: Distance along the timber's length direction from the top position
-        
+
     Returns:
         Point on the timber's centerline at the specified distance from top
     """
@@ -474,56 +474,56 @@ def mark_position_on_centerline_from_top(timber: Timber, distance: Numeric) -> P
     return Point(position)
 
 
-def mark_bottom_center_position(timber: Timber) -> Point:
+def measure_bottom_center_position(timber: Timber) -> Point:
     """
     Mark the position of the center of the bottom cross-section of the timber.
-    
+
     Args:
         timber: The timber to mark on
-        
+
     Returns:
         Point at the center of the bottom cross-section
     """
     return Point(timber.get_bottom_position_global())
 
 
-def mark_top_center_position(timber: Timber) -> Point:
+def measure_top_center_position(timber: Timber) -> Point:
     """
     Mark the position of the center of the top cross-section of the timber.
-    
+
     Args:
         timber: The timber to mark on
-        
+
     Returns:
         Point at the center of the top cross-section
     """
     position = timber.get_bottom_position_global() + timber.get_length_direction_global() * timber.length
     return Point(position)
 
-def mark_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> UnsignedPlane:
+def measure_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> UnsignedPlane:
     """
-    Measure a distance from a face on a timber.
+    Mark a distance from a face on a timber.
     """
 
     # First pick any point on the face
     point_on_face = get_point_on_face_global(face, timber)
 
-    # Measure INTO the face
+    # Mark INTO the face
     point_on_plane = point_on_face - timber.get_face_direction_global(face) * distance
 
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
 
-def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, face: TimberFace) -> DistanceFromFace:
+def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, face: TimberFace) -> DistanceFromFace:
     """
-    Mark a feature from a face on a timber.
-    
+    Measure a feature from a face on a timber.
+
     Returns a DistanceFromFace measurement representing the distance from the face to the feature, measured INTO the timber.
     Positive means the feature is inside the timber (deeper than the face surface).
     Negative means the feature is outside the timber (shallower than the face surface).
-    
-    This is the inverse of mark_into_face:
-    If feature = mark_into_face(d, face, timber), then measure_onto_face(feature, timber, face).distance = d
+
+    This is the inverse of measure_into_face:
+    If feature = measure_into_face(d, face, timber), then mark_onto_face(feature, timber, face).distance = d
     """
 
     # TODO assert that UnsignedPlane/Plane/HalfPlane/Line are parallel to the face
@@ -552,9 +552,9 @@ def measure_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlan
     return DistanceFromFace(distance=distance, timber=timber, face=face)
 
 
-def measure_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane], timber: Timber, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
+def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane], timber: Timber, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
     """
-    Measure onto a long edge of a timber (including centerline) by intersecting a plane.
+    Mark onto a long edge of a timber (including centerline) by intersecting a plane.
 
     Computes the true geometric intersection between the plane and the edge line,
     returning the signed distance from the specified end to the intersection point.
@@ -568,12 +568,13 @@ def measure_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Pla
     Returns the distance from timber_end to where the plane intersects the timber's long edge.
     Positive distance means the intersection is in the direction away from the end (into the timber).
     """
-    
+
+
     # Get the edge line
     if edge == TimberEdge.CENTERLINE:
-        edge_line = mark_centerline(timber)
+        edge_line = measure_centerline(timber)
     else:
-        edge_line = mark_long_edge(timber, edge)
+        edge_line = measure_long_edge(timber, edge)
     
     # Get the end position on the edge
     # edge_line.point is at mid-length, so we need to offset by half the length
@@ -605,9 +606,9 @@ def measure_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Pla
     
     return signed_distance
 
-def measure_onto_edge_by_finding_closest_point_on_line(line: Line, timber: Timber, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
+def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: Timber, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
     """
-    Measure onto a timber edge (including centerline) by finding the closest point on a line.
+    Mark onto a timber edge (including centerline) by finding the closest point on a line.
 
     This computes the closest point on the timber edge to the given line, which is useful
     for finding where two centerlines come closest to each other (even if they don't intersect).
@@ -627,12 +628,13 @@ def measure_onto_edge_by_finding_closest_point_on_line(line: Line, timber: Timbe
     """
 
     
-    
+
+
     # Get the edge line
     if edge == TimberEdge.CENTERLINE:
-        edge_line = mark_centerline(timber)
+        edge_line = measure_centerline(timber)
     else:
-        edge_line = mark_long_edge(timber, edge)
+        edge_line = measure_long_edge(timber, edge)
 
     if are_vectors_parallel(line.direction, edge_line.direction):
         raise ValueError(f"Lines are parallel - no intersection exists")
@@ -673,32 +675,32 @@ def measure_onto_edge_by_finding_closest_point_on_line(line: Line, timber: Timbe
     
     return t
 
-def measure_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> DistanceFromPointIntoFace:
+def mark_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> DistanceFromPointIntoFace:
     """
-    Measure a feature onto the centerline of a timber.
+    Mark a feature onto the centerline of a timber.
 
     Returns a DistanceFromPointIntoFace measurement representing the distance from the specified end of the timber
     to the intersection/closest point on the centerline.
-    
+
     Args:
-        feature: The feature to measure (Plane, Line, Point, etc.)
-        timber: The timber whose centerline we're measuring to
-        end: Which end of the timber to measure from (defaults to BOTTOM)
-        
+        feature: The feature to mark (Plane, Line, Point, etc.)
+        timber: The timber whose centerline we're marking to
+        end: Which end of the timber to mark from (defaults to BOTTOM)
+
     Returns:
         DistanceFromPointIntoFace with distance from the specified end to where the feature intersects/is closest
         to the centerline. Positive means into the timber from the end. The point is set to the end's
         centerline position.
     """
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane):
-        distance = measure_onto_long_edge_by_intersecting_plane(feature, timber, TimberEdge.CENTERLINE, end)
+        distance = mark_onto_long_edge_by_intersecting_plane(feature, timber, TimberEdge.CENTERLINE, end)
     elif isinstance(feature, Line):
-        distance = measure_onto_edge_by_finding_closest_point_on_line(feature, timber, TimberEdge.CENTERLINE, end)
+        distance = mark_onto_edge_by_finding_closest_point_on_line(feature, timber, TimberEdge.CENTERLINE, end)
     else:
         assert False, f"Not implemented for feature type {type(feature)}"
-    
+
     # Get the reference end's centerline position as the reference point
-    centerline = mark_centerline(timber)
+    centerline = measure_centerline(timber)
     if end == TimberReferenceEnd.BOTTOM:
         end_centerline_position = timber.get_bottom_position_global()
         reference_face = TimberFace.BOTTOM

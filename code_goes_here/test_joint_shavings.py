@@ -16,7 +16,7 @@ from code_goes_here.joint_shavings import (
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberLongFace
 from code_goes_here.moothymoth import create_v3, create_v2, inches, are_vectors_parallel
 from code_goes_here.meowmeowcsg import SolidUnion, RectangularPrism, HalfSpace
-from code_goes_here.measuring import measure_onto_centerline
+from code_goes_here.measuring import mark_onto_centerline
 
 # TODO too many tests, just delete some lol... or combine into 1 test that varies only the timber length...
 class TestCheckTimberOverlapForSpliceJoint:
@@ -712,7 +712,7 @@ class TestScribeFaceOnCenterline:
             face=TimberFace.LEFT,
             face_timber=timber_b
         )
-        measurement = measure_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
+        measurement = mark_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
         distance = measurement.distance
         
         # Expected calculation (true geometric intersection):
@@ -756,7 +756,7 @@ class TestScribeFaceOnCenterline:
             face=TimberFace.BACK,
             face_timber=timber_b
         )
-        measurement = measure_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
+        measurement = mark_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
         distance = measurement.distance
         
         # Expected calculation (true geometric intersection):
@@ -799,7 +799,7 @@ class TestScribeFaceOnCenterline:
             face=TimberFace.FRONT,
             face_timber=timber_b
         )
-        measurement = measure_onto_centerline(face_plane, timber_a, TimberReferenceEnd.BOTTOM)
+        measurement = mark_onto_centerline(face_plane, timber_a, TimberReferenceEnd.BOTTOM)
         distance = measurement.distance
         
         # Expected calculation (true geometric intersection):
@@ -841,7 +841,7 @@ class TestScribeFaceOnCenterline:
             face=TimberFace.FRONT,
             face_timber=timber_b
         )
-        measurement = measure_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
+        measurement = mark_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
         distance = measurement.distance
         
         # Expected calculation (true geometric intersection):
@@ -884,7 +884,7 @@ class TestScribeFaceOnCenterline:
             face=TimberFace.LEFT,
             face_timber=timber_b
         )
-        measurement = measure_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
+        measurement = mark_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
         distance = measurement.distance
         
         # Expected calculation:
@@ -927,7 +927,7 @@ class TestScribeFaceOnCenterline:
             face=TimberFace.BACK,
             face_timber=timber_b
         )
-        measurement = measure_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
+        measurement = mark_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
         distance = measurement.distance
         
         # Expected calculation (true geometric intersection):
@@ -969,7 +969,7 @@ class TestScribeFaceOnCenterline:
             face=TimberFace.LEFT,
             face_timber=timber_b
         )
-        measurement = measure_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
+        measurement = mark_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
         distance = measurement.distance
         
         # Expected calculation (true geometric intersection):
@@ -1012,7 +1012,7 @@ class TestScribeFaceOnCenterline:
             face=TimberFace.BOTTOM,
             face_timber=timber_b
         )
-        measurement = measure_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
+        measurement = mark_onto_centerline(face_plane, timber_a, TimberReferenceEnd.TOP)
         distance = measurement.distance
         
         # Expected calculation (true geometric intersection):
@@ -1058,12 +1058,12 @@ class TestFindProjectedIntersectionOnCenterlines:
         # Find closest points
         # Mark the horizontal timber's centerline and measure onto vertical timber
         centerline_horizontal = scribe_centerline_onto_centerline(timber_horizontal)
-        measurement_vertical = measure_onto_centerline(centerline_horizontal, timber_vertical)
+        measurement_vertical = mark_onto_centerline(centerline_horizontal, timber_vertical)
         distA = measurement_vertical.distance
         
         # Mark the vertical timber's centerline and measure onto horizontal timber
         centerline_vertical = scribe_centerline_onto_centerline(timber_vertical)
-        measurement_horizontal = measure_onto_centerline(centerline_vertical, timber_horizontal)
+        measurement_horizontal = mark_onto_centerline(centerline_vertical, timber_horizontal)
         distB = measurement_horizontal.distance
         
         # Vertical timber: closest point should be at 18" from bottom
@@ -1095,7 +1095,7 @@ class TestFindProjectedIntersectionOnCenterlines:
         # expect this to raise ValueError when trying to find closest point on parallel lines
         with pytest.raises(ValueError):
             centerline_b = scribe_centerline_onto_centerline(timberB)
-            measurement_a = measure_onto_centerline(centerline_b, timberA)
+            measurement_a = mark_onto_centerline(centerline_b, timberA)
             distA = measurement_a.distance
         
     
@@ -1124,12 +1124,12 @@ class TestFindProjectedIntersectionOnCenterlines:
         # Measure from TOP of vertical timber and BOTTOM of horizontal
         # Mark the horizontal timber's centerline and measure onto vertical timber from TOP
         centerline_horizontal = scribe_centerline_onto_centerline(timber_horizontal)
-        measurement_vertical = measure_onto_centerline(centerline_horizontal, timber_vertical, TimberReferenceEnd.TOP)
+        measurement_vertical = mark_onto_centerline(centerline_horizontal, timber_vertical, TimberReferenceEnd.TOP)
         distA = measurement_vertical.distance
         
         # Mark the vertical timber's centerline and measure onto horizontal timber from BOTTOM
         centerline_vertical = scribe_centerline_onto_centerline(timber_vertical)
-        measurement_horizontal = measure_onto_centerline(centerline_vertical, timber_horizontal, TimberReferenceEnd.BOTTOM)
+        measurement_horizontal = mark_onto_centerline(centerline_vertical, timber_horizontal, TimberReferenceEnd.BOTTOM)
         distB = measurement_horizontal.distance
         
         # From TOP of vertical (36" high), intersection at 18" from bottom = 18" from top down

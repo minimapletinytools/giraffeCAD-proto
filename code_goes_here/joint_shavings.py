@@ -38,7 +38,7 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: Timber) -> 
     
     Returns:
         UnsignedPlane representing the face plane. This can be measured onto a centerline using
-        measure_onto_centerline() to find intersection points.
+        mark_onto_centerline() to find intersection points.
     
     Example:
         >>> # Mark the plane for timber_b's FRONT face
@@ -47,11 +47,11 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: Timber) -> 
         ...     face_timber=timber_b
         ... )
         >>> # Then measure onto timber_a's centerline
-        >>> measurement = measure_onto_centerline(face_plane, timber_a)
+        >>> measurement = mark_onto_centerline(face_plane, timber_a)
         >>> shoulder_distance = measurement.distance
     """
-    # Get the face plane (any point on the face works - we use mark_into_face for simplicity)
-    return mark_into_face(0, face, face_timber)
+    # Get the face plane (any point on the face works - we use measure_into_face for simplicity)
+    return measure_into_face(0, face, face_timber)
 
 
 def scribe_centerline_onto_centerline(timber: Timber) -> Line:
@@ -69,17 +69,17 @@ def scribe_centerline_onto_centerline(timber: Timber) -> Line:
 
     Returns:
         Line representing the timber's centerline. This can be measured onto another
-        timber's centerline using measure_onto_centerline() to find closest points.
+        timber's centerline using mark_onto_centerline() to find closest points.
         
     Example:
         >>> # Mark the centerline of timber_b
         >>> centerline_b = scribe_centerline_onto_centerline(timber_b)
         >>> # Then measure onto timber_a's centerline
-        >>> measurement_a = measure_onto_centerline(centerline_b, timber_a)
+        >>> measurement_a = mark_onto_centerline(centerline_b, timber_a)
         >>> dist_a = measurement_a.distance
     """
     # Mark the centerline of the timber as a Line feature
-    return mark_centerline(timber)
+    return measure_centerline(timber)
 
 def check_timber_overlap_for_splice_joint_is_sensible(
     timberA: Timber,
@@ -134,22 +134,22 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     # Get the end positions and directions in world coordinates
     # Note: end_direction points AWAY from the timber (outward from the end)
     if timberA_end == TimberReferenceEnd.TOP:
-        timberA_end_pos = mark_top_center_position(timberA).position
+        timberA_end_pos = measure_top_center_position(timberA).position
         timberA_end_direction = timberA.get_length_direction_global()  # Points away from timber
         timberA_opposite_end_pos = timberA.get_bottom_position_global()
     else:  # BOTTOM
         timberA_end_pos = timberA.get_bottom_position_global()
         timberA_end_direction = -timberA.get_length_direction_global()  # Points away from timber
-        timberA_opposite_end_pos = mark_top_center_position(timberA).position
+        timberA_opposite_end_pos = measure_top_center_position(timberA).position
     
     if timberB_end == TimberReferenceEnd.TOP:
-        timberB_end_pos = mark_top_center_position(timberB).position
+        timberB_end_pos = measure_top_center_position(timberB).position
         timberB_end_direction = timberB.get_length_direction_global()  # Points away from timber
         timberB_opposite_end_pos = timberB.get_bottom_position_global()
     else:  # BOTTOM
         timberB_end_pos = timberB.get_bottom_position_global()
         timberB_end_direction = -timberB.get_length_direction_global()  # Points away from timber
-        timberB_opposite_end_pos = mark_top_center_position(timberB).position
+        timberB_opposite_end_pos = measure_top_center_position(timberB).position
     
     # Check 1: The joint ends must be pointing in opposite directions (anti-parallel)
     # For a proper splice joint, the specified ends should point towards each other
@@ -377,10 +377,10 @@ def chop_lap_on_timber_end(
     
     # Step 1: Determine the end positions and shoulder position of the top lap timber
     if lap_timber_end == TimberReferenceEnd.TOP:
-        lap_end_pos = mark_top_center_position(lap_timber).position
+        lap_end_pos = measure_top_center_position(lap_timber).position
         lap_direction = lap_timber.get_length_direction_global() 
     else:  # BOTTOM
-        lap_end_pos = mark_bottom_center_position(lap_timber).position
+        lap_end_pos = measure_bottom_center_position(lap_timber).position
         lap_direction = -lap_timber.get_length_direction_global()
     
     # Calculate the shoulder position (where the lap starts)
@@ -552,13 +552,13 @@ def chop_lap_on_timber_ends(
     # The bottom lap depth is measured from the bottom timber's face to the top timber's cutting plane
     # This accounts for any rotation or offset between the timbers
     # Create a plane at lap_depth from the top timber's face
-    top_cutting_plane = mark_into_face(lap_depth, TimberLongFace(top_lap_timber_face.value), top_lap_timber)
+    top_cutting_plane = measure_into_face(lap_depth, TimberLongFace(top_lap_timber_face.value), top_lap_timber)
     # Find the opposing face on the bottom timber
     top_face_direction = top_lap_timber.get_face_direction_global(top_lap_timber_face)
     bottom_face_direction = -top_face_direction
     bottom_face = bottom_lap_timber.get_closest_oriented_face_from_global_direction(bottom_face_direction)
     # Measure from the bottom face to the cutting plane
-    measurement = measure_onto_face(top_cutting_plane, bottom_lap_timber, bottom_face)
+    measurement = mark_onto_face(top_cutting_plane, bottom_lap_timber, bottom_face)
     bottom_lap_depth = Abs(measurement.distance)
     
     # Step 4: Calculate the shoulder position for the bottom lap timber
@@ -570,10 +570,10 @@ def chop_lap_on_timber_ends(
     
     # Calculate top timber's shoulder and lap end positions in global space
     if top_lap_timber_end == TimberReferenceEnd.TOP:
-        top_timber_end_pos = mark_top_center_position(top_lap_timber).position
+        top_timber_end_pos = measure_top_center_position(top_lap_timber).position
         top_lap_direction = top_lap_timber.get_length_direction_global() 
     else:  # BOTTOM
-        top_timber_end_pos = mark_bottom_center_position(top_lap_timber).position
+        top_timber_end_pos = measure_bottom_center_position(top_lap_timber).position
         top_lap_direction = -top_lap_timber.get_length_direction_global() 
     
     # Top timber shoulder: move inward from timber end by shoulder distance
