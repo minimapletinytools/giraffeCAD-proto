@@ -323,11 +323,10 @@ def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
 
     raise ValueError(f"Unsupported feature type: {type(feature)}")
 
+
 # ============================================================================
 # Measuring functions
 # ============================================================================
-
-
 
 
 def measure_face(timber: Timber, face: TimberFace) -> Plane:
@@ -513,6 +512,10 @@ def measure_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> Un
 
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
+
+# ============================================================================
+# Marking functions
+# ============================================================================
 
 def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, face: TimberFace) -> DistanceFromFace:
     """
