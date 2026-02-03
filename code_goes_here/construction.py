@@ -959,7 +959,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
 # Helper Functions  
 # ============================================================================
 # Note: Timber relationship helper functions (are_timbers_parallel, 
-# are_timbers_orthogonal, are_timbers_face_aligned, are_timbers_coplanar,
+# are_timbers_orthogonal, are_timbers_face_aligned
 # do_xy_cross_section_on_parallel_timbers_overlap) have been moved to 
 # timber_shavings.py
 
