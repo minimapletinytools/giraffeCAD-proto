@@ -47,7 +47,7 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: Timber) -> 
         ...     face_timber=timber_b
         ... )
         >>> # Then measure onto timber_a's centerline
-        >>> measurement = mark_onto_centerline(face_plane, timber_a)
+        >>> marking = mark_onto_centerline(face_plane, timber_a)
         >>> shoulder_distance = measurement.distance
     """
     # Get the face plane (any point on the face works - we use measure_into_face for simplicity)
@@ -558,8 +558,8 @@ def chop_lap_on_timber_ends(
     bottom_face_direction = -top_face_direction
     bottom_face = bottom_lap_timber.get_closest_oriented_face_from_global_direction(bottom_face_direction)
     # Measure from the bottom face to the cutting plane
-    measurement = mark_onto_face(top_cutting_plane, bottom_lap_timber, bottom_face)
-    bottom_lap_depth = Abs(measurement.distance)
+    marking = mark_onto_face(top_cutting_plane, bottom_lap_timber, bottom_face)
+    bottom_lap_depth = Abs(marking.distance)
     
     # Step 4: Calculate the shoulder position for the bottom lap timber
     # Starting from scratch to avoid confusion between timber END and lap END

@@ -257,8 +257,8 @@ def cut_lapped_gooseneck_joint(
     receiving_face_direction = -gooseneck_face_direction
     receiving_face = receiving_timber.get_closest_oriented_face_from_global_direction(receiving_face_direction)
     # Measure from the receiving face to the cutting plane
-    measurement = mark_onto_face(gooseneck_cutting_plane, receiving_timber, receiving_face)
-    receiving_timber_lap_depth = Abs(measurement.distance)
+    marking = mark_onto_face(gooseneck_cutting_plane, receiving_timber, receiving_face)
+    receiving_timber_lap_depth = Abs(marking.distance)
     
     # ========================================================================
     # Cut laps on both timbers
@@ -521,8 +521,8 @@ def cut_lapped_dovetail_butt_joint(
         face=receiving_timber_shoulder_face,
         face_timber=receiving_timber
     )
-    measurement = mark_onto_centerline(face_plane, dovetail_timber, dovetail_timber_end)
-    shoulder_distance_from_end = measurement.distance - receiving_timber_shoulder_inset
+    marking = mark_onto_centerline(face_plane, dovetail_timber, dovetail_timber_end)
+    shoulder_distance_from_end = marking.distance - receiving_timber_shoulder_inset
 
     offset_to_dovetail_face = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face) / Rational(2) * dovetail_timber.get_face_direction_global(dovetail_timber_face)
     
@@ -559,8 +559,8 @@ def cut_lapped_dovetail_butt_joint(
     
     # Calculate where along the receiving timber the shoulder should be
     dovetail_centerline = scribe_centerline_onto_centerline(dovetail_timber)
-    measurement_receiving = mark_onto_centerline(dovetail_centerline, receiving_timber)
-    receiving_timber_notch_center = measurement_receiving.distance
+    marking_receiving = mark_onto_centerline(dovetail_centerline, receiving_timber)
+    receiving_timber_notch_center = marking_receiving.distance
     
     # Create shoulder notch if inset is specified
     if receiving_timber_shoulder_inset > 0:
