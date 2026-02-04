@@ -24,11 +24,11 @@ class PatternMetadata:
     
     Attributes:
         pattern_name: Unique name for this pattern
-        pattern_group_name: Optional group name to organize related patterns
+        pattern_group_names: List of group names to organize related patterns
         pattern_type: Type of pattern - either 'frame' or 'csg'
     """
     pattern_name: str
-    pattern_group_name: Optional[str] = None
+    pattern_group_names: List[str] = field(default_factory=list)
     pattern_type: Literal['frame', 'csg'] = 'frame'
     
     def __post_init__(self):
@@ -114,19 +114,15 @@ class PatternBook:
         if not isinstance(separation_distance, Rational):
             separation_distance = Rational(separation_distance)
         
-        # Find all patterns in the group
+        # Find all patterns in the group (check if group_name is in pattern_group_names list)
         group_patterns = [
             (metadata, pattern_lambda) 
             for metadata, pattern_lambda in self.patterns 
-            if metadata.pattern_group_name == group_name
+            if group_name in metadata.pattern_group_names
         ]
         
         if not group_patterns:
-            available_groups = list(set(
-                m.pattern_group_name 
-                for m, _ in self.patterns 
-                if m.pattern_group_name is not None
-            ))
+            available_groups = self.list_groups()
             raise ValueError(f"Group '{group_name}' not found. Available groups: {available_groups}")
         
         # Check that all patterns in the group have the same type
@@ -202,13 +198,11 @@ class PatternBook:
         List all unique group names in the book.
         
         Returns:
-            List of group names (excluding None)
+            List of group names (flattened from all patterns)
         """
-        groups = set(
-            metadata.pattern_group_name 
-            for metadata, _ in self.patterns 
-            if metadata.pattern_group_name is not None
-        )
+        groups = set()
+        for metadata, _ in self.patterns:
+            groups.update(metadata.pattern_group_names)
         return sorted(list(groups))
     
     def get_patterns_in_group(self, group_name: str) -> List[str]:
@@ -224,5 +218,5 @@ class PatternBook:
         return [
             metadata.pattern_name 
             for metadata, _ in self.patterns 
-            if metadata.pattern_group_name == group_name
+            if group_name in metadata.pattern_group_names
         ]

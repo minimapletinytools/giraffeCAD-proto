@@ -9,6 +9,22 @@ representations are converted to floating point values in CAD systems.
 from sympy import Rational, pi, Matrix, cos, sin
 from code_goes_here.timber import Frame, TimberFace, TimberReferenceEnd, create_v3, timber_from_directions
 from code_goes_here.mortise_and_tenon_joint import cut_mortise_and_tenon_joint_on_face_aligned_timbers
+from code_goes_here.patternbook import PatternBook, PatternMetadata
+
+
+def create_irrational_angles_patternbook() -> PatternBook:
+    """
+    Create a PatternBook with irrational angles test pattern.
+    
+    Returns:
+        PatternBook: PatternBook containing the irrational angles test pattern
+    """
+    patterns = [
+        (PatternMetadata("irrational_angles_test", ["irrational_angles", "test_examples"], "frame"),
+         lambda center: create_all_irrational_examples()),
+    ]
+    
+    return PatternBook(patterns=patterns)
 
 
 def create_all_irrational_examples() -> Frame:

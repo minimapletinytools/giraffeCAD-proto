@@ -5,6 +5,7 @@ with different reference features
 
 from sympy import Rational
 from giraffe import *
+from code_goes_here.patternbook import PatternBook, PatternMetadata
 
 def inches(value):
     """Convert inches to meters using exact rational arithmetic."""
@@ -63,6 +64,23 @@ def create_test_posts_with_beam_centerline():
         ],
         accessories=[]
     )
+
+def create_construction_patternbook() -> PatternBook:
+    """
+    Create a PatternBook with construction example patterns.
+    
+    Each pattern has groups: ["construction", "{feature_type}"]
+    
+    Returns:
+        PatternBook: PatternBook containing construction example patterns
+    """
+    patterns = [
+        (PatternMetadata("posts_with_beam_centerline", ["construction", "centerline"], "frame"),
+         lambda center: create_test_posts_with_beam_centerline()),
+    ]
+    
+    return PatternBook(patterns=patterns)
+
 
 def create_all_construction_examples():
     """Create all construction examples for testing."""

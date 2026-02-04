@@ -36,6 +36,10 @@ if parent_dir not in sys.path:
 #EXAMPLE_TO_RENDER = 'gooseneck'
 EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'irrational_angles'
+#EXAMPLE_TO_RENDER = 'csg'
+
+# CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
+CSG_EXAMPLE_TO_RENDER = 'cube_cutout'  # Options: 'cube_cutout', 'halfspace_cut', 'positioned_cube', 'lap_cut_timber', 'union_cubes', 'hexagon_extrusion', 'gooseneck_profile', 'shoulder_notch'
 
 # DO NOT import GiraffeCAD modules here at the top level!
 # They will be imported AFTER reload inside the render functions.
@@ -98,6 +102,7 @@ def reload_all_modules():
         'code_goes_here.basic_joints',
         'code_goes_here.mortise_and_tenon_joint',
         'code_goes_here.japanese_joints',
+        'code_goes_here.patternbook',
         'giraffe',
         'examples',  # Reload the examples package
         'examples.reference',  # Reload examples.reference subpackage
@@ -125,18 +130,22 @@ def reload_all_modules():
 
 
 def render_basic_joints():
-    """Render all basic joint examples."""
+    """Render all basic joint examples using PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from examples.reference.basic_joints_example import create_all_joint_examples
+    from examples.reference.basic_joints_example import create_basic_joints_patternbook
+    from code_goes_here.moothymoth import m
     
     print("="*60)
     print("GiraffeCAD Fusion 360 - All Basic Joints")
     print("="*60)
     app.log("🦒 GIRAFFETEST: BASIC JOINTS 🦒")
     
-    # Create all joint examples
-    print("\nCreating all joint examples...")
-    frame = create_all_joint_examples()
+    # Create pattern book and raise all patterns in "basic_joints" group
+    print("\nCreating basic joints pattern book...")
+    book = create_basic_joints_patternbook()
+    
+    print("\nRaising all patterns in 'basic_joints' group...")
+    frame = book.raise_pattern_group("basic_joints", separation_distance=m(2))
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -164,18 +173,22 @@ def render_basic_joints():
 
 
 def render_mortise_and_tenon():
-    """Render mortise and tenon joint examples with pegs."""
+    """Render mortise and tenon joint examples with pegs using PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from examples.mortise_and_tenon_joint_examples import create_all_mortise_and_tenon_examples
+    from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
+    from code_goes_here.moothymoth import inches
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - Mortise and Tenon Joint Examples")
     print("="*70)
     app.log("🦒 GIRAFFETEST: MORTISE AND TENON 🦒")
     
-    # Create mortise and tenon examples
-    print("\nCreating all mortise and tenon joint examples...")
-    frame = create_all_mortise_and_tenon_examples()
+    # Create pattern book and raise all patterns in "mortise_tenon" group
+    print("\nCreating mortise and tenon pattern book...")
+    book = create_mortise_and_tenon_patternbook()
+    
+    print("\nRaising all patterns in 'mortise_tenon' group...")
+    frame = book.raise_pattern_group("mortise_tenon", separation_distance=inches(72))
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories (pegs/wedges): {len(frame.accessories)}")
@@ -206,18 +219,21 @@ def render_mortise_and_tenon():
 
 
 def render_gooseneck():
-    """Render Japanese gooseneck joint example."""
+    """Render Japanese gooseneck joint example using PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from examples.japanese_joints_example import create_simple_gooseneck_example
+    from examples.japanese_joints_example import create_japanese_joints_patternbook
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - Japanese Gooseneck Joint")
     print("="*70)
     app.log("🦒 GIRAFFETEST: JAPANESE GOOSENECK 🦒")
     
-    # Create Japanese joint example
-    print("\nCreating Japanese lapped gooseneck joint example...")
-    frame = create_simple_gooseneck_example()
+    # Create pattern book and raise gooseneck pattern
+    print("\nCreating Japanese joints pattern book...")
+    book = create_japanese_joints_patternbook()
+    
+    print("\nRaising 'gooseneck_simple' pattern...")
+    frame = book.raise_pattern("gooseneck_simple")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -246,34 +262,21 @@ def render_gooseneck():
 
 
 def render_oscar_shed():
-    """Render Oscar's Shed - a complete timber frame structure."""
-    # Import after reload to get fresh module references
-    import importlib
-    import sys
-    
-    # Re-import to ensure we get the freshly reloaded modules
-    if 'giraffe_render_fusion360' in sys.modules:
-        giraffe_render_fusion360 = sys.modules['giraffe_render_fusion360']
-    else:
-        import giraffe_render_fusion360
-        
-    if 'examples.oscarshed' in sys.modules:
-        oscarshed = sys.modules['examples.oscarshed']
-    else:
-        import examples.oscarshed as oscarshed
-    
-    render_frame = giraffe_render_fusion360.render_frame
-    clear_design = giraffe_render_fusion360.clear_design
-    create_oscarshed = oscarshed.create_oscarshed
+    """Render Oscar's Shed using PatternBook."""
+    from giraffe_render_fusion360 import render_frame, clear_design
+    from examples.oscarshed import create_oscar_shed_patternbook
     
     print("="*60)
     print("GiraffeCAD Fusion 360 - Oscar's Shed")
     print("="*60)
     app.log("🦒 GIRAFFETEST: OSCAR'S SHED 🦒")
     
-    # Create Oscar's Shed
-    print("\nCreating Oscar's Shed structure...")
-    frame = create_oscarshed()
+    # Create pattern book and raise pattern
+    print("\nCreating Oscar's Shed pattern book...")
+    book = create_oscar_shed_patternbook()
+    
+    print("\nRaising 'oscar_shed' pattern...")
+    frame = book.raise_pattern("oscar_shed")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories (pegs): {len(frame.accessories)}")
@@ -305,18 +308,21 @@ def render_oscar_shed():
 
 
 def render_irrational_angles():
-    """Render irrational angles test examples."""
+    """Render irrational angles test examples using PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from examples.irrational_angles_example import create_all_irrational_examples
+    from examples.irrational_angles_example import create_irrational_angles_patternbook
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - Irrational Angles Test")
     print("="*70)
     app.log("🦒 GIRAFFETEST: IRRATIONAL ANGLES 🦒")
     
-    # Create irrational angles examples
-    print("\nCreating irrational angles test examples...")
-    frame = create_all_irrational_examples()
+    # Create pattern book and raise pattern
+    print("\nCreating irrational angles pattern book...")
+    book = create_irrational_angles_patternbook()
+    
+    print("\nRaising 'irrational_angles_test' pattern...")
+    frame = book.raise_pattern("irrational_angles_test")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -348,6 +354,65 @@ def render_irrational_angles():
     )
 
 
+def render_csg():
+    """Render CSG examples from PatternBook."""
+    from giraffe_render_fusion360 import render_csg_pattern, clear_design
+    from examples.MeowMeowCSG_examples import create_csg_examples_patternbook, EXAMPLES
+    
+    print("="*70)
+    print("GiraffeCAD Fusion 360 - CSG Examples")
+    print("="*70)
+    app.log("🦒 GIRAFFETEST: CSG EXAMPLES 🦒")
+    
+    # Get example info
+    if CSG_EXAMPLE_TO_RENDER not in EXAMPLES:
+        print(f"ERROR: Unknown example '{CSG_EXAMPLE_TO_RENDER}'")
+        print(f"Available examples: {list(EXAMPLES.keys())}")
+        ui.messageBox(
+            f'Unknown CSG example: {CSG_EXAMPLE_TO_RENDER}\n\n' +
+            f'Available: {", ".join(EXAMPLES.keys())}',
+            'Error',
+            adsk.core.MessageBoxButtonTypes.OKButtonType,
+            adsk.core.MessageBoxIconTypes.WarningIconType
+        )
+        return
+    
+    example_info = EXAMPLES[CSG_EXAMPLE_TO_RENDER]
+    print(f"Example: {example_info['name']}")
+    print(f"Description: {example_info['description']}")
+    
+    # Create pattern book and raise the selected pattern
+    print("\nCreating CSG examples pattern book...")
+    book = create_csg_examples_patternbook()
+    
+    print(f"\nRaising '{CSG_EXAMPLE_TO_RENDER}' pattern...")
+    csg = book.raise_pattern(CSG_EXAMPLE_TO_RENDER)
+    
+    # Clear design
+    print("\nClearing Fusion 360 design...")
+    if not clear_design():
+        print("Failed to prepare design - aborting rendering")
+        return
+    
+    # Render CSG
+    print("\nRendering CSG in Fusion 360...")
+    success_count = render_csg_pattern(csg, CSG_EXAMPLE_TO_RENDER)
+    
+    print("\n" + "="*70)
+    print(f"Rendering Complete!")
+    print(f"Successfully rendered CSG: {CSG_EXAMPLE_TO_RENDER}")
+    print("="*70)
+    
+    ui.messageBox(
+        f'CSG rendering complete!\n\n' +
+        f'Example: {example_info["name"]}\n' +
+        f'Description: {example_info["description"]}',
+        'Rendering Complete',
+        adsk.core.MessageBoxButtonTypes.OKButtonType,
+        adsk.core.MessageBoxIconTypes.InformationIconType
+    )
+
+
 def run(_context: str):
     """This function is called by Fusion when the script is run."""
     try:
@@ -366,6 +431,7 @@ def run(_context: str):
             'gooseneck': render_gooseneck,
             'oscar_shed': render_oscar_shed,
             'irrational_angles': render_irrational_angles,
+            'csg': render_csg,
         }
         
         if EXAMPLE_TO_RENDER not in examples:
