@@ -801,3 +801,41 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         wedge_parameters=None,
         peg_parameters=peg_parameters
     )
+
+
+
+
+
+def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
+    tenon_timber: Timber,
+    mortise_timber: Timber,
+    tenon_end: TimberReferenceEnd,
+    tenon_size: V2,
+    tenon_length: Numeric,
+    mortise_depth: Optional[Numeric] = None,
+    mortise_shoulder_inset: Numeric = Rational(0),
+    tenon_position: V2 = None,
+    tenon_rotation: Orientation = None,
+    wedge_parameters: Optional[WedgeParameters] = None,
+    peg_parameters: Optional[SimplePegParameters] = None
+) -> Joint:
+    # use mark/measure functions to implement this
+    # assert that the timbers are plane aligned 
+    # determine which face of the mortise timber the tenon is entering from 
+    # first find where the tenon centerline intersects the mortise face inset by the shoulder inset 
+    # at this point define marking_space : MarkingSpace  on the tenon timber, it should point towards the tenon end
+    # determine the angle of the mortise timber to the tenon timber
+    # create a HalfSpace CSG on the tenon timber at this angle for the shoulder of the tenon
+    # create a RectangularPrism CSG representing the tenon volume (it should go past the shoulder plane)
+    # on the "short" side of the tenon shoulder (where it makes an oblique angle to the mortise timber) make another prism orthogonal to the shoulder angle right where the tenon meets the shoulder plane. So that the tenon can fit into a perpendicular mortise hole that matches the tenon size on the tenon shoulder plane
+    # difference the tenon volume CSG from the half space CSG to get the tenon cut CSG
+
+    # compute the size of the tenon timber in the mortise length axis accounting for the angle that the tenon timber is entering at
+    # make a housing cut on the mortise timber to fit the tenon timber shoulder
+    # next determine the size of the tenon in the mortise timebr length axis, this is one dimension of the mortise hole sive the other dimension can be pulled from tenon_size (i.e. one component of tenon_size needs to be divided by the cosine of the angle)
+    # create a Rectangular prism for the mortise hole based on these parameters, if depth is none then it is a through mortise
+
+    # determine the peg CSGs using the marking space on the tenon timber to position everything (can copy logic from previosu implementation)
+
+    # union/diff all the CSGs and return the joint
+    pass

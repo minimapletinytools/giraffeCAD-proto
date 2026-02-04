@@ -66,8 +66,9 @@ from .timber import *
 # Geometric Feature Types
 # ============================================================================
 
+# TODO use measuring ABC maybe? 
 # Type alias for all measurable geometric features on timbers
-MeasuredTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane']
+MeasuredTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane', 'Space']
 
 @dataclass(frozen=True)
 class Point:
@@ -157,15 +158,25 @@ class HalfPlane:
         return f"HalfPlane(normal={self.normal}, point_on_line={self.point_on_line}, line_direction={self.line_direction})"
 
 
+#dataclass(frozen=True)
+class Space:
+    """
+    Represents an ORIENTED 3D space.
+    """
+    transform: Transform
+    
+    def __repr__(self) -> str:
+        return f"Space(transform={self.transform})"
 
 # ============================================================================
 # Measurement Classes
 # ============================================================================
 
+# TODO consider not having an ABC here... not actually needed
 @dataclass(frozen=True)
 class Marking(ABC):
     @abstractmethod
-    def measure(self) -> Union[UnsignedPlane, Plane, Line, Point, HalfPlane]:
+    def measure(self) -> Union[UnsignedPlane, Plane, Line, Point, HalfPlane, Space]:
         pass
 
 @dataclass(frozen=True)
@@ -287,6 +298,16 @@ class DistanceFromLongEdgeOnFace(Marking):
         
         # Return a line parallel to the edge at the new position
         return Line(edge_line.direction, new_point)
+
+class MarkingSpace(Marking):
+    """
+    Represents a space to mark in.
+    """
+    timber: Timber
+    local_transform: Transform
+    
+    def measure(self) -> Space:
+        return Space(self.timber.transform * self.local_transform)
 
 # ============================================================================
 # Helper Functions
