@@ -196,6 +196,8 @@ DONE-maybe revisit measuring naming conevntion
     -it's just annoying to measure cuz then you need to specify the reference end... but I guess that's a good thing as there fewer args to the mark function!
 DONE-swap measure and mark
 
+-add timber size estimation function (really you want a prism BB)
+  -then add frame size estimation function
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
 -update morties and tenon to support
   -perpendicular but not face aligned
@@ -203,6 +205,7 @@ DONE-swap measure and mark
     -maybe have an add brace function?
   -neither perpendicular nor face aligned
 -think about how you want to make example selector and make it future proof or useful as reference
+  -(example metadata, (V3) -> Frame)
 -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
 
 -be consistent about function local/golbal naming

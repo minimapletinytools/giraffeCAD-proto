@@ -1,0 +1,312 @@
+"""
+Tests for the PatternBook module
+"""
+
+import pytest
+from sympy import Rational
+from .moothymoth import create_v3, create_v2, inches, Transform, Orientation
+from .timber import timber_from_directions, Frame, CutTimber
+from .meowmeowcsg import RectangularPrism
+from .patternbook import PatternMetadata, PatternBook, PatternLambda
+
+
+def test_pattern_metadata_creation():
+    """Test creating PatternMetadata objects."""
+    # Basic metadata
+    metadata1 = PatternMetadata(
+        pattern_name="test_pattern",
+        pattern_type="frame"
+    )
+    assert metadata1.pattern_name == "test_pattern"
+    assert metadata1.pattern_group_name is None
+    assert metadata1.pattern_type == "frame"
+    
+    # Metadata with group
+    metadata2 = PatternMetadata(
+        pattern_name="test_pattern2",
+        pattern_group_name="test_group",
+        pattern_type="csg"
+    )
+    assert metadata2.pattern_group_name == "test_group"
+    assert metadata2.pattern_type == "csg"
+
+
+def test_pattern_metadata_invalid_type():
+    """Test that invalid pattern types raise ValueError."""
+    with pytest.raises(ValueError, match="pattern_type must be"):
+        PatternMetadata(
+            pattern_name="test",
+            pattern_type="invalid"  # type: ignore
+        )
+
+
+def test_pattern_book_creation_with_frames():
+    """Test creating a PatternBook with frame patterns."""
+    # Create a simple pattern function
+    def make_simple_frame(center):
+        timber = timber_from_directions(
+            length=inches(24),
+            size=create_v2(inches(2), inches(4)),
+            bottom_position=center,
+            length_direction=create_v3(1, 0, 0),  # East
+            width_direction=create_v3(0, 1, 0),   # North
+            name="test_timber"
+        )
+        cut_timber = CutTimber(timber=timber, cuts=[])
+        return Frame(cut_timbers=[cut_timber], name="simple_frame")
+    
+    # Create pattern book
+    metadata = PatternMetadata(pattern_name="simple", pattern_type="frame")
+    book = PatternBook(patterns=[(metadata, make_simple_frame)])
+    
+    assert len(book.patterns) == 1
+    assert book.list_patterns() == ["simple"]
+
+
+def test_pattern_book_creation_with_csg():
+    """Test creating a PatternBook with CSG patterns."""
+    # Create a simple CSG pattern function
+    def make_box(center):
+        size = inches(2)
+        return RectangularPrism(
+            size=create_v2(size, size),
+            transform=Transform(position=center, orientation=Orientation.identity()),
+            start_distance=-size / 2,
+            end_distance=size / 2
+        )
+    
+    # Create pattern book
+    metadata = PatternMetadata(pattern_name="box", pattern_type="csg")
+    book = PatternBook(patterns=[(metadata, make_box)])
+    
+    assert len(book.patterns) == 1
+    assert book.list_patterns() == ["box"]
+
+
+def test_pattern_book_duplicate_names():
+    """Test that duplicate pattern names raise ValueError."""
+    def make_frame1(center):
+        timber = timber_from_directions(
+            length=inches(24),
+            size=create_v2(inches(2), inches(4)),
+            bottom_position=center,
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0)
+        )
+        return Frame(cut_timbers=[CutTimber(timber=timber, cuts=[])])
+    
+    def make_frame2(center):
+        return make_frame1(center)
+    
+    metadata1 = PatternMetadata(pattern_name="duplicate", pattern_type="frame")
+    metadata2 = PatternMetadata(pattern_name="duplicate", pattern_type="frame")
+    
+    with pytest.raises(ValueError, match="Duplicate pattern names"):
+        PatternBook(patterns=[(metadata1, make_frame1), (metadata2, make_frame2)])
+
+
+def test_raise_pattern():
+    """Test raising a single pattern."""
+    def make_frame(center):
+        timber = timber_from_directions(
+            length=inches(24),
+            size=create_v2(inches(2), inches(4)),
+            bottom_position=center,
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0),
+            name="test_timber"
+        )
+        return Frame(cut_timbers=[CutTimber(timber=timber, cuts=[])])
+    
+    metadata = PatternMetadata(pattern_name="test", pattern_type="frame")
+    book = PatternBook(patterns=[(metadata, make_frame)])
+    
+    # Raise at default position (origin)
+    frame1 = book.raise_pattern("test")
+    assert isinstance(frame1, Frame)
+    assert len(frame1.cut_timbers) == 1
+    
+    # Raise at specific position
+    center = create_v3(inches(10), inches(20), inches(30))
+    frame2 = book.raise_pattern("test", center=center)
+    assert isinstance(frame2, Frame)
+    # Check that the timber's bottom position matches the center we provided
+    assert frame2.cut_timbers[0].timber.transform.position == center
+
+
+def test_raise_pattern_not_found():
+    """Test that raising a non-existent pattern raises ValueError."""
+    book = PatternBook(patterns=[])
+    
+    with pytest.raises(ValueError, match="Pattern 'nonexistent' not found"):
+        book.raise_pattern("nonexistent")
+
+
+def test_raise_pattern_group_frames():
+    """Test raising a group of frame patterns."""
+    def make_frame(name):
+        def _make(center):
+            timber = timber_from_directions(
+                length=inches(24),
+                size=create_v2(inches(2), inches(4)),
+                bottom_position=center,
+                length_direction=create_v3(1, 0, 0),
+                width_direction=create_v3(0, 1, 0),
+                name=name
+            )
+            return Frame(cut_timbers=[CutTimber(timber=timber, cuts=[])])
+        return _make
+    
+    # Create pattern book with grouped patterns
+    patterns = [
+        (PatternMetadata("frame1", "group_a", "frame"), make_frame("timber1")),
+        (PatternMetadata("frame2", "group_a", "frame"), make_frame("timber2")),
+        (PatternMetadata("frame3", "group_a", "frame"), make_frame("timber3")),
+    ]
+    book = PatternBook(patterns=patterns)
+    
+    # Raise the group
+    separation = inches(48)
+    combined_frame = book.raise_pattern_group("group_a", separation)
+    
+    assert isinstance(combined_frame, Frame)
+    assert len(combined_frame.cut_timbers) == 3
+    assert combined_frame.name == "group_a_combined"
+    
+    # Check positions are separated correctly
+    pos0 = combined_frame.cut_timbers[0].timber.transform.position
+    pos1 = combined_frame.cut_timbers[1].timber.transform.position
+    pos2 = combined_frame.cut_timbers[2].timber.transform.position
+    
+    assert (pos1 - pos0)[0] == separation  # X offset
+    assert (pos2 - pos1)[0] == separation  # X offset
+
+
+def test_raise_pattern_group_csg():
+    """Test raising a group of CSG patterns."""
+    def make_box(name):
+        def _make(center):
+            size = inches(2)
+            return RectangularPrism(
+                size=create_v2(size, size),
+                transform=Transform(position=center, orientation=Orientation.identity()),
+                start_distance=-size / 2,
+                end_distance=size / 2
+            )
+        return _make
+    
+    # Create pattern book with grouped CSG patterns
+    patterns = [
+        (PatternMetadata("box1", "group_b", "csg"), make_box("box1")),
+        (PatternMetadata("box2", "group_b", "csg"), make_box("box2")),
+    ]
+    book = PatternBook(patterns=patterns)
+    
+    # Raise the group
+    separation = inches(12)
+    csg_list = book.raise_pattern_group("group_b", separation)
+    
+    assert isinstance(csg_list, list)
+    assert len(csg_list) == 2
+    assert all(isinstance(obj, RectangularPrism) for obj in csg_list)
+
+
+def test_raise_pattern_group_mixed_types():
+    """Test that mixing frame and CSG patterns in a group raises ValueError."""
+    def make_frame(center):
+        timber = timber_from_directions(
+            length=inches(24),
+            size=create_v2(inches(2), inches(4)),
+            bottom_position=center,
+            length_direction=create_v3(1, 0, 0),
+            width_direction=create_v3(0, 1, 0)
+        )
+        return Frame(cut_timbers=[CutTimber(timber=timber, cuts=[])])
+    
+    def make_box(center):
+        size = inches(2)
+        return RectangularPrism(
+            size=create_v2(size, size),
+            transform=Transform(position=center, orientation=Orientation.identity()),
+            start_distance=-size / 2,
+            end_distance=size / 2
+        )
+    
+    # Create pattern book with mixed types in same group
+    patterns = [
+        (PatternMetadata("frame1", "mixed_group", "frame"), make_frame),
+        (PatternMetadata("box1", "mixed_group", "csg"), make_box),
+    ]
+    book = PatternBook(patterns=patterns)
+    
+    # Should raise when trying to raise the mixed group
+    with pytest.raises(ValueError, match="Cannot mix frame and CSG patterns"):
+        book.raise_pattern_group("mixed_group", inches(12))
+
+
+def test_raise_pattern_group_not_found():
+    """Test that raising a non-existent group raises ValueError."""
+    book = PatternBook(patterns=[])
+    
+    with pytest.raises(ValueError, match="Group 'nonexistent' not found"):
+        book.raise_pattern_group("nonexistent", inches(12))
+
+
+def test_list_patterns():
+    """Test listing all patterns."""
+    def dummy_func(center):
+        return None  # type: ignore
+    
+    patterns = [
+        (PatternMetadata("pattern1", "group_a", "frame"), dummy_func),
+        (PatternMetadata("pattern2", "group_a", "frame"), dummy_func),
+        (PatternMetadata("pattern3", None, "csg"), dummy_func),
+    ]
+    book = PatternBook(patterns=patterns)
+    
+    pattern_names = book.list_patterns()
+    assert len(pattern_names) == 3
+    assert "pattern1" in pattern_names
+    assert "pattern2" in pattern_names
+    assert "pattern3" in pattern_names
+
+
+def test_list_groups():
+    """Test listing all groups."""
+    def dummy_func(center):
+        return None  # type: ignore
+    
+    patterns = [
+        (PatternMetadata("pattern1", "group_a", "frame"), dummy_func),
+        (PatternMetadata("pattern2", "group_a", "frame"), dummy_func),
+        (PatternMetadata("pattern3", "group_b", "csg"), dummy_func),
+        (PatternMetadata("pattern4", None, "frame"), dummy_func),
+    ]
+    book = PatternBook(patterns=patterns)
+    
+    groups = book.list_groups()
+    assert len(groups) == 2
+    assert "group_a" in groups
+    assert "group_b" in groups
+
+
+def test_get_patterns_in_group():
+    """Test getting patterns in a specific group."""
+    def dummy_func(center):
+        return None  # type: ignore
+    
+    patterns = [
+        (PatternMetadata("pattern1", "group_a", "frame"), dummy_func),
+        (PatternMetadata("pattern2", "group_a", "frame"), dummy_func),
+        (PatternMetadata("pattern3", "group_b", "csg"), dummy_func),
+    ]
+    book = PatternBook(patterns=patterns)
+    
+    group_a_patterns = book.get_patterns_in_group("group_a")
+    assert len(group_a_patterns) == 2
+    assert "pattern1" in group_a_patterns
+    assert "pattern2" in group_a_patterns
+    
+    group_b_patterns = book.get_patterns_in_group("group_b")
+    assert len(group_b_patterns) == 1
+    assert "pattern3" in group_b_patterns
