@@ -1151,6 +1151,84 @@ class Frame:
             name=name
         )
     
+    def approximate_bounding_box(self) -> tuple[V3, V3]:
+        """
+        Get the axis-aligned bounding box for the entire frame in global coordinates.
+        
+        This computes the bounding box by getting the bounding prism for each cut timber
+        and finding the global min/max coordinates that enclose all of them.
+        
+        Returns:
+            tuple[V3, V3]: (min_corner, max_corner) where each is a 3x1 Matrix representing
+                          the minimum and maximum corners of the axis-aligned bounding box
+                          in global coordinates
+        
+        Raises:
+            ValueError: If the frame contains no cut timbers
+        """
+        from sympy import Min as SymMin, Max as SymMax
+        
+        if not self.cut_timbers:
+            raise ValueError("Cannot compute bounding box for empty frame (no cut timbers)")
+        
+        # Get bounding prism for each cut timber
+        bounding_prisms = [ct.approximate_bounding_prism() for ct in self.cut_timbers]
+        
+        # For each prism, we need to find its 8 corners and track global min/max
+        # Initialize with infinities
+        min_x = None
+        min_y = None
+        min_z = None
+        max_x = None
+        max_y = None
+        max_z = None
+        
+        for prism in bounding_prisms:
+            # Get the 8 corners of the rectangular prism
+            # The prism is defined by its size (width, height) in the XY plane
+            # and start_distance/end_distance along the Z axis
+            
+            half_width = prism.size[0] / 2
+            half_height = prism.size[1] / 2
+            
+            # Generate 8 corners in local coordinates
+            # (±half_width, ±half_height, start_distance or end_distance)
+            local_corners = []
+            for x_sign in [-1, 1]:
+                for y_sign in [-1, 1]:
+                    for z_val in [prism.start_distance, prism.end_distance]:
+                        local_corner = Matrix([
+                            x_sign * half_width,
+                            y_sign * half_height,
+                            z_val
+                        ])
+                        local_corners.append(local_corner)
+            
+            # Transform each corner to global coordinates
+            for local_corner in local_corners:
+                global_corner = prism.transform.position + prism.transform.orientation.matrix * local_corner
+                
+                # Update min/max for each axis
+                if min_x is None:
+                    min_x = global_corner[0]
+                    max_x = global_corner[0]
+                    min_y = global_corner[1]
+                    max_y = global_corner[1]
+                    min_z = global_corner[2]
+                    max_z = global_corner[2]
+                else:
+                    min_x = SymMin(min_x, global_corner[0])
+                    max_x = SymMax(max_x, global_corner[0])
+                    min_y = SymMin(min_y, global_corner[1])
+                    max_y = SymMax(max_y, global_corner[1])
+                    min_z = SymMin(min_z, global_corner[2])
+                    max_z = SymMax(max_z, global_corner[2])
+        
+        min_corner = Matrix([min_x, min_y, min_z])
+        max_corner = Matrix([max_x, max_y, max_z])
+        
+        return (min_corner, max_corner)
+    
     def __post_init__(self):
         """Validate that the frame contains no floating point numbers."""
         self._check_no_floats()

@@ -1183,3 +1183,129 @@ class TestFrameFromJoints:
         assert len(frame.cut_timbers) == 0
         assert len(frame.accessories) == 0
         assert frame.name == "Empty Frame"
+
+
+class TestFrameBoundingBox:
+    """Test Frame bounding box calculations."""
+    
+    def test_single_timber_bounding_box_matches_timber_prism(self):
+        """Test that a frame with a single timber has a bounding box matching the timber's prism."""
+        # Create a simple vertical timber
+        timber = create_axis_aligned_timber(
+            bottom_position=create_v3(10, 20, 5),
+            length=Rational(96),  # 8 feet
+            size=create_v2(Rational(4), Rational(4)),  # 4x4 inches
+            length_direction=TimberFace.TOP,
+            width_direction=TimberFace.RIGHT,
+            name="TestPost"
+        )
+        
+        # Create a frame with just this timber
+        cut_timber = CutTimber(timber, cuts=[])
+        frame = Frame(cut_timbers=[cut_timber])
+        
+        # Get bounding box
+        min_corner, max_corner = frame.approximate_bounding_box()
+        
+        # Expected bounds: timber goes from (10, 20, 5) to (10, 20, 5+96)
+        # with cross section centered at (10, 20), spanning ±2 inches in X and Y
+        expected_min = create_v3(
+            10 - Rational(2),  # 10 - 4/2
+            20 - Rational(2),  # 20 - 4/2
+            5                   # bottom z
+        )
+        expected_max = create_v3(
+            10 + Rational(2),  # 10 + 4/2
+            20 + Rational(2),  # 20 + 4/2
+            5 + 96             # top z
+        )
+        
+        # Check each component
+        assert min_corner[0] == expected_min[0], f"min_x: {min_corner[0]} != {expected_min[0]}"
+        assert min_corner[1] == expected_min[1], f"min_y: {min_corner[1]} != {expected_min[1]}"
+        assert min_corner[2] == expected_min[2], f"min_z: {min_corner[2]} != {expected_min[2]}"
+        
+        assert max_corner[0] == expected_max[0], f"max_x: {max_corner[0]} != {expected_max[0]}"
+        assert max_corner[1] == expected_max[1], f"max_y: {max_corner[1]} != {expected_max[1]}"
+        assert max_corner[2] == expected_max[2], f"max_z: {max_corner[2]} != {expected_max[2]}"
+    
+    def test_x_shaped_timbers_with_butt_joint(self):
+        """Test bounding box for two timbers in a crossing configuration with a butt joint cut."""
+        from code_goes_here.basic_joints import cut_basic_butt_joint_on_face_aligned_timbers
+        
+        # Create two timbers in a crossing configuration that meet near the origin
+        # Timber A: receiving timber (uncut), runs perpendicular to timberB
+        timberA = create_axis_aligned_timber(
+            bottom_position=create_v3(0, -10, 0),
+            length=Rational(20),
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.RIGHT,
+            width_direction=TimberFace.FRONT,
+            name="TimberA"
+        )
+        
+        # Timber B: butt timber (will be cut), runs perpendicular to timberA
+        # Position it so its TOP end will be cut when it meets timberA
+        timberB = create_axis_aligned_timber(
+            bottom_position=create_v3(-10, 0, 0),
+            length=Rational(20),
+            size=create_v2(Rational(4), Rational(4)),
+            length_direction=TimberFace.FRONT,
+            width_direction=TimberFace.RIGHT,
+            name="TimberB"
+        )
+        
+        # Create a butt joint where timberB's TOP end is cut to butt against timberA
+        joint = cut_basic_butt_joint_on_face_aligned_timbers(
+            receiving_timber=timberA,
+            butt_timber=timberB,
+            butt_end=TimberReferenceEnd.TOP
+        )
+        
+        # Create frame from the joint
+        frame = Frame.from_joints([joint])
+        
+        # Verify that timberB has cuts applied
+        cut_timberB = next(ct for ct in frame.cut_timbers if ct.timber.name == "TimberB")
+        assert len(cut_timberB.cuts) > 0, "TimberB should have cuts applied"
+        
+        # Verify that timberA is uncut
+        cut_timberA = next(ct for ct in frame.cut_timbers if ct.timber.name == "TimberA")
+        assert len(cut_timberA.cuts) == 0, "TimberA should be uncut (receiving timber)"
+        
+        # Get the bounding prisms for both timbers
+        timberA_prism = cut_timberA.approximate_bounding_prism()
+        timberB_prism = cut_timberB.approximate_bounding_prism()
+        
+        # TimberA should still be 20" long (uncut)
+        timberA_length = abs(timberA_prism.end_distance - timberA_prism.start_distance)
+        assert timberA_length == Rational(20), f"Uncut timber length {timberA_length} should be 20"
+        
+        # TimberB should be shorter than 20" due to the cut
+        timberB_length = abs(timberB_prism.end_distance - timberB_prism.start_distance)
+        assert timberB_length < Rational(20), f"Cut timber length {timberB_length} should be < 20"
+        
+        # The cut should remove a significant amount (at least the thickness of timberA)
+        assert timberB_length < Rational(18), f"Cut timber length {timberB_length} should be < 18 (20 - 2)"
+        
+        # Get overall bounding box
+        min_corner, max_corner = frame.approximate_bounding_box()
+        size = max_corner - min_corner
+        
+        # Z span should be about 4 (timber thickness)
+        assert abs(float(size[2]) - 4) < 0.5, f"Z size: {float(size[2])} should be ~4"
+        
+        # The bounding box should be reasonable (not larger than if both timbers were uncut)
+        # Each timber is 20" + some cross-sectional thickness (4" cross-section)
+        # So maximum would be 20 + 4 + some margin = ~30
+        assert float(size[0]) < 35, f"X size {float(size[0])} should be < 35"
+        assert float(size[1]) < 35, f"Y size {float(size[1])} should be < 35"
+    
+    def test_empty_frame_raises_error(self):
+        """Test that computing bounding box for an empty frame raises an error."""
+        frame = Frame(cut_timbers=[])
+        
+        with pytest.raises(ValueError) as exc_info:
+            frame.approximate_bounding_box()
+        
+        assert "empty frame" in str(exc_info.value).lower()
