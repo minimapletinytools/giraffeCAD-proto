@@ -357,3 +357,87 @@ def test_patterns_with_multiple_groups():
     assert len(group_x_patterns) == 2
     assert "pattern1" in group_x_patterns
     assert "pattern3" in group_x_patterns
+
+
+def test_merge_pattern_books():
+    """Test merging two PatternBooks."""
+    def dummy_func(center):
+        return None  # type: ignore
+    
+    # Create first book
+    patterns1 = [
+        (PatternMetadata("pattern1", ["group_a"], "frame"), dummy_func),
+        (PatternMetadata("pattern2", ["group_a"], "frame"), dummy_func),
+    ]
+    book1 = PatternBook(patterns=patterns1)
+    
+    # Create second book
+    patterns2 = [
+        (PatternMetadata("pattern3", ["group_b"], "csg"), dummy_func),
+        (PatternMetadata("pattern4", ["group_b"], "csg"), dummy_func),
+    ]
+    book2 = PatternBook(patterns=patterns2)
+    
+    # Merge books
+    merged_book = book1.merge(book2)
+    
+    # Check merged book has all patterns
+    assert len(merged_book.list_patterns()) == 4
+    assert "pattern1" in merged_book.list_patterns()
+    assert "pattern2" in merged_book.list_patterns()
+    assert "pattern3" in merged_book.list_patterns()
+    assert "pattern4" in merged_book.list_patterns()
+    
+    # Check groups
+    assert "group_a" in merged_book.list_groups()
+    assert "group_b" in merged_book.list_groups()
+
+
+def test_merge_multiple_pattern_books():
+    """Test merging multiple PatternBooks at once."""
+    def dummy_func(center):
+        return None  # type: ignore
+    
+    # Create three books
+    book1 = PatternBook(patterns=[
+        (PatternMetadata("pattern1", ["group_a"], "frame"), dummy_func),
+    ])
+    book2 = PatternBook(patterns=[
+        (PatternMetadata("pattern2", ["group_b"], "frame"), dummy_func),
+    ])
+    book3 = PatternBook(patterns=[
+        (PatternMetadata("pattern3", ["group_c"], "csg"), dummy_func),
+    ])
+    
+    # Merge all books
+    merged_book = PatternBook.merge_multiple([book1, book2, book3])
+    
+    # Check merged book has all patterns
+    assert len(merged_book.list_patterns()) == 3
+    assert "pattern1" in merged_book.list_patterns()
+    assert "pattern2" in merged_book.list_patterns()
+    assert "pattern3" in merged_book.list_patterns()
+    
+    # Check groups
+    assert len(merged_book.list_groups()) == 3
+    assert "group_a" in merged_book.list_groups()
+    assert "group_b" in merged_book.list_groups()
+    assert "group_c" in merged_book.list_groups()
+
+
+def test_merge_duplicate_names_raises_error():
+    """Test that merging books with duplicate pattern names raises an error."""
+    def dummy_func(center):
+        return None  # type: ignore
+    
+    # Create two books with same pattern name
+    book1 = PatternBook(patterns=[
+        (PatternMetadata("duplicate", ["group_a"], "frame"), dummy_func),
+    ])
+    book2 = PatternBook(patterns=[
+        (PatternMetadata("duplicate", ["group_b"], "frame"), dummy_func),
+    ])
+    
+    # Should raise error when merging
+    with pytest.raises(ValueError, match="Duplicate pattern names"):
+        book1.merge(book2)
