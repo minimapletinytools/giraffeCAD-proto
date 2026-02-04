@@ -74,6 +74,7 @@ Joints involve creating CSG cuts on one or more timbers. A typicall joint implem
 4. create a sensible `marking_transform : Transform` on that timber which is a transform in the timber's local space from which we will make all further calculations from. 
     - e.g. if we are cutting a tenon, marking_transform could be where the tenon centerline intersects the tenon shoulder pointing in the tenon direction 
     - for marking transforms inside the timber that are pointing in the length or -length direction, the "+x" axis of the transform should line up with the timber's "+x" axis
+        - TODO decide if Y is rotated or if we use a transform with -1 determinant :O
     - for marking_transforms on the surface of the timber the "+y" should point into the timber
 5. calculate positions from marking_transform to locate features and generate the CSG cuts
 6. repeat 3-5 until all cuts are done

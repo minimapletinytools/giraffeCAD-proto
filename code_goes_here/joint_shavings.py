@@ -756,6 +756,7 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
     return extrusion
 
 
+# TODO add notch chamfer angle parameter
 def chop_shoulder_notch_on_timber_face(
     timber: Timber,
     notch_face: TimberFace,
