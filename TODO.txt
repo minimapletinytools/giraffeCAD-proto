@@ -197,6 +197,8 @@ DONE-maybe revisit measuring naming conevntion
 DONE-swap measure and mark
 
 -make examples of how to use measure/mark to set parameters in cutting functions
+-maybe just have Joints returns their final size rather than try to calculate it....
+
 
 -add timber size estimation function (really you want a prism BB)
   -then add frame size estimation function
@@ -222,6 +224,8 @@ RENAME
 DONE-cleanup where to put get_point_on_face and project_point_onto_face
   -probably move these into timber_shavings or something
 -MeowMeowCSG -> PotatoCSG
+  -or CutCSG probably better...
+-MoothyMoth -> Rule?
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
   -oFAT on face aligned timbers
   -oFAACaT on face aligned coaxial timbers
@@ -229,11 +233,14 @@ DONE-cleanup where to put get_point_on_face and project_point_onto_face
   -oPT on parallel timbers
   -oOT on orthognal timbers
 -do the horseCAD rename
-  -rename meowmeocsg and moothymoth?
-  -change cut_ to layout_? or plan_
-  -rename create_timber to hew or raise timber?
+  -change cut_ to layout_? or plan_?
+  -rename create_timber to hew?
     -make sure to rename the ones in helperonis as well
     -then boards/panels can be mill_board
+    -what about join/stretch/split?
+      -join -> glue?
+  -add from_joints -> raise function to Frame
+    -have an on class member version of it to cuz its cutre that way
 -consider doing a rename pass on validitiy checkers  
   -assert
   -check
