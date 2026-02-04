@@ -196,6 +196,8 @@ DONE-maybe revisit measuring naming conevntion
     -it's just annoying to measure cuz then you need to specify the reference end... but I guess that's a good thing as there fewer args to the mark function!
 DONE-swap measure and mark
 
+-make examples of how to use measure/mark to set parameters in cutting functions
+
 -add timber size estimation function (really you want a prism BB)
   -then add frame size estimation function
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
@@ -204,7 +206,7 @@ DONE-swap measure and mark
   -not perpendicular but partially face aligned (for braces)
     -maybe have an add brace function?
   -neither perpendicular nor face aligned
--think about how you want to make example selector and make it future proof or useful as reference
+DONE-think about how you want to make example selector and make it future proof or useful as reference
   -(example metadata, (V3) -> Frame)
 -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
 
@@ -219,6 +221,7 @@ DONE-swap measure and mark
 RENAME
 DONE-cleanup where to put get_point_on_face and project_point_onto_face
   -probably move these into timber_shavings or something
+-MeowMeowCSG -> PotatoCSG
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
   -oFAT on face aligned timbers
   -oFAACaT on face aligned coaxial timbers
@@ -247,7 +250,7 @@ EXEMPLIFY
 -create potato_joints.py and potato_joints_examples.py
   -pass in sensible default parameters for all joints
 -examplify 
-  -create some map of example name to example function map so you can dynamiaclly get to all examples
+  DONE-create some map of example name to example function map so you can dynamiaclly get to all examples
   -would be cool do deep link by into functions/docs in the future...
 
 
