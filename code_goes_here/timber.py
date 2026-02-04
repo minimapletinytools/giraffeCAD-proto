@@ -3,7 +3,7 @@ GiraffeCAD - Timber types, enums, constants, and core classes
 Contains all core data structures and type definitions for the timber framing system
 """
 
-from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify
+from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify, Min, Max
 from .moothymoth import *
 from .footprint import *
 from .meowmeowcsg import *
@@ -697,6 +697,141 @@ class CutTimber:
         # Return the difference: timber - all cuts
         from .meowmeowcsg import Difference
         return Difference(starting_csg, negative_csgs)
+
+    
+    # TODO test me
+    def approximate_bounding_prism(self) -> RectangularPrism:
+        """
+        TODO someday we want a fully analytical solution for this, but for now this is sufficient for our needs.
+
+        Get the bounding box prism for this timber including all its cuts.
+        The bounding box is aligned with the timber's orientation.
+        
+        Uses a hybrid approach: analytical methods for simple cases (HalfSpace cuts),
+        and sampling for complex CSG operations. Works with all CSG types and orientations.
+        
+        Returns:
+            RectangularPrism: The bounding box for the cut timber in global coordinates
+        """
+        from .meowmeowcsg import RectangularPrism, HalfSpace, Difference
+        
+        # Start with the timber's original bounds (in local coordinates)
+        min_z = Rational(0)
+        max_z = self.timber.length
+        
+        # Length direction in local coordinates (always +Z)
+        length_direction_local = Matrix([Rational(0), Rational(0), Rational(1)])
+        
+        # Try analytical approach first for simple HalfSpace cuts
+        can_use_analytical = True
+        for cut in self.cuts:
+            csg = cut.negative_csg
+            
+            # Check if it's a simple HalfSpace or a Difference with HalfSpaces
+            if isinstance(csg, HalfSpace):
+                half_space = csg
+                dot_product = (half_space.normal.T * length_direction_local)[0, 0]
+                
+                if equality_test(Abs(dot_product), 1):
+                    # HalfSpace aligned with length direction
+                    # HalfSpace contains points where (p · normal) >= offset
+                    # When subtracted, remaining points are where (p · normal) < offset
+                    if dot_product > 0:
+                        # Normal points in +Z direction
+                        # Subtraction removes points with Z >= offset
+                        max_z = Min(max_z, half_space.offset)
+                    else:
+                        # Normal points in -Z direction
+                        # Subtraction removes points with Z <= -offset
+                        min_z = Max(min_z, -half_space.offset)
+                else:
+                    # HalfSpace not aligned with length - need sampling
+                    can_use_analytical = False
+                    break
+            else:
+                # Complex CSG - need sampling
+                can_use_analytical = False
+                break
+        
+        if can_use_analytical:
+            # All cuts were simple aligned HalfSpaces, we're done
+            return RectangularPrism(
+                size=self.timber.size,
+                transform=Transform(
+                    position=self.timber.get_bottom_position_global(),
+                    orientation=self.timber.orientation
+                ),
+                start_distance=min_z,
+                end_distance=max_z
+            )
+        
+        # Fall back to sampling for complex cases
+        cut_csg = self.render_timber_with_cuts_csg_local()
+        
+        # Use fewer samples for speed, using float arithmetic
+        num_length_samples = 50
+        num_cross_section_samples = 5
+        
+        # Get timber half-sizes
+        half_width = self.timber.size[0] / 2
+        half_height = self.timber.size[1] / 2
+        
+        # Find actual min Z (bottom bound)
+        for i in range(num_length_samples + 1):
+            z_float = float(min_z) + (float(max_z) - float(min_z)) * (i / num_length_samples)
+            z = Rational(int(z_float * 1000), 1000)  # Round to 3 decimal places for speed
+            
+            # Sample points in the cross-section
+            found_point_at_z = False
+            for ix in range(-num_cross_section_samples, num_cross_section_samples + 1):
+                if found_point_at_z:
+                    break
+                for iy in range(-num_cross_section_samples, num_cross_section_samples + 1):
+                    x = half_width * Rational(ix, num_cross_section_samples)
+                    y = half_height * Rational(iy, num_cross_section_samples)
+                    
+                    test_point = Matrix([x, y, z])
+                    if cut_csg.contains_point(test_point):
+                        found_point_at_z = True
+                        min_z = z
+                        break
+            
+            if found_point_at_z:
+                break
+        
+        # Find actual max Z (top bound)
+        for i in range(num_length_samples + 1):
+            z_float = float(max_z) - (float(max_z) - float(min_z)) * (i / num_length_samples)
+            z = Rational(int(z_float * 1000), 1000)  # Round to 3 decimal places for speed
+            
+            # Sample points in the cross-section
+            found_point_at_z = False
+            for ix in range(-num_cross_section_samples, num_cross_section_samples + 1):
+                if found_point_at_z:
+                    break
+                for iy in range(-num_cross_section_samples, num_cross_section_samples + 1):
+                    x = half_width * Rational(ix, num_cross_section_samples)
+                    y = half_height * Rational(iy, num_cross_section_samples)
+                    
+                    test_point = Matrix([x, y, z])
+                    if cut_csg.contains_point(test_point):
+                        found_point_at_z = True
+                        max_z = z
+                        break
+            
+            if found_point_at_z:
+                break
+        
+        # Create the bounding box prism in global coordinates
+        return RectangularPrism(
+            size=self.timber.size,
+            transform=Transform(
+                position=self.timber.get_bottom_position_global(),
+                orientation=self.timber.orientation
+            ),
+            start_distance=min_z,
+            end_distance=max_z
+        )
 
 
 # TODO rename to just Accessory
