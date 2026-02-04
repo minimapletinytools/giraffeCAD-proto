@@ -92,6 +92,7 @@ def reload_all_modules():
         'code_goes_here.basic_joints',
         'code_goes_here.mortise_and_tenon_joint',
         'code_goes_here.japanese_joints',
+        'code_goes_here.patternbook',
         'giraffe',
         'examples',  # Reload the examples package
         'examples.reference',  # Reload examples.reference subpackage
@@ -101,6 +102,7 @@ def reload_all_modules():
         'examples.horsey_example',
         'examples.oscarshed',
         'examples.japanese_joints_example',
+        'examples.irrational_angles_example',
         'examples.construction_examples',
         'examples.MeowMeowCSG_examples',
     ]
@@ -118,20 +120,24 @@ def reload_all_modules():
 
 def render_basic_joints():
     """
-    Render all basic joint examples.
+    Render all basic joint examples using PatternBook.
     
     Includes: miter joints, butt joints, splice joints, and house joints.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.reference.basic_joints_example import create_all_joint_examples
+    from examples.reference.basic_joints_example import create_basic_joints_patternbook
+    from code_goes_here.moothymoth import m
     
     print("="*60)
     print("GiraffeCAD FreeCAD - All Basic Joints")
     print("="*60)
     
-    # Create all joint examples (returns Frame object)
-    print("\nCreating all joint examples...")
-    frame = create_all_joint_examples()
+    # Create pattern book and raise all patterns in "basic_joints" group
+    print("\nCreating basic joints pattern book...")
+    book = create_basic_joints_patternbook()
+    
+    print("\nRaising all patterns in 'basic_joints' group...")
+    frame = book.raise_pattern_group("basic_joints", separation_distance=m(2))
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -153,25 +159,31 @@ def render_basic_joints():
     print("  - Miter Joint (Face Aligned)")
     print("  - Butt Joint")
     print("  - Splice Joint")
+    print("  - Splice Lap Joint")
     print("  - House Joint")
+    print("  - Cross Lap Joint")
 
 
 def render_mortise_and_tenon():
     """
-    Render mortise and tenon joint examples with pegs.
+    Render mortise and tenon joint examples with pegs using PatternBook.
     
     Includes various mortise and tenon configurations with accessories like pegs.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.mortise_and_tenon_joint_examples import create_all_mortise_and_tenon_examples
+    from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
+    from code_goes_here.moothymoth import inches
     
     print("="*70)
     print("GiraffeCAD FreeCAD - Mortise and Tenon Joint Examples")
     print("="*70)
     
-    # Create mortise and tenon examples (returns Frame object)
-    print("\nCreating all mortise and tenon joint examples...")
-    frame = create_all_mortise_and_tenon_examples()
+    # Create pattern book and raise all patterns in "mortise_tenon" group
+    print("\nCreating mortise and tenon pattern book...")
+    book = create_mortise_and_tenon_patternbook()
+    
+    print("\nRaising all patterns in 'mortise_tenon' group...")
+    frame = book.raise_pattern_group("mortise_tenon", separation_distance=inches(72))
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories (pegs/wedges): {len(frame.accessories)}")
@@ -188,27 +200,35 @@ def render_mortise_and_tenon():
     print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
     print(f"Successfully rendered {len(frame.accessories)} accessories")
     print("="*70)
-    print("\nExamples rendered (configured in mortise_and_tenon_joint_examples.py):")
-    print("  - Mortise and tenon joints with pegs")
+    print("\nExamples rendered:")
+    print("  - Basic 4x4 mortise and tenon")
+    print("  - 4x6 into 6x8 mortise and tenon")
+    print("  - Through tenon with stickout")
+    print("  - Full size 4x4 tenon")
+    print("  - Offset corner tenon")
+    print("  - Mortise and tenon with pegs")
     print("\nCheck the Model tree on the left to see all timbers, cuts, and accessories")
 
 
 def render_construction():
     """
-    Render construction examples - testing join_perpendicular with different features.
+    Render construction examples using PatternBook.
     
     Tests various reference features (centerline, faces, edges) for positioning.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.construction_examples import create_all_construction_examples
+    from examples.construction_examples import create_construction_patternbook
     
     print("="*70)
     print("GiraffeCAD FreeCAD - Construction Examples")
     print("="*70)
     
-    # Create construction example
-    print("\nCreating construction examples...")
-    frame = create_all_construction_examples()
+    # Create pattern book and raise pattern
+    print("\nCreating construction pattern book...")
+    book = create_construction_patternbook()
+    
+    print("\nRaising 'posts_with_beam_centerline' pattern...")
+    frame = book.raise_pattern("posts_with_beam_centerline")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -229,20 +249,23 @@ def render_construction():
 
 def render_oscar_shed():
     """
-    Render Oscar's Shed - a complete timber frame structure.
+    Render Oscar's Shed using PatternBook.
     
     An 8ft x 4ft shed with mudsills, posts, girts, top plates, joists, and rafters.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.oscarshed import create_oscarshed
+    from examples.oscarshed import create_oscar_shed_patternbook
     
     print("="*60)
     print("GiraffeCAD FreeCAD - Oscar's Shed")
     print("="*60)
     
-    # Create Oscar's Shed (returns Frame object)
-    print("\nCreating Oscar's Shed structure...")
-    frame = create_oscarshed()
+    # Create pattern book and raise pattern
+    print("\nCreating Oscar's Shed pattern book...")
+    book = create_oscar_shed_patternbook()
+    
+    print("\nRaising 'oscar_shed' pattern...")
+    frame = book.raise_pattern("oscar_shed")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories (pegs): {len(frame.accessories)}")
@@ -272,21 +295,24 @@ def render_oscar_shed():
 
 def render_horsey():
     """
-    Render Horsey Sawhorse - a simple sawhorse structure.
+    Render Horsey Sawhorse using PatternBook.
     
     A sawhorse with two horizontal beams, two vertical posts, a stretcher, and a top plate.
     All connected with mortise and tenon joints with pegs.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.horsey_example import create_sawhorse
+    from examples.horsey_example import create_horsey_patternbook
     
     print("="*60)
     print("GiraffeCAD FreeCAD - Horsey Sawhorse")
     print("="*60)
     
-    # Create Horsey Sawhorse (returns Frame object)
-    print("\nCreating Horsey Sawhorse structure...")
-    frame = create_sawhorse()
+    # Create pattern book and raise pattern
+    print("\nCreating Horsey Sawhorse pattern book...")
+    book = create_horsey_patternbook()
+    
+    print("\nRaising 'sawhorse' pattern...")
+    frame = book.raise_pattern("sawhorse")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories (pegs): {len(frame.accessories)}")
@@ -314,7 +340,7 @@ def render_horsey():
 
 def render_japanese_joints():
     """
-    Render traditional Japanese timber joints.
+    Render traditional Japanese timber joints using PatternBook.
     
     Available joints:
     - Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi) - splices beams end-to-end
@@ -323,27 +349,12 @@ def render_japanese_joints():
     Change JAPANESE_JOINT_EXAMPLE at the top of this file to select which joint to render.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.japanese_joints_example import (
-        create_lapped_gooseneck_splice_example,
-        create_simple_gooseneck_example,
-        create_dovetail_butt_joint_example
-    )
+    from examples.japanese_joints_example import create_japanese_joints_patternbook
     
     # Select which example to render based on configuration
     joint_examples = {
-        'gooseneck_splice': {
-            'func': create_lapped_gooseneck_splice_example,
-            'title': 'Japanese Lapped Gooseneck Joint - Splice',
-            'description': 'Splicing two 4"x4" x 3\' timbers with traditional joint...',
-            'details': [
-                'Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi)',
-                '  - Two 4"x4" x 3\' timbers spliced end-to-end',
-                '  - Gooseneck profile resists tension',
-                '  - Lap provides compression bearing'
-            ]
-        },
         'gooseneck_simple': {
-            'func': create_simple_gooseneck_example,
+            'pattern_name': 'gooseneck_simple',
             'title': 'Japanese Lapped Gooseneck Joint - Simple',
             'description': 'Creating simple vertical post splice...',
             'details': [
@@ -354,7 +365,7 @@ def render_japanese_joints():
             ]
         },
         'dovetail_butt': {
-            'func': create_dovetail_butt_joint_example,
+            'pattern_name': 'dovetail_butt',
             'title': 'Japanese Dovetail Butt Joint',
             'description': 'Creating T-joint with dovetail connection...',
             'details': [
@@ -378,9 +389,13 @@ def render_japanese_joints():
     print(f"GiraffeCAD FreeCAD - {example_config['title']}")
     print("="*70)
     
-    # Create Japanese joint example (returns Frame object)
+    # Create pattern book and raise the selected pattern
     print(f"\n{example_config['description']}")
-    frame = example_config['func']()
+    print("Creating Japanese joints pattern book...")
+    book = create_japanese_joints_patternbook()
+    
+    print(f"Raising '{example_config['pattern_name']}' pattern...")
+    frame = book.raise_pattern(example_config['pattern_name'])
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories: {len(frame.accessories)}")
@@ -403,13 +418,13 @@ def render_japanese_joints():
 
 def render_csg():
     """
-    Render CSG test examples.
+    Render CSG test examples using PatternBook.
     
     Tests basic CSG operations like cuts, unions, and extrusions.
     Edit CSG_EXAMPLE_TO_RENDER to choose which example to render.
     """
     from giraffe_render_freecad import render_csg_shape, clear_document, get_active_document
-    from examples.MeowMeowCSG_examples import EXAMPLES, get_example
+    from examples.MeowMeowCSG_examples import create_csg_examples_patternbook, EXAMPLES
     
     print("="*60)
     print("GiraffeCAD FreeCAD - CSG Test")
@@ -426,8 +441,12 @@ def render_csg():
     print(f"Description: {example_info['description']}")
     print()
     
-    # Get CSG object
-    csg = get_example(CSG_EXAMPLE_TO_RENDER)
+    # Create pattern book and raise the selected pattern
+    print("Creating CSG examples pattern book...")
+    book = create_csg_examples_patternbook()
+    
+    print(f"Raising '{CSG_EXAMPLE_TO_RENDER}' pattern...")
+    csg = book.raise_pattern(CSG_EXAMPLE_TO_RENDER)
     print(f"CSG Type: {type(csg).__name__}")
     print()
     

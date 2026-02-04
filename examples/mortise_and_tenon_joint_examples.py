@@ -14,6 +14,7 @@ from code_goes_here.mortise_and_tenon_joint import (
     SimplePegParameters
 )
 from code_goes_here.construction import create_axis_aligned_timber
+from code_goes_here.patternbook import PatternBook, PatternMetadata
 
 
 def example_basic_mortise_and_tenon(position=None):
@@ -370,9 +371,98 @@ def example_mortise_and_tenon_with_pegs(position=None):
     return joint
 
 
+def create_mortise_and_tenon_patternbook() -> PatternBook:
+    """
+    Create a PatternBook with all mortise and tenon joint patterns.
+    
+    Each pattern has groups: ["mortise_tenon", "{variant}"]
+    For example: ["mortise_tenon", "basic"] or ["mortise_tenon", "with_pegs"]
+    
+    Returns:
+        PatternBook: PatternBook containing all mortise and tenon joint patterns
+    """
+    def make_pattern_from_joint(joint_func):
+        """Helper to convert a joint function to a pattern lambda that handles translation."""
+        def pattern_lambda(center):
+            # Create joint at origin
+            joint = joint_func()
+            
+            # Translate all timbers to center position
+            translated_timbers = []
+            for timber in joint.cut_timbers.values():
+                new_position = timber.timber.get_bottom_position_global() + center
+                translated_timber = Timber(
+                    name=timber.timber.name,
+                    transform=Transform(position=new_position, orientation=timber.timber.orientation),
+                    size=timber.timber.size,
+                    length=timber.timber.length
+                )
+                translated_timbers.append(CutTimber(timber=translated_timber, cuts=timber.cuts))
+            
+            # Translate accessories
+            translated_accessories = []
+            if joint.jointAccessories:
+                for accessory in joint.jointAccessories.values():
+                    translated_transform = Transform(
+                        position=accessory.transform.position + center,
+                        orientation=accessory.transform.orientation
+                    )
+                    translated_accessory = Peg(
+                        transform=translated_transform,
+                        size=accessory.size,
+                        shape=accessory.shape,
+                        forward_length=accessory.forward_length,
+                        stickout_length=accessory.stickout_length
+                    )
+                    translated_accessories.append(translated_accessory)
+            
+            return Frame(cut_timbers=translated_timbers, accessories=translated_accessories)
+        
+        return pattern_lambda
+    
+    patterns = [
+        (PatternMetadata("basic_4x4", ["mortise_tenon", "basic"], "frame"),
+         make_pattern_from_joint(example_basic_mortise_and_tenon)),
+        
+        (PatternMetadata("4x6_into_6x8", ["mortise_tenon", "different_sizes"], "frame"),
+         make_pattern_from_joint(example_4x6_into_6x8_mortise_and_tenon)),
+        
+        (PatternMetadata("through_tenon", ["mortise_tenon", "through"], "frame"),
+         make_pattern_from_joint(example_through_tenon_with_6_inch_stickout)),
+        
+        (PatternMetadata("full_size_4x4", ["mortise_tenon", "full_size"], "frame"),
+         make_pattern_from_joint(example_full_size_4x4_tenon)),
+        
+        (PatternMetadata("offset_corner", ["mortise_tenon", "offset"], "frame"),
+         make_pattern_from_joint(example_offset_corner_tenon)),
+        
+        (PatternMetadata("with_pegs", ["mortise_tenon", "pegs"], "frame"),
+         make_pattern_from_joint(example_mortise_and_tenon_with_pegs)),
+    ]
+    
+    return PatternBook(patterns=patterns)
+
+
 def create_all_mortise_and_tenon_examples():
     """
     Create mortise and tenon joint examples with automatic spacing.
+    
+    This now uses the PatternBook to raise all patterns in the "mortise_tenon" group.
+    
+    Returns:
+        Frame: Frame object containing all cut timbers and accessories for the examples
+    """
+    book = create_mortise_and_tenon_patternbook()
+    
+    # Raise all patterns in the "mortise_tenon" group with 6 feet spacing
+    frame = book.raise_pattern_group("mortise_tenon", separation_distance=inches(72))
+    
+    return frame
+
+
+def create_all_mortise_and_tenon_examples_OLD():
+    """
+    OLD VERSION - Create mortise and tenon joint examples with automatic spacing.
     
     To enable/disable specific examples, just comment/uncomment lines in the EXAMPLES_TO_RENDER list below.
     Examples will be positioned sequentially starting at the origin with 6 feet spacing.

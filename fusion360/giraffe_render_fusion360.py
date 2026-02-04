@@ -313,6 +313,45 @@ def render_meowmeowcsg_component_at_origin(csg: MeowMeowCSG, component_name: str
         return None
 
 
+def render_csg_pattern(csg: MeowMeowCSG, pattern_name: str = "CSG", infinite_extent: float = 10000.0) -> int:
+    """
+    Render a standalone CSG object (not associated with a timber) in Fusion 360.
+    
+    This is a convenience function for rendering CSG patterns from PatternBook.
+    
+    Args:
+        csg: MeowMeowCSG object to render
+        pattern_name: Name for the component
+        infinite_extent: Extent for infinite geometry (in cm)
+        
+    Returns:
+        1 if successful, 0 if failed
+    """
+    app = get_fusion_app()
+    
+    if app:
+        app.log(f"Rendering CSG pattern: {pattern_name}")
+    
+    # Use existing render_meowmeowcsg_component_at_origin() which already handles CSG rendering
+    occurrence = render_meowmeowcsg_component_at_origin(
+        csg=csg, 
+        component_name=pattern_name,
+        timber=None,
+        infinite_extent=infinite_extent
+    )
+    
+    if occurrence:
+        print(f"Successfully rendered CSG pattern: {pattern_name}")
+        if app:
+            app.log(f"Successfully rendered CSG pattern: {pattern_name}")
+        return 1
+    else:
+        print(f"Failed to render CSG pattern: {pattern_name}")
+        if app:
+            app.log(f"Failed to render CSG pattern: {pattern_name}")
+        return 0
+
+
 def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
     Render a CSG object in the component's (timber's) local coordinate system.

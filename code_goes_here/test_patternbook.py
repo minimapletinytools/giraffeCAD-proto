@@ -18,17 +18,26 @@ def test_pattern_metadata_creation():
         pattern_type="frame"
     )
     assert metadata1.pattern_name == "test_pattern"
-    assert metadata1.pattern_group_name is None
+    assert metadata1.pattern_group_names == []
     assert metadata1.pattern_type == "frame"
     
-    # Metadata with group
+    # Metadata with single group
     metadata2 = PatternMetadata(
         pattern_name="test_pattern2",
-        pattern_group_name="test_group",
+        pattern_group_names=["test_group"],
         pattern_type="csg"
     )
-    assert metadata2.pattern_group_name == "test_group"
+    assert metadata2.pattern_group_names == ["test_group"]
     assert metadata2.pattern_type == "csg"
+    
+    # Metadata with multiple groups
+    metadata3 = PatternMetadata(
+        pattern_name="test_pattern3",
+        pattern_group_names=["group_a", "group_b"],
+        pattern_type="frame"
+    )
+    assert metadata3.pattern_group_names == ["group_a", "group_b"]
+    assert metadata3.pattern_type == "frame"
 
 
 def test_pattern_metadata_invalid_type():
@@ -159,9 +168,9 @@ def test_raise_pattern_group_frames():
     
     # Create pattern book with grouped patterns
     patterns = [
-        (PatternMetadata("frame1", "group_a", "frame"), make_frame("timber1")),
-        (PatternMetadata("frame2", "group_a", "frame"), make_frame("timber2")),
-        (PatternMetadata("frame3", "group_a", "frame"), make_frame("timber3")),
+        (PatternMetadata("frame1", ["group_a"], "frame"), make_frame("timber1")),
+        (PatternMetadata("frame2", ["group_a"], "frame"), make_frame("timber2")),
+        (PatternMetadata("frame3", ["group_a"], "frame"), make_frame("timber3")),
     ]
     book = PatternBook(patterns=patterns)
     
@@ -197,8 +206,8 @@ def test_raise_pattern_group_csg():
     
     # Create pattern book with grouped CSG patterns
     patterns = [
-        (PatternMetadata("box1", "group_b", "csg"), make_box("box1")),
-        (PatternMetadata("box2", "group_b", "csg"), make_box("box2")),
+        (PatternMetadata("box1", ["group_b"], "csg"), make_box("box1")),
+        (PatternMetadata("box2", ["group_b"], "csg"), make_box("box2")),
     ]
     book = PatternBook(patterns=patterns)
     
@@ -234,8 +243,8 @@ def test_raise_pattern_group_mixed_types():
     
     # Create pattern book with mixed types in same group
     patterns = [
-        (PatternMetadata("frame1", "mixed_group", "frame"), make_frame),
-        (PatternMetadata("box1", "mixed_group", "csg"), make_box),
+        (PatternMetadata("frame1", ["mixed_group"], "frame"), make_frame),
+        (PatternMetadata("box1", ["mixed_group"], "csg"), make_box),
     ]
     book = PatternBook(patterns=patterns)
     
@@ -258,9 +267,9 @@ def test_list_patterns():
         return None  # type: ignore
     
     patterns = [
-        (PatternMetadata("pattern1", "group_a", "frame"), dummy_func),
-        (PatternMetadata("pattern2", "group_a", "frame"), dummy_func),
-        (PatternMetadata("pattern3", None, "csg"), dummy_func),
+        (PatternMetadata("pattern1", ["group_a"], "frame"), dummy_func),
+        (PatternMetadata("pattern2", ["group_a"], "frame"), dummy_func),
+        (PatternMetadata("pattern3", [], "csg"), dummy_func),
     ]
     book = PatternBook(patterns=patterns)
     
@@ -277,10 +286,10 @@ def test_list_groups():
         return None  # type: ignore
     
     patterns = [
-        (PatternMetadata("pattern1", "group_a", "frame"), dummy_func),
-        (PatternMetadata("pattern2", "group_a", "frame"), dummy_func),
-        (PatternMetadata("pattern3", "group_b", "csg"), dummy_func),
-        (PatternMetadata("pattern4", None, "frame"), dummy_func),
+        (PatternMetadata("pattern1", ["group_a"], "frame"), dummy_func),
+        (PatternMetadata("pattern2", ["group_a"], "frame"), dummy_func),
+        (PatternMetadata("pattern3", ["group_b"], "csg"), dummy_func),
+        (PatternMetadata("pattern4", [], "frame"), dummy_func),
     ]
     book = PatternBook(patterns=patterns)
     
@@ -296,9 +305,9 @@ def test_get_patterns_in_group():
         return None  # type: ignore
     
     patterns = [
-        (PatternMetadata("pattern1", "group_a", "frame"), dummy_func),
-        (PatternMetadata("pattern2", "group_a", "frame"), dummy_func),
-        (PatternMetadata("pattern3", "group_b", "csg"), dummy_func),
+        (PatternMetadata("pattern1", ["group_a"], "frame"), dummy_func),
+        (PatternMetadata("pattern2", ["group_a"], "frame"), dummy_func),
+        (PatternMetadata("pattern3", ["group_b"], "csg"), dummy_func),
     ]
     book = PatternBook(patterns=patterns)
     
@@ -310,3 +319,41 @@ def test_get_patterns_in_group():
     group_b_patterns = book.get_patterns_in_group("group_b")
     assert len(group_b_patterns) == 1
     assert "pattern3" in group_b_patterns
+
+
+def test_patterns_with_multiple_groups():
+    """Test patterns belonging to multiple groups."""
+    def dummy_func(center):
+        return None  # type: ignore
+    
+    # Pattern1 is in both group_a and group_x
+    # Pattern2 is only in group_a
+    # Pattern3 is in both group_b and group_x
+    patterns = [
+        (PatternMetadata("pattern1", ["group_a", "group_x"], "frame"), dummy_func),
+        (PatternMetadata("pattern2", ["group_a"], "frame"), dummy_func),
+        (PatternMetadata("pattern3", ["group_b", "group_x"], "frame"), dummy_func),
+    ]
+    book = PatternBook(patterns=patterns)
+    
+    # Test list_groups flattens all groups
+    groups = book.list_groups()
+    assert len(groups) == 3
+    assert "group_a" in groups
+    assert "group_b" in groups
+    assert "group_x" in groups
+    
+    # Test get_patterns_in_group finds patterns with that group
+    group_a_patterns = book.get_patterns_in_group("group_a")
+    assert len(group_a_patterns) == 2
+    assert "pattern1" in group_a_patterns
+    assert "pattern2" in group_a_patterns
+    
+    group_b_patterns = book.get_patterns_in_group("group_b")
+    assert len(group_b_patterns) == 1
+    assert "pattern3" in group_b_patterns
+    
+    group_x_patterns = book.get_patterns_in_group("group_x")
+    assert len(group_x_patterns) == 2
+    assert "pattern1" in group_x_patterns
+    assert "pattern3" in group_x_patterns

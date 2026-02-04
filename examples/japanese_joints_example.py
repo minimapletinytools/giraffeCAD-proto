@@ -9,6 +9,27 @@ Each function creates and returns a Frame object with the joint example.
 """
 
 from giraffe import *
+from code_goes_here.patternbook import PatternBook, PatternMetadata
+
+
+def create_japanese_joints_patternbook() -> PatternBook:
+    """
+    Create a PatternBook with Japanese joint patterns.
+    
+    Each pattern has groups: ["japanese_joints", "{joint_type}"]
+    
+    Returns:
+        PatternBook: PatternBook containing Japanese joint patterns
+    """
+    patterns = [
+        (PatternMetadata("gooseneck_simple", ["japanese_joints", "gooseneck"], "frame"),
+         lambda center: create_simple_gooseneck_example()),
+        
+        (PatternMetadata("dovetail_butt", ["japanese_joints", "dovetail"], "frame"),
+         lambda center: create_dovetail_butt_joint_example()),
+    ]
+    
+    return PatternBook(patterns=patterns)
 
 
 

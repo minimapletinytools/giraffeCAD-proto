@@ -12,6 +12,7 @@ All joints are mortise and tenon with pegs.
 
 from dataclasses import replace
 from giraffe import *
+from code_goes_here.patternbook import PatternBook, PatternMetadata
 
 # Define timber dimensions
 beam_size = Matrix([inches(4), inches(6)])  # 4x6 with 6" in Z
@@ -33,6 +34,21 @@ tenon_length = inches(3)
 mortise_depth = tenon_length + inches(0.25)
 peg_diameter = inches(Rational(5, 8))
 peg_distance_from_shoulder = inches(1)
+
+
+def create_horsey_patternbook() -> PatternBook:
+    """
+    Create a PatternBook with the sawhorse pattern.
+    
+    Returns:
+        PatternBook: PatternBook containing the sawhorse pattern
+    """
+    patterns = [
+        (PatternMetadata("sawhorse", ["horsey", "complete_structures"], "frame"),
+         lambda center: create_sawhorse()),
+    ]
+    
+    return PatternBook(patterns=patterns)
 
 
 def create_sawhorse() -> Frame:

@@ -350,63 +350,57 @@ def make_splice_lap_joint_example(position: V3) -> list[CutTimber]:
     return list(joint.cut_timbers.values())
 
 
+def create_basic_joints_patternbook() -> PatternBook:
+    """
+    Create a PatternBook with all basic joint patterns.
+    
+    Each pattern has groups: ["basic_joints", "{joint_type}"]
+    For example: ["basic_joints", "miter"] or ["basic_joints", "butt"]
+    
+    Returns:
+        PatternBook: PatternBook containing all basic joint patterns
+    """
+    patterns = [
+        (PatternMetadata("miter_joint", ["basic_joints", "miter"], "frame"),
+         lambda center: Frame(cut_timbers=make_miter_joint_example(center), name="Miter Joint (67°)")),
+        
+        (PatternMetadata("miter_joint_face_aligned", ["basic_joints", "miter"], "frame"),
+         lambda center: Frame(cut_timbers=make_miter_joint_face_aligned_example(center), name="Miter Joint (Face Aligned)")),
+        
+        (PatternMetadata("butt_joint", ["basic_joints", "butt"], "frame"),
+         lambda center: Frame(cut_timbers=make_butt_joint_example(center), name="Butt Joint")),
+        
+        (PatternMetadata("splice_joint", ["basic_joints", "splice"], "frame"),
+         lambda center: Frame(cut_timbers=make_splice_joint_example(center), name="Splice Joint")),
+        
+        (PatternMetadata("splice_lap_joint", ["basic_joints", "splice_lap"], "frame"),
+         lambda center: Frame(cut_timbers=make_splice_lap_joint_example(center), name="Splice Lap Joint")),
+        
+        (PatternMetadata("house_joint", ["basic_joints", "house"], "frame"),
+         lambda center: Frame(cut_timbers=make_house_joint_example(center), name="House Joint")),
+        
+        (PatternMetadata("cross_lap_joint", ["basic_joints", "cross_lap"], "frame"),
+         lambda center: Frame(cut_timbers=make_cross_lap_joint_example(center), name="Cross Lap Joint")),
+    ]
+    
+    return PatternBook(patterns=patterns)
+
+
 def create_all_joint_examples() -> Frame:
     """
     Create joint examples with automatic spacing starting from the origin.
     
-    To enable/disable specific joints, just comment/uncomment lines in the JOINTS_TO_RENDER list below.
-    Joints will be positioned sequentially starting at the origin with 2m spacing.
+    This now uses the PatternBook to raise all patterns in the "basic_joints" group.
     
     Returns:
         Frame: Frame object containing all cut timbers for the enabled joints
     """
+    book = create_basic_joints_patternbook()
     
-    # ============================================================================
-    # CONFIGURATION: Comment out lines to disable specific joints
-    # 
-    # Example: To render only Miter and House joints:
-    #   JOINTS_TO_RENDER = [
-    #       ("Miter Joint (67°)", make_miter_joint_example),
-    #       # ("Miter Joint (Face Aligned)", make_miter_joint_face_aligned_example),
-    #       # ("Butt Joint", make_butt_joint_example),
-    #       # ("Splice Joint", make_splice_joint_example),
-    #       ("House Joint", make_house_joint_example),
-    #   ]
-    # Result: Joints will be at x=0.0m and x=2.0m (automatically spaced)
-    # ============================================================================
-    JOINTS_TO_RENDER = [
-        ("Miter Joint (67°)", make_miter_joint_example),
-        ("Miter Joint (Face Aligned)", make_miter_joint_face_aligned_example),
-        ("Butt Joint", make_butt_joint_example),
-        ("Splice Joint", make_splice_joint_example),
-        ("Splice Lap Joint", make_splice_lap_joint_example),
-        ("House Joint", make_house_joint_example),
-        ("Cross Lap Joint", make_cross_lap_joint_example),  # Not yet implemented
-    ]
+    # Raise all patterns in the "basic_joints" group with 2m spacing
+    frame = book.raise_pattern_group("basic_joints", separation_distance=Rational(2))
     
-    # Spacing between joints (in meters)
-    SPACING = Rational(2)
-    
-    # ============================================================================
-    # Render enabled joints starting from origin
-    # ============================================================================
-    all_timbers = []
-    current_position_x = 0
-    
-    for joint_name, joint_function in JOINTS_TO_RENDER:
-        position = create_v3(current_position_x, 0, 0)
-        timbers = joint_function(position)
-        all_timbers.extend(timbers)
-        
-        print(f"Created {joint_name} at x={float(current_position_x):.1f}m")
-        
-        # Move to next position
-        current_position_x += SPACING
-    
-    return Frame(
-        cut_timbers=all_timbers,
-        name="Basic Joints Examples"
-    )
+    return frame
 
 
 # ============================================================================
