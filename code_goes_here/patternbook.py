@@ -220,3 +220,38 @@ class PatternBook:
             for metadata, _ in self.patterns 
             if group_name in metadata.pattern_group_names
         ]
+    
+    def merge(self, other: 'PatternBook') -> 'PatternBook':
+        """
+        Merge another PatternBook into a new PatternBook.
+        
+        Args:
+            other: Another PatternBook to merge with this one
+            
+        Returns:
+            A new PatternBook containing patterns from both books
+            
+        Raises:
+            ValueError: If there are duplicate pattern names
+        """
+        all_patterns = self.patterns + other.patterns
+        return PatternBook(patterns=all_patterns)
+    
+    @staticmethod
+    def merge_multiple(pattern_books: List['PatternBook']) -> 'PatternBook':
+        """
+        Merge multiple PatternBooks into a single PatternBook.
+        
+        Args:
+            pattern_books: List of PatternBooks to merge
+            
+        Returns:
+            A new PatternBook containing patterns from all books
+            
+        Raises:
+            ValueError: If there are duplicate pattern names
+        """
+        all_patterns = []
+        for book in pattern_books:
+            all_patterns.extend(book.patterns)
+        return PatternBook(patterns=all_patterns)

@@ -41,6 +41,9 @@ EXAMPLE_TO_RENDER = 'oscar_shed'
 # CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
 CSG_EXAMPLE_TO_RENDER = 'cube_cutout'  # Options: 'cube_cutout', 'halfspace_cut', 'positioned_cube', 'lap_cut_timber', 'union_cubes', 'hexagon_extrusion', 'gooseneck_profile', 'shoulder_notch'
 
+# Anthology PatternBook - will be initialized after module reload
+ANTHOLOGY_PATTERN_BOOK = None
+
 # DO NOT import GiraffeCAD modules here at the top level!
 # They will be imported AFTER reload inside the render functions.
 # Importing here would create references to old classes that become stale after reload.
@@ -127,12 +130,20 @@ def reload_all_modules():
     
     print("\nModule reload complete.\n")
     app.log("Module reload complete.")
+    
+    # Create the master pattern book after reload
+    global ANTHOLOGY_PATTERN_BOOK
+    print("="*70)
+    print("Creating Anthology PatternBook...")
+    print("="*70)
+    app.log("Creating Anthology PatternBook...")
+    ANTHOLOGY_PATTERN_BOOK = create_anthology_pattern_book()
+    print()
 
 
 def render_basic_joints():
-    """Render all basic joint examples using PatternBook."""
+    """Render all basic joint examples using anthology PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from examples.reference.basic_joints_example import create_basic_joints_patternbook
     from code_goes_here.moothymoth import m
     
     print("="*60)
@@ -140,12 +151,9 @@ def render_basic_joints():
     print("="*60)
     app.log("🦒 GIRAFFETEST: BASIC JOINTS 🦒")
     
-    # Create pattern book and raise all patterns in "basic_joints" group
-    print("\nCreating basic joints pattern book...")
-    book = create_basic_joints_patternbook()
-    
-    print("\nRaising all patterns in 'basic_joints' group...")
-    frame = book.raise_pattern_group("basic_joints", separation_distance=m(2))
+    # Use anthology pattern book
+    print("\nRaising all patterns in 'basic_joints' group from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern_group("basic_joints", separation_distance=m(2))
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -173,9 +181,8 @@ def render_basic_joints():
 
 
 def render_mortise_and_tenon():
-    """Render mortise and tenon joint examples with pegs using PatternBook."""
+    """Render mortise and tenon joint examples with pegs using anthology PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
     from code_goes_here.moothymoth import inches
     
     print("="*70)
@@ -183,12 +190,9 @@ def render_mortise_and_tenon():
     print("="*70)
     app.log("🦒 GIRAFFETEST: MORTISE AND TENON 🦒")
     
-    # Create pattern book and raise all patterns in "mortise_tenon" group
-    print("\nCreating mortise and tenon pattern book...")
-    book = create_mortise_and_tenon_patternbook()
-    
-    print("\nRaising all patterns in 'mortise_tenon' group...")
-    frame = book.raise_pattern_group("mortise_tenon", separation_distance=inches(72))
+    # Use anthology pattern book
+    print("\nRaising all patterns in 'mortise_tenon' group from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern_group("mortise_tenon", separation_distance=inches(72))
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories (pegs/wedges): {len(frame.accessories)}")
@@ -219,21 +223,17 @@ def render_mortise_and_tenon():
 
 
 def render_gooseneck():
-    """Render Japanese gooseneck joint example using PatternBook."""
+    """Render Japanese gooseneck joint example using anthology PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from examples.japanese_joints_example import create_japanese_joints_patternbook
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - Japanese Gooseneck Joint")
     print("="*70)
     app.log("🦒 GIRAFFETEST: JAPANESE GOOSENECK 🦒")
     
-    # Create pattern book and raise gooseneck pattern
-    print("\nCreating Japanese joints pattern book...")
-    book = create_japanese_joints_patternbook()
-    
-    print("\nRaising 'gooseneck_simple' pattern...")
-    frame = book.raise_pattern("gooseneck_simple")
+    # Use anthology pattern book
+    print("\nRaising 'gooseneck_simple' pattern from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern("gooseneck_simple")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -262,21 +262,17 @@ def render_gooseneck():
 
 
 def render_oscar_shed():
-    """Render Oscar's Shed using PatternBook."""
+    """Render Oscar's Shed using anthology PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from examples.oscarshed import create_oscar_shed_patternbook
     
     print("="*60)
     print("GiraffeCAD Fusion 360 - Oscar's Shed")
     print("="*60)
     app.log("🦒 GIRAFFETEST: OSCAR'S SHED 🦒")
     
-    # Create pattern book and raise pattern
-    print("\nCreating Oscar's Shed pattern book...")
-    book = create_oscar_shed_patternbook()
-    
-    print("\nRaising 'oscar_shed' pattern...")
-    frame = book.raise_pattern("oscar_shed")
+    # Use anthology pattern book
+    print("\nRaising 'oscar_shed' pattern from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern("oscar_shed")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories (pegs): {len(frame.accessories)}")
@@ -308,21 +304,17 @@ def render_oscar_shed():
 
 
 def render_irrational_angles():
-    """Render irrational angles test examples using PatternBook."""
+    """Render irrational angles test examples using anthology PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from examples.irrational_angles_example import create_irrational_angles_patternbook
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - Irrational Angles Test")
     print("="*70)
     app.log("🦒 GIRAFFETEST: IRRATIONAL ANGLES 🦒")
     
-    # Create pattern book and raise pattern
-    print("\nCreating irrational angles pattern book...")
-    book = create_irrational_angles_patternbook()
-    
-    print("\nRaising 'irrational_angles_test' pattern...")
-    frame = book.raise_pattern("irrational_angles_test")
+    # Use anthology pattern book
+    print("\nRaising 'irrational_angles_test' pattern from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern("irrational_angles_test")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -355,9 +347,9 @@ def render_irrational_angles():
 
 
 def render_csg():
-    """Render CSG examples from PatternBook."""
+    """Render CSG examples from anthology PatternBook."""
     from giraffe_render_fusion360 import render_csg_pattern, clear_design
-    from examples.MeowMeowCSG_examples import create_csg_examples_patternbook, EXAMPLES
+    from examples.MeowMeowCSG_examples import EXAMPLES
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - CSG Examples")
@@ -381,12 +373,9 @@ def render_csg():
     print(f"Example: {example_info['name']}")
     print(f"Description: {example_info['description']}")
     
-    # Create pattern book and raise the selected pattern
-    print("\nCreating CSG examples pattern book...")
-    book = create_csg_examples_patternbook()
-    
-    print(f"\nRaising '{CSG_EXAMPLE_TO_RENDER}' pattern...")
-    csg = book.raise_pattern(CSG_EXAMPLE_TO_RENDER)
+    # Use anthology pattern book
+    print(f"\nRaising '{CSG_EXAMPLE_TO_RENDER}' pattern from anthology...")
+    csg = ANTHOLOGY_PATTERN_BOOK.raise_pattern(CSG_EXAMPLE_TO_RENDER)
     
     # Clear design
     print("\nClearing Fusion 360 design...")

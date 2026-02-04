@@ -53,6 +53,47 @@ CSG_EXAMPLE_TO_RENDER = 'shoulder_notch'  # Options: 'cube_cutout', 'halfspace_c
 JAPANESE_JOINT_EXAMPLE = 'gooseneck_simple'    # Simple vertical gooseneck joint (3"x3" x 2')
 #JAPANESE_JOINT_EXAMPLE = 'dovetail_butt'       # Dovetail butt joint / T-joint (4"x4" x 3')
 
+# Anthology PatternBook - will be initialized after module reload
+ANTHOLOGY_PATTERN_BOOK = None
+
+
+def create_anthology_pattern_book():
+    """
+    Create an anthology PatternBook containing all patterns from all example files.
+    
+    Returns:
+        PatternBook: A single PatternBook with all patterns from all examples
+    """
+    from code_goes_here.patternbook import PatternBook
+    from examples.reference.basic_joints_example import create_basic_joints_patternbook
+    from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
+    from examples.construction_examples import create_construction_patternbook
+    from examples.horsey_example import create_horsey_patternbook
+    from examples.oscarshed import create_oscar_shed_patternbook
+    from examples.japanese_joints_example import create_japanese_joints_patternbook
+    from examples.irrational_angles_example import create_irrational_angles_patternbook
+    from examples.MeowMeowCSG_examples import create_csg_examples_patternbook
+    
+    # Create all individual pattern books
+    books = [
+        create_basic_joints_patternbook(),
+        create_mortise_and_tenon_patternbook(),
+        create_construction_patternbook(),
+        create_horsey_patternbook(),
+        create_oscar_shed_patternbook(),
+        create_japanese_joints_patternbook(),
+        create_irrational_angles_patternbook(),
+        create_csg_examples_patternbook(),
+    ]
+    
+    # Merge them all into one anthology book
+    anthology_book = PatternBook.merge_multiple(books)
+    
+    print(f"Anthology PatternBook created with {len(anthology_book.list_patterns())} patterns")
+    print(f"Available groups: {', '.join(anthology_book.list_groups())}")
+    
+    return anthology_book
+
 
 def reload_all_modules():
     """Reload all GiraffeCAD modules in dependency order."""
@@ -116,28 +157,32 @@ def reload_all_modules():
             print(f"  ⚠ Error reloading {module_name}: {e}")
     
     print("\nModule reload complete.\n")
+    
+    # Create the anthology pattern book after reload
+    global ANTHOLOGY_PATTERN_BOOK
+    print("="*70)
+    print("Creating Anthology PatternBook...")
+    print("="*70)
+    ANTHOLOGY_PATTERN_BOOK = create_anthology_pattern_book()
+    print()
 
 
 def render_basic_joints():
     """
-    Render all basic joint examples using PatternBook.
+    Render all basic joint examples using anthology PatternBook.
     
     Includes: miter joints, butt joints, splice joints, and house joints.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.reference.basic_joints_example import create_basic_joints_patternbook
     from code_goes_here.moothymoth import m
     
     print("="*60)
     print("GiraffeCAD FreeCAD - All Basic Joints")
     print("="*60)
     
-    # Create pattern book and raise all patterns in "basic_joints" group
-    print("\nCreating basic joints pattern book...")
-    book = create_basic_joints_patternbook()
-    
-    print("\nRaising all patterns in 'basic_joints' group...")
-    frame = book.raise_pattern_group("basic_joints", separation_distance=m(2))
+    # Use anthology pattern book
+    print("\nRaising all patterns in 'basic_joints' group from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern_group("basic_joints", separation_distance=m(2))
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -166,24 +211,20 @@ def render_basic_joints():
 
 def render_mortise_and_tenon():
     """
-    Render mortise and tenon joint examples with pegs using PatternBook.
+    Render mortise and tenon joint examples with pegs using anthology PatternBook.
     
     Includes various mortise and tenon configurations with accessories like pegs.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
     from code_goes_here.moothymoth import inches
     
     print("="*70)
     print("GiraffeCAD FreeCAD - Mortise and Tenon Joint Examples")
     print("="*70)
     
-    # Create pattern book and raise all patterns in "mortise_tenon" group
-    print("\nCreating mortise and tenon pattern book...")
-    book = create_mortise_and_tenon_patternbook()
-    
-    print("\nRaising all patterns in 'mortise_tenon' group...")
-    frame = book.raise_pattern_group("mortise_tenon", separation_distance=inches(72))
+    # Use anthology pattern book
+    print("\nRaising all patterns in 'mortise_tenon' group from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern_group("mortise_tenon", separation_distance=inches(72))
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories (pegs/wedges): {len(frame.accessories)}")
@@ -212,23 +253,19 @@ def render_mortise_and_tenon():
 
 def render_construction():
     """
-    Render construction examples using PatternBook.
+    Render construction examples using anthology PatternBook.
     
     Tests various reference features (centerline, faces, edges) for positioning.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.construction_examples import create_construction_patternbook
     
     print("="*70)
     print("GiraffeCAD FreeCAD - Construction Examples")
     print("="*70)
     
-    # Create pattern book and raise pattern
-    print("\nCreating construction pattern book...")
-    book = create_construction_patternbook()
-    
-    print("\nRaising 'posts_with_beam_centerline' pattern...")
-    frame = book.raise_pattern("posts_with_beam_centerline")
+    # Use anthology pattern book
+    print("\nRaising 'posts_with_beam_centerline' pattern from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern("posts_with_beam_centerline")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -249,23 +286,19 @@ def render_construction():
 
 def render_oscar_shed():
     """
-    Render Oscar's Shed using PatternBook.
+    Render Oscar's Shed using anthology PatternBook.
     
     An 8ft x 4ft shed with mudsills, posts, girts, top plates, joists, and rafters.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.oscarshed import create_oscar_shed_patternbook
     
     print("="*60)
     print("GiraffeCAD FreeCAD - Oscar's Shed")
     print("="*60)
     
-    # Create pattern book and raise pattern
-    print("\nCreating Oscar's Shed pattern book...")
-    book = create_oscar_shed_patternbook()
-    
-    print("\nRaising 'oscar_shed' pattern...")
-    frame = book.raise_pattern("oscar_shed")
+    # Use anthology pattern book
+    print("\nRaising 'oscar_shed' pattern from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern("oscar_shed")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories (pegs): {len(frame.accessories)}")
@@ -295,24 +328,20 @@ def render_oscar_shed():
 
 def render_horsey():
     """
-    Render Horsey Sawhorse using PatternBook.
+    Render Horsey Sawhorse using anthology PatternBook.
     
     A sawhorse with two horizontal beams, two vertical posts, a stretcher, and a top plate.
     All connected with mortise and tenon joints with pegs.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.horsey_example import create_horsey_patternbook
     
     print("="*60)
     print("GiraffeCAD FreeCAD - Horsey Sawhorse")
     print("="*60)
     
-    # Create pattern book and raise pattern
-    print("\nCreating Horsey Sawhorse pattern book...")
-    book = create_horsey_patternbook()
-    
-    print("\nRaising 'sawhorse' pattern...")
-    frame = book.raise_pattern("sawhorse")
+    # Use anthology pattern book
+    print("\nRaising 'sawhorse' pattern from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern("sawhorse")
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories (pegs): {len(frame.accessories)}")
@@ -340,7 +369,7 @@ def render_horsey():
 
 def render_japanese_joints():
     """
-    Render traditional Japanese timber joints using PatternBook.
+    Render traditional Japanese timber joints using anthology PatternBook.
     
     Available joints:
     - Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi) - splices beams end-to-end
@@ -349,7 +378,6 @@ def render_japanese_joints():
     Change JAPANESE_JOINT_EXAMPLE at the top of this file to select which joint to render.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from examples.japanese_joints_example import create_japanese_joints_patternbook
     
     # Select which example to render based on configuration
     joint_examples = {
@@ -389,13 +417,10 @@ def render_japanese_joints():
     print(f"GiraffeCAD FreeCAD - {example_config['title']}")
     print("="*70)
     
-    # Create pattern book and raise the selected pattern
+    # Use anthology pattern book
     print(f"\n{example_config['description']}")
-    print("Creating Japanese joints pattern book...")
-    book = create_japanese_joints_patternbook()
-    
-    print(f"Raising '{example_config['pattern_name']}' pattern...")
-    frame = book.raise_pattern(example_config['pattern_name'])
+    print(f"Raising '{example_config['pattern_name']}' pattern from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern(example_config['pattern_name'])
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     print(f"Total accessories: {len(frame.accessories)}")
@@ -418,13 +443,13 @@ def render_japanese_joints():
 
 def render_csg():
     """
-    Render CSG test examples using PatternBook.
+    Render CSG test examples using anthology PatternBook.
     
     Tests basic CSG operations like cuts, unions, and extrusions.
     Edit CSG_EXAMPLE_TO_RENDER to choose which example to render.
     """
     from giraffe_render_freecad import render_csg_shape, clear_document, get_active_document
-    from examples.MeowMeowCSG_examples import create_csg_examples_patternbook, EXAMPLES
+    from examples.MeowMeowCSG_examples import EXAMPLES
     
     print("="*60)
     print("GiraffeCAD FreeCAD - CSG Test")
@@ -441,12 +466,9 @@ def render_csg():
     print(f"Description: {example_info['description']}")
     print()
     
-    # Create pattern book and raise the selected pattern
-    print("Creating CSG examples pattern book...")
-    book = create_csg_examples_patternbook()
-    
-    print(f"Raising '{CSG_EXAMPLE_TO_RENDER}' pattern...")
-    csg = book.raise_pattern(CSG_EXAMPLE_TO_RENDER)
+    # Use anthology pattern book
+    print(f"Raising '{CSG_EXAMPLE_TO_RENDER}' pattern from anthology...")
+    csg = ANTHOLOGY_PATTERN_BOOK.raise_pattern(CSG_EXAMPLE_TO_RENDER)
     print(f"CSG Type: {type(csg).__name__}")
     print()
     
