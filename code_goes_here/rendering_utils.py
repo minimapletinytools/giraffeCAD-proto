@@ -8,7 +8,7 @@ to minimize code duplication and ensure consistent behavior.
 from sympy import Matrix, Expr
 from typing import List, Tuple, Union, Optional
 from .timber import *
-from .moothymoth import *
+from .rule import *
 
 
 def sympy_to_float(value: Union[Expr, float, int]) -> float:

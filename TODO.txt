@@ -225,7 +225,7 @@ DONE-cleanup where to put get_point_on_face and project_point_onto_face
   -probably move these into timber_shavings or something
 -MeowMeowCSG -> PotatoCSG
   -or CutCSG probably better...
--MoothyMoth -> Rule?
+-rule -> Rule?
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
   -oFAT on face aligned timbers
   -oFAACaT on face aligned coaxial timbers
@@ -407,7 +407,7 @@ DONE-delete rhino for now
 IGNORE-update fusino 360 to similar as run_examples
 DONE-Update Frame to be built from joints
 DONE-be consistent about V2 vs (Numeric,Numeric) tuple
-DONE-I tihnk the pointing constants in moothymoth are wrong (the comments are certainly wrong)
+DONE-I tihnk the pointing constants in rule are wrong (the comments are certainly wrong)
 DONE-fix morties_and_tenon_joint_example
 DONE-pull out logic into joint_helperonis.py
   -split the lap helper to do the lap cut on just 1 timber...
@@ -422,7 +422,7 @@ DONE/IGNORE-static method in orientation class
 DONE-fix or delete goosenecksplice example in japanese joints examples
 DONE-do refactors in timber as well...
 DONE-REFACTOR TIME
-  DONE-create Transform class in moothymoth
+  DONE-create Transform class in rule
   DONE-rename helperonis to something more cute
   IGNORE-make global/local var naming consistent
     DONE-add cursor rules for this
@@ -432,7 +432,7 @@ DONE-REFACTOR TIME
 DONE-cleanup
   DONE-make it clear dircetion3d and V3 are the same, and get rid of uncessary conversions...
   DONE-rename BACK to BACKWARD (DONE: renamed FORWARD to FRONT instead for consistency)
-  DONE-clean up moothymoth tests to not use exact euality...
+  DONE-clean up rule tests to not use exact euality...
 IGNORE-get rhino rendering working for the following joints ...
 DONE-see if you can fix the transform issue in fusion360...  should be able to do as rigid joint with origin
   FAIL-in fusion 360, hwen transforming occurences (components) to their final position.. rather than setting transform2. instead can you create a rigid joint with the global origin to set the position instead. 
@@ -476,7 +476,7 @@ DONE-improve tests
   
 DONE/SORTA-do the big useless test cleanup
 IGNORE-cleanup render utilities, some of them seem unecessary
-DONE-moothymoth
+DONE-rule
   DONE-cleanup all the static ctor stuff, it's confusing
   DONE-create new set of orientation constants for doing timber orientation
     -facing_west/east/north/south (horizontal timbers, top face up, Z-axis rotations)

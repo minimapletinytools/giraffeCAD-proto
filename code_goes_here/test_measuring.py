@@ -5,7 +5,7 @@ Tests for the measuring module (geometric primitives).
 import pytest
 from code_goes_here.measuring import *
 from code_goes_here.timber import timber_from_directions, TimberFace, TimberLongEdge
-from code_goes_here.moothymoth import create_v3, create_v2, Transform, Orientation
+from code_goes_here.rule import create_v3, create_v2, Transform, Orientation
 from sympy import Matrix, Rational
 
 
@@ -547,7 +547,7 @@ class TestMeasureCenterLine:
     def test_measure_centerline_diagonal(self):
         """Test measuring the center line of a diagonally oriented timber"""
         # Timber pointing in diagonal direction
-        from code_goes_here.moothymoth import normalize_vector
+        from code_goes_here.rule import normalize_vector
         
         direction = normalize_vector(create_v3(1, 1, 1))  # Diagonal
         timber = timber_from_directions(

@@ -46,10 +46,10 @@ def test_giraffe_modules():
     print("\nTesting GiraffeCAD module imports from parent directory...")
     
     try:
-        from code_goes_here.moothymoth import Orientation
-        print("✓ moothymoth.Orientation imported successfully from parent dir")
+        from code_goes_here.rule import Orientation
+        print("✓ rule.Orientation imported successfully from parent dir")
     except ImportError as e:
-        print(f"✗ Failed to import moothymoth from parent dir: {e}")
+        print(f"✗ Failed to import rule from parent dir: {e}")
         return False
     
     try:
@@ -113,7 +113,7 @@ def test_path_structure():
     # Files that should be in parent directory
     parent_required_files = [
         'giraffe.py',
-        'code_goes_here/moothymoth.py', 
+        'code_goes_here/rule.py', 
         'examples/sawhorse_example.py',
     ]
     

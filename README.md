@@ -99,7 +99,7 @@ source venv/bin/activate
 python3 -m pytest code_goes_here/ -v
 
 # Or run specific test files
-python3 -m pytest code_goes_here/test_moothymoth.py -v
+python3 -m pytest code_goes_here/test_rule.py -v
 
 # Run with coverage
 python3 -m pytest code_goes_here/ --cov=code_goes_here --cov-report=html
@@ -250,7 +250,7 @@ GiraffeCAD uses a modular architecture with shared utilities across rendering ba
 code_goes_here/
 ├── timber.py              # Core timber and joint data structures
 ├── meowmeowcsg.py        # CSG (Constructive Solid Geometry) operations
-├── moothymoth.py         # Orientation and rotation utilities
+├── rule.py         # Orientation and rotation utilities
 ├── rendering_utils.py    # Shared rendering utilities (NEW!)
 └── basic_joints.py       # Joint construction functions
 

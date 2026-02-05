@@ -7,7 +7,7 @@ These functions help ensure that joints are geometrically valid and sensibly con
 
 from typing import Optional, Tuple, List, Union
 from code_goes_here.timber import *
-from code_goes_here.moothymoth import *
+from code_goes_here.rule import *
 from code_goes_here.meowmeowcsg import *
 from code_goes_here.construction import *
 from code_goes_here.measuring import *
@@ -643,7 +643,7 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
           should be decomposed into multiple convex profiles
     """
     from sympy import Rational, Matrix
-    from .moothymoth import Orientation, Transform, create_v3, cross_product, normalize_vector
+    from .rule import Orientation, Transform, create_v3, cross_product, normalize_vector
     from .meowmeowcsg import ConvexPolygonExtrusion
     
     # Check if we have a single profile or multiple profiles

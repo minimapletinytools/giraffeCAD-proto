@@ -4,7 +4,7 @@ Tests for GiraffeCAD timber framing system
 
 import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
-from code_goes_here.moothymoth import Orientation
+from code_goes_here.rule import Orientation
 from giraffe import *
 from .testing_shavings import (
     create_standard_vertical_timber,
@@ -691,7 +691,7 @@ class TestCutTimber:
         assert csg.size == size
         # In LOCAL coordinates, the prism is always axis-aligned (identity orientation)
         # The timber's orientation transforms from local to global coordinates
-        from code_goes_here.moothymoth import Orientation
+        from code_goes_here.rule import Orientation
         assert simplify(csg.transform.orientation.matrix - Orientation.identity().matrix).norm() == 0
     
     def test_extended_timber_without_cuts_positioned(self):
@@ -736,7 +736,7 @@ class TestCutTimber:
         assert csg.end_distance == 80
         
         # the csg is in local coordinates, so it should have identity orientation
-        from code_goes_here.moothymoth import Orientation
+        from code_goes_here.rule import Orientation
         assert csg.transform.orientation.matrix.equals(Orientation.identity().matrix)
     
     def test_render_timber_with_cuts_no_cuts(self):

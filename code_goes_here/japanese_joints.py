@@ -8,7 +8,7 @@ from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.joint_shavings import *
 from code_goes_here.measuring import measure_top_center_position
-from code_goes_here.moothymoth import *
+from code_goes_here.rule import *
 from code_goes_here.meowmeowcsg import *
 
 # Aliases for backwards compatibility

@@ -1,5 +1,5 @@
 """
-Tests for moothymoth.py module.
+Tests for rule.py module.
 
 This module contains tests for the Orientation class which represents
 3D rotations using sympy matrices.
@@ -8,7 +8,7 @@ This module contains tests for the Orientation class which represents
 import pytest
 import math
 from sympy import Matrix, pi, simplify, Abs, eye, det, Rational
-from code_goes_here.moothymoth import (
+from code_goes_here.rule import (
     Orientation,
     inches, feet, mm, cm, m,
     shaku, sun, bu,

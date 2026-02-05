@@ -4,14 +4,14 @@ Tests for GiraffeCAD timber framing system
 
 import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
-from code_goes_here.moothymoth import Orientation
+from code_goes_here.rule import Orientation
 from giraffe import *
 from .testing_shavings import (
     create_standard_vertical_timber,
     create_standard_horizontal_timber,
     assert_vectors_perpendicular
 )
-from code_goes_here.moothymoth import inches, feet
+from code_goes_here.rule import inches, feet
 
 # ============================================================================
 # Tests for construction.py - Timber Creation and Manipulation

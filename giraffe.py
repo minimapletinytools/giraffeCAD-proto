@@ -6,7 +6,7 @@ This is the main entry point that imports and re-exports all giraffeCAD function
 """
 
 # Import everything from the organized modules
-from code_goes_here.moothymoth import *
+from code_goes_here.rule import *
 from code_goes_here.meowmeowcsg import *
 from code_goes_here.timber import *
 from code_goes_here.footprint import *

@@ -5,7 +5,7 @@ Tests for timber_shavings module (random timber-related helpers).
 import pytest
 from code_goes_here.timber_shavings import *
 from code_goes_here.timber import *
-from code_goes_here.moothymoth import create_v3, create_v2
+from code_goes_here.rule import create_v3, create_v2
 from code_goes_here.testing_shavings import create_standard_vertical_timber
 from sympy import Rational
 

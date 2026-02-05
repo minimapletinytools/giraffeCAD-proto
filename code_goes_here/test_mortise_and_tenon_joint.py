@@ -5,7 +5,7 @@ Tests for mortise and tenon joint construction functions
 import pytest
 from typing import List
 from sympy import Matrix, Rational, simplify
-from code_goes_here.moothymoth import Orientation
+from code_goes_here.rule import Orientation
 from code_goes_here.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberLongFace,
     V2, V3, Numeric, PegShape, WedgeShape, Peg,

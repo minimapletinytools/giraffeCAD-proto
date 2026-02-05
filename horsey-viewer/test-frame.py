@@ -12,7 +12,7 @@ sys.path.insert(0, str(project_root))
 
 from code_goes_here.timber import Frame, CutTimber
 from code_goes_here.construction import create_timber
-from code_goes_here.moothymoth import create_v2, create_v3, mm
+from code_goes_here.rule import create_v2, create_v3, mm
 
 def build_frame():
     """
