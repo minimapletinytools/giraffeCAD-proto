@@ -53,6 +53,15 @@ class TimberFeature(Enum):
     TOP_LEFT_EDGE = 18
     TOP_BACK_EDGE = 19
     # TODO maybe do the corners?
+
+    @property
+    def to(self) -> 'TimberFeature':
+        """Convert to TimberFeature for further conversions. This is a no-op."""
+        return self
+
+    def feature(self) -> 'TimberFeature':
+        """Convert to TimberFeature. This is a no-op."""
+        return self
     
     def face(self) -> 'TimberFace':
         """Convert to TimberFace. Values 1-6 map to faces."""
@@ -91,6 +100,11 @@ class TimberFace(Enum):
     FRONT = 4 # the face vector with normal vector in the +Y axis direction
     LEFT = 5 # the face vector with normal vector in the -X axis direction
     BACK = 6 # the face vector with normal vector in the -Y axis direction
+    
+    @property
+    def to(self) -> TimberFeature:
+        """Convert to TimberFeature for further conversions."""
+        return TimberFeature(self.value)
     
     def get_direction(self) -> Direction3D:
         """Get the direction vector for this face in world coordinates."""
@@ -233,6 +247,14 @@ class TimberLongEdge(Enum):
 
 
 # ============================================================================
+# Type Aliases
+# ============================================================================
+
+# Union type for face-like enums (TimberFace, TimberReferenceEnd, or TimberLongFace)
+SomeTimberFace = Union[TimberFace, TimberReferenceEnd, TimberLongFace]
+
+
+# ============================================================================
 # Core Classes
 #============================================================================
 
@@ -371,7 +393,7 @@ class Timber:
             self.orientation.matrix[1, 1],
             self.orientation.matrix[2, 1]
         ])
-    def get_face_direction_global(self, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]) -> Direction3D:
+    def get_face_direction_global(self, face: SomeTimberFace) -> Direction3D:
         """
         Get the world direction vector for a specific face of this timber.
         
@@ -381,11 +403,8 @@ class Timber:
         Returns:
             Direction vector pointing outward from the specified face in world coordinates
         """
-        # Convert TimberReferenceEnd or TimberLongFace to TimberFace if needed
-        if isinstance(face, TimberReferenceEnd):
-            face = face.to.face()
-        elif isinstance(face, TimberLongFace):
-            face = face.to.face()
+        # Convert to TimberFace
+        face = face.to.face()
         
         if face == TimberFace.TOP:
             return self.get_length_direction_global()
@@ -400,18 +419,15 @@ class Timber:
         else:  # BACK
             return -self.get_height_direction_global()
 
-    def get_size_in_face_normal_axis(self, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]) -> Numeric:
+    def get_size_in_face_normal_axis(self, face: SomeTimberFace) -> Numeric:
         """
         Get the size of the timber in the direction normal to the specified face.
         
         Args:
             face: The face to get the size for (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
         """
-        # Convert TimberReferenceEnd or TimberLongFace to TimberFace if needed
-        if isinstance(face, TimberReferenceEnd):
-            face = face.to.face()
-        elif isinstance(face, TimberLongFace):
-            face = face.to.face()
+        # Convert to TimberFace
+        face = face.to.face()
         
         if face == TimberFace.TOP or face == TimberFace.BOTTOM:
             return self.length
@@ -529,7 +545,7 @@ class Timber:
 
 
     # TODO DELETE this is duplicated in timber_shavings.py which you should also delete and replce with smothenig in measuring
-    def project_global_point_onto_timber_face_global(self, global_point: V3, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]) -> V3:
+    def project_global_point_onto_timber_face_global(self, global_point: V3, face: SomeTimberFace) -> V3:
         """
         Project a point from global coordinates onto the timber's face and return result in global coordinates.
         
@@ -537,11 +553,8 @@ class Timber:
             global_point: The point to project in global coordinates (3x1 Matrix)
             face: The face to project onto (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
         """
-        # Convert TimberReferenceEnd or TimberLongFace to TimberFace if needed
-        if isinstance(face, TimberReferenceEnd):
-            face = face.to.face()
-        elif isinstance(face, TimberLongFace):
-            face = face.to.face()
+        # Convert to TimberFace
+        face = face.to.face()
         
         # Convert global point to local coordinates
         local_point = self.transform.global_to_local(global_point)
@@ -571,6 +584,7 @@ class Cutting:
     # each Cutting is tied to a timber so this is very reasonable to store here
     timber: Timber
 
+    # TODO DELTEE THIS WHY IS THIS HERE? WE JUST USE timber.transform instead
     # set these values by computing them relative to the timber features using helper functions 
     transform: Transform
 

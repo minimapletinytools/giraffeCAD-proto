@@ -169,35 +169,12 @@ CSGTimber?
 
 :: TODO
 
-DONE-all methods have a property `as` that returns TimberFeature 
-  -TimberFeature has methods `face` `reference_end` `long_face` etc 
-  -so you do long_face.as.face() to do your enum castings
-DONE-MeasuredTimberFeature -> MarkedTimberFeature
-DONE-swap measure/mark
-DONE-move out all the get_ methods in Timber.py (change into mark functions)
-DONE-be consistent about get/find usage
-  -get -> use when you might do an "@property" but we don't get properties so use get, virtually no computation
-  -find -> requries some computation
-DONE-don't forget to rename class methods in timber.py
-DONE-move 
-  DONE-more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
-  DONE-move TODO stuff in timber into timber shavings
-DONE-delete deprecated stuff in joint_shavings and replace with measuring function
-DONE-get rid of CSGCut and HalfSpace CSG... omg
-DONE-address TODOs in joint_shavings.py
-DONE-get rid of extra long edge enums... we don't orient there..
-DONE-add short edges to the enum
-DONE-maybe revisit measuring naming conevntion
-  -we have situations where we want to scribe (multiple timbers) but work with a feature not a distance i.e. mark_closest_point_on_centerlines
-  -maybe measurements should be wrapped in an object?.... then you can just measure_face().mark() and then you would do mark_into_face().measure_from_face().distance
-  -and i guess then scribe means taking multiple things to one measurement and could by polymorphic to take either local measurements or global features 
-  -and we would still need something that takes multiple things to one marking (that marking might not hvae an analgous measure so we can't just scribe().mark())
-  -or jsut have scribe return markings that you need to measure... that's probably better... and get rid of the current scribe functions you have...
-    -it's just annoying to measure cuz then you need to specify the reference end... but I guess that's a good thing as there fewer args to the mark function!
-DONE-swap measure and mark
-
 -make examples of how to use measure/mark to set parameters in cutting functions
 -maybe just have Joints returns their final size rather than try to calculate it....
+  -maybe change cutting to have maybe_top/bottom_end_cut and these colud be either
+    -half plane cuts
+    -distance from bottom end (converted to perpendicular half plane cuts)
+    -decide if negativeCSG include the half plane cuts or not
 
 
 -add timber size estimation function (really you want a prism BB)
@@ -208,8 +185,7 @@ DONE-swap measure and mark
   -not perpendicular but partially face aligned (for braces)
     -maybe have an add brace function?
   -neither perpendicular nor face aligned
-DONE-think about how you want to make example selector and make it future proof or useful as reference
-  -(example metadata, (V3) -> Frame)
+
 -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
 
 -be consistent about function local/golbal naming
@@ -221,12 +197,7 @@ DONE-think about how you want to make example selector and make it future proof 
 -make timber names mandatory and if not provided a random one is generated?
 
 RENAME
-DONE-cleanup where to put get_point_on_face and project_point_onto_face
-  -probably move these into timber_shavings or something
-DONE-CutCSG -> PotatoCSG
-  -or CutCSG probably better...
-DONE-Moothymoth -> Rule?
--type alias SomeTimberFace = Union[TimberFace, TimberReferenceEnd, TimberLongFace]
+
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
   -oFAT on face aligned timbers
   -oFAACaT on face aligned coaxial timbers
@@ -391,6 +362,42 @@ EXEMPLIFY
 
 
 :: TODONE
+
+DONE-all methods have a property `as` that returns TimberFeature 
+  -TimberFeature has methods `face` `reference_end` `long_face` etc 
+  -so you do long_face.as.face() to do your enum castings
+DONE-MeasuredTimberFeature -> MarkedTimberFeature
+DONE-swap measure/mark
+DONE-move out all the get_ methods in Timber.py (change into mark functions)
+DONE-be consistent about get/find usage
+  -get -> use when you might do an "@property" but we don't get properties so use get, virtually no computation
+  -find -> requries some computation
+DONE-don't forget to rename class methods in timber.py
+DONE-move 
+  DONE-more  the helper shit in joint_shavings to  timber_shavings unless I guess if it's really super specific to joints...
+  DONE-move TODO stuff in timber into timber shavings
+DONE-delete deprecated stuff in joint_shavings and replace with measuring function
+DONE-get rid of CSGCut and HalfSpace CSG... omg
+DONE-address TODOs in joint_shavings.py
+DONE-get rid of extra long edge enums... we don't orient there..
+DONE-add short edges to the enum
+DONE-maybe revisit measuring naming conevntion
+  -we have situations where we want to scribe (multiple timbers) but work with a feature not a distance i.e. mark_closest_point_on_centerlines
+  -maybe measurements should be wrapped in an object?.... then you can just measure_face().mark() and then you would do mark_into_face().measure_from_face().distance
+  -and i guess then scribe means taking multiple things to one measurement and could by polymorphic to take either local measurements or global features 
+  -and we would still need something that takes multiple things to one marking (that marking might not hvae an analgous measure so we can't just scribe().mark())
+  -or jsut have scribe return markings that you need to measure... that's probably better... and get rid of the current scribe functions you have...
+    -it's just annoying to measure cuz then you need to specify the reference end... but I guess that's a good thing as there fewer args to the mark function!
+DONE-swap measure and mark
+DONE-think about how you want to make example selector and make it future proof or useful as reference
+  -(example metadata, (V3) -> Frame)
+DONE-cleanup where to put get_point_on_face and project_point_onto_face
+  -probably move these into timber_shavings or something
+DONE-CutCSG -> PotatoCSG
+  -or CutCSG probably better...
+DONE-Moothymoth -> Rule?
+DONE-type alias SomeTimberFace = Union[TimberFace, TimberReferenceEnd, TimberLongFace]
+
 
 IGNORE-transform prob does not need to be frozen...
 DONE-come up with consisten import scheme....
