@@ -7,6 +7,7 @@ axis-aligned with one timber going in +Y and another in +X direction.
 """
 
 from sympy import Matrix, Rational
+from typing import Union, List
 import sys
 sys.path.append('../..')
 
@@ -386,14 +387,14 @@ def create_basic_joints_patternbook() -> PatternBook:
     return PatternBook(patterns=patterns)
 
 
-def create_all_joint_examples() -> Frame:
+def create_all_joint_examples() -> Union[Frame, List[CutCSG]]:
     """
     Create joint examples with automatic spacing starting from the origin.
     
     This now uses the PatternBook to raise all patterns in the "basic_joints" group.
     
     Returns:
-        Frame: Frame object containing all cut timbers for the enabled joints
+        Frame or List[CutCSG]: Frame object containing all cut timbers for the enabled joints, or list of CSG objects
     """
     book = create_basic_joints_patternbook()
     

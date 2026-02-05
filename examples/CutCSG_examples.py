@@ -33,7 +33,7 @@ def example_cube_with_cube_cutout():
         Difference CSG object
     """
     # Create a 2x2x2 cube (bottom cross-section centered at origin, rising to Z=2)
-    large_cube = Prism(
+    large_cube = RectangularPrism(
         size=Matrix([2, 2]),  # 2m x 2m cross-section
         start_distance=0,      # Start at Z=0 (relative to position)
         end_distance=2,        # End at Z=2 (relative to position)
@@ -44,7 +44,7 @@ def example_cube_with_cube_cutout():
     )
     
     # Create a 1x1x1 cube to cut out (cross-section centered at origin)
-    small_cube = Prism(
+    small_cube = RectangularPrism(
         size=Matrix([1, 1]),  # 1m x 1m cross-section
         start_distance=0,      # Start at Z=0 (relative to position)
         end_distance=1,        # End at Z=1 (relative to position)
@@ -75,7 +75,7 @@ def example_cube_with_halfspace_cut():
         Difference CSG object
     """
     # Create a 1x1x1 cube (cross-section centered at origin)
-    cube = Prism(
+    cube = RectangularPrism(
         size=Matrix([1, 1]),  # 1m x 1m cross-section
         start_distance=0,      # Start at Z=0 (relative to position)
         end_distance=1,        # End at Z=1 (relative to position)
@@ -111,9 +111,9 @@ def example_cube_at_position():
     This tests position transformation without cuts.
     
     Returns:
-        Prism CSG object
+        RectangularPrism CSG object
     """
-    cube = Prism(
+    cube = RectangularPrism(
         size=Matrix([1, 1]),  # 1m x 1m cross-section
         start_distance=Rational(-1, 2),   # Start at Z=-0.5 (relative to position Z=1)
         end_distance=Rational(1, 2),      # End at Z=0.5 (relative to position Z=1)
@@ -138,7 +138,7 @@ def example_union_of_cubes():
         Union CSG object
     """
     # First cube (cross-section centered at origin)
-    cube1 = Prism(
+    cube1 = RectangularPrism(
         size=Matrix([1, 1]),
         start_distance=0,
         end_distance=1,
@@ -149,7 +149,7 @@ def example_union_of_cubes():
     )
     
     # Second cube offset by 1m in X (cross-section centered at (1,0,0))
-    cube2 = Prism(
+    cube2 = RectangularPrism(
         size=Matrix([1, 1]),
         start_distance=0,
         end_distance=1,
@@ -159,7 +159,7 @@ def example_union_of_cubes():
         )
     )
     
-    result = Union(children=[cube1, cube2])
+    result = SolidUnion(children=[cube1, cube2])
     
     return result
 
@@ -250,7 +250,7 @@ def example_lap_cut_on_timber():
     )
     
     # Create the base timber prism (in local coordinates)
-    timber_prism = Prism(
+    timber_prism = RectangularPrism(
         size=timber.size,
         transform=Transform.identity(),
         start_distance=0,
@@ -326,7 +326,7 @@ def example_gooseneck_profile_cut():
     )
     
     # Create the base timber prism (in local coordinates)
-    timber_prism = Prism(
+    timber_prism = RectangularPrism(
         size=timber.size,
         transform=Transform.identity(),
         start_distance=0,
@@ -388,7 +388,7 @@ def example_shoulder_notch_on_timber():
     )
     
     # Create the base timber prism (in local coordinates)
-    timber_prism = Prism(
+    timber_prism = RectangularPrism(
         size=timber.size,
         transform=Transform.identity(),
         start_distance=0,
@@ -467,7 +467,7 @@ def create_csg_examples_patternbook():
         
         patterns.append((
             PatternMetadata(key, ["csg", key], "csg"),
-            lambda center, func=info['function']: func()  # CSG examples don't use center position
+            lambda center, func=info['function']: func()  # type: ignore[misc]  # CSG examples don't use center position
         ))
     
     return PatternBook(patterns=patterns)
@@ -486,7 +486,7 @@ def get_example(example_key: str):
     if example_key not in EXAMPLES:
         raise ValueError(f"Unknown example: {example_key}. Available: {list(EXAMPLES.keys())}")
     
-    return EXAMPLES[example_key]['function']()
+    return EXAMPLES[example_key]['function']()  # type: ignore[misc]
 
 
 def list_examples():

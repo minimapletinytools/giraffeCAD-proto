@@ -172,13 +172,14 @@ if __name__ == "__main__":
     
     frames = []
     
-    print("\n1. Creating 4\"x4\" x 3' timber splice with lapped gooseneck joint...")
-    frame1 = create_lapped_gooseneck_splice_example()
-    frames.append(frame1)
-    print(f"   Frame created: {frame1.name}")
-    print(f"   Number of timbers: {len(frame1.cut_timbers)}")
-    for timber in frame1.cut_timbers:
-        print(f"   - {timber.name}: {len(timber.cuts)} cut(s)")
+    # TODO: Implement create_lapped_gooseneck_splice_example
+    # print("\n1. Creating 4\"x4\" x 3' timber splice with lapped gooseneck joint...")
+    # frame1 = create_lapped_gooseneck_splice_example()
+    # frames.append(frame1)
+    # print(f"   Frame created: {frame1.name}")
+    # print(f"   Number of timbers: {len(frame1.cut_timbers)}")
+    # for timber in frame1.cut_timbers:
+    #     print(f"   - {timber.name}: {len(timber.cuts)} cut(s)")
     
     print("\n2. Creating simplified vertical post splice example...")
     frame2 = create_simple_gooseneck_example()
