@@ -588,16 +588,27 @@ class Cutting:
     # set these values by computing them relative to the timber features using helper functions 
     transform: Transform
 
-    # end cuts are special as they set the length of the timber
-    # you can only have an end cut on one end of the timber, you can't have an end cut on both ends at once (maybe we should support this?)
+
+    # TODO change to maybe_top/bottom_end_cut : Optional[HalfSpace]
+    # end cuts are special as they determine the end plane of the timber in that direction
+    # if there is not and end cut in a direction, then the original timber end plane in that direction is used instead.
     maybe_end_cut: Optional[TimberReferenceEnd]
 
     # The negative CSG of the cut (the part of the timber that is removed by the cut)
     # in LOCAL coordinates (relative to timber.bottom_position)
+    # does NOT include the end cuts
     negative_csg: CutCSG
     
     def get_negative_csg_local(self) -> CutCSG:
+        # TODO union maybe_top/bottom_end_cut
         return self.negative_csg
+
+    @staticmethod
+    def make_end_cut(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> 'HalfSpace':
+        if end == TimberReferenceEnd.TOP:
+            return HalfSpace(normal=create_v3(0, 0, 1), offset=timber.length - distance_from_end_to_cut)
+        else:
+            return HalfSpace(normal=create_v3(0, 0, -1), offset=distance_from_end_to_cut)
 
 
 def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> CutCSG:
