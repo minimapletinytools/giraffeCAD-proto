@@ -223,7 +223,7 @@ DONE-think about how you want to make example selector and make it future proof 
 RENAME
 DONE-cleanup where to put get_point_on_face and project_point_onto_face
   -probably move these into timber_shavings or something
--CutCSG -> PotatoCSG
+DONE-CutCSG -> PotatoCSG
   -or CutCSG probably better...
 DONE-Moothymoth -> Rule?
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not

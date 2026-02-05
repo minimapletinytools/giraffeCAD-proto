@@ -107,6 +107,116 @@ python3 -m pytest code_goes_here/ --cov=code_goes_here --cov-report=html
 
 Tests flagged with # 🐪 have been hand reviewed, the rest are AI slop
 
+## Type Checking
+
+This project uses [ty](https://docs.astral.sh/ty/), an extremely fast Python type checker written in Rust by Astral (the creators of Ruff). ty is 10x-100x faster than traditional type checkers like mypy and Pyright.
+
+📖 **See [TYPECHECK_SETUP.md](TYPECHECK_SETUP.md) for detailed setup instructions.**
+
+### Installing ty
+
+#### Recommended: Using uv (Easiest, Project-Managed)
+
+If you don't have `uv` yet, install it first:
+
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or using Homebrew on macOS
+brew install uv
+```
+
+Then add `ty` as a development dependency:
+
+```bash
+# Add ty to your project
+uv add --dev ty
+
+# Run ty (uv will manage the installation)
+uv run ty check
+```
+
+This is the recommended approach because:
+- `uv` manages ty versions per-project
+- No global installation needed
+- Works consistently across all team members
+- Automatically handles updates
+
+#### Alternative: Standalone Installation
+
+If you prefer a global installation:
+
+**macOS/Linux:**
+```bash
+curl -LsSf https://astral.sh/ty/install.sh | sh
+```
+
+**Windows:**
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/ty/install.ps1 | iex"
+```
+
+**Or using pipx:**
+```bash
+pipx install ty
+```
+
+#### Quick Testing Without Installation
+
+```bash
+# Run without installing (requires uv)
+uvx ty check
+```
+
+### Quick Commands
+
+Use these `make` commands:
+
+```bash
+make typecheck        # Run type checking on all files
+make typecheck-watch  # Run type checking in watch mode (auto-checks on file changes)
+```
+
+### Manual Type Checking
+
+```bash
+# If using uv (recommended)
+uv run ty check
+
+# If installed globally
+ty check
+
+# Check specific files or directories
+uv run ty check code_goes_here/timber.py
+uv run ty check code_goes_here/
+
+# Watch mode - automatically re-checks when files change
+uv run ty check --watch
+```
+
+### Understanding Type Check Results
+
+ty provides clear, actionable error messages with:
+- File location and line numbers
+- Specific type mismatches
+- Contextual code snippets
+- Suggestions for fixes
+
+### Configuration
+
+ty is configured in `pyproject.toml` with sensible defaults:
+- Includes `code_goes_here/` directory for type checking
+- Excludes `venv/`, cache directories, and vendored libraries
+- See [ty documentation](https://docs.astral.sh/ty/) for more configuration options
+
+### Type Checking Tips
+
+- Run `ty check` before committing code
+- Use watch mode during development for instant feedback
+- Add type hints to new code for better type safety
+- ty respects inline type comments like `# type: ignore`
+
 ### Automatic Testing (Recommended for Development)
 
 For continuous development, you can have tests run automatically whenever you save changes to your code:

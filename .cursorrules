@@ -2,19 +2,18 @@
 
 ## Running Tests
 
+Always run all tests after making changes
+
 Run all tests:
 ```bash
 python3 -m pytest tests/ -v
 ```
 
-Run specific test file:
-```bash
-python3 -m pytest tests/test_giraffe.py -v
-```
+In addition, also run the the type checker
 
-Run specific test class:
+Run typechecking:
 ```bash
-python3 -m pytest tests/test_giraffe.py::TestFootprint -v
+`uv run ty check`
 ```
 
 ## Key Files
