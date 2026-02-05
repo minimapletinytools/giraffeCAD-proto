@@ -527,7 +527,7 @@ class TestChopLapOnTimberEnd:
         lap_end = TimberReferenceEnd.TOP  # Cutting from top end
         
         # Create the lap cut
-        lap_csg = chop_lap_on_timber_end(
+        lap_prism, lap_end_cut = chop_lap_on_timber_end(
             lap_timber=timber,
             lap_timber_end=lap_end,
             lap_timber_face=lap_face,
@@ -536,21 +536,16 @@ class TestChopLapOnTimberEnd:
             lap_depth=lap_depth
         )
         
-        # Verify the CSG is a SolidUnion
-        assert isinstance(lap_csg, SolidUnion), "Lap CSG should be a SolidUnion"
-        assert len(lap_csg.children) == 2, "Lap CSG should have 2 children (RectangularPrism and HalfSpace)"
+        # Verify the components
+        assert isinstance(lap_prism, RectangularPrism), "Lap prism should be a RectangularPrism"
+        assert isinstance(lap_end_cut, HalfSpace), "Lap end cut should be a HalfSpace"
         
-        # Find the RectangularPrism and HalfSpace in the union
-        prism = None
-        half_plane = None
-        for child in lap_csg.children:
-            if isinstance(child, RectangularPrism):
-                prism = child
-            elif isinstance(child, HalfSpace):
-                half_plane = child
+        # Use the prism and end cut
+        prism = lap_prism
+        half_plane = lap_end_cut
         
-        assert prism is not None, "Lap CSG should contain a RectangularPrism"
-        assert half_plane is not None, "Lap CSG should contain a HalfSpace"
+        # Create a union for testing the combined behavior
+        lap_csg = SolidUnion([prism, half_plane])
         
         # Verify geometry based on the implementation:
         # For TOP end with shoulder_distance=6", lap_length=12":

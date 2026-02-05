@@ -780,11 +780,8 @@ class TestCutTimber:
         )
         cut = Cutting(
             timber=timber,
-            transform=Transform(
-                position=Matrix([Rational(0), Rational(0), Rational(0)]),
-                orientation=Orientation.identity()
-            ),
-            maybe_end_cut=None,
+            maybe_top_end_cut=None,
+            maybe_bottom_end_cut=None,
             negative_csg=half_plane
         )
         
@@ -818,11 +815,8 @@ class TestCutTimber:
         )
         cut1 = Cutting(
             timber=timber,
-            transform=Transform(
-                position=Matrix([Rational(0), Rational(0), Rational(0)]),
-                orientation=Orientation.identity()
-            ),
-            maybe_end_cut=None,
+            maybe_top_end_cut=None,
+            maybe_bottom_end_cut=None,
             negative_csg=half_plane1
         )
         
@@ -832,11 +826,8 @@ class TestCutTimber:
         )
         cut2 = Cutting(
             timber=timber,
-            transform=Transform(
-                position=Matrix([Rational(0), Rational(0), Rational(0)]),
-                orientation=Orientation.identity()
-            ),
-            maybe_end_cut=None,
+            maybe_top_end_cut=None,
+            maybe_bottom_end_cut=None,
             negative_csg=half_plane2
         )
         
@@ -870,12 +861,9 @@ class TestCutTimber:
         )
         end_cut = Cutting(
             timber=timber,
-            transform=Transform(
-                position=Matrix([Rational(0), Rational(0), Rational(0)]),
-                orientation=Orientation.identity()
-            ),
-            maybe_end_cut=TimberReferenceEnd.TOP,
-            negative_csg=half_plane
+            maybe_top_end_cut=half_plane,
+            maybe_bottom_end_cut=None,
+            negative_csg=None
         )
         
         cut_timber = CutTimber(timber, cuts=[end_cut])

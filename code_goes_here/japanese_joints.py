@@ -275,7 +275,7 @@ def cut_lapped_gooseneck_joint(
     receiving_timber_lap_face = receiving_timber.get_closest_oriented_face_from_global_direction(receiving_timber_lap_face_direction)
     
     # Cut lap on receiving timber
-    receiving_timber_lap_csg = chop_lap_on_timber_end(
+    receiving_timber_lap_prism, receiving_timber_end_cut = chop_lap_on_timber_end(
         lap_timber=receiving_timber,
         lap_timber_end=receiving_timber_end,
         lap_timber_face=receiving_timber_lap_face,
@@ -301,7 +301,7 @@ def cut_lapped_gooseneck_joint(
         gooseneck_timber_lap_shoulder_from_end = gooseneck_lap_start_on_gooseneck_timber
 
     # Cut lap on gooseneck timber
-    gooseneck_timber_lap_csg = chop_lap_on_timber_end(
+    gooseneck_timber_lap_prism, gooseneck_timber_lap_end_cut = chop_lap_on_timber_end(
         lap_timber=gooseneck_timber,
         lap_timber_end=gooseneck_timber_end,
         lap_timber_face=TimberFace(gooseneck_timber_face.value),
@@ -347,8 +347,26 @@ def cut_lapped_gooseneck_joint(
     
     # Union the gooseneck profile cut with the lap cut
     # Both cuts need to be applied to the gooseneck timber
-    gooseneck_timber_combined_csg = CSGUnion([gooseneck_timber_lap_csg, gooseneck_profile_difference_csg])
+    gooseneck_timber_combined_csg = CSGUnion([gooseneck_timber_lap_prism, gooseneck_profile_difference_csg])
 
+    # Create a redundant end cut for the gooseneck timber
+    # The gooseneck extends beyond the receiving timber end by (lap_length + gooseneck_length)
+    # Position the end cut at: receiving_timber_end + lap_length + gooseneck_length
+    gooseneck_extension_from_receiving_end = lap_length + gooseneck_length
+    
+    # Calculate where the gooseneck end is in gooseneck timber local coordinates
+    # gooseneck_timber_lap_shoulder_from_end is where the lap starts
+    # The gooseneck extends from there by gooseneck_extension_from_receiving_end
+    gooseneck_end_position_from_timber_end = gooseneck_timber_lap_shoulder_from_end - gooseneck_extension_from_receiving_end
+    
+    if gooseneck_timber_end == TimberReferenceEnd.TOP:
+        # End cut at distance from top
+        gooseneck_end_cut_local_z = gooseneck_timber.length - gooseneck_end_position_from_timber_end
+        gooseneck_timber_end_cut = HalfSpace(normal=create_v3(0, 0, 1), offset=gooseneck_end_cut_local_z)
+    else:  # BOTTOM
+        # End cut at distance from bottom
+        gooseneck_end_cut_local_z = gooseneck_end_position_from_timber_end
+        gooseneck_timber_end_cut = HalfSpace(normal=create_v3(0, 0, -1), offset=-gooseneck_end_cut_local_z)
 
     # Transform the gooseneck profile CSG from gooseneck_timber coordinates to receiving_timber coordinates
     # Use the generic adopt_csg function to handle all CSG types (SolidUnion, Difference, RectangularPrism, etc.)
@@ -359,16 +377,16 @@ def cut_lapped_gooseneck_joint(
     # Create Cut objects for each timber
     receiving_timber_cut_obj = Cutting(
         timber=receiving_timber,
-        transform=Transform.identity(), 
-        maybe_end_cut=receiving_timber_end,
-        negative_csg=CSGUnion([receiving_timber_lap_csg, gooseneck_csg_on_receiving_timber])
+        maybe_top_end_cut=receiving_timber_end_cut if receiving_timber_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=receiving_timber_end_cut if receiving_timber_end == TimberReferenceEnd.BOTTOM else None,
+        negative_csg=CSGUnion([receiving_timber_lap_prism, gooseneck_csg_on_receiving_timber])
     )
 
     
     gooseneck_timber_cut_obj = Cutting(
         timber=gooseneck_timber,
-        transform=Transform.identity(), 
-        maybe_end_cut=gooseneck_timber_end,
+        maybe_top_end_cut=gooseneck_timber_end_cut if gooseneck_timber_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=gooseneck_timber_end_cut if gooseneck_timber_end == TimberReferenceEnd.BOTTOM else None,
         negative_csg=gooseneck_timber_combined_csg
     )
     
@@ -590,10 +608,25 @@ def cut_lapped_dovetail_butt_joint(
     # Create Cut objects for each timber
     # ========================================================================
     
+    # Create a redundant end cut for the dovetail timber
+    # The end cut should be at the end of the dovetail profile
+    # The dovetail extends from the shoulder (at shoulder_distance_from_end) toward the end for dovetail_length
+    
+    if dovetail_timber_end == TimberReferenceEnd.TOP:
+        # For TOP end: shoulder is at (timber.length - shoulder_distance_from_end)
+        # Dovetail extends toward +Z for dovetail_length
+        dovetail_end_local_z = dovetail_timber.length - shoulder_distance_from_end + dovetail_length
+        dovetail_timber_end_cut = HalfSpace(normal=create_v3(0, 0, 1), offset=dovetail_end_local_z)
+    else:  # BOTTOM
+        # For BOTTOM end: shoulder is at shoulder_distance_from_end
+        # Dovetail extends toward -Z for dovetail_length
+        dovetail_end_local_z = shoulder_distance_from_end - dovetail_length
+        dovetail_timber_end_cut = HalfSpace(normal=create_v3(0, 0, -1), offset=-dovetail_end_local_z)
+    
     dovetail_timber_cut_obj = Cutting(
         timber=dovetail_timber,
-        transform=Transform.identity(),
-        maybe_end_cut=dovetail_timber_end,
+        maybe_top_end_cut=dovetail_timber_end_cut if dovetail_timber_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=dovetail_timber_end_cut if dovetail_timber_end == TimberReferenceEnd.BOTTOM else None,
         negative_csg=Difference(dovetail_housing_prism, [dovetail_profile_csg])
     )
     
@@ -605,8 +638,8 @@ def cut_lapped_dovetail_butt_joint(
     
     receiving_timber_cut_obj = Cutting(
         timber=receiving_timber,
-        transform=Transform.identity(),
-        maybe_end_cut=None,  # No end cut on receiving timber
+        maybe_top_end_cut=None,
+        maybe_bottom_end_cut=None,
         negative_csg=receiving_timber_negative_csg
     )
     

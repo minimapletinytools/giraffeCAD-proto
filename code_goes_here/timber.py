@@ -584,31 +584,63 @@ class Cutting:
     # each Cutting is tied to a timber so this is very reasonable to store here
     timber: Timber
 
-    # TODO DELTEE THIS WHY IS THIS HERE? WE JUST USE timber.transform instead
-    # set these values by computing them relative to the timber features using helper functions 
-    transform: Transform
-
-
-    # TODO change to maybe_top/bottom_end_cut : Optional[HalfSpace]
-    # end cuts are special as they determine the end plane of the timber in that direction
-    # if there is not and end cut in a direction, then the original timber end plane in that direction is used instead.
-    maybe_end_cut: Optional[TimberReferenceEnd]
+    # End cuts are special as they determine the end plane of the timber in that direction.
+    # If there is not an end cut in a direction, then the original timber end plane in that direction is used instead.
+    maybe_top_end_cut: Optional[HalfSpace] = None
+    maybe_bottom_end_cut: Optional[HalfSpace] = None
 
     # The negative CSG of the cut (the part of the timber that is removed by the cut)
     # in LOCAL coordinates (relative to timber.bottom_position)
-    # does NOT include the end cuts
-    negative_csg: CutCSG
+    # Does NOT include the end cuts (those are stored separately above)
+    negative_csg: Optional[CutCSG] = None
     
     def get_negative_csg_local(self) -> CutCSG:
-        # TODO union maybe_top/bottom_end_cut
-        return self.negative_csg
+        """
+        Get the complete negative CSG including end cuts.
+        
+        Returns the union of negative_csg with any end cuts that are defined.
+        """
+        # Collect all CSG components
+        csg_components = []
+        
+        # Add the base negative_csg if it exists
+        if self.negative_csg is not None:
+            csg_components.append(self.negative_csg)
+        
+        # Add end cuts if they exist
+        if self.maybe_top_end_cut is not None:
+            csg_components.append(self.maybe_top_end_cut)
+        if self.maybe_bottom_end_cut is not None:
+            csg_components.append(self.maybe_bottom_end_cut)
+        
+        # Return union of all components, or empty if none exist
+        if len(csg_components) == 0:
+            # No cuts at all - this shouldn't happen but handle gracefully
+            # Return a HalfSpace that contains nothing (impossible condition)
+            return HalfSpace(normal=create_v3(0, 0, 1), offset=Rational(-999999))
+        elif len(csg_components) == 1:
+            return csg_components[0]
+        else:
+            from .cutcsg import SolidUnion
+            return SolidUnion(csg_components)
 
     @staticmethod
-    def make_end_cut(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> 'HalfSpace':
+    def make_end_cut(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> HalfSpace:
+        """
+        Create a HalfSpace for an end cut at the specified distance from the end.
+        
+        Args:
+            timber: The timber being cut
+            end: Which end (TOP or BOTTOM)
+            distance_from_end_to_cut: Distance from the end to the cut plane
+            
+        Returns:
+            HalfSpace representing the end cut in local coordinates
+        """
         if end == TimberReferenceEnd.TOP:
             return HalfSpace(normal=create_v3(0, 0, 1), offset=timber.length - distance_from_end_to_cut)
         else:
-            return HalfSpace(normal=create_v3(0, 0, -1), offset=distance_from_end_to_cut)
+            return HalfSpace(normal=create_v3(0, 0, -1), offset=-distance_from_end_to_cut)
 
 
 def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> CutCSG:
@@ -631,13 +663,13 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> CutCSG:
     
     # Check if bottom end has cuts
     has_bottom_cut = any(
-        cut.maybe_end_cut == TimberReferenceEnd.BOTTOM 
+        cut.maybe_bottom_end_cut is not None
         for cut in cuts
     )
     
     # Check if top end has cuts  
     has_top_cut = any(
-        cut.maybe_end_cut == TimberReferenceEnd.TOP
+        cut.maybe_top_end_cut is not None
         for cut in cuts
     )
     
@@ -751,7 +783,7 @@ class CutTimber:
         # Try analytical approach first for simple HalfSpace cuts
         can_use_analytical = True
         for cut in self.cuts:
-            csg = cut.negative_csg
+            csg = cut.get_negative_csg_local()
             
             # Check if it's a simple HalfSpace or a Difference with HalfSpaces
             if isinstance(csg, HalfSpace):
@@ -1305,13 +1337,10 @@ class Frame:
     
     def _check_cut_no_floats(self, cut: Cutting):
         """Check a cut for float values."""
-        # Check the cut's transform
-        self._check_vector(cut.transform.position, "Cutting transform.position")
-        self._check_matrix(cut.transform.orientation.matrix, "Cutting transform.orientation")
-        
         # Cutting contains arbitrary CSG in negative_csg - would need recursive checking
         # For now, we'll skip deep CSG validation of the negative_csg field
         # (This could be extended to recursively check all CSG nodes if needed)
+        pass
     
     def _check_numeric_value(self, value: Numeric, description: str):
         """Check that a numeric value is not a float."""
