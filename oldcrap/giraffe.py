@@ -73,6 +73,6 @@ print("poop")
 print("Creating a box meow meow")
 obj1 = my_box("test_cube", 5, 5, 5)
 obj2 = my_cyl("test_cyl", 360, 2.5, 5)
-obj3 = fuse_obj("test_fuse", obj1, obj2)woo
+obj3 = fuse_obj("test_fuse", obj1, obj2)
 
 set_view()

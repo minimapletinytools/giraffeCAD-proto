@@ -43,6 +43,27 @@ pip install -r requirements.txt
 echo ""
 echo "✅ Setup complete!"
 echo ""
+
+# Check if uv is available
+if command -v uv &> /dev/null; then
+    echo "📝 Setting up ty (type checker) with uv..."
+    uv add --dev ty
+    echo "✅ ty installed via uv"
+    echo ""
+else
+    echo "📝 Note: uv is not installed (recommended for managing ty)"
+    echo ""
+    echo "To install uv:"
+    echo "   curl -LsSf https://astral.sh/uv/install.sh | sh"
+    echo ""
+    echo "Then install ty:"
+    echo "   uv add --dev ty"
+    echo ""
+    echo "Or install ty globally:"
+    echo "   curl -LsSf https://astral.sh/ty/install.sh | sh"
+    echo ""
+fi
+
 echo "🎯 Next steps:"
 echo "   1. Activate the virtual environment:"
 echo "      source venv/bin/activate"
@@ -53,7 +74,14 @@ echo ""
 echo "   3. Run tests with coverage:"
 echo "      python3 -m pytest code_goes_here/ --cov=code_goes_here --cov-report=html"
 echo ""
-echo "   4. When done, deactivate:"
+echo "   4. Run type checking:"
+if command -v uv &> /dev/null; then
+    echo "      uv run ty check"
+else
+    echo "      ty check  (install ty first - see TYPECHECK_SETUP.md)"
+fi
+echo ""
+echo "   5. When done, deactivate:"
 echo "      deactivate"
 echo ""
 

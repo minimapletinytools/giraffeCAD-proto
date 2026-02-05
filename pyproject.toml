@@ -1,0 +1,20 @@
+[project]
+name = "giraffeCAD"
+version = "0.1.0"
+description = "A library for programmatic timber frame CAD design"
+requires-python = ">=3.9"
+
+[tool.pytest.ini_options]
+# Pytest configuration
+testpaths = ["code_goes_here"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+[dependency-groups]
+dev = [
+    "ty>=0.0.15",
+]
+
+[tool.ty.src]
+exclude = ["oldcrap"]
