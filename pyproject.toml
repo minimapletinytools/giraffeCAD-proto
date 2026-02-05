@@ -17,4 +17,4 @@ dev = [
 ]
 
 [tool.ty.src]
-exclude = ["oldcrap"]
+exclude = ["oldcrap", "fusion360/libs"]
