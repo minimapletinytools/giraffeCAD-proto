@@ -559,9 +559,8 @@ class Timber:
 
 
 
-# TODO rename to Cutting or something
 @dataclass(frozen=True)
-class Cut:
+class Cutting:
     """
     A cut on a timber, defined by a CSG object representing the volume to be removed.
     
@@ -569,7 +568,7 @@ class Cut:
     in LOCAL coordinates (relative to timber.bottom_position).
     """
     # debug reference to the base timber we are cutting
-    # each Cut is tied to a timber so this is very reasonable to store here
+    # each Cutting is tied to a timber so this is very reasonable to store here
     timber: Timber
 
     # set these values by computing them relative to the timber features using helper functions 
@@ -641,10 +640,10 @@ class CutTimber:
     
     # Declare members
     timber: Timber
-    cuts: List['Cut']
+    cuts: List['Cutting']
     joints: List  # List of joints this timber participates in
     
-    def __init__(self, timber: Timber, cuts: List['Cut'] = None):
+    def __init__(self, timber: Timber, cuts: List['Cutting'] = None):
         """
         Create a CutTimber from a Timber.
         
@@ -1129,7 +1128,7 @@ class Frame:
             timber = cut_timber_list[0].timber
             
             # Collect all cuts from all CutTimber instances for this timber
-            all_cuts: List[Cut] = []
+            all_cuts: List[Cutting] = []
             for cut_timber in cut_timber_list:
                 all_cuts.extend(cut_timber.cuts)
             
@@ -1279,13 +1278,13 @@ class Frame:
             self._check_numeric_value(accessory.length, f"Wedge length")
             self._check_matrix(accessory.transform.orientation.matrix, f"Wedge transform.orientation")
     
-    def _check_cut_no_floats(self, cut: Cut):
+    def _check_cut_no_floats(self, cut: Cutting):
         """Check a cut for float values."""
         # Check the cut's transform
-        self._check_vector(cut.transform.position, "Cut transform.position")
-        self._check_matrix(cut.transform.orientation.matrix, "Cut transform.orientation")
+        self._check_vector(cut.transform.position, "Cutting transform.position")
+        self._check_matrix(cut.transform.orientation.matrix, "Cutting transform.orientation")
         
-        # Cut contains arbitrary CSG in negative_csg - would need recursive checking
+        # Cutting contains arbitrary CSG in negative_csg - would need recursive checking
         # For now, we'll skip deep CSG validation of the negative_csg field
         # (This could be extended to recursively check all CSG nodes if needed)
     
@@ -1317,9 +1316,5 @@ class Frame:
             for j in range(mat.cols):
                 self._check_numeric_value(mat[i, j], f"{description}[{i},{j}]")
 
-
-# ============================================================================
-# Cut Classes
-# ============================================================================
 
 

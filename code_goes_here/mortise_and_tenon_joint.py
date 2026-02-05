@@ -300,7 +300,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     )
     
     # Create the Cut for the mortise
-    mortise_cut = Cut(
+    mortise_cut = Cutting(
         timber=mortise_timber,
         transform=Transform(position=mortise_timber.get_bottom_position_global(), orientation=mortise_timber.orientation),
         maybe_end_cut=None,
@@ -399,7 +399,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     )
     
     # Create a single CSG cut
-    tenon_cut = Cut(
+    tenon_cut = Cutting(
         timber=tenon_timber,
         transform=Transform(position=tenon_timber.get_bottom_position_global(), orientation=tenon_timber.orientation),
         maybe_end_cut=tenon_end,
@@ -654,7 +654,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         if peg_holes_in_tenon_local:
             # Union peg holes into the negative cut CSG for tenon (single union with all children)
             tenon_cut_with_pegs_csg = CSGUnion(children=[tenon_cut_csg] + peg_holes_in_tenon_local)
-            tenon_cut = Cut(
+            tenon_cut = Cutting(
                 timber=tenon_timber,
                 transform=Transform(position=tenon_timber.get_bottom_position_global(), orientation=tenon_timber.orientation),
                 maybe_end_cut=tenon_end,
@@ -665,7 +665,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         if peg_holes_in_mortise_local:
             # Union peg holes into the negative cut CSG for mortise (single union with all children)
             mortise_cut_with_pegs_csg = CSGUnion(children=[tenon_prism_in_mortise_local] + peg_holes_in_mortise_local)
-            mortise_cut = Cut(
+            mortise_cut = Cutting(
                 timber=mortise_timber,
                 transform=Transform(position=mortise_timber.get_bottom_position_global(), orientation=mortise_timber.orientation),
                 maybe_end_cut=None,

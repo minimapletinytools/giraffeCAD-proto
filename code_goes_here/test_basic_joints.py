@@ -95,8 +95,8 @@ class TestMiterJoint:
         assert joint.cut_timbers["timberB"].cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
 
         # check that the two cuts are Cut objects
-        assert isinstance(joint.cut_timbers["timberA"].cuts[0], Cut)
-        assert isinstance(joint.cut_timbers["timberB"].cuts[0], Cut)
+        assert isinstance(joint.cut_timbers["timberA"].cuts[0], Cutting)
+        assert isinstance(joint.cut_timbers["timberB"].cuts[0], Cutting)
 
         # Convert normals to global space and check if they are opposite
         self.assert_miter_joint_normals_are_opposite(joint, timberA, timberB)
@@ -148,8 +148,8 @@ class TestMiterJoint:
             assert len(joint.cut_timbers) == 2
             
             # Verify the cuts are Cut objects
-            assert isinstance(joint.cut_timbers["timberA"].cuts[0], Cut)
-            assert isinstance(joint.cut_timbers["timberB"].cuts[0], Cut)
+            assert isinstance(joint.cut_timbers["timberA"].cuts[0], Cutting)
+            assert isinstance(joint.cut_timbers["timberB"].cuts[0], Cutting)
             
             # Verify normals are opposite in global space
             self.assert_miter_joint_normals_are_opposite(joint, timberA, timberB)
@@ -206,7 +206,7 @@ class TestButtJoint:
         assert joint.cut_timbers["butt_timber"].cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
 
         # Verify the cut is a Cut object
-        assert isinstance(joint.cut_timbers["butt_timber"].cuts[0], Cut)
+        assert isinstance(joint.cut_timbers["butt_timber"].cuts[0], Cutting)
 
         # Verify that the cut normal in global space is parallel or anti-parallel to timberB's length direction
         # For an end cut (butt joint), the cut plane is perpendicular to the timber's length axis,
@@ -458,7 +458,7 @@ class TestHouseJoint:
         housing_cut_timber = joint.cut_timbers["timberA"]
         cut = housing_cut_timber.cuts[0]
         
-        assert isinstance(cut, Cut), "Cut should be a Cut object"
+        assert isinstance(cut, Cutting), "Cut should be a Cutting object"
         
         # Get the negative CSG (the prism being cut away)
         # This is in the housing timber's LOCAL coordinate system
