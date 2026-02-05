@@ -231,7 +231,7 @@ class Footprint:
             raise ValueError("Footprint must have at least 2 corners")
         
         sides = self.sides()
-        min_distance = None
+        min_distance = float('inf')
         nearest_idx = 0
         
         px, py = point[0], point[1]
@@ -259,7 +259,7 @@ class Footprint:
                 # Distance to closest point
                 distance = ((px - closest_x) ** 2 + (py - closest_y) ** 2) ** 0.5
             
-            if min_distance is None or distance < min_distance:
+            if distance < min_distance:
                 min_distance = distance
                 nearest_idx = i
         
@@ -342,13 +342,13 @@ class Footprint:
             raise ValueError("Footprint must have at least 2 corners")
         
         sides = self.sides()
-        min_distance = None
+        min_distance = float('inf')
         nearest_idx = 0
         
         for i, (start, end) in enumerate(sides):
             distance = _segment_to_segment_distance(line_start, line_end, start, end)
             
-            if min_distance is None or distance < min_distance:
+            if distance < min_distance:
                 min_distance = distance
                 nearest_idx = i
         

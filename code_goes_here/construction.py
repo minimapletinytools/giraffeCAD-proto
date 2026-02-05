@@ -91,8 +91,8 @@ class Stickout:
     """
     stickout1: Numeric = 0
     stickout2: Numeric = 0
-    stickoutReference1: 'StickoutReference' = None
-    stickoutReference2: 'StickoutReference' = None
+    stickoutReference1: Optional['StickoutReference'] = None
+    stickoutReference2: Optional['StickoutReference'] = None
     
     def __post_init__(self):
         """Set default stickout references if not provided."""
@@ -102,7 +102,7 @@ class Stickout:
             object.__setattr__(self, 'stickoutReference2', StickoutReference.CENTER_LINE)
     
     @classmethod
-    def symmetric(cls, value: Numeric, reference: 'StickoutReference' = None) -> 'Stickout':
+    def symmetric(cls, value: Numeric, reference: Optional['StickoutReference'] = None) -> 'Stickout':
         """
         Create a symmetric stickout where both sides extend by the same amount.
         

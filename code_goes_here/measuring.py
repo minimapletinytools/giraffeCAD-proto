@@ -158,7 +158,7 @@ class HalfPlane:
         return f"HalfPlane(normal={self.normal}, point_on_line={self.point_on_line}, line_direction={self.line_direction})"
 
 
-#dataclass(frozen=True)
+@dataclass(frozen=True)
 class Space:
     """
     Represents an ORIENTED 3D space.
@@ -313,7 +313,7 @@ class MarkingSpace(Marking):
 # Helper Functions
 # ============================================================================
 
-def get_point_on_face_global(face: TimberFace, timber: Timber) -> V3:
+def get_point_on_face_global(face: Union[TimberFace, TimberReferenceEnd, TimberLongFace], timber: Timber) -> V3:
     """
     Get a point on the timber face. Useful for projecting points onto the face.
     
@@ -350,7 +350,7 @@ def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
 # ============================================================================
 
 
-def measure_face(timber: Timber, face: TimberFace) -> Plane:
+def measure_face(timber: Timber, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]) -> Plane:
     """
     Mark a face on a timber, returning a Plane centered on the face pointing outward.
 
@@ -461,8 +461,8 @@ def measure_centerline(timber: Timber) -> Line:
     return Line(length_direction, center_position)
 
 def measure_edge_on_face(timber: Timber, edge: TimberLongEdge, face: TimberFace) -> HalfPlane:
-    # TODO
-    pass
+    # TODO: Implement this function
+    raise NotImplementedError("measure_edge_on_face is not yet implemented")
 
 def measure_position_on_centerline_from_bottom(timber: Timber, distance: Numeric) -> Point:
     """
@@ -520,7 +520,7 @@ def measure_top_center_position(timber: Timber) -> Point:
     position = timber.get_bottom_position_global() + timber.get_length_direction_global() * timber.length
     return Point(position)
 
-def measure_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> UnsignedPlane:
+def measure_into_face(distance: Numeric, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace], timber: Timber) -> UnsignedPlane:
     """
     Mark a distance from a face on a timber.
     """
@@ -538,7 +538,7 @@ def measure_into_face(distance: Numeric, face: TimberFace, timber: Timber) -> Un
 # Marking functions
 # ============================================================================
 
-def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, face: TimberFace) -> DistanceFromFace:
+def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: Timber, face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]) -> DistanceFromFace:
     """
     Measure a feature from a face on a timber.
 

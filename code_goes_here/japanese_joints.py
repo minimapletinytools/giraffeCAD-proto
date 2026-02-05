@@ -170,7 +170,7 @@ def cut_lapped_gooseneck_joint(
     if not are_timbers_parallel(gooseneck_timber, receiving_timber):
         raise ValueError(
             "Timbers must be parallel for gooseneck joint construction (face-parallel required). "
-            f"Got gooseneck_timber axes: {gooseneck_timber.axis}, receiving_timber axes: {receiving_timber.axis}"
+            f"Got gooseneck_timber axes: {gooseneck_timber.get_length_direction_global()}, receiving_timber axes: {receiving_timber.get_length_direction_global()}"
         )
 
     # Find the opposing end on the gooseneck timber (the end that faces the receiving timber end)
@@ -630,8 +630,8 @@ def cut_lapped_dovetail_butt_joint(
     )
 
 
-def cut_mitered_and_keyed_lap_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timberA_reference_miter_face: TimberLongFace, timberB: Timber, timberB_end: TimberReferenceEnd, lap_start_lap_thickness: Numeric = None, distance_between_lap_and_outside: Numeric = None, num_laps: int = 2, key_width: Numeric = None, key_thickness: Numeric = None) -> Joint:
-
+def cut_mitered_and_keyed_lap_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timberA_reference_miter_face: TimberLongFace, timberB: Timber, timberB_end: TimberReferenceEnd, lap_start_lap_thickness: Optional[Numeric] = None, distance_between_lap_and_outside: Optional[Numeric] = None, num_laps: int = 2, key_width: Optional[Numeric] = None, key_thickness: Optional[Numeric] = None) -> Joint:
+    # TODO: Implement this function
     # assert that num_laps is >= 2
 
     # find timberB_reference_miter_face on timberB by looking for the face that has the same normal as timberA_reference_miter_face (use find closest oriented face and then assert that they are the same normal)
@@ -647,6 +647,8 @@ def cut_mitered_and_keyed_lap_joint(timberA: Timber, timberA_end: TimberReferenc
     # if lap_start_distance_from_reference_miter_face is none and lap_thickness is not none, set it to (miter_face_depth - lap_thickness*(num_laps))/
     # if lap_thickness is none and lap_start_distance_from_reference_miter_face is not none, set it to the (miter_face_depth - lap_start_distance_from_reference_miter_face) / (num_laps+1)
     # if both are none, set lap_start_distance_from_reference_miter_face and lap_thickness to the (miter_face_depth - lap_thickness*(num_laps))/2
+    
+    raise NotImplementedError("cut_mitered_and_keyed_lap_joint is not yet implemented")
     # if distance_between_lap_and_outside is none, set it to the miter_face_width * Rational(0.2) 
 
     # assert that lap_start_distance_from_reference_miter_face + lap_thickness*num_laps < miter_face_depth
