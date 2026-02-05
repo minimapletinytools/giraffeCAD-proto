@@ -357,7 +357,7 @@ def cut_lapped_gooseneck_joint(
 
     
     # Create Cut objects for each timber
-    receiving_timber_cut_obj = Cut(
+    receiving_timber_cut_obj = Cutting(
         timber=receiving_timber,
         transform=Transform.identity(), 
         maybe_end_cut=receiving_timber_end,
@@ -365,7 +365,7 @@ def cut_lapped_gooseneck_joint(
     )
 
     
-    gooseneck_timber_cut_obj = Cut(
+    gooseneck_timber_cut_obj = Cutting(
         timber=gooseneck_timber,
         transform=Transform.identity(), 
         maybe_end_cut=gooseneck_timber_end,
@@ -590,7 +590,7 @@ def cut_lapped_dovetail_butt_joint(
     # Create Cut objects for each timber
     # ========================================================================
     
-    dovetail_timber_cut_obj = Cut(
+    dovetail_timber_cut_obj = Cutting(
         timber=dovetail_timber,
         transform=Transform.identity(),
         maybe_end_cut=dovetail_timber_end,
@@ -603,7 +603,7 @@ def cut_lapped_dovetail_butt_joint(
     else:
         receiving_timber_negative_csg = dovetail_socket_csg
     
-    receiving_timber_cut_obj = Cut(
+    receiving_timber_cut_obj = Cutting(
         timber=receiving_timber,
         transform=Transform.identity(),
         maybe_end_cut=None,  # No end cut on receiving timber

@@ -13,7 +13,7 @@ from .testing_shavings import (
     assert_vectors_perpendicular,
     assert_vectors_parallel,
     assert_vector_normalized,
-    MockCut
+    MockCutting
 )
 
 
@@ -778,7 +778,7 @@ class TestCutTimber:
             normal=Matrix([Rational(0), Rational(0), Rational(1)]),
             offset=Rational(50)
         )
-        cut = Cut(
+        cut = Cutting(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -816,7 +816,7 @@ class TestCutTimber:
             normal=Matrix([Rational(0), Rational(0), Rational(1)]),
             offset=Rational(25)
         )
-        cut1 = Cut(
+        cut1 = Cutting(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -830,7 +830,7 @@ class TestCutTimber:
             normal=Matrix([Rational(0), Rational(0), Rational(-1)]),
             offset=Rational(-75)
         )
-        cut2 = Cut(
+        cut2 = Cutting(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -868,7 +868,7 @@ class TestCutTimber:
             normal=Matrix([Rational(0), Rational(0), Rational(-1)]),
             offset=Rational(-50)
         )
-        end_cut = Cut(
+        end_cut = Cutting(
             timber=timber,
             transform=Transform(
                 position=Matrix([Rational(0), Rational(0), Rational(0)]),
@@ -922,8 +922,8 @@ class TestFrameFromJoints:
         )
         
         # Create mock cuts for each timber
-        cut1 = MockCut(timber1, create_v3(0, 0, 0))
-        cut2 = MockCut(timber2, create_v3(0, 0, 0))
+        cut1 = MockCutting(timber1, create_v3(0, 0, 0))
+        cut2 = MockCutting(timber2, create_v3(0, 0, 0))
         
         # Create CutTimbers
         cut_timber1 = CutTimber(timber1, cuts=[cut1])
@@ -961,9 +961,9 @@ class TestFrameFromJoints:
         )
         
         # Create different cuts for the same timber
-        cut1 = MockCut(timber, create_v3(0, 0, 0))
-        cut2 = MockCut(timber, create_v3(0, 0, 0))
-        cut3 = MockCut(timber, create_v3(0, 0, 0))
+        cut1 = MockCutting(timber, create_v3(0, 0, 0))
+        cut2 = MockCutting(timber, create_v3(0, 0, 0))
+        cut3 = MockCutting(timber, create_v3(0, 0, 0))
         
         # Create multiple CutTimber instances for the same timber
         cut_timber1 = CutTimber(timber, cuts=[cut1])
@@ -1071,7 +1071,7 @@ class TestFrameFromJoints:
         
         # Create a joint with timber1
         joint = Joint(
-            cut_timbers={"timber1": CutTimber(timber1, cuts=[MockCut(timber1, create_v3(0, 0, 0))])},
+            cut_timbers={"timber1": CutTimber(timber1, cuts=[MockCutting(timber1, create_v3(0, 0, 0))])},
             jointAccessories={}
         )
         

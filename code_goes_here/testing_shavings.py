@@ -6,7 +6,7 @@ This module contains:
 - Timber factory functions (create_standard_vertical_timber, etc.)
 - Assertion helpers (assert_is_valid_rotation_matrix, etc.)
 - Test data generators (generate_random_orientation, etc.)
-- Mock objects (MockCut)
+- Mock objects (MockCutting)
 - Pytest fixtures
 """
 
@@ -289,9 +289,9 @@ def create_test_footprint(width=4, height=3) -> Footprint:
 # Mock Objects
 # ============================================================================
 
-class MockCut:
+class MockCutting:
     """
-    Mock Cut implementation for testing.
+    Mock Cutting implementation for testing.
     
     This mock can be used in place of actual Cut objects when testing
     CutTimber functionality without needing full cut implementations.
