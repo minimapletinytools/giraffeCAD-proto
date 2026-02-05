@@ -6,7 +6,7 @@ from enum import Enum
 from typing import List, Tuple
 from sympy import Matrix, Rational
 from dataclasses import dataclass
-from .moothymoth import *
+from .rule import *
 
 
 def _segment_to_segment_distance(seg1_start: V2, seg1_end: V2, 

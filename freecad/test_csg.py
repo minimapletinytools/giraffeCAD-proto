@@ -31,7 +31,7 @@ print("\nReloading all GiraffeCAD modules...")
 
 # List of modules to reload in dependency order
 modules_to_reload = [
-    'code_goes_here.moothymoth',
+    'code_goes_here.rule',
     'code_goes_here.footprint',
     'code_goes_here.meowmeowcsg',
     'code_goes_here.timber',

@@ -57,7 +57,7 @@ Finally, note that the feature classes in this module should NOT be used for any
 from dataclasses import dataclass
 from typing import Union
 from abc import ABC, abstractmethod
-from .moothymoth import *
+from .rule import *
 from .timber import *
 
 

@@ -122,7 +122,7 @@ def reload_all_modules():
     # List of modules to reload in dependency order
     modules_to_reload = [
         'code_goes_here',  # Reload the package itself first
-        'code_goes_here.moothymoth',
+        'code_goes_here.rule',
         'code_goes_here.footprint',
         'code_goes_here.meowmeowcsg',
         'code_goes_here.timber',
@@ -174,7 +174,7 @@ def render_basic_joints():
     Includes: miter joints, butt joints, splice joints, and house joints.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from code_goes_here.moothymoth import m
+    from code_goes_here.rule import m
     
     print("="*60)
     print("GiraffeCAD FreeCAD - All Basic Joints")
@@ -216,7 +216,7 @@ def render_mortise_and_tenon():
     Includes various mortise and tenon configurations with accessories like pegs.
     """
     from giraffe_render_freecad import render_frame, clear_document
-    from code_goes_here.moothymoth import inches
+    from code_goes_here.rule import inches
     
     print("="*70)
     print("GiraffeCAD FreeCAD - Mortise and Tenon Joint Examples")

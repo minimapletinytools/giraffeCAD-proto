@@ -4,7 +4,7 @@ Contains all core data structures and type definitions for the timber framing sy
 """
 
 from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify, Min, Max
-from .moothymoth import *
+from .rule import *
 from .footprint import *
 from .meowmeowcsg import *
 from enum import Enum
@@ -20,7 +20,7 @@ CSGDifference = Difference
 # Constants
 # ============================================================================
 
-# Epsilon constants are now imported from moothymoth module
+# Epsilon constants are now imported from rule module
 
 # Thresholds for geometric decisions
 OFFSET_TEST_POINT = Rational(1, 1000)  # Small offset (0.001) for testing inward direction on footprint

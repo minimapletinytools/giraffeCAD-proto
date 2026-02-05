@@ -5,7 +5,7 @@ Tests for rendering utilities shared across all rendering backends.
 import pytest
 from sympy import Matrix, Rational, Integer
 from .timber import timber_from_directions, create_v2, create_v3, CutTimber
-from .moothymoth import Orientation
+from .rule import Orientation
 from .rendering_utils import (
     sympy_to_float,
     matrix_to_floats,

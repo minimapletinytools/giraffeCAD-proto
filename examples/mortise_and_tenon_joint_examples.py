@@ -3,7 +3,7 @@ Example usage of mortise and tenon joint functions
 """
 
 from sympy import Matrix, Rational
-from code_goes_here.moothymoth import inches, Transform
+from code_goes_here.rule import inches, Transform
 from code_goes_here.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberLongFace, Peg,
     PegShape, timber_from_directions,

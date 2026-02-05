@@ -4,7 +4,7 @@ Random timber-related helper functions.
 Contains utility functions for working with timbers that don't fit into a more specific category.
 """
 
-from .moothymoth import *
+from .rule import *
 from .timber import *
 
 

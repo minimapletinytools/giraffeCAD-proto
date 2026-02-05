@@ -21,7 +21,7 @@ import time
 from typing import Optional, List, Tuple
 from sympy import Matrix, Float
 from giraffe import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge, Frame
-from code_goes_here.moothymoth import Orientation
+from code_goes_here.rule import Orientation
 from code_goes_here.meowmeowcsg import (
     MeowMeowCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )

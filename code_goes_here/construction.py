@@ -5,7 +5,7 @@ Contains functions for creating and manipulating timbers
 
 import warnings
 from code_goes_here.timber import *
-from code_goes_here.moothymoth import *
+from code_goes_here.rule import *
 from code_goes_here.measuring import *
 from code_goes_here.timber_shavings import *
 

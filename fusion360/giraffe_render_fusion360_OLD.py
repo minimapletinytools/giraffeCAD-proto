@@ -21,7 +21,7 @@ import time
 from typing import Optional, Tuple, List
 from sympy import Matrix, Float
 from giraffe import CutTimber, Timber, TimberFace, TimberReferenceEnd, TimberLongFace
-from code_goes_here.moothymoth import Orientation
+from code_goes_here.rule import Orientation
 
 
 def get_fusion_app() -> Optional[adsk.core.Application]:

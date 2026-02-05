@@ -51,7 +51,7 @@ except ImportError:
 from sympy import Matrix
 from giraffe import CutTimber, Timber, Frame
 from code_goes_here.timber import JointAccessory, Peg, Wedge, PegShape
-from code_goes_here.moothymoth import Orientation
+from code_goes_here.rule import Orientation
 from code_goes_here.meowmeowcsg import (
     MeowMeowCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )

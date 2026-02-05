@@ -9,7 +9,7 @@ from sympy import Matrix, Rational, Expr, sqrt, oo
 from typing import List, Optional, Union
 from dataclasses import dataclass, field, replace
 from abc import ABC, abstractmethod
-from .moothymoth import *
+from .rule import *
 
 
 class MeowMeowCSG(ABC):

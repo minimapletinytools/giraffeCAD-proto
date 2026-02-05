@@ -8,7 +8,7 @@ from __future__ import annotations  # Enable deferred annotation evaluation
 from code_goes_here.timber import *
 from code_goes_here.measuring import measure_top_center_position, measure_bottom_center_position, measure_position_on_centerline_from_bottom, measure_position_on_centerline_from_top
 from code_goes_here.construction import *
-from code_goes_here.moothymoth import *
+from code_goes_here.rule import *
 
 # ============================================================================
 # Parameter Classes for Mortise and Tenon Joints
@@ -290,7 +290,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Create a prism representing the tenon volume (in mortise timber's local space)
     from code_goes_here.meowmeowcsg import RectangularPrism
-    from code_goes_here.moothymoth import Transform
+    from code_goes_here.rule import Transform
     tenon_transform = Transform(position=tenon_origin_local, orientation=relative_orientation)
     tenon_prism_in_mortise_local = RectangularPrism(
         size=tenon_size,

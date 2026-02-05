@@ -123,7 +123,7 @@ Edit `CSG_EXAMPLE_TO_RENDER` in `run_examples.py` to choose which test to run.
 
 The scripts reload modules in dependency order:
 
-1. `code_goes_here.moothymoth` - Core math/orientation
+1. `code_goes_here.rule` - Core math/orientation
 2. `code_goes_here.footprint` - 2D footprints
 3. `code_goes_here.meowmeowcsg` - CSG operations
 4. `code_goes_here.timber` - Timber data structures
@@ -160,7 +160,7 @@ GiraffeCAD FreeCAD - Examples Runner
 ======================================================================
 
 Reloading all GiraffeCAD modules...
-  ✓ Reloaded code_goes_here.moothymoth
+  ✓ Reloaded code_goes_here.rule
   ✓ Reloaded code_goes_here.timber
   ✓ Reloaded code_goes_here.construction
   ✓ Reloaded code_goes_here.mortise_and_tenon_joint

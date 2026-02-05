@@ -94,7 +94,7 @@ def reload_all_modules():
     # List of modules to reload in dependency order
     modules_to_reload = [
         'code_goes_here',  # Reload the package itself first
-        'code_goes_here.moothymoth',
+        'code_goes_here.rule',
         'code_goes_here.footprint',
         'code_goes_here.meowmeowcsg',
         'code_goes_here.timber',
@@ -144,7 +144,7 @@ def reload_all_modules():
 def render_basic_joints():
     """Render all basic joint examples using anthology PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from code_goes_here.moothymoth import m
+    from code_goes_here.rule import m
     
     print("="*60)
     print("GiraffeCAD Fusion 360 - All Basic Joints")
@@ -183,7 +183,7 @@ def render_basic_joints():
 def render_mortise_and_tenon():
     """Render mortise and tenon joint examples with pegs using anthology PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from code_goes_here.moothymoth import inches
+    from code_goes_here.rule import inches
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - Mortise and Tenon Joint Examples")

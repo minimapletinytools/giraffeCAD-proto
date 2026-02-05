@@ -8,7 +8,7 @@ and raise them at different positions for visualization and testing.
 from sympy import Rational
 from typing import List, Tuple, Optional, Callable, Union, Literal
 from dataclasses import dataclass, field
-from .moothymoth import V3, create_v3
+from .rule import V3, create_v3
 from .timber import Frame, CutTimber
 from .meowmeowcsg import MeowMeowCSG
 

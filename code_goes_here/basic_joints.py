@@ -5,7 +5,7 @@ Contains functions for creating joints between timbers
 
 from code_goes_here.timber import *
 from code_goes_here.construction import *
-from code_goes_here.moothymoth import *
+from code_goes_here.rule import *
 from code_goes_here.joint_shavings import *
 from code_goes_here.measuring import measure_top_center_position, measure_bottom_center_position
 
