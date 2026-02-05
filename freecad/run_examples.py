@@ -304,16 +304,12 @@ def render_oscar_shed():
     print(f"Total accessories (pegs): {len(frame.accessories)}")
     
     # Print bounding box information
-    # TODO this is in meters but prints in inches
-    # disabled cuz it's slow AF
-    """
-    min_corner, max_corner = frame.DEPRECATED_approximate_bounding_box()
+    min_corner, max_corner = frame.get_bounding_box()
     size = max_corner - min_corner
-    print(f"\nFrame bounding box size: {float(size[0]):.2f}\" x {float(size[1]):.2f}\" x {float(size[2]):.2f}\"")
-    print(f"  X: {float(min_corner[0]):.2f}\" to {float(max_corner[0]):.2f}\"")
-    print(f"  Y: {float(min_corner[1]):.2f}\" to {float(max_corner[1]):.2f}\"")
-    print(f"  Z: {float(min_corner[2]):.2f}\" to {float(max_corner[2]):.2f}\"")
-    """
+    print(f"\nFrame bounding box size: {float(size[0]):.2f}m x {float(size[1]):.2f}m x {float(size[2]):.2f}m")
+    print(f"  X: {float(min_corner[0]):.2f}m to {float(max_corner[0]):.2f}m")
+    print(f"  Y: {float(min_corner[1]):.2f}m to {float(max_corner[1]):.2f}m")
+    print(f"  Z: {float(min_corner[2]):.2f}m to {float(max_corner[2]):.2f}m")
     
     # Clear and render
     print("\nClearing FreeCAD document...")

@@ -1193,7 +1193,7 @@ class TestFrameBoundingBox:
         frame = Frame(cut_timbers=[cut_timber])
         
         # Get bounding box
-        min_corner, max_corner = frame.DEPRECATED_approximate_bounding_box()
+        min_corner, max_corner = frame.get_bounding_box()
         
         # Expected bounds: timber goes from (10, 20, 5) to (10, 20, 5+96)
         # with cross section centered at (10, 20), spanning ±2 inches in X and Y
@@ -1277,7 +1277,7 @@ class TestFrameBoundingBox:
         assert timberB_length < Rational(18), f"Cut timber length {timberB_length} should be < 18 (20 - 2)"
         
         # Get overall bounding box
-        min_corner, max_corner = frame.DEPRECATED_approximate_bounding_box()
+        min_corner, max_corner = frame.get_bounding_box()
         size = max_corner - min_corner
         
         # Z span should be about 4 (timber thickness)
@@ -1294,6 +1294,6 @@ class TestFrameBoundingBox:
         frame = Frame(cut_timbers=[])
         
         with pytest.raises(ValueError) as exc_info:
-            frame.DEPRECATED_approximate_bounding_box()
+            frame.get_bounding_box()
         
         assert "empty frame" in str(exc_info.value).lower()

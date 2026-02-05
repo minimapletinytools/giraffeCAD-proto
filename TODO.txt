@@ -170,8 +170,8 @@ CSGTimber?
 :: TODO
 
 -make examples of how to use measure/mark to set parameters in cutting functions
--maybe change cutting to have maybe_top/bottom_end_cut 
--add timber size estimation function (really you want a prism BB)
+DONE-maybe change cutting to have maybe_top/bottom_end_cut 
+DONE-add timber size estimation function (really you want a prism BB)
   -then add frame size estimation function
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
 -update morties and tenon to support

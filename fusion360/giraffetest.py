@@ -278,7 +278,7 @@ def render_oscar_shed():
     print(f"Total accessories (pegs): {len(frame.accessories)}")
     
     # Print bounding box information
-    min_corner, max_corner = frame.DEPRECATED_approximate_bounding_box()
+    min_corner, max_corner = frame.get_bounding_box()
     size = max_corner - min_corner
     print(f"\nFrame bounding box size: {float(size[0]):.2f}\" x {float(size[1]):.2f}\" x {float(size[2]):.2f}\"")
     print(f"  X: {float(min_corner[0]):.2f}\" to {float(max_corner[0]):.2f}\"")
