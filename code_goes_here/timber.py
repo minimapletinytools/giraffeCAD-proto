@@ -758,7 +758,7 @@ class CutTimber:
 
     
     # TODO test me
-    def approximate_bounding_prism(self) -> RectangularPrism:
+    def DEPRECATED_approximate_bounding_prism(self) -> RectangularPrism:
         """
         TODO someday we want a fully analytical solution for this, but for now this is sufficient for our needs.
 
@@ -1209,7 +1209,7 @@ class Frame:
             name=name
         )
     
-    def approximate_bounding_box(self) -> tuple[V3, V3]:
+    def DEPRECATED_approximate_bounding_box(self) -> tuple[V3, V3]:
         """
         Get the axis-aligned bounding box for the entire frame in global coordinates.
         
@@ -1230,7 +1230,7 @@ class Frame:
             raise ValueError("Cannot compute bounding box for empty frame (no cut timbers)")
         
         # Get bounding prism for each cut timber
-        bounding_prisms = [ct.approximate_bounding_prism() for ct in self.cut_timbers]
+        bounding_prisms = [ct.DEPRECATED_approximate_bounding_prism() for ct in self.cut_timbers]
         
         # For each prism, we need to find its 8 corners and track global min/max
         # Initialize with infinities
