@@ -2,7 +2,7 @@
 FreeCAD rendering module for GiraffeCAD timber framing system using CSG.
 
 This module provides functions to render timber structures in FreeCAD
-using the MeowMeowCSG system for constructive solid geometry operations.
+using the CutCSG system for constructive solid geometry operations.
 
 UNIT CONVERSION:
     GiraffeCAD uses METERS internally, FreeCAD uses MILLIMETERS by default.
@@ -52,8 +52,8 @@ from sympy import Matrix
 from giraffe import CutTimber, Timber, Frame
 from code_goes_here.timber import JointAccessory, Peg, Wedge, PegShape
 from code_goes_here.rule import Orientation
-from code_goes_here.meowmeowcsg import (
-    MeowMeowCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
+from code_goes_here.cutcsg import (
+    CutCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from code_goes_here.rendering_utils import (
     calculate_structure_extents,
@@ -435,7 +435,7 @@ def create_convex_polygon_extrusion_shape(extrusion: ConvexPolygonExtrusion) -> 
         return None
 
 
-def render_csg_shape(csg: MeowMeowCSG, timber: Optional[Timber] = None, 
+def render_csg_shape(csg: CutCSG, timber: Optional[Timber] = None, 
                      infinite_extent: float = 10000.0,
                      halfspace_as_solid: bool = False) -> Optional['Part.Shape']:
     """

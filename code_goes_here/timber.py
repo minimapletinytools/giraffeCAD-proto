@@ -6,7 +6,7 @@ Contains all core data structures and type definitions for the timber framing sy
 from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify, Min, Max
 from .rule import *
 from .footprint import *
-from .meowmeowcsg import *
+from .cutcsg import *
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict
 from dataclasses import dataclass, field
@@ -558,6 +558,8 @@ class Timber:
 # ============================================================================
 
 
+
+# TODO rename to Cutting or something
 @dataclass(frozen=True)
 class Cut:
     """
@@ -579,13 +581,13 @@ class Cut:
 
     # The negative CSG of the cut (the part of the timber that is removed by the cut)
     # in LOCAL coordinates (relative to timber.bottom_position)
-    negative_csg: MeowMeowCSG
+    negative_csg: CutCSG
     
-    def get_negative_csg_local(self) -> MeowMeowCSG:
+    def get_negative_csg_local(self) -> CutCSG:
         return self.negative_csg
 
 
-def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
+def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> CutCSG:
     """
     Helper function to create a prism CSG for a timber in LOCAL coordinates, 
     extending ends with cuts to infinity.
@@ -601,7 +603,7 @@ def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> MeowMeowCSG:
     Returns:
         RectangularPrism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
     """
-    from .meowmeowcsg import RectangularPrism
+    from .cutcsg import RectangularPrism
     
     # Check if bottom end has cuts
     has_bottom_cut = any(
@@ -660,7 +662,7 @@ class CutTimber:
         return self.timber.name
 
     # this one returns the timber without cuts where ends with joints are infinite in length
-    def _extended_timber_without_cuts_csg_local(self) -> MeowMeowCSG:
+    def _extended_timber_without_cuts_csg_local(self) -> CutCSG:
         """
         Returns a CSG representation of the timber without any cuts applied.
         
@@ -676,7 +678,7 @@ class CutTimber:
         return _create_timber_prism_csg_local(self.timber, self.cuts)
 
     # this one returns the timber with all cuts applied
-    def render_timber_with_cuts_csg_local(self) -> MeowMeowCSG:
+    def render_timber_with_cuts_csg_local(self) -> CutCSG:
         """
         Returns a CSG representation of the timber with all cuts applied.
 
@@ -695,7 +697,7 @@ class CutTimber:
         negative_csgs = [cut.get_negative_csg_local() for cut in self.cuts]
         
         # Return the difference: timber - all cuts
-        from .meowmeowcsg import Difference
+        from .cutcsg import Difference
         return Difference(starting_csg, negative_csgs)
 
     
@@ -713,7 +715,7 @@ class CutTimber:
         Returns:
             RectangularPrism: The bounding box for the cut timber in global coordinates
         """
-        from .meowmeowcsg import RectangularPrism, HalfSpace, Difference
+        from .cutcsg import RectangularPrism, HalfSpace, Difference
         
         # Start with the timber's original bounds (in local coordinates)
         min_z = Rational(0)
@@ -840,7 +842,7 @@ class JointAccessory(ABC):
     """Base class for joint accessories like wedges, drawbores, etc."""
     
     @abstractmethod
-    def render_csg_local(self) -> MeowMeowCSG:
+    def render_csg_local(self) -> CutCSG:
         """
         Generate CSG representation of the accessory in local space.
         
@@ -848,7 +850,7 @@ class JointAccessory(ABC):
         where the CSG is generated at the origin with identity orientation.
         
         Returns:
-            MeowMeowCSG: The CSG representation of the accessory in local space
+            CutCSG: The CSG representation of the accessory in local space
         """
         pass
 
@@ -895,7 +897,7 @@ class Peg(JointAccessory):
     # how far the peg "sticks out" in the back direction
     stickout_length: Numeric
     
-    def render_csg_local(self) -> MeowMeowCSG:
+    def render_csg_local(self) -> CutCSG:
         """
         Generate CSG representation of the peg in local space.
         
@@ -903,7 +905,7 @@ class Peg(JointAccessory):
         extending from -stickout_length to forward_length along the Z axis.
         
         Returns:
-            MeowMeowCSG: The CSG representation of the peg
+            CutCSG: The CSG representation of the peg
         """
         if self.shape == PegShape.SQUARE:
             # Square peg - use RectangularPrism with square cross-section
@@ -974,7 +976,7 @@ class Wedge(JointAccessory):
         """Alias for base_width for convenience."""
         return self.base_width
     
-    def render_csg_local(self) -> MeowMeowCSG:
+    def render_csg_local(self) -> CutCSG:
         """
         Generate CSG representation of the wedge in local space.
         
@@ -987,7 +989,7 @@ class Wedge(JointAccessory):
         TODO: Implement proper trapezoidal shape using half-plane intersections.
         
         Returns:
-            MeowMeowCSG: The CSG representation of the wedge
+            CutCSG: The CSG representation of the wedge
         """
         # Create a rectangular prism bounding box
         # The origin is at the bottom center of the base (z=0, y=0, x=0)

@@ -10,11 +10,11 @@ from typing import List, Tuple, Optional, Callable, Union, Literal
 from dataclasses import dataclass, field
 from .rule import V3, create_v3
 from .timber import Frame, CutTimber
-from .meowmeowcsg import MeowMeowCSG
+from .cutcsg import CutCSG
 
 
 # Type alias for pattern functions
-PatternLambda = Callable[[V3], Union[Frame, MeowMeowCSG]]
+PatternLambda = Callable[[V3], Union[Frame, CutCSG]]
 
 
 @dataclass(frozen=True)
@@ -42,7 +42,7 @@ class PatternBook:
     """
     A collection of patterns with functions to raise them at different positions.
     
-    Patterns can be either Frame objects or MeowMeowCSG objects, and can be organized
+    Patterns can be either Frame objects or CutCSG objects, and can be organized
     into groups for batch visualization with spacing.
     
     Attributes:
@@ -57,7 +57,7 @@ class PatternBook:
             duplicates = [name for name in names if names.count(name) > 1]
             raise ValueError(f"Duplicate pattern names found: {set(duplicates)}")
     
-    def raise_pattern(self, pattern_name: str, center: Optional[V3] = None) -> Union[Frame, MeowMeowCSG]:
+    def raise_pattern(self, pattern_name: str, center: Optional[V3] = None) -> Union[Frame, CutCSG]:
         """
         Raise a single pattern by name at the specified center location.
         
@@ -66,7 +66,7 @@ class PatternBook:
             center: Center location for the pattern (default: origin)
             
         Returns:
-            Frame or MeowMeowCSG object at the specified location
+            Frame or CutCSG object at the specified location
             
         Raises:
             ValueError: If pattern_name is not found
@@ -88,7 +88,7 @@ class PatternBook:
         group_name: str, 
         separation_distance: Union[float, int, Rational],
         start_center: Optional[V3] = None
-    ) -> Union[Frame, List[MeowMeowCSG]]:
+    ) -> Union[Frame, List[CutCSG]]:
         """
         Raise all patterns in a group, separated by the specified distance along the X-axis.
         
@@ -102,7 +102,7 @@ class PatternBook:
             
         Returns:
             For frame patterns: A single Frame containing all cut timbers from all patterns
-            For CSG patterns: A list of MeowMeowCSG objects
+            For CSG patterns: A list of CutCSG objects
             
         Raises:
             ValueError: If group_name is not found or if frame and CSG patterns are mixed

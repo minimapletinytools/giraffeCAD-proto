@@ -8,7 +8,7 @@ These functions help ensure that joints are geometrically valid and sensibly con
 from typing import Optional, Tuple, List, Union
 from code_goes_here.timber import *
 from code_goes_here.rule import *
-from code_goes_here.meowmeowcsg import *
+from code_goes_here.cutcsg import *
 from code_goes_here.construction import *
 from code_goes_here.measuring import *
 from sympy import Abs, Rational
@@ -336,7 +336,7 @@ def chop_lap_on_timber_end(
     lap_length: Numeric,
     lap_shoulder_position_from_lap_timber_end: Numeric,
     lap_depth: Numeric
-) -> MeowMeowCSG:
+) -> CutCSG:
     """
     Create CSG cuts for a lap joint between two timber ends.
     
@@ -363,7 +363,7 @@ def chop_lap_on_timber_end(
         lap_depth: Depth of material to remove (measured from lap_timber_face)
     
     Returns:
-        MeowMeowCSG representing material to remove from the timber
+        CutCSG representing material to remove from the timber
         CSG is in local coordinates of the timber
     
     Example:
@@ -478,7 +478,7 @@ def chop_lap_on_timber_ends(
     lap_length: Numeric,
     top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric,
     lap_depth: Numeric
-) -> Tuple[MeowMeowCSG, MeowMeowCSG]:
+) -> Tuple[CutCSG, CutCSG]:
     """
     Create CSG cuts for a lap joint between two timber ends.
     
@@ -630,7 +630,7 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
                                    (0, profile_y_offset_from_end) in the timber's end-face coordinate system.
 
     Returns:
-        MeowMeowCSG representing the extruded profile(s) in the timber's local coordinates.
+        CutCSG representing the extruded profile(s) in the timber's local coordinates.
         If multiple profiles are provided, returns a SolidUnion of all extruded profiles.
         
     Notes:
@@ -644,7 +644,7 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
     """
     from sympy import Rational, Matrix
     from .rule import Orientation, Transform, create_v3, cross_product, normalize_vector
-    from .meowmeowcsg import ConvexPolygonExtrusion
+    from .cutcsg import ConvexPolygonExtrusion
     
     # Check if we have a single profile or multiple profiles
     # If the first element is a list, we have multiple profiles

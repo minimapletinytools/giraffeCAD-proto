@@ -249,7 +249,7 @@ GiraffeCAD uses a modular architecture with shared utilities across rendering ba
 ```
 code_goes_here/
 ├── timber.py              # Core timber and joint data structures
-├── meowmeowcsg.py        # CSG (Constructive Solid Geometry) operations
+├── cutcsg.py        # CSG (Constructive Solid Geometry) operations
 ├── rule.py         # Orientation and rotation utilities
 ├── rendering_utils.py    # Shared rendering utilities (NEW!)
 └── basic_joints.py       # Joint construction functions

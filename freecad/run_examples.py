@@ -72,7 +72,7 @@ def create_anthology_pattern_book():
     from examples.oscarshed import create_oscar_shed_patternbook
     from examples.japanese_joints_example import create_japanese_joints_patternbook
     from examples.irrational_angles_example import create_irrational_angles_patternbook
-    from examples.MeowMeowCSG_examples import create_csg_examples_patternbook
+    from examples.CutCSG_examples import create_csg_examples_patternbook
     
     # Create all individual pattern books
     books = [
@@ -124,7 +124,7 @@ def reload_all_modules():
         'code_goes_here',  # Reload the package itself first
         'code_goes_here.rule',
         'code_goes_here.footprint',
-        'code_goes_here.meowmeowcsg',
+        'code_goes_here.cutcsg',
         'code_goes_here.timber',
         'code_goes_here.measuring',
         'code_goes_here.construction',
@@ -145,7 +145,7 @@ def reload_all_modules():
         'examples.japanese_joints_example',
         'examples.irrational_angles_example',
         'examples.construction_examples',
-        'examples.MeowMeowCSG_examples',
+        'examples.CutCSG_examples',
     ]
     
     # Re-import all modules in dependency order
@@ -461,7 +461,7 @@ def render_csg():
     Edit CSG_EXAMPLE_TO_RENDER to choose which example to render.
     """
     from giraffe_render_freecad import render_csg_shape, clear_document, get_active_document
-    from examples.MeowMeowCSG_examples import EXAMPLES
+    from examples.CutCSG_examples import EXAMPLES
     
     print("="*60)
     print("GiraffeCAD FreeCAD - CSG Test")

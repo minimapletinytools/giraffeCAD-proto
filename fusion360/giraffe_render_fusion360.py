@@ -2,7 +2,7 @@
 Fusion 360 rendering module for GiraffeCAD timber framing system using CSG.
 
 This module provides functions to render timber structures in Autodesk Fusion 360
-using the MeowMeowCSG system for constructive solid geometry operations.
+using the CutCSG system for constructive solid geometry operations.
 """
 
 # Module load tracker - must use app.log for Fusion 360 console
@@ -22,8 +22,8 @@ from typing import Optional, List, Tuple
 from sympy import Matrix, Float
 from giraffe import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge, Frame
 from code_goes_here.rule import Orientation
-from code_goes_here.meowmeowcsg import (
-    MeowMeowCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
+from code_goes_here.cutcsg import (
+    CutCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from code_goes_here.rendering_utils import (
     calculate_structure_extents,
@@ -269,15 +269,15 @@ def render_prism_in_local_space(component: adsk.fusion.Component, prism: Rectang
         return None
 
 
-def render_meowmeowcsg_component_at_origin(csg: MeowMeowCSG, component_name: str = "CSG_Component", timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.Occurrence]:
+def render_cutcsg_component_at_origin(csg: CutCSG, component_name: str = "CSG_Component", timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.Occurrence]:
     """
-    Render a MeowMeowCSG object as a new component in Fusion 360 AT THE ORIGIN.
+    Render a CutCSG object as a new component in Fusion 360 AT THE ORIGIN.
     
     This creates all geometry in local space at the origin. Transforms should be applied
     separately in a later pass for better reliability.
     
     Args:
-        csg: MeowMeowCSG object to render
+        csg: CutCSG object to render
         component_name: Name for the created component
         timber: Optional timber object (needed for coordinate transformations during cuts)
         infinite_extent: Extent to use for infinite geometry (in cm)
@@ -308,19 +308,19 @@ def render_meowmeowcsg_component_at_origin(csg: MeowMeowCSG, component_name: str
         return occurrence
         
     except Exception as e:
-        print(f"Error rendering MeowMeowCSG component: {e}")
+        print(f"Error rendering CutCSG component: {e}")
         traceback.print_exc()
         return None
 
 
-def render_csg_pattern(csg: MeowMeowCSG, pattern_name: str = "CSG", infinite_extent: float = 10000.0) -> int:
+def render_csg_pattern(csg: CutCSG, pattern_name: str = "CSG", infinite_extent: float = 10000.0) -> int:
     """
     Render a standalone CSG object (not associated with a timber) in Fusion 360.
     
     This is a convenience function for rendering CSG patterns from PatternBook.
     
     Args:
-        csg: MeowMeowCSG object to render
+        csg: CutCSG object to render
         pattern_name: Name for the component
         infinite_extent: Extent for infinite geometry (in cm)
         
@@ -332,8 +332,8 @@ def render_csg_pattern(csg: MeowMeowCSG, pattern_name: str = "CSG", infinite_ext
     if app:
         app.log(f"Rendering CSG pattern: {pattern_name}")
     
-    # Use existing render_meowmeowcsg_component_at_origin() which already handles CSG rendering
-    occurrence = render_meowmeowcsg_component_at_origin(
+    # Use existing render_cutcsg_component_at_origin() which already handles CSG rendering
+    occurrence = render_cutcsg_component_at_origin(
         csg=csg, 
         component_name=pattern_name,
         timber=None,
@@ -352,7 +352,7 @@ def render_csg_pattern(csg: MeowMeowCSG, pattern_name: str = "CSG", infinite_ext
         return 0
 
 
-def render_csg_in_local_space(component: adsk.fusion.Component, csg: MeowMeowCSG, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
+def render_csg_in_local_space(component: adsk.fusion.Component, csg: CutCSG, timber: Optional[Timber] = None, infinite_extent: float = 10000.0) -> Optional[adsk.fusion.BRepBody]:
     """
     Render a CSG object in the component's (timber's) local coordinate system.
     
@@ -1317,7 +1317,7 @@ def render_accessory_at_origin(accessory: JointAccessory, component_name: str, i
         accessory_csg = accessory.render_csg_local()
         
         # Render using the standard CSG rendering pipeline
-        occurrence = render_meowmeowcsg_component_at_origin(
+        occurrence = render_cutcsg_component_at_origin(
             csg=accessory_csg,
             component_name=component_name,
             timber=None,  # No timber needed for accessories
@@ -1473,7 +1473,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
             if app:
                 app.log(f"  About to render CSG (type: {type(csg).__name__})")
             
-            occurrence = render_meowmeowcsg_component_at_origin(csg, component_name, cut_timber.timber, infinite_geometry_extent)
+            occurrence = render_cutcsg_component_at_origin(csg, component_name, cut_timber.timber, infinite_geometry_extent)
             
             if occurrence is not None:
                 # Validate geometry extents

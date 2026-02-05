@@ -6,7 +6,7 @@ import pytest
 from sympy import Rational
 from .rule import create_v3, create_v2, inches, Transform, Orientation
 from .timber import timber_from_directions, Frame, CutTimber
-from .meowmeowcsg import RectangularPrism
+from .cutcsg import RectangularPrism
 from .patternbook import PatternMetadata, PatternBook, PatternLambda
 
 

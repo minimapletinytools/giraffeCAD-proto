@@ -378,7 +378,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     Raises:
         AssertionError: If timbers don't intersect, are parallel, or face normals are invalid
     """
-    from code_goes_here.meowmeowcsg import Difference, RectangularPrism, HalfSpace
+    from code_goes_here.cutcsg import Difference, RectangularPrism, HalfSpace
     
     # Verify that cut_ratio is in valid range [0, 1]
     assert 0 <= cut_ratio <= 1, f"cut_ratio must be in range [0, 1], got {cut_ratio}"
@@ -734,7 +734,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
         A shelf (housed_timber) fitting into the side of a cabinet (housing_timber).
         The cabinet side gets a groove cut into it to receive the shelf.
     """
-    from code_goes_here.meowmeowcsg import Difference, RectangularPrism
+    from code_goes_here.cutcsg import Difference, RectangularPrism
     
     # Verify that the timbers are not parallel (their length directions must differ)
     dot_product = (housing_timber.get_length_direction_global().T * housed_timber.get_length_direction_global())[0, 0]

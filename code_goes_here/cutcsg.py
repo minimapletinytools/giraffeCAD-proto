@@ -1,5 +1,5 @@
 """
-MeowMeowCSG - Constructive Solid Geometry operations for GiraffeCAD
+CutCSG - Constructive Solid Geometry operations for GiraffeCAD
 
 This module provides CSG primitives and operations for representing timber cuts
 and geometry operations. All operations use SymPy symbolic math for exact computation.
@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from .rule import *
 
 
-class MeowMeowCSG(ABC):
+class CutCSG(ABC):
     """Base class for all CSG operations."""
     
     @abstractmethod
@@ -49,7 +49,7 @@ class MeowMeowCSG(ABC):
 
 
 @dataclass(frozen=True)
-class HalfSpace(MeowMeowCSG):
+class HalfSpace(CutCSG):
     """
     An infinite half-plane defined by a normal vector and offset from origin.
     
@@ -103,7 +103,7 @@ class HalfSpace(MeowMeowCSG):
 
 
 @dataclass(frozen=True)
-class RectangularPrism(MeowMeowCSG):
+class RectangularPrism(CutCSG):
     """
     A prism with rectangular cross-section, optionally infinite in one or both ends.
     Note,they are parameterized similar to the Timber class which is atypical for such a primitive.
@@ -281,7 +281,7 @@ class RectangularPrism(MeowMeowCSG):
 
 
 @dataclass(frozen=True)
-class Cylinder(MeowMeowCSG):
+class Cylinder(CutCSG):
     """
     A cylinder with circular cross-section, optionally infinite in one or both ends.
     
@@ -394,7 +394,7 @@ class Cylinder(MeowMeowCSG):
 
 
 @dataclass(frozen=True)
-class SolidUnion(MeowMeowCSG):
+class SolidUnion(CutCSG):
     """
     CSG union operation - combines multiple CSG objects.
     
@@ -403,7 +403,7 @@ class SolidUnion(MeowMeowCSG):
     Args:
         children: List of CSG objects to union together
     """
-    children: List[MeowMeowCSG]
+    children: List[CutCSG]
     
     def __repr__(self) -> str:
         return f"SolidUnion({len(self.children)} children)"
@@ -453,7 +453,7 @@ class SolidUnion(MeowMeowCSG):
 
 
 @dataclass(frozen=True)
-class Difference(MeowMeowCSG):
+class Difference(CutCSG):
     """
     CSG difference operation - subtracts multiple CSG objects from a base object.
     
@@ -464,8 +464,8 @@ class Difference(MeowMeowCSG):
         base: The base CSG object to subtract from
         subtract: List of CSG objects to subtract from the base
     """
-    base: MeowMeowCSG
-    subtract: List[MeowMeowCSG]
+    base: CutCSG
+    subtract: List[CutCSG]
     
     def __repr__(self) -> str:
         return f"Difference(base={self.base}, subtract={len(self.subtract)} objects)"
@@ -571,7 +571,7 @@ def translate_profiles(profiles: Profiles, translation: V2) -> Profiles:
 
 
 @dataclass(frozen=True)
-class ConvexPolygonExtrusion(MeowMeowCSG):
+class ConvexPolygonExtrusion(CutCSG):
     """
     An extruded Convex Polygon shape, optionally infinite in one or both ends.
     
@@ -788,7 +788,7 @@ class ConvexPolygonExtrusion(MeowMeowCSG):
 # CSG Coordinate Transform Utility
 # ============================================================================
 
-def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: MeowMeowCSG) -> MeowMeowCSG:
+def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: CutCSG) -> CutCSG:
     """
     Transform a CSG object from one timber's local coordinate system to another timber's local coordinate system.
     

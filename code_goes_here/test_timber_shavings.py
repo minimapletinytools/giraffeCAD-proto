@@ -257,7 +257,7 @@ class TestPeg:
         csg = peg.render_csg_local()
         
         # Should return a RectangularPrism
-        from .meowmeowcsg import RectangularPrism
+        from .cutcsg import RectangularPrism
         assert isinstance(csg, RectangularPrism)
         
         # Verify dimensions
@@ -279,7 +279,7 @@ class TestPeg:
         csg = peg.render_csg_local()
         
         # Should return a Cylinder
-        from .meowmeowcsg import Cylinder
+        from .cutcsg import Cylinder
         assert isinstance(csg, Cylinder)
         
         # Verify dimensions
@@ -350,7 +350,7 @@ class TestWedge:
         csg = wedge.render_csg_local()
         
         # Should return a RectangularPrism (simplified bounding box for now)
-        from .meowmeowcsg import RectangularPrism
+        from .cutcsg import RectangularPrism
         assert isinstance(csg, RectangularPrism)
         
         # Verify dimensions match the base dimensions
