@@ -584,8 +584,8 @@ class Cutting:
     # each Cutting is tied to a timber so this is very reasonable to store here
     timber: Timber
 
-    # End cuts are special as they determine the end plane of the timber in that direction.
-    # If there is not an end cut in a direction, then the original timber end plane in that direction is used instead.
+    # these end cuts are special as they determine "rough cut" of the timber in that direction.
+    # If there is not an end cut in a direction, the original timber end point in that direction is used instead.
     maybe_top_end_cut: Optional[HalfSpace] = None
     maybe_bottom_end_cut: Optional[HalfSpace] = None
 
@@ -756,6 +756,83 @@ class CutTimber:
         from .cutcsg import Difference
         return Difference(starting_csg, negative_csgs)
 
+    def get_bounding_box_prism(self) -> RectangularPrism:
+        """
+        Get the bounding box prism for this timber including all its cuts.
+        The bounding box is aligned with the timber's orientation.
+        
+        Uses the end cuts (maybe_top_end_cut and maybe_bottom_end_cut) to determine
+        the extent of the timber along its length. For skewed end cuts, finds where
+        the plane intersects the four long edges of the timber and takes the max/min.
+        
+        Returns:
+            RectangularPrism: The bounding box for the cut timber in global coordinates
+        """
+        from .cutcsg import RectangularPrism, HalfSpace
+        
+        # Start with the timber's original bounds (in local coordinates)
+        min_z = Rational(0)
+        max_z = self.timber.length
+        
+        # Get timber half-sizes for the four corner edges
+        half_width = self.timber.size[0] / Rational(2)
+        half_height = self.timber.size[1] / Rational(2)
+        
+        # The four corner edges in local coordinates are at:
+        # (-half_width, -half_height, z), (half_width, -half_height, z),
+        # (-half_width, half_height, z), (half_width, half_height, z)
+        corner_positions = [
+            (half_width, half_height),
+            (half_width, -half_height),
+            (-half_width, half_height),
+            (-half_width, -half_height)
+        ]
+        
+        # Check all cuts for end cuts
+        for cut in self.cuts:
+            # Handle top end cut
+            if cut.maybe_top_end_cut is not None:
+                end_cut = cut.maybe_top_end_cut
+                # Find where the plane intersects each of the four corner edges
+                # Plane equation: normal · point = offset
+                # Point on edge: (corner_x, corner_y, z)
+                # Solve for z: normal[0]*corner_x + normal[1]*corner_y + normal[2]*z = offset
+                # z = (offset - normal[0]*corner_x - normal[1]*corner_y) / normal[2]
+                
+                intersections = []
+                for corner_x, corner_y in corner_positions:
+                    # Check if normal[2] is not zero (otherwise plane is perpendicular to length)
+                    if not equality_test(end_cut.normal[2], 0):
+                        z_intersect = (end_cut.offset - end_cut.normal[0]*corner_x - end_cut.normal[1]*corner_y) / end_cut.normal[2]
+                        intersections.append(z_intersect)
+                
+                # For top end cut, take the maximum intersection (furthest extent)
+                if intersections:
+                    max_z = Max(max_z, *intersections)
+            
+            # Handle bottom end cut
+            if cut.maybe_bottom_end_cut is not None:
+                end_cut = cut.maybe_bottom_end_cut
+                # Same logic as above
+                intersections = []
+                for corner_x, corner_y in corner_positions:
+                    if not equality_test(end_cut.normal[2], 0):
+                        z_intersect = (end_cut.offset - end_cut.normal[0]*corner_x - end_cut.normal[1]*corner_y) / end_cut.normal[2]
+                        intersections.append(z_intersect)
+                
+                # For bottom end cut, take the minimum intersection (furthest extent)
+                if intersections:
+                    min_z = Min(min_z, *intersections)
+        
+        return RectangularPrism(
+            size=self.timber.size,
+            transform=Transform(
+                position=self.timber.get_bottom_position_global(),
+                orientation=self.timber.orientation
+            ),
+            start_distance=min_z,
+            end_distance=max_z
+        )
     
     # TODO test me
     def DEPRECATED_approximate_bounding_prism(self) -> RectangularPrism:
@@ -1209,7 +1286,7 @@ class Frame:
             name=name
         )
     
-    def DEPRECATED_approximate_bounding_box(self) -> tuple[V3, V3]:
+    def get_bounding_box(self) -> tuple[V3, V3]:
         """
         Get the axis-aligned bounding box for the entire frame in global coordinates.
         
@@ -1230,7 +1307,7 @@ class Frame:
             raise ValueError("Cannot compute bounding box for empty frame (no cut timbers)")
         
         # Get bounding prism for each cut timber
-        bounding_prisms = [ct.DEPRECATED_approximate_bounding_prism() for ct in self.cut_timbers]
+        bounding_prisms = [ct.get_bounding_box_prism() for ct in self.cut_timbers]
         
         # For each prism, we need to find its 8 corners and track global min/max
         # Initialize with infinities
