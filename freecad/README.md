@@ -125,7 +125,7 @@ The scripts reload modules in dependency order:
 
 1. `code_goes_here.rule` - Core math/orientation
 2. `code_goes_here.footprint` - 2D footprints
-3. `code_goes_here.meowmeowcsg` - CSG operations
+3. `code_goes_here.cutcsg` - CSG operations
 4. `code_goes_here.timber` - Timber data structures
 5. `code_goes_here.construction` - Construction functions
 6. `code_goes_here.basic_joints` - Basic joint functions

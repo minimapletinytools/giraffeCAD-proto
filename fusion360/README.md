@@ -142,7 +142,7 @@ fusion360/
     ├── ../code_goes_here/ (core modules)
     │   ├── rule.py (3D rotations)
     │   ├── footprint.py (2D layouts)
-    │   ├── meowmeowcsg.py (CSG operations)
+    │   ├── cutcsg.py (CSG operations)
     │   ├── timber.py (timber class)
     │   ├── construction.py (timber helpers)
     │   └── basic_joints.py (joint functions)

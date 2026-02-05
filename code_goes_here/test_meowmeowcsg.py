@@ -1,5 +1,5 @@
 """
-Tests for meowmeowcsg.py module.
+Tests for cutcsg.py module.
 
 This module contains tests for the CSG primitives and operations.
 """
@@ -7,7 +7,7 @@ This module contains tests for the CSG primitives and operations.
 import pytest
 from sympy import Matrix, Rational, simplify, sqrt, cos, sin, pi
 from code_goes_here.rule import Orientation, Transform, create_v3
-from code_goes_here.meowmeowcsg import (
+from code_goes_here.cutcsg import (
     HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
 from .testing_shavings import assert_is_valid_rotation_matrix

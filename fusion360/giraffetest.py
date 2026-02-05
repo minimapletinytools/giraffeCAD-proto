@@ -96,7 +96,7 @@ def reload_all_modules():
         'code_goes_here',  # Reload the package itself first
         'code_goes_here.rule',
         'code_goes_here.footprint',
-        'code_goes_here.meowmeowcsg',
+        'code_goes_here.cutcsg',
         'code_goes_here.timber',
         'code_goes_here.construction',
         'code_goes_here.rendering_utils',
@@ -116,7 +116,7 @@ def reload_all_modules():
         'examples.oscarshed',
         'examples.japanese_joints_example',
         'examples.irrational_angles_example',
-        'examples.MeowMeowCSG_examples',
+        'examples.CutCSG_examples',
     ]
     
     # Re-import all modules in dependency order
@@ -357,7 +357,7 @@ def render_irrational_angles():
 def render_csg():
     """Render CSG examples from anthology PatternBook."""
     from giraffe_render_fusion360 import render_csg_pattern, clear_design
-    from examples.MeowMeowCSG_examples import EXAMPLES
+    from examples.CutCSG_examples import EXAMPLES
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - CSG Examples")

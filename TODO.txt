@@ -223,9 +223,9 @@ DONE-think about how you want to make example selector and make it future proof 
 RENAME
 DONE-cleanup where to put get_point_on_face and project_point_onto_face
   -probably move these into timber_shavings or something
--MeowMeowCSG -> PotatoCSG
+-CutCSG -> PotatoCSG
   -or CutCSG probably better...
--rule -> Rule?
+DONE-Moothymoth -> Rule?
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
   -oFAT on face aligned timbers
   -oFAACaT on face aligned coaxial timbers
@@ -248,7 +248,7 @@ DONE-cleanup where to put get_point_on_face and project_point_onto_face
   -check
   -is
   -does
-  -contains (specific to meowmeowcsg...)
+  -contains (specific to cutcsg...)
   -are
 
 
@@ -708,7 +708,7 @@ mark(golbal feature, timber) -> measurement from local feature
 
 :: 1/16/2026 cut agent instructions
 
-implement def chop_lap_on_timber_ends(top_lap_timber: Timber, top_lap_timber_end: TimberReferenceEnd, bottom_lap_timber: Timber, bottom_lap_timber_end: TimberReferenceEnd, top_lap_timber_face: TimberFace, lap_length: Numeric, lap_depth: Numeric, top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric) -> (MeowMeowCSG, MeowMeowCSG):
+implement def chop_lap_on_timber_ends(top_lap_timber: Timber, top_lap_timber_end: TimberReferenceEnd, bottom_lap_timber: Timber, bottom_lap_timber_end: TimberReferenceEnd, top_lap_timber_face: TimberFace, lap_length: Numeric, lap_depth: Numeric, top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric) -> (CutCSG, CutCSG):
 1. determine the end the top lap timber based on top_lap_shoulder_position_from_top_lap_shoulder_timber_end and lap_length
 2. project the end position onto bottom_lap_timber
 3. create half plane cuts to remove the end
@@ -771,7 +771,7 @@ so the next step is acutally to do a CSG expansion
     -half plane cut -> shoulder plane
   -would be cool to also mark edges and vertices
 -I think the above is doable without embedding info in the meshes, you would just need to have a set of filters (and bounding volumes) to check if some edge/tri matches some feature and we can do this using normals and boundary checks etc
--add MeowMeowCSGMesh class and add to_csg_mesh function 
+-add CutCSGMesh class and add to_csg_mesh function 
   -hard part, as we also need to add metadata to the mesh
   -I think metadata can be injected based on 
 

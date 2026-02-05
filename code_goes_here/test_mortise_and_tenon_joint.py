@@ -214,7 +214,7 @@ class TestPegStuff:
         tenon_cut_csg = tenon_cut_timber.cuts[0].negative_csg
         
         # Verify CSG includes peg holes (should be a SolidUnion with multiple children)
-        from code_goes_here.meowmeowcsg import SolidUnion
+        from code_goes_here.cutcsg import SolidUnion
         assert isinstance(tenon_cut_csg, SolidUnion), \
             "Tenon cut CSG with pegs should be a SolidUnion"
         assert len(tenon_cut_csg.children) >= 2, \

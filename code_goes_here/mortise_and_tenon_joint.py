@@ -289,7 +289,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     tenon_origin_local = mortise_timber.orientation.matrix.T * (intersection_point_global - mortise_timber.get_bottom_position_global())
     
     # Create a prism representing the tenon volume (in mortise timber's local space)
-    from code_goes_here.meowmeowcsg import RectangularPrism
+    from code_goes_here.cutcsg import RectangularPrism
     from code_goes_here.rule import Transform
     tenon_transform = Transform(position=tenon_origin_local, orientation=relative_orientation)
     tenon_prism_in_mortise_local = RectangularPrism(
@@ -334,7 +334,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Create infinite prism representing the timber end beyond the shoulder
     # This extends from the shoulder to infinity in the tenon direction
-    from code_goes_here.meowmeowcsg import Difference, HalfSpace
+    from code_goes_here.cutcsg import Difference, HalfSpace
     
     if tenon_end == TimberReferenceEnd.TOP:
         # For top end, the timber end extends from shoulder to +infinity
@@ -649,7 +649,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         
         # Union the peg holes to the existing tenon/mortise timber cut CSGs
         if peg_holes_in_tenon_local or peg_holes_in_mortise_local:
-            from code_goes_here.meowmeowcsg import SolidUnion
+            from code_goes_here.cutcsg import SolidUnion
         
         if peg_holes_in_tenon_local:
             # Union peg holes into the negative cut CSG for tenon (single union with all children)

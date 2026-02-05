@@ -15,7 +15,7 @@ from code_goes_here.joint_shavings import (
 )
 from code_goes_here.timber import timber_from_directions, TimberReferenceEnd, TimberFace, TimberLongFace
 from code_goes_here.rule import create_v3, create_v2, inches, are_vectors_parallel
-from code_goes_here.meowmeowcsg import SolidUnion, RectangularPrism, HalfSpace
+from code_goes_here.cutcsg import SolidUnion, RectangularPrism, HalfSpace
 from code_goes_here.measuring import mark_onto_centerline
 
 # TODO too many tests, just delete some lol... or combine into 1 test that varies only the timber length...
