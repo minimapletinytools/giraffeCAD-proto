@@ -643,13 +643,13 @@ class CutTimber:
     cuts: List['Cutting']
     joints: List  # List of joints this timber participates in
     
-    def __init__(self, timber: Timber, cuts: List['Cutting'] = None):
+    def __init__(self, timber: Timber, cuts: Optional[List['Cutting']] = None):
         """
         Create a CutTimber from a Timber.
         
         Args:
             timber: The timber to be cut
-            cuts: Optional list of cuts to apply (default: empty list)
+            cuts: List of cuts to apply (default: empty list)
         """
         self.timber = timber
         self.cuts = cuts if cuts is not None else []
@@ -1012,8 +1012,8 @@ class Wedge(JointAccessory):
 
 @dataclass(frozen=True)
 class Joint:
-    cut_timbers: Dict[str, CutTimber]
-    jointAccessories: Dict[str, JointAccessory] = field(default_factory=dict)
+    cut_timbers: Dict[Optional[str], CutTimber]
+    jointAccessories: Dict[Optional[str], JointAccessory] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -1036,7 +1036,7 @@ class Frame:
     
     @classmethod
     def from_joints(cls, joints: List[Joint], 
-                    additional_unjointed_timbers: List[Timber] = None,
+                    additional_unjointed_timbers: Optional[List[Timber]] = None,
                     name: Optional[str] = None) -> 'Frame':
         """
         Create a Frame from a list of joints and optional additional unjointed timbers.

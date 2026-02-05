@@ -100,6 +100,30 @@ class Transform:
         """
         return old_parent * self
 
+    def invert(self) -> 'Transform':
+        """
+        Return the inverse of this transform.
+        
+        For a transform T that converts local to global (global = T * local),
+        the inverse converts global to local (local = T^-1 * global).
+        """
+        # Invert the orientation (transpose for rotation matrices)
+        inv_orientation = self.orientation.invert()
+        # Transform the position by the inverted orientation and negate
+        inv_position = -(inv_orientation.matrix * self.position)
+        return Transform(position=inv_position, orientation=inv_orientation)
+    
+    def __mul__(self, other: 'Transform') -> 'Transform':
+        """
+        Compose two transforms: result = self * other.
+        
+        This applies other first, then self.
+        Equivalent to: global = self.local_to_global(other.local_to_global(local))
+        """
+        new_orientation = self.orientation * other.orientation
+        new_position = self.orientation.matrix * other.position + self.position
+        return Transform(position=new_position, orientation=new_orientation)
+    
     # TODO consider renaming to become_child_transform
     def to_local_transform(self, new_parent: 'Transform') -> 'Transform':
         """
