@@ -55,7 +55,7 @@ Finally, note that the feature classes in this module should NOT be used for any
 """
 
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, cast
 from abc import ABC, abstractmethod
 from .rule import *
 from .timber import *
@@ -186,7 +186,7 @@ class DistanceFromFace(Marking):
     """
     distance: Numeric
     timber: Timber
-    face: TimberFace
+    face: Union[TimberFace, TimberReferenceEnd, TimberLongFace]
     
 
     def measure(self) -> UnsignedPlane:
@@ -598,7 +598,7 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
     if edge == TimberEdge.CENTERLINE:
         edge_line = measure_centerline(timber)
     else:
-        edge_line = measure_long_edge(timber, edge)
+        edge_line = measure_long_edge(timber, cast(TimberLongEdge, edge))
     
     # Get the end position on the edge
     # edge_line.point is at mid-length, so we need to offset by half the length
@@ -658,7 +658,7 @@ def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: Timber, 
     if edge == TimberEdge.CENTERLINE:
         edge_line = measure_centerline(timber)
     else:
-        edge_line = measure_long_edge(timber, edge)
+        edge_line = measure_long_edge(timber, cast(TimberLongEdge, edge))
 
     if are_vectors_parallel(line.direction, edge_line.direction):
         raise ValueError(f"Lines are parallel - no intersection exists")

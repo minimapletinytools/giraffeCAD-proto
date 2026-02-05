@@ -5,7 +5,7 @@ Collection of helper functions for validating and checking timber joint configur
 These functions help ensure that joints are geometrically valid and sensibly constructed.
 """
 
-from typing import Optional, Tuple, List, Union
+from typing import Optional, Tuple, List, Union, cast
 from code_goes_here.timber import *
 from code_goes_here.rule import *
 from code_goes_here.cutcsg import *
@@ -654,7 +654,7 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
         # Recursively call this function for each profile and union the results
         extrusions = []
         for single_profile in profile:
-            extrusion = chop_profile_on_timber_face(timber, end, face, single_profile, depth, profile_y_offset_from_end)
+            extrusion = chop_profile_on_timber_face(timber, end, face, cast(List[V2], single_profile), depth, profile_y_offset_from_end)
             extrusions.append(extrusion)
         return SolidUnion(extrusions)
     

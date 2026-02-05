@@ -6,7 +6,7 @@ and geometry operations. All operations use SymPy symbolic math for exact comput
 """
 
 from sympy import Matrix, Rational, Expr, sqrt, oo
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 from dataclasses import dataclass, field, replace
 from abc import ABC, abstractmethod
 from .rule import *
@@ -883,8 +883,8 @@ def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: CutCSG) ->
     elif hasattr(csg_in_orig_timber_space, 'transform'):
         # For types with a transform property (RectangularPrism, ConvexPolygonExtrusion, etc.)
         # Transform the transform and return a new instance
-        new_transform = transform_transform(csg_in_orig_timber_space.transform)
-        return replace(csg_in_orig_timber_space, transform=new_transform)
+        new_transform = transform_transform(cast(Transform, csg_in_orig_timber_space.transform))
+        return replace(csg_in_orig_timber_space, transform=new_transform)  # type: ignore[misc]
     
     else:
         # For other types without special handling, return as-is

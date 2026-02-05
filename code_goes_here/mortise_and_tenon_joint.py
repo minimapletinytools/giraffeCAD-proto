@@ -76,8 +76,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
     mortise_shoulder_inset: Numeric = Rational(0),
-    tenon_position: V2 = None,
-    tenon_rotation: Orientation = None,
+    tenon_position: Optional[V2] = None,
+    tenon_rotation: Optional[Orientation] = None,
     wedge_parameters: Optional[WedgeParameters] = None,
     peg_parameters: Optional[SimplePegParameters] = None
 ) -> Joint:
@@ -717,7 +717,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
     tenon_size: V2,
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
-    tenon_position: V2 = None,
+    tenon_position: Optional[V2] = None,
     peg_parameters: Optional[SimplePegParameters] = None,
 ) -> Joint:
     """
@@ -814,8 +814,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
     mortise_shoulder_inset: Numeric = Rational(0),
-    tenon_position: V2 = None,
-    tenon_rotation: Orientation = None,
+    tenon_position: Optional[V2] = None,
+    tenon_rotation: Optional[Orientation] = None,
     wedge_parameters: Optional[WedgeParameters] = None,
     peg_parameters: Optional[SimplePegParameters] = None
 ) -> Joint:
@@ -838,4 +838,4 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     # determine the peg CSGs using the marking space on the tenon timber to position everything (can copy logic from previosu implementation)
 
     # union/diff all the CSGs and return the joint
-    pass
+    raise NotImplementedError("cut_angled_mortise_and_tenon_joint is not yet implemented")

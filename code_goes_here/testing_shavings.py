@@ -262,7 +262,7 @@ def generate_random_orientation() -> Orientation:
         [2*(q1*q3 - q0*q2), 2*(q2*q3 + q0*q1), 1 - 2*(q1**2 + q2**2)]
     ]
     
-    return Orientation(matrix)
+    return Orientation(matrix)  # type: ignore[arg-type]
 
 
 def create_test_footprint(width=4, height=3) -> Footprint:
@@ -282,7 +282,7 @@ def create_test_footprint(width=4, height=3) -> Footprint:
         create_v2(width, height),
         create_v2(0, height)
     ]
-    return Footprint(corners)
+    return Footprint(corners)  # type: ignore[arg-type]
 
 
 # ============================================================================
