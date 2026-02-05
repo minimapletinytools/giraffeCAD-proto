@@ -6,7 +6,7 @@ beam_size = create_v2(inches(4), inches(4))
 post_size = create_v2(inches(4), inches(4))
 stretcher_size = create_v2(inches(4), inches(4))
 
-tenon_thickness = inches(1)
+tenon_size = create_v2(inches(1), inches(1))  # Square tenon cross-section
 tenon_length = inches(2)
 
 # Define constants for the sawhorse
@@ -24,7 +24,7 @@ def create_sawhorse() -> Frame:
     """
     # define footprint
     footprint = Footprint(
-        corners=[
+        corners=[  # type: ignore[arg-type]
             create_v2(-bottom_width / 2, -bottom_length / 2),
             create_v2(bottom_width / 2, -bottom_length / 2),
             create_v2(bottom_width / 2, bottom_length / 2),
@@ -117,7 +117,7 @@ def create_sawhorse() -> Frame:
         mortise_timber=left_mudsill,
         tenon_timber=left_post,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
-        tenon_thickness=tenon_thickness,
+        tenon_size=tenon_size,
         tenon_length=tenon_length
     )
 
@@ -125,7 +125,7 @@ def create_sawhorse() -> Frame:
         mortise_timber=right_mudsill,
         tenon_timber=right_post,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
-        tenon_thickness=tenon_thickness,
+        tenon_size=tenon_size,
         tenon_length=tenon_length
     )
 
@@ -134,7 +134,7 @@ def create_sawhorse() -> Frame:
         mortise_timber=left_post,
         tenon_timber=stretcher,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom end of stretcher
-        tenon_thickness=tenon_thickness,
+        tenon_size=tenon_size,
         tenon_length=tenon_length
     )
 
@@ -142,7 +142,7 @@ def create_sawhorse() -> Frame:
         mortise_timber=right_post,
         tenon_timber=stretcher,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of stretcher
-        tenon_thickness=tenon_thickness,
+        tenon_size=tenon_size,
         tenon_length=tenon_length
     )
 
@@ -151,7 +151,7 @@ def create_sawhorse() -> Frame:
         mortise_timber=beam,
         tenon_timber=left_post,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from bottom end of beam
-        tenon_thickness=tenon_thickness,
+        tenon_size=tenon_size,
         tenon_length=tenon_length
     )
 
@@ -159,7 +159,7 @@ def create_sawhorse() -> Frame:
         mortise_timber=beam,
         tenon_timber=right_post,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of beam
-        tenon_thickness=tenon_thickness,
+        tenon_size=tenon_size,
         tenon_length=tenon_length
     )
 
@@ -167,43 +167,25 @@ def create_sawhorse() -> Frame:
     # Each joint affects multiple timbers, so we need to add the cut operations to the appropriate timbers
     
     # Mudsill joints
-    for timber, cuts in mudsill_left_joint.timber_cuts:
-        if timber == left_mudsill:
-            cut_left_mudsill.joints.extend(cuts)
-        elif timber == left_post:
-            cut_left_post.joints.extend(cuts)
+    cut_left_mudsill.joints.extend(mudsill_left_joint.cut_timbers["mortise_timber"].cuts)
+    cut_left_post.joints.extend(mudsill_left_joint.cut_timbers["tenon_timber"].cuts)
     
-    for timber, cuts in mudsill_right_joint.timber_cuts:
-        if timber == right_mudsill:
-            cut_right_mudsill.joints.extend(cuts)
-        elif timber == right_post:
-            cut_right_post.joints.extend(cuts)
+    cut_right_mudsill.joints.extend(mudsill_right_joint.cut_timbers["mortise_timber"].cuts)
+    cut_right_post.joints.extend(mudsill_right_joint.cut_timbers["tenon_timber"].cuts)
     
     # Stretcher joints
-    for timber, cuts in stretcher_left_joint.timber_cuts:
-        if timber == left_post:
-            cut_left_post.joints.extend(cuts)
-        elif timber == stretcher:
-            cut_stretcher.joints.extend(cuts)
+    cut_left_post.joints.extend(stretcher_left_joint.cut_timbers["mortise_timber"].cuts)
+    cut_stretcher.joints.extend(stretcher_left_joint.cut_timbers["tenon_timber"].cuts)
     
-    for timber, cuts in stretcher_right_joint.timber_cuts:
-        if timber == right_post:
-            cut_right_post.joints.extend(cuts)
-        elif timber == stretcher:
-            cut_stretcher.joints.extend(cuts)
+    cut_right_post.joints.extend(stretcher_right_joint.cut_timbers["mortise_timber"].cuts)
+    cut_stretcher.joints.extend(stretcher_right_joint.cut_timbers["tenon_timber"].cuts)
     
     # Beam joints
-    for timber, cuts in beam_left_joint.timber_cuts:
-        if timber == left_post:
-            cut_left_post.joints.extend(cuts)
-        elif timber == beam:
-            cut_beam.joints.extend(cuts)
+    cut_left_post.joints.extend(beam_left_joint.cut_timbers["mortise_timber"].cuts)
+    cut_beam.joints.extend(beam_left_joint.cut_timbers["tenon_timber"].cuts)
     
-    for timber, cuts in beam_right_joint.timber_cuts:
-        if timber == right_post:
-            cut_right_post.joints.extend(cuts)
-        elif timber == beam:
-            cut_beam.joints.extend(cuts)
+    cut_right_post.joints.extend(beam_right_joint.cut_timbers["mortise_timber"].cuts)
+    cut_beam.joints.extend(beam_right_joint.cut_timbers["tenon_timber"].cuts)
 
     # Return all cut timbers in a Frame
     return Frame(

@@ -73,9 +73,9 @@ def create_simple_post_pattern() -> PatternBook:
     
     # Create pattern book with grouped patterns
     patterns = [
-        (PatternMetadata("short_post", "posts", "frame"), make_short_post),
-        (PatternMetadata("tall_post", "posts", "frame"), make_tall_post),
-        (PatternMetadata("wide_post", "posts", "frame"), make_wide_post),
+        (PatternMetadata("short_post", "posts", "frame"), make_short_post),  # type: ignore[arg-type]
+        (PatternMetadata("tall_post", "posts", "frame"), make_tall_post),  # type: ignore[arg-type]
+        (PatternMetadata("wide_post", "posts", "frame"), make_wide_post),  # type: ignore[arg-type]
     ]
     
     return PatternBook(patterns=patterns)
@@ -145,9 +145,9 @@ def create_beam_patterns() -> PatternBook:
     
     # Create pattern book with grouped patterns
     patterns = [
-        (PatternMetadata("small_beam", "beams", "frame"), make_small_beam),
-        (PatternMetadata("medium_beam", "beams", "frame"), make_medium_beam),
-        (PatternMetadata("large_beam", "beams", "frame"), make_large_beam),
+        (PatternMetadata("small_beam", "beams", "frame"), make_small_beam),  # type: ignore[arg-type]
+        (PatternMetadata("medium_beam", "beams", "frame"), make_medium_beam),  # type: ignore[arg-type]
+        (PatternMetadata("large_beam", "beams", "frame"), make_large_beam),  # type: ignore[arg-type]
     ]
     
     return PatternBook(patterns=patterns)
@@ -190,9 +190,9 @@ def create_csg_box_patterns() -> PatternBook:
     
     # Create pattern book with grouped CSG patterns
     patterns = [
-        (PatternMetadata("small_box", "boxes", "csg"), make_small_box),
-        (PatternMetadata("medium_box", "boxes", "csg"), make_medium_box),
-        (PatternMetadata("large_box", "boxes", "csg"), make_large_box),
+        (PatternMetadata("small_box", "boxes", "csg"), make_small_box),  # type: ignore[arg-type]
+        (PatternMetadata("medium_box", "boxes", "csg"), make_medium_box),  # type: ignore[arg-type]
+        (PatternMetadata("large_box", "boxes", "csg"), make_large_box),  # type: ignore[arg-type]
     ]
     
     return PatternBook(patterns=patterns)
@@ -251,10 +251,10 @@ def example_raise_csg_group():
     # Raise all CSG patterns in the 'boxes' group with 1-foot spacing
     csg_list = book.raise_pattern_group("boxes", separation_distance=feet(1))
     
-    print(f"Number of CSG objects: {len(csg_list)}")
+    print(f"Number of CSG objects: {len(csg_list)}")  # type: ignore[arg-type]
     
     # Show details of each CSG object
-    for i, csg in enumerate(csg_list):
+    for i, csg in enumerate(csg_list):  # type: ignore[arg-type]
         print(f"  CSG {i}: {type(csg).__name__}")
         print(f"    Position: {csg.transform.position.T}")
     

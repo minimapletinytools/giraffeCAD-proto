@@ -71,7 +71,7 @@ def create_oscarshed():
         create_v2(base_width, base_length),      # Corner 2: Back-right
         create_v2(Rational(0), base_length)      # Corner 3: Back-left
     ]
-    footprint = Footprint(footprint_corners)
+    footprint = Footprint(footprint_corners)  # type: ignore[arg-type]
 
     # ============================================================================
     # Create mudsills on all 4 sides (INSIDE the footprint)
@@ -601,7 +601,7 @@ def create_oscarshed():
     # The left piece gets cuts from mortise & tenon joint and left gooseneck joint
     front_girt_left_cuts = []
     front_girt_left_cuts.extend(joint_front_girt_left.cut_timbers["tenon_timber"].cuts)  # Tenon cuts
-    front_girt_left_cuts.extend(front_girt_gooseneck_joint_left.cut_timbers[front_girt_left.name].cuts)  # Gooseneck cuts
+    front_girt_left_cuts.extend(front_girt_gooseneck_joint_left.cut_timbers[front_girt_left.name or "front_girt_left"].cuts)  # Gooseneck cuts
     
     # The middle piece gets cuts from both gooseneck joints
     front_girt_middle_cuts = []
@@ -614,7 +614,7 @@ def create_oscarshed():
     # The right piece gets cuts from mortise & tenon joint and right gooseneck joint
     front_girt_right_cuts = []
     front_girt_right_cuts.extend(joint_front_girt_right.cut_timbers["tenon_timber"].cuts)  # Tenon cuts
-    front_girt_right_cuts.extend(front_girt_gooseneck_joint_right.cut_timbers[front_girt_right.name].cuts)  # Gooseneck cuts
+    front_girt_right_cuts.extend(front_girt_gooseneck_joint_right.cut_timbers[front_girt_right.name or "front_girt_right"].cuts)  # Gooseneck cuts
     
     # Create CutTimbers for the split pieces with all their cuts
     pct_front_girt_left = CutTimber(front_girt_left, cuts=front_girt_left_cuts)
