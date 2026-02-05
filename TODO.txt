@@ -241,6 +241,8 @@ DONE-cleanup where to put get_point_on_face and project_point_onto_face
       -join -> glue?
   -add from_joints -> raise function to Frame
     -have an on class member version of it to cuz its cutre that way
+  -oscar shed -> tiny snack house
+  -horsey viewer -> horse watcher or barn raising?
 -consider doing a rename pass on validitiy checkers  
   -assert
   -check
