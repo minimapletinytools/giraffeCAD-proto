@@ -302,8 +302,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # Create the Cut for the mortise
     mortise_cut = Cutting(
         timber=mortise_timber,
-        transform=Transform(position=mortise_timber.get_bottom_position_global(), orientation=mortise_timber.orientation),
-        maybe_end_cut=None,
+        maybe_top_end_cut=None,
+        maybe_bottom_end_cut=None,
         negative_csg=tenon_prism_in_mortise_local
     )
     
@@ -398,11 +398,21 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         subtract=[tenon_prism_local, shoulder_half_plane]
     )
     
-    # Create a single CSG cut
+    # Create a redundant end cut that points away from the timber
+    # This doesn't actually cut any additional material, but marks that this end has a cut
+    if tenon_end == TimberReferenceEnd.TOP:
+        # At the top, create a half space that removes everything above the timber end
+        # (which is already removed by the negative_csg)
+        redundant_end_cut = HalfSpace(normal=create_v3(0, 0, 1), offset=tenon_timber.length)
+    else:  # BOTTOM
+        # At the bottom, create a half space that removes everything below the timber end
+        redundant_end_cut = HalfSpace(normal=create_v3(0, 0, -1), offset=Rational(0))
+    
+    # Create a single CSG cut with the redundant end cut marker
     tenon_cut = Cutting(
         timber=tenon_timber,
-        transform=Transform(position=tenon_timber.get_bottom_position_global(), orientation=tenon_timber.orientation),
-        maybe_end_cut=tenon_end,
+        maybe_top_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.BOTTOM else None,
         negative_csg=tenon_cut_csg
     )
     
@@ -656,8 +666,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             tenon_cut_with_pegs_csg = CSGUnion(children=[tenon_cut_csg] + peg_holes_in_tenon_local)
             tenon_cut = Cutting(
                 timber=tenon_timber,
-                transform=Transform(position=tenon_timber.get_bottom_position_global(), orientation=tenon_timber.orientation),
-                maybe_end_cut=tenon_end,
+                maybe_top_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.TOP else None,
+                maybe_bottom_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.BOTTOM else None,
                 negative_csg=tenon_cut_with_pegs_csg
             )
             tenon_cuts = [tenon_cut]
@@ -667,8 +677,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             mortise_cut_with_pegs_csg = CSGUnion(children=[tenon_prism_in_mortise_local] + peg_holes_in_mortise_local)
             mortise_cut = Cutting(
                 timber=mortise_timber,
-                transform=Transform(position=mortise_timber.get_bottom_position_global(), orientation=mortise_timber.orientation),
-                maybe_end_cut=None,
+                maybe_top_end_cut=None,
+                maybe_bottom_end_cut=None,
                 negative_csg=mortise_cut_with_pegs_csg
             )
     

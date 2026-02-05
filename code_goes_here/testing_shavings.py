@@ -289,6 +289,7 @@ def create_test_footprint(width=4, height=3) -> Footprint:
 # Mock Objects
 # ============================================================================
 
+# TODO you can probably delete this...
 class MockCutting:
     """
     Mock Cutting implementation for testing.
@@ -303,15 +304,22 @@ class MockCutting:
         Args:
             timber: The timber this cut belongs to
             end_position: The end position of the cut
-            maybe_end_cut: Optional indication of which end is being cut
+            maybe_end_cut: Optional indication of which end is being cut (for backwards compatibility)
         """
-        from code_goes_here.timber import Transform
         self.timber = timber
         self._end_position = end_position
-        self.maybe_end_cut = maybe_end_cut
+        # Convert old maybe_end_cut to new format
+        if maybe_end_cut == TimberReferenceEnd.TOP:
+            self.maybe_top_end_cut = True  # Mock value
+            self.maybe_bottom_end_cut = None
+        elif maybe_end_cut == TimberReferenceEnd.BOTTOM:
+            self.maybe_top_end_cut = None
+            self.maybe_bottom_end_cut = True  # Mock value
+        else:
+            self.maybe_top_end_cut = None
+            self.maybe_bottom_end_cut = None
         self.origin = Matrix([0, 0, 0])
         self.orientation = Orientation()
-        self.transform = Transform(position=Matrix([0, 0, 0]), orientation=Orientation.identity())
         self.negative_csg = None  # Mock CSG - not actually used
     
     def get_negative_csg_local(self):

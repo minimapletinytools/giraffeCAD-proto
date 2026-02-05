@@ -195,8 +195,11 @@ class TestPegStuff:
         assert joint.cut_timbers["mortise_timber"].timber == mortise_timber
         assert len(joint.cut_timbers["tenon_timber"].cuts) == 1
         assert len(joint.cut_timbers["mortise_timber"].cuts) == 1
-        assert joint.cut_timbers["tenon_timber"].cuts[0].maybe_end_cut == TimberReferenceEnd.BOTTOM
-        assert joint.cut_timbers["mortise_timber"].cuts[0].maybe_end_cut == None
+        # Tenon cut has a redundant end cut marker (points away from timber, doesn't cut anything extra)
+        assert joint.cut_timbers["tenon_timber"].cuts[0].maybe_bottom_end_cut is not None
+        assert joint.cut_timbers["tenon_timber"].cuts[0].maybe_top_end_cut is None
+        assert joint.cut_timbers["mortise_timber"].cuts[0].maybe_top_end_cut is None
+        assert joint.cut_timbers["mortise_timber"].cuts[0].maybe_bottom_end_cut is None
         
         peg = joint.jointAccessories["peg_0"]
         

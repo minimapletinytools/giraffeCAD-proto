@@ -336,7 +336,7 @@ def chop_lap_on_timber_end(
     lap_length: Numeric,
     lap_shoulder_position_from_lap_timber_end: Numeric,
     lap_depth: Numeric
-) -> CutCSG:
+) -> Tuple[CutCSG, HalfSpace]:
     """
     Create CSG cuts for a lap joint between two timber ends.
     
@@ -363,12 +363,12 @@ def chop_lap_on_timber_end(
         lap_depth: Depth of material to remove (measured from lap_timber_face)
     
     Returns:
-        CutCSG representing material to remove from the timber
-        CSG is in local coordinates of the timber
+        Tuple of (lap_prism, end_cut_half_plane) representing material to remove from the timber
+        Both CSGs are in local coordinates of the timber
     
     Example:
         >>> # Create a half-lap joint
-        >>> top_csg = chop_lap_on_timber_end(
+        >>> top_lap, top_end_cut = chop_lap_on_timber_end(
         ...     timber_a, TimberReferenceEnd.TOP,
         ...     TimberFace.BOTTOM, lap_length=4, lap_depth=2, shoulder_pos=1
         ... )
@@ -464,10 +464,8 @@ def chop_lap_on_timber_end(
             end_distance=prism_end
         )
     
-    # Step 7: Union the half-plane cuts with the prism cuts
-    lap_csg = SolidUnion([lap_prism, lap_half_plane])
-
-    return lap_csg
+    # Step 7: Return the lap prism and end cut separately
+    return lap_prism, lap_half_plane
 
 def chop_lap_on_timber_ends(
     top_lap_timber: Timber,
@@ -478,7 +476,7 @@ def chop_lap_on_timber_ends(
     lap_length: Numeric,
     top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric,
     lap_depth: Numeric
-) -> Tuple[CutCSG, CutCSG]:
+) -> Tuple[Tuple[CutCSG, HalfSpace], Tuple[CutCSG, HalfSpace]]:
     """
     Create CSG cuts for a lap joint between two timber ends.
     
@@ -507,12 +505,13 @@ def chop_lap_on_timber_ends(
         lap_depth: Depth of material to remove (measured from top_lap_timber_face)
     
     Returns:
-        Tuple of (top_lap_csg, bottom_lap_csg) representing material to remove from each timber
-        Both CSGs are in local coordinates of their respective timbers
+        Tuple of ((top_lap_prism, top_end_cut), (bottom_lap_prism, bottom_end_cut))
+        Each tuple contains the lap CSG and end cut HalfSpace for that timber
+        All CSGs are in local coordinates of their respective timbers
     
     Example:
         >>> # Create a half-lap joint
-        >>> top_csg, bottom_csg = chop_lap_on_timber_ends(
+        >>> (top_lap, top_end), (bottom_lap, bottom_end) = chop_lap_on_timber_ends(
         ...     timber_a, TimberReferenceEnd.TOP,
         ...     timber_b, TimberReferenceEnd.BOTTOM,
         ...     TimberFace.BOTTOM, lap_length=4, lap_depth=2, shoulder_pos=1
@@ -536,7 +535,8 @@ def chop_lap_on_timber_ends(
         f"{top_lap_timber.name} and {bottom_lap_timber.name} cross sections do not overlap."
 
     
-    top_lap_csg = chop_lap_on_timber_end(top_lap_timber, top_lap_timber_end, top_lap_timber_face, lap_length, top_lap_shoulder_position_from_top_lap_shoulder_timber_end, lap_depth)
+    top_lap_prism, top_end_cut = chop_lap_on_timber_end(top_lap_timber, top_lap_timber_end, top_lap_timber_face, lap_length, top_lap_shoulder_position_from_top_lap_shoulder_timber_end, lap_depth)
+    top_lap_csg = (top_lap_prism, top_end_cut)
 
     # Step 2: Find the corresponding face on the bottom lap timber
     # Get top_lap_timber_face direction in global space
@@ -597,7 +597,8 @@ def chop_lap_on_timber_ends(
         # Measuring from bottom end
         bottom_lap_shoulder_position_from_bottom_timber_end = bottom_shoulder_from_bottom_timber_bottom
 
-    bottom_lap_csg = chop_lap_on_timber_end(bottom_lap_timber, bottom_lap_timber_end, bottom_lap_timber_face, lap_length, bottom_lap_shoulder_position_from_bottom_timber_end, bottom_lap_depth)
+    bottom_lap_prism, bottom_end_cut = chop_lap_on_timber_end(bottom_lap_timber, bottom_lap_timber_end, bottom_lap_timber_face, lap_length, bottom_lap_shoulder_position_from_bottom_timber_end, bottom_lap_depth)
+    bottom_lap_csg = (bottom_lap_prism, bottom_end_cut)
     return (top_lap_csg, bottom_lap_csg)
 
 
