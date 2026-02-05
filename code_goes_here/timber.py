@@ -1012,8 +1012,8 @@ class Wedge(JointAccessory):
 
 @dataclass(frozen=True)
 class Joint:
-    cut_timbers: Dict[Optional[str], CutTimber]
-    jointAccessories: Dict[Optional[str], JointAccessory] = field(default_factory=dict)
+    cut_timbers: Dict[str, CutTimber]
+    jointAccessories: Dict[str, JointAccessory] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

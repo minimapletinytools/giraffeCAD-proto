@@ -385,8 +385,8 @@ def cut_lapped_gooseneck_joint(
     
     return Joint(
         cut_timbers={
-            receiving_timber.name: receiving_timber_cut,
-            gooseneck_timber.name: gooseneck_timber_cut
+            receiving_timber.name or "receiving_timber": receiving_timber_cut,
+            gooseneck_timber.name or "gooseneck_timber": gooseneck_timber_cut
         },
         jointAccessories={}
     )
@@ -623,8 +623,8 @@ def cut_lapped_dovetail_butt_joint(
     
     return Joint(
         cut_timbers={
-            dovetail_timber.name: dovetail_timber_cut,
-            receiving_timber.name: receiving_timber_cut
+            dovetail_timber.name or "dovetail_timber": dovetail_timber_cut,
+            receiving_timber.name or "receiving_timber": receiving_timber_cut
         },
         jointAccessories={}
     )

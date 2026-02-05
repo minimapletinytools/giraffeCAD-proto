@@ -219,6 +219,8 @@ DONE-think about how you want to make example selector and make it future proof 
 
 -is there some way to make orientation/direction generic more like a measuring function?
 
+-make timber names mandatory and if not provided a random one is generated.
+-BUG Joint uses a dictionary of names to cuts but timber names are not guaranteed to be unique!
 
 RENAME
 DONE-cleanup where to put get_point_on_face and project_point_onto_face
