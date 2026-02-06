@@ -227,7 +227,7 @@ EXEMPLIFY
 
   
 -3 major features
-  -measure functions
+  DONE-measure functions
   -refactor timber class
   -add timber metadata
     -prepare for CSG metadata as well...
