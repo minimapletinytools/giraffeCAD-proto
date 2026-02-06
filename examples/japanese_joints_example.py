@@ -144,7 +144,7 @@ def create_dovetail_butt_joint_example():
     receiving_timber_shoulder_inset = inches(Rational(1, 2))  # 0.5 inch shoulder inset
     
     # Create the dovetail butt joint
-    joint = cut_lapped_dovetail_butt_joint(
+    joint = cut_housed_dovetail_butt_joint(
         dovetail_timber=dovetail_timber,
         receiving_timber=receiving_timber,
         dovetail_timber_end=TimberReferenceEnd.BOTTOM,  # Cut on the end pointing toward receiving timber

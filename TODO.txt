@@ -168,30 +168,25 @@ CSGTimber?
 
 
 :: TODO
-
--make examples of how to use measure/mark to set parameters in cutting functions
 DONE-maybe change cutting to have maybe_top/bottom_end_cut 
 DONE-add timber size estimation function (really you want a prism BB)
   -then add frame size estimation function
+-make examples of how to use measure/mark to set parameters in cutting functions
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
 -update morties and tenon to support
   -perpendicular but not face aligned
   -not perpendicular but partially face aligned (for braces)
     -maybe have an add brace function?
   -neither perpendicular nor face aligned
-
 -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
-
 -be consistent about function local/golbal naming
   -local input vars should have the suffix  _local
     -some things must be interpreted locally such as "face" or "distance", these d onot have the suffix
   -functions return things in golbal space by default unless _local suffix
-
 -is there some way to make orientation/direction generic more like a measuring function?
 -make timber names mandatory and if not provided a random one is generated?
 
 RENAME
-
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
   -oFAT on face aligned timbers
   -oFAACaT on face aligned coaxial timbers
@@ -266,20 +261,20 @@ EXEMPLIFY
   DONE-splice_joint
     DONE-gooseneck joint 
     DONE-pick a cute one from the book... maybe a gooseneck? (cuz we need it for the double dildo splice joint where we messed up)
-  -butt joints
+  DONE-butt joints
     DONE-mortise and tenon with pegs and end wedges (generic functon, not intended to be called directly) (supports N pegs)
       DONE-mortise and tenon
       DONE-draw bore mortise and tenon
       DONE-through mortise and tenon
       DONE-add offset mortise peg param (so that it tightens the joint up)
-    -dovetail lap joint (for the floor joists)
+    DONE-dovetail lap joint (for the floor joists)
   -corner joints
     -maybe try the fancy  one we used on the shed  Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)
 
   -decorative cuts
     -basically joints with 1 timber
     -you'll need to add curve CSG D:
-  -make shed example (just add joints)
+  DONE-make shed example (just add joints)
 
   -improve examples
     -create series of examples showcasing each feature
@@ -720,7 +715,7 @@ implement def chop_lap_on_timber_ends(top_lap_timber: Timber, top_lap_timber_end
 7. union with the half lap cuts we created earlier and return the CSG pair
 
 
-implement cut_lapped_dovetail_butt_joint
+implement cut_housed_dovetail_butt_joint
 
 -there is no lap like the gooseneck joint
 -assert that the receiving timber is orthognal
