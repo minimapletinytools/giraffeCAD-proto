@@ -409,7 +409,7 @@ def cut_lapped_gooseneck_joint(
         jointAccessories={}
     )
 
-def cut_lapped_dovetail_butt_joint(
+def cut_housed_dovetail_butt_joint(
     dovetail_timber: Timber,
     receiving_timber: Timber,
     dovetail_timber_end: TimberReferenceEnd,
@@ -702,8 +702,8 @@ def cut_mitered_and_keyed_lap_joint(timberA: Timber, timberA_end: TimberReferenc
 cut_腰掛鎌継ぎ = cut_lapped_gooseneck_joint
 cut_koshikake_kama_tsugi = cut_lapped_gooseneck_joint
 
-cut_蟻仕口 = cut_lapped_dovetail_butt_joint
-cut_ari_shiguchi = cut_lapped_dovetail_butt_joint
+cut_蟻仕口 = cut_housed_dovetail_butt_joint
+cut_ari_shiguchi = cut_housed_dovetail_butt_joint
 
 cut_箱相欠き車知栓仕口 = cut_mitered_and_keyed_lap_joint
 cut_hako_aikaki_shachi_sen_shikuchi = cut_mitered_and_keyed_lap_joint

@@ -846,7 +846,7 @@ def create_oscarshed():
         # Create dovetail joint with front mudsill
         # Joist runs from front (BOTTOM) to back (TOP)
         # The dovetail should be visible on the RIGHT face of the joist (facing right/positive X)
-        joint_front = cut_lapped_dovetail_butt_joint(
+        joint_front = cut_housed_dovetail_butt_joint(
             dovetail_timber=joist,
             receiving_timber=mudsill_front,
             dovetail_timber_end=TimberReferenceEnd.BOTTOM,
@@ -860,7 +860,7 @@ def create_oscarshed():
         )
         
         # Create dovetail joint with back mudsill
-        joint_back = cut_lapped_dovetail_butt_joint(
+        joint_back = cut_housed_dovetail_butt_joint(
             dovetail_timber=joist,
             receiving_timber=mudsill_back,
             dovetail_timber_end=TimberReferenceEnd.TOP,
