@@ -46,6 +46,22 @@ class CutCSG(ABC):
             True if the point is on the boundary of the CSG object, False otherwise
         """
         pass
+    
+    @abstractmethod
+    def get_outward_normal(self, point: V3) -> Optional[Direction3D]:
+        """
+        Get the outward normal vector at a boundary point.
+        
+        This method should only be called if is_point_on_boundary(point) is True.
+        For points not on the boundary, behavior is undefined.
+        
+        Args:
+            point: A point on the boundary (3x1 Matrix)
+            
+        Returns:
+            The outward normal vector at the point, or None if cannot be determined
+        """
+        pass
 
 
 @dataclass(frozen=True)
@@ -53,9 +69,7 @@ class HalfSpace(CutCSG):
     """
     An infinite half-plane defined by a normal vector and offset from origin.
     
-    The half-plane includes all points P such that: (P - origin) · normal >= offset
-    where origin is provided externally when evaluating the CSG.
-    
+    The half-plane includes all points P such that: P · normal >= offset    
     The offset represents the signed distance from the origin along the normal direction
     where the plane is located. Positive offset moves the plane in the direction of the normal.
     
@@ -100,6 +114,20 @@ class HalfSpace(CutCSG):
         # Compute dot product: point · normal
         dot_product = (point.T * self.normal)[0, 0]
         return dot_product == self.offset
+    
+    def get_outward_normal(self, point: V3) -> Optional[Direction3D]:
+        """
+        Get the outward normal vector at a boundary point.
+        
+        For a HalfSpace, the outward normal is always the opposite of thenormal vector itself.
+        
+        Args:
+            point: A point on the boundary
+            
+        Returns:
+            The outward normal vector (the HalfSpace's normal)
+        """
+        return -self.normal
 
 
 @dataclass(frozen=True)
@@ -278,6 +306,77 @@ class RectangularPrism(CutCSG):
             return True
         
         return False
+    
+    def get_outward_normal(self, point: V3) -> Optional[Direction3D]:
+        """
+        Get the outward normal vector at a boundary point.
+        
+        Returns the normalized outward normal for the face that contains this point.
+        If the point is on multiple faces (edge or corner), returns one of the normals.
+        
+        Args:
+            point: A point on the boundary
+            
+        Returns:
+            The outward normal vector at the point, or None if cannot be determined
+        """
+        # Transform point to local coordinates
+        local_point = point - self.transform.position
+        
+        # Extract axes from orientation matrix
+        width_dir = Matrix([
+            self.transform.orientation.matrix[0, 0],
+            self.transform.orientation.matrix[1, 0],
+            self.transform.orientation.matrix[2, 0]
+        ])
+        height_dir = Matrix([
+            self.transform.orientation.matrix[0, 1],
+            self.transform.orientation.matrix[1, 1],
+            self.transform.orientation.matrix[2, 1]
+        ])
+        length_dir = Matrix([
+            self.transform.orientation.matrix[0, 2],
+            self.transform.orientation.matrix[1, 2],
+            self.transform.orientation.matrix[2, 2]
+        ])
+        
+        # Project onto local axes
+        x_coord = (local_point.T * width_dir)[0, 0]
+        y_coord = (local_point.T * height_dir)[0, 0]
+        z_coord = (local_point.T * length_dir)[0, 0]
+        
+        half_width = self.size[0] / 2
+        half_height = self.size[1] / 2
+        
+        # Check which face(s) the point is on
+        # For edges/corners, we'll return one of the normals
+        # Prioritize: length faces (top/bottom), then width faces, then height faces
+        # This prioritization makes sense for typical CSG operations where end faces are often involved
+
+        # TODO you should check if point is on edges and return averages instead
+        
+        # On length faces (top/bottom) - check these first
+        if self.start_distance is not None and z_coord == self.start_distance:
+            return -length_dir  # Bottom face, normal points in -length direction (outward)
+        if self.end_distance is not None and z_coord == self.end_distance:
+            return length_dir  # Top face, normal points in +length direction (outward)
+        
+        # On width faces (right/left)
+        if abs(x_coord) == half_width:
+            if x_coord > 0:
+                return width_dir  # Right face, normal points in +width direction
+            else:
+                return -width_dir  # Left face, normal points in -width direction
+        
+        # On height faces (front/back)
+        if abs(y_coord) == half_height:
+            if y_coord > 0:
+                return height_dir  # Front face, normal points in +height direction
+            else:
+                return -height_dir  # Back face, normal points in -height direction
+        
+        # Should not reach here if point is actually on boundary
+        return None
 
 
 @dataclass(frozen=True)
@@ -391,6 +490,53 @@ class Cylinder(CutCSG):
             return True
         
         return False
+    
+    def get_outward_normal(self, point: V3) -> Optional[Direction3D]:
+        """
+        Get the outward normal vector at a boundary point.
+        
+        For a cylinder, the normal depends on which surface the point is on.
+        
+        Args:
+            point: A point on the boundary
+            
+        Returns:
+            The outward normal vector at the point
+        """
+        # Transform point to local coordinates
+        local_point = point - self.position
+        
+        # Normalize axis
+        axis = self.axis_direction / self.axis_direction.norm()
+        
+        # Project onto axis to get axial coordinate
+        axial_coord = (local_point.T * axis)[0, 0]
+        
+        # Calculate radial distance from axis
+        axial_projection = axis * axial_coord
+        radial_vector = local_point - axial_projection
+        radial_distance = radial_vector.norm()
+        
+        # Check if on cylindrical surface first (most common case)
+        if radial_distance == self.radius:
+            # Normal is the radial direction (normalized)
+            if radial_distance == 0:
+                # Point is on the axis, which shouldn't happen for the cylindrical surface
+                # This might be an edge case on the cap center
+                pass
+            else:
+                return radial_vector / radial_distance
+        
+        # Check if on end caps
+        if self.start_distance is not None and axial_coord == self.start_distance:
+            # Bottom cap, normal points in -axis direction (outward)
+            return -axis
+        if self.end_distance is not None and axial_coord == self.end_distance:
+            # Top cap, normal points in +axis direction (outward)
+            return axis
+        
+        # Should not reach here if point is on boundary
+        return None
 
 
 @dataclass(frozen=True)
@@ -450,6 +596,42 @@ class SolidUnion(CutCSG):
                     return False
         
         return on_any_boundary
+    
+    def get_outward_normal(self, point: V3) -> Optional[Direction3D]:
+        """
+        Get the outward normal vector at a boundary point.
+        
+        For a union, we check all children that have the point on their boundary
+        and return the average of their outward normals. The reason we do this is because this method is used to check if a point is on the boundary through Differences and using an average normal here tends to behave better on weird non-convex geometry.
+        
+        Args:
+            point: A point on the boundary
+            
+        Returns:
+            The average outward normal vector, or None if cannot be determined
+        """
+        normals = []
+        
+        for child in self.children:
+            if child.is_point_on_boundary(point):
+                normal = child.get_outward_normal(point)
+                if normal is not None:
+                    normals.append(normal)
+        
+        if len(normals) == 0:
+            return None
+        elif len(normals) == 1:
+            return normals[0]
+        else:
+            # Average the normals
+            avg_normal = normals[0]
+            for n in normals[1:]:
+                avg_normal = avg_normal + n
+            # Normalize
+            norm = sqrt((avg_normal.T * avg_normal)[0, 0])
+            if norm == 0:
+                return None
+            return avg_normal / norm
 
 
 @dataclass(frozen=True)
@@ -491,15 +673,29 @@ class Difference(CutCSG):
         on_base_boundary = self.base.is_point_on_boundary(point)
         
         # Point must not be strictly inside any subtract object
-        # Also, if point is on boundary of both base and subtract, exclude it
+        # If point is on boundary of both base and subtract, check normals
         for sub in self.subtract:
             if sub.contains_point(point):
                 if not sub.is_point_on_boundary(point):
                     # Point is strictly inside a subtract object
                     return False
                 elif on_base_boundary:
-                    # Point is on boundary of both base and subtract - exclude it
-                    return False
+                    # Point is on boundary of both base and subtract
+                    # Check the outward normals
+                    base_normal = self.base.get_outward_normal(point)
+                    sub_normal = sub.get_outward_normal(point)
+                    
+                    if base_normal is not None and sub_normal is not None:
+                        # Compute dot product of normals
+                        dot_product = (base_normal.T * sub_normal)[0, 0]
+                        
+                        # If dot product == 1, surfaces overlap, exclude the point
+                        # TODO what were really wanting to chec khere is that the surfaces are the same locally which may not be the case if the normal was on an edge with this condition. To fix this you should introduce an is_on_edge function HOWEVER this also won't work in the case of stuff like cylinders, so to fix that you probably really need a surface_derivative (curvature) function...
+                        if equality_test(dot_product, 1):
+                            return False
+                    else:
+                        # Cannot determine normals, use conservative approach: exclude
+                        return False
         
         return True
 
@@ -550,6 +746,49 @@ class Difference(CutCSG):
         
         # Otherwise, check if it's on the base boundary
         return self.base.is_point_on_boundary(point)
+    
+    def get_outward_normal(self, point: V3) -> Optional[Direction3D]:
+        """
+        Get the outward normal vector at a boundary point.
+        
+        For a difference, if the point is on the boundary of the base CSG, return that normal.
+        Otherwise, go through the subtract CSGs and return the average of their normals (negated).
+        
+        Args:
+            point: A point on the boundary
+            
+        Returns:
+            The outward normal vector, or None if cannot be determined
+        """
+        # If point is on base boundary, return base's normal
+        if self.base.is_point_on_boundary(point):
+            return self.base.get_outward_normal(point)
+        
+        # Otherwise, point must be on subtract boundary (creating a "hole")
+        # The normal should point inward to the subtract (which is outward from the difference)
+        # So we negate the subtract's outward normal
+        normals = []
+        for sub in self.subtract:
+            if sub.is_point_on_boundary(point):
+                normal = sub.get_outward_normal(point)
+                if normal is not None:
+                    # Negate because we want the normal pointing into the remaining material
+                    normals.append(-normal)
+        
+        if len(normals) == 0:
+            return None
+        elif len(normals) == 1:
+            return normals[0]
+        else:
+            # Average the normals
+            avg_normal = normals[0]
+            for n in normals[1:]:
+                avg_normal = avg_normal + n
+            # Normalize
+            norm = sqrt((avg_normal.T * avg_normal)[0, 0])
+            if norm == 0:
+                return None
+            return avg_normal / norm
 
 
 
@@ -782,6 +1021,87 @@ class ConvexPolygonExtrusion(CutCSG):
                     return True
         
         return False
+    
+    def get_outward_normal(self, point: V3) -> Optional[Direction3D]:
+        """
+        Get the outward normal vector at a boundary point.
+        
+        For a convex polygon extrusion, the normal depends on which surface.
+        
+        Args:
+            point: A point on the boundary
+            
+        Returns:
+            The outward normal vector at the point
+        """
+        # Transform point to local coordinates
+        local_point = point - self.transform.position
+        local_coords = self.transform.orientation.invert().matrix * local_point
+        
+        x_coord = local_coords[0]
+        y_coord = local_coords[1]
+        z_coord = local_coords[2]
+        
+        # Check if on top face
+        if self.end_distance is not None and z_coord == self.end_distance:
+            # Top face, normal points in +Z direction in local coords
+            local_normal = Matrix([0, 0, 1])
+            return self.transform.orientation.matrix * local_normal
+        
+        # Check if on bottom face
+        if self.start_distance is not None and z_coord == self.start_distance:
+            # Bottom face, normal points in -Z direction in local coords
+            local_normal = Matrix([0, 0, -1])
+            return self.transform.orientation.matrix * local_normal
+        
+        # Otherwise, point is on a side face (edge of polygon extruded)
+        # Find which edge it's on and compute the normal
+        point_2d = Matrix([x_coord, y_coord])
+        
+        for i in range(len(self.points)):
+            p1 = self.points[i]
+            p2 = self.points[(i + 1) % len(self.points)]
+            
+            # Check if point is on the line segment from p1 to p2
+            edge = p2 - p1
+            to_point = point_2d - p1
+            
+            edge_length_sq = edge[0]**2 + edge[1]**2
+            if edge_length_sq == 0:
+                continue
+            
+            t = (to_point[0] * edge[0] + to_point[1] * edge[1]) / edge_length_sq
+            
+            if 0 <= t <= 1:
+                closest_point = p1 + edge * t
+                distance_sq = (point_2d[0] - closest_point[0])**2 + (point_2d[1] - closest_point[1])**2
+                if distance_sq == 0:
+                    # Point is on this edge
+                    # Normal is perpendicular to edge (in 2D), pointing outward
+                    # Left perpendicular of (dx, dy) is (-dy, dx)
+                    edge_normal_2d = Matrix([-edge[1], edge[0]])
+                    edge_normal_2d = edge_normal_2d / sqrt(edge_normal_2d[0]**2 + edge_normal_2d[1]**2)
+                    
+                    # Check if this normal points outward (away from polygon center)
+                    # Calculate polygon center
+                    center_x = sum(p[0] for p in self.points) / len(self.points)
+                    center_y = sum(p[1] for p in self.points) / len(self.points)
+                    center = Matrix([center_x, center_y])
+                    
+                    # Vector from center to point on edge
+                    to_edge = closest_point - center
+                    
+                    # If dot product is negative, flip the normal
+                    if (edge_normal_2d[0] * to_edge[0] + edge_normal_2d[1] * to_edge[1]) < 0:
+                        edge_normal_2d = -edge_normal_2d
+                    
+                    # Convert to 3D local normal (no Z component for side faces)
+                    local_normal = Matrix([edge_normal_2d[0], edge_normal_2d[1], 0])
+                    
+                    # Transform to global coordinates
+                    return self.transform.orientation.matrix * local_normal
+        
+        return None
 
 
 # ============================================================================
