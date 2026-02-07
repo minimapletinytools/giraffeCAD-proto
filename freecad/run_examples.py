@@ -37,8 +37,8 @@ if script_dir not in sys.path:
 # ============================================================================
 # CONFIGURATION: Change this to render different examples
 # ============================================================================
-#EXAMPLE_TO_RENDER = 'basic_joints' 
-EXAMPLE_TO_RENDER = 'oscar_shed'
+EXAMPLE_TO_RENDER = 'basic_joints' 
+#EXAMPLE_TO_RENDER = 'oscar_shed'
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
 #EXAMPLE_TO_RENDER = 'construction'
 #EXAMPLE_TO_RENDER = 'horsey'

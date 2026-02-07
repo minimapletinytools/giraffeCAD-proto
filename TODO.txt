@@ -205,7 +205,7 @@ DONE-BUG Difference is point on boundary is wrong, you need to check the normals
     DONE-for difference cases, first see if point is on boundary on main csg and return that if so, otherwise go through difference csgs, find get_outward_normal on all the csgs that returns true if on boundary and return the average of that (negated)
   DONE-then if point is on boundary of both main csg and difference CSG, check the outward normal, if the dot product is >0 then return false, if it is <= 0 then return true 
 
-
+-actually update run_Examples to use patternbook
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
 -update morties and tenon to support
   -perpendicular but not face aligned
@@ -226,7 +226,7 @@ DONE-BUG Difference is point on boundary is wrong, you need to check the normals
 
 EXEMPLIFY
 -write docs for at least one joint function to use as reference for the rest
--make a set of canonical joint configurations for each joint type to use ine xamples
+DONE-make a set of canonical joint configurations for each joint type to use ine xamples
 -make examples of how to use measure/mark to set parameters in cutting functions
 DONE/IGNORE-create all_joints.py 
   -exports all joints

@@ -857,7 +857,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     
     # Calculate structure extents for intelligent sizing of infinite geometry
     structure_extent = calculate_structure_extents(cut_timbers)
-    infinite_geometry_extent = structure_extent * 10  # 10x for infinite geometry
+    infinite_geometry_extent = structure_extent * 100  # 10x for infinite geometry
     
     # Render all timbers
     success_count = 0
