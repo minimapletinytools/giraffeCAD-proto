@@ -195,12 +195,10 @@ CSGTimber?
 DONE-maybe change cutting to have maybe_top/bottom_end_cut 
 DONE-add timber size estimation function (really you want a prism BB)
   -then add frame size estimation function
-
 DONE/IGNORE-pull out parts of mortise and tenon function, maybe move to joint_helperonis.py in particular
   -round peg support
   -peg positioning
   -finding the shoulder point/shoulder plane
-
 DONE-BUG Difference is point on boundary is wrong, you need to check the normals of the coplanar faces, if they are the same direction, than point not on boundary, if they are opposite, then point is on boundary.
   DONE-you need to add get_outward_normal function to CSG
     DONE-for union cases, check all children, return get_outward_normal on the point for all csgs that have that point on the boundary and return the average of that
@@ -223,6 +221,8 @@ DONE-BUG Difference is point on boundary is wrong, you need to check the normals
 -make timber names mandatory and if not provided a random one is generated?
 
 
+
+-add CutCSG::get_surface_curvature(point: V3) -> Optional[Tuple[V3, Numeric, V3, Numeric]] (returns derivative and basis for the derivative) so you can properly do the point on boundary check.. welly ou may as well just have a get_surface_info that returns stuff like its curvature, whether it's an edge or face, and the curvature info.
 
 EXEMPLIFY
 -write docs for at least one joint function to use as reference for the rest
@@ -379,6 +379,7 @@ RENAME
 
 
 :: FUTURE shit
+
 -should I make a "block" class that parents "Timber" and then make a "board" class?
 -should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
 - add nominal_size sup port for square and line rule desgins
