@@ -960,9 +960,9 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
 # ============================================================================
 
 # Standard dimensions for canonical example joints: 4" x 5" x 4'
-_CANONICAL_EXAMPLE_TIMBER_WIDTH = Rational(4)    # X dimension (inches)
-_CANONICAL_EXAMPLE_TIMBER_HEIGHT = Rational(5)   # Y dimension (inches)
-_CANONICAL_EXAMPLE_TIMBER_LENGTH = Rational(48)  # 4 feet = 48 inches
+_CANONICAL_EXAMPLE_TIMBER_WIDTH = inches(4)    # X dimension (inches)
+_CANONICAL_EXAMPLE_TIMBER_HEIGHT = inches(5)   # Y dimension (inches)
+_CANONICAL_EXAMPLE_TIMBER_LENGTH = inches(48)  # 4 feet = 48 inches
 _CANONICAL_EXAMPLE_TIMBER_SIZE = create_v2(_CANONICAL_EXAMPLE_TIMBER_WIDTH, _CANONICAL_EXAMPLE_TIMBER_HEIGHT)
 
 
@@ -973,17 +973,23 @@ class ButtJointTimberArrangement:
     butt_timber_end: TimberReferenceEnd
 
     
-def create_canonical_butt_joint_timbers() -> ButtJointTimberArrangement:
+def create_canonical_butt_joint_timbers(position: Optional[V3] = None) -> ButtJointTimberArrangement:
     """
     Create a canonical butt joint timber arrangement. 
     All canonical example joints are 4"x5"x4' timbers.
-    The receiving timber is in the X axis direction with its center point at the origin.
-    The butt timber is in the Y axis direction with its center point at the origin.
+    The receiving timber is in the X axis direction with its center point at the position.
+    The butt timber is in the Y axis direction with its center point at the position.
     Both timbers have their RIGHT face pointing in the +Z direction.
+    
+    Args:
+        position: Center position of the joint. Defaults to origin.
     """
-    # Receiving timber: runs along X axis, center at origin
-    # Center at origin means bottom_position is at origin - length/2 in length direction
-    receiving_bottom = create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0, 0)
+    if position is None:
+        position = create_v3(0, 0, 0)
+    
+    # Receiving timber: runs along X axis, center at position
+    # Center at position means bottom_position is at position - length/2 in length direction
+    receiving_bottom = position + create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0, 0)
     receiving_timber = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
@@ -993,9 +999,9 @@ def create_canonical_butt_joint_timbers() -> ButtJointTimberArrangement:
         name="receiving_timber"
     )
     
-    # Butt timber: runs along Y axis, center at origin
+    # Butt timber: runs along Y axis, center at position
     # The butt timber's top end meets the receiving timber
-    butt_bottom = create_v3(0, -_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0)
+    butt_bottom = position + create_v3(0, -_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0)
     butt_timber = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
@@ -1018,17 +1024,23 @@ class SpliceJointTimberArrangement:
     timber1_end: TimberReferenceEnd
     timber2_end: TimberReferenceEnd 
 
-def create_canonical_splice_joint_timbers() -> SpliceJointTimberArrangement:
+def create_canonical_splice_joint_timbers(position: Optional[V3] = None) -> SpliceJointTimberArrangement:
     """
     Create a canonical splice joint timber arrangement. 
     All canonical example joints are 4"x5"x4' timbers.
-    timber1 is to the left of the origin and timber2 is to the right of the origin.
-    both timbers have their centerlines intersecting the origin.
+    timber1 is to the left of the position and timber2 is to the right of the position.
+    both timbers have their centerlines intersecting the position.
     both timbers have their RIGHT face pointing in the +Z direction.
+    
+    Args:
+        position: Center position of the joint. Defaults to origin.
     """
-    # timber1: to the left of origin (runs in +X direction from left)
-    # Centerline intersects origin means the TOP end is at origin
-    timber1_bottom = create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH, 0, 0)
+    if position is None:
+        position = create_v3(0, 0, 0)
+    
+    # timber1: to the left of position (runs in +X direction from left)
+    # Centerline intersects position means the TOP end is at position
+    timber1_bottom = position + create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH, 0, 0)
     timber1 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
@@ -1038,9 +1050,9 @@ def create_canonical_splice_joint_timbers() -> SpliceJointTimberArrangement:
         name="timber1"
     )
     
-    # timber2: to the right of origin (runs in +X direction from origin)
-    # Centerline intersects origin means the BOTTOM end is at origin
-    timber2_bottom = create_v3(0, 0, 0)
+    # timber2: to the right of position (runs in +X direction from position)
+    # Centerline intersects position means the BOTTOM end is at position
+    timber2_bottom = position
     timber2 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
@@ -1064,16 +1076,17 @@ class CornerJointTimberArrangement:
     timber1_end: TimberReferenceEnd
     timber2_end: TimberReferenceEnd
 
-def create_canonical_corner_joint_timbers(corner_angle: Optional[Numeric] = None) -> CornerJointTimberArrangement:
+def create_canonical_corner_joint_timbers(corner_angle: Optional[Numeric] = None, position: Optional[V3] = None) -> CornerJointTimberArrangement:
     """
     Create a canonical corner joint timber arrangement at an angle.
     All canonical example joints are 4"x5"x4' timbers.
-    timber1 points in the +Y direction and has its bottom point at the origin.
-    timber2 has its bottom point at the origin and is rotated CLOCKWISE around the +Z axis by the given angle (that is to say +90deg would be pointing in the +X direction)
+    timber1 points in the +Y direction and has its bottom point at the position.
+    timber2 has its bottom point at the position and is rotated CLOCKWISE around the +Z axis by the given angle (that is to say +90deg would be pointing in the +X direction)
     both timbers have their RIGHT face pointing in the +Z direction.
     
     Args:
         corner_angle: Angle in radians for timber2 rotation. Defaults to pi/2 (90 degrees).
+        position: Bottom position where timbers meet. Defaults to origin.
     """
     from sympy import sin, cos, pi
     
@@ -1081,12 +1094,14 @@ def create_canonical_corner_joint_timbers(corner_angle: Optional[Numeric] = None
     if corner_angle is None:
         corner_angle = pi / 2
     
-    # timber1: points in +Y direction, bottom at origin (same as right angle version)
-    timber1_bottom = create_v3(0, 0, 0)
+    if position is None:
+        position = create_v3(0, 0, 0)
+    
+    # timber1: points in +Y direction, bottom at position
     timber1 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
-        bottom_position=timber1_bottom,
+        bottom_position=position,
         length_direction=create_v3(0, 1, 0),  # +Y direction
         width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
         name="timber1"
@@ -1095,12 +1110,11 @@ def create_canonical_corner_joint_timbers(corner_angle: Optional[Numeric] = None
     # timber2: rotated CLOCKWISE around +Z axis by corner_angle from +Y direction
     # Clockwise rotation by angle θ: (0,1,0) -> (sin(θ), cos(θ), 0)
     # At θ=90°: sin(90°)=1, cos(90°)=0 -> (1, 0, 0) = +X direction ✓
-    timber2_bottom = create_v3(0, 0, 0)
     timber2_length_direction = create_v3(sin(corner_angle), cos(corner_angle), 0)
     timber2 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
-        bottom_position=timber2_bottom,
+        bottom_position=position,
         length_direction=timber2_length_direction,
         width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
         name="timber2"
@@ -1113,32 +1127,42 @@ def create_canonical_corner_joint_timbers(corner_angle: Optional[Numeric] = None
         timber2_end=TimberReferenceEnd.BOTTOM
     )
 
-def create_canonical_right_angle_corner_joint_timbers() -> CornerJointTimberArrangement:
+def create_canonical_right_angle_corner_joint_timbers(position: Optional[V3] = None) -> CornerJointTimberArrangement:
     """
     Create a canonical corner joint timber arrangement at a right angle (90 degrees).
     All canonical example joints are 4"x5"x4' timbers.
-    timber1 points in the +Y direction and has its bottom point at the origin.
-    timber2 points in the +X direction and has its bottom point at the origin.
+    timber1 points in the +Y direction and has its bottom point at the position.
+    timber2 points in the +X direction and has its bottom point at the position.
     both timbers have their RIGHT face pointing in the +Z direction.
+    
+    Args:
+        position: Bottom position where timbers meet. Defaults to origin.
     """
     from sympy import pi
-    return create_canonical_corner_joint_timbers(corner_angle=pi / 2)
+    return create_canonical_corner_joint_timbers(corner_angle=pi / 2, position=position)
 @dataclass(frozen=True)
 class CrossJointTimberArrangement:
     timber1: Timber
     timber2: Timber
 
-def create_canonical_cross_joint_timbers(lateral_offset: Numeric = 0) -> CrossJointTimberArrangement:
+def create_canonical_cross_joint_timbers(lateral_offset: Numeric = 0, position: Optional[V3] = None) -> CrossJointTimberArrangement:
     """
     Create a canonical cross joint timber arrangement.
     All canonical example joints are 4"x5"x4' timbers.
-    timber1 points in the +X direction and has its centerpoint at the origin.
-    timber2 points in the +Y direction and has its centerpoint at the origin + lateral_offset in the +Z direction.
+    timber1 points in the +X direction and has its centerpoint at the position.
+    timber2 points in the +Y direction and has its centerpoint at the position + lateral_offset in the +Z direction.
     both timbers have their RIGHT face pointing in the +Z direction.
+    
+    Args:
+        lateral_offset: Vertical offset for timber2 in +Z direction. Defaults to 0.
+        position: Center position of the joint. Defaults to origin.
     """
-    # timber1: points in +X direction, centerpoint at origin
-    # If centerpoint is at origin and length is L, bottom is at (-L/2, 0, 0)
-    timber1_bottom = create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0, 0)
+    if position is None:
+        position = create_v3(0, 0, 0)
+    
+    # timber1: points in +X direction, centerpoint at position
+    # If centerpoint is at position and length is L, bottom is at position + (-L/2, 0, 0)
+    timber1_bottom = position + create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0, 0)
     timber1 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
@@ -1148,9 +1172,9 @@ def create_canonical_cross_joint_timbers(lateral_offset: Numeric = 0) -> CrossJo
         name="timber1"
     )
     
-    # timber2: points in +Y direction, centerpoint at (0, 0, lateral_offset)
-    # If centerpoint is at (0, 0, lateral_offset) and length is L, bottom is at (0, -L/2, lateral_offset)
-    timber2_bottom = create_v3(0, -_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, lateral_offset)
+    # timber2: points in +Y direction, centerpoint at position + (0, 0, lateral_offset)
+    # If centerpoint is at position + (0, 0, lateral_offset) and length is L, bottom is at position + (0, -L/2, lateral_offset)
+    timber2_bottom = position + create_v3(0, -_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, lateral_offset)
     timber2 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
