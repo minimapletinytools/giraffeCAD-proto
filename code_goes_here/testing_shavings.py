@@ -289,7 +289,6 @@ def create_test_footprint(width=4, height=3) -> Footprint:
 # Mock Objects
 # ============================================================================
 
-# TODO you can probably delete this...
 class MockCutting:
     """
     Mock Cutting implementation for testing.

@@ -1048,6 +1048,73 @@ class TestDifferenceContainsPoint:
         for point in exterior_points:
             assert empty_diff.contains_point(point) == False, \
                 f"Exterior point {point.T} should NOT be in empty difference"
+    
+    def test_difference_two_prisms_sharing_one_plane_no_overlap(self):
+        """Test difference with two prisms that share one plane but don't overlap.
+        
+        When two prisms just touch at a shared face (no volume overlap),
+        their outward normals point in opposite directions. The boundary points
+        should be included in the difference (dot product <= 0).
+        """
+        orientation = Orientation()
+        
+        # Create prism A: from z=0 to z=10
+        prismA = RectangularPrism(
+            size=Matrix([10, 10]), 
+            transform=Transform(position=create_v3(0, 0, 0), orientation=orientation),
+            start_distance=Rational(0), 
+            end_distance=Rational(10)
+        )
+        
+        # Create prism B: from z=10 to z=20 (shares the z=10 plane with A)
+        prismB = RectangularPrism(
+            size=Matrix([10, 10]), 
+            transform=Transform(position=create_v3(0, 0, 0), orientation=orientation),
+            start_distance=Rational(10), 
+            end_distance=Rational(20)
+        )
+        
+        # Create difference: A - B
+        diff = Difference(prismA, [prismB])
+        
+        # Test interior points of A (not near shared boundary) - should be contained
+        assert diff.contains_point(Matrix([0, 0, 5])) == True
+        assert diff.is_point_on_boundary(Matrix([0, 0, 5])) == False
+        
+        # Test points on the shared plane (z=10)
+        # The outward normals point in opposite directions (dot < 0),
+        # so these points should be included in the difference
+        shared_plane_points = [
+            Matrix([0, 0, 10]),  # Center of shared face
+            Matrix([3, 3, 10]),  # Point on shared face
+            Matrix([5, 0, 10]),  # Edge of prism A's boundary on shared plane
+        ]
+        
+        for point in shared_plane_points:
+            # The point is on boundary of both base and subtract
+            assert prismA.is_point_on_boundary(point) == True
+            assert prismB.is_point_on_boundary(point) == True
+            
+            # Check the normals point in opposite directions
+            normalA = prismA.get_outward_normal(point)
+            normalB = prismB.get_outward_normal(point)
+            assert normalA is not None
+            assert normalB is not None
+            dot_product = (normalA.T * normalB)[0, 0]
+            assert dot_product < 0, f"Normals should point in opposite directions at {point.T}"
+            
+            # In the difference, since dot product < 0, points should be included
+            assert diff.contains_point(point) == True, \
+                f"Point {point.T} on shared boundary should be in difference (dot={dot_product})"
+            assert diff.is_point_on_boundary(point) == True, \
+                f"Point {point.T} should be on boundary of difference"
+        
+        # Test points in prism B (z > 10) - should NOT be in the difference
+        assert diff.contains_point(Matrix([0, 0, 15])) == False
+        
+        # Test points on A's other boundaries - should be on boundary
+        assert diff.is_point_on_boundary(Matrix([0, 0, 0])) == True  # Bottom face
+        assert diff.is_point_on_boundary(Matrix([5, 0, 5])) == True  # Side face
 
 
 class TestConvexPolygonExtrusion:

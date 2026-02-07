@@ -1,4 +1,25 @@
 
+:: 2/5/2026 CSG feature notes
+
+CSG creates features, I think we can reasonable identify all faces and edges from intersections in our potato CSG code
+After CSG gets triangulated, when we click/hover we can raycast onto that triangle
+So we want to reveres map from that triangle to some feature
+Face features can be uniquely identified by normal and boundaries
+edge features are harder, as you can't click exactly on an edge, instead we can check proximity, however we only want to click on the edge if the triangle we clicked on a face that forms that edge. We can map to teh faec first, and then maybe in our csg logic we can find all edges on that face :O
+
+Ok, so we only need to do the following:
+-find the fetaure we want to track, this is either a primitive CSG feature or a derived one in the derived case, I think it's really only edges fromed from halfplanes and prism differences (e.g. the edges of a tenon shoulder)
+-so we need CSG feature and we need to be able to send it through the CSG tree to diff away stuff from it.
+-and CSG features can be primitive CSG features or derived ones. For derived features... maybe the noly derived feature we support is differences between some primitive CSG feature and the uncut timber prism :O, that seems reasoabel to me?
+
+
+:: 2/5/2026 JS<->Python interaction DREAM
+viewer js calls frame manager python script that holds hores code and hot reloads the target script and runs it and stores the resulting frame. The frame manager has a websocket or whatever that communicates with js. The socket has teh following things:
+
+- on_frame_updated(): fires when target script changes and script was rerun, if success, gives a list of CHANGED timbers names in the frame
+- get_frame(): gets the entire frame CSG and metadata for rendering
+- get_member(name): gets CSG and metadata for a specific timber
+- raycast_feature(member/feature filter, raycast_point_location): returns feature that got clicked on
 
 :: 1/23/2026 viewer planning notes
 
@@ -36,6 +57,9 @@ for the naive version of feature highlighting:
   -CSG metadata maps to feature filter functions so that we can do the following
     -you probbaly need some kinda BVH to do this efficiently, but linear search is fine too LOL
   -hover -> raycast triangle -> find feature on timber
+
+
+
 
 :: 1/23/2026 viewer and drawing notes [messy]
 
@@ -171,7 +195,19 @@ CSGTimber?
 DONE-maybe change cutting to have maybe_top/bottom_end_cut 
 DONE-add timber size estimation function (really you want a prism BB)
   -then add frame size estimation function
--make examples of how to use measure/mark to set parameters in cutting functions
+
+DONE/IGNORE-pull out parts of mortise and tenon function, maybe move to joint_helperonis.py in particular
+  -round peg support
+  -peg positioning
+  -finding the shoulder point/shoulder plane
+
+DONE-BUG Difference is point on boundary is wrong, you need to check the normals of the coplanar faces, if they are the same direction, than point not on boundary, if they are opposite, then point is on boundary.
+  DONE-you need to add get_outward_normal function to CSG
+    DONE-for union cases, check all children, return get_outward_normal on the point for all csgs that have that point on the boundary and return the average of that
+    DONE-for difference cases, first see if point is on boundary on main csg and return that if so, otherwise go through difference csgs, find get_outward_normal on all the csgs that returns true if on boundary and return the average of that (negated)
+  DONE-then if point is on boundary of both main csg and difference CSG, check the outward normal, if the dot product is >0 then return false, if it is <= 0 then return true 
+
+
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
 -update morties and tenon to support
   -perpendicular but not face aligned
@@ -185,6 +221,23 @@ DONE-add timber size estimation function (really you want a prism BB)
   -functions return things in golbal space by default unless _local suffix
 -is there some way to make orientation/direction generic more like a measuring function?
 -make timber names mandatory and if not provided a random one is generated?
+
+
+
+EXEMPLIFY
+-write docs for at least one joint function to use as reference for the rest
+-make a set of canonical joint configurations for each joint type to use ine xamples
+-make examples of how to use measure/mark to set parameters in cutting functions
+DONE/IGNORE-create all_joints.py 
+  -exports all joints
+-create potato_joints.py and potato_joints_examples.py
+  -pass in sensible default parameters for all joints
+-examplify 
+  DONE-create some map of example name to example function map so you can dynamiaclly get to all examples
+  -would be cool do deep link by into functions/docs in the future...
+
+
+
 
 RENAME
 -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
@@ -203,7 +256,7 @@ RENAME
   -add from_joints -> raise function to Frame
     -have an on class member version of it to cuz its cutre that way
   -oscar shed -> tiny snack house
-  -horsey viewer -> horse watcher or barn raising?
+  -horsey viewer -> horse watcher or barn raising? or 建前 or tatemae
 -consider doing a rename pass on validitiy checkers  
   -assert
   -check
@@ -213,29 +266,12 @@ RENAME
   -are
 
 
-
-EXEMPLIFY
--create all_joints.py 
-  -exports all joints
--create potato_joints.py and potato_joints_examples.py
-  -pass in sensible default parameters for all joints
--examplify 
-  DONE-create some map of example name to example function map so you can dynamiaclly get to all examples
-  -would be cool do deep link by into functions/docs in the future...
-
-
-
   
 -3 major features
   DONE-measure functions
   -refactor timber class
   -add timber metadata
     -prepare for CSG metadata as well...
-
--pull out parts of mortise and tenon function, maybe move to joint_helperonis.py in particular
-  -round peg support
-  -peg positioning
-  -finding the shoulder point/shoulder plane
 
 
 -M1 (reward is reimburse H2D LOL)
