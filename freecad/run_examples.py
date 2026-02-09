@@ -1,7 +1,7 @@
 """
-GiraffeCAD FreeCAD Examples Runner - automatically reloads all modules.
+GiraffeCAD FreeCAD Examples Runner - uses PatternBook for unified rendering.
 
-This script provides multiple example rendering functions with automatic module reloading,
+This script uses the Anthology PatternBook to render all examples with automatic module reloading,
 so you can make changes to your code and re-run this macro without restarting FreeCAD.
 
 SETUP (one-time):
@@ -17,8 +17,12 @@ TO RUN:
 3. Select "run_examples.py" from the list
 4. Click "Execute"
 
-TO CHANGE WHICH EXAMPLE RENDERS:
-Edit the EXAMPLE_TO_RENDER variable below.
+TO CHANGE WHAT RENDERS:
+Edit the configuration variables below:
+- RENDER_TYPE: Choose 'pattern' (single) or 'group' (multiple with spacing)
+- PATTERN_NAME: Name of specific pattern to render (when RENDER_TYPE = 'pattern')
+- GROUP_NAME: Name of pattern group to render (when RENDER_TYPE = 'group')
+- SEPARATION_DISTANCE_METERS: Spacing between patterns in group mode
 """
 
 import sys
@@ -35,23 +39,40 @@ if script_dir not in sys.path:
 
 
 # ============================================================================
-# CONFIGURATION: Change this to render different examples
+# CONFIGURATION: Choose what to render using PatternBook
 # ============================================================================
-#EXAMPLE_TO_RENDER = 'basic_joints' 
-EXAMPLE_TO_RENDER = 'oscar_shed'
-#EXAMPLE_TO_RENDER = 'mortise_and_tenon'
-#EXAMPLE_TO_RENDER = 'construction'
-#EXAMPLE_TO_RENDER = 'horsey'
-#EXAMPLE_TO_RENDER = 'japanese_joints'
-#EXAMPLE_TO_RENDER = 'csg'
 
-# CSG Configuration (only used when EXAMPLE_TO_RENDER = 'csg')
-CSG_EXAMPLE_TO_RENDER = 'shoulder_notch'  # Options: 'cube_cutout', 'halfspace_cut', 'positioned_cube', 'lap_cut_timber', 'union_cubes', 'hexagon_extrusion', 'gooseneck_profile', 'shoulder_notch'
+# RENDER_TYPE: 'pattern' or 'group'
+# - 'pattern': Render a single pattern by name
+# - 'group': Render all patterns in a group with spacing
+RENDER_TYPE = 'group'
+#RENDER_TYPE = 'pattern'
 
-# Japanese Joints Configuration (only used when EXAMPLE_TO_RENDER = 'japanese_joints')
-# Uncomment ONE of the following lines to select which joint example to render:
-JAPANESE_JOINT_EXAMPLE = 'gooseneck_simple'    # Simple vertical gooseneck joint (3"x3" x 2')
-#JAPANESE_JOINT_EXAMPLE = 'dovetail_butt'       # Dovetail butt joint / T-joint (4"x4" x 3')
+# PATTERN_NAME: Name of a specific pattern to render (when RENDER_TYPE = 'pattern')
+# Examples of available patterns:
+#PATTERN_NAME = 'miter_joint_face_aligned'
+#PATTERN_NAME = 'butt_joint'
+#PATTERN_NAME = 'splice_joint'
+#PATTERN_NAME = 'mortise_and_tenon_simple'
+#PATTERN_NAME = 'dovetail_half_lap'
+#PATTERN_NAME = 'oscar_shed_full'
+PATTERN_NAME = 'gooseneck_simple'
+#PATTERN_NAME = 'shoulder_notch'
+#PATTERN_NAME = 'short_post'
+
+# GROUP_NAME: Name of a pattern group to render (when RENDER_TYPE = 'group')
+# Available groups: 'basic_joints', 'mortise_and_tenon', 'construction', 
+#                   'horsey', 'oscar_shed', 'japanese_joints', 'csg_examples', 
+#                   'irrational_angles', 'posts', 'beams', 'boxes'
+#GROUP_NAME = 'basic_joints'
+GROUP_NAME = 'oscar_shed'
+#GROUP_NAME = 'japanese_joints'
+#GROUP_NAME = 'posts'
+#GROUP_NAME = 'csg_examples'
+
+# SEPARATION_DISTANCE: Distance between patterns when rendering a group (in meters)
+# Common values: m(1), m(2), feet(3), feet(4), inches(24)
+SEPARATION_DISTANCE_METERS = 2.0  # 2 meters between patterns
 
 # Anthology PatternBook - will be initialized after module reload
 ANTHOLOGY_PATTERN_BOOK = None
@@ -73,6 +94,7 @@ def create_anthology_pattern_book():
     from examples.japanese_joints_example import create_japanese_joints_patternbook
     from examples.irrational_angles_example import create_irrational_angles_patternbook
     from examples.CutCSG_examples import create_csg_examples_patternbook
+    from examples.patternbook_example import create_patternbook_example_patternbook
     
     # Create all individual pattern books
     books = [
@@ -84,6 +106,7 @@ def create_anthology_pattern_book():
         create_japanese_joints_patternbook(),
         create_irrational_angles_patternbook(),
         create_csg_examples_patternbook(),
+        create_patternbook_example_patternbook(),
     ]
     
     # Merge them all into one anthology book
@@ -146,6 +169,7 @@ def reload_all_modules():
         'examples.irrational_angles_example',
         'examples.construction_examples',
         'examples.CutCSG_examples',
+        'examples.patternbook_example',
     ]
     
     # Re-import all modules in dependency order
@@ -167,404 +191,166 @@ def reload_all_modules():
     print()
 
 
-def render_basic_joints():
+def render_from_patternbook():
     """
-    Render all basic joint examples using anthology PatternBook.
+    Unified render function that uses the Anthology PatternBook.
     
-    Includes: miter joints, butt joints, splice joints, and house joints.
+    Renders either a single pattern or a group of patterns based on configuration.
     """
-    from giraffe_render_freecad import render_frame, clear_document
+    from giraffe_render_freecad import render_frame, render_csg_shape, clear_document, get_active_document
     from code_goes_here.rule import m
-    
-    print("="*60)
-    print("GiraffeCAD FreeCAD - All Basic Joints")
-    print("="*60)
-    
-    # Use anthology pattern book
-    print("\nRaising all patterns in 'basic_joints' group from anthology...")
-    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern_group("basic_joints", separation_distance=m(2))
-    
-    print(f"Total timbers created: {len(frame.cut_timbers)}")
-    
-    # Clear and render
-    print("\nClearing FreeCAD document...")
-    clear_document()
-    
-    print("\nRendering timbers in FreeCAD...")
-    success_count = render_frame(frame)
-    
-    print("\n" + "="*60)
-    print(f"Rendering Complete!")
-    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
-    print("="*60)
-    print("\nJoints are spaced 2m apart along the X axis")
-    print("Check the Model tree on the left to see all joint components")
-    print("\nJoint types rendered:")
-    print("  - Miter Joint (67°)")
-    print("  - Miter Joint (Face Aligned)")
-    print("  - Butt Joint")
-    print("  - Splice Joint")
-    print("  - Splice Lap Joint")
-    print("  - House Joint")
-    print("  - Cross Lap Joint")
-
-
-def render_mortise_and_tenon():
-    """
-    Render mortise and tenon joint examples with pegs using anthology PatternBook.
-    
-    Includes various mortise and tenon configurations with accessories like pegs.
-    """
-    from giraffe_render_freecad import render_frame, clear_document
-    from code_goes_here.rule import inches
+    from code_goes_here.timber import Frame
     
     print("="*70)
-    print("GiraffeCAD FreeCAD - Mortise and Tenon Joint Examples")
+    print("GiraffeCAD FreeCAD - PatternBook Renderer")
     print("="*70)
-    
-    # Use anthology pattern book
-    print("\nRaising all patterns in 'mortise_tenon' group from anthology...")
-    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern_group("mortise_tenon", separation_distance=inches(72))
-    
-    print(f"Total timbers created: {len(frame.cut_timbers)}")
-    print(f"Total accessories (pegs/wedges): {len(frame.accessories)}")
-    
-    # Clear and render
-    print("\nClearing FreeCAD document...")
-    clear_document()
-    
-    print("\nRendering timbers and accessories in FreeCAD...")
-    success_count = render_frame(frame)
-    
-    print("\n" + "="*70)
-    print(f"Rendering Complete!")
-    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
-    print(f"Successfully rendered {len(frame.accessories)} accessories")
-    print("="*70)
-    print("\nExamples rendered:")
-    print("  - Basic 4x4 mortise and tenon")
-    print("  - 4x6 into 6x8 mortise and tenon")
-    print("  - Through tenon with stickout")
-    print("  - Full size 4x4 tenon")
-    print("  - Offset corner tenon")
-    print("  - Mortise and tenon with pegs")
-    print("\nCheck the Model tree on the left to see all timbers, cuts, and accessories")
-
-
-def render_construction():
-    """
-    Render construction examples using anthology PatternBook.
-    
-    Tests various reference features (centerline, faces, edges) for positioning.
-    """
-    from giraffe_render_freecad import render_frame, clear_document
-    
-    print("="*70)
-    print("GiraffeCAD FreeCAD - Construction Examples")
-    print("="*70)
-    
-    # Use anthology pattern book
-    print("\nRaising 'posts_with_beam_centerline' pattern from anthology...")
-    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern("posts_with_beam_centerline")
-    
-    print(f"Total timbers created: {len(frame.cut_timbers)}")
-    
-    # Clear and render
-    print("\nClearing FreeCAD document...")
-    clear_document()
-    
-    print("\nRendering timbers in FreeCAD...")
-    success_count = render_frame(frame)
-    
-    print("\n" + "="*70)
-    print(f"Rendering Complete!")
-    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
-    print("="*70)
-    print("\nExample rendered:")
-    print("  - Construction example: Two 4x4x8 posts with beam using centerline reference")
-
-
-def render_oscar_shed():
-    """
-    Render Oscar's Shed using anthology PatternBook.
-    
-    An 8ft x 4ft shed with mudsills, posts, girts, top plates, joists, and rafters.
-    """
-    from giraffe_render_freecad import render_frame, clear_document
-    
-    print("="*60)
-    print("GiraffeCAD FreeCAD - Oscar's Shed")
-    print("="*60)
-    
-    # Use anthology pattern book
-    print("\nRaising 'oscar_shed' pattern from anthology...")
-    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern("oscar_shed")
-    
-    print(f"Total timbers created: {len(frame.cut_timbers)}")
-    print(f"Total accessories (pegs): {len(frame.accessories)}")
-    
-    # Print bounding box information
-    min_corner, max_corner = frame.get_bounding_box()
-    size = max_corner - min_corner
-    print(f"\nFrame bounding box size: {float(size[0]):.2f}m x {float(size[1]):.2f}m x {float(size[2]):.2f}m")
-    print(f"  X: {float(min_corner[0]):.2f}m to {float(max_corner[0]):.2f}m")
-    print(f"  Y: {float(min_corner[1]):.2f}m to {float(max_corner[1]):.2f}m")
-    print(f"  Z: {float(min_corner[2]):.2f}m to {float(max_corner[2]):.2f}m")
-    
-    # Clear and render
-    print("\nClearing FreeCAD document...")
-    clear_document()
-    
-    print("\nRendering timbers and accessories in FreeCAD...")
-    success_count = render_frame(frame)
-    
-    print("\n" + "="*60)
-    print(f"Rendering Complete!")
-    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
-    print(f"Successfully rendered {len(frame.accessories)} accessories")
-    print("="*60)
-    print("\nOscar's Shed: 8ft x 4ft timber frame structure")
-    print("Check the Model tree on the left to see all components:")
-    print("  - 4 mudsills (with miter joints)")
-    print("  - 6 posts (mortise & tenon joints to mudsills)")
-    print("  - 2 side girts")
-    print("  - 1 front girt (with mortise & tenon joints and pegs, spliced in middle)")
-    print("  - 2 top plates (with rafter pockets)")
-    print("  - 3 joists")
-    print("  - 5 rafters")
-
-
-def render_horsey():
-    """
-    Render Horsey Sawhorse using anthology PatternBook.
-    
-    A sawhorse with two horizontal beams, two vertical posts, a stretcher, and a top plate.
-    All connected with mortise and tenon joints with pegs.
-    """
-    from giraffe_render_freecad import render_frame, clear_document
-    
-    print("="*60)
-    print("GiraffeCAD FreeCAD - Horsey Sawhorse")
-    print("="*60)
-    
-    # Use anthology pattern book
-    print("\nRaising 'sawhorse' pattern from anthology...")
-    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern("sawhorse")
-    
-    print(f"Total timbers created: {len(frame.cut_timbers)}")
-    print(f"Total accessories (pegs): {len(frame.accessories)}")
-    
-    # Clear and render
-    print("\nClearing FreeCAD document...")
-    clear_document()
-    
-    print("\nRendering timbers and accessories in FreeCAD...")
-    success_count = render_frame(frame)
-    
-    print("\n" + "="*60)
-    print(f"Rendering Complete!")
-    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
-    print(f"Successfully rendered {len(frame.accessories)} accessories")
-    print("="*60)
-    print("\nHorsey Sawhorse: Simple sawhorse with mortise & tenon joints")
-    print("Check the Model tree on the left to see all components:")
-    print("  - 2 horizontal beams (feet)")
-    print("  - 2 vertical posts")
-    print("  - 1 horizontal stretcher")
-    print("  - 1 top plate")
-    print("  - Mortise & tenon joints with pegs")
-
-
-def render_japanese_joints():
-    """
-    Render traditional Japanese timber joints using anthology PatternBook.
-    
-    Available joints:
-    - Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi) - splices beams end-to-end
-    - Dovetail Butt Joint (蟻仕口 / Ari Shiguchi) - connects timbers at right angles
-    
-    Change JAPANESE_JOINT_EXAMPLE at the top of this file to select which joint to render.
-    """
-    from giraffe_render_freecad import render_frame, clear_document
-    
-    # Select which example to render based on configuration
-    joint_examples = {
-        'gooseneck_simple': {
-            'pattern_name': 'gooseneck_simple',
-            'title': 'Japanese Lapped Gooseneck Joint - Simple',
-            'description': 'Creating simple vertical post splice...',
-            'details': [
-                'Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi)',
-                '  - Two 3"x3" x 2\' timbers spliced vertically',
-                '  - Simplified version for easier visualization',
-                '  - Gooseneck profile creates mechanical interlock'
-            ]
-        },
-        'dovetail_butt': {
-            'pattern_name': 'dovetail_butt',
-            'title': 'Japanese Dovetail Butt Joint',
-            'description': 'Creating T-joint with dovetail connection...',
-            'details': [
-                'Dovetail Butt Joint (蟻仕口 / Ari Shiguchi)',
-                '  - Two 4"x4" x 3\' timbers at right angles',
-                '  - Dovetail shape resists pulling apart',
-                '  - Used for T-joints and corner connections'
-            ]
-        }
-    }
-    
-    if JAPANESE_JOINT_EXAMPLE not in joint_examples:
-        print(f"ERROR: Unknown Japanese joint example '{JAPANESE_JOINT_EXAMPLE}'")
-        print(f"Available examples: {list(joint_examples.keys())}")
-        print("\nEdit JAPANESE_JOINT_EXAMPLE in run_examples.py to change the joint.")
-        return
-    
-    example_config = joint_examples[JAPANESE_JOINT_EXAMPLE]
-    
-    print("="*70)
-    print(f"GiraffeCAD FreeCAD - {example_config['title']}")
-    print("="*70)
-    
-    # Use anthology pattern book
-    print(f"\n{example_config['description']}")
-    print(f"Raising '{example_config['pattern_name']}' pattern from anthology...")
-    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern(example_config['pattern_name'])
-    
-    print(f"Total timbers created: {len(frame.cut_timbers)}")
-    print(f"Total accessories: {len(frame.accessories)}")
-    
-    # Clear and render
-    print("\nClearing FreeCAD document...")
-    clear_document()
-    
-    print("\nRendering timbers in FreeCAD...")
-    success_count = render_frame(frame)
-    
-    print("\n" + "="*70)
-    print(f"Rendering Complete!")
-    print(f"Successfully rendered {success_count}/{len(frame.cut_timbers)} timbers")
-    print("="*70)
-    for detail in example_config['details']:
-        print(detail)
-    print("="*70)
-
-
-def render_csg():
-    """
-    Render CSG test examples using anthology PatternBook.
-    
-    Tests basic CSG operations like cuts, unions, and extrusions.
-    Edit CSG_EXAMPLE_TO_RENDER to choose which example to render.
-    """
-    from giraffe_render_freecad import render_csg_shape, clear_document, get_active_document
-    from examples.CutCSG_examples import EXAMPLES
-    
-    print("="*60)
-    print("GiraffeCAD FreeCAD - CSG Test")
-    print("="*60)
-    
-    # Get example info
-    if CSG_EXAMPLE_TO_RENDER not in EXAMPLES:
-        print(f"ERROR: Unknown example '{CSG_EXAMPLE_TO_RENDER}'")
-        print(f"Available examples: {list(EXAMPLES.keys())}")
-        return
-    
-    example_info = EXAMPLES[CSG_EXAMPLE_TO_RENDER]
-    print(f"Example: {example_info['name']}")
-    print(f"Description: {example_info['description']}")
     print()
     
-    # Use anthology pattern book
-    print(f"Raising '{CSG_EXAMPLE_TO_RENDER}' pattern from anthology...")
-    csg = ANTHOLOGY_PATTERN_BOOK.raise_pattern(CSG_EXAMPLE_TO_RENDER)
-    print(f"CSG Type: {type(csg).__name__}")
-    print()
-    
-    # Clear document
+    # Clear document first
     print("Clearing FreeCAD document...")
     clear_document()
-    print("Document cleared")
     print()
     
-    # Get document
-    doc = get_active_document()
-    if not doc:
-        print("ERROR: Could not get active document")
-        return
-    
-    # Render CSG
-    print("Rendering CSG...")
-    try:
-        # Use a reasonable extent for infinite geometry (10m = 10000mm)
-        shape = render_csg_shape(csg, timber=None, infinite_extent=10.0)
-        
-        if shape is None:
-            print("ERROR: Failed to create shape")
-            return
-        
-        # Create FreeCAD object
-        obj = doc.addObject("Part::Feature", f"CSG_{CSG_EXAMPLE_TO_RENDER}")
-        obj.Shape = shape
-        
-        # Print bounding box info
-        bbox = shape.BoundBox
-        print(f"Shape created successfully!")
-        print(f"Bounding box (mm):")
-        print(f"  X: [{bbox.XMin:.1f}, {bbox.XMax:.1f}]  (width: {bbox.XLength:.1f})")
-        print(f"  Y: [{bbox.YMin:.1f}, {bbox.YMax:.1f}]  (depth: {bbox.YLength:.1f})")
-        print(f"  Z: [{bbox.ZMin:.1f}, {bbox.ZMax:.1f}]  (height: {bbox.ZLength:.1f})")
+    if RENDER_TYPE == 'pattern':
+        # Render a single pattern
+        print(f"Rendering pattern: '{PATTERN_NAME}'")
         print()
         
-        doc.recompute()
+        # Check if pattern exists
+        if PATTERN_NAME not in ANTHOLOGY_PATTERN_BOOK.list_patterns():
+            print(f"ERROR: Pattern '{PATTERN_NAME}' not found!")
+            print(f"Available patterns:")
+            for group in sorted(ANTHOLOGY_PATTERN_BOOK.list_groups()):
+                patterns = ANTHOLOGY_PATTERN_BOOK.get_patterns_in_group(group)
+                print(f"  {group}: {', '.join(patterns)}")
+            return
         
-    except Exception as e:
-        print(f"ERROR during rendering: {e}")
-        import traceback
-        traceback.print_exc()
+        # Raise the pattern
+        result = ANTHOLOGY_PATTERN_BOOK.raise_pattern(PATTERN_NAME)
+        
+        # Render based on type
+        if isinstance(result, Frame):
+            print(f"Frame: {result.name}")
+            print(f"  Timbers: {len(result.cut_timbers)}")
+            print(f"  Accessories: {len(result.accessories)}")
+            print()
+            
+            print("Rendering to FreeCAD...")
+            success_count = render_frame(result)
+            print(f"Successfully rendered {success_count}/{len(result.cut_timbers)} timbers")
+            if result.accessories:
+                print(f"Successfully rendered {len(result.accessories)} accessories")
+        else:
+            # CSG object
+            print(f"CSG Type: {type(result).__name__}")
+            print()
+            
+            print("Rendering CSG to FreeCAD...")
+            doc = get_active_document()
+            if not doc:
+                print("ERROR: Could not get active document")
+                return
+            
+            try:
+                shape = render_csg_shape(result, timber=None, infinite_extent=10.0)
+                if shape:
+                    obj = doc.addObject("Part::Feature", f"CSG_{PATTERN_NAME}")
+                    obj.Shape = shape
+                    doc.recompute()
+                    print("Successfully rendered CSG object")
+                else:
+                    print("ERROR: Failed to create shape")
+            except Exception as e:
+                print(f"ERROR during rendering: {e}")
+                import traceback
+                traceback.print_exc()
+    
+    elif RENDER_TYPE == 'group':
+        # Render a group of patterns
+        print(f"Rendering pattern group: '{GROUP_NAME}'")
+        print(f"Separation distance: {SEPARATION_DISTANCE_METERS}m")
+        print()
+        
+        # Check if group exists
+        if GROUP_NAME not in ANTHOLOGY_PATTERN_BOOK.list_groups():
+            print(f"ERROR: Group '{GROUP_NAME}' not found!")
+            print(f"Available groups: {', '.join(sorted(ANTHOLOGY_PATTERN_BOOK.list_groups()))}")
+            return
+        
+        # Get patterns in group
+        patterns_in_group = ANTHOLOGY_PATTERN_BOOK.get_patterns_in_group(GROUP_NAME)
+        print(f"Patterns in group: {', '.join(patterns_in_group)}")
+        print()
+        
+        # Raise the group
+        result = ANTHOLOGY_PATTERN_BOOK.raise_pattern_group(GROUP_NAME, separation_distance=m(SEPARATION_DISTANCE_METERS))
+        
+        # Result is always a Frame or list of CSG objects
+        if isinstance(result, Frame):
+            print(f"Combined frame: {result.name}")
+            print(f"  Total timbers: {len(result.cut_timbers)}")
+            print(f"  Total accessories: {len(result.accessories)}")
+            print()
+            
+            print("Rendering to FreeCAD...")
+            success_count = render_frame(result)
+            print(f"Successfully rendered {success_count}/{len(result.cut_timbers)} timbers")
+            if result.accessories:
+                print(f"Successfully rendered {len(result.accessories)} accessories")
+        else:
+            # List of CSG objects
+            print(f"Number of CSG objects: {len(result)}")
+            print()
+            
+            print("Rendering CSG objects to FreeCAD...")
+            doc = get_active_document()
+            if not doc:
+                print("ERROR: Could not get active document")
+                return
+            
+            success_count = 0
+            for i, csg in enumerate(result):
+                try:
+                    shape = render_csg_shape(csg, timber=None, infinite_extent=10.0)
+                    if shape:
+                        obj = doc.addObject("Part::Feature", f"CSG_{i}")
+                        obj.Shape = shape
+                        success_count += 1
+                except Exception as e:
+                    print(f"WARNING: Failed to render CSG {i}: {e}")
+            
+            doc.recompute()
+            print(f"Successfully rendered {success_count}/{len(result)} CSG objects")
+    
+    else:
+        print(f"ERROR: Invalid RENDER_TYPE '{RENDER_TYPE}'")
+        print("Must be 'pattern' or 'group'")
         return
     
-    print("="*60)
+    print()
+    print("="*70)
     print("Rendering Complete!")
-    print("="*60)
+    print("="*70)
     print()
     print("Tips:")
     print("  - Use View → Standard Views to change perspective")
-    print("  - Check the bounding box dimensions to verify size")
-    print("  - For cuts, verify that material was removed")
+    print("  - Check the Model tree on the left to see all components")
+    print("  - Edit configuration variables at the top of run_examples.py to change what renders")
     print()
-    print(f"To test another CSG example, edit CSG_EXAMPLE_TO_RENDER in run_examples.py")
-    print(f"Available: {', '.join(EXAMPLES.keys())}")
+    print(f"Available groups: {', '.join(sorted(ANTHOLOGY_PATTERN_BOOK.list_groups()))}")
+
+
+# All rendering is now done through render_from_patternbook()
+# Old individual render functions have been removed
 
 
 def main():
-    """Main function - reload modules and render selected example."""
+    """Main function - reload modules and render using PatternBook."""
     # Reload all modules first
     reload_all_modules()
     
-    # Render the selected example
-    examples = {
-        'basic_joints': render_basic_joints,
-        'mortise_and_tenon': render_mortise_and_tenon,
-        'construction': render_construction,
-        'horsey': render_horsey,
-        'oscar_shed': render_oscar_shed,
-        'japanese_joints': render_japanese_joints,
-        'csg': render_csg,
-    }
-    
-    if EXAMPLE_TO_RENDER not in examples:
-        print(f"ERROR: Unknown example '{EXAMPLE_TO_RENDER}'")
-        print(f"Available examples: {list(examples.keys())}")
-        print("\nEdit EXAMPLE_TO_RENDER in run_examples.py to change the example.")
-        return
-    
-    print(f"Running example: {EXAMPLE_TO_RENDER}\n")
-    examples[EXAMPLE_TO_RENDER]()
-    
-    print("\n" + "="*70)
-    print("To render a different example, edit EXAMPLE_TO_RENDER in run_examples.py")
-    print(f"Available: {', '.join(examples.keys())}")
-    print("="*70)
+    # Render using the unified PatternBook approach
+    render_from_patternbook()
 
 
 # Run when executed
