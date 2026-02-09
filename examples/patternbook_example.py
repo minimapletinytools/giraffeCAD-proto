@@ -278,6 +278,20 @@ def example_list_patterns():
     return book
 
 
+def create_patternbook_example_patternbook() -> PatternBook:
+    """
+    Create a patternbook containing all the example patterns.
+    This follows the convention used by other example files for integration with run_examples.py
+    """
+    books = [
+        create_simple_post_pattern(),
+        create_beam_patterns(),
+        create_csg_box_patterns(),
+    ]
+    
+    return PatternBook.merge_multiple(books)
+
+
 def main():
     """Run all examples."""
     print("=" * 60)

@@ -38,6 +38,7 @@ V2 = Matrix  # 2D vector - 2x1 Matrix
 V3 = Matrix  # 3D vector - 3x1 Matrix  
 Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
 
+# TODO come up with a cute name for this or get rid of it
 Numeric = Expr  # All numeric values must be SymPy expressions (use Integer for whole numbers, Rational for fractions)
 
 
@@ -356,6 +357,7 @@ def bu(numerator, denominator=1):
 # Zero Test Helper Functions
 # ============================================================================
 
+# maybe rename to zero_test_with_fuzzy_fallback
 def zero_test(value) -> bool:
     """
     Test if a value is zero using SymPy's equals() method or float comparison.
@@ -389,6 +391,7 @@ def zero_test(value) -> bool:
     return Abs(value) < EPSILON_GENERIC
 
 
+# maybe rename to equality_test_with_fuzzy_fallback
 def equality_test(value, expected) -> bool:
     """
     Test if a value equals an expected value using SymPy's equals() method or float comparison.
