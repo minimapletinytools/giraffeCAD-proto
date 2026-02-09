@@ -78,7 +78,7 @@ class HalfSpace(CutCSG):
         offset: Distance from origin along normal direction where plane is located (default: 0)
     """
     normal: Direction3D
-    offset: Numeric = 0
+    offset: Numeric = Integer(0)
     
     def __repr__(self) -> str:
         return f"HalfSpace(normal={self.normal.T}, offset={self.offset})"
@@ -175,7 +175,7 @@ class RectangularPrism(CutCSG):
         """
         if self.start_distance is None:
             raise ValueError("Cannot get bottom position of infinite prism (start_distance is None)")
-        return self.transform.position - self.transform.orientation.matrix * Matrix([0, 0, self.start_distance])
+        return self.transform.position - self.transform.orientation.matrix * Matrix([Integer(0), Integer(0), self.start_distance])
     
     def get_top_position(self) -> V3:
         """
@@ -190,7 +190,7 @@ class RectangularPrism(CutCSG):
         """
         if self.end_distance is None:
             raise ValueError("Cannot get top position of infinite prism (end_distance is None)")
-        return self.transform.position + self.transform.orientation.matrix * Matrix([0, 0, self.end_distance])
+        return self.transform.position + self.transform.orientation.matrix * Matrix([Integer(0), Integer(0), self.end_distance])
     
     def __repr__(self) -> str:
         return (f"RectangularPrism(size={self.size.T}, transform={self.transform}, "
@@ -404,7 +404,7 @@ class Cylinder(CutCSG):
     # TODO consider just making this a Transform object, even though we don't care about one of the DOFs
     axis_direction: Direction3D  # direction of the cylinder's axis, which is the +Z local axis
     radius: Numeric
-    position: V3 = field(default_factory=lambda: Matrix([0, 0, 0]))  # Position in global coordinates
+    position: V3 = field(default_factory=lambda: Matrix([Integer(0), Integer(0), Integer(0)]))  # Position in global coordinates
     start_distance: Optional[Numeric] = None  # None means infinite in negative direction
     end_distance: Optional[Numeric] = None    # None means infinite in positive direction
     
@@ -520,7 +520,7 @@ class Cylinder(CutCSG):
         # Check if on cylindrical surface first (most common case)
         if radial_distance == self.radius:
             # Normal is the radial direction (normalized)
-            if radial_distance == 0:
+            if radial_distance == Integer(0):
                 # Point is on the axis, which shouldn't happen for the cylindrical surface
                 # This might be an edge case on the cap center
                 pass
@@ -618,9 +618,9 @@ class SolidUnion(CutCSG):
                 if normal is not None:
                     normals.append(normal)
         
-        if len(normals) == 0:
+        if len(normals) == Integer(0):
             return None
-        elif len(normals) == 1:
+        elif len(normals) == Integer(1):
             return normals[0]
         else:
             # Average the normals
@@ -629,7 +629,7 @@ class SolidUnion(CutCSG):
                 avg_normal = avg_normal + n
             # Normalize
             norm = sqrt((avg_normal.T * avg_normal)[0, 0])
-            if norm == 0:
+            if norm == Integer(0):
                 return None
             return avg_normal / norm
 
@@ -775,9 +775,9 @@ class Difference(CutCSG):
                     # Negate because we want the normal pointing into the remaining material
                     normals.append(-normal)
         
-        if len(normals) == 0:
+        if len(normals) == Integer(0):
             return None
-        elif len(normals) == 1:
+        elif len(normals) == Integer(1):
             return normals[0]
         else:
             # Average the normals
@@ -786,7 +786,7 @@ class Difference(CutCSG):
                 avg_normal = avg_normal + n
             # Normalize
             norm = sqrt((avg_normal.T * avg_normal)[0, 0])
-            if norm == 0:
+            if norm == Integer(0):
                 return None
             return avg_normal / norm
 
@@ -848,7 +848,7 @@ class ConvexPolygonExtrusion(CutCSG):
         """
         if self.start_distance is None:
             raise ValueError("Cannot get bottom position of infinite extrusion (start_distance is None)")
-        return self.transform.position - self.transform.orientation.matrix * Matrix([0, 0, self.start_distance])
+        return self.transform.position - self.transform.orientation.matrix * Matrix([Integer(0), Integer(0), self.start_distance])
     
     def get_top_position(self) -> V3:
         """
@@ -863,7 +863,7 @@ class ConvexPolygonExtrusion(CutCSG):
         """
         if self.end_distance is None:
             raise ValueError("Cannot get top position of infinite extrusion (end_distance is None)")
-        return self.transform.position + self.transform.orientation.matrix * Matrix([0, 0, self.end_distance])
+        return self.transform.position + self.transform.orientation.matrix * Matrix([Integer(0), Integer(0), self.end_distance])
 
     def __repr__(self) -> str:
         return (f"ConvexPolygonExtrusion({len(self.points)} points, "
@@ -901,12 +901,12 @@ class ConvexPolygonExtrusion(CutCSG):
         
         # Generate all cross products and filter out zeros (collinear points)
         cross_products = [cross_product(i) for i in range(n)]
-        non_zero_crosses = [cp for cp in cross_products if cp != 0]
+        non_zero_crosses = [cp for cp in cross_products if cp != Integer(0)]
         
         # Reject if all collinear, otherwise check all turns go the same direction
-        return (len(non_zero_crosses) > 0 and 
-                (all(cp > 0 for cp in non_zero_crosses) or 
-                 all(cp < 0 for cp in non_zero_crosses)))
+        return (len(non_zero_crosses) > Integer(0) and 
+                (all(cp > Integer(0) for cp in non_zero_crosses) or 
+                 all(cp < Integer(0) for cp in non_zero_crosses)))
 
     def contains_point(self, point: V3) -> bool:
         """
@@ -956,7 +956,7 @@ class ConvexPolygonExtrusion(CutCSG):
             # cross product should be >= 0 for point to be inside
             cross = edge[0] * to_point[1] - edge[1] * to_point[0]
             
-            if cross < 0:
+            if cross < Integer(0):
                 return False
         
         return True
@@ -1007,17 +1007,17 @@ class ConvexPolygonExtrusion(CutCSG):
             
             # If edge is zero-length, skip it
             edge_length_sq = edge[0]**2 + edge[1]**2
-            if edge_length_sq == 0:
+            if edge_length_sq == Integer(0):
                 continue
             
             # Project to_point onto edge
             t = (to_point[0] * edge[0] + to_point[1] * edge[1]) / edge_length_sq
             
             # Check if projection is on the segment and point is on the line
-            if 0 <= t <= 1:
+            if Integer(0) <= t <= Integer(1):
                 closest_point = p1 + edge * t
                 distance_sq = (point_2d[0] - closest_point[0])**2 + (point_2d[1] - closest_point[1])**2
-                if distance_sq == 0:
+                if distance_sq == Integer(0):
                     return True
         
         return False
@@ -1045,13 +1045,13 @@ class ConvexPolygonExtrusion(CutCSG):
         # Check if on top face
         if self.end_distance is not None and z_coord == self.end_distance:
             # Top face, normal points in +Z direction in local coords
-            local_normal = Matrix([0, 0, 1])
+            local_normal = Matrix([Integer(0), Integer(0), Integer(1)])
             return self.transform.orientation.matrix * local_normal
         
         # Check if on bottom face
         if self.start_distance is not None and z_coord == self.start_distance:
             # Bottom face, normal points in -Z direction in local coords
-            local_normal = Matrix([0, 0, -1])
+            local_normal = Matrix([Integer(0), Integer(0), Integer(-1)])
             return self.transform.orientation.matrix * local_normal
         
         # Otherwise, point is on a side face (edge of polygon extruded)
@@ -1067,15 +1067,15 @@ class ConvexPolygonExtrusion(CutCSG):
             to_point = point_2d - p1
             
             edge_length_sq = edge[0]**2 + edge[1]**2
-            if edge_length_sq == 0:
+            if edge_length_sq == Integer(0):
                 continue
             
             t = (to_point[0] * edge[0] + to_point[1] * edge[1]) / edge_length_sq
             
-            if 0 <= t <= 1:
+            if Integer(0) <= t <= Integer(1):
                 closest_point = p1 + edge * t
                 distance_sq = (point_2d[0] - closest_point[0])**2 + (point_2d[1] - closest_point[1])**2
-                if distance_sq == 0:
+                if distance_sq == Integer(0):
                     # Point is on this edge
                     # Normal is perpendicular to edge (in 2D), pointing outward
                     # Left perpendicular of (dx, dy) is (-dy, dx)
@@ -1092,7 +1092,7 @@ class ConvexPolygonExtrusion(CutCSG):
                     to_edge = closest_point - center
                     
                     # If dot product is negative, flip the normal
-                    if (edge_normal_2d[0] * to_edge[0] + edge_normal_2d[1] * to_edge[1]) < 0:
+                    if (edge_normal_2d[0] * to_edge[0] + edge_normal_2d[1] * to_edge[1]) < Integer(0):
                         edge_normal_2d = -edge_normal_2d
                     
                     # Convert to 3D local normal (no Z component for side faces)
@@ -1163,7 +1163,7 @@ def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: CutCSG) ->
         # This gives us normal · (normal * offset) = (normal · normal) * offset = offset (if normalized)
         # But normals might not be unit length, so we use: point = normal * (offset / (normal · normal))
         normal_length_sq = (hp.normal.T * hp.normal)[0, 0]
-        if normal_length_sq == 0:
+        if normal_length_sq == Integer(0):
             # Degenerate case
             return replace(hp, normal=new_local_normal, offset=hp.offset)
         

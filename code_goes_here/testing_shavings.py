@@ -115,7 +115,7 @@ def create_centered_horizontal_timber(
     direction='x',
     length=100,
     size: Optional[Tuple] = None,
-    zoffset = 0,
+    zoffset = Integer(0),
     name: str = "test_timber"
 ) -> Timber:
     """
@@ -159,7 +159,7 @@ def assert_is_valid_rotation_matrix(matrix: Matrix, tolerance: float = TOLERANCE
     """
     # Check determinant is 1
     det_val = float(simplify(det(matrix)))
-    assert abs(det_val - 1.0) < tolerance, \
+    assert abs(det_val - Integer(1)) < tolerance, \
         f"Rotation matrix determinant should be 1, got {det_val}"
     
     # Check orthogonality: M * M^T = I
@@ -199,7 +199,7 @@ def assert_vectors_parallel(v1: Matrix, v2: Matrix, tolerance: float = TOLERANCE
     
     # Check if dot product is ±1
     dot_product = float(simplify((v1_norm.T * v2_norm)[0, 0]))
-    assert abs(abs(dot_product) - 1.0) < tolerance, \
+    assert abs(abs(dot_product) - Integer(1)) < tolerance, \
         f"Vectors should be parallel (|dot product| = 1 for normalized), got {abs(dot_product)}"
 
 
@@ -212,7 +212,7 @@ def assert_vector_normalized(v: Matrix, tolerance: float = TOLERANCE):
         tolerance: Tolerance for float comparison
     """
     magnitude = float(v.norm())
-    assert abs(magnitude - 1.0) < tolerance, \
+    assert abs(magnitude - Integer(1)) < tolerance, \
         f"Vector should be normalized (magnitude = 1), got {magnitude}"
 
 

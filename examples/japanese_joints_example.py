@@ -48,8 +48,8 @@ def create_simple_gooseneck_example():
         length=timber_length,
         size=create_v2(timber_width, timber_height),
         bottom_position=create_v3(0, 0, 0),
-        length_direction=create_v3(0, 0, 1),  # Vertical
-        width_direction=create_v3(1, 0, 0),
+        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
+        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
         name="gooseneck_timber"
     )
     
@@ -58,8 +58,8 @@ def create_simple_gooseneck_example():
         length=timber_length,
         size=create_v2(timber_width, timber_height),
         bottom_position=create_v3(0, 0, timber_length),
-        length_direction=create_v3(0, 0, 1),  # Also vertical
-        width_direction=create_v3(1, 0, 0),
+        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Also vertical
+        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
         name="receiving_timber"
     )
 
@@ -117,8 +117,8 @@ def create_dovetail_butt_joint_example():
         length=timber_length,
         size=timber_size,
         bottom_position=create_v3(0, 0, 0),
-        length_direction=create_v3(0, 0, 1),  # Vertical (Z-axis)
-        width_direction=create_v3(1, 0, 0),   # Width along X-axis
+        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical (Z-axis)
+        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),   # Width along X-axis
         name="receiving_timber"
     )
     
@@ -132,7 +132,7 @@ def create_dovetail_butt_joint_example():
         size=timber_size,
         bottom_position=create_v3(0, inches(4), receiving_center_height),  # Start 4" away (timber width)
         length_direction=create_v3(0, -1, 0),  # Pointing toward receiving timber (negative Y)
-        width_direction=create_v3(1, 0, 0),    # Width along X-axis
+        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),    # Width along X-axis
         name="dovetail_timber"
     )
     

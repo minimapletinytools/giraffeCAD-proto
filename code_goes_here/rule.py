@@ -22,7 +22,7 @@ RHS = Right Hand System
 '''
 
 import sympy as sp
-from sympy import Matrix, cos, sin, pi, Float, Rational, Abs, S, sympify, Expr
+from sympy import Matrix, cos, sin, pi, Float, Rational, Integer, Abs, S, sympify, Expr
 from typing import Optional, Union
 from dataclasses import dataclass, field
 import warnings
@@ -38,7 +38,7 @@ V2 = Matrix  # 2D vector - 2x1 Matrix
 V3 = Matrix  # 3D vector - 3x1 Matrix  
 Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
 
-Numeric = Union[float, int, Expr]  # Numeric values (SymPy Expr type STRONGLY preferred, there's really no reason to ever be using floats or ints. Always use Rational)
+Numeric = Expr  # All numeric values must be SymPy expressions (use Integer for whole numbers, Rational for fractions)
 
 
 # ============================================================================
@@ -58,7 +58,7 @@ class Transform:
     def identity(cls) -> 'Transform':
         """Create an identity transform at origin with identity orientation."""
         return cls(
-            position=create_v3(0, 0, 0),
+            position=create_v3(Integer(0), Integer(0), Integer(0)),
             orientation=Orientation.identity()
         )
     

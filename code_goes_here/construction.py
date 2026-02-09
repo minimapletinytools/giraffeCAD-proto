@@ -78,19 +78,19 @@ class Stickout:
     
     Examples:
         # Symmetric stickout from centerline
-        s = Stickout.symmetric(0.2)  # Both sides extend 0.2m from centerline
+        s = Stickout.symmetric(Rational(1, 5))  # Both sides extend 0.2m from centerline
         
         # No stickout
         s = Stickout.nostickout()  # Both sides are 0
         
         # Asymmetric stickout
-        s = Stickout(0.1, 0.4)  # Left extends 0.1m, right extends 0.4m from centerline
+        s = Stickout(Rational(1, 10), Rational(2, 5))  # Left extends 0.1m, right extends 0.4m from centerline
         
         # Stickout from outside faces
-        s = Stickout(0.1, 0.2, StickoutReference.OUTSIDE, StickoutReference.OUTSIDE)
+        s = Stickout(Rational(1, 10), Rational(1, 5), StickoutReference.OUTSIDE, StickoutReference.OUTSIDE)
     """
-    stickout1: Numeric = 0
-    stickout2: Numeric = 0
+    stickout1: Numeric = Integer(0)
+    stickout2: Numeric = Integer(0)
     stickoutReference1: Optional['StickoutReference'] = None
     stickoutReference2: Optional['StickoutReference'] = None
     
@@ -125,7 +125,7 @@ class Stickout:
         Returns:
             Stickout instance with stickout1 = stickout2 = 0
         """
-        return cls(0, 0)
+        return cls(Integer(0), Integer(0))
 
 
 # ============================================================================
@@ -239,11 +239,11 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
     timber_depth = size[1]   # Height direction (Y-axis of timber)
     
     # Vertical direction (length)
-    length_direction = create_v3(0, 0, 1)
+    length_direction = create_v3(Integer(0), Integer(0), Integer(1))
     
     # Align timber face direction with outgoing boundary side
     # Face direction is in the XY plane along the outgoing side
-    width_direction = create_v3(outgoing_dir_normalized[0], outgoing_dir_normalized[1], 0)
+    width_direction = create_v3(outgoing_dir_normalized[0], outgoing_dir_normalized[1], Integer(0))
     
     # Calculate bottom position based on location type
     # Keep corner coordinates exact
@@ -254,7 +254,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
         # Position so one vertex of bottom face is on the boundary corner
         # Post extends inside the boundary
         # The corner vertex is at the origin of the timber's local coords
-        bottom_position = create_v3(corner_x, corner_y, 0)
+        bottom_position = create_v3(corner_x, corner_y, Integer(0))
         
     elif location_type == FootprintLocation.OUTSIDE:
         # Position so the opposite vertex is on the boundary corner
@@ -263,7 +263,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
         # Use exact arithmetic: outgoing_dir_normalized components are rationals for axis-aligned
         offset_x = -timber_width * outgoing_dir_normalized[0] - timber_depth * (-outgoing_dir_normalized[1])
         offset_y = -timber_width * outgoing_dir_normalized[1] - timber_depth * outgoing_dir_normalized[0]
-        bottom_position = create_v3(corner_x + offset_x, corner_y + offset_y, 0)
+        bottom_position = create_v3(corner_x + offset_x, corner_y + offset_y, Integer(0))
         
     else:  # CENTER
         # Position so center of bottom face is on the boundary corner
@@ -271,7 +271,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
         from sympy import Rational
         offset_x = -timber_width/Rational(2) * outgoing_dir_normalized[0] - timber_depth/Rational(2) * (-outgoing_dir_normalized[1])
         offset_y = -timber_width/Rational(2) * outgoing_dir_normalized[1] - timber_depth/Rational(2) * outgoing_dir_normalized[0]
-        bottom_position = create_v3(corner_x + offset_x, corner_y + offset_y, 0)
+        bottom_position = create_v3(corner_x + offset_x, corner_y + offset_y, Integer(0))
     
     return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)
 
@@ -343,16 +343,16 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
     timber_depth = size[1]   # Depth perpendicular to boundary side
     
     # Vertical direction (length)
-    length_direction = create_v3(0, 0, 1)
+    length_direction = create_v3(Integer(0), Integer(0), Integer(1))
     
     # Face direction is parallel to the boundary side
-    width_direction = create_v3(side_dir_normalized[0], side_dir_normalized[1], 0)
+    width_direction = create_v3(side_dir_normalized[0], side_dir_normalized[1], Integer(0))
     
     # Calculate bottom position based on location type
     if location_type == FootprintLocation.CENTER:
         # Center of bottom face is on the point
         # No offset needed since timber local origin is at center of bottom face
-        bottom_position = create_v3(point_x, point_y, 0)
+        bottom_position = create_v3(point_x, point_y, Integer(0))
         
     elif location_type == FootprintLocation.INSIDE:
         # One edge of bottom face lies on boundary side
@@ -362,7 +362,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
         from sympy import Rational
         bottom_position = create_v3(point_x + inward_x * timber_depth / Rational(2), 
                                          point_y + inward_y * timber_depth / Rational(2), 
-                                         0)
+                                         Integer(0))
         
     else:  # OUTSIDE
         # One edge of bottom face lies on boundary side
@@ -372,7 +372,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
         from sympy import Rational
         bottom_position = create_v3(point_x - inward_x * timber_depth / Rational(2), 
                                          point_y - inward_y * timber_depth / Rational(2), 
-                                         0)
+                                         Integer(0))
     
     return create_timber(bottom_position, length, size, length_direction, width_direction, name=name)
 
@@ -420,7 +420,7 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     inward_normal = create_v3(inward_x, inward_y, inward_z)
     
     # Face direction is up (Z+)
-    width_direction = create_v3(0, 0, 1)
+    width_direction = create_v3(Integer(0), Integer(0), Integer(1))
     
     # The timber's orientation will be:
     #   X-axis (width/size[0]) = width_direction = (0, 0, 1) = vertical (up)
@@ -651,7 +651,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
     timber_length = centerline_distance + stickout.stickout1 + stickout.stickout2
     
     # Apply lateral offset
-    if lateral_offset != 0:
+    if lateral_offset != Integer(0):
         # Calculate offset direction (cross product of length vectors)
         offset_dir = normalize_vector(cross_product(timber1.get_length_direction_global(), length_direction))
     
@@ -660,7 +660,7 @@ def join_timbers(timber1: Timber, timber2: Timber,
     bottom_pos = pos1 - length_direction * stickout.stickout1
     
     # Apply offset to bottom position as well (if any offset was applied to center)
-    if lateral_offset != 0:
+    if lateral_offset != Integer(0):
         bottom_pos += offset_dir * lateral_offset
     
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction, name=name)
@@ -985,29 +985,29 @@ def create_canonical_butt_joint_timbers(position: Optional[V3] = None) -> ButtJo
         position: Center position of the joint. Defaults to origin.
     """
     if position is None:
-        position = create_v3(0, 0, 0)
+        position = create_v3(Integer(0), Integer(0), Integer(0))
     
     # Receiving timber: runs along X axis, center at position
     # Center at position means bottom_position is at position - length/2 in length direction
-    receiving_bottom = position + create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0, 0)
+    receiving_bottom = position + create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH / Integer(2), Integer(0), Integer(0))
     receiving_timber = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
         bottom_position=receiving_bottom,
-        length_direction=create_v3(1, 0, 0),  # +X direction
-        width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
+        length_direction=create_v3(Integer(1), Integer(0), Integer(0)),  # +X direction
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),   # RIGHT face points in +Z
         name="receiving_timber"
     )
     
     # Butt timber: runs along Y axis, center at position
     # The butt timber's top end meets the receiving timber
-    butt_bottom = position + create_v3(0, -_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0)
+    butt_bottom = position + create_v3(Integer(0), -_CANONICAL_EXAMPLE_TIMBER_LENGTH / Integer(2), Integer(0))
     butt_timber = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
         bottom_position=butt_bottom,
-        length_direction=create_v3(0, 1, 0),  # +Y direction
-        width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
+        length_direction=create_v3(Integer(0), Integer(1), Integer(0)),  # +Y direction
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),   # RIGHT face points in +Z
         name="butt_timber"
     )
     
@@ -1036,17 +1036,17 @@ def create_canonical_splice_joint_timbers(position: Optional[V3] = None) -> Spli
         position: Center position of the joint. Defaults to origin.
     """
     if position is None:
-        position = create_v3(0, 0, 0)
+        position = create_v3(Integer(0), Integer(0), Integer(0))
     
     # timber1: to the left of position (runs in +X direction from left)
     # Centerline intersects position means the TOP end is at position
-    timber1_bottom = position + create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH, 0, 0)
+    timber1_bottom = position + create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH, Integer(0), Integer(0))
     timber1 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
         bottom_position=timber1_bottom,
-        length_direction=create_v3(1, 0, 0),  # +X direction
-        width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
+        length_direction=create_v3(Integer(1), Integer(0), Integer(0)),  # +X direction
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),   # RIGHT face points in +Z
         name="timber1"
     )
     
@@ -1057,8 +1057,8 @@ def create_canonical_splice_joint_timbers(position: Optional[V3] = None) -> Spli
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
         bottom_position=timber2_bottom,
-        length_direction=create_v3(1, 0, 0),  # +X direction
-        width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
+        length_direction=create_v3(Integer(1), Integer(0), Integer(0)),  # +X direction
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),   # RIGHT face points in +Z
         name="timber2"
     )
     
@@ -1092,31 +1092,31 @@ def create_canonical_corner_joint_timbers(corner_angle: Optional[Numeric] = None
     
     # Default to 90 degrees (pi/2 radians)
     if corner_angle is None:
-        corner_angle = pi / 2
+        corner_angle = pi / Integer(2)
     
     if position is None:
-        position = create_v3(0, 0, 0)
+        position = create_v3(Integer(0), Integer(0), Integer(0))
     
     # timber1: points in +Y direction, bottom at position
     timber1 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
         bottom_position=position,
-        length_direction=create_v3(0, 1, 0),  # +Y direction
-        width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
+        length_direction=create_v3(Integer(0), Integer(1), Integer(0)),  # +Y direction
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),   # RIGHT face points in +Z
         name="timber1"
     )
     
     # timber2: rotated CLOCKWISE around +Z axis by corner_angle from +Y direction
     # Clockwise rotation by angle θ: (0,1,0) -> (sin(θ), cos(θ), 0)
     # At θ=90°: sin(90°)=1, cos(90°)=0 -> (1, 0, 0) = +X direction ✓
-    timber2_length_direction = create_v3(sin(corner_angle), cos(corner_angle), 0)
+    timber2_length_direction = create_v3(sin(corner_angle), cos(corner_angle), Integer(0))
     timber2 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
         bottom_position=position,
         length_direction=timber2_length_direction,
-        width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),   # RIGHT face points in +Z
         name="timber2"
     )
     
@@ -1139,13 +1139,13 @@ def create_canonical_right_angle_corner_joint_timbers(position: Optional[V3] = N
         position: Bottom position where timbers meet. Defaults to origin.
     """
     from sympy import pi
-    return create_canonical_corner_joint_timbers(corner_angle=pi / 2, position=position)
+    return create_canonical_corner_joint_timbers(corner_angle=pi / Integer(2), position=position)
 @dataclass(frozen=True)
 class CrossJointTimberArrangement:
     timber1: Timber
     timber2: Timber
 
-def create_canonical_cross_joint_timbers(lateral_offset: Numeric = 0, position: Optional[V3] = None) -> CrossJointTimberArrangement:
+def create_canonical_cross_joint_timbers(lateral_offset: Numeric = Integer(0), position: Optional[V3] = None) -> CrossJointTimberArrangement:
     """
     Create a canonical cross joint timber arrangement.
     All canonical example joints are 4"x5"x4' timbers.
@@ -1158,29 +1158,29 @@ def create_canonical_cross_joint_timbers(lateral_offset: Numeric = 0, position: 
         position: Center position of the joint. Defaults to origin.
     """
     if position is None:
-        position = create_v3(0, 0, 0)
+        position = create_v3(Integer(0), Integer(0), Integer(0))
     
     # timber1: points in +X direction, centerpoint at position
     # If centerpoint is at position and length is L, bottom is at position + (-L/2, 0, 0)
-    timber1_bottom = position + create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0, 0)
+    timber1_bottom = position + create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH / Integer(2), Integer(0), Integer(0))
     timber1 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
         bottom_position=timber1_bottom,
-        length_direction=create_v3(1, 0, 0),  # +X direction
-        width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
+        length_direction=create_v3(Integer(1), Integer(0), Integer(0)),  # +X direction
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),   # RIGHT face points in +Z
         name="timber1"
     )
     
     # timber2: points in +Y direction, centerpoint at position + (0, 0, lateral_offset)
     # If centerpoint is at position + (0, 0, lateral_offset) and length is L, bottom is at position + (0, -L/2, lateral_offset)
-    timber2_bottom = position + create_v3(0, -_CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, lateral_offset)
+    timber2_bottom = position + create_v3(Integer(0), -_CANONICAL_EXAMPLE_TIMBER_LENGTH / Integer(2), lateral_offset)
     timber2 = timber_from_directions(
         length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
         size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
         bottom_position=timber2_bottom,
-        length_direction=create_v3(0, 1, 0),  # +Y direction
-        width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
+        length_direction=create_v3(Integer(0), Integer(1), Integer(0)),  # +Y direction
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),   # RIGHT face points in +Z
         name="timber2"
     )
     
