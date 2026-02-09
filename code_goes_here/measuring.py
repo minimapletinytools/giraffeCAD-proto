@@ -603,11 +603,11 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
     # Get the end position on the edge
     # edge_line.point is at mid-length, so we need to offset by half the length
     if end == TimberReferenceEnd.TOP:
-        end_position = edge_line.point + edge_line.direction * (timber.length / 2)
+        end_position = edge_line.point + edge_line.direction * (timber.length / Integer(2))
         # Direction from end into timber is negative length direction
         into_timber_direction = -timber.get_length_direction_global()
     else:  # BOTTOM
-        end_position = edge_line.point - edge_line.direction * (timber.length / 2)
+        end_position = edge_line.point - edge_line.direction * (timber.length / Integer(2))
         # Direction from end into timber is positive length direction
         into_timber_direction = timber.get_length_direction_global()
     
@@ -667,9 +667,9 @@ def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: Timber, 
     # edge_line.point is at mid-length, so we need to offset by half the length
     # edge_line.direction is the timber's length direction (points from BOTTOM to TOP)
     if end == TimberReferenceEnd.TOP:
-        edge_end_position = edge_line.point + edge_line.direction * (timber.length / 2)
+        edge_end_position = edge_line.point + edge_line.direction * (timber.length / Integer(2))
     else:  # BOTTOM
-        edge_end_position = edge_line.point - edge_line.direction * (timber.length / 2)
+        edge_end_position = edge_line.point - edge_line.direction * (timber.length / Integer(2))
     
     # Solve for closest points on two 3D lines using the standard formula
     # Line 1 (given line): line.point + s * line.direction

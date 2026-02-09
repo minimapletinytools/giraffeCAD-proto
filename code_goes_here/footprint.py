@@ -309,7 +309,7 @@ class Footprint:
         midpoint_y = (start[1] + end[1]) / Rational(2)
         
         # Create a test point offset slightly in the perpendicular direction
-        offset = 0.001  # Small offset for testing
+        offset = Rational(1, 1000)  # Small offset for testing
         test_x = midpoint_x + left_perp_x * offset
         test_y = midpoint_y + left_perp_y * offset
         

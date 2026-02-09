@@ -787,7 +787,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     if abs(denom) < Rational(1, 1000000):
         # Lines are parallel, use simple distance check
         # Project p2 onto the line defined by p1 and d1
-        t = -(d1.T * w)[0, 0] / a if a > 0 else 0
+        t = -(d1.T * w)[0, 0] / a if a > Integer(0) else Integer(0)
         closest_on_1 = p1 + t * d1
         distance = (p2 - closest_on_1).norm()
     else:
@@ -826,7 +826,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
         # Use finite timber dimensions
         # The prism's position and orientation already place it in the housing timber's local space
         # So we just need the housed timber's own start (0) and end (length) distances
-        start_distance = 0
+        start_distance = Integer(0)
         end_distance = housed_timber.length
     
     # Create the housed prism in housing timber's LOCAL coordinate system

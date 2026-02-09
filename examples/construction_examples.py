@@ -28,8 +28,8 @@ def create_test_posts_with_beam_centerline():
         length=post_height,
         size=post_size,
         bottom_position=create_v3(0, 0, 0),
-        length_direction=create_v3(0, 0, 1),  # Vertical
-        width_direction=create_v3(1, 0, 0),
+        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
+        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
         name="Post_Left"
     )
     
@@ -38,8 +38,8 @@ def create_test_posts_with_beam_centerline():
         length=post_height,
         size=post_size,
         bottom_position=create_v3(inches(8), 0, 0),
-        length_direction=create_v3(0, 0, 1),  # Vertical
-        width_direction=create_v3(1, 0, 0),
+        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
+        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
         name="Post_Right"
     )
     

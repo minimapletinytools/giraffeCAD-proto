@@ -205,6 +205,12 @@ DONE-BUG Difference is point on boundary is wrong, you need to check the normals
     DONE-for difference cases, first see if point is on boundary on main csg and return that if so, otherwise go through difference csgs, find get_outward_normal on all the csgs that returns true if on boundary and return the average of that (negated)
   DONE-then if point is on boundary of both main csg and difference CSG, check the outward normal, if the dot product is >0 then return false, if it is <= 0 then return true 
 
+
+
+-sympy only refactor
+  -force everything to be RAtional (change Numeric type back to Exprba)
+  -equality_test -> equality_test_with_fuzzy_fallback
+
 -joint reorg
   -joints by joint type 
   -basic joints has simplified versions of all joints instead

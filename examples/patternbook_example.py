@@ -23,8 +23,8 @@ def create_simple_post_pattern() -> PatternBook:
                         length=feet(4),
                         size=create_v2(inches(4), inches(4)),
                         bottom_position=center,
-                        length_direction=create_v3(0, 0, 1),  # Vertical
-                        width_direction=create_v3(1, 0, 0),
+                        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
+                        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
                         name="short_post"
                     ),
                     cuts=[]
@@ -42,8 +42,8 @@ def create_simple_post_pattern() -> PatternBook:
                         length=feet(8),
                         size=create_v2(inches(6), inches(6)),
                         bottom_position=center,
-                        length_direction=create_v3(0, 0, 1),  # Vertical
-                        width_direction=create_v3(1, 0, 0),
+                        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
+                        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
                         name="tall_post"
                     ),
                     cuts=[]
@@ -61,8 +61,8 @@ def create_simple_post_pattern() -> PatternBook:
                         length=feet(6),
                         size=create_v2(inches(8), inches(8)),
                         bottom_position=center,
-                        length_direction=create_v3(0, 0, 1),  # Vertical
-                        width_direction=create_v3(1, 0, 0),
+                        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
+                        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
                         name="wide_post"
                     ),
                     cuts=[]
@@ -95,7 +95,7 @@ def create_beam_patterns() -> PatternBook:
                         length=feet(8),
                         size=create_v2(inches(2), inches(4)),
                         bottom_position=center,
-                        length_direction=create_v3(1, 0, 0),  # Horizontal along X
+                        length_direction=create_v3(Integer(1), Integer(0), Integer(0)),  # Horizontal along X
                         width_direction=create_v3(0, 1, 0),
                         name="small_beam"
                     ),
@@ -114,7 +114,7 @@ def create_beam_patterns() -> PatternBook:
                         length=feet(10),
                         size=create_v2(inches(4), inches(6)),
                         bottom_position=center,
-                        length_direction=create_v3(1, 0, 0),  # Horizontal along X
+                        length_direction=create_v3(Integer(1), Integer(0), Integer(0)),  # Horizontal along X
                         width_direction=create_v3(0, 1, 0),
                         name="medium_beam"
                     ),
@@ -133,7 +133,7 @@ def create_beam_patterns() -> PatternBook:
                         length=feet(12),
                         size=create_v2(inches(6), inches(8)),
                         bottom_position=center,
-                        length_direction=create_v3(1, 0, 0),  # Horizontal along X
+                        length_direction=create_v3(Integer(1), Integer(0), Integer(0)),  # Horizontal along X
                         width_direction=create_v3(0, 1, 0),
                         name="large_beam"
                     ),

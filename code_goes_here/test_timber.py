@@ -55,17 +55,17 @@ class TestVectorHelpers:
     
     def test_normalize_zero_vector(self):
         """Test normalization of zero vector."""
-        v = create_v3(0, 0, 0)  # Use exact integers
+        v = create_v3(Integer(0), Integer(0), Integer(0))  # Use exact integers
         normalized = normalize_vector(v)
         assert normalized == v  # Should return original zero vector
     
     def test_cross_product(self):
         """Test cross product calculation."""
         v1 = create_v3(1, 0, 0)  # Use exact integers
-        v2 = create_v3(0, 1, 0)  # Use exact integers
+        v2 = create_v3(Integer(0), Integer(1), Integer(0))  # Use exact integers
         cross = cross_product(v1, v2)
         
-        expected = create_v3(0, 0, 1)  # Use exact integers
+        expected = create_v3(Integer(0), Integer(0), Integer(1))  # Use exact integers
         assert cross[0] == 0
         assert cross[1] == 0
         assert cross[2] == 1
@@ -216,8 +216,8 @@ class TestTimber:
         """Test basic timber creation."""
         length = 3  # Use exact integer
         size = create_v2(Rational(1, 10), Rational(1, 10))  # 0.1 as exact rational
-        position = create_v3(0, 0, 0)  # Use exact integers
-        length_dir = create_v3(0, 0, 1)  # Use exact integers
+        position = create_v3(Integer(0), Integer(0), Integer(0))  # Use exact integers
+        length_dir = create_v3(Integer(0), Integer(0), Integer(1))  # Use exact integers
         width_dir = create_v3(1, 0, 0)   # Use exact integers
         
         timber = timber_from_directions(length, size, position, length_dir, width_dir)
@@ -230,7 +230,7 @@ class TestTimber:
     def test_timber_orientation_computation(self):
         """Test that timber orientation is computed correctly."""
         # Create vertical timber facing east
-        timber = create_standard_vertical_timber(height=2, size=(0.1, 0.1), position=(0, 0, 0))
+        timber = create_standard_vertical_timber(height=2, size=(Rational(1, 10), Rational(1, 10)), position=(0, 0, 0))
         
         # Check that orientation matrix is reasonable
         matrix = timber.orientation.matrix
@@ -241,7 +241,7 @@ class TestTimber:
     
     def test_get_transform_matrix(self):
         """Test 4x4 transformation matrix generation."""
-        timber = create_standard_vertical_timber(height=1, size=(0.1, 0.1), position=(1, 2, 3))
+        timber = create_standard_vertical_timber(height=1, size=(Rational(1, 10), Rational(1, 10)), position=(1, 2, 3))
         
         transform = timber.get_transform_matrix()
         assert transform.shape == (4, 4)
@@ -255,13 +255,13 @@ class TestTimber:
     def test_orientation_computed_from_directions(self):
         """Test that orientation is correctly computed from input face and length directions."""
         # Test with standard vertical timber facing east
-        input_length_dir = create_v3(0, 0, 1)  # Up - exact integers
+        input_length_dir = create_v3(Integer(0), Integer(0), Integer(1))  # Up - exact integers
         input_width_dir = create_v3(1, 0, 0)    # East - exact integers
         
         timber = timber_from_directions(
             length=2,  # Use exact integer
             size=create_v2(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
-            bottom_position=create_v3(0, 0, 0),  # Use exact integers
+            bottom_position=create_v3(Integer(0), Integer(0), Integer(0)),  # Use exact integers
             length_direction=input_length_dir,
             width_direction=input_width_dir
         )
@@ -288,13 +288,13 @@ class TestTimber:
     def test_orientation_with_horizontal_timber(self):
         """Test orientation computation with a horizontal timber."""
         # Horizontal timber running north, facing up
-        input_length_dir = create_v3(0, 1, 0)  # North - exact integers
-        input_width_dir = create_v3(0, 0, 1)    # Up - exact integers
+        input_length_dir = create_v3(Integer(0), Integer(1), Integer(0))  # North - exact integers
+        input_width_dir = create_v3(Integer(0), Integer(0), Integer(1))    # Up - exact integers
         
         timber = timber_from_directions(
             length=3,  # Use exact integer
             size=create_v2(Rational(1, 10), Rational(1, 10)),  # 0.1 as exact rational
-            bottom_position=create_v3(0, 0, 0),  # Use exact integers
+            bottom_position=create_v3(Integer(0), Integer(0), Integer(0)),  # Use exact integers
             length_direction=input_length_dir,
             width_direction=input_width_dir
         )
@@ -892,7 +892,7 @@ class TestFrameFromJoints:
         """Test creating a frame from a list of joints."""
         # Create two simple timbers
         timber1 = create_axis_aligned_timber(
-            bottom_position=create_v3(0, 0, 0),
+            bottom_position=create_v3(Integer(0), Integer(0), Integer(0)),
             length=Rational(100),
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
@@ -910,8 +910,8 @@ class TestFrameFromJoints:
         )
         
         # Create mock cuts for each timber
-        cut1 = MockCutting(timber1, create_v3(0, 0, 0))
-        cut2 = MockCutting(timber2, create_v3(0, 0, 0))
+        cut1 = MockCutting(timber1, create_v3(Integer(0), Integer(0), Integer(0)))
+        cut2 = MockCutting(timber2, create_v3(Integer(0), Integer(0), Integer(0)))
         
         # Create CutTimbers
         cut_timber1 = CutTimber(timber1, cuts=[cut1])
@@ -940,7 +940,7 @@ class TestFrameFromJoints:
         """Test that cut timbers with the same underlying timber reference are merged."""
         # Create a single timber
         timber = create_axis_aligned_timber(
-            bottom_position=create_v3(0, 0, 0),
+            bottom_position=create_v3(Integer(0), Integer(0), Integer(0)),
             length=Rational(100),
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
@@ -949,9 +949,9 @@ class TestFrameFromJoints:
         )
         
         # Create different cuts for the same timber
-        cut1 = MockCutting(timber, create_v3(0, 0, 0))
-        cut2 = MockCutting(timber, create_v3(0, 0, 0))
-        cut3 = MockCutting(timber, create_v3(0, 0, 0))
+        cut1 = MockCutting(timber, create_v3(Integer(0), Integer(0), Integer(0)))
+        cut2 = MockCutting(timber, create_v3(Integer(0), Integer(0), Integer(0)))
+        cut3 = MockCutting(timber, create_v3(Integer(0), Integer(0), Integer(0)))
         
         # Create multiple CutTimber instances for the same timber
         cut_timber1 = CutTimber(timber, cuts=[cut1])
@@ -984,7 +984,7 @@ class TestFrameFromJoints:
     def test_from_joints_collects_accessories(self):
         """Test that accessories from all joints are collected."""
         timber = create_axis_aligned_timber(
-            bottom_position=create_v3(0, 0, 0),
+            bottom_position=create_v3(Integer(0), Integer(0), Integer(0)),
             length=Rational(100),
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
@@ -1039,7 +1039,7 @@ class TestFrameFromJoints:
         """Test adding additional unjointed timbers to the frame."""
         # Create a timber with a joint
         timber1 = create_axis_aligned_timber(
-            bottom_position=create_v3(0, 0, 0),
+            bottom_position=create_v3(Integer(0), Integer(0), Integer(0)),
             length=Rational(100),
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
@@ -1059,7 +1059,7 @@ class TestFrameFromJoints:
         
         # Create a joint with timber1
         joint = Joint(
-            cut_timbers={"timber1": CutTimber(timber1, cuts=[MockCutting(timber1, create_v3(0, 0, 0))])},
+            cut_timbers={"timber1": CutTimber(timber1, cuts=[MockCutting(timber1, create_v3(Integer(0), Integer(0), Integer(0)))])},
             jointAccessories={}
         )
         
@@ -1081,7 +1081,7 @@ class TestFrameFromJoints:
         """Test that a warning is issued when different timbers have the same name."""
         # Create two different timbers with the same name
         timber1 = create_axis_aligned_timber(
-            bottom_position=create_v3(0, 0, 0),
+            bottom_position=create_v3(Integer(0), Integer(0), Integer(0)),
             length=Rational(100),
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
@@ -1124,7 +1124,7 @@ class TestFrameFromJoints:
         """Test that an error is raised when same timber data exists with different references."""
         # Create two timbers with identical data
         timber1 = create_axis_aligned_timber(
-            bottom_position=create_v3(0, 0, 0),
+            bottom_position=create_v3(Integer(0), Integer(0), Integer(0)),
             length=Rational(100),
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
@@ -1134,7 +1134,7 @@ class TestFrameFromJoints:
         
         # Create an identical timber (same data, different object)
         timber2 = create_axis_aligned_timber(
-            bottom_position=create_v3(0, 0, 0),
+            bottom_position=create_v3(Integer(0), Integer(0), Integer(0)),
             length=Rational(100),
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,

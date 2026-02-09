@@ -1004,8 +1004,8 @@ class TestJoinTimbers:
         beam_right = beams[TimberFeature.RIGHT_FACE]
         beam_left = beams[TimberFeature.LEFT_FACE]
         
-        right_center = measure_position_on_centerline_from_bottom(beam_right, beam_right.length / 2).position
-        left_center = measure_position_on_centerline_from_bottom(beam_left, beam_left.length / 2).position
+        right_center = measure_position_on_centerline_from_bottom(beam_right, beam_right.length / Integer(2)).position
+        left_center = measure_position_on_centerline_from_bottom(beam_left, beam_left.length / Integer(2)).position
         
         # The difference should be along the Z axis (vertical, which is the beam's width direction)
         diff_right_left = right_center - left_center
@@ -1022,8 +1022,8 @@ class TestJoinTimbers:
         beam_front = beams[TimberFeature.FRONT_FACE]
         beam_back = beams[TimberFeature.BACK_FACE]
         
-        front_center = measure_position_on_centerline_from_bottom(beam_front, beam_front.length / 2).position
-        back_center = measure_position_on_centerline_from_bottom(beam_back, beam_back.length / 2).position
+        front_center = measure_position_on_centerline_from_bottom(beam_front, beam_front.length / Integer(2)).position
+        back_center = measure_position_on_centerline_from_bottom(beam_back, beam_back.length / Integer(2)).position
         
         # The difference should be along the Y axis (beam's height direction)
         diff_front_back = front_center - back_center

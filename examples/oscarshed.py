@@ -649,7 +649,7 @@ def create_oscarshed():
         location_on_timber2=post_front_height,   # Same height on right post
         lateral_offset=0,       # No lateral offset
         size=top_plate_size,
-        orientation_width_vector=create_v3(0, 0, 1),
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
         name="Front Top Plate"
     )
     
@@ -662,7 +662,7 @@ def create_oscarshed():
         location_on_timber2=post_back_height+inches(3),   
         lateral_offset=0,
         size=top_plate_size,
-        orientation_width_vector=create_v3(0, 0, 1),
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
         name="Back Top Plate"
     )
 
@@ -824,7 +824,7 @@ def create_oscarshed():
             location_on_timber2=mudsill_back.length - location_along_mudsill,    # Reversed distance along back mudsill (measured from opposite end)
             lateral_offset=joist_vertical_offset,     # Offset upward to align tops
             size=joist_size,
-            orientation_width_vector=create_v3(0, 0, 1),  # Face up
+            orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),  # Face up
             name=f"Joist {i}"
         )
         joists.append(joist)
@@ -917,7 +917,7 @@ def create_oscarshed():
             location_on_timber2=location_along_top_plate,  # Same position on front top plate
             lateral_offset=rafter_vertical_offset,
             size=rafter_size,
-            orientation_width_vector=create_v3(0, 0, 1),  # Face up
+            orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),  # Face up
             name=f"Rafter {i}"
         )
         rafters.append(rafter)

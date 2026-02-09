@@ -80,8 +80,8 @@ def test_pattern_book_creation_with_csg():
         return RectangularPrism(
             size=create_v2(size, size),
             transform=Transform(position=center, orientation=Orientation.identity()),
-            start_distance=-size / 2,
-            end_distance=size / 2
+            start_distance=-size / Integer(2),
+            end_distance=size / Integer(2)
         )
     
     # Create pattern book
@@ -237,8 +237,8 @@ def test_raise_pattern_group_mixed_types():
         return RectangularPrism(
             size=create_v2(size, size),
             transform=Transform(position=center, orientation=Orientation.identity()),
-            start_distance=-size / 2,
-            end_distance=size / 2
+            start_distance=-size / Integer(2),
+            end_distance=size / Integer(2)
         )
     
     # Create pattern book with mixed types in same group
