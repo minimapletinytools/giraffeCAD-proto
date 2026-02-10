@@ -55,18 +55,19 @@ RENDER_TYPE = 'group'
 #PATTERN_NAME = 'splice_joint'
 #PATTERN_NAME = 'mortise_and_tenon_simple'
 #PATTERN_NAME = 'dovetail_half_lap'
-#PATTERN_NAME = 'oscar_shed_full'
-PATTERN_NAME = 'gooseneck_simple'
+#PATTERN_NAME = 'oscar_shed'
+#PATTERN_NAME = 'gooseneck_simple'
 #PATTERN_NAME = 'shoulder_notch'
 #PATTERN_NAME = 'short_post'
+PATTERN_NAME = 'honeycomb_shed'
 
 # GROUP_NAME: Name of a pattern group to render (when RENDER_TYPE = 'group')
 # Available groups: 'basic_joints', 'mortise_and_tenon', 'construction', 
 #                   'horsey', 'oscar_shed', 'japanese_joints', 'csg_examples', 
 #                   'irrational_angles', 'posts', 'beams', 'boxes'
 #GROUP_NAME = 'basic_joints'
-GROUP_NAME = 'oscar_shed'
-#GROUP_NAME = 'japanese_joints'
+#GROUP_NAME = 'oscar_shed'
+GROUP_NAME = 'japanese_joints'
 #GROUP_NAME = 'posts'
 #GROUP_NAME = 'csg_examples'
 
@@ -91,6 +92,7 @@ def create_anthology_pattern_book():
     from examples.construction_examples import create_construction_patternbook
     from examples.horsey_example import create_horsey_patternbook
     from examples.oscarshed import create_oscar_shed_patternbook
+    from examples.new_shed import create_honeycomb_shed_patternbook
     from examples.japanese_joints_example import create_japanese_joints_patternbook
     from examples.irrational_angles_example import create_irrational_angles_patternbook
     from examples.CutCSG_examples import create_csg_examples_patternbook
@@ -103,6 +105,7 @@ def create_anthology_pattern_book():
         create_construction_patternbook(),
         create_horsey_patternbook(),
         create_oscar_shed_patternbook(),
+        create_honeycomb_shed_patternbook(),
         create_japanese_joints_patternbook(),
         create_irrational_angles_patternbook(),
         create_csg_examples_patternbook(),
@@ -165,6 +168,7 @@ def reload_all_modules():
         'examples.mortise_and_tenon_joint_examples',
         'examples.horsey_example',
         'examples.oscarshed',
+        'examples.new_shed',
         'examples.japanese_joints_example',
         'examples.irrational_angles_example',
         'examples.construction_examples',
