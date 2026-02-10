@@ -231,7 +231,6 @@ def are_timbers_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional
     dot_product = timber1.get_length_direction_global().dot(timber2.get_length_direction_global())
     
     if tolerance is None:
-        # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
         return zero_test(dot_product)
     else:
         # Use provided tolerance for approximate comparison
