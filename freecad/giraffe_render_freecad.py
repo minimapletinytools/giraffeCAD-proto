@@ -234,7 +234,8 @@ def create_prism_shape(prism: RectangularPrism, infinite_extent: float = 10000.0
         
         # Get start and end distances along the length axis
         # Convert infinite_extent from meters to mm for consistency
-        LARGE_NUMBER_MM = meters_to_mm(infinite_extent)
+        # hack divide by 5 to make it work will with half space cuts at an angle
+        LARGE_NUMBER_MM = meters_to_mm(infinite_extent/5)
         
         if prism.start_distance is None and prism.end_distance is None:
             # Fully infinite prism - extend both ways

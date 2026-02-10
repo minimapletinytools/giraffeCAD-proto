@@ -63,6 +63,46 @@ app = adsk.core.Application.get()
 ui = app.userInterface
 
 
+def create_anthology_pattern_book():
+    """
+    Create an anthology PatternBook containing all patterns from all example files.
+    
+    Returns:
+        PatternBook: A single PatternBook with all patterns from all examples
+    """
+    from code_goes_here.patternbook import PatternBook
+    from examples.reference.basic_joints_example import create_basic_joints_patternbook
+    from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
+    from examples.construction_examples import create_construction_patternbook
+    from examples.horsey_example import create_horsey_patternbook
+    from examples.oscarshed import create_oscar_shed_patternbook
+    from examples.japanese_joints_example import create_japanese_joints_patternbook
+    from examples.irrational_angles_example import create_irrational_angles_patternbook
+    from examples.CutCSG_examples import create_csg_examples_patternbook
+    from examples.patternbook_example import create_patternbook_example_patternbook
+    
+    # Create all individual pattern books
+    books = [
+        create_basic_joints_patternbook(),
+        create_mortise_and_tenon_patternbook(),
+        create_construction_patternbook(),
+        create_horsey_patternbook(),
+        create_oscar_shed_patternbook(),
+        create_japanese_joints_patternbook(),
+        create_irrational_angles_patternbook(),
+        create_csg_examples_patternbook(),
+        create_patternbook_example_patternbook(),
+    ]
+    
+    # Merge them all into one anthology book
+    anthology_book = PatternBook.merge_multiple(books)
+    
+    print(f"Anthology PatternBook created with {len(anthology_book.list_patterns())} patterns")
+    print(f"Available groups: {', '.join(anthology_book.list_groups())}")
+    
+    return anthology_book
+
+
 def reload_all_modules():
     """Reload all GiraffeCAD modules in dependency order."""
     print("="*70)
@@ -117,6 +157,7 @@ def reload_all_modules():
         'examples.japanese_joints_example',
         'examples.irrational_angles_example',
         'examples.CutCSG_examples',
+        'examples.patternbook_example',
     ]
     
     # Re-import all modules in dependency order
