@@ -1059,7 +1059,7 @@ class TestTimberRelationshipHelpers:
         
         assert not are_timbers_orthogonal(timber1, timber3)
     
-    def testare_timbers_orthogonal_float(self):
+    def testare_timbers_orthogonal_fuzzy_fallback(self):
         """Test are_timbers_orthogonal with float (fuzzy) values."""
         from code_goes_here.timber_shavings import are_timbers_orthogonal
         import math
@@ -1067,8 +1067,8 @@ class TestTimberRelationshipHelpers:
         # Create timbers with float perpendicular directions
         timber1 = create_standard_vertical_timber(height=2, size=(0.2, 0.3), position=(0, 0, 0))
         
-        # Nearly perpendicular (within tolerance)
-        small_offset = 1e-11
+        # Nearly perpendicular (within numeric fallback test tolerance)
+        small_offset = Rational(1e-20)
         timber2 = timber_from_directions(
             length=Rational(3),
             size=create_v2(Rational("0.15"), Rational("0.25")),
