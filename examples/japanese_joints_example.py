@@ -8,6 +8,7 @@ This module demonstrates traditional Japanese timber joints:
 Each function creates and returns a Frame object with the joint example.
 """
 
+from typing import Optional
 from giraffe import *
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 
@@ -23,31 +24,39 @@ def create_japanese_joints_patternbook() -> PatternBook:
     """
     patterns = [
         (PatternMetadata("gooseneck_simple", ["japanese_joints", "gooseneck"], "frame"),
-         lambda center: create_simple_gooseneck_example()),
+         lambda center: create_simple_gooseneck_example(position=center)),
         
         (PatternMetadata("dovetail_butt", ["japanese_joints", "dovetail"], "frame"),
-         lambda center: create_dovetail_butt_joint_example()),
+         lambda center: create_dovetail_butt_joint_example(position=center)),
     ]
     
     return PatternBook(patterns=patterns)
 
 
 
-def create_simple_gooseneck_example():
+def create_simple_gooseneck_example(position: Optional[V3] = None):
     """
     Create a simpler example with smaller dimensions for easier visualization.
+    
+    Args:
+        position: Center position of the joint (V3). Defaults to origin.
     """
+    if position is None:
+        position = create_v3(Integer(0), Integer(0), Integer(0))
     
     # Smaller timber dimensions for testing
     timber_width = inches(3)
     timber_height = inches(3)
     timber_length = inches(24)  # 2 feet
     
-    # Create first timber
+    # Position the joint so its center (where the two timbers meet) is at the given position
+    # The joint is where the top of gooseneck_timber meets the bottom of receiving_timber
+    
+    # Create first timber (bottom timber)
     gooseneck_timber = timber_from_directions(
         length=timber_length,
         size=create_v2(timber_width, timber_height),
-        bottom_position=create_v3(0, 0, 0),
+        bottom_position=position - create_v3(Integer(0), Integer(0), timber_length),
         length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
         width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
         name="gooseneck_timber"
@@ -57,7 +66,7 @@ def create_simple_gooseneck_example():
     receiving_timber = timber_from_directions(
         length=timber_length,
         size=create_v2(timber_width, timber_height),
-        bottom_position=create_v3(0, 0, timber_length),
+        bottom_position=position,
         length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Also vertical
         width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
         name="receiving_timber"
@@ -85,7 +94,7 @@ def create_simple_gooseneck_example():
     return frame
 
 
-def create_dovetail_butt_joint_example():
+def create_dovetail_butt_joint_example(position: Optional[V3] = None):
     """
     Create a dovetail butt joint (蟻仕口 / Ari Shiguchi) connecting two 4"x4" x 3' timbers at right angles.
     
@@ -105,18 +114,27 @@ def create_dovetail_butt_joint_example():
         =====[dovetail tenon]  Dovetail Timber (horizontal)
                    |
                    |
+    
+    Args:
+        position: Center position of the joint (V3). Defaults to origin.
     """
+    if position is None:
+        position = create_v3(Integer(0), Integer(0), Integer(0))
     
     # Timber dimensions
     timber_size = create_v2(inches(4), inches(4))  # 4" x 4"
     timber_length = feet(3)  # 3 feet
     
-    # Create vertical receiving timber
+    # Position the joint center at the given position
+    # The joint center is where the dovetail timber meets the receiving timber's centerline
+    half_length = timber_length / Rational(2)
+    
+    # Create vertical receiving timber centered at the position
     # This timber runs vertically and will have the dovetail socket cut into it
     receiving_timber = timber_from_directions(
         length=timber_length,
         size=timber_size,
-        bottom_position=create_v3(0, 0, 0),
+        bottom_position=position - create_v3(Integer(0), Integer(0), half_length),
         length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical (Z-axis)
         width_direction=create_v3(Integer(1), Integer(0), Integer(0)),   # Width along X-axis
         name="receiving_timber"
@@ -125,13 +143,11 @@ def create_dovetail_butt_joint_example():
     # Create horizontal dovetail timber
     # This timber runs horizontally and will have the dovetail tenon cut on its end
     # Position it so it butts against the center of the receiving timber
-    receiving_center_height = timber_length / Rational(2)
-    
     dovetail_timber = timber_from_directions(
         length=timber_length,
         size=timber_size,
-        bottom_position=create_v3(0, inches(4), receiving_center_height),  # Start 4" away (timber width)
-        length_direction=create_v3(0, -1, 0),  # Pointing toward receiving timber (negative Y)
+        bottom_position=position + create_v3(Integer(0), inches(4), Integer(0)),  # Start 4" away (timber width)
+        length_direction=create_v3(Integer(0), Integer(-1), Integer(0)),  # Pointing toward receiving timber (negative Y)
         width_direction=create_v3(Integer(1), Integer(0), Integer(0)),    # Width along X-axis
         name="dovetail_timber"
     )
