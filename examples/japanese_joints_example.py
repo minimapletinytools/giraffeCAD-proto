@@ -36,59 +36,37 @@ def create_japanese_joints_patternbook() -> PatternBook:
 
 def create_simple_gooseneck_example(position: Optional[V3] = None):
     """
-    Create a simpler example with smaller dimensions for easier visualization.
+    Create a gooseneck splice joint example using canonical 4"x5"x4' timbers.
     
     Args:
         position: Center position of the joint (V3). Defaults to origin.
     """
-    if position is None:
-        position = create_v3(Integer(0), Integer(0), Integer(0))
+    # Create splice joint arrangement using canonical function
+    # This creates two horizontal timbers meeting end-to-end
+    arrangement = create_canonical_splice_joint_timbers(position=position)
     
-    # Smaller timber dimensions for testing
-    timber_width = inches(3)
-    timber_height = inches(3)
-    timber_length = inches(24)  # 2 feet
-    
-    # Position the joint so its center (where the two timbers meet) is at the given position
-    # The joint is where the top of gooseneck_timber meets the bottom of receiving_timber
-    
-    # Create first timber (bottom timber)
-    gooseneck_timber = timber_from_directions(
-        length=timber_length,
-        size=create_v2(timber_width, timber_height),
-        bottom_position=position - create_v3(Integer(0), Integer(0), timber_length),
-        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
-        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
-        name="gooseneck_timber"
-    )
-    
-    # Create second timber above the first
-    receiving_timber = timber_from_directions(
-        length=timber_length,
-        size=create_v2(timber_width, timber_height),
-        bottom_position=position,
-        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Also vertical
-        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
-        name="receiving_timber"
-    )
+    # Rename timbers for clarity in this joint context
+    from dataclasses import replace
+    gooseneck_timber = replace(arrangement.timber1, name="gooseneck_timber")
+    receiving_timber = replace(arrangement.timber2, name="receiving_timber")
 
-    # Smaller joint parameters for the smaller timber
+    # Create the gooseneck joint using parameters appropriate for canonical timber size
     joint = cut_lapped_gooseneck_joint(
         gooseneck_timber=gooseneck_timber,
         receiving_timber=receiving_timber,
-        receiving_timber_end=TimberReferenceEnd.BOTTOM,
+        receiving_timber_end=arrangement.timber2_end,
         gooseneck_timber_face=TimberLongFace.RIGHT,
-        gooseneck_length=inches(4),
-        gooseneck_small_width=inches("0.75"),
-        gooseneck_large_width=inches(2),
-        gooseneck_head_length=inches(1),
-        lap_length=inches(2),
-        gooseneck_depth=inches(1)
+        gooseneck_length=inches(6),        # 6" gooseneck length
+        gooseneck_small_width=inches(1),   # 1" narrow end
+        gooseneck_large_width=inches(3),   # 3" wide end
+        gooseneck_head_length=inches(2),   # 2" head length
+        lap_length=inches(3),              # 3" lap length
+        gooseneck_depth=inches(2)          # 2" depth
     )
     
     frame = Frame.from_joints(
         [joint],
-        name="Simple Vertical Post Splice"
+        name="Lapped Gooseneck Splice Joint"
     )
     
     return frame
@@ -96,81 +74,39 @@ def create_simple_gooseneck_example(position: Optional[V3] = None):
 
 def create_dovetail_butt_joint_example(position: Optional[V3] = None):
     """
-    Create a dovetail butt joint (蟻仕口 / Ari Shiguchi) connecting two 4"x4" x 3' timbers at right angles.
+    Create a dovetail butt joint (蟻仕口 / Ari Shiguchi) using canonical 4"x5"x4' timbers.
     
     This is a traditional Japanese joint where a dovetail-shaped tenon on one timber
     fits into a matching dovetail socket on another timber. The dovetail shape provides
     mechanical resistance to pulling apart.
     
     Configuration:
-        - Receiving timber: 4"x4" x 3', vertical
-        - Dovetail timber: 4"x4" x 3', horizontal, butts against center of receiving timber
-        - Creates a T-joint connection
-    
-    Visual layout (side view):
-                   |
-                   |  Receiving Timber (vertical)
-                   |
-        =====[dovetail tenon]  Dovetail Timber (horizontal)
-                   |
-                   |
+        - Creates a butt joint connection where one timber butts into another
     
     Args:
         position: Center position of the joint (V3). Defaults to origin.
     """
-    if position is None:
-        position = create_v3(Integer(0), Integer(0), Integer(0))
+    # Create butt joint arrangement using canonical function
+    # This creates a receiving timber and a butt timber meeting at their centers
+    arrangement = create_canonical_butt_joint_timbers(position=position)
     
-    # Timber dimensions
-    timber_size = create_v2(inches(4), inches(4))  # 4" x 4"
-    timber_length = feet(3)  # 3 feet
+    # Rename timbers for clarity in this joint context
+    from dataclasses import replace
+    receiving_timber = arrangement.receiving_timber
+    dovetail_timber = replace(arrangement.butt_timber, name="dovetail_timber")
     
-    # Position the joint center at the given position
-    # The joint center is where the dovetail timber meets the receiving timber's centerline
-    half_length = timber_length / Rational(2)
-    
-    # Create vertical receiving timber centered at the position
-    # This timber runs vertically and will have the dovetail socket cut into it
-    receiving_timber = timber_from_directions(
-        length=timber_length,
-        size=timber_size,
-        bottom_position=position - create_v3(Integer(0), Integer(0), half_length),
-        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical (Z-axis)
-        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),   # Width along X-axis
-        name="receiving_timber"
-    )
-    
-    # Create horizontal dovetail timber
-    # This timber runs horizontally and will have the dovetail tenon cut on its end
-    # Position it so it butts against the center of the receiving timber
-    dovetail_timber = timber_from_directions(
-        length=timber_length,
-        size=timber_size,
-        bottom_position=position + create_v3(Integer(0), inches(4), Integer(0)),  # Start 4" away (timber width)
-        length_direction=create_v3(Integer(0), Integer(-1), Integer(0)),  # Pointing toward receiving timber (negative Y)
-        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),    # Width along X-axis
-        name="dovetail_timber"
-    )
-    
-    # Joint parameters
-    dovetail_length = inches(3)                  # 3 inch long dovetail tenon
-    dovetail_small_width = inches(1)             # 1 inch narrow end (at tip)
-    dovetail_large_width = inches(2)             # 2 inch wide end (at base)
-    dovetail_depth = inches(2)                   # 2 inch deep cut
-    receiving_timber_shoulder_inset = inches(Rational(1, 2))  # 0.5 inch shoulder inset
-    
-    # Create the dovetail butt joint
+    # Create the dovetail butt joint using parameters appropriate for canonical timber size
     joint = cut_housed_dovetail_butt_joint(
         dovetail_timber=dovetail_timber,
         receiving_timber=receiving_timber,
-        dovetail_timber_end=TimberReferenceEnd.BOTTOM,  # Cut on the end pointing toward receiving timber
-        dovetail_timber_face=TimberLongFace.RIGHT,  # Dovetail visible on right face (perpendicular to receiving timber Z-axis)
-        receiving_timber_shoulder_inset=receiving_timber_shoulder_inset,
-        dovetail_length=dovetail_length,
-        dovetail_small_width=dovetail_small_width,
-        dovetail_large_width=dovetail_large_width,
-        dovetail_lateral_offset=Rational(0),  # Centered
-        dovetail_depth=dovetail_depth
+        dovetail_timber_end=arrangement.butt_timber_end,
+        dovetail_timber_face=TimberLongFace.RIGHT,
+        receiving_timber_shoulder_inset=inches(Rational(1, 2)),  # 0.5" shoulder inset
+        dovetail_length=inches(4),                                # 4" long dovetail tenon
+        dovetail_small_width=inches(Rational(3, 2)),             # 1.5" narrow end
+        dovetail_large_width=inches(3),                          # 3" wide end
+        dovetail_lateral_offset=Rational(0),                     # Centered
+        dovetail_depth=inches(Rational(5, 2))                    # 2.5" deep cut
     )
     
     # Create a frame from the joint
