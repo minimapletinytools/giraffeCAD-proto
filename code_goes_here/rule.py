@@ -52,8 +52,10 @@ def is_complex_expr(expr) -> bool:
     Detect if a SymPy expression is complex enough to potentially cause slow operations.
     
     Uses heuristics:
+    - String length > 200 characters (very long expressions)
     - Node count > 100 in expression tree
-    - Contains transcendental functions (sin, cos, exp, log, sqrt with many terms)
+    - Contains transcendental functions (sin, cos, exp, log)
+    - Contains sqrt with string length > 100
     """
     from sympy import sin, cos, exp, log, sqrt
     
@@ -65,17 +67,24 @@ def is_complex_expr(expr) -> bool:
     if has_transcendental:
         return True
     
+    # Check string length - very long expressions are always complex
+    expr_str = str(expr)
+    if len(expr_str) > 200:
+        return True
+    
+    # Check for sqrt with long expressions
+    if expr.has(sqrt) and len(expr_str) > 100:
+        return True
+    
     # Check node count in expression tree
     try:
         n_nodes = len(list(expr.preorder_traversal()))
         if n_nodes > 100:
             return True
     except:
-        pass
-    
-    # Check for complex sqrt expressions (many nested operations)
-    if expr.has(sqrt) and len(str(expr)) > 50:
-        return True
+        # If we can't traverse the tree but the expression is long, assume complex
+        if len(expr_str) > 150:
+            return True
     
     return False
 
@@ -387,6 +396,90 @@ def safe_compare(expr, comparison: Comparison):
             return apply_comparison(val, comparison)
         except:
             return False
+
+def safe_dot_product(vec1: Matrix, vec2: Matrix):
+    """
+    Safely compute dot product (vec1.T * vec2)[0, 0].
+    Bypasses SymPy's matrix multiplication entirely to avoid property checking freezes.
+    
+    Args:
+        vec1: First vector
+        vec2: Second vector
+    
+    Returns:
+        Scalar result of dot product
+    """
+    from sympy import Float, Number
+    
+    # Check if we need to use numerical evaluation
+    has_complex = (any(is_complex_expr(elem) for elem in vec1) or 
+                   any(is_complex_expr(elem) for elem in vec2))
+    
+    if has_complex:
+        # Freeze constants in both vectors
+        def freeze_elem(e):
+            if not hasattr(e, 'atoms'):
+                return e
+            return e.xreplace({n: Float(n, 15) for n in e.atoms(Number)})
+        
+        vec1_frozen = [freeze_elem(e) for e in vec1]
+        vec2_frozen = [freeze_elem(e) for e in vec2]
+        
+        # Compute dot product manually to bypass SymPy's matrix multiplication
+        result = sum(v1 * v2 for v1, v2 in zip(vec1_frozen, vec2_frozen))
+        return result
+    
+    # For simple expressions, use standard approach but still compute manually
+    result = sum(v1 * v2 for v1, v2 in zip(vec1, vec2))
+    return result
+
+
+def safe_transform_vector(matrix: Matrix, vector: Matrix) -> Matrix:
+    """
+    Safely compute matrix * vector (or matrix * matrix) transformation.
+    Always uses manual multiplication to completely avoid SymPy's property checking.
+    
+    Args:
+        matrix: Left matrix
+        vector: Right matrix (can be a column vector or another matrix)
+    
+    Returns:
+        Result of matrix multiplication
+    """
+    from sympy import Float, Number
+    
+    # Check if we need to freeze constants
+    has_complex = (any(is_complex_expr(elem) for elem in matrix) or 
+                   any(is_complex_expr(elem) for elem in vector))
+    
+    # Prepare data - freeze if complex
+    def freeze_elem(e):
+        if not hasattr(e, 'atoms'):
+            return e
+        return e.xreplace({n: Float(n, 15) for n in e.atoms(Number)})
+    
+    if has_complex:
+        mat_data = [[freeze_elem(matrix[i, j]) for j in range(matrix.cols)] for i in range(matrix.rows)]
+        vec_data = [[freeze_elem(vector[i, j]) for j in range(vector.cols)] for i in range(vector.rows)]
+    else:
+        mat_data = [[matrix[i, j] for j in range(matrix.cols)] for i in range(matrix.rows)]
+        vec_data = [[vector[i, j] for j in range(vector.cols)] for i in range(vector.rows)]
+    
+    # ALWAYS compute manually to avoid SymPy's matrix multiplication property checking
+    # Handle both matrix-vector (Nx1) and matrix-matrix (NxM) multiplication
+    result = []
+    for i in range(len(mat_data)):
+        row = []
+        for k in range(len(vec_data[0])):  # Iterate over columns of second matrix
+            elem = sum(mat_data[i][j] * vec_data[j][k] for j in range(len(vec_data)))
+            row.append(elem)
+        result.append(row)
+    
+    # If result is a single column, return as column vector
+    if len(result[0]) == 1:
+        return Matrix([row[0] for row in result])
+    else:
+        return Matrix(result)
 
 # ============================================================================
 # Helper Functions for Vector Operations
