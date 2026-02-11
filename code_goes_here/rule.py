@@ -43,6 +43,84 @@ Numeric = Expr  # All numeric values must be SymPy expressions (use Integer for 
 
 
 # ============================================================================
+# Safe SymPy Utilities - Timeout Protection & Complexity Detection
+# ============================================================================
+
+def is_complex_expr(expr) -> bool:
+    """
+    Detect if a SymPy expression is complex enough to potentially cause slow operations.
+    
+    Uses heuristics:
+    - Node count > 100 in expression tree
+    - Contains transcendental functions (sin, cos, exp, log, sqrt with many terms)
+    """
+    from sympy import sin, cos, exp, log, sqrt
+    
+    if not hasattr(expr, 'has'):
+        return False
+    
+    # Check for transcendental functions
+    has_transcendental = any(expr.has(f) for f in [sin, cos, exp, log])
+    if has_transcendental:
+        return True
+    
+    # Check node count in expression tree
+    try:
+        n_nodes = len(list(expr.preorder_traversal()))
+        if n_nodes > 100:
+            return True
+    except:
+        pass
+    
+    # Check for complex sqrt expressions (many nested operations)
+    if expr.has(sqrt) and len(str(expr)) > 50:
+        return True
+    
+    return False
+
+def with_timeout_fallback(symbolic_func, numerical_func, timeout_seconds=0.1):
+    """
+    Execute symbolic_func with timeout, falling back to numerical_func if it takes too long.
+    
+    Args:
+        symbolic_func: Callable that performs symbolic computation
+        numerical_func: Callable that performs numerical fallback
+        timeout_seconds: Timeout in seconds (default 0.1s)
+    
+    Returns:
+        Result from symbolic_func or numerical_func
+    """
+    import signal
+    
+    class TimeoutException(Exception):
+        pass
+    
+    def timeout_handler(signum, frame):
+        raise TimeoutException()
+    
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.setitimer(signal.ITIMER_REAL, timeout_seconds)
+    
+    try:
+        result = symbolic_func()
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old_handler)
+        return result
+    except TimeoutException:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old_handler)
+        return numerical_func()
+    except Exception as e:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old_handler)
+        # For non-timeout exceptions, try numerical fallback
+        try:
+            return numerical_func()
+        except:
+            raise e  # Re-raise original exception if fallback also fails
+
+
+# ============================================================================
 # Transform Class
 # ============================================================================
 
@@ -133,6 +211,74 @@ class Transform:
         return new_parent.invert() * self
 
 # ============================================================================
+# Safe SymPy Wrapper Functions - Protected Operations
+# ============================================================================
+
+def safe_norm(vec: Matrix):
+    """
+    Compute vector norm with timeout protection and numerical fallback.
+    
+    For simple expressions: Returns exact symbolic result
+    For complex expressions: Returns numerical approximation
+    """
+    from sympy import sqrt
+    from fractions import Fraction
+    
+    # Quick check: if vector contains complex expressions, go straight to numerical
+    is_complex = any(is_complex_expr(component) for component in vec)
+    
+    if is_complex:
+        # Compute norm numerically to avoid freeze
+        norm_squared = sum((float(c.evalf())**2 for c in vec))
+        return sqrt(Rational(norm_squared).limit_denominator(10**9))
+    
+    # Try symbolic norm with timeout
+    def symbolic():
+        return vec.norm()
+    
+    def numerical():
+        norm_squared = sum((float(c.evalf())**2 for c in vec))
+        return sqrt(Rational(norm_squared).limit_denominator(10**9))
+    
+    return with_timeout_fallback(symbolic, numerical, timeout_seconds=0.1)
+
+def safe_det(matrix: Matrix):
+    """
+    Compute matrix determinant with timeout protection.
+    """
+    # Check if matrix contains complex expressions
+    is_complex = any(is_complex_expr(elem) for elem in matrix)
+    
+    if is_complex:
+        return matrix.det().evalf()
+    
+    def symbolic():
+        return matrix.det()
+    
+    def numerical():
+        return matrix.det().evalf()
+    
+    return with_timeout_fallback(symbolic, numerical, timeout_seconds=0.2)
+
+def safe_simplify(expr, timeout_seconds=0.5):
+    """
+    Simplify with timeout protection.
+    """
+    from sympy import simplify as sp_simplify
+    
+    if is_complex_expr(expr):
+        # Don't even try to simplify complex expressions
+        return expr
+    
+    def symbolic():
+        return sp_simplify(expr)
+    
+    def numerical():
+        return expr  # Return original if simplification times out
+    
+    return with_timeout_fallback(symbolic, numerical, timeout_seconds)
+
+# ============================================================================
 # Helper Functions for Vector Operations
 # ============================================================================
 
@@ -145,10 +291,32 @@ def create_v3(x: Numeric, y: Numeric, z: Numeric) -> V3:
     return Matrix([x, y, z])
 
 def normalize_vector(vec: Matrix) -> Matrix:
-    """Normalize a vector using SymPy's exact computation"""
-    norm = vec.norm()
+    """Normalize a vector using safe norm computation with numerical fallback"""
+    from sympy import sqrt
+    from fractions import Fraction
+    
+    # Use safe norm
+    norm = safe_norm(vec)
+    
     if zero_test(norm):
         return vec
+    
+    # Check if we got a Float result (needs conversion to rational)
+    # For symbolic expressions like sqrt(3) or Rational values, use exact division
+    if isinstance(norm, Float):
+        # Normalize numerically and convert to rationals
+        norm_val = float(norm)
+        if abs(norm_val) < 1e-15:
+            return vec
+        
+        normalized = []
+        for component in vec:
+            comp_val = float(component.evalf()) / norm_val
+            frac = Fraction(comp_val).limit_denominator(10**9)
+            normalized.append(Rational(frac.numerator, frac.denominator))
+        return Matrix(normalized)
+    
+    # For symbolic expressions (sqrt, Rational, Integer), use exact symbolic division
     return vec / norm
 
 def cross_product(v1: V3, v2: V3) -> V3:
@@ -160,8 +328,8 @@ def cross_product(v1: V3, v2: V3) -> V3:
     ])
 
 def vector_magnitude(vec: Matrix):
-    """Calculate magnitude of a vector using SymPy's exact computation"""
-    return vec.norm()
+    """Calculate magnitude of a vector using safe norm computation"""
+    return safe_norm(vec)
 
 
 # ============================================================================

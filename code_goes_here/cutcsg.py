@@ -428,7 +428,7 @@ class Cylinder(CutCSG):
         local_point = point - self.position
         
         # Normalize axis
-        axis = self.axis_direction / self.axis_direction.norm()
+        axis = self.axis_direction / safe_norm(self.axis_direction)
         
         # Project onto axis to get axial coordinate
         axial_coord = (local_point.T * axis)[0, 0]
@@ -442,7 +442,7 @@ class Cylinder(CutCSG):
         # Calculate radial distance from axis
         axial_projection = axis * axial_coord
         radial_vector = local_point - axial_projection
-        radial_distance = radial_vector.norm()
+        radial_distance = safe_norm(radial_vector)
         
         # Check if within radius
         return radial_distance <= self.radius
@@ -469,7 +469,7 @@ class Cylinder(CutCSG):
         local_point = point - self.position
         
         # Normalize axis
-        axis = self.axis_direction / self.axis_direction.norm()
+        axis = self.axis_direction / safe_norm(self.axis_direction)
         
         # Project onto axis to get axial coordinate
         axial_coord = (local_point.T * axis)[0, 0]
@@ -477,7 +477,7 @@ class Cylinder(CutCSG):
         # Calculate radial distance from axis
         axial_projection = axis * axial_coord
         radial_vector = local_point - axial_projection
-        radial_distance = radial_vector.norm()
+        radial_distance = safe_norm(radial_vector)
         
         # On cylindrical surface
         if radial_distance == self.radius:
@@ -507,7 +507,7 @@ class Cylinder(CutCSG):
         local_point = point - self.position
         
         # Normalize axis
-        axis = self.axis_direction / self.axis_direction.norm()
+        axis = self.axis_direction / safe_norm(self.axis_direction)
         
         # Project onto axis to get axial coordinate
         axial_coord = (local_point.T * axis)[0, 0]
@@ -515,7 +515,7 @@ class Cylinder(CutCSG):
         # Calculate radial distance from axis
         axial_projection = axis * axial_coord
         radial_vector = local_point - axial_projection
-        radial_distance = radial_vector.norm()
+        radial_distance = safe_norm(radial_vector)
         
         # Check if on cylindrical surface first (most common case)
         if radial_distance == self.radius:
