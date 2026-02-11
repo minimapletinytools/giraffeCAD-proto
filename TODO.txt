@@ -210,15 +210,11 @@ DONE-sympy only refactor
 
 
   
--update all equality checks to have fuzzy fallback
-  -first do expr1.equals(expr2, check=False)
-  -then dos moething like def is_complex(expr):
-    # crude heuristic
-    n_nodes = len(list(expr.preorder_traversal()))
-    has_transcendental = any(expr.has(f) for f in [sp.sin, sp.cos, sp.exp, sp.log])
-    return n_nodes > 100 or has_transcendental
-  -then use python concurrent whatever to timeout the equal test
-  -if fail, then do numeric fallback
+-sympy fml
+  DONE-update all equality checks to have fuzzy fallback
+  -update safe calls to reuse numeric check
+  -update all types to be expr or float again....
+
 
 -3 major features
   DONE-measure functions

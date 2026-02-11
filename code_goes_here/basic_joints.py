@@ -419,7 +419,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         # Lines are parallel (already checked above)
         t = -(d1.T * w)[0, 0] / a if a > 0 else 0
         closest_on_1 = p1 + t * d1
-        distance = (p2 - closest_on_1).norm()
+        distance = safe_norm(p2 - closest_on_1)
     else:
         t1 = (b * e - c * d) / denom
         t2 = (a * e - b * d) / denom
@@ -427,7 +427,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         closest_on_1 = p1 + t1 * d1
         closest_on_2 = p2 + t2 * d2
         
-        distance = (closest_on_1 - closest_on_2).norm()
+        distance = safe_norm(closest_on_1 - closest_on_2)
     
     # Check if timbers are close enough to intersect
     max_separation = (timberA.size[0] + timberA.size[1] + 
@@ -480,7 +480,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     # cut_ratio = 1: normal is -normalB (pointing toward faceB from the opposite direction)
     # Since normalA and normalB oppose each other (normalA · normalB < 0), we interpolate:
     cutting_plane_normal = normalA * (1 - cut_ratio) - normalB * cut_ratio
-    cutting_plane_normal_normalized = cutting_plane_normal / cutting_plane_normal.norm()
+    cutting_plane_normal_normalized = cutting_plane_normal / safe_norm(cutting_plane_normal)
     
     # Calculate the offset for the cutting plane
     # offset = normal · point_on_plane
@@ -677,7 +677,7 @@ def _find_closest_face_to_timber(timber: Timber, other_timber: Timber) -> Timber
     
     for face in faces:
         face_center = _get_face_center_position(timber, face)
-        distance = (face_center - other_center).norm()
+        distance = safe_norm(face_center - other_center)
         
         if min_distance is None or distance < min_distance:
             min_distance = distance
@@ -789,7 +789,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
         # Project p2 onto the line defined by p1 and d1
         t = -(d1.T * w)[0, 0] / a if a > Integer(0) else Integer(0)
         closest_on_1 = p1 + t * d1
-        distance = (p2 - closest_on_1).norm()
+        distance = safe_norm(p2 - closest_on_1)
     else:
         t1 = (b * e - c * d) / denom
         t2 = (a * e - b * d) / denom
@@ -797,7 +797,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
         closest_on_1 = p1 + t1 * d1
         closest_on_2 = p2 + t2 * d2
         
-        distance = (closest_on_1 - closest_on_2).norm()
+        distance = safe_norm(closest_on_1 - closest_on_2)
     
     # Check if timbers are close enough to intersect
     # They should intersect if the closest distance is less than the sum of half their cross-sections

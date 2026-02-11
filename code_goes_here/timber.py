@@ -280,7 +280,7 @@ def compute_timber_orientation(length_direction: Direction3D, width_direction: D
     face_orthogonal = face_input - projection
     
     # Check if face_orthogonal is too small (vectors were nearly parallel)
-    if zero_test(face_orthogonal.norm()):
+    if zero_test(safe_norm(face_orthogonal)):
         # Choose an arbitrary orthogonal direction
         # Find a vector that's not parallel to length_norm
         if Abs(length_norm[0]) < Rational(9, 10):  # Threshold comparison
