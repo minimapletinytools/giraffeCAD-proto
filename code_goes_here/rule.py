@@ -47,15 +47,21 @@ Numeric = Expr  # All numeric values must be SymPy expressions (use Integer for 
 # Safe SymPy Utilities - Timeout Protection & Complexity Detection
 # ============================================================================
 
-def is_complex_expr(expr) -> bool:
+def is_complex_expr(expr, max_nodes: int = 50) -> bool:
     """
     Detect if a SymPy expression is complex enough to potentially cause slow operations.
     
-    Uses heuristics:
-    - Node count > 50 in expression tree (primary check)
-    - Contains transcendental functions (sin, cos, exp, log)
+    Uses heuristics with early bailout for performance:
+    - Contains transcendental functions (sin, cos, exp, log) - always complex
+    - Node count > max_nodes in expression tree (uses lazy traversal with early exit)
     - Contains sqrt with node count > 30
-    - Falls back to string length only if node counting fails
+    
+    Args:
+        expr: SymPy expression to check
+        max_nodes: Maximum node count before considering complex (default 50)
+    
+    Returns:
+        True if expression is complex, False otherwise
     """
     from sympy import sin, cos, exp, log, sqrt
     
@@ -67,25 +73,19 @@ def is_complex_expr(expr) -> bool:
     if has_transcendental:
         return True
     
-    # Primary check: node count in expression tree (much faster than string conversion)
-    try:
-        n_nodes = len(list(expr.preorder_traversal()))
-        if n_nodes > 50:
-            return True
-        # Special case for sqrt expressions - lower threshold
-        if expr.has(sqrt) and n_nodes > 30:
-            return True
-    except:
-        # Only if node counting fails, fall back to string length
-        try:
-            expr_str = str(expr)
-            if len(expr_str) > 150:
-                return True
-        except:
-            # If both fail, assume it's complex
-            return True
+    # Check for sqrt (may use lower threshold)
+    has_sqrt = expr.has(sqrt)
+    threshold = 30 if has_sqrt else max_nodes
     
-    return False
+    # Count nodes with early bailout (uses lazy generator)
+    try:
+        for i, _ in enumerate(expr.preorder_traversal()):
+            if i >= threshold:
+                return True  # Hit threshold, expression is complex
+        return False  # Finished traversal, expression is simple
+    except:
+        # If traversal fails, assume complex to be safe
+        return True
 
 def with_timeout_fallback(symbolic_func, numerical_func, timeout_seconds=0.1):
     """
