@@ -871,7 +871,8 @@ class CutTimber:
                     # HalfSpace aligned with length direction
                     # HalfSpace contains points where (p · normal) >= offset
                     # When subtracted, remaining points are where (p · normal) < offset
-                    if dot_product > 0:
+                    from code_goes_here.rule import safe_compare, Comparison
+                    if safe_compare(dot_product, Comparison.GT):
                         # Normal points in +Z direction
                         # Subtraction removes points with Z >= offset
                         max_z = Min(max_z, half_space.offset)
