@@ -52,38 +52,37 @@ def is_complex_expr(expr) -> bool:
     Detect if a SymPy expression is complex enough to potentially cause slow operations.
     
     Uses heuristics:
-    - String length > 200 characters (very long expressions)
-    - Node count > 100 in expression tree
+    - Node count > 50 in expression tree (primary check)
     - Contains transcendental functions (sin, cos, exp, log)
-    - Contains sqrt with string length > 100
+    - Contains sqrt with node count > 30
+    - Falls back to string length only if node counting fails
     """
     from sympy import sin, cos, exp, log, sqrt
     
     if not hasattr(expr, 'has'):
         return False
     
-    # Check for transcendental functions
+    # Check for transcendental functions first (fast check)
     has_transcendental = any(expr.has(f) for f in [sin, cos, exp, log])
     if has_transcendental:
         return True
     
-    # Check string length - very long expressions are always complex
-    expr_str = str(expr)
-    if len(expr_str) > 200:
-        return True
-    
-    # Check for sqrt with long expressions
-    if expr.has(sqrt) and len(expr_str) > 100:
-        return True
-    
-    # Check node count in expression tree
+    # Primary check: node count in expression tree (much faster than string conversion)
     try:
         n_nodes = len(list(expr.preorder_traversal()))
-        if n_nodes > 100:
+        if n_nodes > 50:
+            return True
+        # Special case for sqrt expressions - lower threshold
+        if expr.has(sqrt) and n_nodes > 30:
             return True
     except:
-        # If we can't traverse the tree but the expression is long, assume complex
-        if len(expr_str) > 150:
+        # Only if node counting fails, fall back to string length
+        try:
+            expr_str = str(expr)
+            if len(expr_str) > 150:
+                return True
+        except:
+            # If both fail, assume it's complex
             return True
     
     return False
@@ -253,8 +252,8 @@ def safe_norm(vec: Matrix):
                 else:
                     # Freeze all constants to Float first - this avoids slow symbolic evaluation
                     c_frozen = freeze_constants(c, prec=15)
-                    # Now lambdify should be fast since all constants are already floats
-                    f = lambdify((), c_frozen, modules=['math'])
+                    # Use numpy and scipy for fastest evaluation
+                    f = lambdify((), c_frozen, ["numpy", "scipy"])
                     val = float(f())
                 norm_squared += val ** 2
             
@@ -363,8 +362,8 @@ def safe_compare(expr, comparison: Comparison):
         try:
             # Freeze constants first
             expr_frozen = freeze_constants(expr, prec=15)
-            # Convert to numerical function
-            f = lambdify((), expr_frozen, modules=['math'])
+            # Convert to numerical function with numpy and scipy for speed
+            f = lambdify((), expr_frozen, ["numpy", "scipy"])
             val = float(f())
             return apply_comparison(val, comparison)
         except Exception:
@@ -391,7 +390,7 @@ def safe_compare(expr, comparison: Comparison):
         # Fallback to numerical evaluation with freeze_constants
         try:
             expr_frozen = freeze_constants(expr, prec=15)
-            f = lambdify((), expr_frozen, modules=['math'])
+            f = lambdify((), expr_frozen, ["numpy", "scipy"])
             val = float(f())
             return apply_comparison(val, comparison)
         except:
