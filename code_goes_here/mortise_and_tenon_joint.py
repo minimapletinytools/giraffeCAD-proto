@@ -9,6 +9,7 @@ from code_goes_here.timber import *
 from code_goes_here.measuring import measure_top_center_position, measure_bottom_center_position, measure_position_on_centerline_from_bottom, measure_position_on_centerline_from_top
 from code_goes_here.construction import *
 from code_goes_here.rule import *
+from code_goes_here.rule import safe_transform_vector, safe_dot_product
 
 # ============================================================================
 # Parameter Classes for Mortise and Tenon Joints
@@ -246,7 +247,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # ========================================================================
     
     # Transform intersection point to mortise timber's local coordinate system
-    intersection_point_mortise_timber_local = mortise_timber.orientation.matrix.T * (intersection_point_global - mortise_timber.get_bottom_position_global())
+    intersection_point_mortise_timber_local = safe_transform_vector(mortise_timber.orientation.matrix.T, (intersection_point_global - mortise_timber.get_bottom_position_global()))
     
     # NOTE should only check one axis, checking both is fine too...
 
@@ -281,12 +282,12 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     
     # Create the mortise prism in the mortise timber's LOCAL coordinate system
     # We create a prism representing the tenon volume
-    relative_orientation = Orientation(mortise_timber.orientation.matrix.T * tenon_timber.orientation.matrix)
+    relative_orientation = Orientation(safe_transform_vector(mortise_timber.orientation.matrix.T, tenon_timber.orientation.matrix))
     
     # The intersection_point_global is already the tenon center position in world coordinates
     # (with tenon_position offset already applied)
     # Transform it to mortise timber's local coordinates
-    tenon_origin_local = mortise_timber.orientation.matrix.T * (intersection_point_global - mortise_timber.get_bottom_position_global())
+    tenon_origin_local = safe_transform_vector(mortise_timber.orientation.matrix.T, (intersection_point_global - mortise_timber.get_bottom_position_global()))
     
     # Create a prism representing the tenon volume (in mortise timber's local space)
     from code_goes_here.cutcsg import RectangularPrism
@@ -330,7 +331,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     shoulder_plane_point_with_offset_global = shoulder_plane_point_global + tenon_x_offset_vec + tenon_y_offset_vec
     
     # Convert shoulder plane point to tenon timber's local coordinates
-    shoulder_plane_point_with_offset_local = tenon_timber.orientation.matrix.T * (shoulder_plane_point_with_offset_global - tenon_timber.get_bottom_position_global())
+    shoulder_plane_point_with_offset_local = safe_transform_vector(tenon_timber.orientation.matrix.T, (shoulder_plane_point_with_offset_global - tenon_timber.get_bottom_position_global()))
     
     # Create infinite prism representing the timber end beyond the shoulder
     # This extends from the shoulder to infinity in the tenon direction
@@ -543,8 +544,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             # Next we cut the peg hole in themortise timber
 
             # Transform peg position to global space
-            peg_pos_on_tenon_face_global = tenon_timber.get_bottom_position_global() + tenon_timber.orientation.matrix * peg_pos_on_tenon_face_local
-            peg_orientation_global = Orientation(tenon_timber.orientation.matrix * peg_orientation_tenon_local.matrix)
+            peg_pos_on_tenon_face_global = tenon_timber.get_bottom_position_global() + safe_transform_vector(tenon_timber.orientation.matrix, peg_pos_on_tenon_face_local)
+            peg_orientation_global = Orientation(safe_transform_vector(tenon_timber.orientation.matrix, peg_orientation_tenon_local.matrix))
             peg_direction_global = peg_orientation_global.matrix[:, 2] # Z-axis of peg in global space
 
             # Calculate where the peg intersects the mortise timber
@@ -617,10 +618,10 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             peg_pos_on_mortise_face_global = peg_pos_on_tenon_face_global + peg_direction_global * t_peg
             
             # Transform the intersection point to mortise timber's local coordinates
-            peg_pos_on_mortise_face_local = mortise_timber.orientation.matrix.T * (peg_pos_on_mortise_face_global - mortise_timber.get_bottom_position_global())
+            peg_pos_on_mortise_face_local = safe_transform_vector(mortise_timber.orientation.matrix.T, (peg_pos_on_mortise_face_global - mortise_timber.get_bottom_position_global()))
             
             # Transform peg orientation to mortise local space (peg_orientation_global already calculated above)
-            peg_orientation_mortise_local = Orientation(mortise_timber.orientation.matrix.T * peg_orientation_global.matrix)
+            peg_orientation_mortise_local = Orientation(safe_transform_vector(mortise_timber.orientation.matrix.T, peg_orientation_global.matrix))
             
             # Create peg hole prism in mortise local space
             # The peg position is ON the mortise face, and extends forward into the mortise
@@ -641,10 +642,10 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
             # but the final accessory is stored in global space
             
             # Transform peg position from mortise local space to global space
-            peg_pos_global = mortise_timber.get_bottom_position_global() + mortise_timber.orientation.matrix * peg_pos_on_mortise_face_local
+            peg_pos_global = mortise_timber.get_bottom_position_global() + safe_transform_vector(mortise_timber.orientation.matrix, peg_pos_on_mortise_face_local)
             
             # Transform peg orientation from mortise local space to global space
-            peg_orientation_global = Orientation(mortise_timber.orientation.matrix * peg_orientation_mortise_local.matrix)
+            peg_orientation_global = Orientation(safe_transform_vector(mortise_timber.orientation.matrix, peg_orientation_mortise_local.matrix))
             
             # forward_length: how deep the peg goes into the mortise
             # stickout_length: how much of the peg remains outside (in the tenon)

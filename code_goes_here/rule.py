@@ -163,7 +163,7 @@ class Transform:
         """
         # Rotate to global frame, then translate to position
         # global = R * local + position
-        return self.orientation.matrix * local_point + self.position
+        return safe_transform_vector(self.orientation.matrix, local_point) + self.position
     
     # TODO consider renaming to undo_transform
     def global_to_local(self, global_point: V3) -> V3:
@@ -179,7 +179,7 @@ class Transform:
         # Translate to origin, then rotate to local frame
         # local = R^T * (global - position)
         translated = global_point - self.position
-        return self.orientation.matrix.T * translated
+        return safe_transform_vector(self.orientation.matrix.T, translated)
 
     # TODO consider renaming to leave_parent_transform
     def to_global_transform(self, old_parent: 'Transform') -> 'Transform':
@@ -198,7 +198,7 @@ class Transform:
         # Invert the orientation (transpose for rotation matrices)
         inv_orientation = self.orientation.invert()
         # Transform the position by the inverted orientation and negate
-        inv_position = -(inv_orientation.matrix * self.position)
+        inv_position = -safe_transform_vector(inv_orientation.matrix, self.position)
         return Transform(position=inv_position, orientation=inv_orientation)
     
     def __mul__(self, other: 'Transform') -> 'Transform':
@@ -209,7 +209,7 @@ class Transform:
         Equivalent to: global = self.local_to_global(other.local_to_global(local))
         """
         new_orientation = self.orientation * other.orientation
-        new_position = self.orientation.matrix * other.position + self.position
+        new_position = safe_transform_vector(self.orientation.matrix, other.position) + self.position
         return Transform(position=new_position, orientation=new_orientation)
     
     # TODO consider renaming to become_child_transform
@@ -857,7 +857,7 @@ class Orientation:
         """
         if not isinstance(other, Orientation):
             raise TypeError("Can only multiply with another Orientation")
-        return Orientation(self.matrix * other.matrix)
+        return Orientation(safe_transform_vector(self.matrix, other.matrix))
     
     def invert(self) -> 'Orientation':
         """

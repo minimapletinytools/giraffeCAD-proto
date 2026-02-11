@@ -214,6 +214,7 @@ DONE-sympy only refactor
   DONE-update all equality checks to have fuzzy fallback
   -update safe calls to reuse numeric check
   -update all types to be expr or float again....
+  -you need to switch to float eval a lot sooner.. you probably want to wrap the sympy stuff ...
 
 
 -3 major features

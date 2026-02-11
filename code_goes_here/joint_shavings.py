@@ -588,7 +588,7 @@ def chop_lap_on_timber_ends(
     bottom_shoulder_global = top_lap_end_global
     
     # Project bottom shoulder position onto bottom timber's length axis
-    bottom_shoulder_from_bottom_timber_bottom = ((bottom_shoulder_global - bottom_lap_timber.get_bottom_position_global()).T * bottom_lap_timber.get_length_direction_global())[0, 0]
+    bottom_shoulder_from_bottom_timber_bottom = safe_dot_product((bottom_shoulder_global - bottom_lap_timber.get_bottom_position_global()), bottom_lap_timber.get_length_direction_global())
     
     # Calculate shoulder distance from bottom timber's reference end
     if bottom_lap_timber_end == TimberReferenceEnd.TOP:

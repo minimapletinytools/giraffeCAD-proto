@@ -351,8 +351,9 @@ def do_xy_cross_section_on_parallel_timbers_overlap(timberA: Timber, timberB: Ti
     timberB_height_dir_global = timberB.get_height_direction_global()
     
     # Convert to timberA's local space (just rotate, don't translate)
-    timberB_width_dir_local = timberA.orientation.matrix.T * timberB_width_dir_global
-    timberB_height_dir_local = timberA.orientation.matrix.T * timberB_height_dir_global
+    from code_goes_here.rule import safe_transform_vector
+    timberB_width_dir_local = safe_transform_vector(timberA.orientation.matrix.T, timberB_width_dir_global)
+    timberB_height_dir_local = safe_transform_vector(timberA.orientation.matrix.T, timberB_height_dir_global)
     
     # Get the four corners of timberB's cross section in timberA's local space
     # Start from timberB's center in local space
