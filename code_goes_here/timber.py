@@ -865,13 +865,13 @@ class CutTimber:
             # Check if it's a simple HalfSpace or a Difference with HalfSpaces
             if isinstance(csg, HalfSpace):
                 half_space = csg
-                dot_product = (half_space.normal.T * length_direction_local)[0, 0]
+                from code_goes_here.rule import safe_compare, Comparison, safe_dot_product
+                dot_product = safe_dot_product(half_space.normal, length_direction_local)
                 
                 if equality_test(Abs(dot_product), 1):
                     # HalfSpace aligned with length direction
                     # HalfSpace contains points where (p · normal) >= offset
                     # When subtracted, remaining points are where (p · normal) < offset
-                    from code_goes_here.rule import safe_compare, Comparison
                     if safe_compare(dot_product, Comparison.GT):
                         # Normal points in +Z direction
                         # Subtraction removes points with Z >= offset
@@ -1341,8 +1341,9 @@ class Frame:
                         local_corners.append(local_corner)
             
             # Transform each corner to global coordinates
+            from code_goes_here.rule import safe_transform_vector
             for local_corner in local_corners:
-                global_corner = prism.transform.position + prism.transform.orientation.matrix * local_corner
+                global_corner = prism.transform.position + safe_transform_vector(prism.transform.orientation.matrix, local_corner)
                 
                 # Update min/max for each axis
                 if min_x is None:

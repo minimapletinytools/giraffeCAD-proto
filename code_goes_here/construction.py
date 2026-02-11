@@ -804,9 +804,9 @@ def join_perpendicular_on_face_parallel_timbers(timber1: Timber, timber2: Timber
         
         # Check dot products to determine which direction the normal points
         # dot product ≈ +1 means same direction, ≈ -1 means opposite direction
-        from code_goes_here.rule import safe_compare, Comparison
-        width_dot = (plane_normal.T * width_direction)[0, 0]
-        height_dot = (plane_normal.T * height_direction)[0, 0]
+        from code_goes_here.rule import safe_compare, Comparison, safe_dot_product
+        width_dot = safe_dot_product(plane_normal, width_direction)
+        height_dot = safe_dot_product(plane_normal, height_direction)
         
         # Determine which axis has the strongest alignment (should be close to ±1)
         if Abs(width_dot) > Abs(height_dot):

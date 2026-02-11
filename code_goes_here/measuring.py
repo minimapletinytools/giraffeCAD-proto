@@ -116,7 +116,8 @@ class Plane:
         Returns:
             Plane with normal in global coordinates and point at transform position
         """
-        return Plane(transform.orientation.matrix * direction, transform.position)
+        from code_goes_here.rule import safe_transform_vector
+        return Plane(safe_transform_vector(transform.orientation.matrix, direction), transform.position)
 
 @dataclass(frozen=True)
 class UnsignedPlane(Plane):
@@ -142,7 +143,8 @@ class UnsignedPlane(Plane):
         Returns:
             UnsignedPlane with normal in global coordinates and point at transform position
         """
-        return UnsignedPlane(transform.orientation.matrix * direction, transform.position)
+        from code_goes_here.rule import safe_transform_vector
+        return UnsignedPlane(safe_transform_vector(transform.orientation.matrix, direction), transform.position)
 
 # TODO rename to LineOnPlane
 @dataclass(frozen=True)
@@ -571,7 +573,8 @@ def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane],
     # Calculate signed distance: how far from the face is the point?
     # Positive if point is in the direction opposite to face_direction (inside timber)
     # Negative if point is in the direction of face_direction (outside timber)
-    distance = (face_direction_global.T * (face_point_global - feature_point))[0, 0]
+    from code_goes_here.rule import safe_dot_product
+    distance = safe_dot_product(face_direction_global, (face_point_global - feature_point))
     
     return DistanceFromFace(distance=distance, timber=timber, face=face)
 
@@ -616,8 +619,8 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
     # Plane: plane.normal · (P - plane.point) = 0
     # Solving for t: t = plane.normal · (plane.point - end_position) / (plane.normal · into_timber_direction)
     
-    numerator = (plane.normal.T * (plane.point - end_position))[0, 0]
-    denominator = (plane.normal.T * into_timber_direction)[0, 0]
+    numerator = safe_dot_product(plane.normal, (plane.point - end_position))
+    denominator = safe_dot_product(plane.normal, into_timber_direction)
     
     # If denominator is zero, the line is parallel to the plane (no intersection)
     if zero_test(denominator):
@@ -678,11 +681,11 @@ def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: Timber, 
     
     w = line.point - edge_end_position  # Vector between starting points
     
-    a = (line.direction.T * line.direction)[0, 0]  # Should be 1 for normalized directions
-    b = (line.direction.T * edge_line.direction)[0, 0]
-    c = (edge_line.direction.T * edge_line.direction)[0, 0]  # Should be 1 for normalized directions
-    d = (w.T * line.direction)[0, 0]
-    e = (w.T * edge_line.direction)[0, 0]
+    a = safe_dot_product(line.direction, line.direction)  # Should be 1 for normalized directions
+    b = safe_dot_product(line.direction, edge_line.direction)
+    c = safe_dot_product(edge_line.direction, edge_line.direction)  # Should be 1 for normalized directions
+    d = safe_dot_product(w, line.direction)
+    e = safe_dot_product(w, edge_line.direction)
     
     denominator = a * c - b * b
     
