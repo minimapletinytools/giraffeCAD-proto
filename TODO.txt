@@ -210,11 +210,15 @@ DONE-sympy only refactor
 
 
   
--sympy fml
+DNOE-sympy fml
   DONE-update all equality checks to have fuzzy fallback
-  -update safe calls to reuse numeric check
-  -update all types to be expr or float again....
-  -you need to switch to float eval a lot sooner.. you probably want to wrap the sympy stuff ...
+  DONE-update safe calls to reuse numeric check
+
+-sympy refactor fml
+  DONE-update all types to be expr or float again....
+  -probably add points to convert expressions to numeric
+    -most likely timber positioning is fine, but all joint computations should be numeric by default
+
 
 
 -3 major features
