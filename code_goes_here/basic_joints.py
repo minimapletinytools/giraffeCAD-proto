@@ -116,8 +116,8 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # so we use +miter_normal. Otherwise, we use -miter_normal.
     
     # For timberA: check if miter_normal points away from or towards the timber
-    from code_goes_here.rule import safe_compare, Comparison
-    dot_A = (normA.T * miter_normal)[0, 0]
+    from code_goes_here.rule import safe_compare, Comparison, safe_dot_product, safe_transform_vector
+    dot_A = safe_dot_product(normA, miter_normal)
     if safe_compare(dot_A, Comparison.GT):
         # Miter normal points away from timberA (in the direction of timberA's end)
         # This is what we want - the half-plane removes material in this direction
@@ -129,11 +129,11 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # Convert to LOCAL coordinates for timberA
     # Transform normal: local_normal = orientation^T * global_normal
     # Transform offset: local_offset = global_offset - (global_normal · timber.get_bottom_position_global())
-    local_normalA = timberA.orientation.matrix.T * normalA
-    local_offsetA = (intersection_point.T * normalA)[0, 0] - (normalA.T * timberA.get_bottom_position_global())[0, 0]
+    local_normalA = safe_transform_vector(timberA.orientation.matrix.T, normalA)
+    local_offsetA = safe_dot_product(intersection_point, normalA) - safe_dot_product(normalA, timberA.get_bottom_position_global())
     
     # For timberB: check if miter_normal points away from or towards the timber
-    dot_B = (normB.T * miter_normal)[0, 0]
+    dot_B = safe_dot_product(normB, miter_normal)
     if safe_compare(dot_B, Comparison.GT):
         # Miter normal points away from timberB (in the direction of timberB's end)
         normalB = miter_normal
@@ -142,8 +142,8 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
         normalB = -miter_normal
     
     # Convert to LOCAL coordinates for timberB
-    local_normalB = timberB.orientation.matrix.T * normalB
-    local_offsetB = (intersection_point.T * normalB)[0, 0] - (normalB.T * timberB.get_bottom_position_global())[0, 0]
+    local_normalB = safe_transform_vector(timberB.orientation.matrix.T, normalB)
+    local_offsetB = safe_dot_product(intersection_point, normalB) - safe_dot_product(normalB, timberB.get_bottom_position_global())
     
     # Create the end cut HalfSpaces (in LOCAL coordinates relative to each timber)
     end_cut_A = HalfSpace(normal=local_normalA, offset=local_offsetA)
@@ -224,7 +224,8 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     face_center = _get_face_center_position(receiving_timber, receiving_face)
     
     # Calculate distance from the specified butt end to the receiving face
-    distance_from_bottom = ((face_center - butt_timber.get_bottom_position_global()).T * butt_timber.get_length_direction_global())[0, 0]
+    from code_goes_here.rule import safe_dot_product
+    distance_from_bottom = safe_dot_product(face_center - butt_timber.get_bottom_position_global(), butt_timber.get_length_direction_global())
     distance_from_end = butt_timber.length - distance_from_bottom if butt_end == TimberReferenceEnd.TOP else distance_from_bottom
     
     # Create the end cut HalfSpace
@@ -307,7 +308,8 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end:
         to_splice = splice_point - timberA.get_bottom_position_global()
         
         # Project onto the centerline
-        distance_along_centerline = (to_splice.T * length_dir_norm)[0, 0]
+        from code_goes_here.rule import safe_dot_product
+        distance_along_centerline = safe_dot_product(to_splice, length_dir_norm)
         projected_point = timberA.get_bottom_position_global() + length_dir_norm * distance_along_centerline
         
         # Check if the point needed projection (warn if not on centerline)
@@ -319,11 +321,12 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end:
     # Check if timber cross sections overlap (approximate check using bounding boxes)
     # Project both timber cross-sections onto a plane perpendicular to the length direction
     # For simplicity, we'll warn if the centerlines are far apart
+    from code_goes_here.rule import safe_dot_product
     centerline_distance = vector_magnitude(
         (splice_point - timberA.get_bottom_position_global()) - 
-        length_dir_norm * ((splice_point - timberA.get_bottom_position_global()).T * length_dir_norm)[0, 0] -
+        length_dir_norm * safe_dot_product(splice_point - timberA.get_bottom_position_global(), length_dir_norm) -
         ((splice_point - timberB.get_bottom_position_global()) - 
-         length_dir_norm * ((splice_point - timberB.get_bottom_position_global()).T * length_dir_norm)[0, 0])
+         length_dir_norm * safe_dot_product(splice_point - timberB.get_bottom_position_global(), length_dir_norm))
     )
     
     # Approximate overlap check: centerlines should be close
@@ -333,10 +336,10 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end:
         warnings.warn(f"Timber cross sections may not overlap (centerline distance: {float(centerline_distance)}). Check joint geometry.")
     
     # Calculate distance from each timber end to the splice point
-    distance_A_from_bottom = ((splice_point - timberA.get_bottom_position_global()).T * timberA.get_length_direction_global())[0, 0]
+    distance_A_from_bottom = safe_dot_product(splice_point - timberA.get_bottom_position_global(), timberA.get_length_direction_global())
     distance_A_from_end = timberA.length - distance_A_from_bottom if timberA_end == TimberReferenceEnd.TOP else distance_A_from_bottom
     
-    distance_B_from_bottom = ((splice_point - timberB.get_bottom_position_global()).T * timberB.get_length_direction_global())[0, 0]
+    distance_B_from_bottom = safe_dot_product(splice_point - timberB.get_bottom_position_global(), timberB.get_length_direction_global())
     distance_B_from_end = timberB.length - distance_B_from_bottom if timberB_end == TimberReferenceEnd.TOP else distance_B_from_bottom
     
     # Create the end cut HalfSpaces
@@ -391,12 +394,14 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         AssertionError: If timbers don't intersect, are parallel, or face normals are invalid
     """
     from code_goes_here.cutcsg import Difference, RectangularPrism, HalfSpace
+    from code_goes_here.rule import safe_dot_product, safe_transform_vector
     
     # Verify that cut_ratio is in valid range [0, 1]
     assert 0 <= cut_ratio <= 1, f"cut_ratio must be in range [0, 1], got {cut_ratio}"
     
     # Verify that the timbers are not parallel (their length directions must differ)
-    dot_product = (timberA.get_length_direction_global().T * timberB.get_length_direction_global())[0, 0]
+    from code_goes_here.rule import safe_dot_product
+    dot_product = safe_dot_product(timberA.get_length_direction_global(), timberB.get_length_direction_global())
     assert abs(abs(dot_product) - 1) > Rational(1, 1000000), \
         "Timbers must not be parallel (their length directions must differ)"
     
@@ -408,17 +413,17 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     p2 = timberB.get_bottom_position_global()
     w = p1 - p2
     
-    a = (d1.T * d1)[0, 0]
-    b = (d1.T * d2)[0, 0]
-    c = (d2.T * d2)[0, 0]
-    d = (d1.T * w)[0, 0]
-    e = (d2.T * w)[0, 0]
+    a = safe_dot_product(d1, d1)
+    b = safe_dot_product(d1, d2)
+    c = safe_dot_product(d2, d2)
+    d = safe_dot_product(d1, w)
+    e = safe_dot_product(d2, w)
     
     denom = a * c - b * b
     
     if abs(denom) < Rational(1, 1000000):
         # Lines are parallel (already checked above)
-        t = -(d1.T * w)[0, 0] / a if a > 0 else 0
+        t = -safe_dot_product(d1, w) / a if a > 0 else 0
         closest_on_1 = p1 + t * d1
         distance = safe_norm(p2 - closest_on_1)
     else:
@@ -457,7 +462,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     # Verify that the face normals oppose each other (point toward each other)
     # For a valid cross lap joint, the normals must strictly oppose (dot product < 0)
     # This ensures the cutting plane can properly separate the two timber volumes
-    normal_dot = (normalA.T * normalB)[0, 0]
+    normal_dot = safe_dot_product(normalA, normalB)
     
     # The faces must be opposing (normals pointing toward each other)
     # Perpendicular faces (dot product = 0) are NOT valid for cross lap joints
@@ -485,7 +490,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     
     # Calculate the offset for the cutting plane
     # offset = normal · point_on_plane
-    cutting_plane_offset = (cutting_plane_normal_normalized.T * cutting_plane_position)[0, 0]
+    cutting_plane_offset = safe_dot_product(cutting_plane_normal_normalized, cutting_plane_position)
     
     # Create cuts for both timbers
     cuts_A = []
@@ -498,8 +503,8 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     
     if safe_compare(cut_ratio, Comparison.GT):  # Only cut timberA if cut_ratio > 0
         # Transform timberB prism to timberA's local coordinates
-        relative_orientation_B_in_A = Orientation(timberA.orientation.matrix.T * timberB.orientation.matrix)
-        timberB_origin_in_A_local = timberA.orientation.matrix.T * (timberB.get_bottom_position_global() - timberA.get_bottom_position_global())
+        relative_orientation_B_in_A = Orientation(safe_transform_vector(timberA.orientation.matrix.T, timberB.orientation.matrix))
+        timberB_origin_in_A_local = safe_transform_vector(timberA.orientation.matrix.T, timberB.get_bottom_position_global() - timberA.get_bottom_position_global())
         
         # Create timberB prism in timberA's local coordinates (infinite extent)
         transform_B_in_A = Transform(position=timberB_origin_in_A_local, orientation=relative_orientation_B_in_A)
@@ -511,9 +516,9 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         )
         
         # Transform cutting plane to timberA's local coordinates
-        cutting_plane_normal_in_A = timberA.orientation.matrix.T * cutting_plane_normal_normalized
-        cutting_plane_position_in_A = timberA.orientation.matrix.T * (cutting_plane_position - timberA.get_bottom_position_global())
-        cutting_plane_offset_in_A = (cutting_plane_normal_in_A.T * cutting_plane_position_in_A)[0, 0]
+        cutting_plane_normal_in_A = safe_transform_vector(timberA.orientation.matrix.T, cutting_plane_normal_normalized)
+        cutting_plane_position_in_A = safe_transform_vector(timberA.orientation.matrix.T, cutting_plane_position - timberA.get_bottom_position_global())
+        cutting_plane_offset_in_A = safe_dot_product(cutting_plane_normal_in_A, cutting_plane_position_in_A)
         
         # Create HalfSpace that keeps the region on the positive side of the plane
         # (toward timberB from the cutting plane)
@@ -574,8 +579,8 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     # TimberB: Cut by (timberA prism) intersected with (region on the timberA side of cutting plane)
     if cut_ratio < 1:  # Only cut timberB if cut_ratio < 1
         # Transform timberA prism to timberB's local coordinates
-        relative_orientation_A_in_B = Orientation(timberB.orientation.matrix.T * timberA.orientation.matrix)
-        timberA_origin_in_B_local = timberB.orientation.matrix.T * (timberA.get_bottom_position_global() - timberB.get_bottom_position_global())
+        relative_orientation_A_in_B = Orientation(safe_transform_vector(timberB.orientation.matrix.T, timberA.orientation.matrix))
+        timberA_origin_in_B_local = safe_transform_vector(timberB.orientation.matrix.T, timberA.get_bottom_position_global() - timberB.get_bottom_position_global())
         
         # Create timberA prism in timberB's local coordinates (infinite extent)
         transform_A_in_B = Transform(position=timberA_origin_in_B_local, orientation=relative_orientation_A_in_B)
@@ -587,9 +592,9 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
         )
         
         # Transform cutting plane to timberB's local coordinates
-        cutting_plane_normal_in_B = timberB.orientation.matrix.T * cutting_plane_normal_normalized
-        cutting_plane_position_in_B = timberB.orientation.matrix.T * (cutting_plane_position - timberB.get_bottom_position_global())
-        cutting_plane_offset_in_B = (cutting_plane_normal_in_B.T * cutting_plane_position_in_B)[0, 0]
+        cutting_plane_normal_in_B = safe_transform_vector(timberB.orientation.matrix.T, cutting_plane_normal_normalized)
+        cutting_plane_position_in_B = safe_transform_vector(timberB.orientation.matrix.T, cutting_plane_position - timberB.get_bottom_position_global())
+        cutting_plane_offset_in_B = safe_dot_product(cutting_plane_normal_in_B, cutting_plane_position_in_B)
         
         # For timberB, we want to subtract the region on the negative side (timberA side) of the plane
         # So we use the inverse half plane (keeps normal·P <= offset, the negative side)
@@ -749,7 +754,8 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     from code_goes_here.cutcsg import Difference, RectangularPrism
     
     # Verify that the timbers are not parallel (their length directions must differ)
-    dot_product = (housing_timber.get_length_direction_global().T * housed_timber.get_length_direction_global())[0, 0]
+    from code_goes_here.rule import safe_dot_product
+    dot_product = safe_dot_product(housing_timber.get_length_direction_global(), housed_timber.get_length_direction_global())
     assert abs(abs(dot_product) - 1) > Rational(1, 1000000), \
         "Timbers must not be parallel (their length directions must differ)"
     
@@ -775,11 +781,11 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     
     # Calculate closest points between two lines in 3D
     # See: http://paulbourke.net/geometry/pointlineplane/
-    a = (d1.T * d1)[0, 0]
-    b = (d1.T * d2)[0, 0]
-    c = (d2.T * d2)[0, 0]
-    d = (d1.T * w)[0, 0]
-    e = (d2.T * w)[0, 0]
+    a = safe_dot_product(d1, d1)
+    b = safe_dot_product(d1, d2)
+    c = safe_dot_product(d2, d2)
+    d = safe_dot_product(d1, w)
+    e = safe_dot_product(d2, w)
     
     denom = a * c - b * b
     
@@ -788,7 +794,7 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     if abs(denom) < Rational(1, 1000000):
         # Lines are parallel, use simple distance check
         # Project p2 onto the line defined by p1 and d1
-        t = -(d1.T * w)[0, 0] / a if a > Integer(0) else Integer(0)
+        t = -safe_dot_product(d1, w) / a if a > Integer(0) else Integer(0)
         closest_on_1 = p1 + t * d1
         distance = safe_norm(p2 - closest_on_1)
     else:
@@ -813,10 +819,11 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     
     # Calculate the relative transformation
     # housed_prism in housing_timber's local frame = housing_orientation^T * housed_orientation
-    relative_orientation = Orientation(housing_timber.orientation.matrix.T * housed_timber.orientation.matrix)
+    from code_goes_here.rule import safe_transform_vector
+    relative_orientation = Orientation(safe_transform_vector(housing_timber.orientation.matrix.T, housed_timber.orientation.matrix))
     
     # Transform the housed timber's position to housing timber's local coordinates
-    housed_origin_local = housing_timber.orientation.matrix.T * (housed_timber.get_bottom_position_global() - housing_timber.get_bottom_position_global())
+    housed_origin_local = safe_transform_vector(housing_timber.orientation.matrix.T, housed_timber.get_bottom_position_global() - housing_timber.get_bottom_position_global())
     
     # Determine start and end distances based on extend_housed_timber_to_infinity
     if extend_housed_timber_to_infinity:
