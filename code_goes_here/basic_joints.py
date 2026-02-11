@@ -116,8 +116,9 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     # so we use +miter_normal. Otherwise, we use -miter_normal.
     
     # For timberA: check if miter_normal points away from or towards the timber
+    from code_goes_here.rule import safe_compare, Comparison
     dot_A = (normA.T * miter_normal)[0, 0]
-    if dot_A > 0:
+    if safe_compare(dot_A, Comparison.GT):
         # Miter normal points away from timberA (in the direction of timberA's end)
         # This is what we want - the half-plane removes material in this direction
         normalA = miter_normal
@@ -133,7 +134,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     
     # For timberB: check if miter_normal points away from or towards the timber
     dot_B = (normB.T * miter_normal)[0, 0]
-    if dot_B > 0:
+    if safe_compare(dot_B, Comparison.GT):
         # Miter normal points away from timberB (in the direction of timberB's end)
         normalB = miter_normal
     else:
@@ -495,7 +496,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     # We want to keep the region on the timberB side (positive normal direction from A)
     # So we use the cutting plane as-is
     
-    if cut_ratio > 0:  # Only cut timberA if cut_ratio > 0
+    if safe_compare(cut_ratio, Comparison.GT):  # Only cut timberA if cut_ratio > 0
         # Transform timberB prism to timberA's local coordinates
         relative_orientation_B_in_A = Orientation(timberA.orientation.matrix.T * timberB.orientation.matrix)
         timberB_origin_in_A_local = timberA.orientation.matrix.T * (timberB.get_bottom_position_global() - timberA.get_bottom_position_global())

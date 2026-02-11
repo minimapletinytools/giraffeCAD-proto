@@ -25,6 +25,7 @@ import sympy as sp
 from sympy import Matrix, cos, sin, pi, Float, Rational, Integer, Abs, S, sympify, Expr
 from typing import Optional, Union
 from dataclasses import dataclass, field
+from enum import Enum
 import warnings
 
 
@@ -219,28 +220,53 @@ def safe_norm(vec: Matrix):
     Compute vector norm with timeout protection and numerical fallback.
     
     For simple expressions: Returns exact symbolic result
-    For complex expressions: Returns numerical approximation
+    For complex expressions: Freeze constants as Floats then lambdify
     """
-    from sympy import sqrt
+    from sympy import sqrt, lambdify, Float, Number
     from fractions import Fraction
+    
+    def freeze_constants(expr, prec=53):
+        """Replace all numeric constants with Float equivalents to avoid slow evaluation"""
+        return expr.xreplace({
+            n: Float(n, prec) for n in expr.atoms(Number)
+        })
+    
+    def compute_numerical():
+        """Compute norm numerically by freezing constants first, then lambdify"""
+        try:
+            norm_squared = 0.0
+            for c in vec:
+                # Get free symbols (should be empty for closed-form expressions)
+                syms = list(c.free_symbols)
+                if syms:
+                    # Has free symbols, can't evaluate numerically
+                    return Integer(1)
+                else:
+                    # Freeze all constants to Float first - this avoids slow symbolic evaluation
+                    c_frozen = freeze_constants(c, prec=15)
+                    # Now lambdify should be fast since all constants are already floats
+                    f = lambdify((), c_frozen, modules=['math'])
+                    val = float(f())
+                norm_squared += val ** 2
+            
+            return sqrt(Rational(norm_squared).limit_denominator(10**9))
+        except Exception:
+            # Fallback: assume unit vector
+            return Integer(1)
     
     # Quick check: if vector contains complex expressions, go straight to numerical
     is_complex = any(is_complex_expr(component) for component in vec)
     
     if is_complex:
-        # Compute norm numerically to avoid freeze
-        norm_squared = sum((float(c.evalf())**2 for c in vec))
-        return sqrt(Rational(norm_squared).limit_denominator(10**9))
+        # For complex expressions, freeze constants then lambdify
+        # This avoids SymPy's slow symbolic evaluation entirely
+        return compute_numerical()
     
-    # Try symbolic norm with timeout
+    # Try symbolic norm with timeout, fall back to numerical if it times out
     def symbolic():
         return vec.norm()
     
-    def numerical():
-        norm_squared = sum((float(c.evalf())**2 for c in vec))
-        return sqrt(Rational(norm_squared).limit_denominator(10**9))
-    
-    return with_timeout_fallback(symbolic, numerical, timeout_seconds=0.1)
+    return with_timeout_fallback(symbolic, compute_numerical, timeout_seconds=0.1)
 
 def safe_det(matrix: Matrix):
     """
@@ -277,6 +303,90 @@ def safe_simplify(expr, timeout_seconds=0.5):
         return expr  # Return original if simplification times out
     
     return with_timeout_fallback(symbolic, numerical, timeout_seconds)
+
+class Comparison(Enum):
+    """Enum for safe comparison operations"""
+    GT = ">"      # Greater than
+    LT = "<"      # Less than
+    GE = ">="     # Greater than or equal
+    LE = "<="     # Less than or equal
+    EQ = "=="     # Equal
+    NE = "!="     # Not equal
+
+def safe_compare(expr, comparison: Comparison):
+    """
+    Safely evaluate a comparison by freezing constants first.
+    
+    Args:
+        expr: SymPy expression to compare against zero
+        comparison: Comparison enum value (e.g., Comparison.GT for > 0)
+    
+    Returns:
+        Boolean result of the comparison with zero
+    """
+    from sympy import Float, Number, lambdify
+    
+    def freeze_constants(e, prec=53):
+        """Replace all numeric constants with Float equivalents"""
+        return e.xreplace({
+            n: Float(n, prec) for n in e.atoms(Number)
+        })
+    
+    def apply_comparison(val: float, comp: Comparison) -> bool:
+        """Apply comparison operation to a float value"""
+        if comp == Comparison.GT:
+            return val > 0
+        elif comp == Comparison.LT:
+            return val < 0
+        elif comp == Comparison.GE:
+            return val >= 0
+        elif comp == Comparison.LE:
+            return val <= 0
+        elif comp == Comparison.EQ:
+            return abs(val) < 1e-10
+        elif comp == Comparison.NE:
+            return abs(val) >= 1e-10
+        else:
+            raise ValueError(f"Unknown comparison: {comp}")
+    
+    # For complex expressions, freeze constants and evaluate numerically
+    if is_complex_expr(expr):
+        try:
+            # Freeze constants first
+            expr_frozen = freeze_constants(expr, prec=15)
+            # Convert to numerical function
+            f = lambdify((), expr_frozen, modules=['math'])
+            val = float(f())
+            return apply_comparison(val, comparison)
+        except Exception:
+            # If anything fails, default to False for safety
+            return False
+    
+    # For simple expressions, use direct comparison
+    try:
+        if comparison == Comparison.GT:
+            return bool(expr > 0)
+        elif comparison == Comparison.LT:
+            return bool(expr < 0)
+        elif comparison == Comparison.GE:
+            return bool(expr >= 0)
+        elif comparison == Comparison.LE:
+            return bool(expr <= 0)
+        elif comparison == Comparison.EQ:
+            return bool(expr == 0)
+        elif comparison == Comparison.NE:
+            return bool(expr != 0)
+        else:
+            raise ValueError(f"Unknown comparison: {comparison}")
+    except:
+        # Fallback to numerical evaluation with freeze_constants
+        try:
+            expr_frozen = freeze_constants(expr, prec=15)
+            f = lambdify((), expr_frozen, modules=['math'])
+            val = float(f())
+            return apply_comparison(val, comparison)
+        except:
+            return False
 
 # ============================================================================
 # Helper Functions for Vector Operations

@@ -154,9 +154,10 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     # Check 1: The joint ends must be pointing in opposite directions (anti-parallel)
     # For a proper splice joint, the specified ends should point towards each other
     # (dot product of end directions should be close to -1)
+    from code_goes_here.rule import safe_compare, Comparison
     end_dot_product = timberA_end_direction.dot(timberB_end_direction)
     
-    if end_dot_product > 0:
+    if safe_compare(end_dot_product, Comparison.GT):
         return (
             f"Joint ends are pointing in the same direction (dot product = {float(end_dot_product):.3f}). "
             f"For a splice joint, the ends should point in opposite directions (dot product should be -1). "
