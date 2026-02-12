@@ -109,17 +109,17 @@ class TimberFace(Enum):
     def get_direction(self) -> Direction3D:
         """Get the direction vector for this face in world coordinates."""
         if self == TimberFace.TOP:
-            return create_v3(0, 0, 1)
+            return create_v3(Integer(0), Integer(0), Integer(1))
         elif self == TimberFace.BOTTOM:
-            return create_v3(0, 0, -1)
+            return create_v3(Integer(0), Integer(0), Integer(-1))
         elif self == TimberFace.RIGHT:
-            return create_v3(1, 0, 0)
+            return create_v3(Integer(1), Integer(0), Integer(0))
         elif self == TimberFace.LEFT:
-            return create_v3(-1, 0, 0)
+            return create_v3(Integer(-1), Integer(0), Integer(0))
         elif self == TimberFace.FRONT:
-            return create_v3(0, 1, 0)
+            return create_v3(Integer(0), Integer(1), Integer(0))
         else:  # BACK
-            return create_v3(0, -1, 0)
+            return create_v3(Integer(0), Integer(-1), Integer(0))
     
     def is_perpendicular(self, other: 'TimberFace') -> bool:
         """
@@ -284,9 +284,9 @@ def compute_timber_orientation(length_direction: Direction3D, width_direction: D
         # Choose an arbitrary orthogonal direction
         # Find a vector that's not parallel to length_norm
         if Abs(length_norm[0]) < Rational(9, 10):  # Threshold comparison
-            temp_vector = create_v3(1, 0, 0)
+            temp_vector = create_v3(Integer(1), Integer(0), Integer(0))
         else:
-            temp_vector = create_v3(0, 1, 0)
+            temp_vector = create_v3(Integer(0), Integer(1), Integer(0))
         
         # Project and orthogonalize
         projection = length_norm * (temp_vector.dot(length_norm))
@@ -501,8 +501,7 @@ class PerfectTimberWithin(ABC):
         boundary_idx, boundary_side, distance = footprint.nearest_boundary_from_line(bottom_2d, top_2d)
         
         # Get the inward normal of that boundary
-        inward_x, inward_y, inward_z = footprint.get_inward_normal(boundary_idx)
-        inward_normal = create_v3(inward_x, inward_y, inward_z)
+        inward_normal = footprint.get_inward_normal(boundary_idx)
         
         # Find which face of the timber aligns with the inward direction
         return self.get_closest_oriented_face_from_global_direction(inward_normal)
@@ -535,8 +534,7 @@ class PerfectTimberWithin(ABC):
         boundary_idx, boundary_side, distance = footprint.nearest_boundary_from_line(bottom_2d, top_2d)
         
         # Get the inward normal of that boundary
-        inward_x, inward_y, inward_z = footprint.get_inward_normal(boundary_idx)
-        inward_normal = create_v3(inward_x, inward_y, inward_z)
+        inward_normal = footprint.get_inward_normal(boundary_idx)
         
         # Find which face of the timber aligns with the outward direction (negative of inward)
         outward_normal = -inward_normal
@@ -684,7 +682,7 @@ class Timber(PerfectTimberWithin):
         - transform: Position and orientation
         - name: Optional name
     """
-    nominal_size: Optional[V2] = None  # Optional nominal size different from PTW size
+    nominal_size_override: Optional[V2] = None  # Optional nominal size different from PTW size
     
     def nominal_size(self) -> V2:
         """
@@ -695,8 +693,8 @@ class Timber(PerfectTimberWithin):
         Returns:
             V2 with (width, height)
         """
-        if self.nominal_size is not None:
-            return self.nominal_size
+        if self.nominal_size_override is not None:
+            return self.nominal_size_override
         return self.size
     
     def get_actual_csg_local(self) -> CutCSG:
@@ -777,7 +775,7 @@ class RoundTimber(PerfectTimberWithin):
     Round timbers have a circular cross-section centered on the centerline. The nominal bounding box
     is a square that contains the circle, but the actual geometry is a cylinder.
     """
-    diameter: Numeric  # Diameter of the circular cross-section (required, but has default for dataclass ordering)
+    diameter: Numeric = field(kw_only=True)  # Diameter of the circular cross-section
     
     def nominal_size(self) -> V2:
         """
@@ -802,8 +800,8 @@ class RoundTimber(PerfectTimberWithin):
         from .cutcsg import Cylinder
         return Cylinder(
             radius=self.diameter / Integer(2),
-            axis_direction=create_v3(0, 0, 1),  # Local Z-axis
-            position=create_v3(0, 0, 0),  # Origin in local coords
+            axis_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Local Z-axis
+            position=create_v3(Integer(0), Integer(0), Integer(0)),  # Origin in local coords
             start_distance=Integer(0),
             end_distance=self.length
         )
@@ -824,8 +822,8 @@ class RoundTimber(PerfectTimberWithin):
         from .cutcsg import Cylinder
         return Cylinder(
             radius=self.diameter / Integer(2),
-            axis_direction=create_v3(0, 0, 1),  # Local Z-axis
-            position=create_v3(0, 0, 0),  # Origin in local coords
+            axis_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Local Z-axis
+            position=create_v3(Integer(0), Integer(0), Integer(0)),  # Origin in local coords
             start_distance=None if extend_bot else Integer(0),
             end_distance=None if extend_top else self.length
         )
@@ -878,7 +876,7 @@ class PolygonExtrusionTimber(PerfectTimberWithin):
     The polygon is inscribed in a circle with radius equal to half the minimum dimension
     of the nominal bounding box.
     """
-    num_sides: int  # Number of sides for the regular polygon (e.g., 6 for hexagon) (required, but has default for dataclass ordering)
+    num_sides: int = field(kw_only=True)  # Number of sides for the regular polygon (e.g., 6 for hexagon)
     
     def _compute_polygon_vertices(self) -> List[V2]:
         """
@@ -1011,7 +1009,7 @@ class Cutting:
         if len(csg_components) == 0:
             # No cuts at all - this shouldn't happen but handle gracefully
             # Return a HalfSpace that contains nothing (impossible condition)
-            return HalfSpace(normal=create_v3(0, 0, 1), offset=Rational(-999999))
+            return HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(1)), offset=Rational(-999999))
         elif len(csg_components) == 1:
             return csg_components[0]
         else:
@@ -1032,9 +1030,9 @@ class Cutting:
             HalfSpace representing the end cut in local coordinates
         """
         if end == TimberReferenceEnd.TOP:
-            return HalfSpace(normal=create_v3(0, 0, 1), offset=timber.length - distance_from_end_to_cut)
+            return HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(1)), offset=timber.length - distance_from_end_to_cut)
         else:
-            return HalfSpace(normal=create_v3(0, 0, -1), offset=-distance_from_end_to_cut)
+            return HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(-1)), offset=-distance_from_end_to_cut)
 
 
 def _create_extended_rectangular_prism(
@@ -1507,9 +1505,9 @@ class Peg(JointAccessory):
             # Round peg - use Cylinder
             radius = self.size / 2
             return Cylinder(
-                axis_direction=create_v3(0, 0, 1),
+                axis_direction=create_v3(Integer(0), Integer(0), Integer(1)),
                 radius=radius,
-                position=create_v3(0, 0, 0),
+                position=create_v3(Integer(0), Integer(0), Integer(0)),
                 start_distance=-self.stickout_length,
                 end_distance=self.forward_length
             )
@@ -1588,13 +1586,13 @@ class Wedge(JointAccessory):
         # For RectangularPrism, position is the center of the cross-section at the reference point
         # The cross-section is centered in XY, so position should be at the center
         wedge_transform = Transform(
-            position=create_v3(0, self.height / Rational(2), 0),
+            position=create_v3(Integer(0), self.height / Rational(2), Integer(0)),
             orientation=Orientation.identity()
         )
         return RectangularPrism(
             size=create_v2(self.base_width, self.height),
             transform=wedge_transform,
-            start_distance=0,
+            start_distance=Integer(0),
             end_distance=self.length
         )
 
@@ -1669,7 +1667,7 @@ class Frame:
         
         # Check for name conflicts
         # Build a mapping from name to list of timber references
-        name_to_timber_refs: Dict[str, List[Timber]] = {}
+        name_to_timber_refs: Dict[str, List[PerfectTimberWithin]] = {}
         for timber_id, cut_timber_list in timber_ref_to_cut_timbers.items():
             timber = cut_timber_list[0].timber  # Get timber from first CutTimber
             timber_name = timber.name
@@ -1844,7 +1842,7 @@ class Frame:
         for accessory in self.accessories:
             self._check_accessory_no_floats(accessory)
     
-    def _check_timber_no_floats(self, timber: Timber):
+    def _check_timber_no_floats(self, timber: PerfectTimberWithin):
         """Check a single timber for float values."""
         self._check_numeric_value(timber.length, f"Timber '{timber.name}' length")
         self._check_vector(timber.size, f"Timber '{timber.name}' size")

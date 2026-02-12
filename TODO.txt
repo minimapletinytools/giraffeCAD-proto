@@ -199,11 +199,9 @@ TimberLike = Union[Timber, MeshTimber, RoundTimber PolyExtrusinoTimber, CSGTimeb
 
 :: TODO
 
+DONE-do the timber class refactor
 
--do the timber class refactor
 -fix all type checking errors
-
-
 -3 major features
   DONE-measure functions
   -refactor timber class to support multiple timber types

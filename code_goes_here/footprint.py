@@ -10,7 +10,7 @@ from .rule import *
 
 
 def _segment_to_segment_distance(seg1_start: V2, seg1_end: V2, 
-                                 seg2_start: V2, seg2_end: V2) -> float:
+                                 seg2_start: V2, seg2_end: V2) -> Numeric:
     """
     Calculate the minimum distance between two line segments in 2D.
     
@@ -58,7 +58,7 @@ def _segment_to_segment_distance(seg1_start: V2, seg1_end: V2,
     
     if (ccw(p1x, p1y, p3x, p3y, p4x, p4y) != ccw(p2x, p2y, p3x, p3y, p4x, p4y) and
         ccw(p1x, p1y, p2x, p2y, p3x, p3y) != ccw(p1x, p1y, p2x, p2y, p4x, p4y)):
-        return 0.0
+        return Integer(0)
     
     # Segments don't intersect, find minimum distance among endpoints
     distances = [
@@ -214,7 +214,7 @@ class Footprint:
         
         return nearest_idx, self.corners[nearest_idx]
     
-    def nearest_boundary(self, point: V2) -> Tuple[int, Tuple[V2, V2], float]:
+    def nearest_boundary(self, point: V2) -> Tuple[int, Tuple[V2, V2], Numeric]:
         """
         Find the nearest side (line segment) to a given point.
         
@@ -231,7 +231,7 @@ class Footprint:
             raise ValueError("Footprint must have at least 2 corners")
         
         sides = self.sides()
-        min_distance = float('inf')
+        min_distance = None
         nearest_idx = 0
         
         px, py = point[0], point[1]
@@ -259,13 +259,14 @@ class Footprint:
                 # Distance to closest point
                 distance = ((px - closest_x) ** 2 + (py - closest_y) ** 2) ** 0.5
             
-            if distance < min_distance:
+            if min_distance is None or distance < min_distance:
                 min_distance = distance
                 nearest_idx = i
         
+        assert min_distance is not None, "min_distance should not be None after iterating through sides"
         return nearest_idx, sides[nearest_idx], min_distance
     
-    def get_inward_normal(self, side_index: int) -> Tuple[float, float, float]:
+    def get_inward_normal(self, side_index: int) -> Direction3D:
         """
         Get the inward-pointing normal vector for a boundary side.
         
@@ -276,7 +277,7 @@ class Footprint:
             side_index: Index of the boundary side
             
         Returns:
-            Tuple of (x, y, z) representing the normalized 3D inward normal vector
+            Direction3D representing the normalized 3D inward normal vector
         """
         if side_index < 0 or side_index >= len(self.corners):
             raise ValueError(f"Invalid side_index: {side_index}")
@@ -319,12 +320,12 @@ class Footprint:
         # Check if test point is inside
         if self.contains_point(test_point):
             # Left perpendicular points inward
-            return (left_perp_x, left_perp_y, 0.0)
+            return create_v3(left_perp_x, left_perp_y, Integer(0))
         else:
             # Right perpendicular points inward
-            return (dy, -dx, 0.0)
+            return create_v3(dy, -dx, Integer(0))
     
-    def nearest_boundary_from_line(self, line_start: V2, line_end: V2) -> Tuple[int, Tuple[V2, V2], float]:
+    def nearest_boundary_from_line(self, line_start: V2, line_end: V2) -> Tuple[int, Tuple[V2, V2], Numeric]:
         """
         Find the nearest boundary side to a given line segment.
         
@@ -342,16 +343,17 @@ class Footprint:
             raise ValueError("Footprint must have at least 2 corners")
         
         sides = self.sides()
-        min_distance = float('inf')
+        min_distance = None
         nearest_idx = 0
         
         for i, (start, end) in enumerate(sides):
             distance = _segment_to_segment_distance(line_start, line_end, start, end)
             
-            if distance < min_distance:
+            if min_distance is None or distance < min_distance:
                 min_distance = distance
                 nearest_idx = i
         
+        assert min_distance is not None, "min_distance should not be None after iterating through sides"
         return nearest_idx, sides[nearest_idx], min_distance
 
 

@@ -416,8 +416,7 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
         length = sqrt(dx**2 + dy**2)
     
     # Get the inward normal from the footprint
-    inward_x, inward_y, inward_z = footprint.get_inward_normal(corner_index)
-    inward_normal = create_v3(inward_x, inward_y, inward_z)
+    inward_normal = footprint.get_inward_normal(corner_index)
     
     # Face direction is up (Z+)
     width_direction = create_v3(Integer(0), Integer(0), Integer(1))
@@ -431,7 +430,7 @@ def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: in
     
     # Calculate bottom position based on location type
     # Start at the start_point on the boundary side - keep exact
-    bottom_position = create_v3(start_point[0], start_point[1], 0)
+    bottom_position = create_v3(start_point[0], start_point[1], Integer(0))
     
     # Apply offset based on location type
     if location_type == FootprintLocation.INSIDE:
@@ -721,7 +720,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
     location_on_timber2 = to_pos1.dot(timber2.get_length_direction_global()) / timber2.get_length_direction_global().dot(timber2.get_length_direction_global())
     
     # Clamp location_on_timber2 to be within the timber's length
-    location_on_timber2 = max(0, min(timber2.length, location_on_timber2))
+    location_on_timber2 = max(Integer(0), min(timber2.length, location_on_timber2))
     
     # Calculate position on timber2 to determine joining direction
     pos2 = measure_position_on_centerline_from_bottom(timber2, location_on_timber2).position
@@ -870,7 +869,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
     # Recalculate location_on_timber2 and pos2 based on adjusted pos1
     to_pos1 = pos1 - timber2.get_bottom_position_global()
     location_on_timber2 = to_pos1.dot(timber2.get_length_direction_global()) / timber2.get_length_direction_global().dot(timber2.get_length_direction_global())
-    location_on_timber2 = max(0, min(timber2.length, location_on_timber2))
+    location_on_timber2 = max(Integer(0), min(timber2.length, location_on_timber2))
     pos2 = measure_position_on_centerline_from_bottom(timber2, location_on_timber2).position
     joining_direction = normalize_vector(pos2 - pos1)
     

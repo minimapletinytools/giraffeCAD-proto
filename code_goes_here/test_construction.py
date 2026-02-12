@@ -297,7 +297,7 @@ class TestTimberCreation:
         )
         # Timber should extend outward (in -Y direction)
         # Bottom position Y should be half timber height (perpendicular dimension) outside the footprint
-        # Note: get_inward_normal returns floats, so the result is Float
+        # Note: get_inward_normal returns Direction3D with exact Numeric types
         assert timber_outside.get_bottom_position_global()[1] == -timber_height / Rational(2)
         assert timber_outside.get_bottom_position_global()[0] == 0  # X unchanged
         assert timber_outside.get_bottom_position_global()[2] == 0  # Z at ground

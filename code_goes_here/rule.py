@@ -436,7 +436,7 @@ def safe_dot_product(vec1: Matrix, vec2: Matrix):
         return result
     
     # For simple expressions, use standard approach but still compute manually
-    result = sum(v1 * v2 for v1, v2 in zip(vec1, vec2))
+    result = sum(v1 * v2 for v1, v2 in zip(vec1, vec2))  # type: ignore[arg-type]  # SymPy matrices are iterable
     return result
 
 
