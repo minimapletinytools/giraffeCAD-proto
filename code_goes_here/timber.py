@@ -8,7 +8,7 @@ from .rule import *
 from .footprint import *
 from .cutcsg import *
 from enum import Enum
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict, Literal
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict, Literal, final
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
@@ -638,7 +638,25 @@ class PerfectTimberWithin(ABC):
         return self.get_perfect_timber_within_CSG_local()
 
     def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
-        pass
+        """
+        Returns the actual CSG geometry extended to infinity at specified ends.
+        
+        For the base PerfectTimberWithin class, this returns a rectangular prism
+        using the perfect timber within size, optionally extended to infinity.
+        
+        Args:
+            extend_bot: If True, extend to -infinity at bottom (z=0)
+            extend_top: If True, extend to +infinity at top (z=length)
+            
+        Returns:
+            CutCSG representing the extended geometry in local coordinates
+        """
+        return _create_extended_rectangular_prism(
+            size=self.perfect_size(),
+            length=self.length,
+            extend_bot=extend_bot,
+            extend_top=extend_top
+        )
     
     def is_perfect_timber(self) -> bool:
         """
@@ -666,7 +684,27 @@ class Timber(PerfectTimberWithin):
         - name: Optional name
     """
     # TODO add optional nominal size parameter and override get_nominal_bounding_box_csg_local_local
-    pass  # Inherits everything from PerfectTimberWithin
+    
+    def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
+        """
+        Returns the actual CSG geometry extended to infinity at specified ends.
+        
+        For Timber, this returns a rectangular prism using the nominal size
+        (which equals the perfect timber within size for perfect timbers).
+        
+        Args:
+            extend_bot: If True, extend to -infinity at bottom (z=0)
+            extend_top: If True, extend to +infinity at top (z=length)
+            
+        Returns:
+            CutCSG representing the extended geometry in local coordinates
+        """
+        return _create_extended_rectangular_prism(
+            size=self.nominal_size(),
+            length=self.length,
+            extend_bot=extend_bot,
+            extend_top=extend_top
+        )
 
 
 @dataclass(frozen=True)
@@ -676,7 +714,28 @@ class Board(PerfectTimberWithin):
     Boards are structurally identical to perfect timbers but semantically different.
     They tend to be big in size and stubby in lengeth.
     """
-    pass  # TODO: Add board-specific validation and methods
+    
+    def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
+        """
+        Returns the actual CSG geometry extended to infinity at specified ends.
+        
+        For Board, this returns a rectangular prism using the perfect timber within size.
+        
+        Args:
+            extend_bot: If True, extend to -infinity at bottom (z=0)
+            extend_top: If True, extend to +infinity at top (z=length)
+            
+        Returns:
+            CutCSG representing the extended geometry in local coordinates
+        """
+        return _create_extended_rectangular_prism(
+            size=self.perfect_size(),
+            length=self.length,
+            extend_bot=extend_bot,
+            extend_top=extend_top
+        )
+    
+    # TODO: Add board-specific validation and methods
 
 
 # TODO consider renaming to FancyTimber
@@ -691,6 +750,27 @@ class MeshTimber(PerfectTimberWithin):
     """
     def can_be_extended_for_joints(self) -> bool:
         return False
+    
+    def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
+        """
+        Returns the actual CSG geometry extended to infinity at specified ends.
+        
+        For MeshTimber, this returns a rectangular prism using the perfect timber within size
+        (the bounding box). Note: MeshTimber cannot be extended for joints.
+        
+        Args:
+            extend_bot: If True, extend to -infinity at bottom (z=0)
+            extend_top: If True, extend to +infinity at top (z=length)
+            
+        Returns:
+            CutCSG representing the extended geometry in local coordinates
+        """
+        return _create_extended_rectangular_prism(
+            size=self.perfect_size(),
+            length=self.length,
+            extend_bot=extend_bot,
+            extend_top=extend_top
+        )
 
     # TODO: Add mesh_csg field and override get_actual_csg_local()
 
@@ -704,6 +784,7 @@ class RoundTimber(PerfectTimberWithin):
     is a square that contains the circle, but the actual geometry is a cylinder.
     
     TODO: Add diameter field, update size property, override get_actual_csg_local() to return Cylinder
+    TODO: Override get_extended_actual_csg_local() to return Cylinder with appropriate radius once diameter field is added
     """
     pass  # TODO: Add diameter field, update size property, override get_actual_csg_local()
 
@@ -716,6 +797,7 @@ class PolylineExtrusionTimber(PerfectTimberWithin):
     extruded along the length axis. Examples include hexagonal or octagonal timbers.
     
     TODO: Add polygon data, override get_actual_csg_local() to return ConvexPolygonExtrusion
+    TODO: Override get_extended_actual_csg_local() to return ConvexPolygonExtrusion once polygon data is added
     """
     pass  # TODO: Add polygon data, override get_actual_csg_local()
 
@@ -727,6 +809,9 @@ class PolygonExtrusionTimber(PolylineExtrusionTimber):
     extruded along the length axis. Examples include hexagonal or octagonal timbers.
     
     Same as PolylineExtrusionTimber but with a regular polygon cross-section and adds some methods for referencing its faces.
+    
+    TODO: Add polygon data, override get_actual_csg_local()
+    TODO: Override get_extended_actual_csg_local() to return ConvexPolygonExtrusion once polygon data is added
     """
     pass  # TODO: Add polygon data, override get_actual_csg_local()
 
@@ -740,6 +825,7 @@ class PolyExtrusionTimber(PerfectTimberWithin):
     is rectangular, but the actual geometry is a convex polygon extrusion.
     
     TODO: Add polygon_points field, override get_actual_csg_local()
+    TODO: Override get_extended_actual_csg_local() to return ConvexPolygonExtrusion once polygon_points field is added
     """
     pass  # TODO: Add polygon_points field, override get_actual_csg_local()
 
@@ -752,10 +838,12 @@ class CSGTimber(PerfectTimberWithin):
     Useful for complex shapes that don't fit other categories.
     
     TODO: Add csg field, override get_actual_csg_local()
+    TODO: Override get_extended_actual_csg_local() to extend the arbitrary CSG geometry once csg field is added
     """
     def can_be_extended_for_joints(self) -> bool:
         return False
-    pass  # TODO: Add csg field, override get_actual_csg_local()
+    
+    # TODO: Add csg field, override get_actual_csg_local()
 
 
 # Type alias for all timber-like objects (excludes Board)
@@ -841,10 +929,36 @@ class Cutting:
             return HalfSpace(normal=create_v3(0, 0, -1), offset=-distance_from_end_to_cut)
 
 
+def _create_extended_rectangular_prism(
+    size: V2,
+    length: Numeric,
+    extend_bot: bool,
+    extend_top: bool
+) -> 'RectangularPrism':
+    """
+    Helper to create an extended rectangular prism in local coordinates.
+    
+    Args:
+        size: Cross-sectional size (width, height)
+        length: Length of the prism
+        extend_bot: If True, extend to -infinity at bottom
+        extend_top: If True, extend to +infinity at top
+        
+    Returns:
+        RectangularPrism in local coordinates
+    """
+    from .cutcsg import RectangularPrism
+    return RectangularPrism(
+        size=size,
+        transform=Transform.identity(),
+        start_distance=None if extend_bot else Integer(0),
+        end_distance=None if extend_top else length
+    )
+
+
 def _create_timber_prism_csg_local(
     timber: PerfectTimberWithin, 
-    cuts: list,
-    extend_using: Literal["ptw", "nominal"] = "ptw"
+    cuts: list
 ) -> CutCSG:
     """
     Helper function to create a prism CSG for a timber in LOCAL coordinates, 
@@ -857,15 +971,10 @@ def _create_timber_prism_csg_local(
     Args:
         timber: The timber to create a prism for
         cuts: List of cuts on this timber (used to determine if ends should be infinite)
-        extend_using: Which dimensions to use for the prism cross-section:
-            - "ptw": Use perfect timber within dimensions (timber.size)
-            - "nominal": Use nominal bounding box dimensions (for future use with Board, etc.)
         
     Returns:
-        RectangularPrism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
+        CutCSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
     """
-    from .cutcsg import RectangularPrism
-    
     # Check if bottom end has cuts
     has_bottom_cut = any(
         cut.maybe_bottom_end_cut is not None
@@ -878,35 +987,54 @@ def _create_timber_prism_csg_local(
         for cut in cuts
     )
     
-    # In local coordinates:
-    # - bottom is at 0
-    # - top is at timber.length
-    # - if an end has cuts, extend to infinity in that direction
+    # Check if timber can be extended for joints
+    if (has_bottom_cut or has_top_cut) and not timber.can_be_extended_for_joints():
+        assert False, f"Cannot extend {type(timber).__name__} for joints - timber does not support extension"
     
-    start_distance = None if has_bottom_cut else 0
-    end_distance = None if has_top_cut else timber.length
+    # Note: did_end_cuts_extend_timber() can be called separately to check if cuts extend beyond bounds
+    # For splice joints and similar, cuts extending beyond is expected and valid behavior
     
-    # Determine which size to use based on extend_using parameter
-    if extend_using == "ptw":
-        # Use perfect timber within dimensions
-        prism_size = timber.perfect_size()
-    elif extend_using == "nominal":
-        # Use nominal bounding box dimensions
-        # For now, this is the same as PTW size, but in the future
-        # Board/StickTimber may have a separate nominal_size attribute
-        prism_size = timber.nominal_size()
-    else:
-        raise ValueError(f"Invalid extend_using value: {extend_using}. Must be 'ptw' or 'nominal'.")
+    # Use polymorphic method to get extended CSG
+    return timber.get_extended_actual_csg_local(extend_bot=has_bottom_cut, extend_top=has_top_cut)
+
+
+def did_end_cuts_extend_timber(timber: PerfectTimberWithin, cuts: List['Cutting']) -> bool:
+    """
+    Check if any end cuts extend beyond the timber's original bounds.
     
-    # Create a prism representing the timber in local coordinates
-    # The prism needs to use the timber's orientation to properly represent
-    # timbers in any direction (horizontal, vertical, diagonal, etc.)
-    return RectangularPrism(
-        size=prism_size,
-        transform=Transform.identity(),
-        start_distance=start_distance,
-        end_distance=end_distance
-    )
+    An end cut extends beyond if:
+    - Top cut: The cutting plane is at z > timber.length (cuts beyond the top)
+    - Bottom cut: The cutting plane is at z < 0 (cuts beyond the bottom)
+    
+    In local coordinates, HalfSpace end cuts are defined with:
+    - Top cuts: normal pointing up (+Z), offset at the cut location
+    - Bottom cuts: normal pointing down (-Z), offset at the cut location (negative value)
+    
+    Args:
+        timber: The timber being cut
+        cuts: List of cuts on the timber
+        
+    Returns:
+        True if any end cut extends beyond the timber's original length
+    """
+    from code_goes_here.rule import safe_compare, Comparison
+    
+    for cut in cuts:
+        # Check top end cut
+        if cut.maybe_top_end_cut is not None:
+            # For top cuts, normal is (0,0,1) and offset is the z-position of the cut
+            # If offset > timber.length, the cut extends beyond the top
+            if safe_compare(cut.maybe_top_end_cut.offset - timber.length, Comparison.GT):
+                return True
+        
+        # Check bottom end cut
+        if cut.maybe_bottom_end_cut is not None:
+            # For bottom cuts, normal is (0,0,-1) and offset is negative
+            # If offset > 0, the cut extends beyond the bottom (into negative z)
+            if safe_compare(cut.maybe_bottom_end_cut.offset, Comparison.GT):
+                return True
+    
+    return False
 
 
 class CutTimber:
