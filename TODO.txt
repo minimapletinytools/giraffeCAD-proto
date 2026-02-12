@@ -200,11 +200,12 @@ TimberLike = Union[Timber, MeshTimber, RoundTimber PolyExtrusinoTimber, CSGTimeb
 :: TODO
 
 DONE-do the timber class refactor
-
--fix all type checking errors
+DONE-fix all type checking errors
+-fix type checking errors again lol, and fix for all folders this time...
+  -need to decide if you accept ints/floats
 -3 major features
   DONE-measure functions
-  -refactor timber class to support multiple timber types
+  DONE-refactor timber class to support multiple timber types
   -add timber metadata
     -prepare for CSG metadata as well...
 

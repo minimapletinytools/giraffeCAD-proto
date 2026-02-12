@@ -1503,7 +1503,7 @@ class Peg(JointAccessory):
             )
         else:  # PegShape.ROUND
             # Round peg - use Cylinder
-            radius = self.size / 2
+            radius = self.size / Integer(2)
             return Cylinder(
                 axis_direction=create_v3(Integer(0), Integer(0), Integer(1)),
                 radius=radius,

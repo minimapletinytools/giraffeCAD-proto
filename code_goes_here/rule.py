@@ -39,8 +39,10 @@ V2 = Matrix  # 2D vector - 2x1 Matrix
 V3 = Matrix  # 3D vector - 3x1 Matrix  
 Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
 
-# note Float/Integer are Expr as well, but including them here helps ty properly typecheck the implicit ctor from numeric literals
-Numeric = Union[Expr, Integer, Float] 
+
+# python floats must be explicitly converted to Expr using Rational or Float
+# but python ints are allowed for conevience.... RIP
+Numeric = Union[Expr, int] 
 
 
 # ============================================================================
