@@ -8,7 +8,7 @@ from .rule import *
 from .footprint import *
 from .cutcsg import *
 from enum import Enum
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict, Literal
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
@@ -575,25 +575,31 @@ class PerfectTimberWithin(ABC):
         local_point_projected = local_point - local_point_face_component
         return self.transform.local_to_global(local_point_projected)
     
-    # TODO just have this return a RectangularPrism since it has al the exact same info as a BoundingBox
-    # TODO rename to get_nominal_bounding_box_local
-    def get_nominal_bounding_box(self) -> 'BoundingBox':
+    @final
+    def perfect_size(self) -> V2:
         """
-        Returns the nominal bounding box for this timber.
+        Returns the perfect cross sectional size of the timber.
         
-        The nominal bounding box is the smallest rectangular prism that contains
-        the timber's actual geometry. For perfect rectangular timbers, this equals
-        the actual geometry.
+        The perfect size is the cross sectional size of the perfect timber within.
+        """
+        return self.size
+    
+    
+    def nominal_size(self) -> V2:
+        """
+        Returns the nominal cross sectional size of the timber.
+        
+        The nominal size as understood by this program is the smallest cross sectional size of the timber (always centered on the centerline) such that all of the timber's actual geometry fits within it. For perfect timbers, this equals the actual geometry.
+         
+        TODO should we allow it not be centered on the centerline?
         
         Returns:
-            BoundingBox object representing the nominal bounding box
+            V2 representing the nominal cross sectional size of the timber
+            
         """
-        # TODO: Implement BoundingBox class if it doesn't exist yet
-        # For now, return the size and length as the bounding box dimensions
-        raise NotImplementedError("BoundingBox class not yet implemented")
+        return self.size
     
-    # TODO rename to  get_perfect_timber_within_CSG_local
-    def get_perfect_timber_within_CSG(self) -> RectangularPrism:
+    def get_perfect_timber_within_CSG_local(self) -> RectangularPrism:
         """
         Returns the perfect rectangular prism CSG in local coordinates.
         
@@ -610,8 +616,7 @@ class PerfectTimberWithin(ABC):
             end_distance=self.length
         )
     
-    # TODO rename to get_actual_csg_local
-    def get_actual_csg(self) -> CutCSG:
+    def get_actual_csg_local(self) -> CutCSG:
         """
         Returns the actual CSG geometry for this timber.
         
@@ -621,24 +626,16 @@ class PerfectTimberWithin(ABC):
         Returns:
             CutCSG representing the actual geometry in local coordinates
         """
-        return self.get_perfect_timber_within_CSG()
+        return self.get_perfect_timber_within_CSG_local()
     
     def is_perfect_timber(self) -> bool:
         """
         Check if this timber's actual geometry matches its nominal bounding box.
         
-        Returns True if the actual CSG is identical to the perfect timber within CSG,
-        False otherwise (e.g., for round or mesh timbers).
-        
         Returns:
-            True if actual geometry equals nominal bounding box, False otherwise
+            True if the timber is a perfect timber, False otherwise
         """
-        nominal = self.get_perfect_timber_within_CSG()
-        # TODO check against nominal bounding box instead?
-        actual = self.get_actual_csg()
-        if isinstance(actual, RectangularPrism):
-            return actual.equals_prism(nominal)
-        return False
+        return equality_test(self.nominal_size(), self.size)
 
 
 # TODO HomeDepotTimber or like BoxTimber or NominalTimber, sticktimber and dressedtimber are also cute names?
@@ -656,7 +653,7 @@ class Timber(PerfectTimberWithin):
         - transform: Position and orientation
         - name: Optional name
     """
-    # TODO add optional nominal size parameter and override get_nominal_bounding_box_local
+    # TODO add optional nominal size parameter and override get_nominal_bounding_box_csg_local_local
     pass  # Inherits everything from PerfectTimberWithin
 
 
@@ -678,9 +675,9 @@ class MeshTimber(PerfectTimberWithin):
     This timber type uses a mesh CSG to represent complex or irregular
     timber geometries that cannot be represented by simple primitives.
     
-    TODO: Add mesh_csg field and override get_actual_csg()
+    TODO: Add mesh_csg field and override get_actual_csg_local()
     """
-    pass  # TODO: Add mesh_csg field and override get_actual_csg()
+    pass  # TODO: Add mesh_csg field and override get_actual_csg_local()
 
 
 # TODO consider renaming to Log LOL
@@ -691,9 +688,9 @@ class RoundTimber(PerfectTimberWithin):
     Round timbers have a circular cross-section. The nominal bounding box
     is a square that contains the circle, but the actual geometry is a cylinder.
     
-    TODO: Add diameter field, update size property, override get_actual_csg() to return Cylinder
+    TODO: Add diameter field, update size property, override get_actual_csg_local() to return Cylinder
     """
-    pass  # TODO: Add diameter field, update size property, override get_actual_csg()
+    pass  # TODO: Add diameter field, update size property, override get_actual_csg_local()
 
 
 @dataclass(frozen=True)
@@ -703,9 +700,9 @@ class PolylineExtrusionTimber(PerfectTimberWithin):
     This timber type has a polygonal (non-rectangular) cross-section that is
     extruded along the length axis. Examples include hexagonal or octagonal timbers.
     
-    TODO: Add polygon data, override get_actual_csg() to return ConvexPolygonExtrusion
+    TODO: Add polygon data, override get_actual_csg_local() to return ConvexPolygonExtrusion
     """
-    pass  # TODO: Add polygon data, override get_actual_csg()
+    pass  # TODO: Add polygon data, override get_actual_csg_local()
 
 @dataclass(frozen=True)
 class PolygonExtrusionTimber(PolylineExtrusionTimber):
@@ -716,7 +713,20 @@ class PolygonExtrusionTimber(PolylineExtrusionTimber):
     
     Same as PolylineExtrusionTimber but with a regular polygon cross-section and adds some methods for referencing its faces.
     """
-    pass  # TODO: Add polygon data, override get_actual_csg()
+    pass  # TODO: Add polygon data, override get_actual_csg_local()
+
+
+@dataclass(frozen=True)
+class PolyExtrusionTimber(PerfectTimberWithin):
+    """Timber with polygonal cross-section extruded along length
+    
+    This timber type represents timbers with non-rectangular but still polygonal
+    cross-sections (e.g., hexagonal, octagonal posts). The nominal bounding box
+    is rectangular, but the actual geometry is a convex polygon extrusion.
+    
+    TODO: Add polygon_points field, override get_actual_csg_local()
+    """
+    pass  # TODO: Add polygon_points field, override get_actual_csg_local()
 
 
 @dataclass(frozen=True)
@@ -726,9 +736,9 @@ class CSGTimber(PerfectTimberWithin):
     This is the most general timber type, allowing any CSG geometry to be used.
     Useful for complex shapes that don't fit other categories.
     
-    TODO: Add csg field, override get_actual_csg()
+    TODO: Add csg field, override get_actual_csg_local()
     """
-    pass  # TODO: Add csg field, override get_actual_csg()
+    pass  # TODO: Add csg field, override get_actual_csg_local()
 
 
 # Type alias for all timber-like objects (excludes Board)
@@ -814,8 +824,11 @@ class Cutting:
             return HalfSpace(normal=create_v3(0, 0, -1), offset=-distance_from_end_to_cut)
 
 
-# TODO rename to create_ptw_prism_csg_local
-def _create_timber_prism_csg_local(timber: PerfectTimberWithin, cuts: list) -> CutCSG:
+def _create_timber_prism_csg_local(
+    timber: PerfectTimberWithin, 
+    cuts: list,
+    extend_using: Literal["ptw", "nominal"] = "ptw"
+) -> CutCSG:
     """
     Helper function to create a prism CSG for a timber in LOCAL coordinates, 
     extending ends with cuts to infinity.
@@ -827,6 +840,9 @@ def _create_timber_prism_csg_local(timber: PerfectTimberWithin, cuts: list) -> C
     Args:
         timber: The timber to create a prism for
         cuts: List of cuts on this timber (used to determine if ends should be infinite)
+        extend_using: Which dimensions to use for the prism cross-section:
+            - "ptw": Use perfect timber within dimensions (timber.size)
+            - "nominal": Use nominal bounding box dimensions (for future use with Board, etc.)
         
     Returns:
         RectangularPrism CSG representing the timber (possibly semi-infinite or infinite) in LOCAL coordinates
@@ -853,11 +869,23 @@ def _create_timber_prism_csg_local(timber: PerfectTimberWithin, cuts: list) -> C
     start_distance = None if has_bottom_cut else 0
     end_distance = None if has_top_cut else timber.length
     
+    # Determine which size to use based on extend_using parameter
+    if extend_using == "ptw":
+        # Use perfect timber within dimensions
+        prism_size = timber.perfect_size()
+    elif extend_using == "nominal":
+        # Use nominal bounding box dimensions
+        # For now, this is the same as PTW size, but in the future
+        # Board/StickTimber may have a separate nominal_size attribute
+        prism_size = timber.nominal_size()
+    else:
+        raise ValueError(f"Invalid extend_using value: {extend_using}. Must be 'ptw' or 'nominal'.")
+    
     # Create a prism representing the timber in local coordinates
     # The prism needs to use the timber's orientation to properly represent
     # timbers in any direction (horizontal, vertical, diagonal, etc.)
     return RectangularPrism(
-        size=timber.size,
+        size=prism_size,
         transform=Transform.identity(),
         start_distance=start_distance,
         end_distance=end_distance
