@@ -738,6 +738,21 @@ class Board(PerfectTimberWithin):
     # TODO: Add board-specific validation and methods
 
 
+# TODO consider renaming to Log LOL
+@dataclass(frozen=True)
+class RoundTimber(PerfectTimberWithin):
+    """Cylindrical timber (e.g., logs, poles)
+    
+    Round timbers have a circular cross-section centered on the centerline. The nominal bounding box
+    is a square that contains the circle, but the actual geometry is a cylinder.
+    
+    TODO: Add diameter field, update size property, override get_actual_csg_local() to return Cylinder
+    TODO: Override get_extended_actual_csg_local() to return Cylinder with appropriate radius once diameter field is added
+    """
+    pass  # TODO: Add diameter field, update size property, override get_actual_csg_local()
+
+
+
 # TODO consider renaming to FancyTimber
 @dataclass(frozen=True)
 class MeshTimber(PerfectTimberWithin):
@@ -774,35 +789,8 @@ class MeshTimber(PerfectTimberWithin):
 
     # TODO: Add mesh_csg field and override get_actual_csg_local()
 
-
-# TODO consider renaming to Log LOL
 @dataclass(frozen=True)
-class RoundTimber(PerfectTimberWithin):
-    """Cylindrical timber (e.g., logs, poles)
-    
-    Round timbers have a circular cross-section. The nominal bounding box
-    is a square that contains the circle, but the actual geometry is a cylinder.
-    
-    TODO: Add diameter field, update size property, override get_actual_csg_local() to return Cylinder
-    TODO: Override get_extended_actual_csg_local() to return Cylinder with appropriate radius once diameter field is added
-    """
-    pass  # TODO: Add diameter field, update size property, override get_actual_csg_local()
-
-
-@dataclass(frozen=True)
-class PolylineExtrusionTimber(PerfectTimberWithin):
-    """Timber with convex polyline cross-section
-    
-    This timber type has a polygonal (non-rectangular) cross-section that is
-    extruded along the length axis. Examples include hexagonal or octagonal timbers.
-    
-    TODO: Add polygon data, override get_actual_csg_local() to return ConvexPolygonExtrusion
-    TODO: Override get_extended_actual_csg_local() to return ConvexPolygonExtrusion once polygon data is added
-    """
-    pass  # TODO: Add polygon data, override get_actual_csg_local()
-
-@dataclass(frozen=True)
-class PolygonExtrusionTimber(PolylineExtrusionTimber):
+class PolygonExtrusionTimber(PerfectTimberWithin):
     """Timber with regular polygonal cross-section
     
     This timber type has a polygonal (non-rectangular) cross-section that is
@@ -815,35 +803,6 @@ class PolygonExtrusionTimber(PolylineExtrusionTimber):
     """
     pass  # TODO: Add polygon data, override get_actual_csg_local()
 
-
-@dataclass(frozen=True)
-class PolyExtrusionTimber(PerfectTimberWithin):
-    """Timber with polygonal cross-section extruded along length
-    
-    This timber type represents timbers with non-rectangular but still polygonal
-    cross-sections (e.g., hexagonal, octagonal posts). The nominal bounding box
-    is rectangular, but the actual geometry is a convex polygon extrusion.
-    
-    TODO: Add polygon_points field, override get_actual_csg_local()
-    TODO: Override get_extended_actual_csg_local() to return ConvexPolygonExtrusion once polygon_points field is added
-    """
-    pass  # TODO: Add polygon_points field, override get_actual_csg_local()
-
-
-@dataclass(frozen=True)
-class CSGTimber(PerfectTimberWithin):
-    """Timber with arbitrary CSG geometry
-    
-    This is the most general timber type, allowing any CSG geometry to be used.
-    Useful for complex shapes that don't fit other categories.
-    
-    TODO: Add csg field, override get_actual_csg_local()
-    TODO: Override get_extended_actual_csg_local() to extend the arbitrary CSG geometry once csg field is added
-    """
-    def can_be_extended_for_joints(self) -> bool:
-        return False
-    
-    # TODO: Add csg field, override get_actual_csg_local()
 
 
 # Type alias for all timber-like objects (excludes Board)
