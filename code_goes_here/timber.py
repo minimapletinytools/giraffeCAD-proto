@@ -296,7 +296,8 @@ def compute_timber_orientation(length_direction: Direction3D, width_direction: D
     face_norm = normalize_vector(face_orthogonal)
     
     # Cross product to get the third axis (guaranteed to be orthogonal)
-    height_norm = normalize_vector(cross_product(length_norm, face_norm))
+    cross_result = cross_product(length_norm, face_norm)
+    height_norm = normalize_vector(cross_result)
     
     # Create rotation matrix [face_norm, height_norm, length_norm]
     rotation_matrix = Matrix([

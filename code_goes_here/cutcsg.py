@@ -111,9 +111,11 @@ class HalfSpace(CutCSG):
         Returns:
             True if the point is on the boundary plane, False otherwise
         """
+        from code_goes_here.rule import zero_test
         # Compute dot product: point · normal
         dot_product = safe_dot_product(point, self.normal)
-        return dot_product == self.offset
+        # Use zero_test to handle Float vs Integer comparison with tolerance
+        return zero_test(dot_product - self.offset)
     
     def get_outward_normal(self, point: V3) -> Optional[Direction3D]:
         """
@@ -930,10 +932,11 @@ class ConvexPolygonExtrusion(CutCSG):
         y_coord = local_coords[1]
         z_coord = local_coords[2]
         
-        # Check Z bounds
-        if self.start_distance is not None and z_coord < self.start_distance:
+        # Check Z bounds (use safe_compare for tolerance with Float vs Integer)
+        from code_goes_here.rule import safe_compare, Comparison
+        if self.start_distance is not None and safe_compare(z_coord - self.start_distance, Comparison.LT):
             return False
-        if self.end_distance is not None and z_coord > self.end_distance:
+        if self.end_distance is not None and safe_compare(z_coord - self.end_distance, Comparison.GT):
             return False
         
         # Check if (x_coord, y_coord) is inside the convex polygon
@@ -956,7 +959,9 @@ class ConvexPolygonExtrusion(CutCSG):
             # cross product should be >= 0 for point to be inside
             cross = edge[0] * to_point[1] - edge[1] * to_point[0]
             
-            if cross < Integer(0):
+            # Use safe_compare with tolerance to handle Float vs Integer comparisons
+            from code_goes_here.rule import safe_compare, Comparison
+            if safe_compare(cross, Comparison.LT):
                 return False
         
         return True
@@ -987,15 +992,21 @@ class ConvexPolygonExtrusion(CutCSG):
         y_coord = local_coords[1]
         z_coord = local_coords[2]
         
+        from code_goes_here.rule import zero_test
         # Check if on top or bottom face (if finite)
-        if self.start_distance is not None and z_coord == self.start_distance:
+        if self.start_distance is not None and zero_test(z_coord - self.start_distance):
             return True
-        if self.end_distance is not None and z_coord == self.end_distance:
+        if self.end_distance is not None and zero_test(z_coord - self.end_distance):
             return True
         
-        # Check if on any edge of the polygon (side face)
+        # Check if on a vertical edge (point is at a vertex XY coordinate)
         point_2d = Matrix([x_coord, y_coord])
+        for vertex_2d in self.points:
+            distance_sq = (point_2d[0] - vertex_2d[0])**2 + (point_2d[1] - vertex_2d[1])**2
+            if zero_test(distance_sq):
+                return True  # Point is on a vertical edge
         
+        # Check if on any horizontal edge of the polygon (side face at this z)
         for i in range(len(self.points)):
             p1 = self.points[i]
             p2 = self.points[(i + 1) % len(self.points)]
@@ -1007,7 +1018,7 @@ class ConvexPolygonExtrusion(CutCSG):
             
             # If edge is zero-length, skip it
             edge_length_sq = edge[0]**2 + edge[1]**2
-            if edge_length_sq == Integer(0):
+            if zero_test(edge_length_sq):
                 continue
             
             # Project to_point onto edge
