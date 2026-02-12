@@ -45,8 +45,8 @@ if script_dir not in sys.path:
 # RENDER_TYPE: 'pattern' or 'group'
 # - 'pattern': Render a single pattern by name
 # - 'group': Render all patterns in a group with spacing
-RENDER_TYPE = 'group'
-#RENDER_TYPE = 'pattern'
+#RENDER_TYPE = 'group'
+RENDER_TYPE = 'pattern'
 
 # PATTERN_NAME: Name of a specific pattern to render (when RENDER_TYPE = 'pattern')
 # Examples of available patterns:
@@ -55,11 +55,11 @@ RENDER_TYPE = 'group'
 #PATTERN_NAME = 'splice_joint'
 #PATTERN_NAME = 'mortise_and_tenon_simple'
 #PATTERN_NAME = 'dovetail_half_lap'
-#PATTERN_NAME = 'oscar_shed'
+PATTERN_NAME = 'oscar_shed'
 #PATTERN_NAME = 'gooseneck_simple'
 #PATTERN_NAME = 'shoulder_notch'
 #PATTERN_NAME = 'short_post'
-PATTERN_NAME = 'honeycomb_shed'
+#PATTERN_NAME = 'honeycomb_shed'
 
 # GROUP_NAME: Name of a pattern group to render (when RENDER_TYPE = 'group')
 # Available groups: 'basic_joints', 'mortise_and_tenon', 'construction', 
