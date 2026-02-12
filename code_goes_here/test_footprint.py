@@ -161,29 +161,29 @@ class TestFootprint:
         footprint = Footprint(corners)
         
         # Test bottom edge (should point up/inward: y+)
-        # For axis-aligned edges, normals may be SymPy types
-        nx, ny, nz = footprint.get_inward_normal(0)
-        assert float(nx) == 0.0
-        assert float(ny) == 1.0
-        assert float(nz) == 0.0
+        # Returns Direction3D (V3)
+        normal = footprint.get_inward_normal(0)
+        assert zero_test(normal[0])
+        assert normal[1] == Integer(1)
+        assert zero_test(normal[2])
         
         # Test right edge (should point left/inward: x-)
-        nx, ny, nz = footprint.get_inward_normal(1)
-        assert float(nx) == -1.0
-        assert float(ny) == 0.0
-        assert float(nz) == 0.0
+        normal = footprint.get_inward_normal(1)
+        assert normal[0] == Integer(-1)
+        assert zero_test(normal[1])
+        assert zero_test(normal[2])
         
         # Test top edge (should point down/inward: y-)
-        nx, ny, nz = footprint.get_inward_normal(2)
-        assert float(nx) == 0.0
-        assert float(ny) == -1.0
-        assert float(nz) == 0.0
+        normal = footprint.get_inward_normal(2)
+        assert zero_test(normal[0])
+        assert normal[1] == Integer(-1)
+        assert zero_test(normal[2])
         
         # Test left edge (should point right/inward: x+)
-        nx, ny, nz = footprint.get_inward_normal(3)
-        assert float(nx) == 1.0
-        assert float(ny) == 0.0
-        assert float(nz) == 0.0
+        normal = footprint.get_inward_normal(3)
+        assert normal[0] == Integer(1)
+        assert zero_test(normal[1])
+        assert zero_test(normal[2])
     
     def test_segment_to_segment_distance_parallel(self):
         """Test _segment_to_segment_distance with parallel segments."""
@@ -224,7 +224,7 @@ class TestFootprint:
         line2_end = create_v2(2, 0)
         
         distance = _segment_to_segment_distance(line1_start, line1_end, line2_start, line2_end)
-        assert distance == 0.0
+        assert zero_test(distance)
     
     def test_segment_to_segment_distance_perpendicular(self):
         """Test _segment_to_segment_distance with perpendicular segments."""
@@ -326,5 +326,5 @@ class TestFootprint:
         idx, side, dist = footprint.nearest_boundary_from_line(line_start, line_end)
         
         # Should have distance 0 since it intersects
-        assert dist == 0.0
+        assert zero_test(dist)
 
