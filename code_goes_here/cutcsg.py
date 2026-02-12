@@ -1024,11 +1024,14 @@ class ConvexPolygonExtrusion(CutCSG):
             # Project to_point onto edge
             t = (to_point[0] * edge[0] + to_point[1] * edge[1]) / edge_length_sq
             
-            # Check if projection is on the segment and point is on the line
-            if Integer(0) <= t <= Integer(1):
+            # Check if projection is on the segment [0, 1]
+            from code_goes_here.rule import safe_compare, Comparison
+            t_in_range = safe_compare(t, Comparison.GE) and safe_compare(t - Integer(1), Comparison.LE)
+            
+            if t_in_range:
                 closest_point = p1 + edge * t
                 distance_sq = (point_2d[0] - closest_point[0])**2 + (point_2d[1] - closest_point[1])**2
-                if distance_sq == Integer(0):
+                if zero_test(distance_sq):
                     return True
         
         return False

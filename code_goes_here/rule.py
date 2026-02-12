@@ -358,9 +358,9 @@ def safe_compare(expr, comparison: Comparison):
         elif comp == Comparison.LE:
             return val <= 0
         elif comp == Comparison.EQ:
-            return abs(val) < 1e-10
+            return abs(val) < EPSILON_FLOAT
         elif comp == Comparison.NE:
-            return abs(val) >= 1e-10
+            return abs(val) >= EPSILON_FLOAT
         else:
             raise ValueError(f"Unknown comparison: {comp}")
     
@@ -561,6 +561,7 @@ SHAKU_TO_METER = Rational(10, 33)         # ~0.303030... m (1 shaku = 10/33 m, t
 # Epsilon constants for numerical comparisons
 EPSILON_GENERIC = Float('1e-8')      # Generic epsilon threshold for float comparisons
 SYMPY_EXPR_EPSILON = Float('1e-12')  # Epsilon for SymPy expressions when .equals() returns None
+EPSILON_FLOAT = 1e-10                # Epsilon for plain Python float comparisons (used in safe_compare)
 
 
 # ============================================================================
