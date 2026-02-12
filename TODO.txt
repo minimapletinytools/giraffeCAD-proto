@@ -201,7 +201,7 @@ TimberLike = Union[Timber, MeshTimber, RoundTimber PolyExtrusinoTimber, CSGTimeb
 
 
 -do the timber class refactor
--do sympy numeric conversion at the start of each joint... Or just have the numeric stuff cached in the timber or maybe transform class
+
 
 -3 major features
   DONE-measure functions
@@ -236,6 +236,7 @@ TimberLike = Union[Timber, MeshTimber, RoundTimber PolyExtrusinoTimber, CSGTimeb
 
 
 
+-do sympy numeric conversion at the start of each joint... Or just have the numeric stuff cached in the timber or maybe transform class
 -add CutCSG::get_surface_curvature(point: V3) -> Optional[Tuple[V3, Numeric, V3, Numeric]] (returns derivative and basis for the derivative) so you can properly do the point on boundary check.. welly ou may as well just have a get_surface_info that returns stuff like its curvature, whether it's an edge or face, and the curvature info.
 
 EXEMPLIFY
