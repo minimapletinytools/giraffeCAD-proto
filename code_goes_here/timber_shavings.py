@@ -14,12 +14,7 @@ from .timber import *
 # TODO DELETE ME 
 # ============================================================================
 
-
-
-
-
-
-def find_opposing_face_on_another_timber(reference_timber: Timber, reference_face: TimberLongFace, target_timber: Timber) -> TimberFace:
+def find_opposing_face_on_another_timber(reference_timber: PerfectTimberWithin, reference_face: TimberLongFace, target_timber: PerfectTimberWithin) -> TimberFace:
     """
     Find the opposing face on another timber. Assumes that the target_timber has a face parallel to the reference face on the reference_timber.
     """
@@ -194,7 +189,7 @@ def create_wedge_in_timber_end(
 # Timber Relationship Helper Functions
 # ============================================================================
 
-def are_timbers_parallel(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+def are_timbers_parallel(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two timbers have parallel length directions.
     
@@ -215,7 +210,7 @@ def are_timbers_parallel(timber1: Timber, timber2: Timber, tolerance: Optional[N
         # Use provided tolerance for approximate comparison
         return Abs(dot_product - 1) < tolerance
 
-def are_timbers_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+def are_timbers_orthogonal(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two timbers have orthogonal (perpendicular) length directions.
     
@@ -236,7 +231,7 @@ def are_timbers_orthogonal(timber1: Timber, timber2: Timber, tolerance: Optional
         # Use provided tolerance for approximate comparison
         return Abs(dot_product) < tolerance
 
-def are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+def are_timbers_face_aligned(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two timbers are face-aligned.
     
@@ -277,7 +272,7 @@ def are_timbers_face_aligned(timber1: Timber, timber2: Timber, tolerance: Option
     
     return False
 
-def are_timbers_plane_aligned(timber1: Timber, timber2: Timber, tolerance: Optional[Numeric] = None) -> bool:
+def are_timbers_plane_aligned(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin, tolerance: Optional[Numeric] = None) -> bool:
     """
     Check if two timbers are plane aligned
     
@@ -313,7 +308,7 @@ def are_timbers_plane_aligned(timber1: Timber, timber2: Timber, tolerance: Optio
     
     return False
 
-def do_xy_cross_section_on_parallel_timbers_overlap(timberA: Timber, timberB: Timber) -> bool:
+def do_xy_cross_section_on_parallel_timbers_overlap(timberA: PerfectTimberWithin, timberB: PerfectTimberWithin) -> bool:
     """
     Check if the cross-section of two parallel timbers overlap.
     

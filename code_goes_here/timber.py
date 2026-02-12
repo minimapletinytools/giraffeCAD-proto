@@ -336,15 +336,24 @@ def timber_from_directions(length: Numeric, size: V2, bottom_position: V3,
 
 
 @dataclass(frozen=True)
-class Timber:
-    """Represents a timber in the timber framing system (immutable)
+class PerfectTimberWithin(ABC):
+    """Base class for all timber types in the timber framing system (immutable)
     
-    Note: Use timber_from_directions() factory function to construct Timber instances from
-    length_direction and width_direction vectors. This class is frozen to ensure immutability
+    This is an abstract base class (ABC) to prevent direct instantiation.
+    All timbers contain a perfect rectangular timber within their nominal bounding box.
+    
+    Note: Use timber_from_directions() factory function to construct timber instances from
+    length_direction and width_direction vectors. Subclasses are frozen to ensure immutability
     after construction.
     
     Alternatively, if you already have a Transform object, you can construct
-    Timber directly by passing: Timber(length, size, transform, name)
+    a timber directly by passing: Timber(length, size, transform, name)
+    
+    Attributes:
+        length: Length of the timber along its centerline axis
+        size: Cross-sectional size (width, height) of the nominal bounding box
+        transform: Position and orientation in global coordinates
+        name: Optional name for this timber (used for rendering/debugging)
     """
     length: Numeric
     size: V2
@@ -565,7 +574,168 @@ class Timber:
         local_point_face_component = (local_point-face_zero_local).dot(face.get_direction()) * face.get_direction()
         local_point_projected = local_point - local_point_face_component
         return self.transform.local_to_global(local_point_projected)
+    
+    # TODO just have this return a RectangularPrism since it has al the exact same info as a BoundingBox
+    # TODO rename to get_nominal_bounding_box_local
+    def get_nominal_bounding_box(self) -> 'BoundingBox':
+        """
+        Returns the nominal bounding box for this timber.
+        
+        The nominal bounding box is the smallest rectangular prism that contains
+        the timber's actual geometry. For perfect rectangular timbers, this equals
+        the actual geometry.
+        
+        Returns:
+            BoundingBox object representing the nominal bounding box
+        """
+        # TODO: Implement BoundingBox class if it doesn't exist yet
+        # For now, return the size and length as the bounding box dimensions
+        raise NotImplementedError("BoundingBox class not yet implemented")
+    
+    # TODO rename to  get_perfect_timber_within_CSG_local
+    def get_perfect_timber_within_CSG(self) -> RectangularPrism:
+        """
+        Returns the perfect rectangular prism CSG in local coordinates.
+        
+        This represents the nominal bounding box as a CSG object. All timber types
+        have a perfect rectangular prism that bounds their actual geometry.
+        
+        Returns:
+            RectangularPrism in local coordinates (relative to timber's bottom position)
+        """
+        return RectangularPrism(
+            size=self.size,
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=self.length
+        )
+    
+    # TODO rename to get_actual_csg_local
+    def get_actual_csg(self) -> CutCSG:
+        """
+        Returns the actual CSG geometry for this timber.
+        
+        For the base PerfectTimberWithin class, this returns the perfect rectangular
+        prism. Subclasses override this to return different geometries (cylinder, mesh, etc.).
+        
+        Returns:
+            CutCSG representing the actual geometry in local coordinates
+        """
+        return self.get_perfect_timber_within_CSG()
+    
+    def is_perfect_timber(self) -> bool:
+        """
+        Check if this timber's actual geometry matches its nominal bounding box.
+        
+        Returns True if the actual CSG is identical to the perfect timber within CSG,
+        False otherwise (e.g., for round or mesh timbers).
+        
+        Returns:
+            True if actual geometry equals nominal bounding box, False otherwise
+        """
+        nominal = self.get_perfect_timber_within_CSG()
+        # TODO check against nominal bounding box instead?
+        actual = self.get_actual_csg()
+        if isinstance(actual, RectangularPrism):
+            return actual.equals_prism(nominal)
+        return False
 
+
+# TODO HomeDepotTimber or like BoxTimber or NominalTimber, sticktimber and dressedtimber are also cute names?
+@dataclass(frozen=True)
+class Timber(PerfectTimberWithin):
+    """Perfect rectangular timber (the current default timber type)
+    
+    This is a perfect rectangular prism where the nominal bounding box
+    exactly matches the actual geometry. This is the most common timber type
+    used in timber framing.
+    
+    Inherits all attributes and methods from PerfectTimberWithin:
+        - length: Length of the timber
+        - size: Cross-sectional size (width, height)
+        - transform: Position and orientation
+        - name: Optional name
+    """
+    # TODO add optional nominal size parameter and override get_nominal_bounding_box_local
+    pass  # Inherits everything from PerfectTimberWithin
+
+
+@dataclass(frozen=True)
+class Board(PerfectTimberWithin):
+    """Short perfect timber with board-specific semantics
+    
+    Boards are structurally identical to perfect timbers but semantically different.
+    They tend to be big in size and stubby in lengeth.
+    """
+    pass  # TODO: Add board-specific validation and methods
+
+
+# TODO consider renaming to FancyTimber
+@dataclass(frozen=True)
+class MeshTimber(PerfectTimberWithin):
+    """Timber represented by an arbitrary mesh geometry
+    
+    This timber type uses a mesh CSG to represent complex or irregular
+    timber geometries that cannot be represented by simple primitives.
+    
+    TODO: Add mesh_csg field and override get_actual_csg()
+    """
+    pass  # TODO: Add mesh_csg field and override get_actual_csg()
+
+
+# TODO consider renaming to Log LOL
+@dataclass(frozen=True)
+class RoundTimber(PerfectTimberWithin):
+    """Cylindrical timber (e.g., logs, poles)
+    
+    Round timbers have a circular cross-section. The nominal bounding box
+    is a square that contains the circle, but the actual geometry is a cylinder.
+    
+    TODO: Add diameter field, update size property, override get_actual_csg() to return Cylinder
+    """
+    pass  # TODO: Add diameter field, update size property, override get_actual_csg()
+
+
+@dataclass(frozen=True)
+class PolylineExtrusionTimber(PerfectTimberWithin):
+    """Timber with convex polyline cross-section
+    
+    This timber type has a polygonal (non-rectangular) cross-section that is
+    extruded along the length axis. Examples include hexagonal or octagonal timbers.
+    
+    TODO: Add polygon data, override get_actual_csg() to return ConvexPolygonExtrusion
+    """
+    pass  # TODO: Add polygon data, override get_actual_csg()
+
+@dataclass(frozen=True)
+class PolygonExtrusionTimber(PolylineExtrusionTimber):
+    """Timber with regular polygonal cross-section
+    
+    This timber type has a polygonal (non-rectangular) cross-section that is
+    extruded along the length axis. Examples include hexagonal or octagonal timbers.
+    
+    Same as PolylineExtrusionTimber but with a regular polygon cross-section and adds some methods for referencing its faces.
+    """
+    pass  # TODO: Add polygon data, override get_actual_csg()
+
+
+@dataclass(frozen=True)
+class CSGTimber(PerfectTimberWithin):
+    """Timber with arbitrary CSG geometry
+    
+    This is the most general timber type, allowing any CSG geometry to be used.
+    Useful for complex shapes that don't fit other categories.
+    
+    TODO: Add csg field, override get_actual_csg()
+    """
+    pass  # TODO: Add csg field, override get_actual_csg()
+
+
+# Type alias for all timber-like objects (excludes Board)
+# TimberLike objects are timbers that can be used in structural joinery
+# TODO come up with a cuter name for this
+TimberLike = Union[Timber, MeshTimber, RoundTimber, PolyExtrusionTimber, CSGTimber]
+BoardLike = Union[Board]
 
 # ============================================================================
 # Joint Related Types and Functions
@@ -583,7 +753,7 @@ class Cutting:
     """
     # debug reference to the base timber we are cutting
     # each Cutting is tied to a timber so this is very reasonable to store here
-    timber: Timber
+    timber: PerfectTimberWithin
 
     # these end cuts are special as they determine "rough cut" of the timber in that direction.
     # If there is not an end cut in a direction, the original timber end point in that direction is used instead.
@@ -626,7 +796,7 @@ class Cutting:
             return SolidUnion(csg_components)
 
     @staticmethod
-    def make_end_cut(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> HalfSpace:
+    def make_end_cut(timber: PerfectTimberWithin, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> HalfSpace:
         """
         Create a HalfSpace for an end cut at the specified distance from the end.
         
@@ -644,7 +814,8 @@ class Cutting:
             return HalfSpace(normal=create_v3(0, 0, -1), offset=-distance_from_end_to_cut)
 
 
-def _create_timber_prism_csg_local(timber: Timber, cuts: list) -> CutCSG:
+# TODO rename to create_ptw_prism_csg_local
+def _create_timber_prism_csg_local(timber: PerfectTimberWithin, cuts: list) -> CutCSG:
     """
     Helper function to create a prism CSG for a timber in LOCAL coordinates, 
     extending ends with cuts to infinity.
@@ -697,11 +868,11 @@ class CutTimber:
     """A timber with cuts applied to it."""
     
     # Declare members
-    timber: Timber
+    timber: PerfectTimberWithin
     cuts: List['Cutting']
     joints: List  # List of joints this timber participates in
     
-    def __init__(self, timber: Timber, cuts: Optional[List['Cutting']] = None):
+    def __init__(self, timber: PerfectTimberWithin, cuts: Optional[List['Cutting']] = None):
         """
         Create a CutTimber from a Timber.
         

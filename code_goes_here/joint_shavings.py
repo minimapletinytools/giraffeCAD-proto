@@ -25,7 +25,7 @@ def orientation_pointing_towards_face_sitting_on_face(towards_face : TimberFace,
     assert are_vectors_perpendicular(towards_face.get_direction(), sitting_face.get_direction())
     return Orientation.from_z_and_y(towards_face.get_direction(), -sitting_face.get_direction())
 
-def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: Timber) -> UnsignedPlane:
+def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: TimberLike) -> UnsignedPlane:
     """
     Mark the face plane on a timber.
     
@@ -54,7 +54,7 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: Timber) -> 
     return measure_into_face(0, face, face_timber)
 
 
-def scribe_centerline_onto_centerline(timber: Timber) -> Line:
+def scribe_centerline_onto_centerline(timber: TimberLike) -> Line:
     """
     Mark the centerline of a timber.
     
@@ -82,8 +82,8 @@ def scribe_centerline_onto_centerline(timber: Timber) -> Line:
     return measure_centerline(timber)
 
 def check_timber_overlap_for_splice_joint_is_sensible(
-    timberA: Timber,
-    timberB: Timber,
+    timberA: TimberLike,
+    timberB: TimberLike,
     timberA_end: TimberReferenceEnd,
     timberB_end: TimberReferenceEnd
 ) -> Optional[str]:
@@ -222,8 +222,9 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     return None
 
 
+# TODO add nominal dimension variant instead
 # TODO when you add actual dimensions on top of perfect timber within dimensions, you probably want a version that sizes to the actual dimensions...
-def chop_timber_end_with_prism(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> RectangularPrism:
+def chop_timber_end_with_prism(timber: TimberLike, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> RectangularPrism:
     """
     Create a RectangularPrism CSG for chopping off material from a timber end (in local coordinates).
     
@@ -275,7 +276,7 @@ def chop_timber_end_with_prism(timber: Timber, end: TimberReferenceEnd, distance
     )
 
 
-def chop_timber_end_with_half_plane(timber: Timber, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> HalfSpace:
+def chop_timber_end_with_half_plane(timber: TimberLike, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> HalfSpace:
     """
     Create a HalfSpace CSG for chopping off material from a timber end (in local coordinates).
     
@@ -331,7 +332,7 @@ def chop_timber_end_with_half_plane(timber: Timber, end: TimberReferenceEnd, dis
     return HalfSpace(normal=normal, offset=offset)
 
 def chop_lap_on_timber_end(
-    lap_timber: Timber,
+    lap_timber: TimberLike,
     lap_timber_end: TimberReferenceEnd,
     lap_timber_face: TimberFace,
     lap_length: Numeric,
@@ -469,9 +470,9 @@ def chop_lap_on_timber_end(
     return lap_prism, lap_half_plane
 
 def chop_lap_on_timber_ends(
-    top_lap_timber: Timber,
+    top_lap_timber: TimberLike,
     top_lap_timber_end: TimberReferenceEnd,
-    bottom_lap_timber: Timber,
+    bottom_lap_timber: TimberLike,
     bottom_lap_timber_end: TimberReferenceEnd,
     top_lap_timber_face: TimberFace,
     lap_length: Numeric,
@@ -604,7 +605,7 @@ def chop_lap_on_timber_ends(
 
 
 # TODO I think this is cutting on the wrong face...
-def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: TimberFace, profile: Union[List[V2], List[List[V2]]], depth: Numeric, profile_y_offset_from_end: Numeric = Integer(0)) -> Union[SolidUnion, ConvexPolygonExtrusion]:
+def chop_profile_on_timber_face(timber: TimberLike, end: TimberReferenceEnd, face: TimberFace, profile: Union[List[V2], List[List[V2]]], depth: Numeric, profile_y_offset_from_end: Numeric = Integer(0)) -> Union[SolidUnion, ConvexPolygonExtrusion]:
     """
     Create a CSG extrusion of a profile (or multiple profiles) on a timber face.
     See the diagram below for understanding how to interpret the profile in the timber's local space based on the end and face arguments.
@@ -760,7 +761,7 @@ def chop_profile_on_timber_face(timber: Timber, end: TimberReferenceEnd, face: T
 
 # TODO add notch chamfer angle parameter
 def chop_shoulder_notch_on_timber_face(
-    timber: Timber,
+    timber: TimberLike,
     notch_face: TimberFace,
     distance_along_timber: Numeric,
     notch_width: Numeric,
