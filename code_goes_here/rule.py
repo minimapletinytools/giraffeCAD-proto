@@ -40,7 +40,7 @@ V3 = Matrix  # 3D vector - 3x1 Matrix
 Direction3D = Matrix  # 3D direction vector - 3x1 Matrix
 
 # note Float/Integer are Expr as well, but including them here helps ty properly typecheck the implicit ctor from numeric literals
-Numeric = Expr | Integer | Float 
+Numeric = Union[Expr, Integer, Float] 
 
 
 # ============================================================================
