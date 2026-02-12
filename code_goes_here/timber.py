@@ -594,6 +594,7 @@ class PerfectTimberWithin(ABC):
         return True
     
     
+    @abstractmethod
     def nominal_size(self) -> V2:
         """
         Returns the nominal cross sectional size of the timber.
@@ -606,7 +607,7 @@ class PerfectTimberWithin(ABC):
             V2 representing the nominal cross sectional size of the timber
             
         """
-        return self.size
+        pass
     
     def get_perfect_timber_within_CSG_local(self) -> RectangularPrism:
         """
@@ -683,7 +684,37 @@ class Timber(PerfectTimberWithin):
         - transform: Position and orientation
         - name: Optional name
     """
-    # TODO add optional nominal size parameter and override get_nominal_bounding_box_csg_local_local
+    nominal_size: Optional[V2] = None  # Optional nominal size different from PTW size
+    
+    def nominal_size(self) -> V2:
+        """
+        Returns the nominal cross sectional size of the timber.
+        
+        If nominal_size_override is set, returns that. Otherwise returns the perfect timber within size.
+        
+        Returns:
+            V2 with (width, height)
+        """
+        if self.nominal_size is not None:
+            return self.nominal_size
+        return self.size
+    
+    def get_actual_csg_local(self) -> CutCSG:
+        """
+        Returns the actual CSG geometry for this timber.
+        
+        For Timber, this returns a rectangular prism using the nominal size.
+        
+        Returns:
+            RectangularPrism representing the actual geometry in local coordinates
+        """
+        from .cutcsg import RectangularPrism
+        return RectangularPrism(
+            size=self.nominal_size(),
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=self.length
+        )
     
     def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
         """
@@ -745,11 +776,59 @@ class RoundTimber(PerfectTimberWithin):
     
     Round timbers have a circular cross-section centered on the centerline. The nominal bounding box
     is a square that contains the circle, but the actual geometry is a cylinder.
-    
-    TODO: Add diameter field, update size property, override get_actual_csg_local() to return Cylinder
-    TODO: Override get_extended_actual_csg_local() to return Cylinder with appropriate radius once diameter field is added
     """
-    pass  # TODO: Add diameter field, update size property, override get_actual_csg_local()
+    diameter: Numeric  # Diameter of the circular cross-section (required, but has default for dataclass ordering)
+    
+    def nominal_size(self) -> V2:
+        """
+        Returns the nominal cross sectional size of the timber.
+        
+        For round timbers, this is a square bounding box that contains the circular cross-section.
+        
+        Returns:
+            V2 with (diameter, diameter)
+        """
+        return create_v2(self.diameter, self.diameter)
+    
+    def get_actual_csg_local(self) -> CutCSG:
+        """
+        Returns the actual CSG geometry for this timber.
+        
+        For RoundTimber, this returns a Cylinder with the specified diameter.
+        
+        Returns:
+            Cylinder representing the actual geometry in local coordinates
+        """
+        from .cutcsg import Cylinder
+        return Cylinder(
+            radius=self.diameter / Integer(2),
+            axis_direction=create_v3(0, 0, 1),  # Local Z-axis
+            position=create_v3(0, 0, 0),  # Origin in local coords
+            start_distance=Integer(0),
+            end_distance=self.length
+        )
+    
+    def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
+        """
+        Returns the actual CSG geometry extended to infinity at specified ends.
+        
+        For RoundTimber, this returns a Cylinder optionally extended to infinity.
+        
+        Args:
+            extend_bot: If True, extend to -infinity at bottom (z=0)
+            extend_top: If True, extend to +infinity at top (z=length)
+            
+        Returns:
+            Cylinder representing the extended geometry in local coordinates
+        """
+        from .cutcsg import Cylinder
+        return Cylinder(
+            radius=self.diameter / Integer(2),
+            axis_direction=create_v3(0, 0, 1),  # Local Z-axis
+            position=create_v3(0, 0, 0),  # Origin in local coords
+            start_distance=None if extend_bot else Integer(0),
+            end_distance=None if extend_top else self.length
+        )
 
 
 
@@ -796,19 +875,89 @@ class PolygonExtrusionTimber(PerfectTimberWithin):
     This timber type has a polygonal (non-rectangular) cross-section that is
     extruded along the length axis. Examples include hexagonal or octagonal timbers.
     
-    Same as PolylineExtrusionTimber but with a regular polygon cross-section and adds some methods for referencing its faces.
-    
-    TODO: Add polygon data, override get_actual_csg_local()
-    TODO: Override get_extended_actual_csg_local() to return ConvexPolygonExtrusion once polygon data is added
+    The polygon is inscribed in a circle with radius equal to half the minimum dimension
+    of the nominal bounding box.
     """
-    pass  # TODO: Add polygon data, override get_actual_csg_local()
+    num_sides: int  # Number of sides for the regular polygon (e.g., 6 for hexagon) (required, but has default for dataclass ordering)
+    
+    def _compute_polygon_vertices(self) -> List[V2]:
+        """
+        Compute vertices of regular polygon inscribed in the nominal bounding box.
+        
+        The polygon is centered at the origin with radius equal to half the minimum
+        dimension of the bounding box.
+        
+        Returns:
+            List of V2 vertices for the polygon
+        """
+        assert self.num_sides >= 3, "PolygonExtrusionTimber must have at least 3 sides"
+        from sympy import pi, cos, sin
+        # Use the smaller dimension of size as the diameter of the inscribed circle
+        radius = min(self.size[0], self.size[1]) / Integer(2)
+        vertices = []
+        # start at (1,0) and go counterclockwise
+        for i in range(self.num_sides):
+            angle = Integer(2) * pi * i / self.num_sides
+            x = radius * cos(angle)
+            y = radius * sin(angle)
+            vertices.append(Matrix([x, y]))
+        return vertices
+    
+    def nominal_size(self) -> V2:
+        """
+        Returns the nominal cross sectional size of the timber.
+        
+        For polygon extrusion timbers, this is the rectangular bounding box.
+        
+        Returns:
+            V2 with (width, height)
+        """
+        return self.size
+    
+    def get_actual_csg_local(self) -> CutCSG:
+        """
+        Returns the actual CSG geometry for this timber.
+        
+        For PolygonExtrusionTimber, this returns a ConvexPolygonExtrusion with the specified number of sides.
+        
+        Returns:
+            ConvexPolygonExtrusion representing the actual geometry in local coordinates
+        """
+        from .cutcsg import ConvexPolygonExtrusion
+        return ConvexPolygonExtrusion(
+            points=self._compute_polygon_vertices(),
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=self.length
+        )
+    
+    def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
+        """
+        Returns the actual CSG geometry extended to infinity at specified ends.
+        
+        For PolygonExtrusionTimber, this returns a ConvexPolygonExtrusion optionally extended to infinity.
+        
+        Args:
+            extend_bot: If True, extend to -infinity at bottom (z=0)
+            extend_top: If True, extend to +infinity at top (z=length)
+            
+        Returns:
+            ConvexPolygonExtrusion representing the extended geometry in local coordinates
+        """
+        from .cutcsg import ConvexPolygonExtrusion
+        return ConvexPolygonExtrusion(
+            points=self._compute_polygon_vertices(),
+            transform=Transform.identity(),
+            start_distance=None if extend_bot else Integer(0),
+            end_distance=None if extend_top else self.length
+        )
 
 
 
 # Type alias for all timber-like objects (excludes Board)
 # TimberLike objects are timbers that can be used in structural joinery
 # TODO come up with a cuter name for this
-TimberLike = Union[Timber, MeshTimber, RoundTimber, PolyExtrusionTimber, CSGTimber]
+TimberLike = Union[Timber, MeshTimber, RoundTimber, PolygonExtrusionTimber]
 BoardLike = Union[Board]
 
 # ============================================================================
