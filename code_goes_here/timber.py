@@ -583,6 +583,15 @@ class PerfectTimberWithin(ABC):
         The perfect size is the cross sectional size of the perfect timber within.
         """
         return self.size
+
+    def can_be_extended_for_joints(self) -> bool:
+        """
+        Returns True if the timber can be extended when cutting joints.
+        
+        Returns:
+            True if the timber can be extended when cutting joints.
+        """
+        return True
     
     
     def nominal_size(self) -> V2:
@@ -627,6 +636,9 @@ class PerfectTimberWithin(ABC):
             CutCSG representing the actual geometry in local coordinates
         """
         return self.get_perfect_timber_within_CSG_local()
+
+    def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
+        pass
     
     def is_perfect_timber(self) -> bool:
         """
@@ -677,7 +689,10 @@ class MeshTimber(PerfectTimberWithin):
     
     TODO: Add mesh_csg field and override get_actual_csg_local()
     """
-    pass  # TODO: Add mesh_csg field and override get_actual_csg_local()
+    def can_be_extended_for_joints(self) -> bool:
+        return False
+
+    # TODO: Add mesh_csg field and override get_actual_csg_local()
 
 
 # TODO consider renaming to Log LOL
@@ -738,6 +753,8 @@ class CSGTimber(PerfectTimberWithin):
     
     TODO: Add csg field, override get_actual_csg_local()
     """
+    def can_be_extended_for_joints(self) -> bool:
+        return False
     pass  # TODO: Add csg field, override get_actual_csg_local()
 
 
@@ -1035,6 +1052,7 @@ class CutTimber:
         )
     
     # TODO test me
+    # TODO DELETE ME
     def DEPRECATED_approximate_bounding_prism(self) -> RectangularPrism:
         """
         TODO someday we want a fully analytical solution for this, but for now this is sufficient for our needs.
