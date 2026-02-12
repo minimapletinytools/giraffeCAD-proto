@@ -198,6 +198,52 @@ class RectangularPrism(CutCSG):
         return (f"RectangularPrism(size={self.size.T}, transform={self.transform}, "
                 f"start={self.start_distance}, end={self.end_distance})")
     
+    def equals_prism(self, other: 'RectangularPrism') -> bool:
+        """
+        Check if this prism equals another prism.
+        
+        Uses SymPy's equals() method for numeric comparisons to handle symbolic values.
+        
+        Args:
+            other: Another RectangularPrism to compare with
+            
+        Returns:
+            True if all components are equal, False otherwise
+        """
+        # Check size components
+        if not self.size[0].equals(other.size[0]) or not self.size[1].equals(other.size[1]):
+            return False
+        
+        # Check transform position
+        if not (self.transform.position[0].equals(other.transform.position[0]) and
+                self.transform.position[1].equals(other.transform.position[1]) and
+                self.transform.position[2].equals(other.transform.position[2])):
+            return False
+        
+        # Check transform orientation matrix
+        for i in range(3):
+            for j in range(3):
+                if not self.transform.orientation.matrix[i, j].equals(other.transform.orientation.matrix[i, j]):
+                    return False
+        
+        # Check start_distance (handle None case)
+        if self.start_distance is None and other.start_distance is None:
+            pass  # Both None, equal
+        elif self.start_distance is None or other.start_distance is None:
+            return False  # One is None, other isn't
+        elif not self.start_distance.equals(other.start_distance):
+            return False
+        
+        # Check end_distance (handle None case)
+        if self.end_distance is None and other.end_distance is None:
+            pass  # Both None, equal
+        elif self.end_distance is None or other.end_distance is None:
+            return False  # One is None, other isn't
+        elif not self.end_distance.equals(other.end_distance):
+            return False
+        
+        return True
+    
     def contains_point(self, point: V3) -> bool:
         """
         Check if a point is contained within the prism.

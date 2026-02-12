@@ -70,8 +70,8 @@ class WedgeParameters:
 
 
 def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
-    tenon_timber: Timber,
-    mortise_timber: Timber,
+    tenon_timber: TimberLike,
+    mortise_timber: TimberLike,
     tenon_end: TimberReferenceEnd,
     tenon_size: V2,
     tenon_length: Numeric,
@@ -698,8 +698,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
 
 
 def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
-    tenon_timber: Timber,
-    mortise_timber: Timber,
+    tenon_timber: TimberLike,
+    mortise_timber: TimberLike,
     tenon_end: TimberReferenceEnd,
     tenon_size: V2,
     tenon_length: Numeric,
@@ -794,8 +794,8 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
 
 
 def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
-    tenon_timber: Timber,
-    mortise_timber: Timber,
+    tenon_timber: TimberLike,
+    mortise_timber: TimberLike,
     tenon_end: TimberReferenceEnd,
     tenon_size: V2,
     tenon_length: Numeric,

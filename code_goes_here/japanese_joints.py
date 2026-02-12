@@ -95,8 +95,8 @@ _______________|__________
                end of receiving timber
 '''
 def cut_lapped_gooseneck_joint(
-    gooseneck_timber: Timber,
-    receiving_timber: Timber,
+    gooseneck_timber: TimberLike,
+    receiving_timber: TimberLike,
     receiving_timber_end: TimberReferenceEnd,
     gooseneck_timber_face: TimberLongFace,
     gooseneck_length: Numeric,
@@ -410,8 +410,8 @@ def cut_lapped_gooseneck_joint(
     )
 
 def cut_housed_dovetail_butt_joint(
-    dovetail_timber: Timber,
-    receiving_timber: Timber,
+    dovetail_timber: TimberLike,
+    receiving_timber: TimberLike,
     dovetail_timber_end: TimberReferenceEnd,
     dovetail_timber_face: TimberLongFace,
     receiving_timber_shoulder_inset: Numeric,
@@ -663,7 +663,7 @@ def cut_housed_dovetail_butt_joint(
     )
 
 
-def cut_mitered_and_keyed_lap_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timberA_reference_miter_face: TimberLongFace, timberB: Timber, timberB_end: TimberReferenceEnd, lap_start_lap_thickness: Optional[Numeric] = None, distance_between_lap_and_outside: Optional[Numeric] = None, num_laps: int = 2, key_width: Optional[Numeric] = None, key_thickness: Optional[Numeric] = None) -> Joint:
+def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberA_reference_miter_face: TimberLongFace, timberB: TimberLike, timberB_end: TimberReferenceEnd, lap_start_lap_thickness: Optional[Numeric] = None, distance_between_lap_and_outside: Optional[Numeric] = None, num_laps: int = 2, key_width: Optional[Numeric] = None, key_thickness: Optional[Numeric] = None) -> Joint:
     # TODO: Implement this function
     # assert that num_laps is >= 2
 

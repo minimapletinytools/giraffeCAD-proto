@@ -15,7 +15,7 @@ from code_goes_here.measuring import measure_top_center_position, measure_bottom
 # ============================================================================
 
 
-def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd) -> Joint:
+def cut_basic_miter_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd) -> Joint:
     """
     Creates a basic miter joint between two timbers such that the 2 ends meet and each has a miter cut at half the angle between the two timbers.
     
@@ -176,7 +176,7 @@ def cut_basic_miter_joint(timberA: Timber, timberA_end: TimberReferenceEnd, timb
     
     return joint
 
-def cut_basic_miter_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd) -> Joint:
+def cut_basic_miter_joint_on_face_aligned_timbers(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd) -> Joint:
     """
     Creates a basic miter joint between two timbers such that the 2 ends meet at a 90 degree angle miter corner.
     """
@@ -187,7 +187,7 @@ def cut_basic_miter_joint_on_face_aligned_timbers(timberA: Timber, timberA_end: 
     return cut_basic_miter_joint(timberA, timberA_end, timberB, timberB_end)
 
 
-def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_timber: Timber, butt_end: TimberReferenceEnd) -> Joint:
+def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: TimberLike, butt_timber: TimberLike, butt_end: TimberReferenceEnd) -> Joint:
     """
     Creates a basic butt joint between two timbers. The butt timber is cut flush with the face 
     of the receiving timber. The receiving timber has no cuts.
@@ -253,7 +253,7 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: Timber, butt_
     
     return joint
 
-def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end: TimberReferenceEnd, timberB: Timber, timberB_end: TimberReferenceEnd, splice_point: Optional[V3] = None) -> Joint:
+def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd, splice_point: Optional[V3] = None) -> Joint:
     """
     Creates a basic splice joint between two timbers with parallel (aligned) length axes.
     Both timbers are cut at the splice plane, creating a butt joint connection.
@@ -374,7 +374,7 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: Timber, timberA_end:
     return joint
 
 
-def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face: Optional[TimberFace] = None, timberB_cut_face: Optional[TimberFace] = None, cut_ratio: Numeric = Rational(1, 2)) -> Joint:
+def cut_basic_cross_lap_joint(timberA: TimberLike, timberB: TimberLike, timberA_cut_face: Optional[TimberFace] = None, timberB_cut_face: Optional[TimberFace] = None, cut_ratio: Numeric = Rational(1, 2)) -> Joint:
     """
     Creates a basic cross lap joint between two timbers.
 
@@ -630,7 +630,7 @@ def cut_basic_cross_lap_joint(timberA: Timber, timberB: Timber, timberA_cut_face
     return joint
 
 
-def _get_face_center_position(timber: Timber, face: TimberFace) -> V3:
+def _get_face_center_position(timber: PerfectTimberWithin, face: TimberFace) -> V3:
     """
     Helper function to calculate the center position of a timber face.
     
@@ -663,7 +663,7 @@ def _get_face_center_position(timber: Timber, face: TimberFace) -> V3:
         return face_center
 
 
-def _find_closest_face_to_timber(timber: Timber, other_timber: Timber) -> TimberFace:
+def _find_closest_face_to_timber(timber: PerfectTimberWithin, other_timber: PerfectTimberWithin) -> TimberFace:
     """
     Helper function to find which face of timber is closest to other_timber's centerline.
     Returns the face that minimizes material removal for a cross lap joint.
@@ -692,7 +692,7 @@ def _find_closest_face_to_timber(timber: Timber, other_timber: Timber) -> Timber
     return closest_face
 
 
-def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber, housing_timber_cut_face: Optional[TimberFace] = None, housed_timber_cut_face: Optional[TimberFace] = None) -> Joint:
+def cut_basic_house_joint(housing_timber: TimberLike, housed_timber: TimberLike, housing_timber_cut_face: Optional[TimberFace] = None, housed_timber_cut_face: Optional[TimberFace] = None) -> Joint:
     """
     Creates a basic housed joint (also called housing joint or dado joint) where the 
     housing_timber is notched to fit the housed_timber. The housed timber fits completely
@@ -728,7 +728,7 @@ def cut_basic_house_joint(housing_timber: Timber, housed_timber: Timber, housing
 
 
 # TODO DELETE
-def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timber, extend_housed_timber_to_infinity: bool = False) -> Joint:
+def cut_basic_house_joint_DEPRECATED(housing_timber: TimberLike, housed_timber: TimberLike, extend_housed_timber_to_infinity: bool = False) -> Joint:
     """
     DEPRECATED: Use cut_basic_house_joint() instead.
     
@@ -869,9 +869,9 @@ def cut_basic_house_joint_DEPRECATED(housing_timber: Timber, housed_timber: Timb
     return joint
 
 def cut_basic_splice_lap_joint_on_aligned_timbers(
-    top_lap_timber: Timber,
+    top_lap_timber: TimberLike,
     top_lap_timber_end: TimberReferenceEnd,
-    bottom_lap_timber: Timber,
+    bottom_lap_timber: TimberLike,
     bottom_lap_timber_end: TimberReferenceEnd,
     top_lap_timber_face: TimberFace,
     # TODO make this optional, and if it is, copmtued based on how much the 2 timbers overlap (remember to use top_lap_shoulder_position_from_top_lap_shoulder_timber_end to determine the lap end for the top lap timber, the bototm lap timber lap end is just the bottom lap timber end in this case)

@@ -71,7 +71,7 @@ def extract_rotation_matrix_columns(orientation: Orientation) -> Tuple[V3, V3, V
     return width_dir, height_dir, length_dir
 
 
-def calculate_timber_corners(timber: Timber) -> List[V3]:
+def calculate_timber_corners(timber: PerfectTimberWithin) -> List[V3]:
     """
     Get all 8 corners of a timber's bounding box.
     
