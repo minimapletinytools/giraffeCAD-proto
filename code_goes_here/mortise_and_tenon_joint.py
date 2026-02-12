@@ -690,30 +690,6 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     mortise_cut_timber = CutTimber(mortise_timber, cuts=[mortise_cut])
     tenon_cut_timber = CutTimber(tenon_timber, cuts=tenon_cuts)
     
-    # #region agent log
-    import json
-    import datetime
-    try:
-        with open('/Users/peter.lu/kitchen/faucet/giraffeCAD-proto/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({
-                'location': 'mortise_and_tenon_joint.py:732',
-                'message': 'Returning Joint with cut_timbers ordering',
-                'data': {
-                    'mortise_timber_name': mortise_timber.name if hasattr(mortise_timber, 'name') else 'unnamed',
-                    'tenon_timber_name': tenon_timber.name if hasattr(tenon_timber, 'name') else 'unnamed',
-                    'ordering': 'mortise_first_tenon_second',
-                    'cut_timbers_0': 'mortise_cut_timber',
-                    'cut_timbers_1': 'tenon_cut_timber',
-                    'mortise_cuts_count': len([mortise_cut]),
-                    'tenon_cuts_count': len(tenon_cuts)
-                },
-                'timestamp': int(datetime.datetime.now().timestamp() * 1000),
-                'sessionId': 'debug-session',
-                'hypothesisId': 'H1_H3'
-            }) + '\n')
-    except: pass
-    # #endregion
-    
     return Joint(
         cut_timbers={"tenon_timber": tenon_cut_timber, "mortise_timber": mortise_cut_timber},
         jointAccessories=joint_accessories

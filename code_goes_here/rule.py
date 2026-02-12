@@ -257,13 +257,14 @@ def safe_norm(vec: Matrix):
                 else:
                     # Freeze all constants to Float first - this avoids slow symbolic evaluation
                     c_frozen = freeze_constants(c, prec=15)
-                    # Use numpy and scipy for fastest evaluation
-                    f = lambdify((), c_frozen, ["numpy", "scipy"])
+                    # Use only numpy (not scipy) for lambdify to avoid import issues
+                    f = lambdify((), c_frozen, "numpy")
                     val = float(f())
                 norm_squared += val ** 2
             
-            return sqrt(Rational(norm_squared).limit_denominator(10**9))
-        except Exception:
+            result = sqrt(Rational(norm_squared).limit_denominator(10**9))
+            return result
+        except Exception as e:
             # Fallback: assume unit vector
             return Integer(1)
     
@@ -273,7 +274,8 @@ def safe_norm(vec: Matrix):
     if is_complex:
         # For complex expressions, freeze constants then lambdify
         # This avoids SymPy's slow symbolic evaluation entirely
-        return compute_numerical()
+        result = compute_numerical()
+        return result
     
     # Try symbolic norm with timeout, fall back to numerical if it times out
     def symbolic():
