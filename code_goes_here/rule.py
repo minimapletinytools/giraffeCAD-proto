@@ -63,7 +63,12 @@ def is_complex_expr(expr, max_nodes: int = 50) -> bool:
     Returns:
         True if expression is complex, False otherwise
     """
-    from sympy import sin, cos, exp, log, sqrt
+    from sympy import sin, cos, exp, log, sqrt, Number
+    
+    # Fast check: SymPy Number types (One, Zero, NegativeOne, Integer, Rational, Float, etc.)
+    # are always simple and don't have preorder_traversal()
+    if isinstance(expr, Number):
+        return False
     
     if not hasattr(expr, 'has'):
         return False
