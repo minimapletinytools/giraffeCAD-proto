@@ -231,7 +231,7 @@ class RectangularPrism(CutCSG):
             pass  # Both None, equal
         elif self.start_distance is None or other.start_distance is None:
             return False  # One is None, other isn't
-        elif not self.start_distance.equals(other.start_distance):
+        elif not safe_compare(self.start_distance - other.start_distance, Comparison.EQ):
             return False
         
         # Check end_distance (handle None case)
@@ -239,7 +239,7 @@ class RectangularPrism(CutCSG):
             pass  # Both None, equal
         elif self.end_distance is None or other.end_distance is None:
             return False  # One is None, other isn't
-        elif not self.end_distance.equals(other.end_distance):
+        elif not safe_compare(self.end_distance - other.end_distance, Comparison.EQ):
             return False
         
         return True

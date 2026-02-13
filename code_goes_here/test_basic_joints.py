@@ -214,7 +214,9 @@ class TestButtJoint:
         # Verify that the cut normal in global space is parallel or anti-parallel to timberB's length direction
         # For an end cut (butt joint), the cut plane is perpendicular to the timber's length axis,
         # so the normal is parallel/anti-parallel to the length direction
-        cut_normal_local = joint.cut_timbers["butt_timber"].cuts[0].get_negative_csg_local().normal
+        cut_csg_local = joint.cut_timbers["butt_timber"].cuts[0].get_negative_csg_local()
+        assert isinstance(cut_csg_local, HalfSpace), "Expected cut to be a HalfSpace"
+        cut_normal_local = cut_csg_local.normal
         cut_normal_global = timberB.orientation.matrix * cut_normal_local
         
         dot_with_length = (cut_normal_global.T * timberB.get_length_direction_global())[0, 0]
@@ -295,8 +297,12 @@ class TestSpliceJoint:
         
         # Verify the cut planes are perpendicular to the timber axis (X axis)
         # In global coordinates, the plane normal should be ±(1, 0, 0)
-        global_normalA = timberA.orientation.matrix * cutA.get_negative_csg_local().normal
-        global_normalB = timberB.orientation.matrix * cutB.get_negative_csg_local().normal
+        cutA_csg_local = cutA.get_negative_csg_local()
+        cutB_csg_local = cutB.get_negative_csg_local()
+        assert isinstance(cutA_csg_local, HalfSpace), "Expected cutA to be a HalfSpace"
+        assert isinstance(cutB_csg_local, HalfSpace), "Expected cutB to be a HalfSpace"
+        global_normalA = timberA.orientation.matrix * cutA_csg_local.normal
+        global_normalB = timberB.orientation.matrix * cutB_csg_local.normal
         
         # For aligned timbers with same orientation:
         # - TimberA: cut at TOP, normal points +X (away from timber body)

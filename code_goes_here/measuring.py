@@ -187,7 +187,7 @@ class DistanceFromFace(Marking):
     Represents a distance from a face on a timber with + being AWAY from the face.
     """
     distance: Numeric
-    timber: Timber
+    timber: PerfectTimberWithin
     face: SomeTimberFace
     
 
@@ -204,7 +204,7 @@ class DistanceFromPointIntoFace(Marking):
     If the point is not supplied, the center of the face is used.
     """
     distance: Numeric
-    timber: Timber
+    timber: PerfectTimberWithin
     face: TimberFace
     point: Optional[V3] = None
     

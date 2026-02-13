@@ -170,7 +170,7 @@ class TestPoint:
         """Test that Point is immutable"""
         point = Point(create_v3(1, 2, 3))
         with pytest.raises(Exception):
-            point.position = create_v3(4, 5, 6)
+            point.position = create_v3(4, 5, 6)  # type: ignore
     
     def test_point_repr(self):
         """Test Point string representation"""
@@ -194,7 +194,7 @@ class TestLine:
         """Test that Line is immutable"""
         line = Line(create_v3(0, 0, 1), create_v3(1, 2, 3))
         with pytest.raises(Exception):
-            line.direction = create_v3(1, 0, 0)
+            line.direction = create_v3(1, 0, 0)  # type: ignore
     
     def test_line_repr(self):
         """Test Line string representation"""
@@ -219,7 +219,7 @@ class TestPlane:
         """Test that Plane is immutable"""
         plane = Plane(create_v3(0, 0, 1), create_v3(1, 2, 3))
         with pytest.raises(Exception):
-            plane.normal = create_v3(1, 0, 0)
+            plane.normal = create_v3(1, 0, 0)  # type: ignore
     
     def test_plane_repr(self):
         """Test Plane string representation"""
@@ -704,6 +704,7 @@ class TestMeasureOntoCenterline:
         # Timber should be the one we passed
         assert marking.timber == timber
         # Point should be at bottom centerline position
+        assert marking.point is not None
         assert marking.point.equals(create_v3(0, 0, 0))
         
         # Test round-trip: mark should return a line at the correct position
@@ -735,6 +736,7 @@ class TestMeasureOntoCenterline:
         # Timber should be the one we passed
         assert marking.timber == timber
         # Point should be at bottom centerline position
+        assert marking.point is not None
         assert marking.point.equals(create_v3(0, 0, 0))
         
         # Test round-trip

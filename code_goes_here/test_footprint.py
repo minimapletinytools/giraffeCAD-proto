@@ -23,7 +23,7 @@ class TestFootprint:
             create_v2(1, 1),  # Use exact integers
             create_v2(0, 1)   # Use exact integers
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         assert len(footprint.corners) == 4
         assert footprint.corners[0][0] == 0
@@ -37,7 +37,7 @@ class TestFootprint:
             create_v2(1, 1),
             create_v2(0, 1)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         sides = footprint.sides()
         
@@ -57,7 +57,7 @@ class TestFootprint:
             create_v2(1, 1),
             create_v2(0, 1)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         assert footprint.is_valid() == True
     
@@ -67,7 +67,7 @@ class TestFootprint:
             create_v2(0, 0),
             create_v2(1, 0)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         assert footprint.is_valid() == False
     
@@ -79,7 +79,7 @@ class TestFootprint:
             create_v2(1, 0),
             create_v2(0, 1)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         assert footprint.is_valid() == False
     
@@ -91,7 +91,7 @@ class TestFootprint:
             create_v2(2, 2),
             create_v2(0, 2)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         assert footprint.contains_point(create_v2(1, 1)) == True
     
@@ -103,7 +103,7 @@ class TestFootprint:
             create_v2(2, 2),
             create_v2(0, 2)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         assert footprint.contains_point(create_v2(3, 3)) == False
     
@@ -115,15 +115,15 @@ class TestFootprint:
             create_v2(2, 2),
             create_v2(0, 2)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Point closest to corner 0
-        idx, corner = footprint.nearest_corner(create_v2(0.1, 0.1))
+        idx, corner = footprint.nearest_corner(create_v2(Rational("0.1"), Rational("0.1")))
         assert idx == 0
         assert corner == corners[0]
         
         # Point closest to corner 2
-        idx, corner = footprint.nearest_corner(create_v2(1.9, 1.9))
+        idx, corner = footprint.nearest_corner(create_v2(Rational("1.9"), Rational("1.9")))
         assert idx == 2
         assert corner == corners[2]
     
@@ -135,16 +135,16 @@ class TestFootprint:
             create_v2(2, 2),
             create_v2(0, 2)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Point closest to first side (bottom edge)
-        idx, side, dist = footprint.nearest_boundary(create_v2(1, -0.5))
+        idx, side, dist = footprint.nearest_boundary(create_v2(1, Rational("-0.5")))
         assert idx == 0
         assert side == (corners[0], corners[1])
         assert abs(dist - 0.5) < 1e-6
         
         # Point closest to third side (top edge)
-        idx, side, dist = footprint.nearest_boundary(create_v2(1, 2.5))
+        idx, side, dist = footprint.nearest_boundary(create_v2(1, Rational("2.5")))
         assert idx == 2
         assert side == (corners[2], corners[3])
         assert abs(dist - 0.5) < 1e-6
@@ -158,7 +158,7 @@ class TestFootprint:
             create_v2(2, 2),  # Top-right - exact integers
             create_v2(0, 2)   # Top-left - exact integers
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Test bottom edge (should point up/inward: y+)
         # Returns Direction3D (V3)
@@ -193,7 +193,7 @@ class TestFootprint:
             create_v2(4, 4),
             create_v2(0, 4)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Horizontal line parallel to bottom edge, 1 unit above
         line_start = create_v2(1, 1)
@@ -214,7 +214,7 @@ class TestFootprint:
             create_v2(4, 4),
             create_v2(0, 4)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Two segments that cross
         line1_start = create_v2(0, 0)
@@ -234,7 +234,7 @@ class TestFootprint:
             create_v2(4, 4),
             create_v2(0, 4)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Horizontal segment
         line1_start = create_v2(0, 0)
@@ -255,11 +255,11 @@ class TestFootprint:
             create_v2(4, 4),
             create_v2(0, 4)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Horizontal line parallel to bottom edge, 0.5 units above
-        line_start = create_v2(1, 0.5)
-        line_end = create_v2(3, 0.5)
+        line_start = create_v2(1, Rational("0.5"))
+        line_end = create_v2(3, Rational("0.5"))
         
         idx, side, dist = footprint.nearest_boundary_from_line(line_start, line_end)
         
@@ -276,7 +276,7 @@ class TestFootprint:
             create_v2(4, 4),
             create_v2(0, 4)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Vertical line outside and parallel to right edge
         line_start = create_v2(5, 1)
@@ -297,7 +297,7 @@ class TestFootprint:
             create_v2(4, 4),
             create_v2(0, 4)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Diagonal line outside, closer to bottom edge
         line_start = create_v2(1, -1)
@@ -317,7 +317,7 @@ class TestFootprint:
             create_v2(4, 4),
             create_v2(0, 4)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Line that crosses through the footprint
         line_start = create_v2(-1, 2)

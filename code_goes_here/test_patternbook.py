@@ -3,7 +3,7 @@ Tests for the PatternBook module
 """
 
 import pytest
-from sympy import Rational
+from sympy import Integer, Rational
 from .rule import create_v3, create_v2, inches, Transform, Orientation
 from .timber import timber_from_directions, Frame, CutTimber
 from .cutcsg import RectangularPrism
@@ -264,7 +264,7 @@ def test_raise_pattern_group_not_found():
 def test_list_patterns():
     """Test listing all patterns."""
     def dummy_func(center):
-        return None  # type: ignore
+        return None
     
     patterns = [
         (PatternMetadata("pattern1", ["group_a"], "frame"), dummy_func),
@@ -283,7 +283,7 @@ def test_list_patterns():
 def test_list_groups():
     """Test listing all groups."""
     def dummy_func(center):
-        return None  # type: ignore
+        return None
     
     patterns = [
         (PatternMetadata("pattern1", ["group_a"], "frame"), dummy_func),
@@ -302,7 +302,7 @@ def test_list_groups():
 def test_get_patterns_in_group():
     """Test getting patterns in a specific group."""
     def dummy_func(center):
-        return None  # type: ignore
+        return None
     
     patterns = [
         (PatternMetadata("pattern1", ["group_a"], "frame"), dummy_func),
@@ -324,7 +324,7 @@ def test_get_patterns_in_group():
 def test_patterns_with_multiple_groups():
     """Test patterns belonging to multiple groups."""
     def dummy_func(center):
-        return None  # type: ignore
+        return None
     
     # Pattern1 is in both group_a and group_x
     # Pattern2 is only in group_a
@@ -362,7 +362,7 @@ def test_patterns_with_multiple_groups():
 def test_merge_pattern_books():
     """Test merging two PatternBooks."""
     def dummy_func(center):
-        return None  # type: ignore
+        return None
     
     # Create first book
     patterns1 = [
@@ -396,7 +396,7 @@ def test_merge_pattern_books():
 def test_merge_multiple_pattern_books():
     """Test merging multiple PatternBooks at once."""
     def dummy_func(center):
-        return None  # type: ignore
+        return None
     
     # Create three books
     book1 = PatternBook(patterns=[
@@ -428,7 +428,7 @@ def test_merge_multiple_pattern_books():
 def test_merge_duplicate_names_raises_error():
     """Test that merging books with duplicate pattern names raises an error."""
     def dummy_func(center):
-        return None  # type: ignore
+        return None
     
     # Create two books with same pattern name
     book1 = PatternBook(patterns=[

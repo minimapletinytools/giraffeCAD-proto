@@ -707,6 +707,7 @@ class TestCutTimber:
         cut_timber = CutTimber(timber)
         
         csg = cut_timber._extended_timber_without_cuts_csg_local()
+        assert isinstance(csg, RectangularPrism), "Expected csg to be a RectangularPrism"
         
         # In LOCAL coordinates (relative to bottom_position):
         # Start distance is 0 (at bottom)
@@ -727,6 +728,7 @@ class TestCutTimber:
         cut_timber = CutTimber(timber)
         
         csg = cut_timber._extended_timber_without_cuts_csg_local()
+        assert isinstance(csg, RectangularPrism), "Expected csg to be a RectangularPrism"
         
         # In LOCAL coordinates (relative to bottom_position):
         # Start distance is 0
@@ -914,8 +916,8 @@ class TestFrameFromJoints:
         cut2 = MockCutting(timber2, create_v3(Integer(0), Integer(0), Integer(0)))
         
         # Create CutTimbers
-        cut_timber1 = CutTimber(timber1, cuts=[cut1])
-        cut_timber2 = CutTimber(timber2, cuts=[cut2])
+        cut_timber1 = CutTimber(timber1, cuts=[cut1])  # type: ignore
+        cut_timber2 = CutTimber(timber2, cuts=[cut2])  # type: ignore
         
         # Create a joint
         joint = Joint(
@@ -954,8 +956,8 @@ class TestFrameFromJoints:
         cut3 = MockCutting(timber, create_v3(Integer(0), Integer(0), Integer(0)))
         
         # Create multiple CutTimber instances for the same timber
-        cut_timber1 = CutTimber(timber, cuts=[cut1])
-        cut_timber2 = CutTimber(timber, cuts=[cut2, cut3])
+        cut_timber1 = CutTimber(timber, cuts=[cut1])  # type: ignore
+        cut_timber2 = CutTimber(timber, cuts=[cut2, cut3])  # type: ignore
         
         # Create two joints that both reference the same timber
         joint1 = Joint(
@@ -1059,7 +1061,7 @@ class TestFrameFromJoints:
         
         # Create a joint with timber1
         joint = Joint(
-            cut_timbers={"timber1": CutTimber(timber1, cuts=[MockCutting(timber1, create_v3(Integer(0), Integer(0), Integer(0)))])},
+            cut_timbers={"timber1": CutTimber(timber1, cuts=[MockCutting(timber1, create_v3(Integer(0), Integer(0), Integer(0)))])},  # type: ignore
             jointAccessories={}
         )
         

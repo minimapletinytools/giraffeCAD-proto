@@ -230,7 +230,7 @@ def cut_lapped_gooseneck_joint(
         # Default to half the dimension perpendicular to the specified face
         gooseneck_depth = gooseneck_timber.get_size_in_face_normal_axis(
             gooseneck_timber_face.to.face()
-        ) / 2
+        ) / Rational(2)
 
     # ========================================================================
     # Calculate lap positions and depths
