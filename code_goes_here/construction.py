@@ -918,18 +918,18 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
     if stickout.stickoutReference1 == StickoutReference.INSIDE:
         # INSIDE: Extends from the face closest to timber2
         # Add half the perpendicular size
-        centerline_stickout1 = stickout.stickout1 + perpendicular_size / 2
+        centerline_stickout1 = stickout.stickout1 + perpendicular_size / Rational(2)
     elif stickout.stickoutReference1 == StickoutReference.OUTSIDE:
         # OUTSIDE: Extends from the face away from timber2
         # Subtract half the perpendicular size
-        centerline_stickout1 = stickout.stickout1 - perpendicular_size / 2
+        centerline_stickout1 = stickout.stickout1 - perpendicular_size / Rational(2)
     
     if stickout.stickoutReference2 == StickoutReference.INSIDE:
         # INSIDE: Extends from the face closest to timber1
-        centerline_stickout2 = stickout.stickout2 + perpendicular_size / 2
+        centerline_stickout2 = stickout.stickout2 + perpendicular_size / Rational(2)
     elif stickout.stickoutReference2 == StickoutReference.OUTSIDE:
         # OUTSIDE: Extends from the face away from timber1
-        centerline_stickout2 = stickout.stickout2 - perpendicular_size / 2
+        centerline_stickout2 = stickout.stickout2 - perpendicular_size / Rational(2)
     
     # Create a new Stickout with CENTER_LINE reference
     centerline_stickout = Stickout(

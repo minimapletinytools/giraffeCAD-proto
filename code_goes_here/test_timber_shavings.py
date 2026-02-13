@@ -242,7 +242,7 @@ class TestPeg:
         )
         
         with pytest.raises(Exception):  # FrozenInstanceError
-            peg.size = Rational(3)
+            peg.size = Rational(3)  # type: ignore
     
     def test_peg_render_csg_local_square(self):
         """Test rendering square peg CSG in local space."""
@@ -335,7 +335,7 @@ class TestWedge:
         )
         
         with pytest.raises(Exception):  # FrozenInstanceError
-            wedge.base_width = Rational(6)
+            wedge.base_width = Rational(6)  # type: ignore
     
     def test_wedge_render_csg_local(self):
         """Test rendering wedge CSG in local space."""
@@ -756,7 +756,7 @@ class TestWedgeShape:
         )
         
         with pytest.raises(Exception):  # FrozenInstanceError
-            shape.base_width = Rational(7)
+            shape.base_width = Rational(7)  # type: ignore
 
 
 class TestTimberRelationshipHelpers:
@@ -926,8 +926,8 @@ class TestTimberRelationshipHelpers:
             length=Rational(1),
             size=create_v2(Rational("0.1"), Rational("0.1")),
             bottom_position=create_v3(0, 0, 2),
-            length_direction=create_v3(sin45*cos30, sin45*sin30, cos45),  # Complex 3D direction
-            width_direction=create_v3(cos45*cos30, cos45*sin30, -sin45)    # Perpendicular complex direction
+            length_direction=create_v3(Float(sin45*cos30), Float(sin45*sin30), Float(cos45)),  # Complex 3D direction
+            width_direction=create_v3(Float(cos45*cos30), Float(cos45*sin30), Float(-sin45))    # Perpendicular complex direction
         )
         assert not are_timbers_face_aligned(timber1, timber6)
         
@@ -939,8 +939,8 @@ class TestTimberRelationshipHelpers:
             length=Rational(1),
             size=create_v2(Rational("0.1"), Rational("0.1")),
             bottom_position=create_v3(0, 0, 2),
-            length_direction=create_v3(cos45_xy, sin45_xy, 0),  # 45° in XY plane
-            width_direction=create_v3(-sin45_xy, cos45_xy, 0)    # Perpendicular in XY
+            length_direction=create_v3(Float(cos45_xy), Float(sin45_xy), 0),  # 45° in XY plane
+            width_direction=create_v3(Float(-sin45_xy), Float(cos45_xy), 0)    # Perpendicular in XY
         )
         # This SHOULD be face-aligned because height direction = [0,0,1] = timber1.get_length_direction_global()
         assert are_timbers_face_aligned(timber1, timber7)
@@ -1016,8 +1016,8 @@ class TestTimberRelationshipHelpers:
             length=Rational(3),
             size=create_v2(Rational("0.15"), Rational("0.25")),
             bottom_position=create_v3(Rational(2), Rational(0), Rational(0)),
-            length_direction=create_v3(math.sin(small_angle), Rational(0), math.cos(small_angle)),
-            width_direction=create_v3(math.cos(small_angle), Rational(0), -math.sin(small_angle))
+            length_direction=create_v3(Float(math.sin(small_angle)), Rational(0), Float(math.cos(small_angle))),
+            width_direction=create_v3(Float(math.cos(small_angle)), Rational(0), Float(-math.sin(small_angle)))
         )
         
         # Should be parallel (fuzzy comparison)
@@ -1120,7 +1120,7 @@ class TestTimberRelationshipHelpers:
         assert not result
         
         # Test with tolerance parameter (no warning)
-        assert are_timbers_face_aligned(timber1, timber2, tolerance=1e-10)
+        assert are_timbers_face_aligned(timber1, timber2, tolerance=Float(1e-10))
 
     def test_do_xy_cross_section_on_parallel_timbers_overlap(self):
         """Test do_xy_cross_section_on_parallel_timbers_overlap function."""

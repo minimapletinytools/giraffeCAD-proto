@@ -202,6 +202,7 @@ class TestPegStuff:
         assert joint.cut_timbers["mortise_timber"].cuts[0].maybe_bottom_end_cut is None
         
         peg = joint.jointAccessories["peg_0"]
+        assert isinstance(peg, Peg), "Expected peg to be a Peg instance"
         
         # check that the peg is orthogonal to get_face_direction(TimberFace.FRONT)
         assert_vectors_parallel(peg.transform.orientation.matrix[:, 2], tenon_timber.get_face_direction_global(TimberFace.FRONT))
@@ -248,6 +249,7 @@ class TestPegStuff:
         )
         
         peg = joint.jointAccessories["peg_0"]
+        assert isinstance(peg, Peg), "Expected peg to be a Peg instance"
         peg_csg = peg.render_csg_local()
 
         # Sample points within the peg's CSG
@@ -337,6 +339,7 @@ class TestPegStuff:
         
         # Each peg should have correct depth
         for peg in joint.jointAccessories.values():
+            assert isinstance(peg, Peg), "Expected peg to be a Peg instance"
             assert peg.forward_length == Rational(5), \
                 f"Each peg should have depth 5, got {peg.forward_length}"
     

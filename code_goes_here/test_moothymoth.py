@@ -31,13 +31,13 @@ class TestOrientation:
     def test_init_with_matrix(self):
         """Test initialization with a custom matrix."""
         matrix = [[1, 0, 0], [0, 0, -1], [0, 1, 0]]
-        orientation = Orientation(matrix)
+        orientation = Orientation(matrix)  # type: ignore
         assert orientation.matrix == Matrix(matrix)
     
     def test_init_invalid_shape(self):
         """Test initialization with invalid matrix shape raises error."""
         with pytest.raises(ValueError, match="Rotation matrix must be 3x3"):
-            Orientation([[1, 0], [0, 1]])
+            Orientation([[1, 0], [0, 1]])  # type: ignore
     
     def test_multiply_basic(self):
         """Test basic multiplication of orientations."""
@@ -61,7 +61,7 @@ class TestOrientation:
         """Test multiplication with non-Orientation raises error."""
         orientation = Orientation.identity()
         with pytest.raises(TypeError, match="Can only multiply with another Orientation"):
-            orientation.multiply("not an orientation")
+            orientation.multiply("not an orientation")  # type: ignore
     
     def test_invert_basic(self):
         """Test basic inversion of orientations."""

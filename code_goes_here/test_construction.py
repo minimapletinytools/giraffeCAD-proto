@@ -109,7 +109,7 @@ class TestTimberCreation:
             create_v2(3, 4),  # Corner 2: Top-right
             create_v2(0, 4)   # Corner 3: Top-left
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Post size: 9cm x 9cm (exact rational)
         size = create_v2(Rational(9, 100), Rational(9, 100))
@@ -179,7 +179,7 @@ class TestTimberCreation:
             create_v2(4, 3),  # Corner 2: Top-right
             create_v2(0, 3)   # Corner 3: Top-left
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Post size: 10cm x 10cm (exact rational)
         size = create_v2(Rational(1, 10), Rational(1, 10))
@@ -247,7 +247,7 @@ class TestTimberCreation:
             create_v2(Rational(3), Rational(4)),
             create_v2(Rational(0), Rational(4))
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Default size for test
         size = create_v2(Rational(3, 10), Rational(3, 10))
@@ -270,7 +270,7 @@ class TestTimberCreation:
             create_v2(2, 2),  # Top-right
             create_v2(0, 2)   # Top-left
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Define timber size: width (vertical) x height (perpendicular to boundary)
         # For a horizontal timber: size[0] = width (vertical), size[1] = height (horizontal perpendicular)
@@ -595,7 +595,7 @@ class TestJoinTimbers:
             location_on_timber1=Rational(3, 2),  # 1.5m up the post (exact rational)
             stickout=Stickout.nostickout(),
             lateral_offset_from_centerline_timber1=Rational(0),
-            size=None,  # Auto-determine size
+            size=None,  # Auto-determine size  # type: ignore
             feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP
         )
@@ -1447,7 +1447,7 @@ class TestTimberFootprintOrientation:
             create_v2(10, 10),
             create_v2(0, 10)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Test configurations: (description, bottom_pos, length_dir, width_dir, length, expected_inside, expected_outside)
         test_cases = [
@@ -1502,7 +1502,7 @@ class TestTimberFootprintOrientation:
             create_v2(10, 10),
             create_v2(0, 10)
         ]
-        footprint = Footprint(corners)
+        footprint = Footprint(tuple(corners))
         
         # Diagonal timber from (1,1) going toward (9,9), but oriented so width points inward
         timber = timber_from_directions(
