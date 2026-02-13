@@ -2,7 +2,7 @@
 name = "giraffeCAD"
 version = "0.1.0"
 description = "A library for programmatic timber frame CAD design"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 [tool.pytest.ini_options]
 # Pytest configuration
@@ -17,4 +17,4 @@ dev = [
 ]
 
 [tool.ty.src]
-exclude = ["oldcrap", "fusion360/libs"]
+exclude = ["oldcrap", "fusion360/libs", "horsey-viewer", "fusion360", "freecad", "examples"]

@@ -259,6 +259,7 @@ SomeTimberFace = Union[TimberFace, TimberReferenceEnd, TimberLongFace]
 #============================================================================
 
 
+
 def compute_timber_orientation(length_direction: Direction3D, width_direction: Direction3D) -> Orientation:
     """Compute the orientation matrix from length and width directions
     
@@ -574,7 +575,7 @@ class PerfectTimberWithin(ABC):
         return self.transform.local_to_global(local_point_projected)
     
     @final
-    def perfect_size(self) -> V2:
+    def get_perfect_size(self) -> V2:
         """
         Returns the perfect cross sectional size of the timber.
         
@@ -593,7 +594,7 @@ class PerfectTimberWithin(ABC):
     
     
     @abstractmethod
-    def nominal_size(self) -> V2:
+    def get_nominal_size(self) -> V2:
         """
         Returns the nominal cross sectional size of the timber.
         
@@ -651,7 +652,7 @@ class PerfectTimberWithin(ABC):
             CutCSG representing the extended geometry in local coordinates
         """
         return _create_extended_rectangular_prism(
-            size=self.perfect_size(),
+            size=self.get_perfect_size(),
             length=self.length,
             extend_bot=extend_bot,
             extend_top=extend_top
@@ -664,7 +665,7 @@ class PerfectTimberWithin(ABC):
         Returns:
             True if the timber is a perfect timber, False otherwise
         """
-        return equality_test(self.nominal_size(), self.size)
+        return equality_test(self.get_nominal_size(), self.size)
 
 
 # TODO HomeDepotTimber or like BoxTimber or NominalTimber, sticktimber and dressedtimber are also cute names?
@@ -682,9 +683,9 @@ class Timber(PerfectTimberWithin):
         - transform: Position and orientation
         - name: Optional name
     """
-    nominal_size_override: Optional[V2] = None  # Optional nominal size different from PTW size
+    nominal_size: Optional[V2] = None  # Optional nominal size different from PTW size
     
-    def nominal_size(self) -> V2:
+    def get_nominal_size(self) -> V2:
         """
         Returns the nominal cross sectional size of the timber.
         
@@ -693,8 +694,8 @@ class Timber(PerfectTimberWithin):
         Returns:
             V2 with (width, height)
         """
-        if self.nominal_size_override is not None:
-            return self.nominal_size_override
+        if self.nominal_size is not None:
+            return self.nominal_size
         return self.size
     
     def get_actual_csg_local(self) -> CutCSG:
@@ -708,7 +709,7 @@ class Timber(PerfectTimberWithin):
         """
         from .cutcsg import RectangularPrism
         return RectangularPrism(
-            size=self.nominal_size(),
+            size=self.get_nominal_size(),
             transform=Transform.identity(),
             start_distance=Integer(0),
             end_distance=self.length
@@ -729,7 +730,7 @@ class Timber(PerfectTimberWithin):
             CutCSG representing the extended geometry in local coordinates
         """
         return _create_extended_rectangular_prism(
-            size=self.nominal_size(),
+            size=self.get_nominal_size(),
             length=self.length,
             extend_bot=extend_bot,
             extend_top=extend_top
@@ -758,7 +759,7 @@ class Board(PerfectTimberWithin):
             CutCSG representing the extended geometry in local coordinates
         """
         return _create_extended_rectangular_prism(
-            size=self.perfect_size(),
+            size=self.get_perfect_size(),
             length=self.length,
             extend_bot=extend_bot,
             extend_top=extend_top
@@ -777,7 +778,7 @@ class RoundTimber(PerfectTimberWithin):
     """
     diameter: Numeric = field(kw_only=True)  # Diameter of the circular cross-section
     
-    def nominal_size(self) -> V2:
+    def get_nominal_size(self) -> V2:
         """
         Returns the nominal cross sectional size of the timber.
         
@@ -858,7 +859,7 @@ class MeshTimber(PerfectTimberWithin):
             CutCSG representing the extended geometry in local coordinates
         """
         return _create_extended_rectangular_prism(
-            size=self.perfect_size(),
+            size=self.get_perfect_size(),
             length=self.length,
             extend_bot=extend_bot,
             extend_top=extend_top
@@ -901,7 +902,7 @@ class PolygonExtrusionTimber(PerfectTimberWithin):
             vertices.append(Matrix([x, y]))
         return vertices
     
-    def nominal_size(self) -> V2:
+    def get_nominal_size(self) -> V2:
         """
         Returns the nominal cross sectional size of the timber.
         
