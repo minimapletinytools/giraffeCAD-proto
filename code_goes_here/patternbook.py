@@ -72,7 +72,8 @@ class PatternBook:
             ValueError: If pattern_name is not found
         """
         if center is None:
-            center = create_v3(0, 0, 0)
+            from sympy import Integer
+            center = create_v3(Integer(0), Integer(0), Integer(0))
         
         # Find the pattern by name
         for metadata, pattern_lambda in self.patterns:
@@ -108,7 +109,8 @@ class PatternBook:
             ValueError: If group_name is not found or if frame and CSG patterns are mixed
         """
         if start_center is None:
-            start_center = create_v3(0, 0, 0)
+            from sympy import Integer
+            start_center = create_v3(Integer(0), Integer(0), Integer(0))
         
         # Convert separation_distance to Rational
         if not isinstance(separation_distance, Rational):
@@ -139,7 +141,8 @@ class PatternBook:
         results = []
         for i, (metadata, pattern_lambda) in enumerate(group_patterns):
             # Calculate center position for this pattern
-            offset = create_v3(i * separation_distance, 0, 0)
+            from sympy import Integer
+            offset = create_v3(Integer(i) * separation_distance, Integer(0), Integer(0))
             center = start_center + offset
             
             # Raise the pattern

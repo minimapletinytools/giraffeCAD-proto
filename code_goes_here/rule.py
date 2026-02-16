@@ -255,7 +255,7 @@ def safe_norm(vec: Matrix):
                 syms = list(c.free_symbols)
                 if syms:
                     # Has free symbols, can't evaluate numerically
-                    return Integer(1)
+                    raise ValueError(f"Cannot compute norm: vector has free symbols {syms}")
                 else:
                     # Freeze all constants to Float first - this avoids slow symbolic evaluation
                     c_frozen = freeze_constants(c, prec=15)
@@ -267,8 +267,8 @@ def safe_norm(vec: Matrix):
             result = sqrt(Rational(norm_squared).limit_denominator(10**9))
             return result
         except Exception as e:
-            # Fallback: assume unit vector
-            return Integer(1)
+            # Provide detailed error instead of silently returning 1
+            raise RuntimeError(f"safe_norm numerical computation failed: {type(e).__name__}: {e}\nvec={vec}")
     
     # Quick check: if vector contains complex expressions, go straight to numerical
     is_complex = any(is_complex_expr(component) for component in vec)
