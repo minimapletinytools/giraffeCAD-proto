@@ -397,7 +397,7 @@ class TestMeasureFace:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Vertical
             width_direction=create_v3(1, 0, 0),   # Width along X
-            name="test_timber"
+            ticket="test_timber"
         )
         
         plane = measure_face(timber, TimberFace.RIGHT)
@@ -419,7 +419,7 @@ class TestMeasureFace:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(1, 0, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         plane = measure_face(timber, TimberFace.FRONT)
@@ -443,7 +443,7 @@ class TestMeasureLongEdge:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Vertical
             width_direction=create_v3(1, 0, 0),   # Width along X
-            name="test_timber"
+            ticket="test_timber"
         )
         
         line = measure_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
@@ -465,7 +465,7 @@ class TestMeasureLongEdge:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(1, 0, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         line = measure_long_edge(timber, TimberLongEdge.LEFT_BACK)
@@ -486,7 +486,7 @@ class TestMeasureLongEdge:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),  # Horizontal, pointing east
             width_direction=create_v3(0, 1, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         line = measure_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
@@ -510,7 +510,7 @@ class TestMeasureCenterLine:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Vertical
             width_direction=create_v3(1, 0, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         line = measure_centerline(timber)
@@ -532,7 +532,7 @@ class TestMeasureCenterLine:
             bottom_position=create_v3(10, 20, 5),  # Offset position
             length_direction=create_v3(1, 0, 0),   # Horizontal, pointing east
             width_direction=create_v3(0, 1, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         line = measure_centerline(timber)
@@ -556,7 +556,7 @@ class TestMeasureCenterLine:
             bottom_position=create_v3(0, 0, 0),
             length_direction=direction,
             width_direction=create_v3(1, 0, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         line = measure_centerline(timber)

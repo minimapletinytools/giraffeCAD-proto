@@ -41,7 +41,7 @@ def create_all_irrational_examples() -> Frame:
         bottom_position=create_v3(Rational(0), Rational(0), Rational(0)),
         length_direction=create_v3(Rational(0), Rational(0), Rational(1)),
         width_direction=create_v3(Rational(1), Rational(0), Rational(0)),
-        name="Vertical Post"
+        ticket="Vertical Post"
     )
     
     # Angled beam at 37° (tenon timber)
@@ -57,7 +57,7 @@ def create_all_irrational_examples() -> Frame:
         bottom_position=create_v3(Rational(0), Rational(0), Rational(48)),
         length_direction=length_dir,
         width_direction=width_dir,
-        name="Angled Beam (37°)"
+        ticket="Angled Beam (37°)"
     )
     
     # Create mortise and tenon joint

@@ -25,12 +25,12 @@ def create_simple_post_pattern() -> PatternBook:
                         bottom_position=center,
                         length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
                         width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
-                        name="short_post"
+                        ticket="short_post"
                     ),
                     cuts=[]
                 )
             ],
-            name="short_post_frame"
+            ticket="short_post_frame"
         )
     
     def make_tall_post(center):
@@ -44,12 +44,12 @@ def create_simple_post_pattern() -> PatternBook:
                         bottom_position=center,
                         length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
                         width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
-                        name="tall_post"
+                        ticket="tall_post"
                     ),
                     cuts=[]
                 )
             ],
-            name="tall_post_frame"
+            ticket="tall_post_frame"
         )
     
     def make_wide_post(center):
@@ -63,12 +63,12 @@ def create_simple_post_pattern() -> PatternBook:
                         bottom_position=center,
                         length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
                         width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
-                        name="wide_post"
+                        ticket="wide_post"
                     ),
                     cuts=[]
                 )
             ],
-            name="wide_post_frame"
+            ticket="wide_post_frame"
         )
     
     # Create pattern book with grouped patterns
@@ -97,12 +97,12 @@ def create_beam_patterns() -> PatternBook:
                         bottom_position=center,
                         length_direction=create_v3(Integer(1), Integer(0), Integer(0)),  # Horizontal along X
                         width_direction=create_v3(0, 1, 0),
-                        name="small_beam"
+                        ticket="small_beam"
                     ),
                     cuts=[]
                 )
             ],
-            name="small_beam_frame"
+            ticket="small_beam_frame"
         )
     
     def make_medium_beam(center):
@@ -116,12 +116,12 @@ def create_beam_patterns() -> PatternBook:
                         bottom_position=center,
                         length_direction=create_v3(Integer(1), Integer(0), Integer(0)),  # Horizontal along X
                         width_direction=create_v3(0, 1, 0),
-                        name="medium_beam"
+                        ticket="medium_beam"
                     ),
                     cuts=[]
                 )
             ],
-            name="medium_beam_frame"
+            ticket="medium_beam_frame"
         )
     
     def make_large_beam(center):
@@ -135,12 +135,12 @@ def create_beam_patterns() -> PatternBook:
                         bottom_position=center,
                         length_direction=create_v3(Integer(1), Integer(0), Integer(0)),  # Horizontal along X
                         width_direction=create_v3(0, 1, 0),
-                        name="large_beam"
+                        ticket="large_beam"
                     ),
                     cuts=[]
                 )
             ],
-            name="large_beam_frame"
+            ticket="large_beam_frame"
         )
     
     # Create pattern book with grouped patterns
@@ -237,7 +237,7 @@ def example_raise_pattern_group():
     # Show positions of each timber
     for i, cut_timber in enumerate(combined_frame.cut_timbers):
         pos = cut_timber.timber.transform.position
-        print(f"  Timber {i} ({cut_timber.timber.name}): position = {pos.T}")
+        print(f"  Timber {i} ({cut_timber.timber.ticket.name}): position = {pos.T}")
     
     return combined_frame
 

@@ -35,7 +35,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberA"
+            ticket="timberA"
         )
         
         # TimberB pointing west (right to left), positioned to overlap
@@ -46,7 +46,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(timber_length * 2, 0, 0),
             length_direction=create_v3(-1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberB"
+            ticket="timberB"
         )
         
         # Check the configuration - join TOP to TOP so ends face each other
@@ -68,7 +68,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberA"
+            ticket="timberA"
         )
         
         # TimberB pointing west, TOP ends exactly touch
@@ -79,7 +79,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(2 * timber_length, 0, 0),  # Start further right
             length_direction=create_v3(-1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberB"
+            ticket="timberB"
         )
         
         # Join TOP to TOP so ends face each other
@@ -101,7 +101,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberA"
+            ticket="timberA"
         )
         
         timberB = timber_from_directions(
@@ -110,7 +110,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(timber_length, 0, 0),
             length_direction=create_v3(1, 0, 0),  # Same direction!
             width_direction=create_v3(0, 1, 0),
-            name="timberB"
+            ticket="timberB"
         )
         
         # Invalid: joining TOP to TOP when both point same direction
@@ -135,7 +135,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberA"
+            ticket="timberA"
         )
         
         # TimberB pointing up (perpendicular, not parallel)
@@ -145,7 +145,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(timber_length, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Perpendicular!
             width_direction=create_v3(0, 1, 0),
-            name="timberB"
+            ticket="timberB"
         )
         
         error = check_timber_overlap_for_splice_joint_is_sensible(
@@ -168,7 +168,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberA"
+            ticket="timberA"
         )
         
         # TimberB pointing west, TOP end at inches(36-6)=inches(30)
@@ -179,7 +179,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(inches(30) - timber_length, 0, 0),  # Bottom at -6 inches
             length_direction=create_v3(-1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberB"
+            ticket="timberB"
         )
         
         error = check_timber_overlap_for_splice_joint_is_sensible(
@@ -201,7 +201,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="timberA"
+            ticket="timberA"
         )
         
         # TimberB pointing down, overlapping in the middle
@@ -214,7 +214,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(0, 0, timber_length * Rational(5, 2)),  # Start at 2.5*L
             length_direction=create_v3(0, 0, -1),  # Pointing down, so TOP is at 1.5*L
             width_direction=create_v3(1, 0, 0),
-            name="timberB"
+            ticket="timberB"
         )
         
         # Join TOP to TOP so ends face each other
@@ -234,7 +234,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberA"
+            ticket="timberA"
         )
         
         # 6x8 timber, 48 inches long, pointing opposite direction
@@ -248,7 +248,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(timberA_length + timberB_length, 0, 0),  # Start at 84"
             length_direction=create_v3(-1, 0, 0),  # Pointing left, so TOP is at 36"
             width_direction=create_v3(0, 1, 0),
-            name="timberB"
+            ticket="timberB"
         )
         
         # Join TOP to TOP so ends face each other (both at x=36")
@@ -271,7 +271,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberA"
+            ticket="timberA"
         )
         
         timberB = timber_from_directions(
@@ -280,7 +280,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(timber_length, 0, 0),
             length_direction=create_v3(1, 0, 0),  # Same direction!
             width_direction=create_v3(0, 1, 0),
-            name="timberB"
+            ticket="timberB"
         )
         
         # Valid: joining TOP to BOTTOM when both point same direction
@@ -302,7 +302,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberA"
+            ticket="timberA"
         )
         
         timberB = timber_from_directions(
@@ -311,7 +311,7 @@ class TestCheckTimberOverlapForSpliceJoint:
             bottom_position=create_v3(timber_length * 2, 0, 0),
             length_direction=create_v3(-1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberB"
+            ticket="timberB"
         )
         
         # Test with TOP/BOTTOM (normal)
@@ -342,7 +342,7 @@ class TestChopTimberEndWithPrism:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(1, 0, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         # Chop 2 feet from the top
@@ -369,7 +369,7 @@ class TestChopTimberEndWithPrism:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(1, 0, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         # Chop 2 feet from the bottom
@@ -395,7 +395,7 @@ class TestChopTimberEndWithPrism:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),  # Pointing east
             width_direction=create_v3(0, 1, 0),
-            name="horizontal_timber"
+            ticket="horizontal_timber"
         )
         
         # Chop 6 inches from the top (east) end
@@ -416,7 +416,7 @@ class TestChopTimberEndWithPrism:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(1, 0, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         # Chop 1/3 from the top
@@ -441,7 +441,7 @@ class TestChopTimberEndWithHalfspace:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(1, 0, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         # Chop 2 feet from the top
@@ -463,7 +463,7 @@ class TestChopTimberEndWithHalfspace:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(1, 0, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         # Chop 2 feet from the bottom
@@ -484,7 +484,7 @@ class TestChopTimberEndWithHalfspace:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(1, 0, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         
         # Chop 1/3 from the top
@@ -516,7 +516,7 @@ class TestChopLapOnTimberEnd:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Along Z axis
             width_direction=create_v3(1, 0, 0),   # Width along X axis
-            name="test_timber"
+            ticket="test_timber"
         )
         
         # Lap parameters
@@ -615,7 +615,7 @@ class TestChopShoulderNotchOnTimberFace:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Vertical (along Z)
             width_direction=create_v3(1, 0, 0),   # Width along X
-            name='test_timber'
+            ticket='test_timber'
         )
         # Timber orientation:
         # - width_direction (X): RIGHT face at +X, LEFT face at -X
@@ -687,7 +687,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(0, 0, inches(4)),  # 4 inches above ground
             length_direction=create_v3(1, 0, 0),  # Pointing east
             width_direction=create_v3(0, 1, 0),
-            name="timber_a"
+            ticket="timber_a"
         )
         # timber_a's TOP end is at (48", 0, 4"), centerline runs along x-axis
         
@@ -698,7 +698,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(inches(60), 0, 0),  # Bottom at x=60"
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="timber_b"
+            ticket="timber_b"
         )
         # timber_b's LEFT face is at x = 60" - 3" = 57" (normal pointing in -x direction)
         
@@ -731,7 +731,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="timber_a"
+            ticket="timber_a"
         )
         # timber_a's TOP end is at (0, 0, 96"), centerline runs along z-axis
         
@@ -742,7 +742,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(inches(-10), 0, inches(50)),  # BACK face at z=50"-3"=47"
             length_direction=create_v3(1, 0, 0),  # Pointing east
             width_direction=create_v3(0, 1, 0),
-            name="timber_b"
+            ticket="timber_b"
         )
         # timber_b's BACK face is at z = 50" - 3" = 47" (normal pointing in -z direction, downward)
         
@@ -773,7 +773,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(0, 0, inches(12)),  # Bottom at z=12"
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="timber_a"
+            ticket="timber_a"
         )
         # timber_a's BOTTOM end is at (0, 0, 12"), centerline runs along z-axis
         # timber_a's TOP end is at (0, 0, 108")
@@ -785,7 +785,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(0, 0, 0),  # FRONT face at z=3"
             length_direction=create_v3(1, 0, 0),  # Pointing east
             width_direction=create_v3(0, 1, 0),
-            name="timber_b"
+            ticket="timber_b"
         )
         # timber_b's FRONT face is at z = 0" + 3" = 3" (normal pointing in +z direction, upward)
         
@@ -816,7 +816,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="timber_a"
+            ticket="timber_a"
         )
         # timber_a's TOP end is at (0, 0, 48"), centerline runs along z-axis
         
@@ -827,7 +827,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(inches(-10), 0, inches(27)),  # FRONT face at z=27"+3"=30"
             length_direction=create_v3(1, 0, 0),  # Pointing east
             width_direction=create_v3(0, 1, 0),
-            name="timber_b"
+            ticket="timber_b"
         )
         # timber_b's FRONT face is at z = 27" + 3" = 30" (normal pointing in +z direction, upward)
         
@@ -858,7 +858,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),  # Pointing east
             width_direction=create_v3(0, 1, 0),
-            name="timber_a"
+            ticket="timber_a"
         )
         # timber_a's TOP end is at x=36"
         
@@ -869,7 +869,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(inches(50), 0, 0),
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="timber_b"
+            ticket="timber_b"
         )
         # timber_b's LEFT face is at x = 50" - 3" = 47"
         # timber_b's LEFT face center (mid-length) is at (47", 0, 48")
@@ -902,7 +902,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="timber_a"
+            ticket="timber_a"
         )
         # timber_a's TOP end is at (0, 0, 10), centerline runs along z-axis
         
@@ -913,7 +913,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(Rational(-5), 0, Rational(7) + Rational(3)/2),  # BACK face at z=7
             length_direction=create_v3(1, 0, 0),  # Pointing east
             width_direction=create_v3(0, 1, 0),
-            name="timber_b"
+            ticket="timber_b"
         )
         # timber_b's BACK face is at z = 7 + 3/2 - 3/2 = 7 (normal pointing in -z direction, downward)
         
@@ -944,7 +944,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),  # Pointing east
             width_direction=create_v3(0, 1, 0),
-            name="timber_a"
+            ticket="timber_a"
         )
         # timber_a's TOP end is at (48", 0, 0), centerline runs along x-axis
         
@@ -955,7 +955,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(inches(36), 0, 0),  # LEFT face at x=36"-3"=33"
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="timber_b"
+            ticket="timber_b"
         )
         # timber_b's LEFT face is at x = 36" - 3" = 33" (normal pointing in -x direction)
         
@@ -986,7 +986,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="timber_a"
+            ticket="timber_a"
         )
         # timber_a's TOP end is at z=24"
         
@@ -997,7 +997,7 @@ class TestScribeFaceOnCenterline:
             bottom_position=create_v3(0, 0, inches(36)),  # Start at z=36"
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="timber_b"
+            ticket="timber_b"
         )
         # timber_b's BOTTOM face (end face) is at z=36"
         # timber_b's BOTTOM face center: (0, 0, 36")
@@ -1037,7 +1037,7 @@ class TestFindProjectedIntersectionOnCenterlines:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Pointing up
             width_direction=create_v3(1, 0, 0),
-            name="vertical"
+            ticket="vertical"
         )
         
         # Horizontal timber intersecting at middle of vertical
@@ -1047,7 +1047,7 @@ class TestFindProjectedIntersectionOnCenterlines:
             bottom_position=create_v3(0, inches(12), inches(18)),  # 18" up on vertical
             length_direction=create_v3(0, -1, 0),  # Pointing toward vertical
             width_direction=create_v3(1, 0, 0),
-            name="horizontal"
+            ticket="horizontal"
         )
         
         # Find closest points
@@ -1075,7 +1075,7 @@ class TestFindProjectedIntersectionOnCenterlines:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberA"
+            ticket="timberA"
         )
         
         timberB = timber_from_directions(
@@ -1084,7 +1084,7 @@ class TestFindProjectedIntersectionOnCenterlines:
             bottom_position=create_v3(0, inches(6), 0),  # 6" away parallel
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="timberB"
+            ticket="timberB"
         )
         
         # expect this to raise ValueError when trying to find closest point on parallel lines
@@ -1103,7 +1103,7 @@ class TestFindProjectedIntersectionOnCenterlines:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(1, 0, 0),
-            name="vertical"
+            ticket="vertical"
         )
         
         # Horizontal timber at middle
@@ -1113,7 +1113,7 @@ class TestFindProjectedIntersectionOnCenterlines:
             bottom_position=create_v3(0, inches(12), inches(18)),
             length_direction=create_v3(0, -1, 0),
             width_direction=create_v3(1, 0, 0),
-            name="horizontal"
+            ticket="horizontal"
         )
         
         # Measure from TOP of vertical timber and BOTTOM of horizontal

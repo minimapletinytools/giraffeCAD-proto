@@ -30,7 +30,7 @@ def create_test_posts_with_beam_centerline():
         bottom_position=create_v3(0, 0, 0),
         length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
         width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
-        name="Post_Left"
+        ticket="Post_Left"
     )
     
     # Create right post 8" away in X direction
@@ -40,7 +40,7 @@ def create_test_posts_with_beam_centerline():
         bottom_position=create_v3(inches(8), 0, 0),
         length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
         width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
-        name="Post_Right"
+        ticket="Post_Right"
     )
     
     # Join at mid-height (48" up) with centerline reference
@@ -53,7 +53,7 @@ def create_test_posts_with_beam_centerline():
         size=beam_size,
         feature_to_mark_on_joining_timber=TimberFeature.CENTERLINE,  # Default: centerline
         orientation_face_on_timber1=TimberFace.TOP,
-        name="Beam_Centerline"
+        ticket="Beam_Centerline"
     )
     
     return Frame(

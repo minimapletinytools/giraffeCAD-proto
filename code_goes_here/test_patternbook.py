@@ -59,7 +59,7 @@ def test_pattern_book_creation_with_frames():
             bottom_position=center,
             length_direction=create_v3(1, 0, 0),  # East
             width_direction=create_v3(0, 1, 0),   # North
-            name="test_timber"
+            ticket="test_timber"
         )
         cut_timber = CutTimber(timber=timber, cuts=[])
         return Frame(cut_timbers=[cut_timber], name="simple_frame")
@@ -123,7 +123,7 @@ def test_raise_pattern():
             bottom_position=center,
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name="test_timber"
+            ticket="test_timber"
         )
         return Frame(cut_timbers=[CutTimber(timber=timber, cuts=[])])
     
@@ -161,7 +161,7 @@ def test_raise_pattern_group_frames():
                 bottom_position=center,
                 length_direction=create_v3(1, 0, 0),
                 width_direction=create_v3(0, 1, 0),
-                name=name
+                ticket=name
             )
             return Frame(cut_timbers=[CutTimber(timber=timber, cuts=[])])
         return _make

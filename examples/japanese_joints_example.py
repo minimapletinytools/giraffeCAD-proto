@@ -10,6 +10,7 @@ Each function creates and returns a Frame object with the joint example.
 
 from typing import Optional
 from giraffe import *
+from code_goes_here.ticket import Ticket
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 
 
@@ -47,8 +48,8 @@ def create_simple_gooseneck_example(position: Optional[V3] = None):
     
     # Rename timbers for clarity in this joint context
     from dataclasses import replace
-    gooseneck_timber = replace(arrangement.timber1, name="gooseneck_timber")
-    receiving_timber = replace(arrangement.timber2, name="receiving_timber")
+    gooseneck_timber = replace(arrangement.timber1, ticket=Ticket("gooseneck_timber"))
+    receiving_timber = replace(arrangement.timber2, ticket=Ticket("receiving_timber"))
 
     # Create the gooseneck joint using parameters appropriate for canonical timber size
     joint = cut_lapped_gooseneck_joint(
@@ -93,7 +94,7 @@ def create_dovetail_butt_joint_example(position: Optional[V3] = None):
     # Rename timbers for clarity in this joint context
     from dataclasses import replace
     receiving_timber = arrangement.receiving_timber
-    dovetail_timber = replace(arrangement.butt_timber, name="dovetail_timber")
+    dovetail_timber = replace(arrangement.butt_timber, ticket=Ticket("dovetail_timber"))
     
     # Create the dovetail butt joint using parameters appropriate for canonical timber size
     joint = cut_housed_dovetail_butt_joint(
@@ -131,7 +132,7 @@ if __name__ == "__main__":
     # print(f"   Frame created: {frame1.name}")
     # print(f"   Number of timbers: {len(frame1.cut_timbers)}")
     # for timber in frame1.cut_timbers:
-    #     print(f"   - {timber.name}: {len(timber.cuts)} cut(s)")
+    #     print(f"   - {timber.ticket.name}: {len(timber.cuts)} cut(s)")
     
     print("\n2. Creating simplified vertical post splice example...")
     frame2 = create_simple_gooseneck_example()
@@ -139,7 +140,7 @@ if __name__ == "__main__":
     print(f"   Frame created: {frame2.name}")
     print(f"   Number of timbers: {len(frame2.cut_timbers)}")
     for timber in frame2.cut_timbers:
-        print(f"   - {timber.name}: {len(timber.cuts)} cut(s)")
+        print(f"   - {timber.ticket.name}: {len(timber.cuts)} cut(s)")
     
     print("\n3. Creating dovetail butt joint (T-joint) example...")
     frame3 = create_dovetail_butt_joint_example()
@@ -147,7 +148,7 @@ if __name__ == "__main__":
     print(f"   Frame created: {frame3.name}")
     print(f"   Number of timbers: {len(frame3.cut_timbers)}")
     for timber in frame3.cut_timbers:
-        print(f"   - {timber.name}: {len(timber.cuts)} cut(s)")
+        print(f"   - {timber.ticket.name}: {len(timber.cuts)} cut(s)")
     
     print("\n" + "=" * 70)
     print("All examples created successfully!")

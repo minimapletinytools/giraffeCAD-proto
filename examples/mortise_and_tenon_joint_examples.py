@@ -42,7 +42,7 @@ def example_basic_mortise_and_tenon(position=None):
         size=timber_size,
         length_direction=TimberFace.TOP,  # Points upward in +Z direction
         width_direction=TimberFace.RIGHT,  # Width in +X direction
-        name="Vertical Post"
+        ticket="Vertical Post"
     )
     
     # Create a horizontal beam (mortise timber) centered at position
@@ -53,7 +53,7 @@ def example_basic_mortise_and_tenon(position=None):
         size=timber_size,
         length_direction=TimberFace.RIGHT,  # Points in +X direction
         width_direction=TimberFace.FRONT,  # Width in +Y direction
-        name="Horizontal Beam"
+        ticket="Horizontal Beam"
     )
     
     tenon_size = Matrix([inches(2), inches(2)])
@@ -96,7 +96,7 @@ def example_4x6_into_6x8_mortise_and_tenon(position=None):
         size=Matrix([inches(4), inches(6)]),  # 4" x 6"
         length_direction=TimberFace.TOP,
         width_direction=TimberFace.RIGHT,
-        name="4x6 Vertical Post"
+        ticket="4x6 Vertical Post"
     )
     
     # Create a horizontal beam (mortise timber) - 6x8 inches
@@ -106,7 +106,7 @@ def example_4x6_into_6x8_mortise_and_tenon(position=None):
         size=Matrix([inches(6), inches(8)]),  # 6" x 8"
         length_direction=TimberFace.RIGHT,
         width_direction=TimberFace.FRONT,
-        name="6x8 Horizontal Beam"
+        ticket="6x8 Horizontal Beam"
     )
     
     tenon_size = Matrix([inches(4), inches(2)])  # 4" x 2" tenon
@@ -150,7 +150,7 @@ def example_through_tenon_with_6_inch_stickout(position=None):
         size=Matrix([inches(4), inches(4)]),
         length_direction=TimberFace.TOP,
         width_direction=TimberFace.RIGHT,
-        name="4x4 Vertical Post"
+        ticket="4x4 Vertical Post"
     )
     
     # Create a horizontal beam (mortise timber) - 6x6 inches
@@ -160,7 +160,7 @@ def example_through_tenon_with_6_inch_stickout(position=None):
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
         width_direction=TimberFace.FRONT,
-        name="6x6 Horizontal Beam"
+        ticket="6x6 Horizontal Beam"
     )
     
     # Define through tenon dimensions
@@ -207,7 +207,7 @@ def example_full_size_4x4_tenon(position=None):
         size=Matrix([inches(4), inches(4)]),
         length_direction=TimberFace.TOP,
         width_direction=TimberFace.RIGHT,
-        name="4x4 Vertical Post"
+        ticket="4x4 Vertical Post"
     )
     
     # Create a horizontal beam (mortise timber) - 6x6 inches
@@ -217,7 +217,7 @@ def example_full_size_4x4_tenon(position=None):
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
         width_direction=TimberFace.FRONT,
-        name="6x6 Horizontal Beam"
+        ticket="6x6 Horizontal Beam"
     )
     
     # Define full-size tenon dimensions
@@ -262,7 +262,7 @@ def example_offset_corner_tenon(position=None):
         size=Matrix([inches(4), inches(4)]),
         length_direction=TimberFace.TOP,
         width_direction=TimberFace.RIGHT,
-        name="4x4 Vertical Post"
+        ticket="4x4 Vertical Post"
     )
     
     # Create a horizontal beam (mortise timber) - 6x6 inches
@@ -272,7 +272,7 @@ def example_offset_corner_tenon(position=None):
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
         width_direction=TimberFace.FRONT,
-        name="6x6 Horizontal Beam"
+        ticket="6x6 Horizontal Beam"
     )
     
     # Define offset corner tenon dimensions
@@ -323,7 +323,7 @@ def example_mortise_and_tenon_with_pegs(position=None):
         size=Matrix([inches(4), inches(4)]),
         length_direction=TimberFace.TOP,
         width_direction=TimberFace.RIGHT,
-        name="4x4 Vertical Post"
+        ticket="4x4 Vertical Post"
     )
     
     # Create a horizontal beam (mortise timber) - 6x6 inches
@@ -333,7 +333,7 @@ def example_mortise_and_tenon_with_pegs(position=None):
         size=Matrix([inches(6), inches(6)]),
         length_direction=TimberFace.RIGHT,
         width_direction=TimberFace.FRONT,
-        name="6x6 Horizontal Beam"
+        ticket="6x6 Horizontal Beam"
     )
     
     # Define tenon dimensions
@@ -392,7 +392,7 @@ def create_mortise_and_tenon_patternbook() -> PatternBook:
             for timber in joint.cut_timbers.values():
                 new_position = timber.timber.get_bottom_position_global() + center
                 translated_timber = Timber(
-                    name=timber.timber.name,
+                    ticket=timber.timber.ticket.name,
                     transform=Transform(position=new_position, orientation=timber.timber.orientation),
                     size=timber.timber.size,
                     length=timber.timber.length
@@ -514,7 +514,7 @@ def create_all_mortise_and_tenon_examples_OLD():
         for timber in joint.cut_timbers.values():
             new_position = timber.timber.get_bottom_position_global() + create_v3(current_position_x, 0, 0)
             translated_timber = Timber(
-                name=timber.timber.name,
+                ticket=timber.timber.ticket.name,
                 transform=Transform(position=new_position, orientation=timber.timber.orientation),
                 size=timber.timber.size,
                 length=timber.timber.length
@@ -549,7 +549,7 @@ def create_all_mortise_and_tenon_examples_OLD():
     return Frame(
         cut_timbers=all_timbers,
         accessories=all_accessories,
-        name="M&T Examples"
+        ticket="M&T Examples"
     )
 
 
@@ -575,7 +575,7 @@ if __name__ == "__main__":
         # Display timber details
         for i, cut_timber in enumerate(joint.cut_timbers.values()):
             timber = cut_timber.timber
-            print(f"\n  Timber {i+1}: {timber.name}")
+            print(f"\n  Timber {i+1}: {timber.ticket.name}")
             print(f"    Position: ({float(timber.get_bottom_position_global()[0]):.1f}, {float(timber.get_bottom_position_global()[1]):.1f}, {float(timber.get_bottom_position_global()[2]):.1f})")
             print(f"    Length: {float(timber.length):.1f} inches")
             print(f"    Size: {float(timber.size[0]):.1f} x {float(timber.size[1]):.1f} inches")

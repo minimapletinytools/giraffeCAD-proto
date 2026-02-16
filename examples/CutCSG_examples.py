@@ -231,7 +231,7 @@ def example_lap_cut_on_timber():
         bottom_position=Matrix([0, 0, 0]),
         length_direction=Matrix([1, 0, 0]),
         width_direction=Matrix([0, 1, 0]),
-        name='lap_test_timber'
+        ticket='lap_test_timber'
     )
     
     # Create the lap cut parameters
@@ -296,7 +296,7 @@ def example_gooseneck_profile_cut():
         bottom_position=Matrix([0, 0, 0]),
         length_direction=Matrix([0, 0, 1]),  # Vertical
         width_direction=Matrix([1, 0, 0]),   # Along X
-        name='gooseneck_test_timber'
+        ticket='gooseneck_test_timber'
     )
     
     # Define gooseneck parameters
@@ -370,7 +370,7 @@ def example_shoulder_notch_on_timber():
         bottom_position=Matrix([0, 0, 0]),
         length_direction=Matrix([0, 0, 1]),  # Vertical (along Z)
         width_direction=Matrix([1, 0, 0]),   # Width along X
-        name='shoulder_notch_test_timber'
+        ticket='shoulder_notch_test_timber'
     )
     
     # Define notch parameters

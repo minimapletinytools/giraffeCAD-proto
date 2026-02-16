@@ -670,7 +670,7 @@ class TestCutTimber:
         length_direction = Matrix([Rational(0), Rational(0), Rational(1)])
         width_direction = Matrix([Rational(1), Rational(0), Rational(0)])
         
-        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction, name='test_timber')
+        timber = timber_from_directions(length, size, bottom_position, length_direction, width_direction, ticket='test_timber')
         cut_timber = CutTimber(timber)
         
         # Get the CSG
@@ -899,7 +899,7 @@ class TestFrameFromJoints:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="Timber 1"
+            ticket="Timber 1"
         )
         
         timber2 = create_axis_aligned_timber(
@@ -908,7 +908,7 @@ class TestFrameFromJoints:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="Timber 2"
+            ticket="Timber 2"
         )
         
         # Create mock cuts for each timber
@@ -934,7 +934,7 @@ class TestFrameFromJoints:
         assert len(frame.accessories) == 0
         
         # Verify each timber appears once
-        timber_names = [ct.timber.name for ct in frame.cut_timbers]
+        timber_names = [ct.timber.ticket.name for ct in frame.cut_timbers]
         assert "Timber 1" in timber_names
         assert "Timber 2" in timber_names
     
@@ -947,7 +947,7 @@ class TestFrameFromJoints:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="Shared Timber"
+            ticket="Shared Timber"
         )
         
         # Create different cuts for the same timber
@@ -991,7 +991,7 @@ class TestFrameFromJoints:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="Timber"
+            ticket="Timber"
         )
         
         # Create a peg accessory
@@ -1046,7 +1046,7 @@ class TestFrameFromJoints:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="Jointed Timber"
+            ticket="Jointed Timber"
         )
         
         # Create an unjointed timber
@@ -1056,7 +1056,7 @@ class TestFrameFromJoints:
             size=create_v2(Rational(2), Rational(2)),
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="Unjointed Timber"
+            ticket="Unjointed Timber"
         )
         
         # Create a joint with timber1
@@ -1071,12 +1071,12 @@ class TestFrameFromJoints:
         # Verify both timbers are in the frame
         assert len(frame.cut_timbers) == 2
         
-        timber_names = [ct.timber.name for ct in frame.cut_timbers]
+        timber_names = [ct.timber.ticket.name for ct in frame.cut_timbers]
         assert "Jointed Timber" in timber_names
         assert "Unjointed Timber" in timber_names
         
         # Verify unjointed timber has no cuts
-        unjointed_ct = [ct for ct in frame.cut_timbers if ct.timber.name == "Unjointed Timber"][0]
+        unjointed_ct = [ct for ct in frame.cut_timbers if ct.timber.ticket.name == "Unjointed Timber"][0]
         assert len(unjointed_ct.cuts) == 0
     
     def test_from_joints_warns_on_different_timbers_same_name(self):
@@ -1088,7 +1088,7 @@ class TestFrameFromJoints:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="Post"
+            ticket="Post"
         )
         
         timber2 = create_axis_aligned_timber(
@@ -1097,7 +1097,7 @@ class TestFrameFromJoints:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="Post"  # Same name
+            ticket="Post"  # Same name
         )
         
         # Create joints
@@ -1131,7 +1131,7 @@ class TestFrameFromJoints:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="Post"
+            ticket="Post"
         )
         
         # Create an identical timber (same data, different object)
@@ -1141,7 +1141,7 @@ class TestFrameFromJoints:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="Post"
+            ticket="Post"
         )
         
         # Verify they are different objects but equal data
@@ -1187,7 +1187,7 @@ class TestFrameBoundingBox:
             size=create_v2(Rational(4), Rational(4)),  # 4x4 inches
             length_direction=TimberFace.TOP,
             width_direction=TimberFace.RIGHT,
-            name="TestPost"
+            ticket="TestPost"
         )
         
         # Create a frame with just this timber
@@ -1231,7 +1231,7 @@ class TestFrameBoundingBox:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.RIGHT,
             width_direction=TimberFace.FRONT,
-            name="TimberA"
+            ticket="TimberA"
         )
         
         # Timber B: butt timber (will be cut), runs perpendicular to timberA
@@ -1242,7 +1242,7 @@ class TestFrameBoundingBox:
             size=create_v2(Rational(4), Rational(4)),
             length_direction=TimberFace.FRONT,
             width_direction=TimberFace.RIGHT,
-            name="TimberB"
+            ticket="TimberB"
         )
         
         # Create a butt joint where timberB's TOP end is cut to butt against timberA
@@ -1256,11 +1256,11 @@ class TestFrameBoundingBox:
         frame = Frame.from_joints([joint])
         
         # Verify that timberB has cuts applied
-        cut_timberB = next(ct for ct in frame.cut_timbers if ct.timber.name == "TimberB")
+        cut_timberB = next(ct for ct in frame.cut_timbers if ct.timber.ticket.name == "TimberB")
         assert len(cut_timberB.cuts) > 0, "TimberB should have cuts applied"
         
         # Verify that timberA is uncut
-        cut_timberA = next(ct for ct in frame.cut_timbers if ct.timber.name == "TimberA")
+        cut_timberA = next(ct for ct in frame.cut_timbers if ct.timber.ticket.name == "TimberA")
         assert len(cut_timberA.cuts) == 0, "TimberA should be uncut (receiving timber)"
         
         # Get the bounding prisms for both timbers

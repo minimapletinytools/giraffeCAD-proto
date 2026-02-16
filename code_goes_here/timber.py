@@ -7,6 +7,7 @@ from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify, Min, Max
 from .rule import *
 from .footprint import *
 from .cutcsg import *
+from .ticket import Ticket
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict, Literal, final
 from dataclasses import dataclass, field
@@ -259,6 +260,22 @@ SomeTimberFace = Union[TimberFace, TimberReferenceEnd, TimberLongFace]
 #============================================================================
 
 
+def _ensure_ticket(ticket: Optional[Union[Ticket, str]]) -> Ticket:
+    """Convert a ticket parameter to a Ticket object.
+    
+    Args:
+        ticket: Either a Ticket object, a string name, or None
+        
+    Returns:
+        Ticket object (creates one with default name if None provided)
+    """
+    if ticket is None:
+        return Ticket()
+    elif isinstance(ticket, str):
+        return Ticket(name=ticket)
+    else:
+        return ticket
+
 
 def compute_timber_orientation(length_direction: Direction3D, width_direction: Direction3D) -> Orientation:
     """Compute the orientation matrix from length and width directions
@@ -314,7 +331,7 @@ def compute_timber_orientation(length_direction: Direction3D, width_direction: D
 # TODO rename to create_timber (or maybe hew lolololol) + add defaults
 def timber_from_directions(length: Numeric, size: V2, bottom_position: V3,
                           length_direction: Direction3D, width_direction: Direction3D,
-                          name: Optional[str] = None) -> 'Timber':
+                          ticket: Optional[Union[Ticket, str]] = None) -> 'Timber':
     """Factory function to create a Timber with computed orientation from direction vectors
     
     This is the main way to construct Timber instances. It takes direction vectors
@@ -326,14 +343,14 @@ def timber_from_directions(length: Numeric, size: V2, bottom_position: V3,
         bottom_position: Position of the bottom point (center of cross-section) as 3D vector
         length_direction: Direction vector for the length axis as 3D vector, the +length direction is the +Z direction
         width_direction: Direction vector for the width axis as 3D vector, the +width direction is the +X direction
-        name: Optional name for this timber (used for rendering/debugging)
+        ticket: Optional ticket for this timber (can be Ticket object or string name, used for rendering/debugging)
         
     Returns:
         Timber instance with computed orientation
     """
     orientation = compute_timber_orientation(length_direction, width_direction)
     transform = Transform(position=bottom_position, orientation=orientation)
-    return Timber(length=length, size=size, transform=transform, name=name)
+    return Timber(length=length, size=size, transform=transform, ticket=_ensure_ticket(ticket))
 
 
 @dataclass(frozen=True)
@@ -348,18 +365,18 @@ class PerfectTimberWithin(ABC):
     after construction.
     
     Alternatively, if you already have a Transform object, you can construct
-    a timber directly by passing: Timber(length, size, transform, name)
+    a timber directly by passing: Timber(length, size, transform, ticket)
     
     Attributes:
         length: Length of the timber along its centerline axis
         size: Cross-sectional size (width, height) of the nominal bounding box
         transform: Position and orientation in global coordinates
-        name: Optional name for this timber (used for rendering/debugging)
+        ticket: Ticket for this timber (used for rendering/debugging)
     """
     length: Numeric
     size: V2
     transform: Transform
-    name: Optional[str] = None
+    ticket: Ticket = field(default_factory=Ticket)
     
     @property
     def orientation(self) -> Orientation:
@@ -1165,9 +1182,9 @@ class CutTimber:
         self.joints = []  # List of joints this timber participates in
 
     @property
-    def name(self) -> Optional[str]:
-        """Get the name from the underlying timber."""
-        return self.timber.name
+    def name(self) -> str:
+        """Get the name from the underlying timber's ticket."""
+        return self.timber.ticket.name
 
     # this one returns the timber without cuts where ends with joints are infinite in length
     def _extended_timber_without_cuts_csg_local(self) -> CutCSG:
@@ -1671,7 +1688,7 @@ class Frame:
         name_to_timber_refs: Dict[str, List[PerfectTimberWithin]] = {}
         for timber_id, cut_timber_list in timber_ref_to_cut_timbers.items():
             timber = cut_timber_list[0].timber  # Get timber from first CutTimber
-            timber_name = timber.name
+            timber_name = timber.ticket.name
             if timber_name is not None:
                 if timber_name not in name_to_timber_refs:
                     name_to_timber_refs[timber_name] = []
@@ -1845,11 +1862,11 @@ class Frame:
     
     def _check_timber_no_floats(self, timber: PerfectTimberWithin):
         """Check a single timber for float values."""
-        self._check_numeric_value(timber.length, f"Timber '{timber.name}' length")
-        self._check_vector(timber.size, f"Timber '{timber.name}' size")
-        self._check_vector(timber.transform.position, f"Timber '{timber.name}' transform.position")
+        self._check_numeric_value(timber.length, f"Timber '{timber.ticket.name}' length")
+        self._check_vector(timber.size, f"Timber '{timber.ticket.name}' size")
+        self._check_vector(timber.transform.position, f"Timber '{timber.ticket.name}' transform.position")
         # Note: orientation.matrix is checked as part of the matrix
-        self._check_matrix(timber.transform.orientation.matrix, f"Timber '{timber.name}' transform.orientation")
+        self._check_matrix(timber.transform.orientation.matrix, f"Timber '{timber.ticket.name}' transform.orientation")
     
     def _check_accessory_no_floats(self, accessory: JointAccessory):
         """Check an accessory for float values."""

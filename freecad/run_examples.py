@@ -45,8 +45,8 @@ if script_dir not in sys.path:
 # RENDER_TYPE: 'pattern' or 'group'
 # - 'pattern': Render a single pattern by name
 # - 'group': Render all patterns in a group with spacing
-#RENDER_TYPE = 'group'
-RENDER_TYPE = 'pattern'
+RENDER_TYPE = 'group'
+#RENDER_TYPE = 'pattern'
 
 # PATTERN_NAME: Name of a specific pattern to render (when RENDER_TYPE = 'pattern')
 # Examples of available patterns:
@@ -65,9 +65,9 @@ PATTERN_NAME = 'oscar_shed'
 # Available groups: 'basic_joints', 'mortise_and_tenon', 'construction', 
 #                   'horsey', 'oscar_shed', 'japanese_joints', 'csg_examples', 
 #                   'irrational_angles', 'posts', 'beams', 'boxes'
-#GROUP_NAME = 'basic_joints'
+GROUP_NAME = 'basic_joints'
 #GROUP_NAME = 'oscar_shed'
-GROUP_NAME = 'japanese_joints'
+#GROUP_NAME = 'japanese_joints'
 #GROUP_NAME = 'posts'
 #GROUP_NAME = 'csg_examples'
 

@@ -12,6 +12,7 @@ import sys
 sys.path.append('../..')
 
 from giraffe import *
+from code_goes_here.ticket import Ticket
 
 # Standard timber dimensions (4" x 5", 4' long) - matches canonical examples
 TIMBER_WIDTH = inches(4)   # 4"
@@ -53,7 +54,7 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     
     # TimberA extends from position in direction_A
     timberA = timber_from_directions(
-        name="MiterJoint_TimberA",
+        ticket="MiterJoint_TimberA",
         length=TIMBER_LENGTH,
         size=TIMBER_SIZE_2D,
         bottom_position=position - direction_A * half_length,
@@ -63,7 +64,7 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     
     # TimberB extends from position in direction_B
     timberB = timber_from_directions(
-        name="MiterJoint_TimberB",
+        ticket="MiterJoint_TimberB",
         length=TIMBER_LENGTH,
         size=TIMBER_SIZE_2D,
         bottom_position=position - direction_B * half_length,
@@ -94,8 +95,8 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
     
     # Rename timbers for clarity (timber2 is +X, timber1 is +Y)
     from dataclasses import replace
-    timberA = replace(arrangement.timber2, name="MiterFaceAligned_TimberA")  # +X direction
-    timberB = replace(arrangement.timber1, name="MiterFaceAligned_TimberB")  # +Y direction
+    timberA = replace(arrangement.timber2, ticket=Ticket("MiterFaceAligned_TimberA"))  # +X direction
+    timberB = replace(arrangement.timber1, ticket=Ticket("MiterFaceAligned_TimberB"))  # +Y direction
     
     joint = cut_basic_miter_joint_on_face_aligned_timbers(
         timberA, TimberReferenceEnd.BOTTOM, 
@@ -122,8 +123,8 @@ def make_butt_joint_example(position: V3) -> list[CutTimber]:
     
     # Rename timbers for clarity
     from dataclasses import replace
-    receiving_timber = replace(arrangement.receiving_timber, name="ButtJoint_Receiving")
-    butt_timber = replace(arrangement.butt_timber, name="ButtJoint_Butt")
+    receiving_timber = replace(arrangement.receiving_timber, ticket=Ticket("ButtJoint_Receiving"))
+    butt_timber = replace(arrangement.butt_timber, ticket=Ticket("ButtJoint_Butt"))
     
     joint = cut_basic_butt_joint_on_face_aligned_timbers(
         receiving_timber, 
@@ -151,8 +152,8 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
     
     # Rename timbers for clarity
     from dataclasses import replace
-    timberA = replace(arrangement.timber1, name="SpliceJoint_TimberA")
-    timberB = replace(arrangement.timber2, name="SpliceJoint_TimberB")
+    timberA = replace(arrangement.timber1, ticket=Ticket("SpliceJoint_TimberA"))
+    timberB = replace(arrangement.timber2, ticket=Ticket("SpliceJoint_TimberB"))
     
     joint = cut_basic_butt_splice_joint_on_aligned_timbers(
         timberA, arrangement.timber1_end,
@@ -183,7 +184,7 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
     # Housing timber (beam) extends in +X direction
     # This is the timber that gets the groove cut into it
     housing_timber = timber_from_directions(
-        name="HouseJoint_Housing",
+        ticket="HouseJoint_Housing",
         length=TIMBER_LENGTH,
         size=TIMBER_SIZE_2D,
         bottom_position=position - Matrix([half_length, 0, 0]) + Matrix([0, 0, offset]),
@@ -195,7 +196,7 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
     # This timber fits into the groove and remains uncut
     # Offset vertically so they intersect properly
     housed_timber = timber_from_directions(
-        name="HouseJoint_Housed",
+        ticket="HouseJoint_Housed",
         length=TIMBER_LENGTH,
         size=TIMBER_SIZE_2D,
         bottom_position=position - Matrix([0, half_length, 0]) - Matrix([0, 0, offset]),
@@ -227,7 +228,7 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
     # TimberA extends in +X direction, bottom at Z=0 (relative to position)
     # Height direction is +Z, so top face is at Z=TIMBER_HEIGHT
     timberA = timber_from_directions(
-        name="CrossLap_TimberA",
+        ticket="CrossLap_TimberA",
         length=TIMBER_LENGTH,
         size=TIMBER_SIZE_2D,
         bottom_position=position - Matrix([half_length, 0, 0]),
@@ -239,7 +240,7 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
     # This creates an overlap from Z=half_height to Z=TIMBER_HEIGHT
     # Height direction is +Z, so top face is at Z=half_height+TIMBER_HEIGHT
     timberB = timber_from_directions(
-        name="CrossLap_TimberB",
+        ticket="CrossLap_TimberB",
         length=TIMBER_LENGTH,
         size=TIMBER_SIZE_2D,
         bottom_position=position - Matrix([0, half_length, 0]) + Matrix([0, 0, half_height]),
@@ -284,7 +285,7 @@ def make_splice_lap_joint_example(position: V3) -> list[CutTimber]:
         bottom_position=position - create_v3(half_length, 0, 0),
         length_direction=create_v3(1, 0, 0),
         width_direction=create_v3(0, 1, 0),
-        name="splice_lap_timberA"
+        ticket="splice_lap_timberA"
     )
     
     # TimberB extends in +X direction, positioned to meet timberA end-to-end
@@ -294,7 +295,7 @@ def make_splice_lap_joint_example(position: V3) -> list[CutTimber]:
         bottom_position=position + create_v3(half_length, 0, 0),
         length_direction=create_v3(1, 0, 0),
         width_direction=create_v3(0, 1, 0),
-        name="splice_lap_timberB"
+        ticket="splice_lap_timberB"
     )
     
     # Create the splice lap joint
@@ -395,4 +396,4 @@ if __name__ == "__main__":
     for i, cut_timber in enumerate(frame.cut_timbers):
         timber = cut_timber.timber
         num_cuts = len(cut_timber.cuts)
-        print(f"{i+1:2d}. {timber.name:30s} | Cuts: {num_cuts} | Length: {float(timber.length):.2f}m")
+        print(f"{i+1:2d}. {timber.ticket.name:30s} | Cuts: {num_cuts} | Length: {float(timber.length):.2f}m")
