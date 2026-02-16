@@ -18,10 +18,10 @@ else
     echo ""
     
     # Check if Python 3.10+ is available
-    if ! command -v python3 &> /dev/null; then
-        echo "❌ Error: python3 not found. Please install Python 3.10 or higher."
-        exit 1
-    fi
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Error: python3 not found. Please install Python 3.10 or higher."
+    exit 1
+fi
     
     # Check Python version
     python_version=$(python3 --version | cut -d' ' -f2)
@@ -35,20 +35,20 @@ else
     
     echo "Found Python: $python_version"
     echo ""
-    
-    # Create venv if it doesn't exist
-    if [ ! -d "venv" ]; then
-        echo "📦 Creating virtual environment..."
-        python3 -m venv venv
-        echo "✅ Virtual environment created"
-    else
-        echo "✅ Virtual environment already exists"
-    fi
-    echo ""
-    
-    # Activate venv
-    echo "🔌 Activating virtual environment..."
-    source venv/bin/activate
+
+# Create venv if it doesn't exist
+if [ ! -d "venv" ]; then
+    echo "📦 Creating virtual environment..."
+    python3 -m venv venv
+    echo "✅ Virtual environment created"
+else
+    echo "✅ Virtual environment already exists"
+fi
+echo ""
+
+# Activate venv
+echo "🔌 Activating virtual environment..."
+source venv/bin/activate
 fi
 
 # Upgrade pip
@@ -97,20 +97,20 @@ if command -v uv &> /dev/null; then
     echo "   4. See all available commands:"
     echo "      make help"
 else
-    echo "   1. Activate the virtual environment:"
-    echo "      source venv/bin/activate"
-    echo ""
-    echo "   2. Run tests:"
+echo "   1. Activate the virtual environment:"
+echo "      source venv/bin/activate"
+echo ""
+echo "   2. Run tests:"
     echo "      make test"
-    echo ""
-    echo "   3. Run tests with coverage:"
+echo ""
+echo "   3. Run tests with coverage:"
     echo "      make test-cov"
-    echo ""
-    echo "   4. Run type checking:"
+echo ""
+echo "   4. Run type checking:"
     echo "      ty check  (install ty first - see TYPECHECK_SETUP.md)"
-    echo ""
-    echo "   5. When done, deactivate:"
-    echo "      deactivate"
+echo ""
+echo "   5. When done, deactivate:"
+echo "      deactivate"
 fi
 echo ""
 
