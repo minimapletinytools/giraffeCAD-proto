@@ -5,6 +5,7 @@ Built using the GiraffeCAD API
 
 from sympy import Rational
 from dataclasses import replace
+from typing import Optional
 import sys
 sys.path.append('..')
 
@@ -45,31 +46,39 @@ def create_oscar_shed_patternbook() -> PatternBook:
     """
     patterns = [
         (PatternMetadata("oscar_shed", ["oscar_shed", "complete_structures"], "frame"),
-         lambda center: create_oscarshed()),
+         lambda center: create_oscarshed(center=center)),
     ]
     
     return PatternBook(patterns=patterns)
 
 
-def create_oscarshed():
+def create_oscarshed(center: Optional[V3] = None):
     """
     Create Oscar's Shed structure.
+    
+    Args:
+        center: Optional center position for the structure (default: origin)
     
     Returns:
         Frame: Frame object containing all cut timbers and accessories for the complete shed
     """
     # Note: Dimensions are already in meters from dimensional helpers
     
+    # Default center to origin if not provided
+    if center is None:
+        center = create_v3(Rational(0), Rational(0), Rational(0))
+    
     # ============================================================================
     # BUILD THE STRUCTURE
     # ============================================================================
 
     # Create the footprint (rectangular, counter-clockwise from bottom-left)
+    # Offset by center position (only x and y components)
     footprint_corners = [
-        create_v2(Rational(0), Rational(0)),     # Corner 0: Front-left
-        create_v2(base_width, Rational(0)),      # Corner 1: Front-right
-        create_v2(base_width, base_length),      # Corner 2: Back-right
-        create_v2(Rational(0), base_length)      # Corner 3: Back-left
+        create_v2(center[0] + Rational(0), center[1] + Rational(0)),     # Corner 0: Front-left
+        create_v2(center[0] + base_width, center[1] + Rational(0)),      # Corner 1: Front-right
+        create_v2(center[0] + base_width, center[1] + base_length),      # Corner 2: Back-right
+        create_v2(center[0] + Rational(0), center[1] + base_length)      # Corner 3: Back-left
     ]
     footprint = Footprint(footprint_corners)  # type: ignore[arg-type]
 
@@ -82,22 +91,22 @@ def create_oscarshed():
     # Front mudsill (corner 0 to corner 1) - along X axis
     # Length is automatically calculated from boundary side
     mudsill_front = create_horizontal_timber_on_footprint(
-        footprint, 0, FootprintLocation.INSIDE, mudsill_size, name="Front Mudsill"
+        footprint, 0, FootprintLocation.INSIDE, mudsill_size, ticket="Front Mudsill"
     )
 
     # Right mudsill (corner 1 to corner 2) - along Y axis
     mudsill_right = create_horizontal_timber_on_footprint(
-        footprint, 1, FootprintLocation.INSIDE, mudsill_size, name="Right Mudsill"
+        footprint, 1, FootprintLocation.INSIDE, mudsill_size, ticket="Right Mudsill"
     )
 
     # Back mudsill (corner 2 to corner 3) - along X axis
     mudsill_back = create_horizontal_timber_on_footprint(
-        footprint, 2, FootprintLocation.INSIDE, mudsill_size, name="Back Mudsill"
+        footprint, 2, FootprintLocation.INSIDE, mudsill_size, ticket="Back Mudsill"
     )
 
     # Left mudsill (corner 3 to corner 0) - along Y axis
     mudsill_left = create_horizontal_timber_on_footprint(
-        footprint, 3, FootprintLocation.INSIDE, mudsill_size, name="Left Mudsill"
+        footprint, 3, FootprintLocation.INSIDE, mudsill_size, ticket="Left Mudsill"
     )
 
     # ============================================================================
@@ -152,7 +161,7 @@ def create_oscarshed():
         length=post_front_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        name="Front Left Post"
+        ticket="Front Left Post"
     )
 
     # Front-right post (on front boundary side, inset from right corner)
@@ -163,7 +172,7 @@ def create_oscarshed():
         length=post_front_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        name="Front Right Post"
+        ticket="Front Right Post"
     )
 
     # Back-right post (on back boundary side, inset from right corner)
@@ -175,7 +184,7 @@ def create_oscarshed():
         length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        name="Back Right Post"
+        ticket="Back Right Post"
     )
 
     # Back-left post (on back boundary side, inset from left corner)
@@ -186,7 +195,7 @@ def create_oscarshed():
         length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        name="Back Left Post"
+        ticket="Back Left Post"
     )
 
     # ============================================================================
@@ -211,7 +220,7 @@ def create_oscarshed():
         length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        name="Back Middle-Right Post"
+        ticket="Back Middle-Right Post"
     )
     
     # Middle-left post (3rd from right)
@@ -224,7 +233,7 @@ def create_oscarshed():
         length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        name="Back Middle-Left Post"
+        ticket="Back Middle-Left Post"
     )
 
     # ============================================================================
@@ -342,7 +351,7 @@ def create_oscarshed():
         location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0,       # No lateral offset
         size=side_girt_size,
-        name="Left Side Girt"
+        ticket="Left Side Girt"
     )
     
     # Right side girt (connects back-right post to front-right post)
@@ -354,7 +363,7 @@ def create_oscarshed():
         location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0,       # No lateral offset
         size=side_girt_size,
-        name="Right Side Girt"
+        ticket="Right Side Girt"
     )
 
     # ============================================================================
@@ -475,7 +484,7 @@ def create_oscarshed():
         location_on_timber2=front_girt_height_on_posts,   # Same height on right post
         lateral_offset=0,       # No lateral offset
         size=front_girt_size,
-        name="Front Girt"
+        ticket="Front Girt"
     )
     
     # ============================================================================
@@ -494,15 +503,15 @@ def create_oscarshed():
     front_girt_left_and_middle, front_girt_right = split_timber(
         front_girt, 
         second_split_distance,
-        name1="Front Girt Left+Middle (temp)",
-        name2="Front Girt Right"
+        ticket1="Front Girt Left+Middle (temp)",
+        ticket2="Front Girt Right"
     )
     
     front_girt_left, front_girt_middle = split_timber(
         front_girt_left_and_middle,
         first_split_distance,
-        name1="Front Girt Left",
-        name2="Front Girt Middle"
+        ticket1="Front Girt Left",
+        ticket2="Front Girt Middle"
     )
     
     # Create gooseneck joints
@@ -601,20 +610,20 @@ def create_oscarshed():
     # The left piece gets cuts from mortise & tenon joint and left gooseneck joint
     front_girt_left_cuts = []
     front_girt_left_cuts.extend(joint_front_girt_left.cut_timbers["tenon_timber"].cuts)  # Tenon cuts
-    front_girt_left_cuts.extend(front_girt_gooseneck_joint_left.cut_timbers[front_girt_left.name or "front_girt_left"].cuts)  # Gooseneck cuts
+    front_girt_left_cuts.extend(front_girt_gooseneck_joint_left.cut_timbers[front_girt_left.ticket.name].cuts)  # Gooseneck cuts
     
     # The middle piece gets cuts from both gooseneck joints
     front_girt_middle_cuts = []
     # Middle piece is referenced in both joints, need to check which one has it
-    if front_girt_middle.name in front_girt_gooseneck_joint_left.cut_timbers:
-        front_girt_middle_cuts.extend(front_girt_gooseneck_joint_left.cut_timbers[front_girt_middle.name].cuts)
-    if front_girt_middle.name in front_girt_gooseneck_joint_right.cut_timbers:
-        front_girt_middle_cuts.extend(front_girt_gooseneck_joint_right.cut_timbers[front_girt_middle.name].cuts)
+    if front_girt_middle.ticket.name in front_girt_gooseneck_joint_left.cut_timbers:
+        front_girt_middle_cuts.extend(front_girt_gooseneck_joint_left.cut_timbers[front_girt_middle.ticket.name].cuts)
+    if front_girt_middle.ticket.name in front_girt_gooseneck_joint_right.cut_timbers:
+        front_girt_middle_cuts.extend(front_girt_gooseneck_joint_right.cut_timbers[front_girt_middle.ticket.name].cuts)
     
     # The right piece gets cuts from mortise & tenon joint and right gooseneck joint
     front_girt_right_cuts = []
     front_girt_right_cuts.extend(joint_front_girt_right.cut_timbers["tenon_timber"].cuts)  # Tenon cuts
-    front_girt_right_cuts.extend(front_girt_gooseneck_joint_right.cut_timbers[front_girt_right.name or "front_girt_right"].cuts)  # Gooseneck cuts
+    front_girt_right_cuts.extend(front_girt_gooseneck_joint_right.cut_timbers[front_girt_right.ticket.name].cuts)  # Gooseneck cuts
     
     # Create CutTimbers for the split pieces with all their cuts
     pct_front_girt_left = CutTimber(front_girt_left, cuts=front_girt_left_cuts)
@@ -650,7 +659,7 @@ def create_oscarshed():
         lateral_offset=0,       # No lateral offset
         size=top_plate_size,
         orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
-        name="Front Top Plate"
+        ticket="Front Top Plate"
     )
     
     
@@ -663,7 +672,7 @@ def create_oscarshed():
         lateral_offset=0,
         size=top_plate_size,
         orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
-        name="Back Top Plate"
+        ticket="Back Top Plate"
     )
 
     # ============================================================================
@@ -825,7 +834,7 @@ def create_oscarshed():
             lateral_offset=joist_vertical_offset,     # Offset upward to align tops
             size=joist_size,
             orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),  # Face up
-            name=f"Joist {i}"
+            ticket=f"Joist {i}"
         )
         joists.append(joist)
 
@@ -918,7 +927,7 @@ def create_oscarshed():
             lateral_offset=rafter_vertical_offset,
             size=rafter_size,
             orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),  # Face up
-            name=f"Rafter {i}"
+            ticket=f"Rafter {i}"
         )
         rafters.append(rafter)
 
@@ -1021,7 +1030,7 @@ if __name__ == "__main__":
     
     print(f"\nCreated {len(frame.cut_timbers)} timbers and {len(frame.accessories)} accessories:")
     for ct in frame.cut_timbers:
-        print(f"  - {ct.timber.name}")
+        print(f"  - {ct.timber.ticket.name}")
     if frame.accessories:
         print(f"\nAccessories:")
         for acc in frame.accessories:

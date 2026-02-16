@@ -761,7 +761,7 @@ class TestJoinTimbers:
                 bottom_position=pos,
                 length_direction=create_v3(1, 0, 0),  # All point east
                 width_direction=create_v3(0, 1, 0),    # All face north
-                name=f"Base_Timber_{i}"
+                ticket=f"Base_Timber_{i}"
             )
             base_timbers.append(timber)
         
@@ -773,14 +773,14 @@ class TestJoinTimbers:
             bottom_position=create_v3(-2, 0, beam_z),
             length_direction=create_v3(1, 0, 0),  # East direction
             width_direction=create_v3(0, 1, 0),    # North facing
-            name="Top_Beam"
+            ticket="Top_Beam"
         )
         
         # Verify that base timbers are face-aligned (same top face Z coordinate)
         for timber in base_timbers:
             top_face_z = timber.get_bottom_position_global()[2] + timber.get_height_direction_global()[2] * timber.size[1]
             expected_top_z = base_z + timber_size[1]  # base_z + height
-            assert simplify(top_face_z - expected_top_z) == 0, f"Base timber {timber.name} not at expected height"
+            assert simplify(top_face_z - expected_top_z) == 0, f"Base timber {timber.ticket.name} not at expected height"
         
         # Test joining multiple base timbers to the beam
         joining_timbers = []
@@ -939,7 +939,7 @@ class TestJoinTimbers:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),  # Vertical (up)
             width_direction=create_v3(1, 0, 0),    # Width points East
-            name="Post_Left"
+            ticket="Post_Left"
         )
         
         # Right post 8" away in X direction
@@ -949,7 +949,7 @@ class TestJoinTimbers:
             bottom_position=create_v3(inches(8), 0, 0),
             length_direction=create_v3(0, 0, 1),  # Vertical (up)
             width_direction=create_v3(1, 0, 0),    # Width points East
-            name="Post_Right"
+            ticket="Post_Right"
         )
         
         # Create beams using all 4 lateral face features
@@ -971,7 +971,7 @@ class TestJoinTimbers:
                 size=beam_size,
                 feature_to_mark_on_joining_timber=feature,
                 orientation_face_on_timber1=TimberFace.TOP,
-                name=f"Beam_{feature.name}"
+                ticket=f"Beam_{feature.name}"
             )
             beams[feature] = beam
         
@@ -1534,7 +1534,7 @@ class TestSplitTimber:
     def test_split_timber_basic(self):
         """Test basic timber splitting at midpoint"""
         # Create a simple vertical timber
-        timber = create_standard_vertical_timber(height=10, size=(4, 4), position=(0, 0, 0), name="Test Timber")
+        timber = create_standard_vertical_timber(height=10, size=(4, 4), position=(0, 0, 0), ticket="Test Timber")
         
         # Split at 30% (distance 3)
         bottom_timber, top_timber = split_timber(timber, Rational(3))
@@ -1546,7 +1546,7 @@ class TestSplitTimber:
         assert bottom_timber.get_bottom_position_global() == create_v3(Rational(0), Rational(0), Rational(0))
         assert bottom_timber.get_length_direction_global() == create_v3(Rational(0), Rational(0), Rational(1))
         assert bottom_timber.get_width_direction_global() == create_v3(Rational(1), Rational(0), Rational(0))
-        assert bottom_timber.name == "Test Timber_bottom"
+        assert bottom_timber.ticket.name == "Test Timber_bottom"
         
         # Check top timber
         assert top_timber.length == Rational(7)
@@ -1555,7 +1555,7 @@ class TestSplitTimber:
         assert top_timber.get_bottom_position_global() == create_v3(Rational(0), Rational(0), Rational(3))
         assert top_timber.get_length_direction_global() == create_v3(Rational(0), Rational(0), Rational(1))
         assert top_timber.get_width_direction_global() == create_v3(Rational(1), Rational(0), Rational(0))
-        assert top_timber.name == "Test Timber_top"
+        assert top_timber.ticket.name == "Test Timber_top"
     
     def test_split_timber_horizontal(self):
         """Test splitting a horizontal timber"""

@@ -71,7 +71,7 @@ def create_sawhorse() -> Frame:
         size=beam_size,
         length_direction=TimberFace.FRONT,  # Y direction
         width_direction=TimberFace.RIGHT,   # X direction (width is 4")
-        name="Left Beam"
+        ticket="Left Beam"
     )
     
     # Create right beam (4x6, runs in Y direction, 6" dimension in Z)
@@ -81,7 +81,7 @@ def create_sawhorse() -> Frame:
         size=beam_size,
         length_direction=TimberFace.FRONT,  # Y direction
         width_direction=TimberFace.RIGHT,   # X direction (width is 4")
-        name="Right Beam"
+        ticket="Right Beam"
     )
     
     # Create left post (4x4, vertical, centered on left beam)
@@ -91,7 +91,7 @@ def create_sawhorse() -> Frame:
         size=post_size,
         length_direction=TimberFace.TOP,    # Z direction
         width_direction=TimberFace.RIGHT,   # X direction
-        name="Left Post"
+        ticket="Left Post"
     )
     
     # Create right post (4x4, vertical, centered on right beam)
@@ -101,7 +101,7 @@ def create_sawhorse() -> Frame:
         size=post_size,
         length_direction=TimberFace.TOP,    # Z direction
         width_direction=TimberFace.RIGHT,   # X direction
-        name="Right Post"
+        ticket="Right Post"
     )
     
     # Create stretcher (4x4, horizontal, connects the two posts at their midpoint)
@@ -115,7 +115,7 @@ def create_sawhorse() -> Frame:
         size=stretcher_size,
         length_direction=TimberFace.RIGHT,  # X direction
         width_direction=TimberFace.FRONT,   # Y direction
-        name="Stretcher"
+        ticket="Stretcher"
     )
     
     # Create top plate (4x6 with 6" in Y, 5ft long in X direction)
@@ -127,7 +127,7 @@ def create_sawhorse() -> Frame:
         size=plate_size,
         length_direction=TimberFace.RIGHT,  # X direction (5ft long)
         width_direction=TimberFace.FRONT,   # Y direction (6" wide)
-        name="Top Plate"
+        ticket="Top Plate"
     )
     
     # ============================================================================
@@ -264,7 +264,7 @@ def main():
     
     for i, cut_timber in enumerate(frame.cut_timbers):
         timber = cut_timber.timber
-        print(f"{i+1}. {timber.name}")
+        print(f"{i+1}. {timber.ticket.name}")
         print(f"   Length: {float(timber.length):.3f}m ({float(timber.length) / 0.0254:.1f} inches)")
         print(f"   Size: {float(timber.size[0]):.3f}m x {float(timber.size[1]):.3f}m "
               f"({float(timber.size[0]) / 0.0254:.1f}\" x {float(timber.size[1]) / 0.0254:.1f}\")")

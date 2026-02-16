@@ -90,7 +90,7 @@ def create_honeycomb_shed():
         print(f"  Mudsill {i}...")
         mudsill = create_horizontal_timber_on_footprint(
             footprint, i, FootprintLocation.INSIDE, mudsill_size, 
-            name=f"Mudsill {i}"
+            ticket=f"Mudsill {i}"
         )
         mudsills.append(mudsill)
     
@@ -145,7 +145,7 @@ def create_honeycomb_shed():
             length=height,
             location_type=FootprintLocation.INSIDE,
             size=post_size,
-            name=f"Post {i}"
+            ticket=f"Post {i}"
         )
         posts.append(post)
     
@@ -207,7 +207,7 @@ def create_honeycomb_shed():
             lateral_offset=Rational(0),
             size=ring_beam_size,
             orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),  # Face up
-            name=f"Ring Beam {i}"
+            ticket=f"Ring Beam {i}"
         )
         ring_beams.append(ring_beam)
 
@@ -278,7 +278,7 @@ def create_honeycomb_shed():
         bottom_position=center_point,
         length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # Vertical
         width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
-        name="Central Hub Post"
+        ticket="Central Hub Post"
     )
 
     # ============================================================================
@@ -327,7 +327,7 @@ def create_honeycomb_shed():
             lateral_offset=Rational(0),
             size=rafter_size,
             orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),  # Face up
-            name=f"Radial Rafter {i}"
+            ticket=f"Radial Rafter {i}"
         )
         rafters.append(rafter)
 
@@ -359,7 +359,7 @@ def create_honeycomb_shed():
             lateral_offset=Rational(0),
             size=brace_size,
             orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
-            name=f"Knee Brace {i}"
+            ticket=f"Knee Brace {i}"
         )
         braces.append(brace)
 
@@ -405,7 +405,7 @@ def create_honeycomb_shed():
             lateral_offset=joist_offset,
             size=joist_size,
             orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
-            name=f"Floor Joist {i}"
+            ticket=f"Floor Joist {i}"
         )
         joists.append(joist)
 
@@ -466,7 +466,7 @@ def create_honeycomb_shed():
     return Frame.from_joints(
         all_joints, 
         additional_unjointed_timbers=unjointed_timbers,
-        name="Honeycomb Shed"
+        ticket="Honeycomb Shed"
     )
 
 
@@ -484,7 +484,7 @@ if __name__ == "__main__":
     
     print(f"\nCreated {len(frame.cut_timbers)} timbers and {len(frame.accessories)} accessories:")
     for ct in frame.cut_timbers:
-        print(f"  - {ct.timber.name}")
+        print(f"  - {ct.timber.ticket.name}")
     if frame.accessories:
         print(f"\nAccessories:")
         for acc in frame.accessories:

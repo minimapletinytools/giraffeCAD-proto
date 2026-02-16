@@ -403,8 +403,8 @@ def cut_lapped_gooseneck_joint(
     
     return Joint(
         cut_timbers={
-            receiving_timber.name or "receiving_timber": receiving_timber_cut,
-            gooseneck_timber.name or "gooseneck_timber": gooseneck_timber_cut
+            receiving_timber.ticket.name: receiving_timber_cut,
+            gooseneck_timber.ticket.name: gooseneck_timber_cut
         },
         jointAccessories={}
     )

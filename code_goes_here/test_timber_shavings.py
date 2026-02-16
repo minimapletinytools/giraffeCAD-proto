@@ -25,7 +25,7 @@ class TestFindOpposingFaceOnAnotherTimber:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),  # East
             width_direction=create_v3(0, 1, 0),   # North
-            name="timber_a"
+            ticket="timber_a"
         )
         # Timber A has:
         # - length_direction = (1, 0, 0) = East
@@ -43,7 +43,7 @@ class TestFindOpposingFaceOnAnotherTimber:
             bottom_position=create_v3(0, inches(10), 0),  # 10 inches north
             length_direction=create_v3(1, 0, 0),  # East
             width_direction=create_v3(0, 1, 0),   # North
-            name="timber_b"
+            ticket="timber_b"
         )
         # Timber B has same orientation as Timber A
         # - RIGHT face points North: (0, 1, 0)
@@ -80,7 +80,7 @@ class TestFindOpposingFaceOnAnotherTimber:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),  # East
             width_direction=create_v3(0, 1, 0),   # North
-            name="timber_a"
+            ticket="timber_a"
         )
         # Timber A:
         # - length_direction = (1, 0, 0) = East
@@ -104,7 +104,7 @@ class TestFindOpposingFaceOnAnotherTimber:
             bottom_position=create_v3(inches(20), 0, 0),
             length_direction=length_dir_b,
             width_direction=width_dir_b,
-            name="timber_b"
+            ticket="timber_b"
         )
         # Timber B:
         # - length_direction = (cos(30°), sin(30°), 0) ≈ (0.866, 0.5, 0)
@@ -146,7 +146,7 @@ class TestFindOpposingFaceOnAnotherTimber:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),  # East
             width_direction=create_v3(0, 1, 0),   # North
-            name="timber_a"
+            ticket="timber_a"
         )
         
         # Timber B pointing up (perpendicular to Timber A)
@@ -157,7 +157,7 @@ class TestFindOpposingFaceOnAnotherTimber:
             bottom_position=create_v3(inches(20), 0, 0),
             length_direction=create_v3(0, 0, 1),  # Up
             width_direction=create_v3(1, 0, 0),   # East
-            name="timber_b"
+            ticket="timber_b"
         )
         # Timber B:
         # - length_direction = (0, 0, 1) = Up
@@ -179,7 +179,7 @@ class TestFindOpposingFaceOnAnotherTimber:
             bottom_position=create_v3(inches(20), 0, 0),
             length_direction=create_v3(1, 1, 1) / sqrt(3),  # Diagonal direction
             width_direction=create_v3(-1, 1, 0) / sqrt(2),  # Perpendicular in a different plane
-            name="timber_b"
+            ticket="timber_b"
         )
         
         # Should raise an AssertionError because no face on timber_b is parallel to timber_a's RIGHT face
@@ -1134,7 +1134,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timber1'
+            ticket='timber1'
         )
         
         timber2 = timber_from_directions(
@@ -1143,7 +1143,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(5, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timber2'
+            ticket='timber2'
         )
         
         assert do_xy_cross_section_on_parallel_timbers_overlap(timber1, timber2), \
@@ -1156,7 +1156,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(5, 10, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timber3'
+            ticket='timber3'
         )
         
         assert not do_xy_cross_section_on_parallel_timbers_overlap(timber1, timber3), \
@@ -1169,7 +1169,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timber4'
+            ticket='timber4'
         )
         
         timber5 = timber_from_directions(
@@ -1178,7 +1178,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 0, 1),  # Rotated 90 degrees
-            name='timber5'
+            ticket='timber5'
         )
         
         assert do_xy_cross_section_on_parallel_timbers_overlap(timber4, timber5), \
@@ -1191,7 +1191,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timber6'
+            ticket='timber6'
         )
         
         # timber6 spans Y: -2 to 2
@@ -1202,7 +1202,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(0, Rational(4), 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timber7'
+            ticket='timber7'
         )
         
         assert do_xy_cross_section_on_parallel_timbers_overlap(timber6, timber7), \
@@ -1215,7 +1215,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(0, Rational(4) + Rational('0.01'), 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timber8'
+            ticket='timber8'
         )
         
         assert not do_xy_cross_section_on_parallel_timbers_overlap(timber6, timber8), \
@@ -1228,7 +1228,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timber9'
+            ticket='timber9'
         )
         
         timber10 = timber_from_directions(
@@ -1237,7 +1237,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(20, 0, 0),
             length_direction=create_v3(-1, 0, 0),  # Opposite direction
             width_direction=create_v3(0, 1, 0),
-            name='timber10'
+            ticket='timber10'
         )
         
         assert do_xy_cross_section_on_parallel_timbers_overlap(timber9, timber10), \
@@ -1250,7 +1250,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(1, 0, 0),
-            name='timber11'
+            ticket='timber11'
         )
         
         # Rotated 90 degrees and offset
@@ -1260,7 +1260,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(Rational(4), 0, 0),  # Offset in X
             length_direction=create_v3(0, 0, 1),
             width_direction=create_v3(0, 1, 0),  # Rotated 90 degrees
-            name='timber12'
+            ticket='timber12'
         )
         
         # timber11: X spans -2 to 2, Y spans -3 to 3
@@ -1276,7 +1276,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timber13'
+            ticket='timber13'
         )
         
         timber14 = timber_from_directions(
@@ -1285,7 +1285,7 @@ class TestTimberRelationshipHelpers:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(0, 1, 0),  # Perpendicular
             width_direction=create_v3(1, 0, 0),
-            name='timber14'
+            ticket='timber14'
         )
         
         # Should raise assertion error for non-parallel timbers

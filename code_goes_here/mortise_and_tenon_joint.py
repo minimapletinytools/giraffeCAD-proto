@@ -756,7 +756,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
     # Verify that the timbers are orthogonal (perpendicular length directions)
     # This is required for proper mortise and tenon joint geometry
     assert are_timbers_orthogonal(mortise_timber, tenon_timber), \
-        f"Timbers must be orthogonare_timbers_orthogonalal (perpendicular length directions) for this joint type. {mortise_timber.name} length_direction: {mortise_timber.get_length_direction_global()}, {tenon_timber.name} length_direction: {tenon_timber.get_length_direction_global()}"
+        f"Timbers must be orthogonare_timbers_orthogonalal (perpendicular length directions) for this joint type. {mortise_timber.ticket.name} length_direction: {mortise_timber.get_length_direction_global()}, {tenon_timber.ticket.name} length_direction: {tenon_timber.get_length_direction_global()}"
     
     # Verify that tenon size + position doesn't exceed timber cross-section
     # Tenon bounds: [position - tenon_size/2, position + tenon_size/2] must be within [-timber_size/2, +timber_size/2]

@@ -576,7 +576,7 @@ class TestSpliceLapJoint:
             bottom_position=create_v3(0, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timberA'
+            ticket='timberA'
         )
         
         # TimberB extends from x=20 to x=40
@@ -586,7 +586,7 @@ class TestSpliceLapJoint:
             bottom_position=create_v3(20, 0, 0),
             length_direction=create_v3(1, 0, 0),
             width_direction=create_v3(0, 1, 0),
-            name='timberB'
+            ticket='timberB'
         )
         
         # Create splice lap joint

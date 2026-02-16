@@ -40,7 +40,7 @@ def create_sawhorse() -> Frame:
         location_type=FootprintLocation.INSIDE,
         size=feet_size,
         length=bottom_length,
-        name="Left Mudsill"
+        ticket="Left Mudsill"
     )
     
     # Create mudsill on the right boundary (index 1: top-right to bottom-right)  
@@ -50,7 +50,7 @@ def create_sawhorse() -> Frame:
         location_type=FootprintLocation.INSIDE,
         size=feet_size,
         length=bottom_length,
-        name="Right Mudsill"
+        ticket="Right Mudsill"
     )
     
     # next create a "beam" that is running from left to right centered on the origin and top_beam_surface_position-stretcher_size[1]/2 above the origin
@@ -60,7 +60,7 @@ def create_sawhorse() -> Frame:
         size=beam_size,
         length_direction=TimberFace.RIGHT,
         width_direction=TimberFace.TOP,
-        name="Top Beam"
+        ticket="Top Beam"
     )
 
     # connect the 2 feet to the beam with posts. The posts are centered on the feet
@@ -75,7 +75,7 @@ def create_sawhorse() -> Frame:
         size=post_size,
         feature_to_mark_on_joining_timber=None,
         orientation_face_on_timber1=TimberFace.TOP,
-        name="Left Post"
+        ticket="Left Post"
     )
     
     # Connect right foot to beam
@@ -88,7 +88,7 @@ def create_sawhorse() -> Frame:
         size=post_size,
         feature_to_mark_on_joining_timber=None,
         orientation_face_on_timber1=TimberFace.TOP,
-        name="Right Post"
+        ticket="Right Post"
     )
 
     # now create the stretcher that runs between the middle of the 2 posts using the join_perpendicular_on_face_parallel_timbers
@@ -101,7 +101,7 @@ def create_sawhorse() -> Frame:
         size=stretcher_size,
         feature_to_mark_on_joining_timber=None,
         orientation_face_on_timber1=TimberFace.TOP,
-        name="Stretcher"
+        ticket="Stretcher"
     )
 
     # Create CutTimber objects for all timbers (names will be inherited from the timbers)
@@ -197,7 +197,7 @@ def create_sawhorse() -> Frame:
             cut_right_post,
             cut_stretcher
         ],
-        name="Sawhorse"
+        ticket="Sawhorse"
     )
 
 def main():
@@ -207,7 +207,7 @@ def main():
     print(f"Created sawhorse with {len(frame.cut_timbers)} timbers:")
     for i, cut_timber in enumerate(frame.cut_timbers):
         timber = cut_timber.timber
-        print(f"  {i+1}. Timber: {timber.name} "
+        print(f"  {i+1}. Timber: {timber.ticket.name} "
               f"length={timber.length:.3f}m, "
               f"size=({float(timber.size[0]):.3f}m x {float(timber.size[1]):.3f}m), "
               f"joints={len(cut_timber.joints)}, "

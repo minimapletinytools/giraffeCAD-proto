@@ -34,7 +34,7 @@ def create_standard_vertical_timber(
     height=100,
     size: Optional[Tuple] = None,
     position: Optional[Tuple] = None,
-    name: str = "test_timber"
+    ticket: str = "test_timber"
 ) -> Timber:
     """
     Create a standard vertical timber for testing. The timber has its bottom point at the origin by default and extends upward in the +Z direction.
@@ -44,7 +44,7 @@ def create_standard_vertical_timber(
         height: Length of timber (default 100)
         size: (width, height) tuple (default (4, 6))
         position: (x, y, z) tuple for bottom position (default (0, 0, 0))
-        name: Name for the timber
+        ticket: Ticket for the timber
         
     Returns:
         Timber: A vertical timber extending upward in +Z direction
@@ -60,7 +60,7 @@ def create_standard_vertical_timber(
         bottom_position=Matrix([Rational(position[0]), Rational(position[1]), Rational(position[2])]),
         length_direction=Matrix([Rational(0), Rational(0), Rational(1)]),  # Up
         width_direction=Matrix([Rational(1), Rational(0), Rational(0)]),   # East
-        name=name
+        ticket=ticket
     )
 
 
@@ -69,7 +69,7 @@ def create_standard_horizontal_timber(
     length=100,
     size: Optional[Tuple] = None,
     position: Optional[Tuple] = None,
-    name: str = "test_timber"
+    ticket: str = "test_timber"
 ) -> Timber:
     """
     Create a standard horizontal timber for testing. The timber has its bottom point at the origin by default and extends in the `direction` direction.
@@ -80,7 +80,7 @@ def create_standard_horizontal_timber(
         length: Length of timber (default 100)
         size: (width, height) tuple (default (4, 6))
         position: (x, y, z) tuple for bottom position (default (0, 0, 0))
-        name: Name for the timber
+        ticket: Ticket for the timber
         
     Returns:
         Timber: A horizontal timber
@@ -108,7 +108,7 @@ def create_standard_horizontal_timber(
         bottom_position=Matrix([Rational(position[0]), Rational(position[1]), Rational(position[2])]),
         length_direction=length_dir,
         width_direction=width_dir,
-        name=name
+        ticket=ticket
     )
 
 def create_centered_horizontal_timber(
