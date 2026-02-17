@@ -7,13 +7,16 @@ This module contains tests for the Orientation class which represents
 
 import pytest
 import math
-from sympy import Matrix, pi, simplify, Abs, eye, det, Rational
+from sympy import Matrix, pi, simplify, Abs, eye, det, Rational, Integer, cos, sin, sqrt
 from code_goes_here.rule import (
     Orientation,
+    Transform,
+    Axis,
     inches, feet, mm, cm, m,
     shaku, sun, bu,
     INCH_TO_METER, FOOT_TO_METER, SHAKU_TO_METER,
-    create_v3
+    create_v3,
+    normalize_vector
 )
 import random
 from .testing_shavings import generate_random_orientation, assert_is_valid_rotation_matrix
@@ -841,3 +844,280 @@ class TestDimensionalHelpers:
         # Verify they're equal and exact
         assert width == height
         assert width == Rational(4) * SHAKU_TO_METER / 10
+
+
+class TestTransformRotateAroundAxis:
+    """Test cases for the Transform.rotate_around_axis method."""
+    
+    def test_rotate_around_z_axis_through_origin_90_degrees(self):
+        """Test rotation around Z axis through origin by 90 degrees."""
+        # Create a transform at (1, 0, 0) with identity orientation
+        transform = Transform(
+            position=create_v3(Integer(1), Integer(0), Integer(0)),
+            orientation=Orientation.identity()
+        )
+        
+        # Create Z axis through origin
+        z_axis = Axis(
+            position=create_v3(Integer(0), Integer(0), Integer(0)),
+            direction=create_v3(Integer(0), Integer(0), Integer(1))
+        )
+        
+        # Rotate 90 degrees counterclockwise around Z axis
+        rotated = transform.rotate_around_axis(z_axis, pi / 2)
+        
+        # Position should move from (1, 0, 0) to (0, 1, 0)
+        expected_pos = create_v3(Integer(0), Integer(1), Integer(0))
+        diff = simplify(rotated.position - expected_pos)
+        for i in range(3):
+            assert abs(float(diff[i])) < 1e-10, f"Position mismatch at index {i}"
+        
+        # Orientation should be rotated by 90 degrees around Z
+        expected_orient = Orientation.rotate_left()
+        diff_orient = simplify(rotated.orientation.matrix - expected_orient.matrix)
+        for i in range(3):
+            for j in range(3):
+                assert abs(float(diff_orient[i, j])) < 1e-10
+    
+    def test_rotate_around_x_axis_through_origin_180_degrees(self):
+        """Test rotation around X axis through origin by 180 degrees."""
+        # Create a transform at (0, 1, 0) with identity orientation
+        transform = Transform(
+            position=create_v3(Integer(0), Integer(1), Integer(0)),
+            orientation=Orientation.identity()
+        )
+        
+        # Create X axis through origin
+        x_axis = Axis(
+            position=create_v3(Integer(0), Integer(0), Integer(0)),
+            direction=create_v3(Integer(1), Integer(0), Integer(0))
+        )
+        
+        # Rotate 180 degrees around X axis
+        rotated = transform.rotate_around_axis(x_axis, pi)
+        
+        # Position should move from (0, 1, 0) to (0, -1, 0)
+        expected_pos = create_v3(Integer(0), Integer(-1), Integer(0))
+        diff = simplify(rotated.position - expected_pos)
+        for i in range(3):
+            assert abs(float(diff[i])) < 1e-10
+        
+        # Orientation should be rotated by 180 degrees around X
+        expected_matrix = Matrix([
+            [Integer(1), Integer(0), Integer(0)],
+            [Integer(0), Integer(-1), Integer(0)],
+            [Integer(0), Integer(0), Integer(-1)]
+        ])
+        expected_orient = Orientation(expected_matrix)
+        diff_orient = simplify(rotated.orientation.matrix - expected_orient.matrix)
+        for i in range(3):
+            for j in range(3):
+                assert abs(float(diff_orient[i, j])) < 1e-10
+    
+    def test_rotate_around_offset_z_axis(self):
+        """Test rotation around Z axis NOT through origin."""
+        # Create a transform at (2, 0, 0)
+        transform = Transform(
+            position=create_v3(Integer(2), Integer(0), Integer(0)),
+            orientation=Orientation.identity()
+        )
+        
+        # Create Z axis through (1, 0, 0) - offset from origin
+        z_axis = Axis(
+            position=create_v3(Integer(1), Integer(0), Integer(0)),
+            direction=create_v3(Integer(0), Integer(0), Integer(1))
+        )
+        
+        # Rotate 90 degrees counterclockwise
+        # Point (2, 0, 0) is distance 1 from axis at (1, 0, 0)
+        # After rotation, should be at (1, 1, 0)
+        rotated = transform.rotate_around_axis(z_axis, pi / 2)
+        
+        expected_pos = create_v3(Integer(1), Integer(1), Integer(0))
+        diff = simplify(rotated.position - expected_pos)
+        for i in range(3):
+            assert abs(float(diff[i])) < 1e-10
+    
+    def test_rotate_around_offset_y_axis(self):
+        """Test rotation around Y axis offset from origin."""
+        # Create a transform at (1, 0, 0)
+        transform = Transform(
+            position=create_v3(Integer(1), Integer(0), Integer(0)),
+            orientation=Orientation.identity()
+        )
+        
+        # Create Y axis through (1, 0, 0) - axis passes through the point
+        y_axis = Axis(
+            position=create_v3(Integer(1), Integer(0), Integer(0)),
+            direction=create_v3(Integer(0), Integer(1), Integer(0))
+        )
+        
+        # Rotate 90 degrees - point is ON the axis, so should not move
+        rotated = transform.rotate_around_axis(y_axis, pi / 2)
+        
+        # Position should stay at (1, 0, 0)
+        expected_pos = create_v3(Integer(1), Integer(0), Integer(0))
+        diff = simplify(rotated.position - expected_pos)
+        for i in range(3):
+            assert abs(float(diff[i])) < 1e-10
+    
+    def test_rotate_zero_angle(self):
+        """Test that rotation by 0 degrees returns unchanged transform."""
+        transform = Transform(
+            position=create_v3(Integer(1), Integer(2), Integer(3)),
+            orientation=Orientation.rotate_left()
+        )
+        
+        axis = Axis(
+            position=create_v3(Integer(5), Integer(6), Integer(7)),
+            direction=create_v3(Integer(0), Integer(0), Integer(1))
+        )
+        
+        # Rotate by 0 degrees
+        rotated = transform.rotate_around_axis(axis, Integer(0))
+        
+        # Should be essentially unchanged
+        pos_diff = simplify(rotated.position - transform.position)
+        for i in range(3):
+            assert abs(float(pos_diff[i])) < 1e-10
+        
+        orient_diff = simplify(rotated.orientation.matrix - transform.orientation.matrix)
+        for i in range(3):
+            for j in range(3):
+                assert abs(float(orient_diff[i, j])) < 1e-10
+    
+    def test_rotate_arbitrary_axis_preserves_distance(self):
+        """Test rotation around arbitrary axis preserves distance from axis."""
+        # Point at (2, 0, 0)
+        transform = Transform(
+            position=create_v3(Integer(2), Integer(0), Integer(0)),
+            orientation=Orientation.identity()
+        )
+        
+        # Axis through (1, 1, 1) in direction (1, 1, 1)
+        axis = Axis(
+            position=create_v3(Integer(1), Integer(1), Integer(1)),
+            direction=create_v3(Integer(1), Integer(1), Integer(1))
+        )
+        
+        # Rotate by 120 degrees
+        rotated = transform.rotate_around_axis(axis, 2 * pi / 3)
+        
+        # Calculate distance from point to axis before and after rotation
+        # Distance from point P to axis through Q with direction D:
+        # dist = ||(P - Q) - ((P - Q) · D̂)D̂||
+        
+        def distance_to_axis(point, axis_pos, axis_dir):
+            axis_normalized = normalize_vector(axis_dir)
+            point_to_axis_pos = point - axis_pos
+            projection_length = sum(point_to_axis_pos[i] * axis_normalized[i] for i in range(3))
+            projection = axis_normalized * projection_length
+            perpendicular = point_to_axis_pos - projection
+            dist_sq = sum(perpendicular[i]**2 for i in range(3))
+            return simplify(dist_sq)
+        
+        dist_before = distance_to_axis(transform.position, axis.position, axis.direction)
+        dist_after = distance_to_axis(rotated.position, axis.position, axis.direction)
+        
+        dist_diff = simplify(dist_after - dist_before)
+        assert abs(float(dist_diff)) < 1e-9, "Rotation should preserve distance from axis"
+    
+    def test_rotate_with_non_unit_axis_direction(self):
+        """Test that non-unit axis directions are normalized correctly."""
+        # Use a non-unit axis direction (2, 0, 0) which should behave same as (1, 0, 0)
+        transform = Transform(
+            position=create_v3(Integer(0), Integer(1), Integer(0)),
+            orientation=Orientation.identity()
+        )
+        
+        axis = Axis(
+            position=create_v3(Integer(0), Integer(0), Integer(0)),
+            direction=create_v3(Integer(2), Integer(0), Integer(0))
+        )
+        
+        # Rotate 90 degrees around (2, 0, 0) - should be same as rotating around (1, 0, 0)
+        rotated = transform.rotate_around_axis(axis, pi / 2)
+        
+        # Position should move from (0, 1, 0) to (0, 0, 1)
+        expected_pos = create_v3(Integer(0), Integer(0), Integer(1))
+        diff = simplify(rotated.position - expected_pos)
+        for i in range(3):
+            assert abs(float(diff[i])) < 1e-10
+    
+    def test_rotate_composed_orientation(self):
+        """Test rotation of a transform that already has a non-identity orientation."""
+        # Start with a transform that's already rotated
+        initial_orientation = Orientation.rotate_left()  # 90° around Z
+        transform = Transform(
+            position=create_v3(Integer(0), Integer(1), Integer(0)),
+            orientation=initial_orientation
+        )
+        
+        axis = Axis(
+            position=create_v3(Integer(0), Integer(0), Integer(0)),
+            direction=create_v3(Integer(0), Integer(0), Integer(1))
+        )
+        
+        # Rotate 90° around Z again
+        rotated = transform.rotate_around_axis(axis, pi / 2)
+        
+        # Position should move from (0, 1, 0) to (-1, 0, 0)
+        expected_pos = create_v3(Integer(-1), Integer(0), Integer(0))
+        diff = simplify(rotated.position - expected_pos)
+        for i in range(3):
+            assert abs(float(diff[i])) < 1e-10
+        
+        # Orientation should be 180° around Z (two 90° rotations)
+        expected_matrix = Matrix([
+            [Integer(-1), Integer(0), Integer(0)],
+            [Integer(0), Integer(-1), Integer(0)],
+            [Integer(0), Integer(0), Integer(1)]
+        ])
+        expected_orient = Orientation(expected_matrix)
+        diff_orient = simplify(rotated.orientation.matrix - expected_orient.matrix)
+        for i in range(3):
+            for j in range(3):
+                assert abs(float(diff_orient[i, j])) < 1e-10
+    
+    def test_rotate_full_circle(self):
+        """Test that rotating 360 degrees returns to original (approximately)."""
+        transform = Transform(
+            position=create_v3(Integer(1), Integer(2), Integer(3)),
+            orientation=Orientation.rotate_left()
+        )
+        
+        axis = Axis(
+            position=create_v3(Integer(0), Integer(1), Integer(0)),
+            direction=create_v3(Integer(0), Integer(1), Integer(0))
+        )
+        
+        # Rotate full circle (2*pi radians)
+        rotated = transform.rotate_around_axis(axis, 2 * pi)
+        
+        # Should be back to original position and orientation (within numerical precision)
+        pos_diff = simplify(rotated.position - transform.position)
+        for i in range(3):
+            assert abs(float(pos_diff[i])) < 1e-9
+        
+        orient_diff = simplify(rotated.orientation.matrix - transform.orientation.matrix)
+        for i in range(3):
+            for j in range(3):
+                assert abs(float(orient_diff[i, j])) < 1e-9
+    
+    def test_rotate_orientation_matrix_stays_valid(self):
+        """Test that the rotated orientation matrix remains a valid rotation matrix."""
+        transform = Transform(
+            position=create_v3(Integer(1), Integer(2), Integer(3)),
+            orientation=Orientation.rotate_left()
+        )
+        
+        axis = Axis(
+            position=create_v3(Integer(2), Integer(3), Integer(4)),
+            direction=create_v3(Integer(1), Integer(1), Integer(1))
+        )
+        
+        # Rotate by some arbitrary angle
+        rotated = transform.rotate_around_axis(axis, pi / 7)
+        
+        # Check that the resulting orientation is a valid rotation matrix
+        assert_is_valid_rotation_matrix(rotated.orientation.matrix)
