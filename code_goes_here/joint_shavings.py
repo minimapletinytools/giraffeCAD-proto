@@ -766,7 +766,7 @@ def chop_shoulder_notch_on_timber_face(
     distance_along_timber: Numeric,
     notch_width: Numeric,
     notch_depth: Numeric,
-    wall_angle: Numeric = Integer(0)
+    notch_wall_relief_cut_angle: Numeric = Integer(0)
 ) -> Union[RectangularPrism, 'SolidUnion']:
     """
     Create a rectangular shoulder notch on a timber face with optional angled walls.
@@ -780,11 +780,11 @@ def chop_shoulder_notch_on_timber_face(
         distance_along_timber: Distance from the timber's BOTTOM end to the center of the notch
         notch_width: Width of the notch (measured along timber length direction)
         notch_depth: Depth of the notch (measured perpendicular to the face, into the timber)
-        wall_angle: Angle in degrees for the side walls (default 0 = perpendicular).
+        notch_wall_relief_cut_angle: Angle in degrees for the side walls (default 0 = perpendicular).
                     Positive angles make walls slant outward like \\___/
     
     Returns:
-        RectangularPrism (if wall_angle=0) or SolidUnion (if wall_angle>0) representing 
+        RectangularPrism (if notch_wall_relief_cut_angle=0) or SolidUnion (if notch_wall_relief_cut_angle>0) representing 
         the material to remove (in timber's local coordinates)
     
     Example:
@@ -794,7 +794,7 @@ def chop_shoulder_notch_on_timber_face(
         ... )
         >>> # Create the same notch but with 45° angled walls
         >>> notch_angled = chop_shoulder_notch_on_timber_face(
-        ...     timber, TimberFace.FRONT, inches(6), inches(2), inches(1), wall_angle=45
+        ...     timber, TimberFace.FRONT, inches(6), inches(2), inches(1), notch_wall_relief_cut_angle=45
         ... )
     """
     from sympy import Rational, sin, cos, tan, pi
@@ -813,8 +813,8 @@ def chop_shoulder_notch_on_timber_face(
             f"distance_along_timber must be between 0 and timber.length ({timber.length}), "
             f"got {distance_along_timber}"
         )
-    if wall_angle < 0 or wall_angle >= 90:
-        raise ValueError(f"wall_angle must be between 0 and 90 degrees, got {wall_angle}")
+    if notch_wall_relief_cut_angle < 0 or notch_wall_relief_cut_angle >= 90:
+        raise ValueError(f"notch_wall_relief_cut_angle must be between 0 and 90 degrees, got {notch_wall_relief_cut_angle}")
     
     # Create notch prism with length direction perpendicular to the face (into timber)
     # Position the prism ON the face surface at distance_along_timber
@@ -891,13 +891,13 @@ def chop_shoulder_notch_on_timber_face(
         end_distance=notch_depth
     )
     
-    # If wall_angle is 0, return the simple notch prism
-    if wall_angle == 0:
+    # If notch_wall_relief_cut_angle is 0, return the simple notch prism
+    if notch_wall_relief_cut_angle == 0:
         return notch_prism
     
     # Create angled wall prisms by rotating copies of the notch prism around the corner edges
     # Convert angle to radians
-    angle_rad = wall_angle * pi / Integer(180)
+    angle_rad = notch_wall_relief_cut_angle * pi / Integer(180)
     
     # Determine the axis direction for rotation (parallel to notch face, perpendicular to timber length)
     # The rotation axes are perpendicular to the timber length direction
