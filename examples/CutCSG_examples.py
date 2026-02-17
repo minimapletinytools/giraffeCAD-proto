@@ -404,6 +404,122 @@ def example_shoulder_notch_on_timber():
     return result
 
 
+def example_chop_shoulder_notch_on_timber_face_raw():
+    """
+    Test example showing the raw CSG output of chop_shoulder_notch_on_timber_face.
+    
+    This renders the notch cut geometry itself (not as a difference), so you can
+    see the shape that gets subtracted from the timber.
+    
+    Creates a 4"x4"x4' vertical timber and generates a notch with 45° angled walls.
+    The notch is 4" wide, 1" deep, located 18" from the bottom on the FRONT face.
+    
+    Returns:
+        CSG object representing the notch cut (RectangularPrism or SolidUnion)
+    """
+    # Create a 4"x4"x4' vertical timber
+    timber_size = inches(4)
+    timber_length = feet(4)
+    
+    timber = timber_from_directions(
+        length=timber_length,
+        size=Matrix([timber_size, timber_size]),
+        bottom_position=Matrix([0, 0, 0]),
+        length_direction=Matrix([0, 0, 1]),  # Vertical
+        width_direction=Matrix([1, 0, 0])     # Width along X
+    )
+    
+    # Create a notch with 45° angled walls
+    notch_csg = chop_shoulder_notch_on_timber_face(
+        timber,
+        TimberFace.FRONT,
+        distance_along_timber=inches(18),
+        notch_width=inches(4),
+        notch_depth=inches(1),
+        wall_angle=45
+    )
+    
+    # Return the notch CSG directly (not as a difference)
+    return notch_csg
+
+
+def example_angled_shoulder_notch_on_timber():
+    """
+    Test example for shoulder notch with angled walls (wall_angle parameter).
+    
+    Creates a 4"x4"x4' vertical timber with three notches at different heights:
+    - Bottom notch (6" from bottom): 0° wall angle (perpendicular walls)
+    - Middle notch (18" from bottom): 30° wall angle
+    - Top notch (30" from bottom): 45° wall angle (creates angled walls like \___/)
+    
+    All notches are 4" wide and 1" deep, cut into the FRONT face.
+    
+    Returns:
+        Difference CSG object (timber with three notches)
+    """
+    # Create a 4"x4"x4' vertical timber
+    timber_size = inches(4)
+    timber_length = feet(4)
+    
+    timber = timber_from_directions(
+        length=timber_length,
+        size=Matrix([timber_size, timber_size]),
+        bottom_position=Matrix([0, 0, 0]),
+        length_direction=Matrix([0, 0, 1]),  # Vertical
+        width_direction=Matrix([1, 0, 0])     # Width along X
+    )
+    
+    # Create three notches with different wall angles
+    notch_width = inches(4)
+    notch_depth = inches(1)
+    
+    # Notch 1: 0° wall angle (perpendicular) at 6" from bottom
+    notch_0deg = chop_shoulder_notch_on_timber_face(
+        timber,
+        TimberFace.FRONT,
+        distance_along_timber=inches(6),
+        notch_width=notch_width,
+        notch_depth=notch_depth,
+        wall_angle=0
+    )
+    
+    # Notch 2: 30° wall angle at 18" from bottom
+    notch_30deg = chop_shoulder_notch_on_timber_face(
+        timber,
+        TimberFace.FRONT,
+        distance_along_timber=inches(18),
+        notch_width=notch_width,
+        notch_depth=notch_depth,
+        wall_angle=30
+    )
+    
+    # Notch 3: 45° wall angle at 30" from bottom
+    notch_45deg = chop_shoulder_notch_on_timber_face(
+        timber,
+        TimberFace.FRONT,
+        distance_along_timber=inches(30),
+        notch_width=notch_width,
+        notch_depth=notch_depth,
+        wall_angle=45
+    )
+    
+    # Create the base timber prism (in local coordinates)
+    timber_prism = RectangularPrism(
+        size=timber.size,
+        transform=Transform.identity(),
+        start_distance=0,
+        end_distance=timber.length
+    )
+    
+    # Create the difference (timber with all three notches removed)
+    result = Difference(
+        base=timber_prism,
+        subtract=[notch_0deg, notch_30deg, notch_45deg]
+    )
+    
+    return result
+
+
 # Dictionary for easy example selection
 EXAMPLES = {
     'cube_cutout': {
@@ -445,6 +561,16 @@ EXAMPLES = {
         'name': 'Shoulder Notch on Timber',
         'description': '4"x4"x4\' vertical timber with 1" deep x 4" wide notch on right face (tests chop_shoulder_notch_on_timber_face)',
         'function': example_shoulder_notch_on_timber
+    },
+    'angled_shoulder_notch': {
+        'name': 'Angled Shoulder Notch on Timber',
+        'description': '4"x4"x4\' vertical timber with three notches at 0°, 30°, and 45° wall angles (tests wall_angle parameter)',
+        'function': example_angled_shoulder_notch_on_timber
+    },
+    'shoulder_notch_raw': {
+        'name': 'Raw Shoulder Notch CSG (45° walls)',
+        'description': 'Direct CSG output from chop_shoulder_notch_on_timber_face with 45° angled walls',
+        'function': example_chop_shoulder_notch_on_timber_face_raw
     }
 }
 
