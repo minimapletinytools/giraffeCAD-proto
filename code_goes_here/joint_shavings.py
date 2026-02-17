@@ -822,16 +822,16 @@ def chop_shoulder_notch_on_timber_face(
     
     if notch_face == TimberFace.FRONT:
         # FRONT face: notch opens in -Y direction (into timber)
-        # Position on front face surface, centered on timber width
-        position = create_v3(Integer(0), timber.size[1] / Rational(2), distance_along_timber)
-        # Orientation: Z-axis points -Y (into timber), X-axis along timber length (Z)
+        # Position at BOTTOM of notch (inside timber by notch_depth), centered on timber width
+        position = create_v3(Integer(0), timber.size[1] / Rational(2) - notch_depth, distance_along_timber)
+        # Orientation: Z-axis points +Y (OUT from timber towards surface), X-axis along timber length (Z)
         orientation = Orientation.from_z_and_x(
-            create_v3(Integer(0), Integer(-1), Integer(0)),  # Z → -Y
+            create_v3(Integer(0), Integer(1), Integer(0)),   # Z → +Y (out towards surface)
             create_v3(Integer(0), Integer(0), Integer(1))    # X → +Z (timber length)
         )
         # Size: notch_width along timber length, timber.size[0] (timber width) perpendicular
         prism_size = create_v2(notch_width, timber.size[0])
-        # Corner points: on face surface at ± notch_width/2 along timber length
+        # Corner points: at bottom of notch at ± notch_width/2 along timber length
         corner_point_1 = create_v3(Integer(0), timber.size[1] / Rational(2) - notch_depth, 
                                    distance_along_timber + notch_width / Rational(2))
         corner_point_2 = create_v3(Integer(0), timber.size[1] / Rational(2) - notch_depth, 
@@ -839,45 +839,48 @@ def chop_shoulder_notch_on_timber_face(
         
     elif notch_face == TimberFace.BACK:
         # BACK face: notch opens in +Y direction (into timber)
-        position = create_v3(Integer(0), -timber.size[1] / Rational(2), distance_along_timber)
-        # Orientation: Z-axis points +Y (into timber), X-axis along timber length (Z)
+        # Position at BOTTOM of notch (inside timber by notch_depth)
+        position = create_v3(Integer(0), -timber.size[1] / Rational(2) + notch_depth, distance_along_timber)
+        # Orientation: Z-axis points -Y (OUT from timber towards surface), X-axis along timber length (Z)
         orientation = Orientation.from_z_and_x(
-            create_v3(Integer(0), Integer(1), Integer(0)),   # Z → +Y
+            create_v3(Integer(0), Integer(-1), Integer(0)),  # Z → -Y (out towards surface)
             create_v3(Integer(0), Integer(0), Integer(1))    # X → +Z (timber length)
         )
         prism_size = create_v2(notch_width, timber.size[0])
-        corner_point_1 = create_v3(Integer(0), -timber.size[1] / Rational(2) - notch_depth, 
+        corner_point_1 = create_v3(Integer(0), -timber.size[1] / Rational(2) + notch_depth, 
                                    distance_along_timber + notch_width / Rational(2))
-        corner_point_2 = create_v3(Integer(0), -timber.size[1] / Rational(2) - notch_depth, 
+        corner_point_2 = create_v3(Integer(0), -timber.size[1] / Rational(2) + notch_depth, 
                                    distance_along_timber - notch_width / Rational(2))
         
     elif notch_face == TimberFace.RIGHT:
         # RIGHT face: notch opens in -X direction (into timber)
-        position = create_v3(timber.size[0] / Rational(2), Integer(0), distance_along_timber)
-        # Orientation: Z-axis points -X (into timber), X-axis along timber length (Z)
+        # Position at BOTTOM of notch (inside timber by notch_depth)
+        position = create_v3(timber.size[0] / Rational(2) - notch_depth, Integer(0), distance_along_timber)
+        # Orientation: Z-axis points +X (OUT from timber towards surface), X-axis along timber length (Z)
         orientation = Orientation.from_z_and_x(
-            create_v3(Integer(-1), Integer(0), Integer(0)),  # Z → -X
+            create_v3(Integer(1), Integer(0), Integer(0)),   # Z → +X (out towards surface)
             create_v3(Integer(0), Integer(0), Integer(1))    # X → +Z (timber length)
         )
         # Size: notch_width along timber length, timber.size[1] (timber height) perpendicular
         prism_size = create_v2(notch_width, timber.size[1])
-        corner_point_1 = create_v3(timber.size[0] / Rational(2), Integer(0), 
+        corner_point_1 = create_v3(timber.size[0] / Rational(2) - notch_depth, Integer(0), 
                                    distance_along_timber + notch_width / Rational(2))
-        corner_point_2 = create_v3(timber.size[0] / Rational(2), Integer(0), 
+        corner_point_2 = create_v3(timber.size[0] / Rational(2) - notch_depth, Integer(0), 
                                    distance_along_timber - notch_width / Rational(2))
         
     else:  # LEFT
         # LEFT face: notch opens in +X direction (into timber)
-        position = create_v3(-timber.size[0] / Rational(2), Integer(0), distance_along_timber)
-        # Orientation: Z-axis points +X (into timber), X-axis along timber length (Z)
+        # Position at BOTTOM of notch (inside timber by notch_depth)
+        position = create_v3(-timber.size[0] / Rational(2) + notch_depth, Integer(0), distance_along_timber)
+        # Orientation: Z-axis points -X (OUT from timber towards surface), X-axis along timber length (Z)
         orientation = Orientation.from_z_and_x(
-            create_v3(Integer(1), Integer(0), Integer(0)),   # Z → +X
+            create_v3(Integer(-1), Integer(0), Integer(0)),  # Z → -X (out towards surface)
             create_v3(Integer(0), Integer(0), Integer(1))    # X → +Z (timber length)
         )
         prism_size = create_v2(notch_width, timber.size[1])
-        corner_point_1 = create_v3(-timber.size[0] / Rational(2), Integer(0), 
+        corner_point_1 = create_v3(-timber.size[0] / Rational(2) + notch_depth, Integer(0), 
                                    distance_along_timber + notch_width / Rational(2))
-        corner_point_2 = create_v3(-timber.size[0] / Rational(2), Integer(0), 
+        corner_point_2 = create_v3(-timber.size[0] / Rational(2) + notch_depth, Integer(0), 
                                    distance_along_timber - notch_width / Rational(2))
     
     # Create the notch prism
@@ -909,13 +912,19 @@ def chop_shoulder_notch_on_timber_face(
     axis_1 = Axis(position=corner_point_1, direction=axis_direction)
     axis_2 = Axis(position=corner_point_2, direction=axis_direction)
     
+    # Calculate extended end_distance for angled walls
+    # When the wall is angled, the prism needs to extend further to cover the full depth
+    # The length along the angled surface is notch_depth / cos(angle)
+    from sympy import cos
+    extended_end_distance = notch_depth / cos(angle_rad)
+    
     # Create left wall prism by rotating the notch prism transform around the first corner
     left_wall_transform = notch_prism.transform.rotate_around_axis(axis_1, angle_rad)
     left_wall_prism = RectangularPrism(
         size=notch_prism.size,
         transform=left_wall_transform,
-        start_distance=notch_prism.start_distance - 1000,
-        end_distance=notch_prism.end_distance
+        start_distance=notch_prism.start_distance,
+        end_distance=extended_end_distance
     )
     
     # Create right wall prism by rotating around the second corner (opposite direction)
@@ -923,8 +932,8 @@ def chop_shoulder_notch_on_timber_face(
     right_wall_prism = RectangularPrism(
         size=notch_prism.size,
         transform=right_wall_transform,
-        start_distance=notch_prism.start_distance - 1000,
-        end_distance=notch_prism.end_distance
+        start_distance=notch_prism.start_distance,
+        end_distance=extended_end_distance
     )
     
     # Union the main notch with the two angled wall prisms
