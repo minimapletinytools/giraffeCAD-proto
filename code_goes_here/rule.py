@@ -141,6 +141,11 @@ def with_timeout_fallback(symbolic_func, numerical_func, timeout_seconds=0.1):
 # ============================================================================
 
 @dataclass(frozen=True)
+class Axis:
+    position: V3
+    direction: Direction3D
+
+@dataclass(frozen=True)
 class Transform:
     """
     Represents a 3D transformation with position and orientation.
@@ -225,6 +230,64 @@ class Transform:
         Convert this transform to local coordinates relative to a parent transform.
         """
         return new_parent.invert() * self
+
+    def rotate_around_axis(self, axis: Axis, radians: Numeric) -> 'Transform':
+        """
+        Rotate this transform counterclockwise around an axis and return the new transform.
+        
+        The axis can be positioned anywhere in space (not just through the origin).
+        Uses Rodrigues' rotation formula after translating to make the axis pass through origin.
+        
+        Args:
+            axis: Axis with position and direction to rotate around
+            radians: Angle to rotate in radians (counterclockwise when looking along axis direction)
+        
+        Returns:
+            New Transform with rotated position and orientation
+        """
+        from sympy import cos, sin, eye
+        
+        # Normalize the axis direction
+        axis_normalized = normalize_vector(axis.direction)
+        kx, ky, kz = axis_normalized[0], axis_normalized[1], axis_normalized[2]
+        
+        # Rodrigues' rotation formula for rotation matrix around axis k by angle θ:
+        # R = I + sin(θ)K + (1 - cos(θ))K²
+        # where K is the skew-symmetric cross-product matrix of k
+        
+        # K = [[0, -kz, ky], [kz, 0, -kx], [-ky, kx, 0]]
+        K = Matrix([
+            [Integer(0), -kz, ky],
+            [kz, Integer(0), -kx],
+            [-ky, kx, Integer(0)]
+        ])
+        
+        # K² = K * K
+        K_squared = K * K
+        
+        # R = I + sin(θ)K + (1 - cos(θ))K²
+        I = eye(3)
+        rotation_matrix = I + sin(radians) * K + (Integer(1) - cos(radians)) * K_squared
+        
+        # To rotate around an axis not through origin:
+        # 1. Translate so axis passes through origin
+        # 2. Rotate
+        # 3. Translate back
+        
+        # Translate position relative to axis position
+        position_relative = self.position - axis.position
+        
+        # Apply rotation to the relative position
+        rotated_relative = rotation_matrix * position_relative
+        
+        # Translate back
+        new_position = rotated_relative + axis.position
+        
+        # Apply rotation to orientation (orientation is independent of translation)
+        new_orientation_matrix = rotation_matrix * self.orientation.matrix
+        new_orientation = Orientation(new_orientation_matrix)
+        
+        return Transform(position=new_position, orientation=new_orientation)
 
 # ============================================================================
 # Safe SymPy Wrapper Functions - Protected Operations
