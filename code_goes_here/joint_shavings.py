@@ -834,14 +834,12 @@ def chop_shoulder_notch_on_timber_face(
             x_offset = timber.size[0] / Rational(2) - notch_depth / Rational(2)
             corner_point_1 = create_v3(timber.size[0] / Rational(2) - notch_depth, 0, prism_end)
             corner_point_2 = create_v3(timber.size[0] / Rational(2) - notch_depth, 0, prism_start)
-            wall_rot_axis = TimberFace.FRONT.get_direction()
         else:  # LEFT
             # Notch starts at left face (-depth inward)
             # Prism center: -size[0]/2 + depth/2
             x_offset = -timber.size[0] / Rational(2) + notch_depth / Rational(2)
             corner_point_1 = create_v3(-timber.size[0] / Rational(2) + notch_depth, 0, prism_end)
             corner_point_2 = create_v3(-timber.size[0] / Rational(2) + notch_depth, 0, prism_start)
-            wall_rot_axis = -TimberFace.BACK.get_direction()
         
         notch_prism = RectangularPrism(
             size=create_v2(notch_depth, timber.size[1]),  # depth in X, full height in Y
@@ -858,14 +856,12 @@ def chop_shoulder_notch_on_timber_face(
             y_offset = timber.size[1] / Rational(2) - notch_depth / Rational(2)
             corner_point_1 = create_v3(0, timber.size[1] / Rational(2) - notch_depth, prism_end)
             corner_point_2 = create_v3(0, timber.size[1] / Rational(2) - notch_depth, prism_start)
-            wall_rot_axis = TimberFace.LEFT.get_direction()
         else:  # BACK
             # Notch starts at back face (-depth inward)
             # Prism center: -size[1]/2 + depth/2
             y_offset = -timber.size[1] / Rational(2) + notch_depth / Rational(2)
             corner_point_1 = create_v3(0, -timber.size[1] / Rational(2) + notch_depth, prism_end)
             corner_point_2 = create_v3(0, -timber.size[1] / Rational(2) + notch_depth, prism_start)
-            wall_rot_axis = TimberFace.RIGHT.get_direction()
 
         notch_prism = RectangularPrism(
             size=create_v2(timber.size[0], notch_depth),  # full width in X, depth in Y
@@ -882,70 +878,32 @@ def chop_shoulder_notch_on_timber_face(
     # Convert angle to radians
     angle_rad = wall_angle * pi / Integer(180)
     
-    # Get the notch prism's transform and size
-    # TODO you need to extend the prism based on the wall angle so that it cuts through the timber (so increase the size of the prism and also adjust the transform so that the side of the prism in the timber stays put while the other side moves outward)
-    notch_transform = notch_prism.transform
-    notch_size = notch_prism.size
-    
+    # Determine the axis direction for rotation (parallel to notch face, perpendicular to opening)
     if notch_face == TimberFace.LEFT or notch_face == TimberFace.RIGHT:
-        # Create rotation matrix around Y axis for left corner (rotate by +angle)
-        left_angle = angle_rad
-        left_rot_matrix = Matrix([
-            [cos(left_angle), Integer(0), sin(left_angle)],
-            [Integer(0), Integer(1), Integer(0)],
-            [-sin(left_angle), Integer(0), cos(left_angle)]
-        ])
-        
-        # Create rotation matrix for right corner (rotate by -angle)
-        right_angle = -angle_rad
-        right_rot_matrix = Matrix([
-            [cos(right_angle), Integer(0), sin(right_angle)],
-            [Integer(0), Integer(1), Integer(0)],
-            [-sin(right_angle), Integer(0), cos(right_angle)]
-        ])
-        
+        # For LEFT/RIGHT faces, notch opens in X direction, rotation axis is Y
+        axis_direction = create_v3(Integer(0), Integer(1), Integer(0))
     else:  # FRONT or BACK faces
-        # Create rotation matrix around X axis for left corner (rotate by +angle)
-        left_angle = angle_rad
-        left_rot_matrix = Matrix([
-            [Integer(1), Integer(0), Integer(0)],
-            [Integer(0), cos(left_angle), -sin(left_angle)],
-            [Integer(0), sin(left_angle), cos(left_angle)]
-        ])
-        
-        # Create rotation matrix for right corner (rotate by -angle)
-        right_angle = -angle_rad
-        right_rot_matrix = Matrix([
-            [Integer(1), Integer(0), Integer(0)],
-            [Integer(0), cos(right_angle), -sin(right_angle)],
-            [Integer(0), sin(right_angle), cos(right_angle)]
-        ])
+        # For FRONT/BACK faces, notch opens in Y direction, rotation axis is X
+        axis_direction = create_v3(Integer(1), Integer(0), Integer(0))
     
-    # Create left wall prism by rotating around left corner
-    # Transform: translate to corner, rotate, translate back, then apply original transform
-    left_wall_orientation = Orientation(left_rot_matrix).multiply(notch_transform.orientation)
-    # Rotate the offset from corner to center
-    offset_from_left_corner = notch_transform.position - corner_point_1
-    rotated_offset_left = left_rot_matrix * offset_from_left_corner
-    left_wall_position = corner_point_1 + rotated_offset_left
+    # Create axes through the corner edges
+    axis_1 = Axis(position=corner_point_1, direction=axis_direction)
+    axis_2 = Axis(position=corner_point_2, direction=axis_direction)
     
+    # Create left wall prism by rotating the notch prism transform around the first corner
+    left_wall_transform = notch_prism.transform.rotate_around_axis(axis_1, angle_rad)
     left_wall_prism = RectangularPrism(
-        size=notch_size,
-        transform=Transform(position=left_wall_position, orientation=left_wall_orientation),
+        size=notch_prism.size,
+        transform=left_wall_transform,
         start_distance=notch_prism.start_distance,
         end_distance=notch_prism.end_distance
     )
     
-    # Create right wall prism by rotating around right corner
-    right_wall_orientation = Orientation(right_rot_matrix).multiply(notch_transform.orientation)
-    # Rotate the offset from corner to center
-    offset_from_right_corner = notch_transform.position - corner_point_2
-    rotated_offset_right = right_rot_matrix * offset_from_right_corner
-    right_wall_position = corner_point_2 + rotated_offset_right
-    
+    # Create right wall prism by rotating around the second corner (opposite direction)
+    right_wall_transform = notch_prism.transform.rotate_around_axis(axis_2, -angle_rad)
     right_wall_prism = RectangularPrism(
-        size=notch_size,
-        transform=Transform(position=right_wall_position, orientation=right_wall_orientation),
+        size=notch_prism.size,
+        transform=right_wall_transform,
         start_distance=notch_prism.start_distance,
         end_distance=notch_prism.end_distance
     )
