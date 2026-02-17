@@ -765,10 +765,11 @@ def chop_shoulder_notch_on_timber_face(
     notch_face: TimberFace,
     distance_along_timber: Numeric,
     notch_width: Numeric,
-    notch_depth: Numeric
-) -> RectangularPrism:
+    notch_depth: Numeric,
+    wall_angle: Numeric = Integer(0)
+) -> Union[RectangularPrism, 'SolidUnion']:
     """
-    Create a rectangular shoulder notch on a timber face.
+    Create a rectangular shoulder notch on a timber face with optional angled walls.
     
     This creates a rectangular notch/pocket on a specified face of a timber.
     The notch is centered at a specific position along the timber's length.
@@ -779,17 +780,24 @@ def chop_shoulder_notch_on_timber_face(
         distance_along_timber: Distance from the timber's BOTTOM end to the center of the notch
         notch_width: Width of the notch (measured along timber length direction)
         notch_depth: Depth of the notch (measured perpendicular to the face, into the timber)
+        wall_angle: Angle in degrees for the side walls (default 0 = perpendicular).
+                    Positive angles make walls slant outward like \\___/
     
     Returns:
-        RectangularPrism representing the material to remove (in timber's local coordinates)
+        RectangularPrism (if wall_angle=0) or SolidUnion (if wall_angle>0) representing 
+        the material to remove (in timber's local coordinates)
     
     Example:
         >>> # Create a 2" wide, 1" deep notch on the front face, 6" from bottom
         >>> notch = chop_shoulder_notch_on_timber_face(
         ...     timber, TimberFace.FRONT, inches(6), inches(2), inches(1)
         ... )
+        >>> # Create the same notch but with 45° angled walls
+        >>> notch_angled = chop_shoulder_notch_on_timber_face(
+        ...     timber, TimberFace.FRONT, inches(6), inches(2), inches(1), wall_angle=45
+        ... )
     """
-    from sympy import Rational
+    from sympy import Rational, sin, cos, tan, pi
     
     # Validate face is a long face (not TOP or BOTTOM)
     if notch_face == TimberFace.TOP or notch_face == TimberFace.BOTTOM:
@@ -805,6 +813,8 @@ def chop_shoulder_notch_on_timber_face(
             f"distance_along_timber must be between 0 and timber.length ({timber.length}), "
             f"got {distance_along_timber}"
         )
+    if wall_angle < 0 or wall_angle >= 90:
+        raise ValueError(f"wall_angle must be between 0 and 90 degrees, got {wall_angle}")
     
     # Calculate prism extent along timber length
     prism_start = distance_along_timber - notch_width / Rational(2)
@@ -822,10 +832,16 @@ def chop_shoulder_notch_on_timber_face(
             # Notch starts at right face (-depth inward)
             # RectangularPrism center: size[0]/2 - depth/2
             x_offset = timber.size[0] / Rational(2) - notch_depth / Rational(2)
+            corner_point_1 = create_v3(timber.size[0] / Rational(2) - notch_depth, 0, prism_end)
+            corner_point_2 = create_v3(timber.size[0] / Rational(2) - notch_depth, 0, prism_start)
+            wall_rot_axis = TimberFace.FRONT.get_direction()
         else:  # LEFT
             # Notch starts at left face (-depth inward)
             # Prism center: -size[0]/2 + depth/2
             x_offset = -timber.size[0] / Rational(2) + notch_depth / Rational(2)
+            corner_point_1 = create_v3(-timber.size[0] / Rational(2) + notch_depth, 0, prism_end)
+            corner_point_2 = create_v3(-timber.size[0] / Rational(2) + notch_depth, 0, prism_start)
+            wall_rot_axis = -TimberFace.BACK.get_direction()
         
         notch_prism = RectangularPrism(
             size=create_v2(notch_depth, timber.size[1]),  # depth in X, full height in Y
@@ -840,11 +856,17 @@ def chop_shoulder_notch_on_timber_face(
             # Notch starts at front face (-depth inward)
             # Prism center: size[1]/2 - depth/2
             y_offset = timber.size[1] / Rational(2) - notch_depth / Rational(2)
+            corner_point_1 = create_v3(0, timber.size[1] / Rational(2) - notch_depth, prism_end)
+            corner_point_2 = create_v3(0, timber.size[1] / Rational(2) - notch_depth, prism_start)
+            wall_rot_axis = TimberFace.LEFT.get_direction()
         else:  # BACK
             # Notch starts at back face (-depth inward)
             # Prism center: -size[1]/2 + depth/2
             y_offset = -timber.size[1] / Rational(2) + notch_depth / Rational(2)
-        
+            corner_point_1 = create_v3(0, -timber.size[1] / Rational(2) + notch_depth, prism_end)
+            corner_point_2 = create_v3(0, -timber.size[1] / Rational(2) + notch_depth, prism_start)
+            wall_rot_axis = TimberFace.RIGHT.get_direction()
+
         notch_prism = RectangularPrism(
             size=create_v2(timber.size[0], notch_depth),  # full width in X, depth in Y
             transform=Transform(position=create_v3(0, y_offset, 0), orientation=Orientation.identity()),
@@ -852,4 +874,82 @@ def chop_shoulder_notch_on_timber_face(
             end_distance=prism_end
         )
     
-    return notch_prism
+    # If wall_angle is 0, return the simple notch prism
+    if wall_angle == 0:
+        return notch_prism
+    
+    # Create angled wall prisms by rotating copies of the notch prism around the corner edges
+    # Convert angle to radians
+    angle_rad = wall_angle * pi / Integer(180)
+    
+    # Get the notch prism's transform and size
+    # TODO you need to extend the prism based on the wall angle so that it cuts through the timber (so increase the size of the prism and also adjust the transform so that the side of the prism in the timber stays put while the other side moves outward)
+    notch_transform = notch_prism.transform
+    notch_size = notch_prism.size
+    
+    if notch_face == TimberFace.LEFT or notch_face == TimberFace.RIGHT:
+        # Create rotation matrix around Y axis for left corner (rotate by +angle)
+        left_angle = angle_rad
+        left_rot_matrix = Matrix([
+            [cos(left_angle), Integer(0), sin(left_angle)],
+            [Integer(0), Integer(1), Integer(0)],
+            [-sin(left_angle), Integer(0), cos(left_angle)]
+        ])
+        
+        # Create rotation matrix for right corner (rotate by -angle)
+        right_angle = -angle_rad
+        right_rot_matrix = Matrix([
+            [cos(right_angle), Integer(0), sin(right_angle)],
+            [Integer(0), Integer(1), Integer(0)],
+            [-sin(right_angle), Integer(0), cos(right_angle)]
+        ])
+        
+    else:  # FRONT or BACK faces
+        # Create rotation matrix around X axis for left corner (rotate by +angle)
+        left_angle = angle_rad
+        left_rot_matrix = Matrix([
+            [Integer(1), Integer(0), Integer(0)],
+            [Integer(0), cos(left_angle), -sin(left_angle)],
+            [Integer(0), sin(left_angle), cos(left_angle)]
+        ])
+        
+        # Create rotation matrix for right corner (rotate by -angle)
+        right_angle = -angle_rad
+        right_rot_matrix = Matrix([
+            [Integer(1), Integer(0), Integer(0)],
+            [Integer(0), cos(right_angle), -sin(right_angle)],
+            [Integer(0), sin(right_angle), cos(right_angle)]
+        ])
+    
+    # Create left wall prism by rotating around left corner
+    # Transform: translate to corner, rotate, translate back, then apply original transform
+    left_wall_orientation = Orientation(left_rot_matrix).multiply(notch_transform.orientation)
+    # Rotate the offset from corner to center
+    offset_from_left_corner = notch_transform.position - corner_point_1
+    rotated_offset_left = left_rot_matrix * offset_from_left_corner
+    left_wall_position = corner_point_1 + rotated_offset_left
+    
+    left_wall_prism = RectangularPrism(
+        size=notch_size,
+        transform=Transform(position=left_wall_position, orientation=left_wall_orientation),
+        start_distance=notch_prism.start_distance,
+        end_distance=notch_prism.end_distance
+    )
+    
+    # Create right wall prism by rotating around right corner
+    right_wall_orientation = Orientation(right_rot_matrix).multiply(notch_transform.orientation)
+    # Rotate the offset from corner to center
+    offset_from_right_corner = notch_transform.position - corner_point_2
+    rotated_offset_right = right_rot_matrix * offset_from_right_corner
+    right_wall_position = corner_point_2 + rotated_offset_right
+    
+    right_wall_prism = RectangularPrism(
+        size=notch_size,
+        transform=Transform(position=right_wall_position, orientation=right_wall_orientation),
+        start_distance=notch_prism.start_distance,
+        end_distance=notch_prism.end_distance
+    )
+    
+    # Union the main notch with the two angled wall prisms
+    from .cutcsg import SolidUnion
+    return SolidUnion([notch_prism, left_wall_prism, right_wall_prism])
