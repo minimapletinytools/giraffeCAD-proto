@@ -4,11 +4,15 @@ Japanese Joints Examples
 This module demonstrates traditional Japanese timber joints:
 - Lapped Gooseneck Joint (腰掛鎌継ぎ / Koshikake Kama Tsugi) - for splicing beams end-to-end
 - Dovetail Butt Joint (蟻仕口 / Ari Shiguchi) - for connecting timbers at right angles
+- Mitered and Keyed Lap Joint (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi) - for corner joints
 
 Each function creates and returns a Frame object with the joint example.
 """
 
 from typing import Optional
+import sys
+sys.path.append('..')
+
 from giraffe import *
 from code_goes_here.ticket import Ticket
 from code_goes_here.patternbook import PatternBook, PatternMetadata
@@ -29,6 +33,9 @@ def create_japanese_joints_patternbook() -> PatternBook:
         
         (PatternMetadata("dovetail_butt", ["japanese_joints", "dovetail"], "frame"),
          lambda center: create_dovetail_butt_joint_example(position=center)),
+        
+        (PatternMetadata("mitered_keyed_lap", ["japanese_joints", "miter"], "frame"),
+         lambda center: create_mitered_and_keyed_lap_joint_example(position=center)),
     ]
     
     return PatternBook(patterns=patterns)
@@ -119,6 +126,56 @@ def create_dovetail_butt_joint_example(position: Optional[V3] = None):
     return frame
 
 
+def create_mitered_and_keyed_lap_joint_example(position: Optional[V3] = None):
+    """
+    Create a mitered and keyed lap joint (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi)
+    using canonical 4"x5"x4' timbers.
+    
+    This is a traditional Japanese corner joint that combines a miter joint with interlocking
+    finger laps on the inside of the miter for additional mechanical strength. The fingers
+    create a strong mechanical connection that resists both tension and shear forces.
+    
+    Configuration:
+        - Creates a 90-degree corner joint
+        - Uses interlocking finger laps inside the miter
+        - Timbers meet at their bottom ends
+    
+    Args:
+        position: Center position of the joint (V3). Defaults to origin.
+    """
+    # Create corner joint arrangement using canonical function
+    # This creates two timbers meeting at a 90-degree angle
+    arrangement = create_canonical_corner_joint_timbers(position=position)
+    
+    # Rename timbers for clarity in this joint context
+    from dataclasses import replace
+    timberA = replace(arrangement.timber1, ticket=Ticket("timber_A"))
+    timberB = replace(arrangement.timber2, ticket=Ticket("timber_B"))
+    
+    # Create the mitered and keyed lap joint
+    # The reference miter face is the face that defines the miter plane (the face that will be visible after cutting)
+    # For a 90-degree corner, both timbers have their RIGHT face pointing in the +Z direction
+    joint = cut_mitered_and_keyed_lap_joint(
+        timberA=timberA,
+        timberA_end=TimberReferenceEnd.BOTTOM,
+        timberA_reference_miter_face=TimberLongFace.RIGHT,  # The face defining the miter plane
+        timberB=timberB,
+        timberB_end=TimberReferenceEnd.BOTTOM,
+        num_laps=3,                                          # 3 interlocking fingers
+        lap_thickness=inches(Rational(3, 4)),               # 0.75" thick fingers
+        lap_start_distance_from_reference_miter_face=inches(Rational(1, 2)),  # Start 0.5" from miter face
+        distance_between_lap_and_outside=inches(Rational(1, 2))  # 0.5" inset from outer edge
+    )
+    
+    # Create a frame from the joint
+    frame = Frame.from_joints(
+        [joint],
+        name="Mitered and Keyed Lap Joint (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi)"
+    )
+    
+    return frame
+
+
 if __name__ == "__main__":
     print("Creating Japanese Joint Examples...")
     print("=" * 70)
@@ -139,16 +196,24 @@ if __name__ == "__main__":
     frames.append(frame2)
     print(f"   Frame created: {frame2.name}")
     print(f"   Number of timbers: {len(frame2.cut_timbers)}")
-    for timber in frame2.cut_timbers:
-        print(f"   - {timber.ticket.name}: {len(timber.cuts)} cut(s)")
+    for cut_timber in frame2.cut_timbers:
+        print(f"   - {cut_timber.timber.ticket.name}: {len(cut_timber.cuts)} cut(s)")
     
     print("\n3. Creating dovetail butt joint (T-joint) example...")
     frame3 = create_dovetail_butt_joint_example()
     frames.append(frame3)
     print(f"   Frame created: {frame3.name}")
     print(f"   Number of timbers: {len(frame3.cut_timbers)}")
-    for timber in frame3.cut_timbers:
-        print(f"   - {timber.ticket.name}: {len(timber.cuts)} cut(s)")
+    for cut_timber in frame3.cut_timbers:
+        print(f"   - {cut_timber.timber.ticket.name}: {len(cut_timber.cuts)} cut(s)")
+    
+    print("\n4. Creating mitered and keyed lap joint (corner joint) example...")
+    frame4 = create_mitered_and_keyed_lap_joint_example()
+    frames.append(frame4)
+    print(f"   Frame created: {frame4.name}")
+    print(f"   Number of timbers: {len(frame4.cut_timbers)}")
+    for cut_timber in frame4.cut_timbers:
+        print(f"   - {cut_timber.timber.ticket.name}: {len(cut_timber.cuts)} cut(s)")
     
     print("\n" + "=" * 70)
     print("All examples created successfully!")
@@ -162,5 +227,10 @@ if __name__ == "__main__":
     print("    - Connects timbers at right angles")
     print("    - Dovetail shape resists pulling apart")
     print("    - Used for T-joints and corner connections")
+    print("")
+    print("  • Mitered and Keyed Lap Joint (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi)")
+    print("    - Reinforced corner joint")
+    print("    - Miter cut with interlocking finger laps")
+    print("    - Resists tension, shear, and compression")
     print("")
     print(f"Total frames created: {len(frames)}")
