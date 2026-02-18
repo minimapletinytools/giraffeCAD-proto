@@ -7,7 +7,7 @@ import warnings
 from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.joint_shavings import *
-from code_goes_here.measuring import measure_top_center_position
+from code_goes_here.measuring import measure_top_center_position, measure_centerline, mark_onto_centerline
 from code_goes_here.rule import *
 from code_goes_here.cutcsg import *
 
@@ -663,36 +663,518 @@ def cut_housed_dovetail_butt_joint(
     )
 
 
-def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberA_reference_miter_face: TimberLongFace, timberB: TimberLike, timberB_end: TimberReferenceEnd, lap_start_lap_thickness: Optional[Numeric] = None, distance_between_lap_and_outside: Optional[Numeric] = None, num_laps: int = 2, key_width: Optional[Numeric] = None, key_thickness: Optional[Numeric] = None) -> Joint:
-    # TODO: Implement this function
-    # assert that num_laps is >= 2
-
-    # find timberB_reference_miter_face on timberB by looking for the face that has the same normal as timberA_reference_miter_face (use find closest oriented face and then assert that they are the same normal)
-
-    # see that timberA_reference_miter_face and timberB_reference_miter_face are on the same plane and if not give a warning
+def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberA_reference_miter_face: TimberLongFace, timberB: TimberLike, timberB_end: TimberReferenceEnd, lap_thickness: Optional[Numeric] = None, lap_start_distance_from_reference_miter_face: Optional[Numeric] = None, distance_between_lap_and_outside: Optional[Numeric] = None, num_laps: int = 2, key_width: Optional[Numeric] = None, key_thickness: Optional[Numeric] = None) -> Joint:
+    """
+    Creates a mitered and keyed lap joint (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi)
+    between two timbers.
     
-    # now determine the angle between the two timbers in the parallel plane
-    # assert that this angle is > 45 and < 135
-
-    # miter_face_depth = timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face())
-    # miter_face_width = timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.rotate_right().to.face())
-
-    # if lap_start_distance_from_reference_miter_face is none and lap_thickness is not none, set it to (miter_face_depth - lap_thickness*(num_laps))/
-    # if lap_thickness is none and lap_start_distance_from_reference_miter_face is not none, set it to the (miter_face_depth - lap_start_distance_from_reference_miter_face) / (num_laps+1)
-    # if both are none, set lap_start_distance_from_reference_miter_face and lap_thickness to the (miter_face_depth - lap_thickness*(num_laps))/2
+    This is a traditional Japanese timber joint that combines a miter joint with interlocking
+    finger laps on the inside of the miter for additional mechanical strength.
     
-    raise NotImplementedError("cut_mitered_and_keyed_lap_joint is not yet implemented")
-    # if distance_between_lap_and_outside is none, set it to the miter_face_width * Rational(0.2) 
-
-    # assert that lap_start_distance_from_reference_miter_face + lap_thickness*num_laps < miter_face_depth
-    # assert that the laps will fit on timberB, in particular, the positions from timberA refence miter face + (into the face) lap_start_distance_from_reference_miter_face to timberA refence miter face + (into the face) lap_start_distance_from_reference_miter_face + lap_thickness*num_laps falli n the range of the thickness oftimberB_reference_miter_face
-
-    # now determine the "inner" faces of each timber (on the inside of the angle)
-    # find where these "inner" faces intersect and call it the inner shoulder
+    Args:
+        timberA: First timber to join
+        timberA_end: Which end of timberA to cut
+        timberA_reference_miter_face: The long face on timberA that defines the miter plane
+        timberB: Second timber to join
+        timberB_end: Which end of timberB to cut
+        lap_thickness: Thickness of each lap/finger (optional, auto-calculated if None)
+        lap_start_distance_from_reference_miter_face: Distance from miter face to first lap (optional)
+        distance_between_lap_and_outside: Inset distance from outer face (optional)
+        num_laps: Number of interlocking laps/fingers (minimum 2)
+        key_width: Not implemented yet (reserved for future key feature)
+        key_thickness: Not implemented yet (reserved for future key feature)
     
-    # create a marking transform on this intersection on timber A, the transform should point towards the timberA_end and it should start lap_start_distance_from_reference_miter_face from timberA_reference_miter_face
+    Returns:
+        Joint object containing the two CutTimbers with miter and finger cuts applied
     
-    pass
+    Raises:
+        ValueError: If parameters are invalid or timbers are not properly positioned
+    """
+    from sympy import acos, pi
+    
+    # ========================================================================
+    # Step 1: Parameter validation and find matching miter faces
+    # ========================================================================
+    
+    # Validate num_laps
+    if num_laps < 2:
+        raise ValueError(f"num_laps must be at least 2, got {num_laps}")
+    
+    # Find matching miter face on timberB
+    timberA_miter_face_normal = timberA.get_face_direction_global(timberA_reference_miter_face)
+    timberB_reference_miter_face_enum = timberB.get_closest_oriented_face_from_global_direction(
+        timberA_miter_face_normal
+    )
+    
+    # Convert to TimberLongFace if it's a long face
+    if timberB_reference_miter_face_enum == TimberFace.RIGHT:
+        timberB_reference_miter_face = TimberLongFace.RIGHT
+    elif timberB_reference_miter_face_enum == TimberFace.LEFT:
+        timberB_reference_miter_face = TimberLongFace.LEFT
+    elif timberB_reference_miter_face_enum == TimberFace.FRONT:
+        timberB_reference_miter_face = TimberLongFace.FRONT
+    elif timberB_reference_miter_face_enum == TimberFace.BACK:
+        timberB_reference_miter_face = TimberLongFace.BACK
+    else:
+        raise ValueError(
+            f"timberB matching face must be a long face (not TOP or BOTTOM), got {timberB_reference_miter_face_enum}"
+        )
+    
+    # Verify the normals are parallel
+    timberB_miter_face_normal = timberB.get_face_direction_global(timberB_reference_miter_face)
+    if not are_vectors_parallel(timberA_miter_face_normal, timberB_miter_face_normal):
+        raise ValueError(
+            f"Miter face normals must be parallel. "
+            f"timberA face normal: {timberA_miter_face_normal.T}, "
+            f"timberB face normal: {timberB_miter_face_normal.T}"
+        )
+    
+    # Check if the miter faces are coplanar (warning if not)
+    # Get a point on each face
+    timberA_face_point = timberA.get_bottom_position_global() + \
+        timberA.get_length_direction_global() * (timberA.length / Rational(2)) + \
+        timberA_miter_face_normal * (timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face()) / Rational(2))
+    
+    timberB_face_point = timberB.get_bottom_position_global() + \
+        timberB.get_length_direction_global() * (timberB.length / Rational(2)) + \
+        timberB_miter_face_normal * (timberB.get_size_in_face_normal_axis(timberB_reference_miter_face.to.face()) / Rational(2))
+    
+    # Distance between the two face planes
+    face_separation = Abs(safe_dot_product(timberB_face_point - timberA_face_point, timberA_miter_face_normal))
+    if not zero_test(face_separation):
+        warnings.warn(
+            f"Miter faces are not coplanar (separation: {float(face_separation):.6f}). "
+            f"Joint may not fit properly."
+        )
+    
+    # ========================================================================
+    # Step 2: Calculate and validate angle between timbers
+    # ========================================================================
+    
+    # Get end directions (pointing outward from timber)
+    if timberA_end == TimberReferenceEnd.TOP:
+        directionA = timberA.get_length_direction_global()
+    else:  # BOTTOM
+        directionA = -timberA.get_length_direction_global()
+    
+    if timberB_end == TimberReferenceEnd.TOP:
+        directionB = timberB.get_length_direction_global()
+    else:  # BOTTOM
+        directionB = -timberB.get_length_direction_global()
+    
+    # Calculate angle between timbers using dot product
+    # angle = acos(directionA · directionB)
+    dot_product = safe_dot_product(normalize_vector(directionA), normalize_vector(directionB))
+    
+    # Clamp to [-1, 1] to avoid numerical issues with acos
+    from sympy import Max, Min
+    dot_product_clamped = Max(Rational(-1), Min(Rational(1), dot_product))
+    angle = acos(dot_product_clamped)
+    
+    # Validate angle is between 45 and 135 degrees
+    min_angle = pi / Integer(4)  # 45 degrees
+    max_angle = Rational(3) * pi / Integer(4)  # 135 degrees
+    
+    if angle < min_angle or angle > max_angle:
+        raise ValueError(
+            f"Angle between timbers must be between 45° and 135°, "
+            f"got {float(angle * 180 / pi):.1f}°"
+        )
+    
+    # ========================================================================
+    # Step 3: Calculate dimensions and default values
+    # ========================================================================
+    
+    # Get miter face dimensions
+    miter_face_depth = timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face())
+    miter_face_width = timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.rotate_right().to.face())
+    
+    # Calculate lap_thickness and lap_start_distance defaults
+    lap_thickness_final: Numeric
+    lap_start_distance_final: Numeric
+    
+    if lap_thickness is None and lap_start_distance_from_reference_miter_face is None:
+        # Both None: distribute evenly
+        # Total space for laps plus margins: miter_face_depth
+        # We want: margin + num_laps * thickness + margin = miter_face_depth
+        # With equal margins: 2*margin + num_laps*thickness = miter_face_depth
+        # Let's use: margin = thickness, so: (num_laps + 2)*thickness = miter_face_depth
+        lap_thickness_final = miter_face_depth / (num_laps + Integer(2))
+        lap_start_distance_final = lap_thickness_final
+    elif lap_thickness is None:
+        # Only start distance given, calculate thickness
+        assert lap_start_distance_from_reference_miter_face is not None  # Type narrowing
+        remaining_depth: Numeric = miter_face_depth - lap_start_distance_from_reference_miter_face
+        lap_thickness_final = remaining_depth / Integer(num_laps)
+        lap_start_distance_final = lap_start_distance_from_reference_miter_face
+    elif lap_start_distance_from_reference_miter_face is None:
+        # Only thickness given, calculate start distance
+        total_lap_depth: Numeric = lap_thickness * num_laps
+        lap_start_distance_final = (miter_face_depth - total_lap_depth) / Rational(2)
+        lap_thickness_final = lap_thickness
+    else:
+        # Both provided
+        lap_thickness_final = lap_thickness
+        lap_start_distance_final = lap_start_distance_from_reference_miter_face
+    
+    # Default distance_between_lap_and_outside
+    if distance_between_lap_and_outside is None:
+        distance_between_lap_and_outside = miter_face_width * Rational(1, 5)
+    
+    # ========================================================================
+    # Step 4: Validate fit
+    # ========================================================================
+    
+    # Check laps fit in depth
+    total_lap_depth = lap_start_distance_final + lap_thickness_final * num_laps
+    if total_lap_depth >= miter_face_depth:
+        raise ValueError(
+            f"Laps do not fit in timber depth. "
+            f"Total lap depth: {float(total_lap_depth):.3f}, "
+            f"Miter face depth: {float(miter_face_depth):.3f}"
+        )
+    
+    # Check laps fit on timberB 
+    # TODO fix, you need to mark the lap start/end positions and measure on timberB to see that they are both within the timberB miter face depth
+    timberB_miter_face_depth = timberB.get_size_in_face_normal_axis(timberB_reference_miter_face.to.face())
+    if total_lap_depth >= timberB_miter_face_depth:
+        raise ValueError(
+            f"Laps do not fit on timberB. "
+            f"Total lap depth: {float(total_lap_depth):.3f}, "
+            f"TimberB miter face depth: {float(timberB_miter_face_depth):.3f}"
+        )
+    
+    # ========================================================================
+    # Step 5: Find inner shoulder axis
+    # WTF is this, do we even need this??
+    # TODO DELETE
+    # ========================================================================
+    
+    # Determine which faces are on the "inside" of the corner
+    # The inside faces are perpendicular to the miter face and point toward each other
+    
+    # For a corner joint, we need to find the faces that face toward the other timber
+    # Use cross product of miter normal and length direction to find the perpendicular faces
+    
+    # Get the perpendicular direction in the plane of the joint
+    perp_direction_A = cross_product(timberA_miter_face_normal, directionA)
+    perp_direction_A = normalize_vector(perp_direction_A)
+    
+    # Find which face of timberA is closest to this direction
+    timberA_inner_face_enum = timberA.get_closest_oriented_face_from_global_direction(perp_direction_A)
+    
+    # For timberB, the inner face points in the opposite perpendicular direction
+    perp_direction_B = cross_product(timberB_miter_face_normal, directionB)
+    perp_direction_B = normalize_vector(perp_direction_B)
+    timberB_inner_face_enum = timberB.get_closest_oriented_face_from_global_direction(perp_direction_B)
+    
+    # Get the inner face normals
+    timberA_inner_face_normal = timberA.get_face_direction_global(timberA_inner_face_enum)
+    timberB_inner_face_normal = timberB.get_face_direction_global(timberB_inner_face_enum)
+    
+    # The inner shoulder axis is the intersection line of the two inner face planes
+    # Direction of intersection line = cross product of the two normals
+    inner_shoulder_direction = cross_product(timberA_inner_face_normal, timberB_inner_face_normal)
+    inner_shoulder_direction = normalize_vector(inner_shoulder_direction)
+    
+    # Find a point on the inner shoulder line
+    # This is where the two inner face planes intersect
+    # We can use the timber ends as reference points
+    
+    # Get points on the inner faces
+    timberA_inner_face_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) / Rational(2)
+    timberA_inner_face_point = timberA.get_bottom_position_global() + \
+        timberA.get_length_direction_global() * (timberA.length / Rational(2)) + \
+        timberA_inner_face_normal * timberA_inner_face_offset
+    
+    timberB_inner_face_offset = timberB.get_size_in_face_normal_axis(timberB_inner_face_enum) / Rational(2)
+    timberB_inner_face_point = timberB.get_bottom_position_global() + \
+        timberB.get_length_direction_global() * (timberB.length / Rational(2)) + \
+        timberB_inner_face_normal * timberB_inner_face_offset
+    
+    # Find intersection line between two planes using parametric form
+    # Plane 1: (P - P1) · N1 = 0
+    # Plane 2: (P - P2) · N2 = 0
+    # The intersection line has direction d = N1 × N2
+    # To find a point on the line, we solve the system for a point
+    
+    # Use the cross product method to find a point on the intersection line
+    # We need a point that satisfies both plane equations
+    # Pick a convenient third constraint (e.g., set one coordinate to a value)
+    
+    # Simplified approach: find the closest point on both planes to the origin
+    # that also lies on the intersection line
+    from sympy import symbols, solve, Eq
+    
+    # Parametric line: P = P0 + t * d, where we need to find P0
+    # We know: (P0 - P1) · N1 = 0 and (P0 - P2) · N2 = 0
+    # Let P0 = a*N1 + b*N2 + c*d (general point near the intersection)
+    # Substituting into plane equations gives us a and b
+    
+    # Simpler approach: use a reference point and project it onto the intersection line
+    # Use the midpoint of the two face points as an approximation
+    reference_point = (timberA_inner_face_point + timberB_inner_face_point) / Rational(2)
+    
+    # Project onto plane 1
+    dist_to_plane1 = safe_dot_product(reference_point - timberA_inner_face_point, timberA_inner_face_normal)
+    point_on_plane1 = reference_point - timberA_inner_face_normal * dist_to_plane1
+    
+    # Project onto the intersection line from plane 1
+    # The intersection line passes through point_on_plane1 in direction inner_shoulder_direction
+    inner_shoulder_point = point_on_plane1
+    
+    # ========================================================================
+    # Step 6: Create marking transform on timberA
+    # ========================================================================
+    
+
+    # Find where timberB's centerline intersects timberA's centerline
+    timberB_centerline = measure_centerline(timberB)
+    centerline_marking = mark_onto_centerline(timberB_centerline, timberA, end=TimberReferenceEnd.BOTTOM)
+
+    marking_position = timberA.get_bottom_position_global()
+    marking_position = marking_position + timberA.get_length_direction_global() * centerline_marking.distance
+    
+    # now move to the timberA_reference_miter_face surface
+    marking_position = marking_position + timberA_miter_face_normal * (lap_start_distance_final - timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face()) / Rational(2))
+    
+    # Move to the inner shoulder edge
+    # The marking position should be at the inner edge of the timber
+    inner_edge_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) / Rational(2)
+    marking_position = marking_position + timberA_inner_face_normal * inner_edge_offset
+    
+    # Create orientation for the marking transform
+    # Z-axis points toward the end (along timber length direction or opposite)
+    if timberA_end == TimberReferenceEnd.TOP:
+        marking_z = timberA.get_length_direction_global()
+    else:
+        marking_z = -timberA.get_length_direction_global()
+    
+    # X-axis aligns with the inner shoulder direction
+    marking_x = inner_shoulder_direction
+    
+    # Ensure correct orientation (might need to flip based on handedness)
+    # Y-axis from cross product
+    marking_y = cross_product(marking_z, marking_x)
+    marking_y = normalize_vector(marking_y)
+    
+    # Re-orthogonalize X to be perpendicular to Z
+    marking_x = cross_product(marking_y, marking_z)
+    marking_x = normalize_vector(marking_x)
+    
+    marking_transform = Transform(
+        position=marking_position,
+        orientation=Orientation(Matrix([
+            [marking_x[0], marking_y[0], marking_z[0]],
+            [marking_x[1], marking_y[1], marking_z[1]],
+            [marking_x[2], marking_y[2], marking_z[2]]
+        ]))
+    )
+    
+    # ========================================================================
+    # Step 7: Generate finger prisms
+    # ========================================================================
+    
+    # Calculate finger dimensions
+    finger_width = miter_face_width - distance_between_lap_and_outside
+    
+    finger_length = lap_thickness_final
+    
+    fingers_for_timberA = []
+    fingers_for_timberB = []
+    
+    for i in range(num_laps):
+        # Calculate position of this finger
+        finger_start_offset = lap_start_distance_final + i * lap_thickness_final
+        
+        # Create finger prism in a convenient coordinate system
+        # Then transform it to the correct position
+        
+        # Finger dimensions: width x thickness x length
+        finger_size = create_v2(finger_width, finger_width)
+        
+        # Position the finger
+        # Start from the miter face, move inward by finger_start_offset
+        finger_position = timberA.get_bottom_position_global()
+        
+        if timberA_end == TimberReferenceEnd.TOP:
+            finger_position = finger_position + timberA.get_length_direction_global() * timberA.length
+        
+        # Move inward from miter face
+        finger_position = finger_position + timberA_miter_face_normal * (finger_start_offset + lap_thickness_final / Rational(2))
+        
+        # Move to the side (centered on the inner edge area)
+        # The finger should be positioned between the inner edge and the outer edge
+        inner_edge_full_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) / Rational(2)
+        finger_center_offset = inner_edge_full_offset - finger_width / Rational(2) - distance_between_lap_and_outside
+        finger_position = finger_position + timberA_inner_face_normal * finger_center_offset
+        
+        # Create finger orientation
+        # X-axis: along the finger width (parallel to inner shoulder)
+        finger_x = inner_shoulder_direction
+        # Y-axis: along the finger thickness (into the miter face)
+        finger_y = -timberA_miter_face_normal  # pointing inward
+        # Z-axis: along the finger length
+        finger_z = cross_product(finger_x, finger_y)
+        finger_z = normalize_vector(finger_z)
+        
+        # Re-orthogonalize
+        finger_y = cross_product(finger_z, finger_x)
+        finger_y = normalize_vector(finger_y)
+        
+        finger_orientation = Orientation(Matrix([
+            [finger_x[0], finger_y[0], finger_z[0]],
+            [finger_x[1], finger_y[1], finger_z[1]],
+            [finger_x[2], finger_y[2], finger_z[2]]
+        ]))
+        
+        # Create the finger prism in global coordinates
+        finger_prism_global = RectangularPrism(
+            size=finger_size,
+            transform=Transform(position=finger_position, orientation=finger_orientation),
+            start_distance=Integer(0),
+            end_distance=finger_length
+        )
+        
+        # Determine which timber this finger is cut from
+        # Even indices (0, 2, 4, ...) cut from timberA
+        # Odd indices (1, 3, 5, ...) cut from timberB
+        if i % 2 == 0:
+            # Convert to timberA local coordinates
+            temp_timber_A = Timber(
+                length=finger_length, 
+                size=finger_size, 
+                transform=Transform(position=finger_position, orientation=finger_orientation), 
+                ticket=Ticket("temp_finger")
+            )
+            finger_prism_local_A = adopt_csg(
+                temp_timber_A,
+                timberA,
+                RectangularPrism(size=finger_size, transform=Transform.identity(), start_distance=Integer(0), end_distance=finger_length)
+            )
+            fingers_for_timberA.append(finger_prism_local_A)
+        else:
+            # Convert to timberB local coordinates
+            temp_timber_B = Timber(
+                length=finger_length, 
+                size=finger_size, 
+                transform=Transform(position=finger_position, orientation=finger_orientation), 
+                ticket=Ticket("temp_finger")
+            )
+            finger_prism_local_B = adopt_csg(
+                temp_timber_B,
+                timberB,
+                RectangularPrism(size=finger_size, transform=Transform.identity(), start_distance=Integer(0), end_distance=finger_length)
+            )
+            fingers_for_timberB.append(finger_prism_local_B)
+    
+    # ========================================================================
+    # Step 8: Create miter cuts (reuse logic from cut_basic_miter_joint)
+    # ========================================================================
+    
+    # Get end positions
+    if timberA_end == TimberReferenceEnd.TOP:
+        endA_position = measure_top_center_position(timberA).position
+    else:
+        endA_position = measure_bottom_center_position(timberA).position
+    
+    if timberB_end == TimberReferenceEnd.TOP:
+        endB_position = measure_top_center_position(timberB).position
+    else:
+        endB_position = measure_bottom_center_position(timberB).position
+    
+    # Find intersection point using closest point formula
+    w0 = endA_position - endB_position
+    a = directionA.dot(directionA)
+    b = directionA.dot(directionB)
+    c = directionB.dot(directionB)
+    d = directionA.dot(w0)
+    e = directionB.dot(w0)
+    
+    denom = a * c - b * b
+    if zero_test(denom):
+        raise ValueError("Cannot compute intersection point (degenerate case)")
+    
+    t = (b * e - c * d) / denom
+    s = (a * e - b * d) / denom
+    
+    pointA = endA_position + directionA * t
+    pointB = endB_position + directionB * s
+    intersection_point = (pointA + pointB) / Rational(2)
+    
+    # Create miter plane normal
+    normA = normalize_vector(directionA)
+    normB = normalize_vector(directionB)
+    bisector = normalize_vector(normA + normB)
+    plane_normal = cross_product(normA, normB)
+    miter_normal = normalize_vector(cross_product(bisector, plane_normal))
+    
+    # Create HalfSpace cuts for each timber
+    from code_goes_here.rule import safe_compare, Comparison, safe_transform_vector
+    
+    dot_A = safe_dot_product(normA, miter_normal)
+    if safe_compare(dot_A, Comparison.GT):
+        normalA = miter_normal
+    else:
+        normalA = -miter_normal
+    
+    local_normalA = safe_transform_vector(timberA.orientation.matrix.T, normalA)
+    local_offsetA = safe_dot_product(intersection_point, normalA) - safe_dot_product(normalA, timberA.get_bottom_position_global())
+    
+    dot_B = safe_dot_product(normB, miter_normal)
+    if safe_compare(dot_B, Comparison.GT):
+        normalB = miter_normal
+    else:
+        normalB = -miter_normal
+    
+    local_normalB = safe_transform_vector(timberB.orientation.matrix.T, normalB)
+    local_offsetB = safe_dot_product(intersection_point, normalB) - safe_dot_product(normalB, timberB.get_bottom_position_global())
+    
+    end_cut_A = HalfSpace(normal=local_normalA, offset=local_offsetA)
+    end_cut_B = HalfSpace(normal=local_normalB, offset=local_offsetB)
+    
+    # ========================================================================
+    # Step 9: Combine cuts and return Joint
+    # ========================================================================
+    
+    # Combine finger CSGs
+    if fingers_for_timberA:
+        negative_csg_A = CSGUnion(fingers_for_timberA)
+    else:
+        negative_csg_A = None
+    
+    if fingers_for_timberB:
+        negative_csg_B = CSGUnion(fingers_for_timberB)
+    else:
+        negative_csg_B = None
+    
+    # Create Cutting objects
+    cutA = Cutting(
+        timber=timberA,
+        maybe_top_end_cut=end_cut_A if timberA_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=end_cut_A if timberA_end == TimberReferenceEnd.BOTTOM else None,
+        negative_csg=negative_csg_A
+    )
+    
+    cutB = Cutting(
+        timber=timberB,
+        maybe_top_end_cut=end_cut_B if timberB_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=end_cut_B if timberB_end == TimberReferenceEnd.BOTTOM else None,
+        negative_csg=negative_csg_B
+    )
+    
+    # Create CutTimber objects
+    cut_timberA = CutTimber(timberA, cuts=[cutA])
+    cut_timberB = CutTimber(timberB, cuts=[cutB])
+    
+    # Return Joint
+    return Joint(
+        cut_timbers={
+            timberA.ticket.name: cut_timberA,
+            timberB.ticket.name: cut_timberB
+        },
+        jointAccessories={}
+    )
 
 
 # ============================================================================
