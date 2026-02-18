@@ -988,8 +988,8 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # and runs along the inner face direction - it should be large enough to cut through
     finger_depth = miter_face_depth * Rational(2)  # Conservative, extends through timber
     
-    fingers_for_timberA = []
-    fingers_for_timberB = []
+    # Create all fingers in timberA's space
+    all_fingers_in_timberA_space = []
     
     for i in range(num_laps):
         # Calculate Z position along timber length for this lap
@@ -1023,79 +1023,92 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         # Finger size: width (X) x depth (Y), with length (Z) in start/end_distance
         finger_size = create_v2(finger_width, finger_width)
         
-        # Create the finger prism in global coordinates
-        finger_prism_global = RectangularPrism(
+        # Create temporary timber in global space for this finger
+        temp_timber = Timber(
+            length=finger_length, 
+            size=finger_size, 
+            transform=Transform(position=finger_position, orientation=finger_orientation), 
+            ticket=Ticket("temp_finger")
+        )
+        
+        # Create finger prism in identity space
+        finger_prism_identity = RectangularPrism(
             size=finger_size,
-            transform=Transform(position=finger_position, orientation=finger_orientation),
+            transform=Transform.identity(),
             start_distance=Integer(0),
             end_distance=finger_length
         )
         
-        # Determine which timber this finger is cut from
-        # Even indices (0, 2, 4, ...) cut from timberA
-        # Odd indices (1, 3, 5, ...) cut from timberB
-        if i % 2 == 0:
-            # Convert to timberA local coordinates
-            temp_timber_A = Timber(
-                length=finger_length, 
-                size=finger_size, 
-                transform=Transform(position=finger_position, orientation=finger_orientation), 
-                ticket=Ticket("temp_finger")
-            )
-            finger_prism_local_A = adopt_csg(
-                temp_timber_A,
-                timberA,
-                RectangularPrism(size=finger_size, transform=Transform.identity(), start_distance=Integer(0), end_distance=finger_length)
-            )
-            fingers_for_timberA.append(finger_prism_local_A)
-        else:
-            # Convert to timberB local coordinates
-            temp_timber_B = Timber(
-                length=finger_length, 
-                size=finger_size, 
-                transform=Transform(position=finger_position, orientation=finger_orientation), 
-                ticket=Ticket("temp_finger")
-            )
-            finger_prism_local_B = adopt_csg(
-                temp_timber_B,
-                timberB,
-                RectangularPrism(size=finger_size, transform=Transform.identity(), start_distance=Integer(0), end_distance=finger_length)
-            )
-            fingers_for_timberB.append(finger_prism_local_B)
+        # Adopt to timberA's local space
+        finger_prism_in_timberA = adopt_csg(temp_timber, timberA, finger_prism_identity)
+        all_fingers_in_timberA_space.append(finger_prism_in_timberA)
+    
+    # Separate fingers by which timber they belong to (even = A, odd = B)
+    A_finger_indices = [i for i in range(num_laps) if i % 2 == 0]
+    B_finger_indices = [i for i in range(num_laps) if i % 2 == 1]
+    
+    # A fingers in timberA space (for subtracting from timberA)
+    A_fingers_in_timberA = [all_fingers_in_timberA_space[i] for i in A_finger_indices]
+    
+    # B fingers in timberA space (for adding voids to timberA)
+    B_fingers_in_timberA = [all_fingers_in_timberA_space[i] for i in B_finger_indices]
+    
+    # A fingers in timberB space (for adding voids to timberB)
+    A_fingers_in_timberB = []
+    for idx in A_finger_indices:
+        finger_in_A = all_fingers_in_timberA_space[idx]
+        finger_in_B = adopt_csg(timberA, timberB, finger_in_A)
+        A_fingers_in_timberB.append(finger_in_B)
+    
+    # B fingers in timberB space (for subtracting from timberB)
+    B_fingers_in_timberB = []
+    for idx in B_finger_indices:
+        finger_in_A = all_fingers_in_timberA_space[idx]
+        finger_in_B = adopt_csg(timberA, timberB, finger_in_A)
+        B_fingers_in_timberB.append(finger_in_B)
     
     # ========================================================================
-    # Step 8: Create miter cuts (reuse logic from cut_basic_miter_joint)
+    # Step 8: Create rough end cuts and miter half plane cuts
     # ========================================================================
     
-    # Get end positions
+    from code_goes_here.rule import safe_transform_vector, safe_compare, Comparison
+    
+    # Create rough end cuts perpendicular to timbers
+    # These cross the corner of the miter
+    
+    # For timberA: cut position is marking_position moved by timberB's width along timberA's length
+    # Use the maximum dimension of timberB's cross-section as the width
+    timberB_width = max(timberB.size[0], timberB.size[1])
+    
     if timberA_end == TimberReferenceEnd.TOP:
-        endA_position = measure_top_center_position(timberA).position
-    else:
-        endA_position = measure_bottom_center_position(timberA).position
+        # Cut the top: position is outward from marking, normal points up (to cut away top)
+        rough_cut_position_A = marking_position + timberA.get_length_direction_global() * timberB_width
+        rough_cut_normal_A_global = timberA.get_length_direction_global()
+    else:  # BOTTOM
+        # Cut the bottom: position is outward from marking, normal points down (to cut away bottom)
+        rough_cut_position_A = marking_position - timberA.get_length_direction_global() * timberB_width
+        rough_cut_normal_A_global = -timberA.get_length_direction_global()
+    
+    local_normal_A_rough = safe_transform_vector(timberA.orientation.matrix.T, rough_cut_normal_A_global)
+    local_offset_A_rough = safe_dot_product(rough_cut_position_A, rough_cut_normal_A_global) - safe_dot_product(rough_cut_normal_A_global, timberA.get_bottom_position_global())
+    rough_end_cut_A = HalfSpace(normal=local_normal_A_rough, offset=local_offset_A_rough)
+    
+    # For timberB
+    timberA_width = max(timberA.size[0], timberA.size[1])
     
     if timberB_end == TimberReferenceEnd.TOP:
-        endB_position = measure_top_center_position(timberB).position
-    else:
-        endB_position = measure_bottom_center_position(timberB).position
+        rough_cut_position_B = marking_position + timberB.get_length_direction_global() * timberA_width
+        rough_cut_normal_B_global = timberB.get_length_direction_global()
+    else:  # BOTTOM
+        rough_cut_position_B = marking_position - timberB.get_length_direction_global() * timberA_width
+        rough_cut_normal_B_global = -timberB.get_length_direction_global()
     
-    # Find intersection point using closest point formula
-    w0 = endA_position - endB_position
-    a = directionA.dot(directionA)
-    b = directionA.dot(directionB)
-    c = directionB.dot(directionB)
-    d = directionA.dot(w0)
-    e = directionB.dot(w0)
+    local_normal_B_rough = safe_transform_vector(timberB.orientation.matrix.T, rough_cut_normal_B_global)
+    local_offset_B_rough = safe_dot_product(rough_cut_position_B, rough_cut_normal_B_global) - safe_dot_product(rough_cut_normal_B_global, timberB.get_bottom_position_global())
+    rough_end_cut_B = HalfSpace(normal=local_normal_B_rough, offset=local_offset_B_rough)
     
-    denom = a * c - b * b
-    if zero_test(denom):
-        raise ValueError("Cannot compute intersection point (degenerate case)")
-    
-    t = (b * e - c * d) / denom
-    s = (a * e - b * d) / denom
-    
-    pointA = endA_position + directionA * t
-    pointB = endB_position + directionB * s
-    intersection_point = (pointA + pointB) / Rational(2)
+    # Create miter half plane cuts (for negative_csg)
+    intersection_point = marking_position
     
     # Create miter plane normal
     normA = normalize_vector(directionA)
@@ -1104,9 +1117,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     plane_normal = cross_product(normA, normB)
     miter_normal = normalize_vector(cross_product(bisector, plane_normal))
     
-    # Create HalfSpace cuts for each timber
-    from code_goes_here.rule import safe_compare, Comparison, safe_transform_vector
-    
+    # Create HalfSpace cuts for miter planes
     dot_A = safe_dot_product(normA, miter_normal)
     if safe_compare(dot_A, Comparison.GT):
         normalA = miter_normal
@@ -1125,36 +1136,60 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     local_normalB = safe_transform_vector(timberB.orientation.matrix.T, normalB)
     local_offsetB = safe_dot_product(intersection_point, normalB) - safe_dot_product(normalB, timberB.get_bottom_position_global())
     
-    end_cut_A = HalfSpace(normal=local_normalA, offset=local_offsetA)
-    end_cut_B = HalfSpace(normal=local_normalB, offset=local_offsetB)
+    miter_half_plane_A = HalfSpace(normal=local_normalA, offset=local_offsetA)
+    miter_half_plane_B = HalfSpace(normal=local_normalB, offset=local_offsetB)
     
     # ========================================================================
     # Step 9: Combine cuts and return Joint
     # ========================================================================
     
-    # Combine finger CSGs
-    if fingers_for_timberA:
-        negative_csg_A = CSGUnion(fingers_for_timberA)
-    else:
-        negative_csg_A = None
+    # For A fingers: SUBTRACT from timberA's half plane, ADD to timberB's half plane
+    # For B fingers: SUBTRACT from timberB's half plane, ADD to timberA's half plane
     
-    if fingers_for_timberB:
-        negative_csg_B = CSGUnion(fingers_for_timberB)
+    # TimberA negative_csg:
+    # - Start with miter_half_plane_A
+    # - Subtract A fingers (they protrude, so remove them from the half plane cut)
+    # - Add B fingers (they create voids)
+    if A_fingers_in_timberA:
+        # A fingers subtract from half plane
+        miter_cut_A_with_fingers = Difference(miter_half_plane_A, A_fingers_in_timberA)
     else:
-        negative_csg_B = None
+        miter_cut_A_with_fingers = miter_half_plane_A
+    
+    if B_fingers_in_timberA:
+        # B fingers add as voids
+        negative_csg_A = CSGUnion([miter_cut_A_with_fingers] + B_fingers_in_timberA)
+    else:
+        negative_csg_A = miter_cut_A_with_fingers
+    
+    # TimberB negative_csg:
+    # - Start with miter_half_plane_B
+    # - Subtract B fingers (they protrude)
+    # - Add A fingers (they create voids)
+    if B_fingers_in_timberB:
+        # B fingers subtract from half plane
+        miter_cut_B_with_fingers = Difference(miter_half_plane_B, B_fingers_in_timberB)
+    else:
+        miter_cut_B_with_fingers = miter_half_plane_B
+    
+    if A_fingers_in_timberB:
+        # A fingers add as voids
+        negative_csg_B = CSGUnion([miter_cut_B_with_fingers] + A_fingers_in_timberB)
+    else:
+        negative_csg_B = miter_cut_B_with_fingers
     
     # Create Cutting objects
     cutA = Cutting(
         timber=timberA,
-        maybe_top_end_cut=end_cut_A if timberA_end == TimberReferenceEnd.TOP else None,
-        maybe_bottom_end_cut=end_cut_A if timberA_end == TimberReferenceEnd.BOTTOM else None,
+        maybe_top_end_cut=rough_end_cut_A if timberA_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=rough_end_cut_A if timberA_end == TimberReferenceEnd.BOTTOM else None,
         negative_csg=negative_csg_A
     )
     
     cutB = Cutting(
         timber=timberB,
-        maybe_top_end_cut=end_cut_B if timberB_end == TimberReferenceEnd.TOP else None,
-        maybe_bottom_end_cut=end_cut_B if timberB_end == TimberReferenceEnd.BOTTOM else None,
+        maybe_top_end_cut=rough_end_cut_B if timberB_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=rough_end_cut_B if timberB_end == TimberReferenceEnd.BOTTOM else None,
         negative_csg=negative_csg_B
     )
     
