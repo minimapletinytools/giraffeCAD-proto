@@ -464,6 +464,24 @@ class PerfectTimberWithin(ABC):
         else:  # FRONT or BACK
             return self.size[1]
     
+    def get_nominal_size_in_face_normal_axis(self, face: SomeTimberFace) -> Numeric:
+        """
+        Get the nominal size of the timber in the direction normal to the specified face.
+        
+        Args:
+            face: The face to get the size for (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
+        """
+
+        nominal_size = self.get_nominal_size()
+        face = face.to.face()
+        
+        if face == TimberFace.TOP or face == TimberFace.BOTTOM:
+            return self.length
+        elif face == TimberFace.RIGHT or face == TimberFace.LEFT:
+            return nominal_size[0]
+        else:  # FRONT or BACK
+            return nominal_size[1]
+    
     def get_closest_oriented_face_from_global_direction(self, target_direction: Direction3D) -> TimberFace:
         """
         Find which face of this timber best aligns with the target direction.
