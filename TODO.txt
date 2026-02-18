@@ -197,7 +197,7 @@ DONE-update cut notch helper to consider nominal size
 
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
   -add keys
-  -fix non 90 degree placement
+  DONE-fix non 90 degree placement
   DONE-add non 90 examlpe D:
 -update morties and tenon to support
   -perpendicular but not face aligned
