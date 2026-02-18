@@ -70,7 +70,7 @@ Joints involve creating CSG cuts on one or more timbers. A typicall joint implem
 1. validate input parameters
 2. locate key features (e.g. where the shoulder is for a mortise an tenon cut)
 3. pick a timber to start working on 
-4. create a sensible `marking_transform : Transform` on that timber which is a transform in the timber's local space from which we will make all further calculations from. 
+4. create a sensible `marking_transform : Transform` on that timber which is a transform from which we will make all further calculations from. Depending on the situation, it may either be in local or global coordiantes (if local postfix with _<timber_name>_local)
     - e.g. if we are cutting a tenon, marking_transform could be where the tenon centerline intersects the tenon shoulder pointing in the tenon direction 
     - for marking transforms inside the timber that are pointing in the length or -length direction, the "+x" axis of the transform should line up with the timber's "+x" axis
         - TODO decide if Y is rotated or if we use a transform with -1 determinant :O

@@ -942,10 +942,22 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # This is the average of the two end directions
     diagonal_direction = normalize_vector(directionA + directionB)
     
+    # Compute the angle between the two timbers to get the correct scale factor
+    # The half-angle is the angle between the diagonal and either timber's length direction
+    from sympy import acos, sin, sqrt
+    cos_angle = safe_dot_product(directionA, directionB)
+    timber_angle = acos(cos_angle)  # Angle between the two timbers
+    half_angle = timber_angle / Rational(2)  # Angle between diagonal and timber length
+    
+    # Scale factor for moving along diagonal to achieve perpendicular offset
+    # For 90° joint: half_angle = 45°, scale = 1/sin(45°) = sqrt(2)
+    # For 180° joint: half_angle = 90°, scale = 1/sin(90°) = 1
+    # For 135° joint: half_angle = 67.5°, scale = 1/sin(67.5°)
+    diagonal_scale_factor = Rational(1) / sin(half_angle)
+    
     # Move to the inner shoulder edge along the diagonal direction
-    # Since we're moving diagonally (hypotenuse), the distance is inner_edge_offset * sqrt(2)/2
-    from sympy import sqrt
-    diagonal_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) * sqrt(Rational(2)) / Rational(2)
+    inner_edge_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) / Rational(2)
+    diagonal_offset = inner_edge_offset * diagonal_scale_factor
     marking_position = marking_position - diagonal_direction * diagonal_offset
     
     # Create orientation for the marking transform
@@ -1001,10 +1013,6 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         # Move along miter face normal (into timber) by z_offset
         finger_position = finger_position + timberA_miter_face_normal * z_offset
         
-        # Move diagonally by half the finger width along the diagonal direction
-        # The diagonal is the bisector between timberA and timberB directions
-        finger_position = finger_position + diagonal_direction * (finger_width *sqrt(Rational(2)) / Rational(2))
-        
         # Create finger orientation with Z-axis pointing along miter face normal
         # Z-axis: points along miter face normal (into timber)
         finger_z = timberA_miter_face_normal
@@ -1023,24 +1031,33 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         # Finger size: width (X) x depth (Y), with length (Z) in start/end_distance
         finger_size = create_v2(finger_width, finger_width)
         
-        # Create temporary timber in global space for this finger
-        temp_timber = Timber(
-            length=finger_length, 
-            size=finger_size, 
-            transform=Transform(position=finger_position, orientation=finger_orientation), 
-            ticket=Ticket("temp_finger")
-        )
+        # Rotate the finger around the Y-axis of the marking_transform
+        # For 90° joint: half_angle = 45°, so rotation angle = 0° (no rotation)
+        # For non-90° joints: rotate by (half_angle - 45°)
+        from sympy import pi
+        rotation_angle = half_angle - (pi / Rational(4))  # half_angle - 45°
         
-        # Create finger prism in identity space
-        finger_prism_identity = RectangularPrism(
+        # Create rotation axis: Y-axis of marking_transform at marking_position
+        # marking_y is already defined from the marking_transform creation
+        rotation_axis = Axis(position=marking_position, direction=marking_x)
+        
+        # Rotate the finger transform around the inner shoulder edge axis so it's diagonal is aligned with the diagonal direction
+        finger_transform_global = Transform(position=finger_position, orientation=finger_orientation)
+        rotated_finger_transform_global_before_diagonal_offset = finger_transform_global.rotate_around_axis(rotation_axis, rotation_angle)
+
+        # Move the finger along the diagonal direction so that the corner is on the inner shoulder edge
+        rotated_finger_transform_global = replace(rotated_finger_transform_global_before_diagonal_offset, position=rotated_finger_transform_global_before_diagonal_offset.position + diagonal_direction * (finger_width * sqrt(2) / Rational(2)))
+        
+        # Convert the global transform to timberA's local space
+        finger_transform_local = rotated_finger_transform_global.to_local_transform(timberA.transform)
+        
+        # Create finger prism in timberA's local space
+        finger_prism_in_timberA = RectangularPrism(
             size=finger_size,
-            transform=Transform.identity(),
+            transform=finger_transform_local,
             start_distance=Integer(0),
             end_distance=finger_length
         )
-        
-        # Adopt to timberA's local space
-        finger_prism_in_timberA = adopt_csg(temp_timber, timberA, finger_prism_identity)
         all_fingers_in_timberA_space.append(finger_prism_in_timberA)
     
     # Separate fingers by which timber they belong to (even = A, odd = B)

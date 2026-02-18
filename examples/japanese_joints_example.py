@@ -219,7 +219,7 @@ def create_mitered_and_keyed_lap_joint_110deg_example(position: Optional[V3] = N
         num_laps=3,                                          # 3 interlocking fingers
         lap_thickness=inches(Rational(3, 4)),               # 0.75" thick fingers
         lap_start_distance_from_reference_miter_face=inches(Rational(1, 2)),  # Start 0.5" from miter face
-        distance_between_lap_and_outside=inches(Rational(1, 2))  # 0.5" inset from outer edge
+        distance_between_lap_and_outside=inches(Rational(3, 2))  # 1.5" inset from outer edge, needs to be larger for oblique joints
     )
     
     # Create a frame from the joint
