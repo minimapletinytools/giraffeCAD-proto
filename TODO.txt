@@ -184,6 +184,8 @@ DONE-3 major features
     IGNORE-prepare for CSG metadata as well...
 DONE-actually update run_Examples to use patternbook
 
+-consider making marking functions class member function of measurement hehe
+
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
 -update morties and tenon to support
   -perpendicular but not face aligned

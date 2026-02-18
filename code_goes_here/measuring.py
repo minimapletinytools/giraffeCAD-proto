@@ -171,7 +171,7 @@ class Space:
         return f"Space(transform={self.transform})"
 
 # ============================================================================
-# Measurement Classes
+# Marking Classes
 # ============================================================================
 
 # TODO consider not having an ABC here... not actually needed
