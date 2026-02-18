@@ -938,10 +938,15 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # now move to the timberA_reference_miter_face surface
     marking_position = marking_position + timberA_miter_face_normal * (lap_start_distance_final - timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face()) / Rational(2))
     
-    # Move to the inner shoulder edge
-    # The marking position should be at the inner edge of the timber
-    inner_edge_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) / Rational(2)
-    marking_position = marking_position + timberA_inner_face_normal * inner_edge_offset
+    # Calculate the diagonal direction (bisector between timberA and timberB)
+    # This is the average of the two end directions
+    diagonal_direction = normalize_vector(directionA + directionB)
+    
+    # Move to the inner shoulder edge along the diagonal direction
+    # Since we're moving diagonally (hypotenuse), the distance is inner_edge_offset * sqrt(2)/2
+    from sympy import sqrt
+    diagonal_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) * sqrt(Rational(2)) / Rational(2)
+    marking_position = marking_position - diagonal_direction * diagonal_offset
     
     # Create orientation for the marking transform
     # Z-axis points toward the end (along timber length direction or opposite)
@@ -977,48 +982,35 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     
     # Calculate finger dimensions
     finger_width = miter_face_width - distance_between_lap_and_outside
-    
     finger_length = lap_thickness_final
+    
+    # The other dimension of the finger cross-section extends perpendicular to the miter face
+    # and runs along the inner face direction - it should be large enough to cut through
+    finger_depth = miter_face_depth * Rational(2)  # Conservative, extends through timber
     
     fingers_for_timberA = []
     fingers_for_timberB = []
     
     for i in range(num_laps):
-        # Calculate position of this finger
-        finger_start_offset = lap_start_distance_final + i * lap_thickness_final
+        # Calculate Z position along timber length for this lap
+        z_offset = lap_start_distance_final + i * lap_thickness_final
         
-        # Create finger prism in a convenient coordinate system
-        # Then transform it to the correct position
+        # Start from marking_position (at centerline intersection, on miter face surface)
+        finger_position = marking_position
         
-        # Finger dimensions: width x thickness x length
-        finger_size = create_v2(finger_width, finger_width)
+        # Move along miter face normal (into timber) by z_offset
+        finger_position = finger_position + timberA_miter_face_normal * z_offset
         
-        # Position the finger
-        # Start from the miter face, move inward by finger_start_offset
-        finger_position = timberA.get_bottom_position_global()
+        # Move diagonally by half the finger width along the diagonal direction
+        # The diagonal is the bisector between timberA and timberB directions
+        finger_position = finger_position + diagonal_direction * (finger_width *sqrt(Rational(2)) / Rational(2))
         
-        if timberA_end == TimberReferenceEnd.TOP:
-            finger_position = finger_position + timberA.get_length_direction_global() * timberA.length
-        
-        # Move inward from miter face
-        finger_position = finger_position + timberA_miter_face_normal * (finger_start_offset + lap_thickness_final / Rational(2))
-        
-        # Move to the side (centered on the inner edge area)
-        # The finger should be positioned between the inner edge and the outer edge
-        inner_edge_full_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) / Rational(2)
-        finger_center_offset = inner_edge_full_offset - finger_width / Rational(2) - distance_between_lap_and_outside
-        finger_position = finger_position + timberA_inner_face_normal * finger_center_offset
-        
-        # Create finger orientation
-        # X-axis: along the finger width (parallel to inner shoulder)
-        finger_x = inner_shoulder_direction
-        # Y-axis: along the finger thickness (into the miter face)
-        finger_y = -timberA_miter_face_normal  # pointing inward
-        # Z-axis: along the finger length
-        finger_z = cross_product(finger_x, finger_y)
-        finger_z = normalize_vector(finger_z)
-        
-        # Re-orthogonalize
+        # Create finger orientation with Z-axis pointing along miter face normal
+        # Z-axis: points along miter face normal (into timber)
+        finger_z = timberA_miter_face_normal
+        # X-axis: along the inner shoulder face normal direction
+        finger_x = timberA_inner_face_normal
+        # Y-axis: perpendicular to both (computed via cross product)
         finger_y = cross_product(finger_z, finger_x)
         finger_y = normalize_vector(finger_y)
         
@@ -1027,6 +1019,9 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
             [finger_x[1], finger_y[1], finger_z[1]],
             [finger_x[2], finger_y[2], finger_z[2]]
         ]))
+        
+        # Finger size: width (X) x depth (Y), with length (Z) in start/end_distance
+        finger_size = create_v2(finger_width, finger_width)
         
         # Create the finger prism in global coordinates
         finger_prism_global = RectangularPrism(
