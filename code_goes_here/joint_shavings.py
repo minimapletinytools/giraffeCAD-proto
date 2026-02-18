@@ -884,12 +884,14 @@ def chop_shoulder_notch_on_timber_face(
         corner_point_2 = create_v3(-timber.size[0] / Rational(2) + notch_depth, Integer(0), 
                                    distance_along_timber - notch_width / Rational(2))
     
+    notch_additional_depth = timber.get_nominal_size_in_face_normal_axis(notch_face) / Rational(2)
+
     # Create the notch prism
     notch_prism = RectangularPrism(
         size=prism_size,
         transform=Transform(position=position, orientation=orientation),
         start_distance=Integer(0),
-        end_distance=notch_depth
+        end_distance=notch_depth + notch_additional_depth
     )
     
     # If notch_wall_relief_cut_angle is 0, return the simple notch prism
@@ -917,7 +919,7 @@ def chop_shoulder_notch_on_timber_face(
     # When the wall is angled, the prism needs to extend further to cover the full depth
     # The length along the angled surface is notch_depth / cos(angle)
     from sympy import cos
-    extended_end_distance = notch_depth / cos(angle_rad)
+    extended_end_distance = (notch_depth + notch_additional_depth) / cos(angle_rad)
     
     # Create left wall prism by rotating the notch prism transform around the first corner
     left_wall_transform = notch_prism.transform.rotate_around_axis(axis_1, angle_rad)
