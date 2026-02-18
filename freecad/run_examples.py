@@ -65,11 +65,11 @@ PATTERN_NAME = 'oscar_shed'
 # Available groups: 'basic_joints', 'mortise_and_tenon', 'construction', 
 #                   'horsey', 'oscar_shed', 'japanese_joints', 'csg_examples', 
 #                   'irrational_angles', 'posts', 'beams', 'boxes'
-GROUP_NAME = 'basic_joints'
+#GROUP_NAME = 'basic_joints'
 #GROUP_NAME = 'oscar_shed'
-#GROUP_NAME = 'japanese_joints'
+GROUP_NAME = 'japanese_joints'
 #GROUP_NAME = 'posts'
-#GROUP_NAME = 'csg_examples'
+#GROUP_NAME = 'csg'
 
 # SEPARATION_DISTANCE: Distance between patterns when rendering a group (in meters)
 # Common values: m(1), m(2), feet(3), feet(4), inches(24)

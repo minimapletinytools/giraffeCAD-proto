@@ -54,6 +54,7 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: TimberLike)
     return measure_into_face(0, face, face_timber)
 
 
+# TODO DELETE THIS just 
 def scribe_centerline_onto_centerline(timber: TimberLike) -> Line:
     """
     Mark the centerline of a timber.
