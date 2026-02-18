@@ -884,8 +884,9 @@ class MeshTimber(PerfectTimberWithin):
 
     # TODO: Add mesh_csg field and override get_actual_csg_local()
 
+# TODO rename to RegularPolygonTimber
 @dataclass(frozen=True)
-class PolygonExtrusionTimber(PerfectTimberWithin):
+class RegularPolygonTimber(PerfectTimberWithin):
     """Timber with regular polygonal cross-section
     
     This timber type has a polygonal (non-rectangular) cross-section that is
@@ -906,7 +907,7 @@ class PolygonExtrusionTimber(PerfectTimberWithin):
         Returns:
             List of V2 vertices for the polygon
         """
-        assert self.num_sides >= 3, "PolygonExtrusionTimber must have at least 3 sides"
+        assert self.num_sides >= 3, "RegularPolygonTimber must have at least 3 sides"
         from sympy import pi, cos, sin
         # Use the smaller dimension of size as the diameter of the inscribed circle
         radius = min(self.size[0], self.size[1]) / Integer(2)
@@ -934,7 +935,7 @@ class PolygonExtrusionTimber(PerfectTimberWithin):
         """
         Returns the actual CSG geometry for this timber.
         
-        For PolygonExtrusionTimber, this returns a ConvexPolygonExtrusion with the specified number of sides.
+        For RegularPolygonTimber, this returns a ConvexPolygonExtrusion with the specified number of sides.
         
         Returns:
             ConvexPolygonExtrusion representing the actual geometry in local coordinates
@@ -951,7 +952,7 @@ class PolygonExtrusionTimber(PerfectTimberWithin):
         """
         Returns the actual CSG geometry extended to infinity at specified ends.
         
-        For PolygonExtrusionTimber, this returns a ConvexPolygonExtrusion optionally extended to infinity.
+        For RegularPolygonTimber, this returns a ConvexPolygonExtrusion optionally extended to infinity.
         
         Args:
             extend_bot: If True, extend to -infinity at bottom (z=0)
@@ -973,7 +974,7 @@ class PolygonExtrusionTimber(PerfectTimberWithin):
 # Type alias for all timber-like objects (excludes Board)
 # TimberLike objects are timbers that can be used in structural joinery
 # TODO come up with a cuter name for this
-TimberLike = Union[Timber, MeshTimber, RoundTimber, PolygonExtrusionTimber]
+TimberLike = Union[Timber, MeshTimber, RoundTimber, RegularPolygonTimber]
 BoardLike = Union[Board]
 
 # ============================================================================
