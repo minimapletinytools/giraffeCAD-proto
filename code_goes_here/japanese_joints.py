@@ -1090,11 +1090,11 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
 
     # Set default key dimensions if not provided
     if key_width is None:
-        key_width = lap_thickness / Rational(2)  
+        key_width = lap_thickness
     if key_thickness is None:
         key_thickness = lap_thickness / Rational(3) 
     
-    key_depth = finger_width
+    key_depth = finger_width * sqrt(2)
     
     keys_in_timberA = []
     keys_in_timberB = []
@@ -1113,8 +1113,10 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
 
         # Rotate it around the diagonal direction (X-axis) by the same rotation angle as the fingers
         # This aligns the key with the finger geometry
-        # TODO set rotation_angle
-        rotation_for_key = Orientation.from_axis_angle(diagonal_direction, rotation_angle)
+        from sympy import atan2
+        key_rotation_sign = -1 if i % 2 == 0 else 1
+        key_rotation_angle = key_rotation_sign * atan2(key_thickness, key_width)
+        rotation_for_key = Orientation.from_axis_angle(diagonal_direction, key_rotation_angle)
         key_orientation = rotation_for_key * key_orientation_before_rotation
         key_transform_global = Transform(position=key_position, orientation=key_orientation)
         
@@ -1128,24 +1130,14 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
             end_distance=key_depth
         )
         
-        # Convert to timberA's local space
+        # Convert to timberA's local space using replace
         key_transform_local_A = key_transform_global.to_local_transform(timberA.transform)
-        key_prism_in_timberA = RectangularPrism(
-            size=key_size,
-            transform=key_transform_local_A,
-            start_distance=-key_depth,
-            end_distance=key_depth
-        )
+        key_prism_in_timberA = replace(key_prism_global, transform=key_transform_local_A)
         keys_in_timberA.append(key_prism_in_timberA)
         
-        # Convert to timberB's local space
+        # Convert to timberB's local space using replace
         key_transform_local_B = key_transform_global.to_local_transform(timberB.transform)
-        key_prism_in_timberB = RectangularPrism(
-            size=key_size,
-            transform=key_transform_local_B,
-            start_distance=-key_depth,
-            end_distance=key_depth
-        )
+        key_prism_in_timberB = replace(key_prism_global, transform=key_transform_local_B)
         keys_in_timberB.append(key_prism_in_timberB)
         
     # ========================================================================
@@ -1291,6 +1283,9 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Create CutTimber objects
     cut_timberA = CutTimber(timberA, cuts=[cutA])
     cut_timberB = CutTimber(timberB, cuts=[cutB])
+
+
+    # TODO generate key accessories...
     
     # Return Joint
     return Joint(
