@@ -1085,6 +1085,70 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         B_fingers_in_timberB.append(finger_in_B)
     
     # ========================================================================
+    # Step 7.5: Create Keys
+    # ========================================================================
+
+    # Set default key dimensions if not provided
+    if key_width is None:
+        key_width = lap_thickness / Rational(2)  
+    if key_thickness is None:
+        key_thickness = lap_thickness / Rational(3) 
+    
+    key_depth = finger_width
+    
+    keys_in_timberA = []
+    keys_in_timberB = []
+    
+    num_keys = num_laps - 1
+    for i in range(num_keys):
+        key_position = marking_position
+        z_offset = lap_start_distance_final + (i+1) * lap_thickness_final
+        key_position = key_position + timberA_miter_face_normal * z_offset
+        
+        # set key_orientation, it should point in the diagonal direction with y axis in the -timberA_miter_face_normal direction
+        key_orientation_before_rotation = Orientation.from_z_and_y(
+            z_direction=diagonal_direction,
+            y_direction=-timberA_miter_face_normal
+        )
+
+        # Rotate it around the diagonal direction (X-axis) by the same rotation angle as the fingers
+        # This aligns the key with the finger geometry
+        # TODO set rotation_angle
+        rotation_for_key = Orientation.from_axis_angle(diagonal_direction, rotation_angle)
+        key_orientation = rotation_for_key * key_orientation_before_rotation
+        key_transform_global = Transform(position=key_position, orientation=key_orientation)
+        
+        # Create key prism in global space
+        # Size: key_width (X) x key_thickness (Y), depth (Z) in start/end_distance
+        key_size = create_v2(key_width, key_thickness)
+        key_prism_global = RectangularPrism(
+            size=key_size,
+            transform=key_transform_global,
+            start_distance=-key_depth,
+            end_distance=key_depth
+        )
+        
+        # Convert to timberA's local space
+        key_transform_local_A = key_transform_global.to_local_transform(timberA.transform)
+        key_prism_in_timberA = RectangularPrism(
+            size=key_size,
+            transform=key_transform_local_A,
+            start_distance=-key_depth,
+            end_distance=key_depth
+        )
+        keys_in_timberA.append(key_prism_in_timberA)
+        
+        # Convert to timberB's local space
+        key_transform_local_B = key_transform_global.to_local_transform(timberB.transform)
+        key_prism_in_timberB = RectangularPrism(
+            size=key_size,
+            transform=key_transform_local_B,
+            start_distance=-key_depth,
+            end_distance=key_depth
+        )
+        keys_in_timberB.append(key_prism_in_timberB)
+        
+    # ========================================================================
     # Step 8: Create rough end cuts and miter half plane cuts
     # ========================================================================
     
@@ -1167,15 +1231,22 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # - Start with miter_half_plane_A
     # - Subtract A fingers (they protrude, so remove them from the half plane cut)
     # - Add B fingers (they create voids)
+    # - Add keys (they create voids)
     if A_fingers_in_timberA:
         # A fingers subtract from half plane
         miter_cut_A_with_fingers = Difference(miter_half_plane_A, A_fingers_in_timberA)
     else:
         miter_cut_A_with_fingers = miter_half_plane_A
     
+    # Collect all voids for timberA: B fingers and keys
+    voids_in_A = []
     if B_fingers_in_timberA:
-        # B fingers add as voids
-        negative_csg_A = CSGUnion([miter_cut_A_with_fingers] + B_fingers_in_timberA)
+        voids_in_A.extend(B_fingers_in_timberA)
+    if keys_in_timberA:
+        voids_in_A.extend(keys_in_timberA)
+    
+    if voids_in_A:
+        negative_csg_A = CSGUnion([miter_cut_A_with_fingers] + voids_in_A)
     else:
         negative_csg_A = miter_cut_A_with_fingers
     
@@ -1183,15 +1254,22 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # - Start with miter_half_plane_B
     # - Subtract B fingers (they protrude)
     # - Add A fingers (they create voids)
+    # - Add keys (they create voids)
     if B_fingers_in_timberB:
         # B fingers subtract from half plane
         miter_cut_B_with_fingers = Difference(miter_half_plane_B, B_fingers_in_timberB)
     else:
         miter_cut_B_with_fingers = miter_half_plane_B
     
+    # Collect all voids for timberB: A fingers and keys
+    voids_in_B = []
     if A_fingers_in_timberB:
-        # A fingers add as voids
-        negative_csg_B = CSGUnion([miter_cut_B_with_fingers] + A_fingers_in_timberB)
+        voids_in_B.extend(A_fingers_in_timberB)
+    if keys_in_timberB:
+        voids_in_B.extend(keys_in_timberB)
+    
+    if voids_in_B:
+        negative_csg_B = CSGUnion([miter_cut_B_with_fingers] + voids_in_B)
     else:
         negative_csg_B = miter_cut_B_with_fingers
     
