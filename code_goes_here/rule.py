@@ -1025,6 +1025,36 @@ class Orientation:
             [x_direction[1], y_direction[1], z_direction[1]],
             [x_direction[2], y_direction[2], z_direction[2]]
         ]))
+    
+    @classmethod
+    def from_axis_angle(cls, axis: Direction3D, radians: Numeric) -> 'Orientation':
+        """
+        Create an Orientation representing a rotation around an axis by an angle.
+        Uses Rodrigues' rotation formula.
+        
+        Args:
+            axis: Direction vector to rotate around (will be normalized)
+            radians: Angle to rotate in radians
+            
+        Returns:
+            Orientation object representing the rotation
+        """
+        # Normalize the axis
+        axis_normalized = normalize_vector(axis)
+        kx, ky, kz = axis_normalized[0], axis_normalized[1], axis_normalized[2]
+        
+        # Rodrigues' rotation formula: R = I + sin(θ)K + (1 - cos(θ))K²
+        # where K is the skew-symmetric cross-product matrix of k
+        K = Matrix([
+            [Integer(0), -kz, ky],
+            [kz, Integer(0), -kx],
+            [-ky, kx, Integer(0)]
+        ])
+        K_squared = K * K
+        I = Matrix.eye(3)
+        rotation_matrix = I + sin(radians) * K + (Integer(1) - cos(radians)) * K_squared
+        
+        return cls(rotation_matrix)
             
     @classmethod
     def from_euleryZYX(cls, yaw: Union[float, int, sp.Basic], pitch: Union[float, int, sp.Basic], roll: Union[float, int, sp.Basic]) -> 'Orientation':
