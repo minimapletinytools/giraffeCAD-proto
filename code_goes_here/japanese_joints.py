@@ -838,17 +838,15 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # For a corner joint, we need to find the faces that face toward the other timber
     # Use cross product of miter normal and length direction to find the perpendicular faces
     
-    # Get the perpendicular direction in the plane of the joint
-    perp_direction_A = cross_product(timberA_miter_face_normal, directionA)
-    perp_direction_A = normalize_vector(perp_direction_A)
+    # Calculate the diagonal direction (bisector between timberA and timberB)
+    # This is the average of the two end directions
+    diagonal_direction = normalize_vector(directionA + directionB)
     
-    # Find which face of timberA is closest to this direction
-    timberA_inner_face_enum = timberA.get_closest_oriented_face_from_global_direction(perp_direction_A)
-    
-    # For timberB, the inner face points in the opposite perpendicular direction
-    perp_direction_B = cross_product(timberB_miter_face_normal, directionB)
-    perp_direction_B = normalize_vector(perp_direction_B)
-    timberB_inner_face_enum = timberB.get_closest_oriented_face_from_global_direction(perp_direction_B)
+    # Find inner faces by looking for the closest oriented face to the negative diagonal direction
+    # The negative diagonal points toward the inside of the corner
+    negative_diagonal = -diagonal_direction
+    timberA_inner_face_enum = timberA.get_closest_oriented_long_face_from_global_direction(negative_diagonal).to.face()
+    timberB_inner_face_enum = timberB.get_closest_oriented_long_face_from_global_direction(negative_diagonal).to.face()
     
     # Get the inner face normals
     timberA_inner_face_normal = timberA.get_face_direction_global(timberA_inner_face_enum)
@@ -869,6 +867,9 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
             f"TimberB size: {float(timberB_inner_face_size):.3f}"
         )
     
+    print(f"timberA_inner_face_enum: {timberA_inner_face_enum}")
+    print(f"timberB_inner_face_enum: {timberB_inner_face_enum}")
+    
     # ========================================================================
     # Step 6: Create marking transform on timberA
     # ========================================================================
@@ -883,10 +884,6 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     
     # now move to the timberA_reference_miter_face surface
     marking_position_on_centerline = marking_position + timberA_miter_face_normal * (lap_start_distance_final - timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face()) / Rational(2))
-    
-    # Calculate the diagonal direction (bisector between timberA and timberB)
-    # This is the average of the two end directions
-    diagonal_direction = normalize_vector(directionA + directionB)
     
     # Compute the angle between the two timbers to get the correct scale factor
     # The half-angle is the angle between the diagonal and either timber's length direction
@@ -904,7 +901,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Move to the inner shoulder edge along the diagonal direction
     inner_edge_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) / Rational(2)
     diagonal_offset = inner_edge_offset * diagonal_scale_factor
-    marking_position = marking_position_on_centerline - diagonal_direction * diagonal_offset
+    marking_position = marking_position_on_centerline + diagonal_direction * diagonal_offset
     
     # Create orientation for the marking transform
     # Z-axis points toward the end (along timber length direction or opposite)
@@ -1083,6 +1080,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Finger size is miter_face_width x (miter_face_width * tan(half_angle))
     # Diagonal = miter_face_width * sqrt(1 + tan^2(half_angle)) = miter_face_width / cos(half_angle)
     from sympy import cos
+    # TODO fix this, not right
     key_depth = miter_face_width / cos(half_angle)
     
     keys_in_timberA = []
@@ -1132,8 +1130,6 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # ========================================================================
     # Step 8: Create rough end cuts and miter half plane cuts
     # ========================================================================
-    
-    from code_goes_here.rule import safe_transform_vector, safe_compare, Comparison
     
     # Create rough end cuts perpendicular to timbers
     # These cross the corner of the miter
