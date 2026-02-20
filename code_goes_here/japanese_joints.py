@@ -1075,13 +1075,9 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         key_width = lap_thickness
     if key_thickness is None:
         key_thickness = lap_thickness / Rational(3) 
-    
-    # Key depth should extend through the finger, use the diagonal of the finger cross-section
-    # Finger size is miter_face_width x (miter_face_width * tan(half_angle))
-    # Diagonal = miter_face_width * sqrt(1 + tan^2(half_angle)) = miter_face_width / cos(half_angle)
-    from sympy import cos
-    # TODO fix this, not right
-    key_depth = miter_face_width * cos(half_angle)
+
+
+    key_depth = miter_face_width/sin(half_angle)-distance_between_lap_and_outside/sin(half_angle)    
     
     keys_in_timberA = []
     keys_in_timberB = []
