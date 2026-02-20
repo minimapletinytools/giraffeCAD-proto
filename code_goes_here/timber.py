@@ -1600,25 +1600,20 @@ class Wedge(JointAccessory):
     
     Visual representation (looking at wedge from the side):
          +z
-          _______
-         / \      \
-        /   \      \  +y
-   -x  /_____\______\ 
+          __________       <- tip width   
+         /   \      \
+        /     \      \  +y
+   -x  /_______\______\    <- base width
           ↑
         origin
-    
-    Attributes:
-        transform: Transform (position and orientation) of the wedge in local timber space
-        base_width: Width at the base (wider end) of the wedge
-        tip_width: Width at the tip (narrower end, where triangle is cut)
-        height: Height of the wedge (in Y axis)
-        length: Length from base to tip
     """
     transform: Transform
     base_width: Numeric
     tip_width: Numeric
     height: Numeric
     length: Numeric
+
+    # TODO add stickout_length parameter
     
     @property
     def width(self) -> Numeric:
@@ -1629,31 +1624,40 @@ class Wedge(JointAccessory):
         """
         Generate CSG representation of the wedge in local space.
         
-        The wedge is created using CSG operations with half-planes to form
-        a trapezoidal prism. The base is at z=0 and extends to z=length.
+        The wedge is created using a polyline extrusion (ConvexPolygonExtrusion)
+        with a rectangular cross-section. The base is at z=0 and extends to z=length.
         The wedge tapers from base_width to tip_width in the X direction,
         and has a trapezoidal profile in the YZ plane.
         
-        For now, this creates a simplified bounding box representation.
-        TODO: Implement proper trapezoidal shape using half-plane intersections.
+        The origin is at the center of the base_width x height bottom surface:
+        - x = 0 (center of base_width)
+        - y = 0 (bottom of height)
+        - z = 0 (bottom of length)
         
         Returns:
             CutCSG: The CSG representation of the wedge
         """
-        # Create a rectangular prism bounding box
-        # The origin is at the bottom center of the base (z=0, y=0, x=0)
-        # The prism extends from z=0 to z=length
-        # Width (x): centered, so from -base_width/2 to +base_width/2
-        # Height (y): from 0 to height
+        # Create a rectangle polygon for the base cross-section
+        # The rectangle is in the XY plane, with origin at the center of the bottom edge
+        # Points are ordered counter-clockwise when viewed from +Z
+        half_base_width = self.base_width / Rational(2)
         
-        # For RectangularPrism, position is the center of the cross-section at the reference point
-        # The cross-section is centered in XY, so position should be at the center
+        rectangle_points = [
+            create_v2(-half_base_width, Integer(0)),      # Bottom-left
+            create_v2(half_base_width, Integer(0)),       # Bottom-right
+            create_v2(half_base_width, self.height),      # Top-right
+            create_v2(-half_base_width, self.height)       # Top-left
+        ]
+        
+        # The transform places the origin at (0, 0, 0) - center of base bottom surface
+        # The extrusion extends from z=0 to z=length
         wedge_transform = Transform(
-            position=create_v3(Integer(0), self.height / Rational(2), Integer(0)),
+            position=create_v3(Integer(0), Integer(0), Integer(0)),
             orientation=Orientation.identity()
         )
-        return RectangularPrism(
-            size=create_v2(self.base_width, self.height),
+        
+        return ConvexPolygonExtrusion(
+            points=rectangle_points,
             transform=wedge_transform,
             start_distance=Integer(0),
             end_distance=self.length
