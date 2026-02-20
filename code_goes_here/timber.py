@@ -1647,7 +1647,8 @@ class Wedge(JointAccessory):
         # Calculate width at stickout position (z = -stickout_length)
         # The taper goes from base_width at z=0 to tip_width at z=length
         # Linear interpolation: width(z) = base_width + (tip_width - base_width) * z / length
-        if self.stickout_length > 0:
+        has_stickout = safe_compare(self.stickout_length, Comparison.GT)
+        if has_stickout:
             # Width at z = -stickout_length
             stickout_width = self.base_width + (self.tip_width - self.base_width) * (-self.stickout_length) / self.length
             half_stickout_width = stickout_width / Rational(2)
