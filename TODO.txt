@@ -201,6 +201,7 @@ IGNORE-consider making marking functions class member function of measurement he
   DONE-add key holes
   DONE-fix non 90 degree placement
   DONE-add non 90 examlpe D:
+  -fix finger prisms
   -add key accessories
   -default thicknesses are wrong
 -update morties and tenon to support
