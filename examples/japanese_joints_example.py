@@ -198,9 +198,9 @@ def create_mitered_and_keyed_lap_joint_130deg_example(position: Optional[V3] = N
     from sympy import pi
     
     # Create corner joint arrangement using canonical function with 130-degree angle
-    # Convert 130 degrees to radians: 130° = 130 * π / 180
-    angle_130_deg = Integer(130) * pi / Integer(180)
-    arrangement = create_canonical_corner_joint_timbers(corner_angle=angle_130_deg, position=position)
+    # Convert 130 degrees to radians
+    angle_130_rad = degrees(Integer(130))
+    arrangement = create_canonical_corner_joint_timbers(corner_angle=angle_130_rad, position=position)
     
     # Rename timbers for clarity in this joint context
     from dataclasses import replace

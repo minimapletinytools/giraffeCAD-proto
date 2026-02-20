@@ -16,7 +16,8 @@ from code_goes_here.rule import (
     shaku, sun, bu,
     INCH_TO_METER, FOOT_TO_METER, SHAKU_TO_METER,
     create_v3,
-    normalize_vector
+    normalize_vector,
+    radians
 )
 import random
 from .testing_shavings import generate_random_orientation, assert_is_valid_rotation_matrix
@@ -187,20 +188,20 @@ class TestEulerAngles:
     
     def test_from_euleryZYX_zero_angles(self):
         """Test from_euleryZYX with zero angles gives identity."""
-        orientation = Orientation.from_euleryZYX(0, 0, 0)
+        orientation = Orientation.from_euleryZYX(radians(0), radians(0), radians(0))
         expected = Matrix.eye(3)
         assert simplify(orientation.matrix - expected) == Matrix.zeros(3, 3)
     
     def test_from_euleryZYX_yaw_only(self):
         """Test from_euleryZYX with only yaw rotation."""
         # 90° yaw should match rotate_left
-        orientation = Orientation.from_euleryZYX(pi/2, 0, 0)
+        orientation = Orientation.from_euleryZYX(radians(pi/2), radians(0), radians(0))
         expected = Orientation.rotate_left().matrix
         assert simplify(orientation.matrix - expected) == Matrix.zeros(3, 3)
     
     def test_from_euleryZYX_pitch_only(self):
         """Test from_euleryZYX with only pitch rotation."""
-        orientation = Orientation.from_euleryZYX(0, pi/2, 0)
+        orientation = Orientation.from_euleryZYX(radians(0), radians(pi/2), radians(0))
         
         # Verify it's a valid rotation matrix
         matrix = orientation.matrix
@@ -214,7 +215,7 @@ class TestEulerAngles:
     
     def test_from_euleryZYX_roll_only(self):
         """Test from_euleryZYX with only roll rotation."""
-        orientation = Orientation.from_euleryZYX(0, 0, pi/2)
+        orientation = Orientation.from_euleryZYX(radians(0), radians(0), radians(pi/2))
         
         # Verify it's a valid rotation matrix
         matrix = orientation.matrix
@@ -864,7 +865,7 @@ class TestTransformRotateAroundAxis:
         )
         
         # Rotate 90 degrees counterclockwise around Z axis
-        rotated = transform.rotate_around_axis(z_axis, pi / 2)
+        rotated = transform.rotate_around_axis(z_axis, radians(pi / 2))
         
         # Position should move from (1, 0, 0) to (0, 1, 0)
         expected_pos = create_v3(Integer(0), Integer(1), Integer(0))
@@ -894,7 +895,7 @@ class TestTransformRotateAroundAxis:
         )
         
         # Rotate 180 degrees around X axis
-        rotated = transform.rotate_around_axis(x_axis, pi)
+        rotated = transform.rotate_around_axis(x_axis, radians(pi))
         
         # Position should move from (0, 1, 0) to (0, -1, 0)
         expected_pos = create_v3(Integer(0), Integer(-1), Integer(0))
@@ -931,7 +932,7 @@ class TestTransformRotateAroundAxis:
         # Rotate 90 degrees counterclockwise
         # Point (2, 0, 0) is distance 1 from axis at (1, 0, 0)
         # After rotation, should be at (1, 1, 0)
-        rotated = transform.rotate_around_axis(z_axis, pi / 2)
+        rotated = transform.rotate_around_axis(z_axis, radians(pi / 2))
         
         expected_pos = create_v3(Integer(1), Integer(1), Integer(0))
         diff = simplify(rotated.position - expected_pos)
@@ -953,7 +954,7 @@ class TestTransformRotateAroundAxis:
         )
         
         # Rotate 90 degrees - point is ON the axis, so should not move
-        rotated = transform.rotate_around_axis(y_axis, pi / 2)
+        rotated = transform.rotate_around_axis(y_axis, radians(pi / 2))
         
         # Position should stay at (1, 0, 0)
         expected_pos = create_v3(Integer(1), Integer(0), Integer(0))
@@ -974,7 +975,7 @@ class TestTransformRotateAroundAxis:
         )
         
         # Rotate by 0 degrees
-        rotated = transform.rotate_around_axis(axis, Integer(0))
+        rotated = transform.rotate_around_axis(axis, radians(Integer(0)))
         
         # Should be essentially unchanged
         pos_diff = simplify(rotated.position - transform.position)
@@ -1001,7 +1002,7 @@ class TestTransformRotateAroundAxis:
         )
         
         # Rotate by 120 degrees
-        rotated = transform.rotate_around_axis(axis, 2 * pi / 3)
+        rotated = transform.rotate_around_axis(axis, radians(2 * pi / 3))
         
         # Calculate distance from point to axis before and after rotation
         # Distance from point P to axis through Q with direction D:
@@ -1036,7 +1037,7 @@ class TestTransformRotateAroundAxis:
         )
         
         # Rotate 90 degrees around (2, 0, 0) - should be same as rotating around (1, 0, 0)
-        rotated = transform.rotate_around_axis(axis, pi / 2)
+        rotated = transform.rotate_around_axis(axis, radians(pi / 2))
         
         # Position should move from (0, 1, 0) to (0, 0, 1)
         expected_pos = create_v3(Integer(0), Integer(0), Integer(1))
@@ -1059,7 +1060,7 @@ class TestTransformRotateAroundAxis:
         )
         
         # Rotate 90° around Z again
-        rotated = transform.rotate_around_axis(axis, pi / 2)
+        rotated = transform.rotate_around_axis(axis, radians(pi / 2))
         
         # Position should move from (0, 1, 0) to (-1, 0, 0)
         expected_pos = create_v3(Integer(-1), Integer(0), Integer(0))
@@ -1092,7 +1093,7 @@ class TestTransformRotateAroundAxis:
         )
         
         # Rotate full circle (2*pi radians)
-        rotated = transform.rotate_around_axis(axis, 2 * pi)
+        rotated = transform.rotate_around_axis(axis, radians(2 * pi))
         
         # Should be back to original position and orientation (within numerical precision)
         pos_diff = simplify(rotated.position - transform.position)
@@ -1117,7 +1118,7 @@ class TestTransformRotateAroundAxis:
         )
         
         # Rotate by some arbitrary angle
-        rotated = transform.rotate_around_axis(axis, pi / 7)
+        rotated = transform.rotate_around_axis(axis, radians(pi / 7))
         
         # Check that the resulting orientation is a valid rotation matrix
         assert_is_valid_rotation_matrix(rotated.orientation.matrix)

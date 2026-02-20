@@ -13,6 +13,7 @@ sys.path.append('../..')
 
 from giraffe import *
 from code_goes_here.ticket import Ticket
+from code_goes_here.rule import degrees
 
 # Standard timber dimensions (4" x 5", 4' long) - matches canonical examples
 TIMBER_WIDTH = inches(4)   # 4"
@@ -39,7 +40,7 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     
     # Angle in radians (67 degrees)
     angle_deg = 67
-    angle_rad = angle_deg * pi / 180
+    angle_rad = degrees(angle_deg)
     
     # TimberA extends at 0 degrees (along +X axis)
     direction_A = Matrix([1, 0, 0])

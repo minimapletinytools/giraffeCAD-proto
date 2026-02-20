@@ -10,6 +10,7 @@ from sympy import Rational, pi, Matrix, cos, sin
 from code_goes_here.timber import Frame, TimberFace, TimberReferenceEnd, create_v3, timber_from_directions
 from code_goes_here.mortise_and_tenon_joint import cut_mortise_and_tenon_joint_on_face_aligned_timbers
 from code_goes_here.patternbook import PatternBook, PatternMetadata
+from code_goes_here.rule import degrees
 
 
 def create_irrational_angles_patternbook() -> PatternBook:
@@ -45,7 +46,7 @@ def create_all_irrational_examples() -> Frame:
     )
     
     # Angled beam at 37° (tenon timber)
-    angle_37 = Rational(37) * pi / Rational(180)  # 37 degrees in radians (irrational)
+    angle_37 = degrees(Rational(37))  # 37 degrees in radians (irrational)
     
     # Direction vector at 37° in XY plane
     length_dir = create_v3(cos(angle_37), sin(angle_37), Rational(0))
