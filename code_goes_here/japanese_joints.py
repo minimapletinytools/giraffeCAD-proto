@@ -846,9 +846,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         )
     
     # ========================================================================
-    # Step 5: Find inner shoulder axis
-    # WTF is this, do we even need this??
-    # TODO DELETE
+    # Step 5: Find inner face normals and inner shoulder direction
     # ========================================================================
     
     # Determine which faces are on the "inside" of the corner
@@ -877,52 +875,6 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Direction of intersection line = cross product of the two normals
     inner_shoulder_direction = cross_product(timberA_inner_face_normal, timberB_inner_face_normal)
     inner_shoulder_direction = normalize_vector(inner_shoulder_direction)
-    
-    # Find a point on the inner shoulder line
-    # This is where the two inner face planes intersect
-    # We can use the timber ends as reference points
-    
-    # Get points on the inner faces
-    timberA_inner_face_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) / Rational(2)
-    timberA_inner_face_point = timberA.get_bottom_position_global() + \
-        timberA.get_length_direction_global() * (timberA.length / Rational(2)) + \
-        timberA_inner_face_normal * timberA_inner_face_offset
-    
-    timberB_inner_face_offset = timberB.get_size_in_face_normal_axis(timberB_inner_face_enum) / Rational(2)
-    timberB_inner_face_point = timberB.get_bottom_position_global() + \
-        timberB.get_length_direction_global() * (timberB.length / Rational(2)) + \
-        timberB_inner_face_normal * timberB_inner_face_offset
-    
-    # Find intersection line between two planes using parametric form
-    # Plane 1: (P - P1) · N1 = 0
-    # Plane 2: (P - P2) · N2 = 0
-    # The intersection line has direction d = N1 × N2
-    # To find a point on the line, we solve the system for a point
-    
-    # Use the cross product method to find a point on the intersection line
-    # We need a point that satisfies both plane equations
-    # Pick a convenient third constraint (e.g., set one coordinate to a value)
-    
-    # Simplified approach: find the closest point on both planes to the origin
-    # that also lies on the intersection line
-    from sympy import symbols, solve, Eq
-    
-    # Parametric line: P = P0 + t * d, where we need to find P0
-    # We know: (P0 - P1) · N1 = 0 and (P0 - P2) · N2 = 0
-    # Let P0 = a*N1 + b*N2 + c*d (general point near the intersection)
-    # Substituting into plane equations gives us a and b
-    
-    # Simpler approach: use a reference point and project it onto the intersection line
-    # Use the midpoint of the two face points as an approximation
-    reference_point = (timberA_inner_face_point + timberB_inner_face_point) / Rational(2)
-    
-    # Project onto plane 1
-    dist_to_plane1 = safe_dot_product(reference_point - timberA_inner_face_point, timberA_inner_face_normal)
-    point_on_plane1 = reference_point - timberA_inner_face_normal * dist_to_plane1
-    
-    # Project onto the intersection line from plane 1
-    # The intersection line passes through point_on_plane1 in direction inner_shoulder_direction
-    inner_shoulder_point = point_on_plane1
     
     # ========================================================================
     # Step 6: Create marking transform on timberA
