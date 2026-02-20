@@ -1908,7 +1908,7 @@ class Frame:
     
     def __post_init__(self):
         """Validate that the frame contains no floating point numbers."""
-        #self._check_no_python_floats()
+        self._check_no_python_floats()
         pass
     
     def _check_no_python_floats(self):
@@ -1933,27 +1933,28 @@ class Frame:
     
     def _check_timber_no_python_floats(self, timber: PerfectTimberWithin):
         """Check a single timber for float values."""
-        self._check_numeric_value(timber.length, f"Timber '{timber.ticket.name}' length")
-        self._check_vector(timber.size, f"Timber '{timber.ticket.name}' size")
-        self._check_vector(timber.transform.position, f"Timber '{timber.ticket.name}' transform.position")
+        self._check_numeric_value_no_python_floats(timber.length, f"Timber '{timber.ticket.name}' length")
+        self._check_vector_no_python_floats(timber.size, f"Timber '{timber.ticket.name}' size")
+        self._check_vector_no_python_floats(timber.transform.position, f"Timber '{timber.ticket.name}' transform.position")
         # Note: orientation.matrix is checked as part of the matrix
-        self._check_matrix(timber.transform.orientation.matrix, f"Timber '{timber.ticket.name}' transform.orientation")
+        self._check_matrix_no_python_floats(timber.transform.orientation.matrix, f"Timber '{timber.ticket.name}' transform.orientation")
     
     def _check_accessory_no_python_floats(self, accessory: JointAccessory):
         """Check an accessory for float values."""
         if isinstance(accessory, Peg):
-            self._check_vector(accessory.transform.position, f"Peg transform.position")
-            self._check_numeric_value(accessory.size, f"Peg size")
-            self._check_numeric_value(accessory.forward_length, f"Peg forward_length")
-            self._check_numeric_value(accessory.stickout_length, f"Peg stickout_length")
-            self._check_matrix(accessory.transform.orientation.matrix, f"Peg transform.orientation")
+            self._check_vector_no_python_floats(accessory.transform.position, f"Peg transform.position")
+            self._check_numeric_value_no_python_floats(accessory.size, f"Peg size")
+            self._check_numeric_value_no_python_floats(accessory.forward_length, f"Peg forward_length")
+            self._check_numeric_value_no_python_floats(accessory.stickout_length, f"Peg stickout_length")
+            self._check_matrix_no_python_floats(accessory.transform.orientation.matrix, f"Peg transform.orientation")
         elif isinstance(accessory, Wedge):
-            self._check_vector(accessory.transform.position, f"Wedge transform.position")
-            self._check_numeric_value(accessory.base_width, f"Wedge base_width")
-            self._check_numeric_value(accessory.tip_width, f"Wedge tip_width")
-            self._check_numeric_value(accessory.height, f"Wedge height")
-            self._check_numeric_value(accessory.length, f"Wedge length")
-            self._check_matrix(accessory.transform.orientation.matrix, f"Wedge transform.orientation")
+            self._check_vector_no_python_floats(accessory.transform.position, f"Wedge transform.position")
+            self._check_numeric_value_no_python_floats(accessory.base_width, f"Wedge base_width")
+            self._check_numeric_value_no_python_floats(accessory.tip_width, f"Wedge tip_width")
+            self._check_numeric_value_no_python_floats(accessory.height, f"Wedge height")
+            self._check_numeric_value_no_python_floats(accessory.length, f"Wedge length")
+            self._check_numeric_value_no_python_floats(accessory.stickout_length, f"Wedge stickout_length")
+            self._check_matrix_no_python_floats(accessory.transform.orientation.matrix, f"Wedge transform.orientation")
     
     def _check_cut_no_python_floats(self, cut: Cutting):
         """Check a cut for float values."""
@@ -1969,26 +1970,17 @@ class Frame:
                 f"Float detected in Frame: {description} = {value}. "
                 f"All numeric values must use SymPy Rational, not float."
             )
-        # Also check if it's a SymPy expression containing floats
-        if isinstance(value, Expr):
-            # Check if any atoms in the expression are floats
-            if any(isinstance(atom, float) or (hasattr(atom, 'is_Float') and atom.is_Float) 
-                   for atom in value.atoms()):
-                raise AssertionError(
-                    f"Float detected in Frame: {description} contains float in expression {value}. "
-                    f"All numeric values must use SymPy Rational, not float."
-                )
     
     def _check_vector_no_python_floats(self, vec: Matrix, description: str):
         """Check that all elements in a vector are not floats."""
         for i in range(vec.rows):
-            self._check_numeric_value(vec[i], f"{description}[{i}]")
+            self._check_numeric_value_no_python_floats(vec[i], f"{description}[{i}]")
     
     def _check_matrix_no_python_floats(self, mat: Matrix, description: str):
         """Check that all elements in a matrix are not floats."""
         for i in range(mat.rows):
             for j in range(mat.cols):
-                self._check_numeric_value(mat[i, j], f"{description}[{i},{j}]")
+                self._check_numeric_value_no_python_floats(mat[i, j], f"{description}[{i},{j}]")
 
 
 
