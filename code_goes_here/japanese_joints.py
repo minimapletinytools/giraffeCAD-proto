@@ -1081,7 +1081,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Diagonal = miter_face_width * sqrt(1 + tan^2(half_angle)) = miter_face_width / cos(half_angle)
     from sympy import cos
     # TODO fix this, not right
-    key_depth = miter_face_width / cos(half_angle)
+    key_depth = miter_face_width * cos(half_angle)
     
     keys_in_timberA = []
     keys_in_timberB = []
@@ -1137,7 +1137,8 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
             base_width=key_width,
             tip_width=key_width,  # Same as base_width for rectangular shape
             height=key_thickness,
-            length=key_depth
+            length=key_depth,
+            stickout_length=key_depth*Rational(1,4)
         )
         key_wedges.append(key_wedge)
         
