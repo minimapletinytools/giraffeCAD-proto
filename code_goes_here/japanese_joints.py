@@ -730,23 +730,6 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
             f"timberB face normal: {timberB_miter_face_normal.T}"
         )
     
-    # Check if the miter faces are coplanar (warning if not)
-    # Get a point on each face
-    timberA_face_point = timberA.get_bottom_position_global() + \
-        timberA.get_length_direction_global() * (timberA.length / Rational(2)) + \
-        timberA_miter_face_normal * (timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face()) / Rational(2))
-    
-    timberB_face_point = timberB.get_bottom_position_global() + \
-        timberB.get_length_direction_global() * (timberB.length / Rational(2)) + \
-        timberB_miter_face_normal * (timberB.get_size_in_face_normal_axis(timberB_reference_miter_face.to.face()) / Rational(2))
-    
-    # Distance between the two face planes
-    face_separation = Abs(safe_dot_product(timberB_face_point - timberA_face_point, timberA_miter_face_normal))
-    if not zero_test(face_separation):
-        warnings.warn(
-            f"Miter faces are not coplanar (separation: {float(face_separation):.6f}). "
-            f"Joint may not fit properly."
-        )
     
     # ========================================================================
     # Step 2: Calculate and validate angle between timbers
@@ -875,6 +858,16 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Direction of intersection line = cross product of the two normals
     inner_shoulder_direction = cross_product(timberA_inner_face_normal, timberB_inner_face_normal)
     inner_shoulder_direction = normalize_vector(inner_shoulder_direction)
+
+    # validate that the timber size in the inner_face axis direction is the same on both timbers
+    timberA_inner_face_size = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum)
+    timberB_inner_face_size = timberB.get_size_in_face_normal_axis(timberB_inner_face_enum)
+    if not zero_test(timberA_inner_face_size - timberB_inner_face_size):
+        raise ValueError(
+            f"Timber widths in the miter plane are not the same. "
+            f"TimberA size: {float(timberA_inner_face_size):.3f}, "
+            f"TimberB size: {float(timberB_inner_face_size):.3f}"
+        )
     
     # ========================================================================
     # Step 6: Create marking transform on timberA
