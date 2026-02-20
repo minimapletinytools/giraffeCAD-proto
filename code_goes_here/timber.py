@@ -1611,8 +1611,7 @@ class Wedge(JointAccessory):
     tip_width: Numeric
     height: Numeric
     length: Numeric
-
-    # TODO add stickout_length parameter
+    stickout_length: Numeric = Integer(0)
     
     @property
     def width(self) -> Numeric:
@@ -1645,9 +1644,21 @@ class Wedge(JointAccessory):
         half_base_width = self.base_width / Rational(2)
         half_tip_width = self.tip_width / Rational(2)
         
+        # Calculate width at stickout position (z = -stickout_length)
+        # The taper goes from base_width at z=0 to tip_width at z=length
+        # Linear interpolation: width(z) = base_width + (tip_width - base_width) * z / length
+        if self.stickout_length > 0:
+            # Width at z = -stickout_length
+            stickout_width = self.base_width + (self.tip_width - self.base_width) * (-self.stickout_length) / self.length
+            half_stickout_width = stickout_width / Rational(2)
+            base_z = -self.stickout_length
+        else:
+            half_stickout_width = half_base_width
+            base_z = Integer(0)
+        
         trapezoid_points = [
-            create_v2(-half_base_width, Integer(0)),      # Bottom-left (base)
-            create_v2(half_base_width, Integer(0)),       # Bottom-right (base)
+            create_v2(-half_stickout_width, base_z),      # Bottom-left (base with stickout)
+            create_v2(half_stickout_width, base_z),       # Bottom-right (base with stickout)
             create_v2(half_tip_width, self.length),       # Top-right (tip)
             create_v2(-half_tip_width, self.length)        # Top-left (tip)
         ]
