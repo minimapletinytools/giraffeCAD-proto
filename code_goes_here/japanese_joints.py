@@ -1145,31 +1145,25 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Create rough end cuts perpendicular to timbers
     # These cross the corner of the miter
     
-    # For timberA: cut position is marking_position moved by timberB's width along timberA's length
-    # Use the maximum dimension of timberB's cross-section as the width
-    timberB_width = max(timberB.size[0], timberB.size[1])
     
     if timberA_end == TimberReferenceEnd.TOP:
         # Cut the top: position is outward from marking, normal points up (to cut away top)
-        rough_cut_position_A = marking_position + timberA.get_length_direction_global() * timberB_width
+        rough_cut_position_A = marking_position + timberA.get_length_direction_global() * finger_size_y
         rough_cut_normal_A_global = timberA.get_length_direction_global()
     else:  # BOTTOM
         # Cut the bottom: position is outward from marking, normal points down (to cut away bottom)
-        rough_cut_position_A = marking_position - timberA.get_length_direction_global() * timberB_width
+        rough_cut_position_A = marking_position - timberA.get_length_direction_global() * finger_size_y
         rough_cut_normal_A_global = -timberA.get_length_direction_global()
     
     local_normal_A_rough = safe_transform_vector(timberA.orientation.matrix.T, rough_cut_normal_A_global)
     local_offset_A_rough = safe_dot_product(rough_cut_position_A, rough_cut_normal_A_global) - safe_dot_product(rough_cut_normal_A_global, timberA.get_bottom_position_global())
     rough_end_cut_A = HalfSpace(normal=local_normal_A_rough, offset=local_offset_A_rough)
     
-    # For timberB
-    timberA_width = max(timberA.size[0], timberA.size[1])
-    
     if timberB_end == TimberReferenceEnd.TOP:
-        rough_cut_position_B = marking_position + timberB.get_length_direction_global() * timberA_width
+        rough_cut_position_B = marking_position + timberB.get_length_direction_global() * finger_size_y
         rough_cut_normal_B_global = timberB.get_length_direction_global()
     else:  # BOTTOM
-        rough_cut_position_B = marking_position - timberB.get_length_direction_global() * timberA_width
+        rough_cut_position_B = marking_position - timberB.get_length_direction_global() * finger_size_y
         rough_cut_normal_B_global = -timberB.get_length_direction_global()
     
     local_normal_B_rough = safe_transform_vector(timberB.orientation.matrix.T, rough_cut_normal_B_global)
