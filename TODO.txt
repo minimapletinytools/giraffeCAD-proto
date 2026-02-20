@@ -197,6 +197,8 @@ IGNORE-consider making marking functions class member function of measurement he
 -I think tickets can be done as dictionary... or maybe there are compositoin fo classes?
   -e.g. material ticket, grain direction ticket?
 
+-do degrees() function and radians() function
+  -make a new angle type that wraps sympy so we can typecheck on angle types
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
   DONE-add key holes
   DONE-fix non 90 degree placement

@@ -889,7 +889,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     marking_position = marking_position + timberA.get_length_direction_global() * centerline_marking.distance
     
     # now move to the timberA_reference_miter_face surface
-    marking_position = marking_position + timberA_miter_face_normal * (lap_start_distance_final - timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face()) / Rational(2))
+    marking_position_on_centerline = marking_position + timberA_miter_face_normal * (lap_start_distance_final - timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face()) / Rational(2))
     
     # Calculate the diagonal direction (bisector between timberA and timberB)
     # This is the average of the two end directions
@@ -911,7 +911,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Move to the inner shoulder edge along the diagonal direction
     inner_edge_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) / Rational(2)
     diagonal_offset = inner_edge_offset * diagonal_scale_factor
-    marking_position = marking_position - diagonal_direction * diagonal_offset
+    marking_position = marking_position_on_centerline - diagonal_direction * diagonal_offset
     
     # Create orientation for the marking transform
     # Z-axis points toward the end (along timber length direction or opposite)
@@ -945,27 +945,28 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Step 7: Generate finger prisms
     # ========================================================================
     
-    # TODO this approach is wrong
-    # instead, fingers should be aligned with the inner edge of timberA/B and extend past timberB/A
-    # then use a half plane or sometihng to chop off the ends of the fingers distance_between_lap_and_outside away from timberB/A outside face
-
     # Calculate finger dimensions
-    finger_width = miter_face_width - distance_between_lap_and_outside
     finger_length = lap_thickness_final
     
-    # The other dimension of the finger cross-section extends perpendicular to the miter face
-    # and runs along the inner face direction - it should be large enough to cut through
-    finger_depth = miter_face_depth * Rational(2)  # Conservative, extends through timber
+    # Finger size: X = miter_face_width, Y = miter_face_width * tan(half_angle)
+    from sympy import pi, tan
+    finger_size_x = miter_face_width
+    finger_size_y = miter_face_width * tan(half_angle)
+    finger_size = create_v2(finger_size_x, finger_size_y)
     
-    # Create all fingers in timberA's space
-    all_fingers_in_timberA_space = []
+    # Create all fingers in global space
+    all_fingers_global = []
     
     for i in range(num_laps):
+        # Determine if this lap belongs to timber A or B
+        # Even indices (0, 2, 4, ...) = timber A, odd indices (1, 3, 5, ...) = timber B
+        is_timber_a = (i % 2 == 0)
+        
         # Calculate Z position along timber length for this lap
         z_offset = lap_start_distance_final + i * lap_thickness_final
         
         # Start from marking_position (at centerline intersection, on miter face surface)
-        finger_position = marking_position
+        finger_position = marking_position_on_centerline
         
         # Move along miter face normal (into timber) by z_offset
         finger_position = finger_position + timberA_miter_face_normal * z_offset
@@ -973,8 +974,13 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         # Create finger orientation with Z-axis pointing along miter face normal
         # Z-axis: points along miter face normal (into timber)
         finger_z = timberA_miter_face_normal
-        # X-axis: along the inner shoulder face normal direction
-        finger_x = timberA_inner_face_normal
+        
+        # X-axis: along the inner face normal direction based on which timber this lap belongs to
+        if is_timber_a:
+            finger_x = timberA_inner_face_normal
+        else:
+            finger_x = timberB_inner_face_normal
+        
         # Y-axis: perpendicular to both (computed via cross product)
         finger_y = cross_product(finger_z, finger_x)
         finger_y = normalize_vector(finger_y)
@@ -985,61 +991,92 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
             [finger_x[2], finger_y[2], finger_z[2]]
         ]))
         
-        # Finger size: width (X) x depth (Y), with length (Z) in start/end_distance
-        finger_size = create_v2(finger_width, finger_width)
-        
-        # Rotate the finger around the Y-axis of the marking_transform
-        # For 90° joint: half_angle = 45°, so rotation angle = 0° (no rotation)
-        # For non-90° joints: rotate by (half_angle - 45°)
-        from sympy import pi
-        rotation_angle = half_angle - (pi / Rational(4))  # half_angle - 45°
-        
-        # Create rotation axis: Y-axis of marking_transform at marking_position
-        # marking_y is already defined from the marking_transform creation
-        rotation_axis = Axis(position=marking_position, direction=marking_x)
-        
-        # Rotate the finger transform around the inner shoulder edge axis so it's diagonal is aligned with the diagonal direction
+        # Rotate the finger transform around the inner shoulder edge axis
         finger_transform_global = Transform(position=finger_position, orientation=finger_orientation)
-        rotated_finger_transform_global_before_diagonal_offset = finger_transform_global.rotate_around_axis(rotation_axis, rotation_angle)
-
-        # Move the finger along the diagonal direction so that the corner is on the inner shoulder edge
-        rotated_finger_transform_global = replace(rotated_finger_transform_global_before_diagonal_offset, position=rotated_finger_transform_global_before_diagonal_offset.position + diagonal_direction * (finger_width * sqrt(2) / Rational(2)))
         
-        # Convert the global transform to timberA's local space
-        finger_transform_local = rotated_finger_transform_global.to_local_transform(timberA.transform)
-        
-        # Create finger prism in timberA's local space
-        finger_prism_in_timberA = RectangularPrism(
+        # Create finger prism in global space
+        finger_prism_global = RectangularPrism(
             size=finger_size,
-            transform=finger_transform_local,
+            transform=finger_transform_global,
             start_distance=Integer(0),
             end_distance=finger_length
         )
-        all_fingers_in_timberA_space.append(finger_prism_in_timberA)
+        
+        all_fingers_global.append((finger_prism_global, is_timber_a))
     
     # Separate fingers by which timber they belong to (even = A, odd = B)
     A_finger_indices = [i for i in range(num_laps) if i % 2 == 0]
     B_finger_indices = [i for i in range(num_laps) if i % 2 == 1]
     
-    # A fingers in timberA space (for subtracting from timberA)
-    A_fingers_in_timberA = [all_fingers_in_timberA_space[i] for i in A_finger_indices]
+    # Helper function to convert finger from global to local and apply crop
+    def convert_finger_to_local(finger_global: RectangularPrism, is_timber_a_finger: bool) -> CutCSG:
+        """Convert finger from global to local coordinates and apply crop using opposing timber's inner face."""
+        # Determine target timber from finger type
+        if is_timber_a_finger:
+            target_timber = timberA
+            # Crop A fingers using timberB's inner face
+            opposing_timber = timberB
+            opposing_inner_face_enum = timberB_inner_face_enum
+        else:
+            target_timber = timberB
+            # Crop B fingers using timberA's inner face
+            opposing_timber = timberA
+            opposing_inner_face_enum = timberA_inner_face_enum
+        
+        # Convert to local space
+        finger_transform_local = finger_global.transform.to_local_transform(target_timber.transform)
+        finger_local = replace(finger_global, transform=finger_transform_local)
+        
+        # Apply crop using the opposing timber's inner face
+        from code_goes_here.measuring import measure_into_face
+        from code_goes_here.rule import safe_transform_vector
+        
+        # Measure into opposing timber's inner face to create a cutting plane (in global space)
+        crop_distance = miter_face_width - distance_between_lap_and_outside
+        crop_plane = measure_into_face(crop_distance, opposing_inner_face_enum, opposing_timber)
+        
+        # Convert crop plane to local space of target timber
+        # Convert UnsignedPlane point and normal to local coordinates
+        crop_point_local = target_timber.transform.global_to_local(crop_plane.point)
+        crop_normal_local = safe_transform_vector(target_timber.orientation.matrix.T, crop_plane.normal)
+        
+        # Convert to HalfSpace in local coordinates
+        crop_offset_local = safe_dot_product(crop_point_local, crop_normal_local)
+        # Use negative normal to represent the "too far into opposing timber" side
+        crop_halfspace_local = HalfSpace(normal=-crop_normal_local, offset=-crop_offset_local)
+        
+        # Crop the finger by subtracting everything beyond the half space
+        finger_local = Difference(base=finger_local, subtract=[crop_halfspace_local])
+        
+        return finger_local
     
-    # B fingers in timberA space (for adding voids to timberA)
-    B_fingers_in_timberA = [all_fingers_in_timberA_space[i] for i in B_finger_indices]
+    # A fingers in timberA local space (for subtracting from timberA)
+    A_fingers_in_timberA = []
+    for idx in A_finger_indices:
+        finger_global, is_timber_a_finger = all_fingers_global[idx]
+        finger_local = convert_finger_to_local(finger_global, is_timber_a_finger)
+        A_fingers_in_timberA.append(finger_local)
     
-    # A fingers in timberB space (for adding voids to timberB)
+    # B fingers in timberA local space (for adding voids to timberA)
+    B_fingers_in_timberA = []
+    for idx in B_finger_indices:
+        finger_global, is_timber_a_finger = all_fingers_global[idx]
+        finger_local = convert_finger_to_local(finger_global, is_timber_a_finger)
+        B_fingers_in_timberA.append(finger_local)
+    
+    # A fingers in timberB local space (for adding voids to timberB)
     A_fingers_in_timberB = []
     for idx in A_finger_indices:
-        finger_in_A = all_fingers_in_timberA_space[idx]
-        finger_in_B = adopt_csg(timberA, timberB, finger_in_A)
-        A_fingers_in_timberB.append(finger_in_B)
+        finger_global, is_timber_a_finger = all_fingers_global[idx]
+        finger_local = convert_finger_to_local(finger_global, is_timber_a_finger)
+        A_fingers_in_timberB.append(finger_local)
     
-    # B fingers in timberB space (for subtracting from timberB)
+    # B fingers in timberB local space (for subtracting from timberB)
     B_fingers_in_timberB = []
     for idx in B_finger_indices:
-        finger_in_A = all_fingers_in_timberA_space[idx]
-        finger_in_B = adopt_csg(timberA, timberB, finger_in_A)
-        B_fingers_in_timberB.append(finger_in_B)
+        finger_global, is_timber_a_finger = all_fingers_global[idx]
+        finger_local = convert_finger_to_local(finger_global, is_timber_a_finger)
+        B_fingers_in_timberB.append(finger_local)
     
     # ========================================================================
     # Step 7.5: Create Keys
@@ -1051,7 +1088,11 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     if key_thickness is None:
         key_thickness = lap_thickness / Rational(3) 
     
-    key_depth = finger_width * sqrt(2)
+    # Key depth should extend through the finger, use the diagonal of the finger cross-section
+    # Finger size is miter_face_width x (miter_face_width * tan(half_angle))
+    # Diagonal = miter_face_width * sqrt(1 + tan^2(half_angle)) = miter_face_width / cos(half_angle)
+    from sympy import cos
+    key_depth = miter_face_width / cos(half_angle)
     
     keys_in_timberA = []
     keys_in_timberB = []

@@ -199,7 +199,7 @@ def create_mitered_and_keyed_lap_joint_110deg_example(position: Optional[V3] = N
     
     # Create corner joint arrangement using canonical function with 110-degree angle
     # Convert 110 degrees to radians: 110° = 110 * π / 180
-    angle_110_deg = Integer(110) * pi / Integer(180)
+    angle_110_deg = Integer(130) * pi / Integer(180)
     arrangement = create_canonical_corner_joint_timbers(corner_angle=angle_110_deg, position=position)
     
     # Rename timbers for clarity in this joint context
