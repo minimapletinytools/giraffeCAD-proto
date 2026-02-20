@@ -60,6 +60,7 @@ PATTERN_NAME = 'oscar_shed'
 #PATTERN_NAME = 'shoulder_notch'
 #PATTERN_NAME = 'short_post'
 #PATTERN_NAME = 'honeycomb_shed'
+#PATTERN_NAME = 'mitered_keyed_lap'
 
 # GROUP_NAME: Name of a pattern group to render (when RENDER_TYPE = 'group')
 # Available groups: 'basic_joints', 'mortise_and_tenon', 'construction', 

@@ -37,8 +37,8 @@ def create_japanese_joints_patternbook() -> PatternBook:
         (PatternMetadata("mitered_keyed_lap", ["japanese_joints", "miter"], "frame"),
          lambda center: create_mitered_and_keyed_lap_joint_example(position=center)),
         
-        (PatternMetadata("mitered_keyed_lap_110deg", ["japanese_joints", "miter"], "frame"),
-         lambda center: create_mitered_and_keyed_lap_joint_110deg_example(position=center)),
+        (PatternMetadata("mitered_keyed_lap_130deg", ["japanese_joints", "miter"], "frame"),
+         lambda center: create_mitered_and_keyed_lap_joint_130deg_example(position=center)),
     ]
     
     return PatternBook(patterns=patterns)
@@ -179,16 +179,16 @@ def create_mitered_and_keyed_lap_joint_example(position: Optional[V3] = None):
     return frame
 
 
-def create_mitered_and_keyed_lap_joint_110deg_example(position: Optional[V3] = None):
+def create_mitered_and_keyed_lap_joint_130deg_example(position: Optional[V3] = None):
     """
-    Create a mitered and keyed lap joint at 110 degrees using canonical 4"x5"x4' timbers.
+    Create a mitered and keyed lap joint at 130 degrees using canonical 4"x5"x4' timbers.
     
     This demonstrates the same joint type as create_mitered_and_keyed_lap_joint_example,
-    but at a 110-degree angle instead of 90 degrees. The interlocking finger laps work
+    but at a 130-degree angle instead of 90 degrees. The interlocking finger laps work
     at any angle, providing mechanical strength for obtuse corner joints.
     
     Configuration:
-        - Creates a 110-degree corner joint
+        - Creates a 130-degree corner joint
         - Uses interlocking finger laps inside the miter
         - Timbers meet at their bottom ends
     
@@ -197,10 +197,10 @@ def create_mitered_and_keyed_lap_joint_110deg_example(position: Optional[V3] = N
     """
     from sympy import pi
     
-    # Create corner joint arrangement using canonical function with 110-degree angle
-    # Convert 110 degrees to radians: 110° = 110 * π / 180
-    angle_110_deg = Integer(130) * pi / Integer(180)
-    arrangement = create_canonical_corner_joint_timbers(corner_angle=angle_110_deg, position=position)
+    # Create corner joint arrangement using canonical function with 130-degree angle
+    # Convert 130 degrees to radians: 130° = 130 * π / 180
+    angle_130_deg = Integer(130) * pi / Integer(180)
+    arrangement = create_canonical_corner_joint_timbers(corner_angle=angle_130_deg, position=position)
     
     # Rename timbers for clarity in this joint context
     from dataclasses import replace
@@ -209,7 +209,7 @@ def create_mitered_and_keyed_lap_joint_110deg_example(position: Optional[V3] = N
     
     # Create the mitered and keyed lap joint
     # The reference miter face is the face that defines the miter plane
-    # For a 110-degree corner, both timbers still have their RIGHT face pointing in the +Z direction
+    # For a 130-degree corner, both timbers still have their RIGHT face pointing in the +Z direction
     joint = cut_mitered_and_keyed_lap_joint(
         timberA=timberA,
         timberA_end=TimberReferenceEnd.BOTTOM,
@@ -219,13 +219,13 @@ def create_mitered_and_keyed_lap_joint_110deg_example(position: Optional[V3] = N
         num_laps=3,                                          # 3 interlocking fingers
         lap_thickness=inches(Rational(3, 4)),               # 0.75" thick fingers
         lap_start_distance_from_reference_miter_face=inches(Rational(1, 2)),  # Start 0.5" from miter face
-        distance_between_lap_and_outside=inches(Rational(3, 2))  # 1.5" inset from outer edge, needs to be larger for oblique joints
+        distance_between_lap_and_outside=inches(Rational(1, 2)), 
     )
     
     # Create a frame from the joint
     frame = Frame.from_joints(
         [joint],
-        name="Mitered and Keyed Lap Joint - 110° (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi)"
+        name="Mitered and Keyed Lap Joint - 130° (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi)"
     )
     
     return frame
@@ -270,8 +270,8 @@ if __name__ == "__main__":
     for cut_timber in frame4.cut_timbers:
         print(f"   - {cut_timber.timber.ticket.name}: {len(cut_timber.cuts)} cut(s)")
     
-    print("\n5. Creating mitered and keyed lap joint (110-degree corner) example...")
-    frame5 = create_mitered_and_keyed_lap_joint_110deg_example()
+    print("\n5. Creating mitered and keyed lap joint (130-degree corner) example...")
+    frame5 = create_mitered_and_keyed_lap_joint_130deg_example()
     frames.append(frame5)
     print(f"   Frame created: {frame5.name}")
     print(f"   Number of timbers: {len(frame5.cut_timbers)}")

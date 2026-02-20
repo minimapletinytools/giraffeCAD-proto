@@ -508,6 +508,32 @@ class PerfectTimberWithin(ABC):
                 best_face = face
         
         return best_face 
+
+    def get_closest_oriented_long_face_from_global_direction(self, target_direction: Direction3D) -> TimberLongFace:
+        """
+        Find which face of this timber best aligns with the target direction.
+        
+        The target_direction should point "outwards" from the desired face (not into it).
+        
+        Args:
+            target_direction: Direction vector to match against
+            
+        Returns:
+            The TimberFace that best aligns with the target direction
+        """
+        faces = [TimberLongFace.RIGHT, TimberLongFace.LEFT, TimberLongFace.FRONT, TimberLongFace.BACK]
+        
+        best_face = faces[0]
+        best_alignment = target_direction.dot(self.get_face_direction_global(faces[0]))
+        
+        for face in faces[1:]:
+            face_direction = self.get_face_direction_global(face)
+            alignment = target_direction.dot(face_direction)
+            if alignment > best_alignment:
+                best_alignment = alignment
+                best_face = face
+        
+        return best_face 
     
     # UNTESTED
     def get_inside_face_from_footprint(self, footprint: Footprint) -> TimberFace:
