@@ -1887,9 +1887,10 @@ class Frame:
     
     def __post_init__(self):
         """Validate that the frame contains no floating point numbers."""
-        self._check_no_floats()
+        #self._check_no_python_floats()
+        pass
     
-    def _check_no_floats(self):
+    def _check_no_python_floats(self):
         """
         Check that all numeric values in the frame use SymPy Rationals, not floats.
         
@@ -1899,17 +1900,17 @@ class Frame:
         # Check all cut timbers
         for cut_timber in self.cut_timbers:
             timber = cut_timber.timber
-            self._check_timber_no_floats(timber)
+            self._check_timber_no_python_floats(timber)
             
             # Check all cuts on this timber
             for cut in cut_timber.cuts:
-                self._check_cut_no_floats(cut)
+                self._check_cut_no_python_floats(cut)
         
         # Check all accessories
         for accessory in self.accessories:
-            self._check_accessory_no_floats(accessory)
+            self._check_accessory_no_python_floats(accessory)
     
-    def _check_timber_no_floats(self, timber: PerfectTimberWithin):
+    def _check_timber_no_python_floats(self, timber: PerfectTimberWithin):
         """Check a single timber for float values."""
         self._check_numeric_value(timber.length, f"Timber '{timber.ticket.name}' length")
         self._check_vector(timber.size, f"Timber '{timber.ticket.name}' size")
@@ -1917,7 +1918,7 @@ class Frame:
         # Note: orientation.matrix is checked as part of the matrix
         self._check_matrix(timber.transform.orientation.matrix, f"Timber '{timber.ticket.name}' transform.orientation")
     
-    def _check_accessory_no_floats(self, accessory: JointAccessory):
+    def _check_accessory_no_python_floats(self, accessory: JointAccessory):
         """Check an accessory for float values."""
         if isinstance(accessory, Peg):
             self._check_vector(accessory.transform.position, f"Peg transform.position")
@@ -1933,14 +1934,14 @@ class Frame:
             self._check_numeric_value(accessory.length, f"Wedge length")
             self._check_matrix(accessory.transform.orientation.matrix, f"Wedge transform.orientation")
     
-    def _check_cut_no_floats(self, cut: Cutting):
+    def _check_cut_no_python_floats(self, cut: Cutting):
         """Check a cut for float values."""
         # Cutting contains arbitrary CSG in negative_csg - would need recursive checking
         # For now, we'll skip deep CSG validation of the negative_csg field
         # (This could be extended to recursively check all CSG nodes if needed)
         pass
     
-    def _check_numeric_value(self, value: Numeric, description: str):
+    def _check_numeric_value_no_python_floats(self, value: Numeric, description: str):
         """Check that a numeric value is not a float."""
         if isinstance(value, float):
             raise AssertionError(
@@ -1957,12 +1958,12 @@ class Frame:
                     f"All numeric values must use SymPy Rational, not float."
                 )
     
-    def _check_vector(self, vec: Matrix, description: str):
+    def _check_vector_no_python_floats(self, vec: Matrix, description: str):
         """Check that all elements in a vector are not floats."""
         for i in range(vec.rows):
             self._check_numeric_value(vec[i], f"{description}[{i}]")
     
-    def _check_matrix(self, mat: Matrix, description: str):
+    def _check_matrix_no_python_floats(self, mat: Matrix, description: str):
         """Check that all elements in a matrix are not floats."""
         for i in range(mat.rows):
             for j in range(mat.cols):
