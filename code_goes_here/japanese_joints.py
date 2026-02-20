@@ -663,6 +663,7 @@ def cut_housed_dovetail_butt_joint(
     )
 
 
+# rename lap_start_distance_from_reference_miter_face -> first_lap_distance_from_reference_miter_face
 def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberA_reference_miter_face: TimberLongFace, timberB: TimberLike, timberB_end: TimberReferenceEnd, lap_thickness: Optional[Numeric] = None, lap_start_distance_from_reference_miter_face: Optional[Numeric] = None, distance_between_lap_and_outside: Optional[Numeric] = None, num_laps: int = 2, key_width: Optional[Numeric] = None, key_thickness: Optional[Numeric] = None) -> Joint:
     """
     Creates a mitered and keyed lap joint (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi)
@@ -805,7 +806,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         # Only start distance given, calculate thickness
         assert lap_start_distance_from_reference_miter_face is not None  # Type narrowing
         remaining_depth: Numeric = miter_face_depth - lap_start_distance_from_reference_miter_face
-        lap_thickness_final = remaining_depth / Integer(num_laps)
+        lap_thickness_final = remaining_depth / Integer(num_laps+1)
         lap_start_distance_final = lap_start_distance_from_reference_miter_face
     elif lap_start_distance_from_reference_miter_face is None:
         # Only thickness given, calculate start distance
@@ -992,6 +993,10 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Step 7: Generate finger prisms
     # ========================================================================
     
+    # TODO this approach is wrong
+    # instead, fingers should be aligned with the inner edge of timberA/B and extend past timberB/A
+    # then use a half plane or sometihng to chop off the ends of the fingers distance_between_lap_and_outside away from timberB/A outside face
+
     # Calculate finger dimensions
     finger_width = miter_face_width - distance_between_lap_and_outside
     finger_length = lap_thickness_final
