@@ -958,7 +958,7 @@ class RegularPolygonTimber(PerfectTimberWithin):
         vertices = []
         # start at (1,0) and go counterclockwise
         for i in range(self.num_sides):
-            angle = Integer(2) * pi * i / self.num_sides
+            angle = radians(Integer(2) * pi * i / self.num_sides)
             x = radius * cos(angle)
             y = radius * sin(angle)
             vertices.append(Matrix([x, y]))

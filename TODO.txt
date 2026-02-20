@@ -197,15 +197,15 @@ IGNORE-consider making marking functions class member function of measurement he
 -I think tickets can be done as dictionary... or maybe there are compositoin fo classes?
   -e.g. material ticket, grain direction ticket?
 
--do degrees() function and radians() function
-  -make a new angle type that wraps sympy so we can typecheck on angle types
+DONE-do degrees() function and radians() function
+  IGNORE-make a new angle type that wraps sympy so we can typecheck on angle types
 -Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
   DONE-add key holes
   DONE-fix non 90 degree placement
   DONE-add non 90 examlpe D:
-  -fix finger prisms
+  DONE-fix finger prisms
+  DONE-default thicknesses are wrong
   -add key accessories
-  -default thicknesses are wrong
 -update morties and tenon to support
   -perpendicular but not face aligned
   -not perpendicular but partially face aligned (for braces)

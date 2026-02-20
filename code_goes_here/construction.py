@@ -1093,7 +1093,7 @@ def create_canonical_corner_joint_timbers(corner_angle: Optional[Numeric] = None
     
     # Default to 90 degrees (pi/2 radians)
     if corner_angle is None:
-        corner_angle = pi / Integer(2)
+        corner_angle = radians(pi / Integer(2))
     
     if position is None:
         position = create_v3(Integer(0), Integer(0), Integer(0))
@@ -1140,7 +1140,7 @@ def create_canonical_right_angle_corner_joint_timbers(position: Optional[V3] = N
         position: Bottom position where timbers meet. Defaults to origin.
     """
     from sympy import pi
-    return create_canonical_corner_joint_timbers(corner_angle=pi / Integer(2), position=position)
+    return create_canonical_corner_joint_timbers(corner_angle=radians(pi / Integer(2)), position=position)
 @dataclass(frozen=True)
 class CrossJointTimberArrangement:
     timber1: Timber

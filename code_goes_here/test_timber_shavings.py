@@ -5,7 +5,7 @@ Tests for timber_shavings module (random timber-related helpers).
 import pytest
 from code_goes_here.timber_shavings import *
 from code_goes_here.timber import *
-from code_goes_here.rule import create_v3, create_v2
+from code_goes_here.rule import create_v3, create_v2, radians
 from code_goes_here.testing_shavings import create_standard_vertical_timber
 from sympy import Rational
 
@@ -92,7 +92,7 @@ class TestFindOpposingFaceOnAnotherTimber:
         
         # Timber B at 30 degrees counterclockwise from X-axis in XY plane
         # length_direction at 30 degrees: (cos(30°), sin(30°), 0)
-        angle = pi / 6  # 30 degrees in radians
+        angle = radians(pi / 6)  # 30 degrees in radians
         length_dir_b = create_v3(cos(angle), sin(angle), 0)
         
         # width_direction perpendicular to length in XY plane: (-sin(30°), cos(30°), 0)

@@ -69,7 +69,7 @@ def create_honeycomb_shed():
     
     footprint_corners = []
     for i in range(6):
-        angle = Rational(i, 3) * pi  # 60° increments
+        angle = radians(Rational(i, 3) * pi)  # 60° increments
         x = hex_radius * cos(angle)
         y = hex_radius * sin(angle)
         footprint_corners.append(create_v2(x, y))

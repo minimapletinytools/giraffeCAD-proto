@@ -756,8 +756,8 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     angle = acos(dot_product_clamped)
     
     # Validate angle is between 45 and 135 degrees
-    min_angle = pi / Integer(4)  # 45 degrees
-    max_angle = Rational(3) * pi / Integer(4)  # 135 degrees
+    min_angle = radians(pi / Integer(4))  # 45 degrees
+    max_angle = radians(Rational(3) * pi / Integer(4))  # 135 degrees
     
     if angle < min_angle or angle > max_angle:
         raise ValueError(
@@ -1103,7 +1103,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         from sympy import atan2
         key_rotation_sign = -1 if i % 2 == 0 else 1
         key_rotation_angle = key_rotation_sign * atan2(key_thickness, key_width)
-        rotation_for_key = Orientation.from_axis_angle(diagonal_direction, key_rotation_angle)
+        rotation_for_key = Orientation.from_axis_angle(diagonal_direction, radians(key_rotation_angle))
         key_orientation = rotation_for_key * key_orientation_before_rotation
         key_transform_global = Transform(position=key_position, orientation=key_orientation)
         

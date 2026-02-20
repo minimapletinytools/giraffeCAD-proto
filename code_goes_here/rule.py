@@ -607,6 +607,45 @@ def vector_magnitude(vec: Matrix):
 
 
 # ============================================================================
+# Angle Conversion Functions
+# ============================================================================
+
+def radians(angle: Numeric) -> Numeric:
+    """
+    Identity function for angles already in radians.
+    Use this to make it explicit that an angle is in radians.
+    
+    Args:
+        angle: Angle value in radians
+    
+    Returns:
+        The same angle value (unchanged)
+    
+    Examples:
+        radians(pi / 2)      # 90 degrees in radians
+        radians(pi / 4)       # 45 degrees in radians
+    """
+    return angle
+
+def degrees(angle: Numeric) -> Numeric:
+    """
+    Convert an angle from degrees to radians.
+    
+    Args:
+        angle: Angle value in degrees
+    
+    Returns:
+        Angle value in radians
+    
+    Examples:
+        degrees(90)           # 90 degrees = pi/2 radians
+        degrees(45)           # 45 degrees = pi/4 radians
+        degrees(180)          # 180 degrees = pi radians
+    """
+    return angle * pi / Rational(180)
+
+
+# ============================================================================
 # Unit Conversion Constants
 # ============================================================================
 

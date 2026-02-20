@@ -6,7 +6,7 @@ This module contains tests for the CSG primitives and operations.
 
 import pytest
 from sympy import Matrix, Rational, Integer, simplify, sqrt, cos, sin, pi
-from code_goes_here.rule import Orientation, Transform, create_v3
+from code_goes_here.rule import Orientation, Transform, create_v3, radians
 from code_goes_here.cutcsg import (
     HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
@@ -68,7 +68,7 @@ def generate_random_convex_polygon_extrusion():
     radius = Rational(random.randint(3, 8))
     vertices = []
     for i in range(num_vertices):
-        angle = Integer(2) * pi * i / num_vertices
+        angle = radians(Integer(2) * pi * i / num_vertices)
         x = radius * cos(angle)
         y = radius * sin(angle)
         vertices.append(Matrix([x, y]))
@@ -173,7 +173,7 @@ def generate_cylinder_boundary_points(cylinder):
     
     # Points on cap circumferences (round edges) - 8 points per cap
     for angle_frac in [0, Rational(1, 4), Rational(1, 2), Rational(3, 4)]:
-        angle = Integer(2) * pi * angle_frac
+        angle = radians(Integer(2) * pi * angle_frac)
         radial = cylinder.radius * (perp1 * cos(angle) + perp2 * sin(angle))
         
         if cylinder.start_distance is not None:
@@ -185,7 +185,7 @@ def generate_cylinder_boundary_points(cylinder):
     if cylinder.start_distance is not None and cylinder.end_distance is not None:
         z_mid = (cylinder.start_distance + cylinder.end_distance) / Integer(2)
         for angle_frac in [0, Rational(1, 4), Rational(1, 2), Rational(3, 4)]:
-            angle = Integer(2) * pi * angle_frac
+            angle = radians(Integer(2) * pi * angle_frac)
             radial = cylinder.radius * (perp1 * cos(angle) + perp2 * sin(angle))
             points.append(cylinder.position + axis * z_mid + radial)
     

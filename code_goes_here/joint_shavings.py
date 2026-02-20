@@ -900,7 +900,7 @@ def chop_shoulder_notch_on_timber_face(
     
     # Create angled wall prisms by rotating copies of the notch prism around the corner edges
     # Convert angle to radians
-    angle_rad = notch_wall_relief_cut_angle * pi / Integer(180)
+    angle_rad = degrees(notch_wall_relief_cut_angle)
     
     # Determine the axis direction for rotation (parallel to notch face, perpendicular to timber length)
     # The rotation axes are perpendicular to the timber length direction
@@ -922,7 +922,7 @@ def chop_shoulder_notch_on_timber_face(
     extended_end_distance = (notch_depth + notch_additional_depth) / cos(angle_rad)
     
     # Create left wall prism by rotating the notch prism transform around the first corner
-    left_wall_transform = notch_prism.transform.rotate_around_axis(axis_1, angle_rad)
+    left_wall_transform = notch_prism.transform.rotate_around_axis(axis_1, radians(angle_rad))
     left_wall_prism = RectangularPrism(
         size=notch_prism.size,
         transform=left_wall_transform,
@@ -931,7 +931,7 @@ def chop_shoulder_notch_on_timber_face(
     )
     
     # Create right wall prism by rotating around the second corner (opposite direction)
-    right_wall_transform = notch_prism.transform.rotate_around_axis(axis_2, -angle_rad)
+    right_wall_transform = notch_prism.transform.rotate_around_axis(axis_2, radians(-angle_rad))
     right_wall_prism = RectangularPrism(
         size=notch_prism.size,
         transform=right_wall_transform,
