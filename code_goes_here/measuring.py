@@ -354,14 +354,14 @@ def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
 
 def measure_face(timber: PerfectTimberWithin, face: SomeTimberFace) -> Plane:
     """
-    Mark a face on a timber, returning a Plane centered on the face pointing outward.
+    Measure a face on a timber, returning a Plane centered on the face pointing outward.
 
     The plane's normal points OUT of the timber (away from the timber's interior),
     and the plane's point is positioned at the center of the face surface.
 
     Args:
-        timber: The timber to mark
-        face: The face to mark
+        timber: The timber to measure
+        face: The face to measure
 
     Returns:
         Plane with normal pointing outward from the face and point at the face center
@@ -383,14 +383,14 @@ def measure_face(timber: PerfectTimberWithin, face: SomeTimberFace) -> Plane:
 # TODO change this to just measure edge
 def measure_long_edge(timber: PerfectTimberWithin, edge: TimberLongEdge) -> Line:
     """
-    Mark a long edge on a timber, returning a Line centered on the edge pointing in +Z.
+    Measure a long edge on a timber, returning a Line centered on the edge pointing in +Z.
 
     The line runs along the timber's length direction (+Z in timber local coordinates),
     positioned at the specified edge (intersection of two long faces).
 
     Args:
-        timber: The timber to mark
-        edge: The long edge to mark
+        timber: The timber to measure
+        edge: The long edge to measure
 
     Returns:
         Line with direction pointing in the timber's +Z direction and point at the edge center
@@ -438,13 +438,13 @@ def measure_long_edge(timber: PerfectTimberWithin, edge: TimberLongEdge) -> Line
 
 def measure_centerline(timber: PerfectTimberWithin) -> Line:
     """
-    Mark the center line of a timber, returning a Line through the timber's center.
+    Measure the center line of a timber, returning a Line through the timber's center.
 
     The line runs along the timber's length direction (+Z in timber local coordinates),
     positioned at the center of the timber's cross-section.
 
     Args:
-        timber: The timber to mark
+        timber: The timber to measure
 
     Returns:
         Line with direction pointing in the timber's +Z direction and point at the centerline
@@ -468,10 +468,10 @@ def measure_edge_on_face(timber: PerfectTimberWithin, edge: TimberLongEdge, face
 
 def measure_position_on_centerline_from_bottom(timber: PerfectTimberWithin, distance: Numeric) -> Point:
     """
-    Mark a position at a specific point along the timber's centerline, measured from the bottom.
+    Measure a position at a specific point along the timber's centerline, measured from the bottom.
 
     Args:
-        timber: The timber to mark on
+        timber: The timber to measure on
         distance: Distance along the timber's length direction from the bottom position
 
     Returns:
@@ -483,10 +483,10 @@ def measure_position_on_centerline_from_bottom(timber: PerfectTimberWithin, dist
 
 def measure_position_on_centerline_from_top(timber: PerfectTimberWithin, distance: Numeric) -> Point:
     """
-    Mark a position at a specific point along the timber's centerline, measured from the top.
+    Measure a position at a specific point along the timber's centerline, measured from the top.
 
     Args:
-        timber: The timber to mark on
+        timber: The timber to measure on
         distance: Distance along the timber's length direction from the top position
 
     Returns:
@@ -498,10 +498,10 @@ def measure_position_on_centerline_from_top(timber: PerfectTimberWithin, distanc
 
 def measure_bottom_center_position(timber: PerfectTimberWithin) -> Point:
     """
-    Mark the position of the center of the bottom cross-section of the timber.
+    Measure the position of the center of the bottom cross-section of the timber.
 
     Args:
-        timber: The timber to mark on
+        timber: The timber to measure on
 
     Returns:
         Point at the center of the bottom cross-section
@@ -511,10 +511,10 @@ def measure_bottom_center_position(timber: PerfectTimberWithin) -> Point:
 
 def measure_top_center_position(timber: PerfectTimberWithin) -> Point:
     """
-    Mark the position of the center of the top cross-section of the timber.
+    Measure the position of the center of the top cross-section of the timber.
 
     Args:
-        timber: The timber to mark on
+        timber: The timber to measure on
 
     Returns:
         Point at the center of the top cross-section
@@ -524,13 +524,13 @@ def measure_top_center_position(timber: PerfectTimberWithin) -> Point:
 
 def measure_into_face(distance: Numeric, face: SomeTimberFace, timber: PerfectTimberWithin) -> UnsignedPlane:
     """
-    Mark a distance from a face on a timber.
+    Measure a distance from a face on a timber.
     """
 
     # First pick any point on the face
     point_on_face = get_point_on_face_global(face, timber)
 
-    # Mark INTO the face
+    # Measure INTO the face
     point_on_plane = point_on_face - timber.get_face_direction_global(face) * distance
 
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
@@ -542,7 +542,7 @@ def measure_into_face(distance: Numeric, face: SomeTimberFace, timber: PerfectTi
 
 def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin, face: SomeTimberFace) -> DistanceFromFace:
     """
-    Measure a feature from a face on a timber.
+    Mark a feature onto a face on a timber.
 
     Returns a DistanceFromFace measurement representing the distance from the face to the feature, measured INTO the timber.
     Positive means the feature is inside the timber (deeper than the face surface).
@@ -590,7 +590,7 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
         plane: the plane to intersect with
         timber: the timber whose edge we're intersecting
         edge: the edge to intersect with (TimberLongEdge or TimberEdge.CENTERLINE)
-        end: the end of the timber to measure from
+        end: the end of the timber to mark from
 
     Returns the distance from timber_end to where the plane intersects the timber's long edge.
     Positive distance means the intersection is in the direction away from the end (into the timber).
@@ -641,10 +641,10 @@ def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectT
     for finding where two centerlines come closest to each other (even if they don't intersect).
 
     Args:
-        line: The line feature to measure from
-        timber: The timber whose edge we're measuring to
-        edge: The edge to measure to (TimberLongEdge or TimberEdge.CENTERLINE)
-        end: Which end of the timber to measure from
+        line: The line feature to mark from
+        timber: The timber whose edge we're marking to
+        edge: The edge to mark to (TimberLongEdge or TimberEdge.CENTERLINE)
+        end: Which end of the timber to mark from
 
     Returns:
         The signed distance along the timber's length direction from the specified end to the closest point.
