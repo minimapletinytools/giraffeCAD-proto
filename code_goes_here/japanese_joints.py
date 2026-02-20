@@ -1009,16 +1009,14 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     B_finger_indices = [i for i in range(num_laps) if i % 2 == 1]
     
     # Helper function to convert finger from global to local and apply crop
-    def convert_finger_to_local(finger_global: RectangularPrism, is_timber_a_finger: bool) -> CutCSG:
+    def convert_finger_to_local(finger_global: RectangularPrism, target_timber: Timber, is_timber_a_finger: bool) -> CutCSG:
         """Convert finger from global to local coordinates and apply crop using opposing timber's inner face."""
-        # Determine target timber from finger type
+        # Determine opposing timber from finger type
         if is_timber_a_finger:
-            target_timber = timberA
             # Crop A fingers using timberB's inner face
             opposing_timber = timberB
             opposing_inner_face_enum = timberB_inner_face_enum
         else:
-            target_timber = timberB
             # Crop B fingers using timberA's inner face
             opposing_timber = timberA
             opposing_inner_face_enum = timberA_inner_face_enum
@@ -1054,28 +1052,28 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     A_fingers_in_timberA = []
     for idx in A_finger_indices:
         finger_global, is_timber_a_finger = all_fingers_global[idx]
-        finger_local = convert_finger_to_local(finger_global, is_timber_a_finger)
+        finger_local = convert_finger_to_local(finger_global, timberA, is_timber_a_finger)
         A_fingers_in_timberA.append(finger_local)
     
     # B fingers in timberA local space (for adding voids to timberA)
     B_fingers_in_timberA = []
     for idx in B_finger_indices:
         finger_global, is_timber_a_finger = all_fingers_global[idx]
-        finger_local = convert_finger_to_local(finger_global, is_timber_a_finger)
+        finger_local = convert_finger_to_local(finger_global, timberA, is_timber_a_finger)
         B_fingers_in_timberA.append(finger_local)
     
     # A fingers in timberB local space (for adding voids to timberB)
     A_fingers_in_timberB = []
     for idx in A_finger_indices:
         finger_global, is_timber_a_finger = all_fingers_global[idx]
-        finger_local = convert_finger_to_local(finger_global, is_timber_a_finger)
+        finger_local = convert_finger_to_local(finger_global, timberB, is_timber_a_finger)
         A_fingers_in_timberB.append(finger_local)
     
     # B fingers in timberB local space (for subtracting from timberB)
     B_fingers_in_timberB = []
     for idx in B_finger_indices:
         finger_global, is_timber_a_finger = all_fingers_global[idx]
-        finger_local = convert_finger_to_local(finger_global, is_timber_a_finger)
+        finger_local = convert_finger_to_local(finger_global, timberB, is_timber_a_finger)
         B_fingers_in_timberB.append(finger_local)
     
     # ========================================================================
