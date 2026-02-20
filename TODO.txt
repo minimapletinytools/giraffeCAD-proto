@@ -214,7 +214,7 @@ DONE-do degrees() function and radians() function
 
 
 
-
+-enable and fix the no python floats check or delete it alltogether
 -joint reorg
   -reorg joints by joint type 
   -basic joints has simplified versions of all joints instead

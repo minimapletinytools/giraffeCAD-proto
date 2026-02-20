@@ -901,7 +901,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Move to the inner shoulder edge along the diagonal direction
     inner_edge_offset = timberA.get_size_in_face_normal_axis(timberA_inner_face_enum) / Rational(2)
     diagonal_offset = inner_edge_offset * diagonal_scale_factor
-    marking_position = marking_position_on_centerline + diagonal_direction * diagonal_offset
+    marking_position = marking_position_on_centerline - diagonal_direction * diagonal_offset
     
     # Create orientation for the marking transform
     # Z-axis points toward the end (along timber length direction or opposite)
@@ -1085,6 +1085,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     
     keys_in_timberA = []
     keys_in_timberB = []
+    key_wedges = []
     
     num_keys = num_laps - 1
     for i in range(num_keys):
@@ -1126,6 +1127,19 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         key_transform_local_B = key_transform_global.to_local_transform(timberB.transform)
         key_prism_in_timberB = replace(key_prism_global, transform=key_transform_local_B)
         keys_in_timberB.append(key_prism_in_timberB)
+        
+        # Create Wedge accessory matching the key prism
+        # The wedge has the same transform as the key prism (in global space)
+        # base_width and tip_width are the same (key_width) since it's a rectangular shape
+        # height is key_thickness, length is 2 * key_depth (from -key_depth to +key_depth)
+        key_wedge = Wedge(
+            transform=key_transform_global,
+            base_width=key_width,
+            tip_width=key_width,  # Same as base_width for rectangular shape
+            height=key_thickness,
+            length=key_depth
+        )
+        key_wedges.append(key_wedge)
         
     # ========================================================================
     # Step 8: Create rough end cuts and miter half plane cuts
@@ -1264,7 +1278,10 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     cut_timberB = CutTimber(timberB, cuts=[cutB])
 
 
-    # TODO generate key accessories...
+    # Create jointAccessories dict with key wedges
+    joint_accessories = {}
+    for i, wedge in enumerate(key_wedges):
+        joint_accessories[f"key_{i}"] = wedge
     
     # Return Joint
     return Joint(
@@ -1272,7 +1289,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
             timberA.ticket.name: cut_timberA,
             timberB.ticket.name: cut_timberB
         },
-        jointAccessories={}
+        jointAccessories=joint_accessories
     )
 
 
