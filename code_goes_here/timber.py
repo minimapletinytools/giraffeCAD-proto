@@ -1585,7 +1585,6 @@ class WedgeShape:
     length: Numeric  # From bottom to top of trapezoid in the Z axis
 
 
-# TODO add a get_local_csg function that returns the CSG of the wedge at the origin 
 @dataclass(frozen=True)
 class Wedge(JointAccessory):
     r"""
@@ -1625,42 +1624,52 @@ class Wedge(JointAccessory):
         Generate CSG representation of the wedge in local space.
         
         The wedge is created using a polyline extrusion (ConvexPolygonExtrusion)
-        with a rectangular cross-section. The base is at z=0 and extends to z=length.
-        The wedge tapers from base_width to tip_width in the X direction,
-        and has a trapezoidal profile in the YZ plane.
+        with a trapezoidal profile in the XZ plane. The base is at z=0 with base_width,
+        and the tip is at z=length with tip_width. The extrusion extends along Y
+        from -height/2 to height/2.
         
-        The origin is at the center of the base_width x height bottom surface:
-        - x = 0 (center of base_width)
-        - y = 0 (bottom of height)
-        - z = 0 (bottom of length)
+        The polygon profile is a trapezoid in the XZ plane:
+        - Base at z=0 with width = base_width (centered at x=0)
+        - Tip at z=length with width = tip_width (centered at x=0)
+        
+        The transform is rotated so that +Y goes to +Z (rotation around X axis by +90°).
         
         Returns:
             CutCSG: The CSG representation of the wedge
         """
-        # Create a rectangle polygon for the base cross-section
-        # The rectangle is in the XY plane, with origin at the center of the bottom edge
-        # Points are ordered counter-clockwise when viewed from +Z
-        half_base_width = self.base_width / Rational(2)
+        from sympy import pi
         
-        rectangle_points = [
-            create_v2(-half_base_width, Integer(0)),      # Bottom-left
-            create_v2(half_base_width, Integer(0)),       # Bottom-right
-            create_v2(half_base_width, self.height),      # Top-right
-            create_v2(-half_base_width, self.height)       # Top-left
+        # Create trapezoid polygon in XZ plane
+        # Points are (x, z) where x is X coordinate and y (2D) is Z coordinate
+        # Ordered counter-clockwise when viewed from +Y
+        half_base_width = self.base_width / Rational(2)
+        half_tip_width = self.tip_width / Rational(2)
+        
+        trapezoid_points = [
+            create_v2(-half_base_width, Integer(0)),      # Bottom-left (base)
+            create_v2(half_base_width, Integer(0)),       # Bottom-right (base)
+            create_v2(half_tip_width, self.length),       # Top-right (tip)
+            create_v2(-half_tip_width, self.length)        # Top-left (tip)
         ]
         
-        # The transform places the origin at (0, 0, 0) - center of base bottom surface
-        # The extrusion extends from z=0 to z=length
+        # Rotate transform so that +Y goes to +Z
+        # This rotates around X axis by +90° (pi/2 radians)
+        x_axis = create_v3(Integer(1), Integer(0), Integer(0))
+        rotation_orientation = Orientation.from_axis_angle(x_axis, radians(pi / Integer(2)))
+        
         wedge_transform = Transform(
             position=create_v3(Integer(0), Integer(0), Integer(0)),
-            orientation=Orientation.identity()
+            orientation=rotation_orientation
         )
         
+        # Extrusion extends along Y from -height/2 to height/2
+        half_height = self.height / Rational(2)
+        
         return ConvexPolygonExtrusion(
-            points=rectangle_points,
+            points=trapezoid_points,
             transform=wedge_transform,
-            start_distance=Integer(0),
-            end_distance=self.length
+            start_distance=-half_height,
+            end_distance=half_height
         )
 
 
