@@ -86,10 +86,10 @@ fi
 echo "🎯 Next steps:"
 if command -v uv &> /dev/null; then
     echo "   1. Run tests:"
-    echo "      make test         # or: uv run python -m pytest code_goes_here/ -v"
+    echo "      make test         # or: uv run python -m pytest tests/ -v"
     echo ""
     echo "   2. Run tests with coverage:"
-    echo "      make test-cov     # or: uv run python -m pytest code_goes_here/ --cov=code_goes_here"
+    echo "      make test-cov     # or: uv run python -m pytest tests/ --cov=code_goes_here"
     echo ""
     echo "   3. Run type checking:"
     echo "      make typecheck    # or: uv run ty check"

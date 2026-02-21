@@ -10,7 +10,7 @@ from code_goes_here.rule import Orientation, Transform, create_v3, radians
 from code_goes_here.cutcsg import (
     HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
-from .testing_shavings import assert_is_valid_rotation_matrix
+from tests.testing_shavings import assert_is_valid_rotation_matrix
 import random
 
 

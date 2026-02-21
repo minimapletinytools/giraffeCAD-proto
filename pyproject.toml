@@ -6,7 +6,7 @@ requires-python = ">=3.10"
 
 [tool.pytest.ini_options]
 # Pytest configuration
-testpaths = ["code_goes_here"]
+testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"

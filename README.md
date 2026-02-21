@@ -21,7 +21,7 @@ cd giraffeCAD-proto
 source venv/bin/activate
 
 # Run tests
-python3 -m pytest code_goes_here/ -v
+python3 -m pytest tests/ -v
 ```
 
 ## Development Setup
@@ -96,13 +96,16 @@ To run the test suite manually:
 source venv/bin/activate
 
 # Run all tests
-python3 -m pytest code_goes_here/ -v
+python3 -m pytest tests/ -v
+
+# Or use the test runner script
+python3 run_tests.py
 
 # Or run specific test files
-python3 -m pytest code_goes_here/test_rule.py -v
+python3 -m pytest tests/test_rule.py -v
 
 # Run with coverage
-python3 -m pytest code_goes_here/ --cov=code_goes_here --cov-report=html
+python3 -m pytest tests/ --cov=code_goes_here --cov-report=html
 ```
 
 Tests flagged with # 🐪 have been hand reviewed, the rest are AI slop
@@ -229,7 +232,7 @@ pip install pytest-watch
 source venv/bin/activate 
 
 # Start automatic testing - watches all Python files and runs tests on changes
-ptw code_goes_here/
+ptw tests/
 ```
 
 **How it works:**
