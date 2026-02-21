@@ -1221,7 +1221,7 @@ class TestFrameBoundingBox:
     
     def test_x_shaped_timbers_with_butt_joint(self):
         """Test bounding box for two timbers in a crossing configuration with a butt joint cut."""
-        from code_goes_here.basic_joints import cut_basic_butt_joint_on_face_aligned_timbers
+        from code_goes_here.plain_joints import cut_plain_butt_joint_on_face_aligned_timbers
         
         # Create two timbers in a crossing configuration that meet near the origin
         # Timber A: receiving timber (uncut), runs perpendicular to timberB
@@ -1246,7 +1246,7 @@ class TestFrameBoundingBox:
         )
         
         # Create a butt joint where timberB's TOP end is cut to butt against timberA
-        joint = cut_basic_butt_joint_on_face_aligned_timbers(
+        joint = cut_plain_butt_joint_on_face_aligned_timbers(
             receiving_timber=timberA,
             butt_timber=timberB,
             butt_end=TimberReferenceEnd.TOP

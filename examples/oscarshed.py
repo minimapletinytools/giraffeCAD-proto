@@ -116,7 +116,7 @@ def create_oscarshed(center: Optional[V3] = None):
     # Corner 0 (front-left): Front mudsill BOTTOM meets Left mudsill TOP
     # Front mudsill goes from corner 0 to corner 1 (BOTTOM=corner 0, TOP=corner 1)
     # Left mudsill goes from corner 3 to corner 0 (BOTTOM=corner 3, TOP=corner 0)
-    joint_corner_0 = cut_basic_miter_joint(
+    joint_corner_0 = cut_plain_miter_joint(
         mudsill_front, TimberReferenceEnd.BOTTOM,
         mudsill_left, TimberReferenceEnd.TOP
     )
@@ -124,7 +124,7 @@ def create_oscarshed(center: Optional[V3] = None):
     # Corner 1 (front-right): Front mudsill TOP meets Right mudsill BOTTOM
     # Front mudsill goes from corner 0 to corner 1 (BOTTOM=corner 0, TOP=corner 1)
     # Right mudsill goes from corner 1 to corner 2 (BOTTOM=corner 1, TOP=corner 2)
-    joint_corner_1 = cut_basic_miter_joint(
+    joint_corner_1 = cut_plain_miter_joint(
         mudsill_front, TimberReferenceEnd.TOP,
         mudsill_right, TimberReferenceEnd.BOTTOM
     )
@@ -132,7 +132,7 @@ def create_oscarshed(center: Optional[V3] = None):
     # Corner 2 (back-right): Right mudsill TOP meets Back mudsill BOTTOM
     # Right mudsill goes from corner 1 to corner 2 (BOTTOM=corner 1, TOP=corner 2)
     # Back mudsill goes from corner 2 to corner 3 (BOTTOM=corner 2, TOP=corner 3)
-    joint_corner_2 = cut_basic_miter_joint(
+    joint_corner_2 = cut_plain_miter_joint(
         mudsill_right, TimberReferenceEnd.TOP,
         mudsill_back, TimberReferenceEnd.BOTTOM
     )
@@ -140,7 +140,7 @@ def create_oscarshed(center: Optional[V3] = None):
     # Corner 3 (back-left): Back mudsill TOP meets Left mudsill BOTTOM
     # Back mudsill goes from corner 2 to corner 3 (BOTTOM=corner 2, TOP=corner 3)
     # Left mudsill goes from corner 3 to corner 0 (BOTTOM=corner 3, TOP=corner 0)
-    joint_corner_3 = cut_basic_miter_joint(
+    joint_corner_3 = cut_plain_miter_joint(
         mudsill_back, TimberReferenceEnd.TOP,
         mudsill_left, TimberReferenceEnd.BOTTOM
     )
@@ -740,13 +740,13 @@ def create_oscarshed(center: Optional[V3] = None):
     # The side girts are the housing timber (receiving the housed timber)
     # The back top plate is the housed timber (fitting into the pockets)
     
-    joint_back_beam_left_housing = cut_basic_house_joint_DEPRECATED(
+    joint_back_beam_left_housing = cut_plain_house_joint_DEPRECATED(
         housing_timber=side_girt_left,
         housed_timber=top_plate_back,
         extend_housed_timber_to_infinity=False
     )
     
-    joint_back_beam_right_housing = cut_basic_house_joint_DEPRECATED(
+    joint_back_beam_right_housing = cut_plain_house_joint_DEPRECATED(
         housing_timber=side_girt_right,
         housed_timber=top_plate_back,
         extend_housed_timber_to_infinity=False
@@ -943,14 +943,14 @@ def create_oscarshed(center: Optional[V3] = None):
     for i, rafter in enumerate(rafters, start=1):
         # TODO switch to not DEPRECATED one
         # Create house joint with back top plate
-        joint_back = cut_basic_house_joint_DEPRECATED(
+        joint_back = cut_plain_house_joint_DEPRECATED(
             housing_timber=top_plate_back,
             housed_timber=rafter,
             extend_housed_timber_to_infinity=False
         )
         
         # Create house joint with front top plate
-        joint_front = cut_basic_house_joint_DEPRECATED(
+        joint_front = cut_plain_house_joint_DEPRECATED(
             housing_timber=top_plate_front,
             housed_timber=rafter,
             extend_housed_timber_to_infinity=False

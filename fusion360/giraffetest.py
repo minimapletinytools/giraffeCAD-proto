@@ -31,7 +31,7 @@ if parent_dir not in sys.path:
 # ============================================================================
 # CONFIGURATION: Change this to render different examples
 # ============================================================================
-#EXAMPLE_TO_RENDER = 'basic_joints' 
+#EXAMPLE_TO_RENDER = 'plain_joints' 
 #EXAMPLE_TO_RENDER = 'mortise_and_tenon'
 #EXAMPLE_TO_RENDER = 'gooseneck'
 EXAMPLE_TO_RENDER = 'oscar_shed'
@@ -71,7 +71,7 @@ def create_anthology_pattern_book():
         PatternBook: A single PatternBook with all patterns from all examples
     """
     from code_goes_here.patternbook import PatternBook
-    from examples.reference.basic_joints_example import create_basic_joints_patternbook
+    from examples.reference.basic_joints_example import create_plain_joints_patternbook
     from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
     from examples.construction_examples import create_construction_patternbook
     from examples.horsey_example import create_horsey_patternbook
@@ -83,7 +83,7 @@ def create_anthology_pattern_book():
     
     # Create all individual pattern books
     books = [
-        create_basic_joints_patternbook(),
+        create_plain_joints_patternbook(),
         create_mortise_and_tenon_patternbook(),
         create_construction_patternbook(),
         create_horsey_patternbook(),
@@ -142,7 +142,7 @@ def reload_all_modules():
         'code_goes_here.rendering_utils',
         'code_goes_here.joint_shavings',
         'code_goes_here.measuring',
-        'code_goes_here.basic_joints',
+        'code_goes_here.plain_joints',
         'code_goes_here.mortise_and_tenon_joint',
         'code_goes_here.japanese_joints',
         'code_goes_here.patternbook',
@@ -182,19 +182,19 @@ def reload_all_modules():
     print()
 
 
-def render_basic_joints():
-    """Render all basic joint examples using anthology PatternBook."""
+def render_plain_joints():
+    """Render all plain joint examples using anthology PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
     from code_goes_here.rule import m
     
     print("="*60)
-    print("GiraffeCAD Fusion 360 - All Basic Joints")
+    print("GiraffeCAD Fusion 360 - All Plain Joints")
     print("="*60)
-    app.log("🦒 GIRAFFETEST: BASIC JOINTS 🦒")
+    app.log("🦒 GIRAFFETEST: PLAIN JOINTS 🦒")
     
     # Use anthology pattern book
-    print("\nRaising all patterns in 'basic_joints' group from anthology...")
-    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern_group("basic_joints", separation_distance=m(2))
+    print("\nRaising all patterns in 'plain_joints' group from anthology...")
+    frame = ANTHOLOGY_PATTERN_BOOK.raise_pattern_group("plain_joints", separation_distance=m(2))
     
     print(f"Total timbers created: {len(frame.cut_timbers)}")
     
@@ -464,7 +464,7 @@ def run(_context: str):
         
         # Dispatch to the selected example
         examples = {
-            'basic_joints': render_basic_joints,
+            'plain_joints': render_plain_joints,
             'mortise_and_tenon': render_mortise_and_tenon,
             'gooseneck': render_gooseneck,
             'oscar_shed': render_oscar_shed,

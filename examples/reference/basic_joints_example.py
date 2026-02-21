@@ -74,7 +74,7 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     )
     
     # Create miter joint at the ends that meet at position
-    joint = cut_basic_miter_joint(timberA, TimberReferenceEnd.TOP, timberB, TimberReferenceEnd.TOP)
+    joint = cut_plain_miter_joint(timberA, TimberReferenceEnd.TOP, timberB, TimberReferenceEnd.TOP)
     
     return list(joint.cut_timbers.values())
 
@@ -99,7 +99,7 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
     timberA = replace(arrangement.timber2, ticket=Ticket("MiterFaceAligned_TimberA"))  # +X direction
     timberB = replace(arrangement.timber1, ticket=Ticket("MiterFaceAligned_TimberB"))  # +Y direction
     
-    joint = cut_basic_miter_joint_on_face_aligned_timbers(
+    joint = cut_plain_miter_joint_on_face_aligned_timbers(
         timberA, TimberReferenceEnd.BOTTOM, 
         timberB, TimberReferenceEnd.BOTTOM
     )
@@ -127,7 +127,7 @@ def make_butt_joint_example(position: V3) -> list[CutTimber]:
     receiving_timber = replace(arrangement.receiving_timber, ticket=Ticket("ButtJoint_Receiving"))
     butt_timber = replace(arrangement.butt_timber, ticket=Ticket("ButtJoint_Butt"))
     
-    joint = cut_basic_butt_joint_on_face_aligned_timbers(
+    joint = cut_plain_butt_joint_on_face_aligned_timbers(
         receiving_timber, 
         butt_timber, 
         arrangement.butt_timber_end
@@ -156,7 +156,7 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
     timberA = replace(arrangement.timber1, ticket=Ticket("SpliceJoint_TimberA"))
     timberB = replace(arrangement.timber2, ticket=Ticket("SpliceJoint_TimberB"))
     
-    joint = cut_basic_butt_splice_joint_on_aligned_timbers(
+    joint = cut_plain_butt_splice_joint_on_aligned_timbers(
         timberA, arrangement.timber1_end,
         timberB, arrangement.timber2_end,
         splice_point=position  # Meet at the specified position
@@ -206,7 +206,7 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
     )
     
     # Create house joint
-    joint = cut_basic_house_joint(housing_timber, housed_timber)
+    joint = cut_plain_house_joint(housing_timber, housed_timber)
     
     return list(joint.cut_timbers.values())
 
@@ -252,7 +252,7 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
     # Create cross lap joint with cut_ratio=0.5 (each timber cut halfway)
     # The function will auto-select FRONT face of timberA (+Z) and BACK face of timberB (-Z)
     # which oppose each other (dot product = -1 < 0)
-    joint = cut_basic_cross_lap_joint(
+    joint = cut_plain_cross_lap_joint(
         timberA, timberB,
         cut_ratio=Rational(1, 2),
         # these are coplanar timbers so it can not infer which side to cut
@@ -302,7 +302,7 @@ def make_splice_lap_joint_example(position: V3) -> list[CutTimber]:
     # Create the splice lap joint
     # TimberA has material removed from BOTTOM face
     # TimberB has material removed from TOP face (opposite)
-    joint = cut_basic_splice_lap_joint_on_aligned_timbers(
+    joint = cut_plain_splice_lap_joint_on_aligned_timbers(
         top_lap_timber=timberA,
         top_lap_timber_end=TimberReferenceEnd.TOP,
         bottom_lap_timber=timberB,
@@ -316,36 +316,36 @@ def make_splice_lap_joint_example(position: V3) -> list[CutTimber]:
     return list(joint.cut_timbers.values())
 
 
-def create_basic_joints_patternbook() -> PatternBook:
+def create_plain_joints_patternbook() -> PatternBook:
     """
-    Create a PatternBook with all basic joint patterns.
+    Create a PatternBook with all plain joint patterns.
     
-    Each pattern has groups: ["basic_joints", "{joint_type}"]
-    For example: ["basic_joints", "miter"] or ["basic_joints", "butt"]
+    Each pattern has groups: ["plain_joints", "{joint_type}"]
+    For example: ["plain_joints", "miter"] or ["plain_joints", "butt"]
     
     Returns:
-        PatternBook: PatternBook containing all basic joint patterns
+        PatternBook: PatternBook containing all plain joint patterns
     """
     patterns = [
-        (PatternMetadata("miter_joint", ["basic_joints", "miter"], "frame"),
+        (PatternMetadata("miter_joint", ["plain_joints", "miter"], "frame"),
          lambda center: Frame(cut_timbers=make_miter_joint_example(center), name="Miter Joint (67°)")),
         
-        (PatternMetadata("miter_joint_face_aligned", ["basic_joints", "miter"], "frame"),
+        (PatternMetadata("miter_joint_face_aligned", ["plain_joints", "miter"], "frame"),
          lambda center: Frame(cut_timbers=make_miter_joint_face_aligned_example(center), name="Miter Joint (Face Aligned)")),
         
-        (PatternMetadata("butt_joint", ["basic_joints", "butt"], "frame"),
+        (PatternMetadata("butt_joint", ["plain_joints", "butt"], "frame"),
          lambda center: Frame(cut_timbers=make_butt_joint_example(center), name="Butt Joint")),
         
-        (PatternMetadata("splice_joint", ["basic_joints", "splice"], "frame"),
+        (PatternMetadata("splice_joint", ["plain_joints", "splice"], "frame"),
          lambda center: Frame(cut_timbers=make_splice_joint_example(center), name="Splice Joint")),
         
-        (PatternMetadata("splice_lap_joint", ["basic_joints", "splice_lap"], "frame"),
+        (PatternMetadata("splice_lap_joint", ["plain_joints", "splice_lap"], "frame"),
          lambda center: Frame(cut_timbers=make_splice_lap_joint_example(center), name="Splice Lap Joint")),
         
-        (PatternMetadata("house_joint", ["basic_joints", "house"], "frame"),
+        (PatternMetadata("house_joint", ["plain_joints", "house"], "frame"),
          lambda center: Frame(cut_timbers=make_house_joint_example(center), name="House Joint")),
         
-        (PatternMetadata("cross_lap_joint", ["basic_joints", "cross_lap"], "frame"),
+        (PatternMetadata("cross_lap_joint", ["plain_joints", "cross_lap"], "frame"),
          lambda center: Frame(cut_timbers=make_cross_lap_joint_example(center), name="Cross Lap Joint")),
     ]
     
@@ -356,15 +356,15 @@ def create_all_joint_examples() -> Union[Frame, List[CutCSG]]:
     """
     Create joint examples with automatic spacing starting from the origin.
     
-    This now uses the PatternBook to raise all patterns in the "basic_joints" group.
+    This now uses the PatternBook to raise all patterns in the "plain_joints" group.
     
     Returns:
         Frame or List[CutCSG]: Frame object containing all cut timbers for the enabled joints, or list of CSG objects
     """
-    book = create_basic_joints_patternbook()
+    book = create_plain_joints_patternbook()
     
-    # Raise all patterns in the "basic_joints" group with 2m spacing
-    frame = book.raise_pattern_group("basic_joints", separation_distance=Rational(2))
+    # Raise all patterns in the "plain_joints" group with 2m spacing
+    frame = book.raise_pattern_group("plain_joints", separation_distance=Rational(2))
     
     return frame
 

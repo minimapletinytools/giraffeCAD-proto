@@ -103,7 +103,7 @@ You can also test examples directly:
 ```bash
 # Test Basic Joints
 cd ../examples/reference
-python3 basic_joints_example.py
+python3 plain_joints_example.py
 
 # Test Oscar's Shed
 cd ../examples
@@ -145,11 +145,11 @@ fusion360/
     │   ├── cutcsg.py (CSG operations)
     │   ├── timber.py (timber class)
     │   ├── construction.py (timber helpers)
-    │   └── basic_joints.py (joint functions)
+    │   └── plain_joints.py (joint functions)
     └── ../examples/
         ├── sawhorse_example.py
         ├── oscarshed.py
-        └── reference/basic_joints_example.py
+        └── reference/plain_joints_example.py
 ```
 
 ## 🔧 Troubleshooting
