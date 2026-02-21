@@ -349,15 +349,10 @@ class TestWedge:
         
         csg = wedge.render_csg_local()
         
-        # Should return a RectangularPrism (simplified bounding box for now)
-        from code_goes_here.cutcsg import RectangularPrism
-        assert isinstance(csg, RectangularPrism)
+        # Should return a ConvexPolygonExtrusion 
+        from code_goes_here.cutcsg import ConvexPolygonExtrusion
+        assert isinstance(csg, ConvexPolygonExtrusion)
         
-        # Verify dimensions match the base dimensions
-        assert csg.size[0] == Rational(5)  # base_width
-        assert csg.size[1] == Rational(2)  # height
-        assert csg.start_distance == 0
-        assert csg.end_distance == Rational(10)  # length
 
 
 class TestCreatePegGoingIntoFace:
