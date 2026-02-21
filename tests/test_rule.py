@@ -20,7 +20,7 @@ from code_goes_here.rule import (
     radians
 )
 import random
-from .testing_shavings import generate_random_orientation, assert_is_valid_rotation_matrix
+from tests.testing_shavings import generate_random_orientation, assert_is_valid_rotation_matrix
 
 
 class TestOrientation:

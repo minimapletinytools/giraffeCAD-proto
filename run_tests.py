@@ -16,7 +16,9 @@ def run_tests(args=None):
         args = []
     
     # Base pytest command
-    cmd = ['python', '-m', 'pytest']
+    import shutil
+    python_cmd = shutil.which('python3') or shutil.which('python') or 'python3'
+    cmd = [python_cmd, '-m', 'pytest']
     
     # Add custom arguments
     cmd.extend(args)

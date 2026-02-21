@@ -18,15 +18,15 @@ setup:
 
 test:
 	@echo "Running tests..."
-	@uv run python -m pytest code_goes_here/
+	@uv run python -m pytest tests/
 
 test-verbose:
 	@echo "Running tests (verbose)..."
-	@uv run python -m pytest code_goes_here/ -v
+	@uv run python -m pytest tests/ -v
 
 test-cov:
 	@echo "Running tests with coverage..."
-	@uv run python -m pytest code_goes_here/ --cov=code_goes_here --cov-report=html
+	@uv run python -m pytest tests/ --cov=code_goes_here --cov-report=html
 	@echo ""
 	@echo "✅ Coverage report generated in htmlcov/index.html"
 

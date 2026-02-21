@@ -4,16 +4,16 @@ Tests for rendering utilities shared across all rendering backends.
 
 import pytest
 from sympy import Matrix, Rational, Integer
-from .timber import timber_from_directions, create_v2, create_v3, CutTimber
-from .rule import Orientation
-from .rendering_utils import (
+from code_goes_here.timber import timber_from_directions, create_v2, create_v3, CutTimber
+from code_goes_here.rule import Orientation
+from code_goes_here.rendering_utils import (
     sympy_to_float,
     matrix_to_floats,
     extract_rotation_matrix_columns,
     calculate_timber_corners,
     calculate_structure_extents
 )
-from .testing_shavings import create_standard_vertical_timber, create_standard_horizontal_timber
+from tests.testing_shavings import create_standard_vertical_timber, create_standard_horizontal_timber
 
 
 def test_sympy_to_float():

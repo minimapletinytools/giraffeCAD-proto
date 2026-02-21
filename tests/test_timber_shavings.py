@@ -6,7 +6,7 @@ import pytest
 from code_goes_here.timber_shavings import *
 from code_goes_here.timber import *
 from code_goes_here.rule import create_v3, create_v2, radians
-from code_goes_here.testing_shavings import create_standard_vertical_timber
+from tests.testing_shavings import create_standard_vertical_timber
 from sympy import Rational
 
 
@@ -257,7 +257,7 @@ class TestPeg:
         csg = peg.render_csg_local()
         
         # Should return a RectangularPrism
-        from .cutcsg import RectangularPrism
+        from code_goes_here.cutcsg import RectangularPrism
         assert isinstance(csg, RectangularPrism)
         
         # Verify dimensions
@@ -279,7 +279,7 @@ class TestPeg:
         csg = peg.render_csg_local()
         
         # Should return a Cylinder
-        from .cutcsg import Cylinder
+        from code_goes_here.cutcsg import Cylinder
         assert isinstance(csg, Cylinder)
         
         # Verify dimensions
@@ -350,7 +350,7 @@ class TestWedge:
         csg = wedge.render_csg_local()
         
         # Should return a RectangularPrism (simplified bounding box for now)
-        from .cutcsg import RectangularPrism
+        from code_goes_here.cutcsg import RectangularPrism
         assert isinstance(csg, RectangularPrism)
         
         # Verify dimensions match the base dimensions
