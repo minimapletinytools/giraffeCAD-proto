@@ -203,10 +203,12 @@ DONE-enable and fix the no python floats check or delete it alltogether
     -maybe have an add brace function?
   -neither perpendicular nor face aligned
 
-
 -joint reorg
+  DONE-basic joints has simplified versions of all joints instead
   -reorg joints by joint type 
-  -basic joints has simplified versions of all joints instead
+  -create basic_joints for simplified verison of alle xsiting joints
+    -finish mortise and tenon basic jonit
+    -create patternbook for basic jonits
   -cleanup joint examples
     -celaup miter joint to use your new construction function thing
     -change rest of joint examples to use standard joint ctor function
@@ -240,8 +242,6 @@ DONE-make a set of canonical joint configurations for each joint type to use ine
 -make examples of how to use measure/mark to set parameters in cutting functions
 DONE/IGNORE-create all_joints.py 
   -exports all joints
--create basic_joints for simplified verison of alle xsiting joints
-  -pass in sensible default parameters for all joints
 -examplify 
   DONE-create some map of example name to example function map so you can dynamiaclly get to all examples
   -would be cool do deep link by into functions/docs in the future...

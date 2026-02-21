@@ -5,7 +5,7 @@ Example usage of mortise and tenon joint functions
 from sympy import Matrix, Rational
 from code_goes_here.rule import inches, Transform
 from code_goes_here.timber import (
-    Timber, TimberReferenceEnd, TimberFace, TimberLongFace, Peg,
+    Timber, TimberReferenceEnd, TimberFace, TimberLongFace, Peg, Wedge,
     PegShape, timber_from_directions,
     create_v3, V2, CutTimber, Frame
 )
@@ -13,7 +13,7 @@ from code_goes_here.joints.mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
     SimplePegParameters
 )
-from code_goes_here.construction import create_axis_aligned_timber
+from code_goes_here.construction import create_axis_aligned_timber, create_canonical_brace_joint_timbers
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 
 
@@ -371,6 +371,60 @@ def example_mortise_and_tenon_with_pegs(position=None):
     return joint
 
 
+def example_brace_joint(position=None):
+    """
+    Create a brace joint with mortise and tenon connections.
+    
+    Configuration:
+    - Creates a canonical brace joint arrangement (two 90-degree corner timbers + brace)
+    - The brace timber connects the midpoints of the two corner timbers
+    - Mortise and tenon joints connect the brace to both corner timbers
+    - The two corner timbers are NOT jointed together
+    
+    Args:
+        position: Optional offset position (V3) to translate the joint
+    """
+    if position is None:
+        position = create_v3(0, 0, 0)
+    
+    # Create the brace joint timber arrangement
+    brace_arrangement = create_canonical_brace_joint_timbers(position)
+    timber1 = brace_arrangement.timber1
+    timber2 = brace_arrangement.timber2
+    brace_timber = brace_arrangement.brace_timber
+    
+    # Define tenon dimensions (smaller than full timber size)
+    tenon_size = Matrix([inches(2), inches(2)])  # 2" x 2" tenon
+    tenon_length = inches(2)  # 2" long tenon
+    mortise_depth = inches(3)  # 3" deep mortise
+    
+    # Create mortise and tenon joint between brace (tenon) and timber1 (mortise)
+    # The brace connects to timber1 at its midpoint
+    joint1 = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=brace_timber,
+        mortise_timber=timber1,
+        tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon on the end of brace that connects to timber1
+        tenon_size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth
+    )
+    
+    # Create mortise and tenon joint between brace (tenon) and timber2 (mortise)
+    # The brace connects to timber2 at its midpoint
+    joint2 = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        tenon_timber=brace_timber,
+        mortise_timber=timber2,
+        tenon_end=TimberReferenceEnd.TOP,  # Tenon on the end of brace that connects to timber2
+        tenon_size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth
+    )
+    
+    # Combine both joints into a single Frame
+    # Frame.from_joints will handle merging cuts on timbers that appear in multiple joints
+    return Frame.from_joints([joint1, joint2], name="Brace Joint with Mortise and Tenon")
+
+
 def create_mortise_and_tenon_patternbook() -> PatternBook:
     """
     Create a PatternBook with all mortise and tenon joint patterns.
@@ -420,6 +474,60 @@ def create_mortise_and_tenon_patternbook() -> PatternBook:
         
         return pattern_lambda
     
+    def make_pattern_from_frame(frame_func):
+        """Helper to convert a Frame-returning function to a pattern lambda that handles translation."""
+        def pattern_lambda(center):
+            # Create frame at origin
+            frame = frame_func()
+            
+            # Translate all timbers to center position
+            translated_timbers = []
+            for cut_timber in frame.cut_timbers:
+                new_position = cut_timber.timber.get_bottom_position_global() + center
+                translated_timber = Timber(
+                    ticket=cut_timber.timber.ticket.name,
+                    transform=Transform(position=new_position, orientation=cut_timber.timber.orientation),
+                    size=cut_timber.timber.size,
+                    length=cut_timber.timber.length
+                )
+                translated_timbers.append(CutTimber(timber=translated_timber, cuts=cut_timber.cuts))
+            
+            # Translate accessories
+            translated_accessories = []
+            if frame.accessories:
+                for accessory in frame.accessories:
+                    translated_transform = Transform(
+                        position=accessory.transform.position + center,
+                        orientation=accessory.transform.orientation
+                    )
+                    # Handle different accessory types
+                    if isinstance(accessory, Peg):
+                        translated_accessory = Peg(
+                            transform=translated_transform,
+                            size=accessory.size,
+                            shape=accessory.shape,
+                            forward_length=accessory.forward_length,
+                            stickout_length=accessory.stickout_length
+                        )
+                    elif isinstance(accessory, Wedge):
+                        translated_accessory = Wedge(
+                            transform=translated_transform,
+                            base_width=accessory.base_width,
+                            tip_width=accessory.tip_width,
+                            height=accessory.height,
+                            length=accessory.length,
+                            stickout_length=accessory.stickout_length
+                        )
+                    else:
+                        # For other accessory types, try to preserve as-is with translated transform
+                        # This is a fallback - may need to be extended for new accessory types
+                        translated_accessory = accessory
+                    translated_accessories.append(translated_accessory)
+            
+            return Frame(cut_timbers=translated_timbers, accessories=translated_accessories)
+        
+        return pattern_lambda
+    
     patterns = [
         (PatternMetadata("basic_4x4", ["mortise_tenon", "basic"], "frame"),
          make_pattern_from_joint(example_basic_mortise_and_tenon)),
@@ -438,6 +546,9 @@ def create_mortise_and_tenon_patternbook() -> PatternBook:
         
         (PatternMetadata("with_pegs", ["mortise_tenon", "pegs"], "frame"),
          make_pattern_from_joint(example_mortise_and_tenon_with_pegs)),
+        
+        (PatternMetadata("brace_joint", ["mortise_tenon", "brace"], "frame"),
+         make_pattern_from_frame(example_brace_joint)),
     ]
     
     return PatternBook(patterns=patterns)
