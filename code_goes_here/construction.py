@@ -1190,6 +1190,90 @@ def create_canonical_cross_joint_timbers(lateral_offset: Numeric = Integer(0), p
         timber2=timber2
     )
 
+
+@dataclass(frozen=True)
+class BraceJointTimberArrangement:
+    timber1: Timber
+    timber2: Timber
+    brace_timber: Timber
+    timber1_end: TimberReferenceEnd
+    timber2_end: TimberReferenceEnd
+
+def create_canonical_brace_joint_timbers(position: Optional[V3] = None) -> BraceJointTimberArrangement:
+    """
+    Create a canonical brace joint timber arrangement.
+    All canonical example joints are 4"x5"x4' timbers.
+    
+    Creates a corner joint (two 90-degree timbers) plus a third brace timber
+    that connects the midpoints of the two corner timbers.
+    
+    timber1 points in the +Y direction and has its bottom point at the position.
+    timber2 points in the +X direction and has its bottom point at the position.
+    Both timbers have their RIGHT face pointing in the +Z direction.
+    
+    The brace timber connects the midpoints of timber1 and timber2,
+    running diagonally from timber1's midpoint to timber2's midpoint.
+    The brace timber is aligned in the same plane as the corner timbers
+    (RIGHT face pointing in +Z direction).
+    
+    Args:
+        position: Bottom position where corner timbers meet. Defaults to origin.
+    """
+    from sympy import sqrt
+    
+    if position is None:
+        position = create_v3(Integer(0), Integer(0), Integer(0))
+    
+    # Create the two corner timbers (same as right angle corner joint)
+    corner_arrangement = create_canonical_right_angle_corner_joint_timbers(position)
+    timber1 = corner_arrangement.timber1
+    timber2 = corner_arrangement.timber2
+    
+    # Calculate midpoints of timber1 and timber2
+    # timber1 midpoint: position + (length/2) * (0, 1, 0) = position + (0, length/2, 0)
+    timber1_midpoint = position + create_v3(
+        Integer(0),
+        _CANONICAL_EXAMPLE_TIMBER_LENGTH / Integer(2),
+        Integer(0)
+    )
+    
+    # timber2 midpoint: position + (length/2) * (1, 0, 0) = position + (length/2, 0, 0)
+    timber2_midpoint = position + create_v3(
+        _CANONICAL_EXAMPLE_TIMBER_LENGTH / Integer(2),
+        Integer(0),
+        Integer(0)
+    )
+    
+    # Calculate brace direction (from timber1 midpoint to timber2 midpoint)
+    brace_direction_vector = timber2_midpoint - timber1_midpoint
+    # Normalize the direction
+    brace_length_direction = normalize_vector(brace_direction_vector)
+    
+    # Calculate the length of the brace (distance between midpoints)
+    # Distance = sqrt((length/2)^2 + (length/2)^2) = length / sqrt(2)
+    brace_length = _CANONICAL_EXAMPLE_TIMBER_LENGTH / sqrt(Integer(2))
+    
+    # Create the brace timber
+    # Bottom position is at timber1's midpoint
+    # Length direction points from timber1 midpoint to timber2 midpoint
+    # RIGHT face points in +Z direction (same plane as corner timbers)
+    brace_timber = timber_from_directions(
+        length=brace_length,
+        size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
+        bottom_position=timber1_midpoint,
+        length_direction=brace_length_direction,
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # RIGHT face points in +Z
+        ticket="brace_timber"
+    )
+    
+    return BraceJointTimberArrangement(
+        timber1=timber1,
+        timber2=timber2,
+        brace_timber=brace_timber,
+        timber1_end=corner_arrangement.timber1_end,
+        timber2_end=corner_arrangement.timber2_end
+    )
+
 # =========================================
 # internal helpers
 # =========================================
