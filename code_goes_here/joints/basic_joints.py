@@ -71,7 +71,7 @@ def cut_basic_splice_lap_joint_on_aligned_timbers(
     top_lap_timber_face: TimberFace
 ) -> Joint:
     """Wrapper for cut_plain_splice_lap_joint_on_aligned_timbers."""
-    lap_length = top_lap_timber.get_size_in_direction(top_lap_timber_face)
+    lap_length = top_lap_timber.get_size_in_face_normal_axis(top_lap_timber_face)
     return cut_plain_splice_lap_joint_on_aligned_timbers(
         top_lap_timber,
         top_lap_timber_end,
@@ -97,8 +97,8 @@ def cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers(
 
     # TODO FINISH THESE
     tenon_size = tenon_timber.size
-    tenon_length = tenon_timber.get_size_in_direction(TimberLongFace.FRONT)
-    mortise_depth = mortise_timber.get_size_in_direction(TimberLongFace.FRONT)
+    tenon_length = tenon_timber.get_size_in_face_normal_axis(TimberLongFace.FRONT)
+    mortise_depth = mortise_timber.get_size_in_face_normal_axis(TimberLongFace.FRONT)
 
     tenon_position = create_v3(0, 0, 0)
     peg_parameters = None
@@ -140,7 +140,7 @@ def cut_basic_lapped_gooseneck_joint(
 ) -> Joint:
     """Wrapper for cut_lapped_gooseneck_joint."""
 
-    width = gooseneck_timber.get_size_in_direction(gooseneck_timber_face.rotate_right())
+    width = gooseneck_timber.get_size_in_face_normal_axis(gooseneck_timber_face.rotate_right())
     gooseneck_length = width*Rational(2)
     gooseneck_small_width: width*Rational(1, 4)
     gooseneck_large_width: width*Rational(1, 2)
@@ -170,7 +170,7 @@ def cut_basic_housed_dovetail_butt_joint(
 ) -> Joint:
     """Wrapper for cut_housed_dovetail_butt_joint."""
 
-    width = dovetail_timber.get_size_in_direction(dovetail_timber_face.rotate_right())
+    width = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face.rotate_right())
     dovetail_length = width/Integer(2)
     dovetail_small_width: width*Rational(1, 2)
     dovetail_large_width: width*Rational(2, 3)
