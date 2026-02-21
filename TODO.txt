@@ -195,9 +195,24 @@ DONE-Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shach
   DONE-default thicknesses are wrong
   DONE-add key accessories
   DONE-fix wedge length
+DONE-enable and fix the no python floats check or delete it alltogether
+
+-update morties and tenon to support
+  -perpendicular but not face aligned
+  -not perpendicular but partially face aligned (for braces)
+    -maybe have an add brace function?
+  -neither perpendicular nor face aligned
 
 
-  
+-joint reorg
+  -reorg joints by joint type 
+  -basic joints has simplified versions of all joints instead
+  -cleanup joint examples
+    -celaup miter joint to use your new construction function thing
+    -change rest of joint examples to use standard joint ctor function
+
+
+
 -BIG QUESTION, how to "highlight" a feature...
   -seems like you can flag meshes... but you noly want to flag part of the mesh?
 -consider doing csg feature tree thingy
@@ -209,22 +224,6 @@ DONE-Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shach
 -I think tickets can be done as dictionary... or maybe there are compositoin fo classes?
   -e.g. material ticket, grain direction ticket?
 
-
--update morties and tenon to support
-  -perpendicular but not face aligned
-  -not perpendicular but partially face aligned (for braces)
-    -maybe have an add brace function?
-  -neither perpendicular nor face aligned
-
-
-
--enable and fix the no python floats check or delete it alltogether
--joint reorg
-  -reorg joints by joint type 
-  -basic joints has simplified versions of all joints instead
-  -cleanup joint examples
-    -celaup miter joint to use your new construction function thing
-    -change rest of joint examples to use standard joint ctor function
 
 -add test timber construction thingies on top of the example ones
   -btw you should update your current example so that everything is in the XY plane I think yo uhave soem in the Z plane
@@ -312,12 +311,9 @@ RENAME
       DONE-add offset mortise peg param (so that it tightens the joint up)
     DONE-dovetail lap joint (for the floor joists)
   DONE-make shed example (just add joints)
-  -corner joints
+  DONE-corner joints
     -maybe try the fancy  one we used on the shed  Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi)
 
-  -decorative cuts
-    -basically joints with 1 timber
-    -you'll need to add curve CSG D:
 
   -improve examples
     -create series of examples showcasing each feature
@@ -325,7 +321,9 @@ RENAME
     -create test runner for examples so the exmaples are also tests :O
     -agent prompt examples
     -make sawhores example nice (eh, maybe you need to wedged dovetail mortise and tenons... or nuki joints or whatever)
-  -template project
+  -decorative cuts
+    -basically joints with 1 timber
+    -you'll need to add curve CSG D:
   -update docs
     -cleanup README
       -clean up venv/makefile/setup nonsense so its simpler...
@@ -336,12 +334,12 @@ RENAME
       - i think this is how it already is, update the README to explain this
     - move joint section from morenotes into concepts.md and then delete morenotes
 
--M1.25
+-M1.25 (reward: reimburse camera)
   -improve ticket class
   -VIEWER :D
 
 
--M1.5
+-M1.5 (reward: HNT gordon plane :D)
   -add more features to mortise and tenon joint
     -extract out peg creation stuff, it will be useful in other places
       -basically, just figure out the start point and direction of the peg... it will return to you a tuple of prisms to substract from the mortise and tenon timber, and a peg accessory

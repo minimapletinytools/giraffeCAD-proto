@@ -107,7 +107,7 @@ def create_honeycomb_shed():
         # Each mudsill connects to the next one at the shared corner
         # Mudsill i goes from corner i to corner (i+1)%6
         # So at corner (i+1)%6: mudsill i TOP meets mudsill (i+1)%6 BOTTOM
-        joint = cut_basic_miter_joint(
+        joint = cut_plain_miter_joint(
             mudsills[i], TimberReferenceEnd.TOP,
             mudsills[(i + 1) % 6], TimberReferenceEnd.BOTTOM
         )
@@ -219,7 +219,7 @@ def create_honeycomb_shed():
     ring_beam_joints = []
     for i in range(6):
         print(f"  Ring beam miter joint {i}...")
-        joint = cut_basic_miter_joint(
+        joint = cut_plain_miter_joint(
             ring_beams[i], TimberReferenceEnd.TOP,
             ring_beams[(i + 1) % 6], TimberReferenceEnd.BOTTOM
         )

@@ -362,7 +362,7 @@ code_goes_here/
 ├── cutcsg.py        # CSG (Constructive Solid Geometry) operations
 ├── rule.py         # Orientation and rotation utilities
 ├── rendering_utils.py    # Shared rendering utilities (NEW!)
-└── basic_joints.py       # Joint construction functions
+└── plain_joints.py       # Joint construction functions
 
 fusion360/
 └── giraffe_render_fusion360.py   # Fusion 360 renderer

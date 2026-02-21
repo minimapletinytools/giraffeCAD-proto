@@ -57,7 +57,7 @@ Both scripts provide automatic module reloading:
 **Choosing Which Example to Render:**
 - Edit `run_examples.py`
 - Change the `EXAMPLE_TO_RENDER` variable at the top:
-  - `'basic_joints'` - All basic joint types
+  - `'plain_joints'` - All plain joint types
   - `'mortise_and_tenon'` - Mortise and tenon joints with pegs
   - `'oscar_shed'` - Complete 8ft x 4ft timber frame shed
   - `'csg'` - CSG operation tests (also edit `CSG_EXAMPLE_TO_RENDER` for specific test)
@@ -78,7 +78,7 @@ freecad test_csg.py
 
 ## Available Examples
 
-### 1. Basic Joints (`basic_joints`)
+### 1. Plain Joints (`plain_joints`)
 Demonstrates all basic joint types:
 - Miter Joint (67°)
 - Miter Joint (Face Aligned)
@@ -128,7 +128,7 @@ The scripts reload modules in dependency order:
 3. `code_goes_here.cutcsg` - CSG operations
 4. `code_goes_here.timber` - Timber data structures
 5. `code_goes_here.construction` - Construction functions
-6. `code_goes_here.basic_joints` - Basic joint functions
+6. `code_goes_here.plain_joints` - Plain joint functions
 7. `code_goes_here.mortise_and_tenon_joint` - Mortise & tenon functions
 8. `giraffe` - Main API module
 9. `giraffe_render_freecad` - FreeCAD renderer

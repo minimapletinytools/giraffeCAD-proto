@@ -63,10 +63,10 @@ PATTERN_NAME = 'oscar_shed'
 #PATTERN_NAME = 'mitered_keyed_lap'
 
 # GROUP_NAME: Name of a pattern group to render (when RENDER_TYPE = 'group')
-# Available groups: 'basic_joints', 'mortise_and_tenon', 'construction', 
+# Available groups: 'plain_joints', 'mortise_and_tenon', 'construction', 
 #                   'horsey', 'oscar_shed', 'japanese_joints', 'csg_examples', 
 #                   'irrational_angles', 'posts', 'beams', 'boxes'
-#GROUP_NAME = 'basic_joints'
+#GROUP_NAME = 'plain_joints'
 #GROUP_NAME = 'oscar_shed'
 GROUP_NAME = 'japanese_joints'
 #GROUP_NAME = 'posts'
@@ -88,7 +88,7 @@ def create_anthology_pattern_book():
         PatternBook: A single PatternBook with all patterns from all examples
     """
     from code_goes_here.patternbook import PatternBook
-    from examples.reference.basic_joints_example import create_basic_joints_patternbook
+    from examples.reference.basic_joints_example import create_plain_joints_patternbook
     from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
     from examples.construction_examples import create_construction_patternbook
     from examples.horsey_example import create_horsey_patternbook
@@ -101,7 +101,7 @@ def create_anthology_pattern_book():
     
     # Create all individual pattern books
     books = [
-        create_basic_joints_patternbook(),
+        create_plain_joints_patternbook(),
         create_mortise_and_tenon_patternbook(),
         create_construction_patternbook(),
         create_horsey_patternbook(),
@@ -157,7 +157,7 @@ def reload_all_modules():
         'code_goes_here.construction',
         'code_goes_here.rendering_utils',
         'code_goes_here.joint_shavings',
-        'code_goes_here.basic_joints',
+        'code_goes_here.plain_joints',
         'code_goes_here.mortise_and_tenon_joint',
         'code_goes_here.japanese_joints',
         'code_goes_here.patternbook',
