@@ -8,7 +8,7 @@ representations are converted to floating point values in CAD systems.
 
 from sympy import Rational, pi, Matrix, cos, sin
 from code_goes_here.timber import Frame, TimberFace, TimberReferenceEnd, create_v3, timber_from_directions
-from code_goes_here.mortise_and_tenon_joint import cut_mortise_and_tenon_joint_on_face_aligned_timbers
+from code_goes_here.joints.mortise_and_tenon_joint import cut_mortise_and_tenon_joint_on_face_aligned_timbers
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 from code_goes_here.rule import degrees
 

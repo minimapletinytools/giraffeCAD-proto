@@ -647,8 +647,8 @@ def chop_profile_on_timber_face(timber: TimberLike, end: TimberReferenceEnd, fac
           should be decomposed into multiple convex profiles
     """
     from sympy import Rational, Matrix
-    from .rule import Orientation, Transform, create_v3, cross_product, normalize_vector
-    from .cutcsg import ConvexPolygonExtrusion
+    from code_goes_here.rule import Orientation, Transform, create_v3, cross_product, normalize_vector
+    from code_goes_here.cutcsg import ConvexPolygonExtrusion
     
     # Check if we have a single profile or multiple profiles
     # If the first element is a list, we have multiple profiles
@@ -940,5 +940,5 @@ def chop_shoulder_notch_on_timber_face(
     )
     
     # Union the main notch with the two angled wall prisms
-    from .cutcsg import SolidUnion
+    from code_goes_here.cutcsg import SolidUnion
     return SolidUnion([notch_prism, left_wall_prism, right_wall_prism])

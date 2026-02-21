@@ -6,7 +6,7 @@ import warnings
 
 from code_goes_here.timber import *
 from code_goes_here.construction import *
-from code_goes_here.joint_shavings import *
+from .joint_shavings import *
 from code_goes_here.measuring import measure_top_center_position, measure_centerline, mark_onto_centerline
 from code_goes_here.rule import *
 from code_goes_here.cutcsg import *

@@ -11,7 +11,7 @@ from code_goes_here.timber import (
     V2, V3, Numeric, PegShape, WedgeShape, Peg,
     timber_from_directions, create_v3
 )
-from code_goes_here.mortise_and_tenon_joint import (
+from code_goes_here.joints.mortise_and_tenon_joint import (
     SimplePegParameters,
     WedgeParameters,
     cut_mortise_and_tenon_many_options_do_not_call_me_directly,

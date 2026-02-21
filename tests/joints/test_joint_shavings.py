@@ -4,7 +4,7 @@ Tests for joint_shavings.py - Helper functions for joint validation
 
 import pytest
 from sympy import Rational
-from code_goes_here.joint_shavings import (
+from code_goes_here.joints.joint_shavings import (
     check_timber_overlap_for_splice_joint_is_sensible, 
     chop_timber_end_with_prism,
     chop_timber_end_with_half_plane,

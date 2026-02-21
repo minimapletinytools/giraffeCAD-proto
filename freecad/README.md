@@ -128,8 +128,8 @@ The scripts reload modules in dependency order:
 3. `code_goes_here.cutcsg` - CSG operations
 4. `code_goes_here.timber` - Timber data structures
 5. `code_goes_here.construction` - Construction functions
-6. `code_goes_here.plain_joints` - Plain joint functions
-7. `code_goes_here.mortise_and_tenon_joint` - Mortise & tenon functions
+6. `code_goes_here.joints.plain_joints` - Plain joint functions
+7. `code_goes_here.joints.mortise_and_tenon_joint` - Mortise & tenon functions
 8. `giraffe` - Main API module
 9. `giraffe_render_freecad` - FreeCAD renderer
 10. `examples.*` - All example modules
@@ -163,7 +163,7 @@ Reloading all GiraffeCAD modules...
   ✓ Reloaded code_goes_here.rule
   ✓ Reloaded code_goes_here.timber
   ✓ Reloaded code_goes_here.construction
-  ✓ Reloaded code_goes_here.mortise_and_tenon_joint
+  ✓ Reloaded code_goes_here.joints.mortise_and_tenon_joint
   ✓ Reloaded giraffe_render_freecad
   ✓ Reloaded examples.oscarshed
 
