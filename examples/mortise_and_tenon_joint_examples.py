@@ -9,7 +9,7 @@ from code_goes_here.timber import (
     PegShape, timber_from_directions,
     create_v3, V2, CutTimber, Frame
 )
-from code_goes_here.mortise_and_tenon_joint import (
+from code_goes_here.joints.mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
     SimplePegParameters
 )

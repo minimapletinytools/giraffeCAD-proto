@@ -17,8 +17,8 @@ from sympy import Matrix, eye, Rational, sqrt
 from code_goes_here.cutcsg import *
 from code_goes_here.rule import Orientation, Transform, inches, feet
 from code_goes_here.timber import Timber, TimberReferenceEnd, TimberFace, timber_from_directions
-from code_goes_here.joint_shavings import chop_lap_on_timber_end, chop_profile_on_timber_face, chop_shoulder_notch_on_timber_face
-from code_goes_here.japanese_joints import draw_gooseneck_polygon
+from code_goes_here.joints.joint_shavings import chop_lap_on_timber_end, chop_profile_on_timber_face, chop_shoulder_notch_on_timber_face
+from code_goes_here.joints.japanese_joints import draw_gooseneck_polygon
 
 
 def example_cube_with_cube_cutout():
