@@ -71,7 +71,7 @@ def create_anthology_pattern_book():
         PatternBook: A single PatternBook with all patterns from all examples
     """
     from code_goes_here.patternbook import PatternBook
-    from examples.reference.basic_joints_example import create_plain_joints_patternbook
+    from examples.basic_joints_examples import create_basic_joints_patternbook
     from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
     from examples.construction_examples import create_construction_patternbook
     from examples.horsey_example import create_horsey_patternbook
@@ -83,7 +83,7 @@ def create_anthology_pattern_book():
     
     # Create all individual pattern books
     books = [
-        create_plain_joints_patternbook(),
+        create_basic_joints_patternbook(),
         create_mortise_and_tenon_patternbook(),
         create_construction_patternbook(),
         create_horsey_patternbook(),
@@ -148,10 +148,9 @@ def reload_all_modules():
         'code_goes_here.patternbook',
         'giraffe',
         'examples',  # Reload the examples package
-        'examples.reference',  # Reload examples.reference subpackage
         'giraffe_render_fusion360',  # Add this so the rendering module itself gets reloaded
-        'examples.reference.basic_joints_example',
         'examples.mortise_and_tenon_joint_examples',
+        'examples.basic_joints_examples',
         'examples.horsey_example',
         'examples.oscarshed',
         'examples.japanese_joints_example',

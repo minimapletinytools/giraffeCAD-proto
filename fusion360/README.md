@@ -14,7 +14,7 @@ This directory contains a complete, self-contained Fusion 360 script for renderi
 - **`../code_goes_here/`** - Core modules (rule, footprint, etc.)
 - **`../examples/sawhorse_example.py`** - Sawhorse structure
 - **`../examples/oscarshed.py`** - Oscar's Shed structure
-- **`../examples/reference/basic_joints_example.py`** - Joint type demonstrations
+- **`../examples/basic_joints_examples.py`** - Basic joint type demonstrations and patternbook
 
 ### Local Dependencies
 - **`libs/`** - Contains locally installed Python packages:
