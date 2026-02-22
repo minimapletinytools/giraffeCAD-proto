@@ -584,18 +584,15 @@ def create_csg_examples_patternbook():
     Returns:
         PatternBook: PatternBook containing all CSG example patterns
     """
-    from code_goes_here.patternbook import PatternBook, PatternMetadata
-    
+    from code_goes_here.patternbook import PatternBook, PatternMetadata, make_pattern_from_csg
+
     patterns = []
     for key, info in EXAMPLES.items():
-        # Determine the example type from the key
-        example_type = key.replace('_', ' ')
-        
         patterns.append((
             PatternMetadata(key, ["csg", key], "csg"),
-            lambda center, func=info['function']: func()  # type: ignore[misc]  # CSG examples don't use center position
+            make_pattern_from_csg(info['function'])
         ))
-    
+
     return PatternBook(patterns=patterns)
 
 

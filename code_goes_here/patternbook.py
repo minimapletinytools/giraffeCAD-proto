@@ -8,13 +8,134 @@ and raise them at different positions for visualization and testing.
 from sympy import Rational
 from typing import List, Tuple, Optional, Callable, Union, Literal
 from dataclasses import dataclass, field
-from .rule import V3, create_v3
-from .timber import Frame, CutTimber
+from .rule import V3, create_v3, Transform
+from .timber import Frame, CutTimber, Timber, Peg, Wedge, Joint, JointAccessory
 from .cutcsg import CutCSG
 
 
 # Type alias for pattern functions
 PatternLambda = Callable[[V3], Union[Frame, CutCSG]]
+
+
+def make_pattern_from_joint(joint_func: Callable[[], Joint]) -> PatternLambda:
+    """
+    Convert a joint function (no args, returns a joint with cut_timbers and jointAccessories)
+    to a pattern lambda that accepts center and returns a Frame with all timbers and
+    accessories translated by center.
+    """
+    def pattern_lambda(center: V3) -> Frame:
+        joint = joint_func()
+        translated_timbers: List[CutTimber] = []
+        for timber in joint.cut_timbers.values():
+            new_position = timber.timber.get_bottom_position_global() + center
+            translated_timber = Timber(
+                ticket=timber.timber.ticket,
+                transform=Transform(position=new_position, orientation=timber.timber.orientation),
+                size=timber.timber.size,
+                length=timber.timber.length
+            )
+            translated_timbers.append(CutTimber(timber=translated_timber, cuts=timber.cuts))
+
+        translated_accessories: List[JointAccessory] = []
+        if joint.jointAccessories:
+            for accessory in joint.jointAccessories.values():
+                if isinstance(accessory, Peg):
+                    translated_transform = Transform(
+                        position=accessory.transform.position + center,
+                        orientation=accessory.transform.orientation
+                    )
+                    translated_accessories.append(Peg(
+                        transform=translated_transform,
+                        size=accessory.size,
+                        shape=accessory.shape,
+                        forward_length=accessory.forward_length,
+                        stickout_length=accessory.stickout_length
+                    ))
+                elif isinstance(accessory, Wedge):
+                    translated_transform = Transform(
+                        position=accessory.transform.position + center,
+                        orientation=accessory.transform.orientation
+                    )
+                    translated_accessories.append(Wedge(
+                        transform=translated_transform,
+                        base_width=accessory.base_width,
+                        tip_width=accessory.tip_width,
+                        height=accessory.height,
+                        length=accessory.length,
+                        stickout_length=accessory.stickout_length
+                    ))
+                else:
+                    translated_accessories.append(accessory)
+
+        return Frame(cut_timbers=translated_timbers, accessories=translated_accessories)
+
+    return pattern_lambda
+
+
+def make_pattern_from_frame(frame_func: Callable[[], Frame]) -> PatternLambda:
+    """
+    Convert a Frame-returning function (no args) to a pattern lambda that accepts center
+    and returns a Frame with all timbers and accessories translated by center.
+    """
+    def pattern_lambda(center: V3) -> Frame:
+        frame = frame_func()
+        translated_timbers = []
+        for cut_timber in frame.cut_timbers:
+            new_position = cut_timber.timber.get_bottom_position_global() + center
+            translated_timber = Timber(
+                ticket=cut_timber.timber.ticket,
+                transform=Transform(position=new_position, orientation=cut_timber.timber.orientation),
+                size=cut_timber.timber.size,
+                length=cut_timber.timber.length
+            )
+            translated_timbers.append(CutTimber(timber=translated_timber, cuts=cut_timber.cuts))
+
+        translated_accessories: List[JointAccessory] = []
+        if frame.accessories:
+            for accessory in frame.accessories:
+                if isinstance(accessory, Peg):
+                    translated_transform = Transform(
+                        position=accessory.transform.position + center,
+                        orientation=accessory.transform.orientation
+                    )
+                    translated_accessories.append(Peg(
+                        transform=translated_transform,
+                        size=accessory.size,
+                        shape=accessory.shape,
+                        forward_length=accessory.forward_length,
+                        stickout_length=accessory.stickout_length
+                    ))
+                elif isinstance(accessory, Wedge):
+                    translated_transform = Transform(
+                        position=accessory.transform.position + center,
+                        orientation=accessory.transform.orientation
+                    )
+                    translated_accessories.append(Wedge(
+                        transform=translated_transform,
+                        base_width=accessory.base_width,
+                        tip_width=accessory.tip_width,
+                        height=accessory.height,
+                        length=accessory.length,
+                        stickout_length=accessory.stickout_length
+                    ))
+                else:
+                    translated_accessories.append(accessory)
+
+        return Frame(cut_timbers=translated_timbers, accessories=translated_accessories)
+
+    return pattern_lambda
+
+
+def make_pattern_from_csg(csg_func: Callable[[], CutCSG]) -> PatternLambda:
+    """
+    Convert a CSG-returning function (no args) to a pattern lambda that accepts center
+    and returns the CSG. CSG examples currently do not translate by center; the center
+    parameter is present for API consistency with frame/joint patterns.
+    """
+    def pattern_lambda(center: V3) -> CutCSG:
+        return csg_func()
+
+    return pattern_lambda
 
 
 @dataclass(frozen=True)

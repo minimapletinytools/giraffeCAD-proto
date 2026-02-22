@@ -18,7 +18,7 @@ from code_goes_here.construction import (
     create_canonical_brace_joint_timbers,
     create_canonical_butt_joint_timbers,
 )
-from code_goes_here.patternbook import PatternBook, PatternMetadata
+from code_goes_here.patternbook import PatternBook, PatternMetadata, make_pattern_from_joint, make_pattern_from_frame
 
 
 def example_basic_mortise_and_tenon(position=None):
@@ -410,99 +410,6 @@ def create_mortise_and_tenon_patternbook() -> PatternBook:
     Returns:
         PatternBook: PatternBook containing all mortise and tenon joint patterns
     """
-    def make_pattern_from_joint(joint_func):
-        """Helper to convert a joint function to a pattern lambda that handles translation."""
-        def pattern_lambda(center):
-            # Create joint at origin
-            joint = joint_func()
-            
-            # Translate all timbers to center position
-            translated_timbers = []
-            for timber in joint.cut_timbers.values():
-                new_position = timber.timber.get_bottom_position_global() + center
-                translated_timber = Timber(
-                    ticket=timber.timber.ticket,
-                    transform=Transform(position=new_position, orientation=timber.timber.orientation),
-                    size=timber.timber.size,
-                    length=timber.timber.length
-                )
-                translated_timbers.append(CutTimber(timber=translated_timber, cuts=timber.cuts))
-            
-            # Translate accessories
-            translated_accessories = []
-            if joint.jointAccessories:
-                for accessory in joint.jointAccessories.values():
-                    translated_transform = Transform(
-                        position=accessory.transform.position + center,
-                        orientation=accessory.transform.orientation
-                    )
-                    translated_accessory = Peg(
-                        transform=translated_transform,
-                        size=accessory.size,
-                        shape=accessory.shape,
-                        forward_length=accessory.forward_length,
-                        stickout_length=accessory.stickout_length
-                    )
-                    translated_accessories.append(translated_accessory)
-            
-            return Frame(cut_timbers=translated_timbers, accessories=translated_accessories)
-        
-        return pattern_lambda
-    
-    def make_pattern_from_frame(frame_func):
-        """Helper to convert a Frame-returning function to a pattern lambda that handles translation."""
-        def pattern_lambda(center):
-            # Create frame at origin
-            frame = frame_func()
-            
-            # Translate all timbers to center position
-            translated_timbers = []
-            for cut_timber in frame.cut_timbers:
-                new_position = cut_timber.timber.get_bottom_position_global() + center
-                translated_timber = Timber(
-                    ticket=cut_timber.timber.ticket.name,
-                    transform=Transform(position=new_position, orientation=cut_timber.timber.orientation),
-                    size=cut_timber.timber.size,
-                    length=cut_timber.timber.length
-                )
-                translated_timbers.append(CutTimber(timber=translated_timber, cuts=cut_timber.cuts))
-            
-            # Translate accessories
-            translated_accessories = []
-            if frame.accessories:
-                for accessory in frame.accessories:
-                    translated_transform = Transform(
-                        position=accessory.transform.position + center,
-                        orientation=accessory.transform.orientation
-                    )
-                    # Handle different accessory types
-                    if isinstance(accessory, Peg):
-                        translated_accessory = Peg(
-                            transform=translated_transform,
-                            size=accessory.size,
-                            shape=accessory.shape,
-                            forward_length=accessory.forward_length,
-                            stickout_length=accessory.stickout_length
-                        )
-                    elif isinstance(accessory, Wedge):
-                        translated_accessory = Wedge(
-                            transform=translated_transform,
-                            base_width=accessory.base_width,
-                            tip_width=accessory.tip_width,
-                            height=accessory.height,
-                            length=accessory.length,
-                            stickout_length=accessory.stickout_length
-                        )
-                    else:
-                        # For other accessory types, try to preserve as-is with translated transform
-                        # This is a fallback - may need to be extended for new accessory types
-                        translated_accessory = accessory
-                    translated_accessories.append(translated_accessory)
-            
-            return Frame(cut_timbers=translated_timbers, accessories=translated_accessories)
-        
-        return pattern_lambda
-    
     patterns = [
         (PatternMetadata("basic_4x4", ["mortise_tenon", "basic"], "frame"),
          make_pattern_from_joint(example_basic_mortise_and_tenon)),
@@ -522,8 +429,9 @@ def create_mortise_and_tenon_patternbook() -> PatternBook:
         (PatternMetadata("with_pegs", ["mortise_tenon", "pegs"], "frame"),
          make_pattern_from_joint(example_mortise_and_tenon_with_pegs)),
         
-        (PatternMetadata("brace_joint", ["mortise_tenon", "brace"], "frame"),
-         make_pattern_from_frame(example_brace_joint)),
+        # uncomment when fixed
+#       #(PatternMetadata("brace_joint", ["mortise_tenon", "brace"], "frame"),
+        # make_pattern_from_frame(example_brace_joint)),
     ]
     
     return PatternBook(patterns=patterns)
