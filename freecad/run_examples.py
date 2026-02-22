@@ -99,7 +99,7 @@ def create_anthology_pattern_book():
     from examples.new_shed import create_honeycomb_shed_patternbook
     from examples.japanese_joints_example import create_japanese_joints_patternbook
     from examples.irrational_angles_example import create_irrational_angles_patternbook
-    from examples.CutCSG_examples import create_csg_examples_patternbook
+    from examples.CSG_debug_examples import create_csg_examples_patternbook
     from examples.patternbook_example import create_patternbook_example_patternbook
     
     # Create all individual pattern books
@@ -177,7 +177,7 @@ def reload_all_modules():
         'examples.japanese_joints_example',
         'examples.irrational_angles_example',
         'examples.construction_examples',
-        'examples.CutCSG_examples',
+        'examples.CSG_debug_examples',
         'examples.patternbook_example',
     ]
     
