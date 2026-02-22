@@ -196,9 +196,8 @@ DONE-Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shach
   DONE-add key accessories
   DONE-fix wedge length
 DONE-enable and fix the no python floats check or delete it alltogether
-
--BUG default lap settings seems to be wrong 
--BUG lap splice joint seems to cut wrongside sometime
+DONE-BUG default lap settings seems to be wrong 
+DONE-BUG lap splice joint seems to cut wrongside sometime
 
 -update morties and tenon to support
   -perpendicular but not face aligned
@@ -208,10 +207,10 @@ DONE-enable and fix the no python floats check or delete it alltogether
 
 -joint reorg
   DONE-basic joints has simplified versions of all joints instead
-  -reorg joints by joint type 
-  -create basic_joints for simplified verison of alle xsiting joints
+  DONE-create basic_joints for simplified verison of alle xsiting joints
     -finish mortise and tenon basic jonit
     -create patternbook for basic jonits
+  -reorg joints by joint type 
   -cleanup joint examples
     -celaup miter joint to use your new construction function thing
     -change rest of joint examples to use standard joint ctor function
