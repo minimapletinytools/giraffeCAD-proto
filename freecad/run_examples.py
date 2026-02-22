@@ -45,8 +45,8 @@ if script_dir not in sys.path:
 # RENDER_TYPE: 'pattern' or 'group'
 # - 'pattern': Render a single pattern by name
 # - 'group': Render all patterns in a group with spacing
-RENDER_TYPE = 'group'
-#RENDER_TYPE = 'pattern'
+#RENDER_TYPE = 'group'
+RENDER_TYPE = 'pattern'
 
 # PATTERN_NAME: Name of a specific pattern to render (when RENDER_TYPE = 'pattern')
 # Examples of available patterns:
@@ -54,9 +54,9 @@ RENDER_TYPE = 'group'
 #PATTERN_NAME = 'butt_joint'
 #PATTERN_NAME = 'splice_joint'
 #PATTERN_NAME = 'mortise_and_tenon_simple'
-PATTERN_NAME = 'brace_joint'  # Brace joint with mortise and tenon connections
+#PATTERN_NAME = 'brace_joint'  # Brace joint with mortise and tenon connections
 #PATTERN_NAME = 'dovetail_half_lap'
-#PATTERN_NAME = 'oscar_shed'
+PATTERN_NAME = 'oscar_shed'
 #PATTERN_NAME = 'gooseneck_simple'
 #PATTERN_NAME = 'shoulder_notch'
 #PATTERN_NAME = 'short_post'
@@ -67,10 +67,9 @@ PATTERN_NAME = 'brace_joint'  # Brace joint with mortise and tenon connections
 # Available groups: 'plain_joints', 'mortise_tenon', 'basic_joints', 'construction', 
 #                   'horsey', 'oscar_shed', 'japanese_joints', 'csg_examples', 
 #                   'irrational_angles', 'posts', 'beams', 'boxes'
-#GROUP_NAME = 'plain_joints'
-GROUP_NAME = 'mortise_tenon'  # All mortise and tenon examples including brace_joint
+GROUP_NAME = 'plain_joints'
+#GROUP_NAME = 'mortise_tenon'  # All mortise and tenon examples (brace_joint excluded until angled M&T is implemented)
 #GROUP_NAME = 'basic_joints'  # All simplified basic joint examples
-#GROUP_NAME = 'oscar_shed'
 #GROUP_NAME = 'japanese_joints'
 #GROUP_NAME = 'posts'
 #GROUP_NAME = 'csg'
@@ -93,6 +92,7 @@ def create_anthology_pattern_book():
     from code_goes_here.patternbook import PatternBook
     from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
     from examples.basic_joints_examples import create_basic_joints_patternbook
+    from examples.plain_joints_example import create_plain_joints_patternbook
     from examples.construction_examples import create_construction_patternbook
     from examples.horsey_example import create_horsey_patternbook
     from examples.oscarshed import create_oscar_shed_patternbook
@@ -105,6 +105,7 @@ def create_anthology_pattern_book():
     # Create all individual pattern books
     books = [
         create_basic_joints_patternbook(),
+        create_plain_joints_patternbook(),
         create_mortise_and_tenon_patternbook(),
         create_construction_patternbook(),
         create_horsey_patternbook(),
