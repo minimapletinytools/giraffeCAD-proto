@@ -29,6 +29,7 @@ from code_goes_here.construction import (
     create_canonical_butt_joint_timbers,
     create_canonical_splice_joint_timbers,
     create_canonical_cross_joint_timbers,
+    create_canonical_vertical_post_horizontal_timber_timbers,
     _CANONICAL_EXAMPLE_TIMBER_LENGTH,
     _CANONICAL_EXAMPLE_TIMBER_SIZE,
 )
@@ -129,7 +130,8 @@ def example_basic_house_joint(position=None):
     if position is None:
         position = create_v3(0, 0, 0)
     
-    arrangement = create_canonical_cross_joint_timbers(position=position)
+    # TODO offset
+    arrangement = create_canonical_cross_joint_timbers(position=position, lateral_offset=inches(2))
     joint = cut_basic_house_joint(
         housing_timber=arrangement.timber1,
         housed_timber=arrangement.timber2
@@ -197,38 +199,15 @@ def example_basic_mortise_and_tenon_joint_with_peg(position=None):
 def example_basic_lapped_gooseneck_joint(position=None):
     """
     Create a basic lapped gooseneck joint.
-    Uses canonical timbers - receiving timber is vertical, gooseneck timber is horizontal.
+    Uses canonical splice joint timbers (parallel timbers meeting at position).
     """
-    if position is None:
-        position = create_v3(0, 0, 0)
-    
-    # Create receiving timber (vertical, like a post)
-    receiving_timber = timber_from_directions(
-        length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
-        size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
-        bottom_position=position,
-        length_direction=create_v3(0, 0, 1),  # +Z direction (vertical)
-        width_direction=create_v3(1, 0, 0),   # RIGHT face points in +X
-        ticket="receiving_timber"
-    )
-    
-    # Create gooseneck timber (horizontal, extending from receiving timber)
-    gooseneck_timber = timber_from_directions(
-        length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
-        size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
-        bottom_position=position + create_v3(0, _CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0),
-        length_direction=create_v3(0, 1, 0),  # +Y direction (horizontal)
-        width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
-        ticket="gooseneck_timber"
-    )
-    
+    arrangement = create_canonical_splice_joint_timbers(position)
     joint = cut_basic_lapped_gooseneck_joint(
-        gooseneck_timber=gooseneck_timber,
-        receiving_timber=receiving_timber,
-        receiving_timber_end=TimberReferenceEnd.BOTTOM,
-        gooseneck_timber_face=TimberLongFace.TOP
+        gooseneck_timber=arrangement.timber2,
+        receiving_timber=arrangement.timber1,
+        receiving_timber_end=arrangement.timber1_end,
+        gooseneck_timber_face=TimberLongFace.RIGHT,
     )
-    
     return joint
 
 
@@ -237,49 +216,27 @@ def example_basic_housed_dovetail_butt_joint(position=None):
     Create a basic housed dovetail butt joint.
     Uses canonical timbers - dovetail timber is horizontal, receiving timber is vertical.
     """
-    if position is None:
-        position = create_v3(0, 0, 0)
-    
     from sympy import Integer
-    
-    # Create receiving timber (vertical, like a post)
-    receiving_timber = timber_from_directions(
-        length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
-        size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
-        bottom_position=position,
-        length_direction=create_v3(0, 0, 1),  # +Z direction (vertical)
-        width_direction=create_v3(1, 0, 0),   # RIGHT face points in +X
-        ticket="receiving_timber"
-    )
-    
-    # Create dovetail timber (horizontal, extending from receiving timber)
-    dovetail_timber = timber_from_directions(
-        length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
-        size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
-        bottom_position=position + create_v3(0, _CANONICAL_EXAMPLE_TIMBER_LENGTH / 2, 0),
-        length_direction=create_v3(0, 1, 0),  # +Y direction (horizontal)
-        width_direction=create_v3(0, 0, 1),   # RIGHT face points in +Z
-        ticket="dovetail_timber"
-    )
-    
-    # Calculate dovetail parameters based on timber size
-    width = dovetail_timber.get_size_in_direction(TimberLongFace.TOP.rotate_right())
+
+    arrangement = create_canonical_butt_joint_timbers(position)
+    # Face must be perpendicular to receiving timber length (+Z); use FRONT (normal +Y)
+    dovetail_timber_face = TimberLongFace.RIGHT
+    width = arrangement.butt_timber.get_size_in_face_normal_axis(dovetail_timber_face.rotate_right())
     dovetail_length = width / Integer(2)
     dovetail_small_width = width * Rational(1, 2)
     dovetail_large_width = width * Rational(2, 3)
     receiving_timber_shoulder_inset = inches(1)  # 1 inch inset
-    
+
     joint = cut_basic_housed_dovetail_butt_joint(
-        dovetail_timber=dovetail_timber,
-        receiving_timber=receiving_timber,
-        dovetail_timber_end=TimberReferenceEnd.BOTTOM,
-        dovetail_timber_face=TimberLongFace.TOP,
+        dovetail_timber=arrangement.butt_timber,
+        receiving_timber=arrangement.receiving_timber,
+        dovetail_timber_end=arrangement.butt_timber_end,
+        dovetail_timber_face=dovetail_timber_face,
         receiving_timber_shoulder_inset=receiving_timber_shoulder_inset,
         dovetail_length=dovetail_length,
         dovetail_small_width=dovetail_small_width,
         dovetail_large_width=dovetail_large_width
     )
-    
     return joint
 
 

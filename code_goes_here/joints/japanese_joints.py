@@ -152,8 +152,6 @@ def cut_lapped_gooseneck_joint(
         raise ValueError(f"gooseneck_large_width must be positive, got {gooseneck_large_width}")
     if gooseneck_head_length <= 0:
         raise ValueError(f"gooseneck_head_length must be positive, got {gooseneck_head_length}")
-    if lap_length <= 0:
-        raise ValueError(f"lap_length must be positive, got {lap_length}")
     
     # Validate that large_width > small_width (gooseneck taper requirement)
     if gooseneck_large_width <= gooseneck_small_width:
@@ -1072,9 +1070,9 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
 
     # Set default key dimensions if not provided
     if key_width is None:
-        key_width = lap_thickness
+        key_width = lap_thickness_final
     if key_thickness is None:
-        key_thickness = lap_thickness / Rational(3) 
+        key_thickness = lap_thickness_final / Rational(3) 
 
 
     key_depth = miter_face_width/sin(half_angle)-distance_between_lap_and_outside/sin(half_angle)    

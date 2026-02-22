@@ -394,13 +394,13 @@ def cut_plain_cross_lap_joint(timberA: TimberLike, timberB: TimberLike, timberA_
         AssertionError: If timbers don't intersect, are parallel, or face normals are invalid
     """
     from code_goes_here.cutcsg import Difference, RectangularPrism, HalfSpace
-    from code_goes_here.rule import safe_dot_product, safe_transform_vector
+    from code_goes_here.rule import safe_dot_product, safe_transform_vector, safe_norm
+    from sympy import Rational
     
     # Verify that cut_ratio is in valid range [0, 1]
     assert 0 <= cut_ratio <= 1, f"cut_ratio must be in range [0, 1], got {cut_ratio}"
     
     # Verify that the timbers are not parallel (their length directions must differ)
-    from code_goes_here.rule import safe_dot_product
     dot_product = safe_dot_product(timberA.get_length_direction_global(), timberB.get_length_direction_global())
     assert abs(abs(dot_product) - 1) > Rational(1, 1000000), \
         "Timbers must not be parallel (their length directions must differ)"
@@ -443,16 +443,69 @@ def cut_plain_cross_lap_joint(timberA: TimberLike, timberB: TimberLike, timberA_
         f"Timbers do not intersect (closest distance: {float(distance):.4f}m, max allowed: {float(max_separation):.4f}m)"
     
 
-    # TODO this is wrong, don't use closest to centeline, instead, find the axis perpendicular to the length axis of both timbers and choose the faces on that axis. Choose face on that axis on timberA that's closest to timberB and then pick the opposite face on timberB.
+    # TODO why is this code so compilcate? cany o umake it sipmler
     # Auto-select cut faces if not provided
-    # Choose the face that minimizes material removal (face closest to the other timber)
-    if timberA_cut_face is None:
-        # Find which face of timberA is closest to timberB's centerline
-        # Check all 4 faces and pick the one with smallest distance
-        timberA_cut_face = _find_closest_face_to_timber(timberA, timberB)
-    
-    if timberB_cut_face is None:
-        timberB_cut_face = _find_closest_face_to_timber(timberB, timberA)
+    # Find the axis perpendicular to the length axis of both timbers
+    # Choose the face on that axis on timberA that's closest to timberB
+    # Then pick the opposite face on timberB
+    if timberA_cut_face is None or timberB_cut_face is None:
+        from code_goes_here.rule import cross_product, normalize_vector, safe_norm
+        
+        # Get length directions of both timbers
+        d1 = timberA.get_length_direction_global()
+        d2 = timberB.get_length_direction_global()
+        
+        # Find axis perpendicular to both length directions (cross product)
+        perpendicular_axis = cross_product(d1, d2)
+        perpendicular_axis = normalize_vector(perpendicular_axis)
+        
+        # Get center positions of both timbers
+        from sympy import Rational
+        centerA = timberA.get_bottom_position_global() + timberA.get_length_direction_global() * (timberA.length / Rational(2))
+        centerB = timberB.get_bottom_position_global() + timberB.get_length_direction_global() * (timberB.length / Rational(2))
+        
+        # Vector from timberA center to timberB center
+        A_to_B = centerB - centerA
+        
+        # Project A_to_B onto the perpendicular axis to get direction
+        projection = safe_dot_product(A_to_B, perpendicular_axis)
+        
+        # Direction along perpendicular axis (toward timberB from timberA)
+        direction_toward_B = perpendicular_axis if projection >= 0 else -perpendicular_axis
+        
+        if timberA_cut_face is None:
+            # Find face on timberA whose normal is closest to direction_toward_B
+            faces = [TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FRONT, TimberFace.BACK]
+            max_dot = None
+            best_face = TimberFace.RIGHT  # Default
+            
+            for face in faces:
+                face_normal = timberA.get_face_direction_global(face)
+                dot = safe_dot_product(face_normal, direction_toward_B)
+                
+                if max_dot is None or dot > max_dot:
+                    max_dot = dot
+                    best_face = face
+            
+            timberA_cut_face = best_face
+        
+        if timberB_cut_face is None:
+            # Find the opposite face on timberB (face whose normal opposes timberA's chosen face)
+            normalA = timberA.get_face_direction_global(timberA_cut_face)
+            faces = [TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FRONT, TimberFace.BACK]
+            min_dot = None
+            best_face = TimberFace.RIGHT  # Default
+            
+            for face in faces:
+                face_normal = timberB.get_face_direction_global(face)
+                dot = safe_dot_product(face_normal, normalA)
+                
+                # We want the face with the most negative dot product (most opposing)
+                if min_dot is None or dot < min_dot:
+                    min_dot = dot
+                    best_face = face
+            
+            timberB_cut_face = best_face
     
     # Get face normals (pointing outward from the timber) in GLOBAL space
     # get_face_direction returns the direction vector in world coordinates
