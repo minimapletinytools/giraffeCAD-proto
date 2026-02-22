@@ -521,6 +521,12 @@ def chop_lap_on_timber_ends(
         ... )
     """
 
+    # assert the face types are correct
+    assert isinstance(top_lap_timber_end, TimberReferenceEnd), \
+        f"lap_timber_end must be a TimberReferenceEnd, got {top_lap_timber_end}"
+    assert isinstance(top_lap_timber_face, TimberLongFace), \
+        f"top_lap_timber_face must be a TimberLongFace, got {top_lap_timber_face}"
+
     # Assert that the 2 timbers are face aligned
     assert are_timbers_face_aligned(top_lap_timber, bottom_lap_timber), \
         f"Timbers must be face-aligned for a splice lap joint. " \
@@ -538,7 +544,7 @@ def chop_lap_on_timber_ends(
         f"{top_lap_timber.ticket.name} and {bottom_lap_timber.ticket.name} cross sections do not overlap."
 
     
-    top_lap_prism, top_end_cut = chop_lap_on_timber_end(top_lap_timber, top_lap_timber_end, top_lap_timber_face, lap_length, top_lap_shoulder_position_from_top_lap_shoulder_timber_end, lap_depth)
+    top_lap_prism, top_end_cut = chop_lap_on_timber_end(top_lap_timber, top_lap_timber_end, top_lap_timber_face.to.face(), lap_length, top_lap_shoulder_position_from_top_lap_shoulder_timber_end, lap_depth)
     top_lap_csg = (top_lap_prism, top_end_cut)
 
     # Step 2: Find the corresponding face on the bottom lap timber
@@ -555,7 +561,7 @@ def chop_lap_on_timber_ends(
     # The bottom lap depth is measured from the bottom timber's face to the top timber's cutting plane
     # This accounts for any rotation or offset between the timbers
     # Create a plane at lap_depth from the top timber's face
-    top_cutting_plane = measure_into_face(lap_depth, TimberLongFace(top_lap_timber_face.value), top_lap_timber)
+    top_cutting_plane = measure_into_face(lap_depth, top_lap_timber_face, top_lap_timber)
     # Find the opposing face on the bottom timber
     top_face_direction = top_lap_timber.get_face_direction_global(top_lap_timber_face)
     bottom_face_direction = -top_face_direction
@@ -585,10 +591,8 @@ def chop_lap_on_timber_ends(
     # Top timber lap end: move outward from shoulder by lap_length
     top_lap_end_global = top_shoulder_global + top_lap_direction * lap_length
     
-    # For bottom timber: swap shoulder and lap end
-    # Bottom timber shoulder = Top timber lap END
     bottom_shoulder_global = top_lap_end_global
-    
+
     # Project bottom shoulder position onto bottom timber's length axis
     bottom_shoulder_from_bottom_timber_bottom = safe_dot_product((bottom_shoulder_global - bottom_lap_timber.get_bottom_position_global()), bottom_lap_timber.get_length_direction_global())
     

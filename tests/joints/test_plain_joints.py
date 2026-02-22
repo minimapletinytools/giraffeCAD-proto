@@ -598,7 +598,7 @@ class TestSpliceLapJoint:
             top_lap_timber_end=TimberReferenceEnd.TOP,
             bottom_lap_timber=timberB,
             bottom_lap_timber_end=TimberReferenceEnd.BOTTOM,
-            top_lap_timber_face=TimberFace.BACK,  # Use BACK (side face), not BOTTOM (end face)
+            top_lap_timber_face=TimberLongFace.BACK,  # Use BACK (side face), not BOTTOM (end face)
             lap_length=lap_length,
             top_lap_shoulder_position_from_top_lap_shoulder_timber_end=shoulder_distance,
             lap_depth=None  # Use default
