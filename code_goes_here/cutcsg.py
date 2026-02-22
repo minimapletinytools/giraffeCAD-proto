@@ -1168,6 +1168,42 @@ class ConvexPolygonExtrusion(CutCSG):
 # CSG Coordinate Transform Utility
 # ============================================================================
 
+def translate_csg(csg: CutCSG, translation: V3) -> CutCSG:
+    """
+    Return a copy of the CSG object translated by the given vector.
+
+    Args:
+        csg: The CSG object to translate
+        translation: 3D translation vector (3x1 Matrix)
+
+    Returns:
+        A new CSG object with the same structure but translated by translation
+    """
+    if isinstance(csg, SolidUnion):
+        return SolidUnion(children=[translate_csg(c, translation) for c in csg.children])
+    if isinstance(csg, Difference):
+        return Difference(
+            base=translate_csg(csg.base, translation),
+            subtract=[translate_csg(s, translation) for s in csg.subtract],
+        )
+    if isinstance(csg, HalfSpace):
+        # HalfSpace: normal·P >= offset. After translating by T: normal·(P - T) >= offset => normal·P >= offset + normal·T
+        new_offset = csg.offset + safe_dot_product(csg.normal, translation)
+        return replace(csg, offset=new_offset)
+    if isinstance(csg, RectangularPrism):
+        new_position = csg.transform.position + translation
+        new_transform = replace(csg.transform, position=new_position)
+        return replace(csg, transform=new_transform)
+    if isinstance(csg, ConvexPolygonExtrusion):
+        new_position = csg.transform.position + translation
+        new_transform = replace(csg.transform, position=new_position)
+        return replace(csg, transform=new_transform)
+    if isinstance(csg, Cylinder):
+        return replace(csg, position=csg.position + translation)
+    # Unknown CSG type: return as-is
+    return csg
+
+
 def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: CutCSG) -> CutCSG:
     """
     Transform a CSG object from one timber's local coordinate system to another timber's local coordinate system.
