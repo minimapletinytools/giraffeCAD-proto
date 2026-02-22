@@ -783,6 +783,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         # Let's use: margin = thickness, so: (num_laps + 2)*thickness = miter_face_depth
         lap_thickness_final = miter_face_depth / (num_laps + Integer(2))
         lap_start_distance_final = lap_thickness_final
+        
     elif lap_thickness is None:
         # Only start distance given, calculate thickness
         assert lap_start_distance_from_reference_miter_face is not None  # Type narrowing
@@ -802,7 +803,8 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Default distance_between_lap_and_outside
     if distance_between_lap_and_outside is None:
         distance_between_lap_and_outside = miter_face_width * Rational(1, 5)
-    
+
+
     # ========================================================================
     # Step 4: Validate fit
     # ========================================================================
@@ -880,8 +882,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     marking_position = timberA.get_bottom_position_global()
     marking_position = marking_position + timberA.get_length_direction_global() * centerline_marking.distance
     
-    # now move to the timberA_reference_miter_face surface
-    marking_position_on_centerline = marking_position + timberA_miter_face_normal * (lap_start_distance_final - timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face()) / Rational(2))
+    marking_position_on_centerline = marking_position + timberA_miter_face_normal * (-timberA.get_size_in_face_normal_axis(timberA_reference_miter_face.to.face()) / Rational(2))
     
     # Compute the angle between the two timbers to get the correct scale factor
     # The half-angle is the angle between the diagonal and either timber's length direction
@@ -919,15 +920,6 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     # Re-orthogonalize X to be perpendicular to Z
     marking_x = cross_product(marking_y, marking_z)
     marking_x = normalize_vector(marking_x)
-    
-    marking_transform = Transform(
-        position=marking_position,
-        orientation=Orientation(Matrix([
-            [marking_x[0], marking_y[0], marking_z[0]],
-            [marking_x[1], marking_y[1], marking_z[1]],
-            [marking_x[2], marking_y[2], marking_z[2]]
-        ]))
-    )
     
     # ========================================================================
     # Step 7: Generate finger prisms
