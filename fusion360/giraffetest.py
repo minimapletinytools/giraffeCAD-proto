@@ -78,7 +78,7 @@ def create_anthology_pattern_book():
     from examples.oscarshed import create_oscar_shed_patternbook
     from examples.japanese_joints_example import create_japanese_joints_patternbook
     from examples.irrational_angles_example import create_irrational_angles_patternbook
-    from examples.CutCSG_examples import create_csg_examples_patternbook
+    from examples.CSG_debug_examples import create_csg_examples_patternbook
     from examples.patternbook_example import create_patternbook_example_patternbook
     
     # Create all individual pattern books
@@ -155,7 +155,7 @@ def reload_all_modules():
         'examples.oscarshed',
         'examples.japanese_joints_example',
         'examples.irrational_angles_example',
-        'examples.CutCSG_examples',
+        'examples.CSG_debug_examples',
         'examples.patternbook_example',
     ]
     
@@ -397,7 +397,7 @@ def render_irrational_angles():
 def render_csg():
     """Render CSG examples from anthology PatternBook."""
     from giraffe_render_fusion360 import render_csg_pattern, clear_design
-    from examples.CutCSG_examples import EXAMPLES
+    from examples.CSG_debug_examples import EXAMPLES
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - CSG Examples")

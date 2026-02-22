@@ -38,7 +38,7 @@ modules_to_reload = [
     'code_goes_here.construction',
     'giraffe',
     'giraffe_render_freecad',
-    'examples.test_CutCSG_examples',
+    'examples.CSG_debug_examples',
 ]
 
 for module_name in modules_to_reload:
@@ -55,7 +55,7 @@ print("\nModule reload complete.\n")
 
 # Import after reloading
 from giraffe_render_freecad import render_csg_shape, clear_document, get_active_document
-from examples.test_CutCSG_examples import EXAMPLES, get_example
+from examples.CSG_debug_examples import EXAMPLES, get_example
 
 
 # ============================================================================
