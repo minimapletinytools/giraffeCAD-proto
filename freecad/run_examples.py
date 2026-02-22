@@ -45,8 +45,8 @@ if script_dir not in sys.path:
 # RENDER_TYPE: 'pattern' or 'group'
 # - 'pattern': Render a single pattern by name
 # - 'group': Render all patterns in a group with spacing
-#RENDER_TYPE = 'group'
-RENDER_TYPE = 'pattern'
+RENDER_TYPE = 'group'
+#RENDER_TYPE = 'pattern'
 
 # PATTERN_NAME: Name of a specific pattern to render (when RENDER_TYPE = 'pattern')
 # Examples of available patterns:
@@ -72,7 +72,7 @@ GROUP_NAME = 'plain_joints'
 #GROUP_NAME = 'basic_joints'  # All simplified basic joint examples
 #GROUP_NAME = 'japanese_joints'
 #GROUP_NAME = 'posts'
-#GROUP_NAME = 'csg'
+GROUP_NAME = 'csg'
 
 # SEPARATION_DISTANCE: Distance between patterns when rendering a group (in meters)
 # Common values: m(1), m(2), feet(3), feet(4), inches(24)

@@ -10,7 +10,7 @@ from typing import List, Tuple, Optional, Callable, Union, Literal
 from dataclasses import dataclass, field
 from .rule import V3, create_v3, Transform
 from .timber import Frame, CutTimber, Timber, Peg, Wedge, Joint, JointAccessory
-from .cutcsg import CutCSG
+from .cutcsg import CutCSG, translate_csg
 
 
 # Type alias for pattern functions
@@ -129,11 +129,11 @@ def make_pattern_from_frame(frame_func: Callable[[], Frame]) -> PatternLambda:
 def make_pattern_from_csg(csg_func: Callable[[], CutCSG]) -> PatternLambda:
     """
     Convert a CSG-returning function (no args) to a pattern lambda that accepts center
-    and returns the CSG. CSG examples currently do not translate by center; the center
-    parameter is present for API consistency with frame/joint patterns.
+    and returns the CSG translated by center. Consistent with frame/joint patterns:
+    the returned CSG is positioned at the given center.
     """
     def pattern_lambda(center: V3) -> CutCSG:
-        return csg_func()
+        return translate_csg(csg_func(), center)
 
     return pattern_lambda
 

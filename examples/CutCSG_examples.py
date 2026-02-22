@@ -436,7 +436,7 @@ def example_chop_shoulder_notch_on_timber_face_raw():
         distance_along_timber=inches(18),
         notch_width=inches(4),
         notch_depth=inches(1),
-        wall_angle=45
+        notch_wall_relief_cut_angle=degrees(45)
     )
     
     # Return the notch CSG directly (not as a difference)
@@ -445,7 +445,7 @@ def example_chop_shoulder_notch_on_timber_face_raw():
 
 def example_angled_shoulder_notch_on_timber():
     """
-    Test example for shoulder notch with angled walls (wall_angle parameter).
+    Test example for shoulder notch with angled walls (notch_wall_relief_cut_angle parameter).
     
     Creates a 4"x4"x4' vertical timber with three notches at different heights:
     - Bottom notch (6" from bottom): 0° wall angle (perpendicular walls)
@@ -480,7 +480,7 @@ def example_angled_shoulder_notch_on_timber():
         distance_along_timber=inches(6),
         notch_width=notch_width,
         notch_depth=notch_depth,
-        wall_angle=0
+        notch_wall_relief_cut_angle=degrees(0)
     )
     
     # Notch 2: 30° wall angle at 18" from bottom
@@ -490,7 +490,7 @@ def example_angled_shoulder_notch_on_timber():
         distance_along_timber=inches(18),
         notch_width=notch_width,
         notch_depth=notch_depth,
-        wall_angle=30
+        notch_wall_relief_cut_angle=degrees(30)
     )
     
     # Notch 3: 45° wall angle at 30" from bottom
@@ -500,7 +500,7 @@ def example_angled_shoulder_notch_on_timber():
         distance_along_timber=inches(30),
         notch_width=notch_width,
         notch_depth=notch_depth,
-        wall_angle=45
+        notch_wall_relief_cut_angle=degrees(45)
     )
     
     # Create the base timber prism (in local coordinates)
@@ -564,7 +564,7 @@ EXAMPLES = {
     },
     'angled_shoulder_notch': {
         'name': 'Angled Shoulder Notch on Timber',
-        'description': '4"x4"x4\' vertical timber with three notches at 0°, 30°, and 45° wall angles (tests wall_angle parameter)',
+        'description': '4"x4"x4\' vertical timber with three notches at 0°, 30°, and 45° wall angles (tests notch_wall_relief_cut_angle parameter)',
         'function': example_angled_shoulder_notch_on_timber
     },
     'shoulder_notch_raw': {

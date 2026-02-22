@@ -173,32 +173,6 @@ class Ticket
 
 :: TODO
 
-DONE-do the timber class refactor
-DONE-fix all type checking errors
-DONE-fix type checking errors again lol, and fix for all folders this time...
-  -need to decide if you accept ints/floats  
-DONE-3 major features
-  DONE-measure functions
-  DONE-refactor timber class to support multiple timber types
-  DONE-add timber metadata
-    IGNORE-prepare for CSG metadata as well...
-DONE-actually update run_Examples to use patternbook
-DONE-update cut notch helper to consider nominal size
-IGNORE-consider making marking functions class member function of measurement hehe
-DONE-do degrees() function and radians() function
-  IGNORE-make a new angle type that wraps sympy so we can typecheck on angle types
-DONE-Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
-  DONE-add key holes
-  DONE-fix non 90 degree placement
-  DONE-add non 90 examlpe D:
-  DONE-fix finger prisms
-  DONE-default thicknesses are wrong
-  DONE-add key accessories
-  DONE-fix wedge length
-DONE-enable and fix the no python floats check or delete it alltogether
-DONE-BUG default lap settings seems to be wrong 
-DONE-BUG lap splice joint seems to cut wrongside sometime
-
 
 -create a helper for sizing mortise and timber tenons (so that the "height" of the tenon is always in the mortise timber axis)
   -just copy code from basic_mortise_and_tenon and update tha functino to use the helper
@@ -213,15 +187,8 @@ DONE-BUG lap splice joint seems to cut wrongside sometime
     -maybe have an add brace function?
   -neither perpendicular nor face aligned
 
--joint reorg
-  DONE-basic joints has simplified versions of all joints instead
-  DONE-create basic_joints for simplified verison of alle xsiting joints
-    -finish mortise and tenon basic jonit
-    -create patternbook for basic jonits
-  -reorg joints by joint type 
-  -cleanup joint examples
-    -celaup miter joint to use your new construction function thing
-    DONE-change rest of joint examples to use standard joint ctor function
+
+-reorg joints by joint type 
 
 
 
@@ -410,6 +377,40 @@ RENAME
 
 
 :: TODONE
+
+DONE-do the timber class refactor
+DONE-fix all type checking errors
+DONE-fix type checking errors again lol, and fix for all folders this time...
+  -need to decide if you accept ints/floats  
+DONE-3 major features
+  DONE-measure functions
+  DONE-refactor timber class to support multiple timber types
+  DONE-add timber metadata
+    IGNORE-prepare for CSG metadata as well...
+DONE-actually update run_Examples to use patternbook
+DONE-update cut notch helper to consider nominal size
+IGNORE-consider making marking functions class member function of measurement hehe
+DONE-do degrees() function and radians() function
+  IGNORE-make a new angle type that wraps sympy so we can typecheck on angle types
+DONE-Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shachi-sen-shikuchi) using new measuring functions
+  DONE-add key holes
+  DONE-fix non 90 degree placement
+  DONE-add non 90 examlpe D:
+  DONE-fix finger prisms
+  DONE-default thicknesses are wrong
+  DONE-add key accessories
+  DONE-fix wedge length
+DONE-enable and fix the no python floats check or delete it alltogether
+DONE-BUG default lap settings seems to be wrong 
+DONE-BUG lap splice joint seems to cut wrongside sometime
+DONE-joint reorg
+  DONE-basic joints has simplified versions of all joints instead
+  DONE-create basic_joints for simplified verison of alle xsiting joints
+    -finish mortise and tenon basic jonit
+    -create patternbook for basic jonits
+  DONE-cleanup joint examples
+    DONE-celaup miter joint to use your new construction function thing
+    DONE-change rest of joint examples to use standard joint ctor function
 DONE-maybe change cutting to have maybe_top/bottom_end_cut 
 DONE-add timber size estimation function (really you want a prism BB)
   -then add frame size estimation function
