@@ -475,7 +475,7 @@ def chop_lap_on_timber_ends(
     top_lap_timber_end: TimberReferenceEnd,
     bottom_lap_timber: TimberLike,
     bottom_lap_timber_end: TimberReferenceEnd,
-    top_lap_timber_face: TimberFace,
+    top_lap_timber_face: TimberLongFace,
     lap_length: Numeric,
     top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Numeric,
     lap_depth: Numeric

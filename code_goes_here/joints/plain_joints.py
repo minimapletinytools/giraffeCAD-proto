@@ -926,7 +926,7 @@ def cut_plain_splice_lap_joint_on_aligned_timbers(
     top_lap_timber_end: TimberReferenceEnd,
     bottom_lap_timber: TimberLike,
     bottom_lap_timber_end: TimberReferenceEnd,
-    top_lap_timber_face: TimberFace,
+    top_lap_timber_face: TimberLongFace,
     # TODO make this optional, and if it is, copmtued based on how much the 2 timbers overlap (remember to use top_lap_shoulder_position_from_top_lap_shoulder_timber_end to determine the lap end for the top lap timber, the bototm lap timber lap end is just the bottom lap timber end in this case)
     lap_length: Numeric,
     # TODO make this optional, and if it is, compute based on the top lap timber end
@@ -977,10 +977,10 @@ def cut_plain_splice_lap_joint_on_aligned_timbers(
     # Calculate default lap_depth if not provided
     if lap_depth is None:
         # Use half the thickness in the axis perpendicular to top_lap_timber_face
-        if top_lap_timber_face == TimberFace.LEFT or top_lap_timber_face == TimberFace.RIGHT:
+        if top_lap_timber_face == TimberLongFace.LEFT or top_lap_timber_face == TimberLongFace.RIGHT:
             # Face is on X-axis, so thickness is in X direction (width)
             lap_depth = top_lap_timber.size[0] / Rational(2)
-        elif top_lap_timber_face == TimberFace.FRONT or top_lap_timber_face == TimberFace.BACK:
+        elif top_lap_timber_face == TimberLongFace.FRONT or top_lap_timber_face == TimberLongFace.BACK:
             # Face is on Y-axis, so thickness is in Y direction (height)
             lap_depth = top_lap_timber.size[1] / Rational(2)
         else:  # TOP or BOTTOM
