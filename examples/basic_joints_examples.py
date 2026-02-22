@@ -146,17 +146,15 @@ def example_basic_splice_lap_joint(position=None):
     """
     if position is None:
         position = create_v3(0, 0, 0)
-    
+
     arrangement = create_canonical_splice_joint_timbers(position)
-    # Use the FRONT face for the lap
     joint = cut_basic_splice_lap_joint_on_aligned_timbers(
         top_lap_timber=arrangement.timber1,
         top_lap_timber_end=arrangement.timber1_end,
         bottom_lap_timber=arrangement.timber2,
         bottom_lap_timber_end=arrangement.timber2_end,
-        top_lap_timber_face=TimberLongFace.FRONT
+        top_lap_timber_face=TimberLongFace.FRONT,
     )
-    
     return joint
 
 

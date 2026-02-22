@@ -197,6 +197,9 @@ DONE-Mitered and keyed lap joint  (箱相欠き車知栓仕口 Hako-aikaki-shach
   DONE-fix wedge length
 DONE-enable and fix the no python floats check or delete it alltogether
 
+-BUG default lap settings seems to be wrong 
+-BUG lap splice joint seems to cut wrongside sometime
+
 -update morties and tenon to support
   -perpendicular but not face aligned
   -not perpendicular but partially face aligned (for braces)
