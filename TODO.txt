@@ -202,6 +202,8 @@ DONE-BUG lap splice joint seems to cut wrongside sometime
 
 -create a helper for sizing mortise and timber tenons (so that the "height" of the tenon is always in the mortise timber axis)
   -just copy code from basic_mortise_and_tenon and update tha functino to use the helper
+  -you might want to make a sizing helpre class for this to simplify the args?.... idk...
+  -prompt address @TODO.txt (202-204)  in the helper, first assert that the 2 timbers are are_timbers_plane_aligned. next assert that the 2 timbers are not parallel. then proceed with the logic @basic_joints.py (97-113). put this helper function in mortise_and_tenon_joint.py
 
 -CutCSG_examples -. csg_examples or just cut_examples :D
 
@@ -234,6 +236,8 @@ DONE-BUG lap splice joint seems to cut wrongside sometime
 -I think tickets can be done as dictionary... or maybe there are compositoin fo classes?
   -e.g. material ticket, grain direction ticket?
 
+
+-cleanup mortise and tenon joint examples so they actually test out th edifferent parameters and use canonicla ctors
 
 -add test timber construction thingies on top of the example ones
   -btw you should update your current example so that everything is in the XY plane I think yo uhave soem in the Z plane
