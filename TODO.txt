@@ -199,6 +199,10 @@ DONE-enable and fix the no python floats check or delete it alltogether
 DONE-BUG default lap settings seems to be wrong 
 DONE-BUG lap splice joint seems to cut wrongside sometime
 
+
+-create a helper for sizing mortise and timber tenons (so that the "height" of the tenon is always in the mortise timber axis)
+  -just copy code from basic_mortise_and_tenon and update tha functino to use the helper
+  
 -update morties and tenon to support
   -perpendicular but not face aligned
   -not perpendicular but partially face aligned (for braces)

@@ -71,7 +71,7 @@ PATTERN_NAME = 'brace_joint'  # Brace joint with mortise and tenon connections
 #GROUP_NAME = 'mortise_tenon'  # All mortise and tenon examples including brace_joint
 GROUP_NAME = 'basic_joints'  # All simplified basic joint examples
 #GROUP_NAME = 'oscar_shed'
-#GROUP_NAME = 'japanese_joints'
+GROUP_NAME = 'japanese_joints'
 #GROUP_NAME = 'posts'
 #GROUP_NAME = 'csg'
 

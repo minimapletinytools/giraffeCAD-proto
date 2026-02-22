@@ -1275,53 +1275,6 @@ def create_canonical_brace_joint_timbers(position: Optional[V3] = None) -> Brace
     )
 
 
-@dataclass(frozen=True)
-class VerticalPostHorizontalTimberArrangement:
-    """Vertical receiving post and horizontal timber (e.g. for gooseneck or housed dovetail)."""
-    receiving_timber: Timber
-    horizontal_timber: Timber
-    receiving_timber_end: TimberReferenceEnd
-
-
-def create_canonical_vertical_post_horizontal_timber_timbers(position: Optional[V3] = None) -> VerticalPostHorizontalTimberArrangement:
-    """
-    Create a canonical vertical post + horizontal timber arrangement.
-    All canonical example joints are 4"x5"x4' timbers.
-    The receiving timber is vertical (+Z) with its bottom at the position.
-    The horizontal timber runs in +Y with its bottom at position + (0, length/2, 0),
-    so it meets the post at the post's bottom end. Both have RIGHT face in +Z.
-
-    Args:
-        position: Bottom position of the vertical post. Defaults to origin.
-    """
-    if position is None:
-        position = create_v3(Integer(0), Integer(0), Integer(0))
-
-    receiving_timber = timber_from_directions(
-        length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
-        size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
-        bottom_position=position,
-        length_direction=create_v3(Integer(0), Integer(0), Integer(1)),  # +Z direction (vertical)
-        width_direction=create_v3(Integer(1), Integer(0), Integer(0)),   # RIGHT face points in +X
-        ticket="receiving_timber"
-    )
-
-    horizontal_timber = timber_from_directions(
-        length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
-        size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
-        bottom_position=position + create_v3(Integer(0), _CANONICAL_EXAMPLE_TIMBER_LENGTH / Integer(2), Integer(0)),
-        length_direction=create_v3(Integer(0), Integer(1), Integer(0)),  # +Y direction (horizontal)
-        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),   # RIGHT face points in +Z
-        ticket="horizontal_timber"
-    )
-
-    return VerticalPostHorizontalTimberArrangement(
-        receiving_timber=receiving_timber,
-        horizontal_timber=horizontal_timber,
-        receiving_timber_end=TimberReferenceEnd.BOTTOM
-    )
-
-
 # =========================================
 # internal helpers
 # =========================================
