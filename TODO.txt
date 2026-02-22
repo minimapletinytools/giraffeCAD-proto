@@ -202,7 +202,9 @@ DONE-BUG lap splice joint seems to cut wrongside sometime
 
 -create a helper for sizing mortise and timber tenons (so that the "height" of the tenon is always in the mortise timber axis)
   -just copy code from basic_mortise_and_tenon and update tha functino to use the helper
-  
+
+-CutCSG_examples -. csg_examples or just cut_examples :D
+
 -update morties and tenon to support
   -perpendicular but not face aligned
   -not perpendicular but partially face aligned (for braces)
@@ -217,7 +219,7 @@ DONE-BUG lap splice joint seems to cut wrongside sometime
   -reorg joints by joint type 
   -cleanup joint examples
     -celaup miter joint to use your new construction function thing
-    -change rest of joint examples to use standard joint ctor function
+    DONE-change rest of joint examples to use standard joint ctor function
 
 
 

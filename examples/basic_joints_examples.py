@@ -32,7 +32,7 @@ from code_goes_here.construction import (
     _CANONICAL_EXAMPLE_TIMBER_LENGTH,
     _CANONICAL_EXAMPLE_TIMBER_SIZE,
 )
-from code_goes_here.patternbook import PatternBook, PatternMetadata
+from code_goes_here.patternbook import PatternBook, PatternMetadata, make_pattern_from_joint
 
 
 def example_basic_miter_joint(position=None):
@@ -266,58 +266,6 @@ def create_basic_joints_patternbook() -> PatternBook:
     Returns:
         PatternBook: PatternBook containing all basic joint patterns
     """
-    def make_pattern_from_joint(joint_func):
-        """Helper to convert a joint function to a pattern lambda that handles translation."""
-        def pattern_lambda(center):
-            # Create joint at origin
-            joint = joint_func()
-            
-            # Translate all timbers to center position
-            translated_timbers = []
-            for timber in joint.cut_timbers.values():
-                new_position = timber.timber.get_bottom_position_global() + center
-                # Get ticket - preserve the original ticket object
-                translated_timber = Timber(
-                    ticket=timber.timber.ticket,
-                    transform=Transform(position=new_position, orientation=timber.timber.orientation),
-                    size=timber.timber.size,
-                    length=timber.timber.length
-                )
-                translated_timbers.append(CutTimber(timber=translated_timber, cuts=timber.cuts))
-            
-            # Translate accessories
-            translated_accessories = []
-            if joint.jointAccessories:
-                for accessory in joint.jointAccessories.values():
-                    translated_transform = Transform(
-                        position=accessory.transform.position + center,
-                        orientation=accessory.transform.orientation
-                    )
-                    if isinstance(accessory, Peg):
-                        translated_accessory = Peg(
-                            transform=translated_transform,
-                            size=accessory.size,
-                            shape=accessory.shape,
-                            forward_length=accessory.forward_length,
-                            stickout_length=accessory.stickout_length
-                        )
-                    elif isinstance(accessory, Wedge):
-                        translated_accessory = Wedge(
-                            transform=translated_transform,
-                            base_width=accessory.base_width,
-                            tip_width=accessory.tip_width,
-                            height=accessory.height,
-                            length=accessory.length,
-                            stickout_length=accessory.stickout_length
-                        )
-                    else:
-                        translated_accessory = accessory
-                    translated_accessories.append(translated_accessory)
-            
-            return Frame(cut_timbers=translated_timbers, accessories=translated_accessories)
-        
-        return pattern_lambda
-    
     patterns = [
         (PatternMetadata("basic_miter", ["basic_joints", "miter"], "frame"),
          make_pattern_from_joint(example_basic_miter_joint)),
