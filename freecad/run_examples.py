@@ -54,8 +54,9 @@ RENDER_TYPE = 'group'
 #PATTERN_NAME = 'butt_joint'
 #PATTERN_NAME = 'splice_joint'
 #PATTERN_NAME = 'mortise_and_tenon_simple'
+PATTERN_NAME = 'brace_joint'  # Brace joint with mortise and tenon connections
 #PATTERN_NAME = 'dovetail_half_lap'
-PATTERN_NAME = 'oscar_shed'
+#PATTERN_NAME = 'oscar_shed'
 #PATTERN_NAME = 'gooseneck_simple'
 #PATTERN_NAME = 'shoulder_notch'
 #PATTERN_NAME = 'short_post'
@@ -63,12 +64,14 @@ PATTERN_NAME = 'oscar_shed'
 #PATTERN_NAME = 'mitered_keyed_lap'
 
 # GROUP_NAME: Name of a pattern group to render (when RENDER_TYPE = 'group')
-# Available groups: 'plain_joints', 'mortise_and_tenon', 'construction', 
+# Available groups: 'plain_joints', 'mortise_tenon', 'basic_joints', 'construction', 
 #                   'horsey', 'oscar_shed', 'japanese_joints', 'csg_examples', 
 #                   'irrational_angles', 'posts', 'beams', 'boxes'
 #GROUP_NAME = 'plain_joints'
+#GROUP_NAME = 'mortise_tenon'  # All mortise and tenon examples including brace_joint
+GROUP_NAME = 'basic_joints'  # All simplified basic joint examples
 #GROUP_NAME = 'oscar_shed'
-GROUP_NAME = 'japanese_joints'
+#GROUP_NAME = 'japanese_joints'
 #GROUP_NAME = 'posts'
 #GROUP_NAME = 'csg'
 
@@ -90,6 +93,7 @@ def create_anthology_pattern_book():
     from code_goes_here.patternbook import PatternBook
     from examples.reference.basic_joints_example import create_plain_joints_patternbook
     from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
+    from examples.basic_joints_examples import create_basic_joints_patternbook
     from examples.construction_examples import create_construction_patternbook
     from examples.horsey_example import create_horsey_patternbook
     from examples.oscarshed import create_oscar_shed_patternbook
@@ -103,6 +107,7 @@ def create_anthology_pattern_book():
     books = [
         create_plain_joints_patternbook(),
         create_mortise_and_tenon_patternbook(),
+        create_basic_joints_patternbook(),
         create_construction_patternbook(),
         create_horsey_patternbook(),
         create_oscar_shed_patternbook(),
@@ -158,6 +163,7 @@ def reload_all_modules():
         'code_goes_here.rendering_utils',
         'code_goes_here.joints.joint_shavings',
         'code_goes_here.joints.plain_joints',
+        'code_goes_here.joints.basic_joints',
         'code_goes_here.joints.mortise_and_tenon_joint',
         'code_goes_here.joints.japanese_joints',
         'code_goes_here.patternbook',
@@ -167,6 +173,7 @@ def reload_all_modules():
         'giraffe_render_freecad',
         'examples.reference.basic_joints_example',
         'examples.mortise_and_tenon_joint_examples',
+        'examples.basic_joints_examples',
         'examples.horsey_example',
         'examples.oscarshed',
         'examples.new_shed',

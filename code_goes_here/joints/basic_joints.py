@@ -15,7 +15,6 @@ from .plain_joints import (
     cut_plain_butt_splice_joint_on_aligned_timbers,
     cut_plain_cross_lap_joint,
     cut_plain_house_joint,
-    cut_plain_house_joint_DEPRECATED,
     cut_plain_splice_lap_joint_on_aligned_timbers,
 )
 from .mortise_and_tenon_joint import (
@@ -95,23 +94,36 @@ def cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers(
 ) -> Joint:
     """Wrapper for cut_mortise_and_tenon_joint_on_face_aligned_timbers."""
 
-    # TODO FINISH THESE
-    tenon_size = tenon_timber.size
-    tenon_length = tenon_timber.get_size_in_face_normal_axis(TimberLongFace.FRONT)
-    mortise_depth = mortise_timber.get_size_in_face_normal_axis(TimberLongFace.FRONT)
+    # this is the "side" of the joint
+    joint_side_mortise_timber_face = mortise_timber.get_closest_oriented_face_from_global_direction(cross_product(mortise_timber.get_length_direction_global(), tenon_timber.get_face_direction_global(tenon_end.to.face())))
+    joint_side_tenon_timber_face = tenon_timber.get_closest_oriented_face_from_global_direction(mortise_timber.get_face_direction_global(joint_side_mortise_timber_face))
+
+    # the sizing XY depends on the orientation of the tenon timber relative to the mortise timber
+    mortise_length_on_tenon_timber_face = tenon_timber.get_closest_oriented_face_from_global_direction(mortise_timber.get_length_direction_global())
+
+    mortise_timber_entry_face = joint_side_mortise_timber_face.to.long_face().rotate_right().to.face()
+
+    tenon_mortise_length_size = tenon_timber.get_size_in_face_normal_axis(mortise_length_on_tenon_timber_face)*Rational(3,4)
+    tenon_mortise_width_size = mortise_timber.get_size_in_face_normal_axis(joint_side_mortise_timber_face)*Rational(1,3)
+
+    if mortise_length_on_tenon_timber_face == TimberLongFace.FRONT or mortise_length_on_tenon_timber_face == TimberLongFace.BACK:
+        tenon_size = Matrix([tenon_mortise_length_size, tenon_mortise_width_size])
+    else:
+        tenon_size = Matrix([tenon_mortise_width_size, tenon_mortise_length_size])
+        
+
+    tenon_length = mortise_timber.get_size_in_face_normal_axis(mortise_timber_entry_face)
+    mortise_depth = tenon_length
 
     tenon_position = create_v3(0, 0, 0)
     peg_parameters = None
-    if use_peg:
+    if use_peg: 
         peg_parameters = SimplePegParameters(
             shape=PegShape.SQUARE,
-
-            # TODO FINISH ALL WRONG 
-            tenon_face=TimberLongFace.FRONT,
-            peg_positions=[(inches(1), inches(-1, 2))],
+            tenon_face=joint_side_tenon_timber_face.to.long_face(),
+            peg_positions=[(tenon_length/3, 0)],
             size=inches(1, 2),
-            depth=inches(7, 2),
-
+            depth=None,
             tenon_hole_offset=inches(Rational(1, 16))
         )
     
@@ -142,9 +154,9 @@ def cut_basic_lapped_gooseneck_joint(
 
     width = gooseneck_timber.get_size_in_face_normal_axis(gooseneck_timber_face.rotate_right())
     gooseneck_length = width*Rational(2)
-    gooseneck_small_width: width*Rational(1, 4)
-    gooseneck_large_width: width*Rational(1, 2)
-    gooseneck_head_length: width*Rational(1, 2)
+    gooseneck_small_width = width*Rational(1, 4)
+    gooseneck_large_width = width*Rational(1, 2)
+    gooseneck_head_length = width*Rational(1, 2)
 
     return cut_lapped_gooseneck_joint(
         gooseneck_timber,
