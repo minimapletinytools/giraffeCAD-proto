@@ -30,6 +30,7 @@ from code_goes_here.joints.plain_joints import (
     cut_plain_splice_lap_joint_on_aligned_timbers,
 )
 from code_goes_here.construction import (
+    create_canonical_corner_joint_timbers,
     create_canonical_right_angle_corner_joint_timbers,
     create_canonical_butt_joint_timbers,
     create_canonical_splice_joint_timbers,
@@ -46,57 +47,25 @@ TIMBER_SIZE_2D = create_v2(TIMBER_WIDTH, TIMBER_HEIGHT)
 def make_miter_joint_example(position: V3) -> list[CutTimber]:
     """
     Create a basic miter joint example with non-axis-aligned timbers.
-    Two timbers meet at their ends with a miter cut, at 77 degrees apart.
+    Two timbers meet at their ends with a miter cut, at 67 degrees apart.
     This demonstrates the general miter joint (non-face-aligned case).
 
     Args:
-        position: Center position of the joint (V3)
+        position: Bottom position where the two timbers meet (V3)
 
     Returns:
         List of CutTimber objects representing the joint
     """
-    from sympy import cos, sin
-
-    half_length = TIMBER_LENGTH / 2
-
-    # Angle in radians (67 degrees)
-    angle_deg = 67
-    angle_rad = degrees(angle_deg)
-
-    # TimberA extends at 0 degrees (along +X axis)
-    direction_A = Matrix([1, 0, 0])
-
-    # TimberB extends at 77 degrees from TimberA (rotated counterclockwise in XY plane)
-    direction_B = Matrix([cos(angle_rad), sin(angle_rad), 0])
-
-    # Calculate perpendicular directions in XY plane for width directions
-    # For direction (dx, dy, 0), perpendicular is (-dy, dx, 0)
-    width_A = Matrix([0, 1, 0])  # Perpendicular to direction_A
-    width_B = Matrix([-sin(angle_rad), cos(angle_rad), 0])  # Perpendicular to direction_B
-
-    # TimberA extends from position in direction_A
-    timberA = timber_from_directions(
-        ticket="MiterJoint_TimberA",
-        length=TIMBER_LENGTH,
-        size=TIMBER_SIZE_2D,
-        bottom_position=position - direction_A * half_length,
-        length_direction=direction_A,
-        width_direction=width_A
+    arrangement = create_canonical_corner_joint_timbers(
+        corner_angle=degrees(67),
+        position=position,
     )
-
-    # TimberB extends from position in direction_B
-    timberB = timber_from_directions(
-        ticket="MiterJoint_TimberB",
-        length=TIMBER_LENGTH,
-        size=TIMBER_SIZE_2D,
-        bottom_position=position - direction_B * half_length,
-        length_direction=direction_B,
-        width_direction=width_B
+    timberA = replace(arrangement.timber1, ticket=Ticket("MiterJoint_TimberA"))
+    timberB = replace(arrangement.timber2, ticket=Ticket("MiterJoint_TimberB"))
+    joint = cut_plain_miter_joint(
+        timberA, arrangement.timber1_end,
+        timberB, arrangement.timber2_end,
     )
-
-    # Create miter joint at the ends that meet at position
-    joint = cut_plain_miter_joint(timberA, TimberReferenceEnd.TOP, timberB, TimberReferenceEnd.TOP)
-
     return list(joint.cut_timbers.values())
 
 
