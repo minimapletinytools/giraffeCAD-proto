@@ -29,7 +29,6 @@ from code_goes_here.construction import (
     create_canonical_butt_joint_timbers,
     create_canonical_splice_joint_timbers,
     create_canonical_cross_joint_timbers,
-    create_canonical_vertical_post_horizontal_timber_timbers,
     _CANONICAL_EXAMPLE_TIMBER_LENGTH,
     _CANONICAL_EXAMPLE_TIMBER_SIZE,
 )
@@ -212,12 +211,12 @@ def example_basic_lapped_gooseneck_joint(position=None):
 def example_basic_housed_dovetail_butt_joint(position=None):
     """
     Create a basic housed dovetail butt joint.
-    Uses canonical timbers - dovetail timber is horizontal, receiving timber is vertical.
+    Uses canonical butt joint timbers (receiving along X, butt/dovetail along Y).
     """
     from sympy import Integer
 
     arrangement = create_canonical_butt_joint_timbers(position)
-    # Face must be perpendicular to receiving timber length (+Z); use FRONT (normal +Y)
+    # Face perpendicular to receiving timber length (X): use RIGHT (normal +Z) on butt timber
     dovetail_timber_face = TimberLongFace.RIGHT
     width = arrangement.butt_timber.get_size_in_face_normal_axis(dovetail_timber_face.rotate_right())
     dovetail_length = width / Integer(2)

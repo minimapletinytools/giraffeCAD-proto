@@ -13,9 +13,17 @@ from typing import Optional
 import sys
 sys.path.append('..')
 
+from sympy import Rational, Integer
 from giraffe import *
 from code_goes_here.ticket import Ticket
 from code_goes_here.patternbook import PatternBook, PatternMetadata
+from code_goes_here.construction import (
+    create_canonical_splice_joint_timbers,
+    create_canonical_butt_joint_timbers,
+    create_canonical_corner_joint_timbers,
+    create_canonical_right_angle_corner_joint_timbers,
+)
+from code_goes_here.rule import inches, degrees
 
 
 def create_japanese_joints_patternbook() -> PatternBook:
@@ -92,26 +100,24 @@ def create_dovetail_butt_joint_example(position: Optional[V3] = None):
     mechanical resistance to pulling apart.
     
     Configuration:
-        - Creates a butt joint connection where one timber butts into another
+        - Uses canonical butt joint timbers (receiving along X, dovetail/butt along Y)
     
     Args:
         position: Center position of the joint (V3). Defaults to origin.
     """
-    # Create butt joint arrangement using canonical function
-    # This creates a receiving timber and a butt timber meeting at their centers
-    arrangement = create_canonical_butt_joint_timbers(position=position)
-    
-    # Rename timbers for clarity in this joint context
     from dataclasses import replace
-    receiving_timber = arrangement.receiving_timber
+
+    arrangement = create_canonical_butt_joint_timbers(position=position)
     dovetail_timber = replace(arrangement.butt_timber, ticket=Ticket("dovetail_timber"))
-    
-    # Create the dovetail butt joint using parameters appropriate for canonical timber size
+    receiving_timber = arrangement.receiving_timber
+    # Face perpendicular to receiving length (X): use RIGHT (normal +Z) on butt timber
+    dovetail_timber_face = TimberLongFace.RIGHT
+
     joint = cut_housed_dovetail_butt_joint(
         dovetail_timber=dovetail_timber,
         receiving_timber=receiving_timber,
         dovetail_timber_end=arrangement.butt_timber_end,
-        dovetail_timber_face=TimberLongFace.RIGHT,
+        dovetail_timber_face=dovetail_timber_face,
         receiving_timber_shoulder_inset=inches(Rational(1, 2)),  # 0.5" shoulder inset
         dovetail_length=inches(4),                                # 4" long dovetail tenon
         dovetail_small_width=inches(Rational(3, 2)),             # 1.5" narrow end
@@ -146,9 +152,8 @@ def create_mitered_and_keyed_lap_joint_example(position: Optional[V3] = None):
     Args:
         position: Center position of the joint (V3). Defaults to origin.
     """
-    # Create corner joint arrangement using canonical function
-    # This creates two timbers meeting at a 90-degree angle
-    arrangement = create_canonical_corner_joint_timbers(position=position)
+    # Create right-angle corner joint arrangement using canonical function
+    arrangement = create_canonical_right_angle_corner_joint_timbers(position=position)
     
     # Rename timbers for clarity in this joint context
     from dataclasses import replace
@@ -195,10 +200,7 @@ def create_mitered_and_keyed_lap_joint_130deg_example(position: Optional[V3] = N
     Args:
         position: Center position of the joint (V3). Defaults to origin.
     """
-    from sympy import pi
-    
-    # Create corner joint arrangement using canonical function with 130-degree angle
-    # Convert 130 degrees to radians
+    # Create corner joint arrangement with 130-degree angle (convert to radians)
     angle_130_rad = degrees(Integer(130))
     arrangement = create_canonical_corner_joint_timbers(corner_angle=angle_130_rad, position=position)
     

@@ -13,63 +13,38 @@ from code_goes_here.joints.mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
     SimplePegParameters
 )
-from code_goes_here.construction import create_axis_aligned_timber, create_canonical_brace_joint_timbers
+from code_goes_here.construction import (
+    create_axis_aligned_timber,
+    create_canonical_brace_joint_timbers,
+    create_canonical_butt_joint_timbers,
+)
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 
 
 def example_basic_mortise_and_tenon(position=None):
     """
-    Create a basic mortise and tenon joint between a vertical post and horizontal beam.
-    
-    Configuration:
-    - Tenon timber (vertical post): 4x4 inch, 4 feet long, bottom point at origin (0,0,0), extends upward
-    - Mortise timber (horizontal beam): 4x4 inch, 4 feet long, centered at origin, extends along X axis
+    Create a basic mortise and tenon joint using canonical butt joint timbers (4"x5"x4').
+    Tenon on butt timber (Y), mortise in receiving timber (X).
     
     Args:
         position: Optional offset position (V3) to translate the joint
     """
     if position is None:
         position = create_v3(0, 0, 0)
-    
-    # Timber dimensions: 4x4 inches, 4 feet (48 inches) long
-    timber_size = Matrix([inches(4), inches(4)])  # 4" x 4" cross section
-    timber_length = inches(48)  # 4 feet = 48 inches
-    
-    # Create a vertical post (tenon timber) with bottom at position
-    post = create_axis_aligned_timber(
-        bottom_position=position,
-        length=timber_length,
-        size=timber_size,
-        length_direction=TimberFace.TOP,  # Points upward in +Z direction
-        width_direction=TimberFace.RIGHT,  # Width in +X direction
-        ticket="Vertical Post"
-    )
-    
-    # Create a horizontal beam (mortise timber) centered at position
-    # The beam extends along X axis with its center (not bottom) at position
-    beam = create_axis_aligned_timber(
-        bottom_position=create_v3(position[0] - timber_length / 2, position[1], position[2]),  # Start at -24 inches from position so center is at position
-        length=timber_length,
-        size=timber_size,
-        length_direction=TimberFace.RIGHT,  # Points in +X direction
-        width_direction=TimberFace.FRONT,  # Width in +Y direction
-        ticket="Horizontal Beam"
-    )
-    
+
+    arrangement = create_canonical_butt_joint_timbers(position)
     tenon_size = Matrix([inches(2), inches(2)])
     tenon_length = inches(3)  # 3" long tenon
     mortise_depth = inches(7, 2)  # 3.5" deep mortise (slightly deeper than tenon)
-    
-    # Create the joint
+
     joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
-        tenon_timber=post,
-        mortise_timber=beam,
-        tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon cut on top end of post
+        tenon_timber=arrangement.butt_timber,
+        mortise_timber=arrangement.receiving_timber,
+        tenon_end=arrangement.butt_timber_end,
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth
     )
-    
     return joint
 
 
@@ -446,7 +421,7 @@ def create_mortise_and_tenon_patternbook() -> PatternBook:
             for timber in joint.cut_timbers.values():
                 new_position = timber.timber.get_bottom_position_global() + center
                 translated_timber = Timber(
-                    ticket=timber.timber.ticket.name,
+                    ticket=timber.timber.ticket,
                     transform=Transform(position=new_position, orientation=timber.timber.orientation),
                     size=timber.timber.size,
                     length=timber.timber.length
