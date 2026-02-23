@@ -589,12 +589,10 @@ class TestDistanceFromPointIntoFaceMark:
             point=None  # Use face center
         )
         
-        line = measurement.measure()
+        point = measurement.measure()
         
         # Line should point away from RIGHT face (negative X direction)
-        assert line.direction.equals(create_v3(-1, 0, 0))
-        # Face center is at (5, 0, 0), moving 5 units in -X direction gives (0, 0, 0)
-        assert line.point.equals(create_v3(0, 0, 0))
+        assert point.position.equals(create_v3(0, 0, 0))
     
     def test_mark_from_custom_point(self):
         """Test marking a line from a custom point going into timber"""
@@ -615,12 +613,10 @@ class TestDistanceFromPointIntoFaceMark:
             point=custom_point
         )
         
-        line = measurement.measure()
+        point = measurement.measure()
         
         # Line should point away from FRONT face (negative Y direction)
-        assert line.direction.equals(create_v3(0, -1, 0))
-        # Starting at (2, 5, 30), moving 3 units in -Y direction gives (2, 2, 30)
-        assert line.point.equals(create_v3(2, 2, 30))
+        assert point.position.equals(create_v3(2, 2, 30))
 
 
 class TestDistanceFromLongEdgeOnFaceMark:
@@ -708,9 +704,8 @@ class TestMeasureOntoCenterline:
         assert marking.point.equals(create_v3(0, 0, 0))
         
         # Test round-trip: mark should return a line at the correct position
-        line = marking.measure()
-        assert line.direction.equals(create_v3(0, 0, 1))  # Points into timber (+Z)
-        assert line.point.equals(create_v3(0, 0, 30))  # At the plane location
+        point = marking.measure()
+        assert point.position.equals(create_v3(0, 0, 30))  # At the plane location
     
     def test_measure_line_onto_centerline(self):
         """Test measuring closest point between a line and centerline"""
@@ -740,6 +735,5 @@ class TestMeasureOntoCenterline:
         assert marking.point.equals(create_v3(0, 0, 0))
         
         # Test round-trip
-        marked_line = marking.measure()
-        assert marked_line.direction.equals(create_v3(0, 0, 1))
-        assert marked_line.point.equals(create_v3(0, 0, 40))
+        marked_point = marking.measure()
+        assert marked_point.position.equals(create_v3(0, 0, 40))

@@ -208,15 +208,12 @@ class DistanceFromPointIntoFace(Marking):
     face: TimberFace
     point: Optional[V3] = None
     
-    def measure(self) -> Line:
+    def measure(self) -> Point:
         """
-        Convert the distance from a point into a face to a line.
-
-        Returns a line perpendicular to the face, going through the specified point (or face center),
-        offset by the distance in the direction into the timber (-face_normal).
+        Convert the distance from a point into a face to a Point
 
         Returns:
-            Line perpendicular to the face at the specified distance from the starting point
+            Point at the specified distance from the starting point
         """
         # Determine the starting point (either provided point or face center)
         if self.point is not None:
@@ -235,7 +232,8 @@ class DistanceFromPointIntoFace(Marking):
         line_point = starting_point + away_direction * self.distance
 
         # The line direction is perpendicular to the face (away from it)
-        return Line(away_direction, line_point)
+        #return Line(away_direction, line_point)
+        return Point(line_point)
     
 @dataclass(frozen=True)
 class DistanceFromLongEdgeOnFace(Marking):
