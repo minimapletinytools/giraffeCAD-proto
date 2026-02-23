@@ -11,6 +11,7 @@ from code_goes_here.timber import (
 )
 from code_goes_here.joints.mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
+    cut_mortise_and_tenon_many_options_do_not_call_me_directly,
     SimplePegParameters
 )
 from code_goes_here.construction import (
@@ -18,6 +19,7 @@ from code_goes_here.construction import (
     create_canonical_brace_joint_timbers,
     create_canonical_butt_joint_timbers,
 )
+from code_goes_here.joints.basic_joints import cut_basic_miter_joint
 from code_goes_here.patternbook import PatternBook, PatternMetadata, make_pattern_from_joint, make_pattern_from_frame
 
 
@@ -352,9 +354,9 @@ def example_brace_joint(position=None):
     
     Configuration:
     - Creates a canonical brace joint arrangement (two 90-degree corner timbers + brace)
+    - Plain miter joint between timber1 and timber2 at the corner
     - The brace timber connects the midpoints of the two corner timbers
     - Mortise and tenon joints connect the brace to both corner timbers
-    - The two corner timbers are NOT jointed together
     
     Args:
         position: Optional offset position (V3) to translate the joint
@@ -368,6 +370,14 @@ def example_brace_joint(position=None):
     timber2 = brace_arrangement.timber2
     brace_timber = brace_arrangement.brace_timber
     
+    # Plain miter joint between the two corner timbers
+    miter_joint = cut_basic_miter_joint(
+        timber1,
+        brace_arrangement.timber1_end,
+        timber2,
+        brace_arrangement.timber2_end,
+    )
+    
     # Define tenon dimensions (smaller than full timber size)
     tenon_size = Matrix([inches(2), inches(2)])  # 2" x 2" tenon
     tenon_length = inches(2)  # 2" long tenon
@@ -375,7 +385,7 @@ def example_brace_joint(position=None):
     
     # Create mortise and tenon joint between brace (tenon) and timber1 (mortise)
     # The brace connects to timber1 at its midpoint
-    joint1 = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint1 = cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         tenon_timber=brace_timber,
         mortise_timber=timber1,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon on the end of brace that connects to timber1
@@ -386,7 +396,7 @@ def example_brace_joint(position=None):
     
     # Create mortise and tenon joint between brace (tenon) and timber2 (mortise)
     # The brace connects to timber2 at its midpoint
-    joint2 = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint2 = cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         tenon_timber=brace_timber,
         mortise_timber=timber2,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon on the end of brace that connects to timber2
@@ -395,9 +405,9 @@ def example_brace_joint(position=None):
         mortise_depth=mortise_depth
     )
     
-    # Combine both joints into a single Frame
+    # Combine miter + both mortise-and-tenon joints into a single Frame
     # Frame.from_joints will handle merging cuts on timbers that appear in multiple joints
-    return Frame.from_joints([joint1, joint2], name="Brace Joint with Mortise and Tenon")
+    return Frame.from_joints([miter_joint, joint1, joint2], name="Brace Joint with Mortise and Tenon")
 
 
 def create_mortise_and_tenon_patternbook() -> PatternBook:
@@ -429,9 +439,8 @@ def create_mortise_and_tenon_patternbook() -> PatternBook:
         (PatternMetadata("with_pegs", ["mortise_tenon", "pegs"], "frame"),
          make_pattern_from_joint(example_mortise_and_tenon_with_pegs)),
         
-        # uncomment when fixed
-#       #(PatternMetadata("brace_joint", ["mortise_tenon", "brace"], "frame"),
-        # make_pattern_from_frame(example_brace_joint)),
+        (PatternMetadata("brace_joint", ["mortise_tenon", "brace"], "frame"),
+         make_pattern_from_frame(example_brace_joint)),
     ]
     
     return PatternBook(patterns=patterns)

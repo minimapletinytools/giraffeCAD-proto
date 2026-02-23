@@ -174,7 +174,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     # ========================================================================
     
     # Find which face of the mortise timber receives the mortise
-    mortise_face = mortise_timber.get_closest_oriented_face_from_global_direction(-tenon_end_direction)
+    mortise_face = mortise_timber.get_closest_oriented_long_face_from_global_direction(-tenon_end_direction).to.face()
 
     # Get the mortise face normal (pointing outward from mortise timber)
     mortise_face_normal = mortise_timber.get_face_direction_global(mortise_face)
@@ -748,34 +748,6 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
     if tenon_position is None:
         tenon_position = Matrix([Rational(0), Rational(0)])
     
-    # Verify that the timbers are face-aligned and orthogonal
-    # Face-aligned means they share the same coordinate grid alignment  
-    assert are_timbers_face_aligned(mortise_timber, tenon_timber), \
-        "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
-    
-    # Verify that the timbers are orthogonal (perpendicular length directions)
-    # This is required for proper mortise and tenon joint geometry
-    assert are_timbers_orthogonal(mortise_timber, tenon_timber), \
-        f"Timbers must be orthogonare_timbers_orthogonalal (perpendicular length directions) for this joint type. {mortise_timber.ticket.name} length_direction: {mortise_timber.get_length_direction_global()}, {tenon_timber.ticket.name} length_direction: {tenon_timber.get_length_direction_global()}"
-    
-    # Verify that tenon size + position doesn't exceed timber cross-section
-    # Tenon bounds: [position - tenon_size/2, position + tenon_size/2] must be within [-timber_size/2, +timber_size/2]
-    tenon_half_size_x = tenon_size[0] / 2
-    tenon_half_size_y = tenon_size[1] / 2
-    timber_half_size_x = tenon_timber.size[0] / 2
-    timber_half_size_y = tenon_timber.size[1] / 2
-    
-    tenon_min_x = tenon_position[0] - tenon_half_size_x
-    tenon_max_x = tenon_position[0] + tenon_half_size_x
-    tenon_min_y = tenon_position[1] - tenon_half_size_y
-    tenon_max_y = tenon_position[1] + tenon_half_size_y
-    
-    assert tenon_min_x >= -timber_half_size_x and tenon_max_x <= timber_half_size_x, \
-        f"Tenon extends beyond timber bounds in X: tenon [{float(tenon_min_x):.4f}, {float(tenon_max_x):.4f}] vs timber [{float(-timber_half_size_x):.4f}, {float(timber_half_size_x):.4f}]"
-    
-    assert tenon_min_y >= -timber_half_size_y and tenon_max_y <= timber_half_size_y, \
-        f"Tenon extends beyond timber bounds in Y: tenon [{float(tenon_min_y):.4f}, {float(tenon_max_y):.4f}] vs timber [{float(-timber_half_size_y):.4f}, {float(timber_half_size_y):.4f}]"
-    
     return cut_mortise_and_tenon_many_options_do_not_call_me_directly(
         tenon_timber=tenon_timber,
         mortise_timber=mortise_timber,
@@ -788,7 +760,6 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         wedge_parameters=None,
         peg_parameters=peg_parameters
     )
-
 
 
 
@@ -809,11 +780,13 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     # use mark/measure functions to implement this
     # assert that the timbers are plane aligned 
     # determine which face of the mortise timber the tenon is entering from 
-    # first find where the tenon centerline intersects the mortise face inset by the shoulder inset 
-    # at this point define marking_space : MarkingSpace  on the tenon timber, it should point towards the tenon end
+    # first find where the tenon centerline intersects the mortise face inset by the shoulder inset  (use measure/mark function to determine the inset shoulder plane)
+    # at this point define marking_space : MarkingSpace (in global space) on the centerline of the tenon timber right at the joint shoulder, it should point towards the tenon end
     # determine the angle of the mortise timber to the tenon timber
     # create a HalfSpace CSG on the tenon timber at this angle for the shoulder of the tenon
     # create a RectangularPrism CSG representing the tenon volume (it should go past the shoulder plane)
+
+    # SKIP THIS FOR NOW WE WILL DO THIS LATER
     # on the "short" side of the tenon shoulder (where it makes an oblique angle to the mortise timber) make another prism orthogonal to the shoulder angle right where the tenon meets the shoulder plane. So that the tenon can fit into a perpendicular mortise hole that matches the tenon size on the tenon shoulder plane
     # difference the tenon volume CSG from the half space CSG to get the tenon cut CSG
 
