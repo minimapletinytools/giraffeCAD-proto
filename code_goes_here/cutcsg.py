@@ -1204,74 +1204,77 @@ def translate_csg(csg: CutCSG, translation: V3) -> CutCSG:
     return csg
 
 
-def adopt_csg(orig_timber, adopting_timber, csg_in_orig_timber_space: CutCSG) -> CutCSG:
+def adopt_csg(
+    orig_timber: Optional["TimberLike"],
+    adopting_timber: "TimberLike",
+    csg_in_orig_timber_space: CutCSG,
+) -> CutCSG:
     """
-    Transform a CSG object from one timber's local coordinate system to another timber's local coordinate system.
-    
-    This function takes a CSG that is defined in orig_timber's local coordinates and transforms it
-    to be in adopting_timber's local coordinates. This is useful for copying joint features from
-    one timber to another (e.g., copying a gooseneck profile from the gooseneck timber to the receiving timber).
-    
+    Transform a CSG object into adopting_timber's local coordinate system.
+
+    If orig_timber is provided, the CSG is treated as being in orig_timber's local
+    coordinates. If orig_timber is None, the CSG is treated as being in global coordinates.
+
     Args:
-        orig_timber: The timber whose coordinate system the CSG is currently in
+        orig_timber: The timber whose coordinate system the CSG is in, or None for global
         adopting_timber: The timber whose coordinate system we want to transform the CSG to
-        csg_in_orig_timber_space: The CSG object in orig_timber's local coordinates
-    
+        csg_in_orig_timber_space: The CSG object (in orig_timber local, or global if orig_timber is None)
+
     Returns:
         A new CSG object in adopting_timber's local coordinates
-    
+
     Example:
-        >>> # Create a cut on timber_a
-        >>> cut_csg = create_some_cut(timber_a, ...)
-        >>> # Transform the cut to timber_b's coordinate system
         >>> cut_on_b = adopt_csg(timber_a, timber_b, cut_csg)
+        >>> csg_in_tenon_local = adopt_csg(None, tenon_timber, csg_global)
     """
     from .timber import Timber
-    
-    # Helper function to transform a transform from orig_timber to adopting_timber
+
+    # Helper: Transform from orig (or global) to adopting_timber local
     def transform_transform(trans: Transform) -> Transform:
-        """Transform a Transform from orig_timber local coords to adopting_timber local coords."""
-        # Convert from orig_timber local to global
-        global_position = orig_timber.get_bottom_position_global() + safe_transform_vector(orig_timber.orientation.matrix, trans.position)
-        global_orientation = orig_timber.orientation * trans.orientation
-        
-        # Convert from global to adopting_timber local
-        local_position = safe_transform_vector(adopting_timber.orientation.matrix.T, (global_position - adopting_timber.get_bottom_position_global()))
+        if orig_timber is not None:
+            global_position = orig_timber.get_bottom_position_global() + safe_transform_vector(
+                orig_timber.orientation.matrix, trans.position
+            )
+            global_orientation = orig_timber.orientation * trans.orientation
+        else:
+            global_position = trans.position
+            global_orientation = trans.orientation
+
+        local_position = safe_transform_vector(
+            adopting_timber.orientation.matrix.T,
+            (global_position - adopting_timber.get_bottom_position_global()),
+        )
         local_orientation = adopting_timber.orientation.invert() * global_orientation
-        
         return Transform(position=local_position, orientation=local_orientation)
-    
-    # Helper function to transform HalfSpace normal and offset
+
+    # Helper: HalfSpace from orig (or global) to adopting_timber local
     def transform_halfspace(hp: HalfSpace) -> HalfSpace:
-        """Transform a HalfSpace from orig_timber local coords to adopting_timber local coords."""
-        # The half plane is defined by: normal · point >= offset (in local coords)
-        # We need to transform this equation to the new coordinate system
-        
-        # Transform the normal vector (it's a direction, so no translation)
-        # global_normal = orig_timber.orientation * local_normal
-        global_normal = safe_transform_vector(orig_timber.orientation.matrix, hp.normal)
-        # new_local_normal = adopting_timber.orientation^T * global_normal
-        new_local_normal = safe_transform_vector(adopting_timber.orientation.matrix.T, global_normal)
-        
-        # To transform the offset, we need a point on the plane
-        # In orig timber local coords: point where normal · point = offset
-        # Pick the point: point = normal * offset (assuming normal is unit length)
-        # This gives us normal · (normal * offset) = (normal · normal) * offset = offset (if normalized)
-        # But normals might not be unit length, so we use: point = normal * (offset / (normal · normal))
+        if orig_timber is not None:
+            global_normal = safe_transform_vector(orig_timber.orientation.matrix, hp.normal)
+        else:
+            global_normal = hp.normal
+
+        new_local_normal = safe_transform_vector(
+            adopting_timber.orientation.matrix.T, global_normal
+        )
+
         normal_length_sq = safe_dot_product(hp.normal, hp.normal)
         if normal_length_sq == Integer(0):
-            # Degenerate case
             return replace(hp, normal=new_local_normal, offset=hp.offset)
-        
-        point_on_plane_local = hp.normal * (hp.offset / normal_length_sq)
-        
-        # Transform this point to global, then to new local
-        point_on_plane_global = orig_timber.get_bottom_position_global() + safe_transform_vector(orig_timber.orientation.matrix, point_on_plane_local)
-        point_on_plane_new_local = safe_transform_vector(adopting_timber.orientation.matrix.T, (point_on_plane_global - adopting_timber.get_bottom_position_global()))
-        
-        # New offset = new_normal · point_on_plane_new_local
+
+        point_on_plane_in_orig = hp.normal * (hp.offset / normal_length_sq)
+        if orig_timber is not None:
+            point_on_plane_global = orig_timber.get_bottom_position_global() + safe_transform_vector(
+                orig_timber.orientation.matrix, point_on_plane_in_orig
+            )
+        else:
+            point_on_plane_global = point_on_plane_in_orig
+
+        point_on_plane_new_local = safe_transform_vector(
+            adopting_timber.orientation.matrix.T,
+            (point_on_plane_global - adopting_timber.get_bottom_position_global()),
+        )
         new_offset = safe_dot_product(new_local_normal, point_on_plane_new_local)
-        
         return replace(hp, normal=new_local_normal, offset=new_offset)
     
     # Recursively transform based on CSG type
