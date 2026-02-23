@@ -176,6 +176,9 @@ DONE-CutCSG_examples -> CSG_debug_examples.py
 DONE-make timber names mandatory and if not provided a random one is generated?
   -if you do random ones they need to be deterministic so that they can be remapped in the viewer
 
+
+-fix timberlongface methods to take timberface or assert or something
+
 -create a helper for sizing mortise and timber tenons (so that the "height" of the tenon is always in the mortise timber axis)
   -just copy code from basic_mortise_and_tenon and update tha functino to use the helper
   -you might want to make a sizing helpre class for this to simplify the args?.... idk...
