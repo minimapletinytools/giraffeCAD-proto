@@ -6,8 +6,17 @@ Contains various mortise and tenon joint implementations
 from __future__ import annotations  # Enable deferred annotation evaluation
 
 from code_goes_here.timber import *
-from code_goes_here.measuring import measure_top_center_position, measure_bottom_center_position, measure_position_on_centerline_from_bottom, measure_position_on_centerline_from_top
+from code_goes_here.measuring import (
+    measure_top_center_position,
+    measure_bottom_center_position,
+    measure_position_on_centerline_from_bottom,
+    measure_position_on_centerline_from_top,
+    measure_into_face,
+    mark_onto_centerline,
+    Space,
+)
 from code_goes_here.construction import *
+from code_goes_here.timber_shavings import are_timbers_plane_aligned
 from code_goes_here.rule import *
 from code_goes_here.rule import safe_transform_vector, safe_dot_product
 
@@ -764,6 +773,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
 
 
 
+# TODO add mortise_shoulder_distance_from_centerline: Optional[Numeric] = None, parameter, this is intended for non plane aligned cases.
 def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     tenon_timber: TimberLike,
     mortise_timber: TimberLike,
@@ -777,12 +787,64 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     wedge_parameters: Optional[WedgeParameters] = None,
     peg_parameters: Optional[SimplePegParameters] = None
 ) -> Joint:
-    # use mark/measure functions to implement this
-    # assert that the timbers are plane aligned 
-    # determine which face of the mortise timber the tenon is entering from 
-    # first find where the tenon centerline intersects the mortise face inset by the shoulder inset  (use measure/mark function to determine the inset shoulder plane)
-    # at this point define marking_space : MarkingSpace (in global space) on the centerline of the tenon timber right at the joint shoulder, it should point towards the tenon end
-    # determine the angle of the mortise timber to the tenon timber
+    # Default tenon_position to centered (0, 0)
+    if tenon_position is None:
+        tenon_position = Matrix([Rational(0), Rational(0)])
+
+    # -------------------------------------------------------------------------
+    # Step 1: Assert plane-aligned
+    # -------------------------------------------------------------------------
+    assert are_timbers_plane_aligned(tenon_timber, mortise_timber), (
+        "Timbers must be plane-aligned for cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION"
+    )
+
+    # -------------------------------------------------------------------------
+    # Step 2: Determine which face of the mortise timber the tenon enters from
+    # -------------------------------------------------------------------------
+    tenon_end_direction = tenon_timber.get_face_direction_global(
+        TimberFace.TOP if tenon_end == TimberReferenceEnd.TOP else TimberFace.BOTTOM
+    )
+    mortise_face = mortise_timber.get_closest_oriented_long_face_from_global_direction(
+        -tenon_end_direction
+    ).to.face()
+
+    # -------------------------------------------------------------------------
+    # Step 3: Shoulder plane with inset (measure/mark)
+    # -------------------------------------------------------------------------
+    shoulder_plane = measure_into_face(mortise_shoulder_inset, mortise_face, mortise_timber)
+    shoulder_from_tenon_end_mark = mark_onto_centerline(shoulder_plane, tenon_timber, tenon_end)
+
+    away_from_tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
+    shoulder_point_global = (
+        shoulder_from_tenon_end_mark.point + shoulder_from_tenon_end_mark.distance * away_from_tenon_end_direction
+    )
+
+    tenon_right = tenon_timber.get_face_direction_global(TimberFace.RIGHT)
+    tenon_front = tenon_timber.get_face_direction_global(TimberFace.FRONT)
+    marking_origin_global = (
+        shoulder_point_global
+        + tenon_right * tenon_position[0]
+        + tenon_front * tenon_position[1]
+    )
+
+    # -------------------------------------------------------------------------
+    # Step 4: Define marking_space (global Space at shoulder, toward tenon end)
+    # -------------------------------------------------------------------------
+    direction_toward_tenon_end = -away_from_tenon_end_direction
+    tenon_orientation = compute_timber_orientation(
+        normalize_vector(direction_toward_tenon_end), tenon_timber.get_width_direction_global()
+    )
+    tenon_orientation_transform = Transform(position=marking_origin_global, orientation=tenon_orientation)
+    marking_space: Space = Space(transform=tenon_orientation_transform)
+
+    # -------------------------------------------------------------------------
+    # Step 5: Determine the angle of the mortise timber to the tenon timber
+    # -------------------------------------------------------------------------
+    mortise_face_normal = mortise_timber.get_face_direction_global(mortise_face)
+    cos_angle = safe_dot_product(
+        normalize_vector(mortise_face_normal), normalize_vector(-tenon_end_direction)
+    )
+
     # create a HalfSpace CSG on the tenon timber at this angle for the shoulder of the tenon
     # create a RectangularPrism CSG representing the tenon volume (it should go past the shoulder plane)
 
