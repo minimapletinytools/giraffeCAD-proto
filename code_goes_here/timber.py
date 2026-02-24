@@ -1685,6 +1685,39 @@ class Wedge(JointAccessory):
         )
 
 
+# TODO you should build this out, maybe do any MeasuredTimberFeature
+@dataclass(frozen=True)
+class Sticker(JointAccessory):
+    """
+    Just a marking used for debugging (ball at center + shaft in local +Z).
+    """
+    transform: Transform
+    size: Numeric = inches(1)
+
+    def render_csg_local(self) -> CutCSG:
+        # Ball diameter = size, shaft diameter = size/2, shaft length = 2*size
+        ball_radius = self.size / Integer(2)
+        shaft_radius = self.size / Integer(4)
+        shaft_length = self.size * Integer(2)
+        axis_z = create_v3(Integer(0), Integer(0), Integer(1))
+        origin = create_v3(Integer(0), Integer(0), Integer(0))
+        ball = Cylinder(
+            position=origin,
+            axis_direction=axis_z,
+            radius=ball_radius,
+            start_distance=-ball_radius,
+            end_distance=ball_radius,
+        )
+        shaft_position = axis_z * ball_radius
+        shaft = Cylinder(
+            position=shaft_position,
+            axis_direction=axis_z,
+            radius=shaft_radius,
+            start_distance=Integer(0),
+            end_distance=shaft_length,
+        )
+        return SolidUnion(children=[ball, shaft])
+        
 @dataclass(frozen=True)
 class Joint:
     cut_timbers: Dict[str, CutTimber]
