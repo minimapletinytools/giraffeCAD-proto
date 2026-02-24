@@ -19,6 +19,7 @@ from code_goes_here.construction import *
 from code_goes_here.timber_shavings import are_timbers_plane_aligned
 from code_goes_here.rule import *
 from code_goes_here.rule import safe_transform_vector, safe_dot_product
+from code_goes_here.cutcsg import RectangularPrism, HalfSpace, Difference, adopt_csg
 
 # ============================================================================
 # Parameter Classes for Mortise and Tenon Joints
@@ -808,16 +809,23 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
         -tenon_end_direction
     ).to.face()
 
+
     # -------------------------------------------------------------------------
     # Step 3: Shoulder plane with inset (measure/mark)
     # -------------------------------------------------------------------------
     shoulder_plane = measure_into_face(mortise_shoulder_inset, mortise_face, mortise_timber)
     shoulder_from_tenon_end_mark = mark_onto_centerline(shoulder_plane, tenon_timber, tenon_end)
 
-    away_from_tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
+    tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
     shoulder_point_global = (
-        shoulder_from_tenon_end_mark.point + shoulder_from_tenon_end_mark.distance * away_from_tenon_end_direction
+        shoulder_from_tenon_end_mark.point + shoulder_from_tenon_end_mark.distance * tenon_end_direction
     )
+
+    # SOMETHING IS WRONG EHER IT SHOULD BE THIS
+    # why are the shoulder plane cuts correct????
+    shoulder_point_global = shoulder_from_tenon_end_mark.measure().position
+
+    
 
     tenon_right = tenon_timber.get_face_direction_global(TimberFace.RIGHT)
     tenon_front = tenon_timber.get_face_direction_global(TimberFace.FRONT)
@@ -830,27 +838,87 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     # -------------------------------------------------------------------------
     # Step 4: Define marking_space (global Space at shoulder, toward tenon end)
     # -------------------------------------------------------------------------
-    direction_toward_tenon_end = -away_from_tenon_end_direction
     tenon_orientation = compute_timber_orientation(
-        normalize_vector(direction_toward_tenon_end), tenon_timber.get_width_direction_global()
+        normalize_vector(tenon_end_direction), tenon_timber.get_width_direction_global()
     )
-    tenon_orientation_transform = Transform(position=marking_origin_global, orientation=tenon_orientation)
-    marking_space: Space = Space(transform=tenon_orientation_transform)
+    tenon_base_transform = Transform(position=marking_origin_global, orientation=tenon_orientation)
+    marking_space: Space = Space(transform=tenon_base_transform)
 
     # -------------------------------------------------------------------------
     # Step 5: Determine the angle of the mortise timber to the tenon timber
     # -------------------------------------------------------------------------
     mortise_face_normal = mortise_timber.get_face_direction_global(mortise_face)
     cos_angle = safe_dot_product(
-        normalize_vector(mortise_face_normal), normalize_vector(-tenon_end_direction)
+        normalize_vector(mortise_face_normal), normalize_vector(tenon_end_direction)
     )
 
-    # create a HalfSpace CSG on the tenon timber at this angle for the shoulder of the tenon
-    # create a RectangularPrism CSG representing the tenon volume (it should go past the shoulder plane)
+    # -------------------------------------------------------------------------
+    # Tenon prism (origin at marking_space) and shoulder half-space
+    # -------------------------------------------------------------------------
+    from sympy import sqrt
 
-    # SKIP THIS FOR NOW WE WILL DO THIS LATER
-    # on the "short" side of the tenon shoulder (where it makes an oblique angle to the mortise timber) make another prism orthogonal to the shoulder angle right where the tenon meets the shoulder plane. So that the tenon can fit into a perpendicular mortise hole that matches the tenon size on the tenon shoulder plane
-    # difference the tenon volume CSG from the half space CSG to get the tenon cut CSG
+    # Back-extension from shoulder so prism fully contains tenon at oblique angles
+    sin_angle_sq = Integer(1) - cos_angle * cos_angle
+    sin_angle = sqrt(sin_angle_sq) if sin_angle_sq >= 0 else Integer(1)
+    sin_angle_safe = max(sin_angle, Rational(1, 10000))  # avoid division by zero when parallel
+    back_extension = max(tenon_size[0], tenon_size[1]) / sin_angle_safe
+
+    tenon_prism_global = RectangularPrism(
+        size=tenon_size,
+        transform=marking_space.transform,
+        start_distance=-back_extension,
+        end_distance=tenon_length,
+    )
+
+    # Shoulder half-space: plane through centerline ∩ shoulder (marking origin), normal = shoulder plane normal
+    shoulder_half_space_global = HalfSpace(
+        normal=-shoulder_plane.normal,
+        offset=safe_dot_product(-shoulder_plane.normal, marking_space.transform.position),
+    )
+
+    # Convert from global to tenon timber local (orig_timber=None => CSG is in global space)
+    tenon_prism_local = adopt_csg(None, tenon_timber, tenon_prism_global)
+    shoulder_half_space_local = adopt_csg(None, tenon_timber, shoulder_half_space_global)
+
+    # -------------------------------------------------------------------------
+    # Tenon cut CSG (for testing: return joint cutting only the tenon timber)
+    # -------------------------------------------------------------------------
+    marking_origin_local = safe_transform_vector(
+        tenon_timber.orientation.matrix.T,
+        (marking_origin_global - tenon_timber.get_bottom_position_global()),
+    )
+
+
+    tenon_cut_csg = Difference(
+        base=shoulder_half_space_local,
+        subtract=[tenon_prism_local],
+    )
+
+    # Redundant end cut at the tip of the tenon prism (in tenon timber local)
+    tenon_length_direction_global = safe_transform_vector(
+        marking_space.transform.orientation.matrix, Matrix([Integer(0), Integer(0), Integer(1)])
+    )
+    tip_position_global = marking_space.transform.position + tenon_length_direction_global * max(tenon_length, max(tenon_size[0], tenon_size[1])/sin_angle_safe)
+    tip_position_local = tenon_timber.transform.global_to_local(tip_position_global)
+    tip_z_local = tip_position_local[2]
+    redundant_end_cut = (
+        HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(1)), offset=tip_z_local)
+        if tenon_end == TimberReferenceEnd.TOP
+        else HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(-1)), offset=-tip_z_local)
+    )
+    tenon_cut = Cutting(
+        timber=tenon_timber,
+        maybe_top_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.BOTTOM else None,
+        negative_csg=tenon_cut_csg,
+    )
+    tenon_cut_timber = CutTimber(timber=tenon_timber, cuts=[tenon_cut])
+
+    return Joint(
+        cut_timbers={tenon_timber.ticket.name: tenon_cut_timber},
+        jointAccessories={},
+    ) 
+
 
     # compute the size of the tenon timber in the mortise length axis accounting for the angle that the tenon timber is entering at
     # make a housing cut on the mortise timber to fit the tenon timber shoulder
@@ -860,4 +928,3 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     # determine the peg CSGs using the marking space on the tenon timber to position everything (can copy logic from previosu implementation)
 
     # union/diff all the CSGs and return the joint
-    raise NotImplementedError("cut_angled_mortise_and_tenon_joint is not yet implemented")

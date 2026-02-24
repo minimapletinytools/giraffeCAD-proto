@@ -12,6 +12,7 @@ from code_goes_here.timber import (
 from code_goes_here.joints.mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_face_aligned_timbers,
     cut_mortise_and_tenon_many_options_do_not_call_me_directly,
+    cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION,
     SimplePegParameters
 )
 from code_goes_here.construction import (
@@ -385,7 +386,7 @@ def example_brace_joint(position=None):
     
     # Create mortise and tenon joint between brace (tenon) and timber1 (mortise)
     # The brace connects to timber1 at its midpoint
-    joint1 = cut_mortise_and_tenon_many_options_do_not_call_me_directly(
+    joint1 = cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
         tenon_timber=brace_timber,
         mortise_timber=timber1,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon on the end of brace that connects to timber1
@@ -396,7 +397,7 @@ def example_brace_joint(position=None):
     
     # Create mortise and tenon joint between brace (tenon) and timber2 (mortise)
     # The brace connects to timber2 at its midpoint
-    joint2 = cut_mortise_and_tenon_many_options_do_not_call_me_directly(
+    joint2 = cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
         tenon_timber=brace_timber,
         mortise_timber=timber2,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon on the end of brace that connects to timber2
