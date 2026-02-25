@@ -805,13 +805,15 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
 
     tenon_prism_cropping_csgs: Optional[List[CutCSG]] = None
     if crop_tenon_to_mortise_orientation_on_angled_joints:
-        mortise_face_center = get_point_on_face_global(mortise_face, mortise_timber)
-
-        oblique_axis_index = 0 # TODO
-        mortise_oblique_end = TimberFace.TOP # TODO
         
+        # TODO I think you need to make this completely generic, mrotise_oblique_end should be just any face if we want to support shoulder planes that have 2 angles to the tenon timber (which maybe we don't...)
+        # TODO you actualy maybe want to crop on both angles...
+        # TODO oblique_axis_index 
+        joint_angle_axis_index = 0 # TODO
+        mortise_oblique_end = TimberFace.TOP # TODO
+
         mortise_hole_length_oblique_direction = mortise_timber.get_face_direction_global(mortise_oblique_end)
-        end_crop_distance = tenon_size[oblique_axis_index] / sin_angle_safe / Rational(2)
+        end_crop_distance = tenon_size[joint_angle_axis_index] / sin_angle_safe / Rational(2)
 
         # Crop 1: far end of prism perpendicular to mortise face
         mortise_hole_end_crop_global = HalfSpace(
@@ -823,7 +825,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
         # Remove tenon where dot(p, tenon_end_direction) >= dot(origin, tenon_end_direction) + depth
         mortise_depth_crop_global = HalfSpace(
             normal=-mortise_face_normal,
-            offset=mortise_depth - safe_dot_product(mortise_face_normal, mortise_face_center),
+            offset=mortise_depth - safe_dot_product(mortise_face_normal, get_point_on_face_global(mortise_face, mortise_timber)),
         )
 
         tenon_prism_cropping_csgs = [mortise_hole_end_crop_global, mortise_depth_crop_global]
