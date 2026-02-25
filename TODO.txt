@@ -1,3 +1,18 @@
+:: 2/24/2025 measure/mark rules
+
+we have the following measurements
+MeasuredTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane', 'Space']
+
+And a bunch of different markings which are local to timber features. 
+
+But markings follow the general pattern
+
+mark(measured_feature, timber, feature)
+
+and then their measure function returns another measured_feature, they type of which should be determined from mesaured_feature and feature 
+
+we want a set of rules to determine what feature type gets returned
+
 
 :: 2/5/2026 CSG feature notes
 
@@ -176,9 +191,7 @@ DONE-CutCSG_examples -> CSG_debug_examples.py
 DONE-make timber names mandatory and if not provided a random one is generated?
   -if you do random ones they need to be deterministic so that they can be remapped in the viewer
 
-
 -fix timberlongface methods to take timberface or assert or something
-
 -create a helper for sizing mortise and timber tenons (so that the "height" of the tenon is always in the mortise timber axis)
   -just copy code from basic_mortise_and_tenon and update tha functino to use the helper
   -you might want to make a sizing helpre class for this to simplify the args?.... idk...
@@ -188,6 +201,13 @@ DONE-make timber names mandatory and if not provided a random one is generated?
   -not perpendicular but partially face aligned (for braces)
     -maybe have an add brace function?
   -neither perpendicular nor face aligned
+    -for this one you need to define the shoulder plane a certain distance away from centerline
+  -decide how to position pegs at an angle
+  -do cropping on angled mortise and tenon joints
+  -make 3 versions
+    -perpendicular (simplest)
+    -angled plane aligned
+    -no alignment (most complicated)
 -cleanup mortise and tenon joint examples so they actually test out th edifferent parameters and use canonicla ctors
 -reorg joints by joint type 
 -do sympy numeric conversion at the start of each joint... Or just have the numeric stuff cached in the timber or maybe transform class
