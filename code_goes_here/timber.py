@@ -447,6 +447,17 @@ class PerfectTimberWithin(ABC):
         else:  # BACK
             return -self.get_height_direction_global()
 
+    def get_size_index_in_long_face_normal_axis(self, face: TimberLongFace) -> int:
+        """
+        Get the index of the size in the direction normal to the specified face.
+        """
+        if face == TimberLongFace.RIGHT or face == TimberLongFace.LEFT:
+            return 0
+        elif face == TimberLongFace.FRONT or face == TimberLongFace.BACK:
+            return 1
+        else:
+            raise ValueError(f"Unknown face: {face}")
+
     def get_size_in_face_normal_axis(self, face: SomeTimberFace) -> Numeric:
         """
         Get the size of the timber in the direction normal to the specified face.
@@ -481,59 +492,62 @@ class PerfectTimberWithin(ABC):
             return nominal_size[0]
         else:  # FRONT or BACK
             return nominal_size[1]
-    
+
+    def _get_closest_oriented_face_from_faces(self, faces: List[TimberFace], target_direction: Direction3D) -> TimberFace:
+        """Return the face in `faces` whose outward normal best aligns with `target_direction` (max dot product)."""
+        best_face = faces[0]
+        best_alignment = target_direction.dot(self.get_face_direction_global(faces[0]))
+        for face in faces[1:]:
+            alignment = target_direction.dot(self.get_face_direction_global(face))
+            if alignment > best_alignment:
+                best_alignment = alignment
+                best_face = face
+        return best_face
+
     def get_closest_oriented_face_from_global_direction(self, target_direction: Direction3D) -> TimberFace:
         """
         Find which face of this timber best aligns with the target direction.
-        
+
         The target_direction should point "outwards" from the desired face (not into it).
-        
+
         Args:
             target_direction: Direction vector to match against
-            
+
         Returns:
             The TimberFace that best aligns with the target direction
         """
-        faces = [TimberFace.TOP, TimberFace.BOTTOM, TimberFace.RIGHT, 
-                TimberFace.LEFT, TimberFace.FRONT, TimberFace.BACK]
-        
-        best_face = faces[0]
-        best_alignment = target_direction.dot(self.get_face_direction_global(faces[0]))
-        
-        for face in faces[1:]:
-            face_direction = self.get_face_direction_global(face)
-            alignment = target_direction.dot(face_direction)
-            if alignment > best_alignment:
-                best_alignment = alignment
-                best_face = face
-        
-        return best_face 
+        faces = [
+            TimberFace.TOP, TimberFace.BOTTOM, TimberFace.RIGHT,
+            TimberFace.LEFT, TimberFace.FRONT, TimberFace.BACK,
+        ]
+        return self._get_closest_oriented_face_from_faces(faces, target_direction)
 
     def get_closest_oriented_long_face_from_global_direction(self, target_direction: Direction3D) -> TimberLongFace:
         """
-        Find which face of this timber best aligns with the target direction.
-        
+        Find which long face of this timber best aligns with the target direction.
+
         The target_direction should point "outwards" from the desired face (not into it).
-        
+
         Args:
             target_direction: Direction vector to match against
-            
+
         Returns:
-            The TimberFace that best aligns with the target direction
+            The TimberLongFace that best aligns with the target direction
         """
-        faces = [TimberLongFace.RIGHT, TimberLongFace.LEFT, TimberLongFace.FRONT, TimberLongFace.BACK]
-        
-        best_face = faces[0]
-        best_alignment = target_direction.dot(self.get_face_direction_global(faces[0]))
-        
-        for face in faces[1:]:
-            face_direction = self.get_face_direction_global(face)
-            alignment = target_direction.dot(face_direction)
-            if alignment > best_alignment:
-                best_alignment = alignment
-                best_face = face
-        
-        return best_face 
+        faces = [TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FRONT, TimberFace.BACK]
+        return self._get_closest_oriented_face_from_faces(faces, target_direction).to.long_face()
+
+    def get_closest_oriented_end_face_from_global_direction(self, target_direction: Direction3D) -> TimberReferenceEnd:
+        """
+        Find which end face of this timber best aligns with the target direction.
+
+        The target_direction should point "outwards" from the desired end face (not into it).
+
+        Returns:
+            The TimberReferenceEnd that best aligns with the target direction
+        """
+        faces = [TimberFace.TOP, TimberFace.BOTTOM]
+        return self._get_closest_oriented_face_from_faces(faces, target_direction).to.end()
     
     # UNTESTED
     def get_inside_face_from_footprint(self, footprint: Footprint) -> TimberFace:
