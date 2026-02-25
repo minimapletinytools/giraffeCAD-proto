@@ -192,10 +192,7 @@ DONE-make timber names mandatory and if not provided a random one is generated?
   -if you do random ones they need to be deterministic so that they can be remapped in the viewer
 
 -fix timberlongface methods to take timberface or assert or something
--create a helper for sizing mortise and timber tenons (so that the "height" of the tenon is always in the mortise timber axis)
-  -just copy code from basic_mortise_and_tenon and update tha functino to use the helper
-  -you might want to make a sizing helpre class for this to simplify the args?.... idk...
-  -prompt address @TODO.txt (202-204)  in the helper, first assert that the 2 timbers are are_timbers_plane_aligned. next assert that the 2 timbers are not parallel. then proceed with the logic @basic_joints.py (97-113). put this helper function in mortise_and_tenon_joint.py
+
 -update morties and tenon to support
   -perpendicular but not face aligned
   -not perpendicular but partially face aligned (for braces)
@@ -203,16 +200,22 @@ DONE-make timber names mandatory and if not provided a random one is generated?
   -neither perpendicular nor face aligned
     -for this one you need to define the shoulder plane a certain distance away from centerline
   -decide how to position pegs at an angle
-  -do cropping on angled mortise and tenon joints
+  DONE-do cropping on angled mortise and tenon joints
+  -TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
   -make 3 versions
     -perpendicular (simplest)
     -angled plane aligned
     -no alignment (most complicated)
 -cleanup mortise and tenon joint examples so they actually test out th edifferent parameters and use canonicla ctors
 -reorg joints by joint type 
+
+
 -do sympy numeric conversion at the start of each joint... Or just have the numeric stuff cached in the timber or maybe transform class
 -add CutCSG::get_surface_curvature(point: V3) -> Optional[Tuple[V3, Numeric, V3, Numeric]] (returns derivative and basis for the derivative) so you can properly do the point on boundary check.. welly ou may as well just have a get_surface_info that returns stuff like its curvature, whether it's an edge or face, and the curvature info.
-
+-create a helper for sizing mortise and timber tenons (so that the "height" of the tenon is always in the mortise timber axis)
+  -just copy code from basic_mortise_and_tenon and update tha functino to use the helper
+  -you might want to make a sizing helpre class for this to simplify the args?.... idk...
+  -prompt address @TODO.txt (202-204)  in the helper, first assert that the 2 timbers are are_timbers_plane_aligned. next assert that the 2 timbers are not parallel. then proceed with the logic @basic_joints.py (97-113). put this helper function in mortise_and_tenon_joint.py
 
 VIEWER PREP
   -BIG QUESTION, how to "highlight" a feature...
