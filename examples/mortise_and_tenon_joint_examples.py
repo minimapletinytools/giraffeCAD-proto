@@ -381,8 +381,8 @@ def example_brace_joint(position=None):
     
     # Define tenon dimensions (smaller than full timber size)
     tenon_size = Matrix([inches(2), inches(2)])  # 2" x 2" tenon
-    tenon_length = inches(2)  # 2" long tenon
-    mortise_depth = inches(3)  # 3" deep mortise
+    tenon_length = inches(5)  # 2" long tenon
+    mortise_depth = inches(2)  # 3" deep mortise
     
     # Create mortise and tenon joint between brace (tenon) and timber1 (mortise)
     # The brace connects to timber1 at its midpoint
@@ -392,7 +392,8 @@ def example_brace_joint(position=None):
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon on the end of brace that connects to timber1
         tenon_size=tenon_size,
         tenon_length=tenon_length,
-        mortise_depth=mortise_depth
+        mortise_depth=mortise_depth,
+        crop_tenon_to_mortise_orientation_on_angled_joints = True
     )
     
     # Create mortise and tenon joint between brace (tenon) and timber2 (mortise)
@@ -403,7 +404,8 @@ def example_brace_joint(position=None):
         tenon_end=TimberReferenceEnd.TOP,  # Tenon on the end of brace that connects to timber2
         tenon_size=tenon_size,
         tenon_length=tenon_length,
-        mortise_depth=mortise_depth
+        mortise_depth=mortise_depth,
+        crop_tenon_to_mortise_orientation_on_angled_joints = True
     )
     
     # Combine miter + both mortise-and-tenon joints into a single Frame
