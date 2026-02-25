@@ -13,13 +13,14 @@ from code_goes_here.measuring import (
     measure_position_on_centerline_from_top,
     measure_into_face,
     mark_onto_centerline,
+    get_point_on_face_global,
     Space,
 )
 from code_goes_here.construction import *
 from code_goes_here.timber_shavings import are_timbers_plane_aligned
 from code_goes_here.rule import *
 from code_goes_here.rule import safe_transform_vector, safe_dot_product
-from code_goes_here.cutcsg import RectangularPrism, HalfSpace, Difference, adopt_csg
+from code_goes_here.cutcsg import CutCSG, RectangularPrism, HalfSpace, Difference, adopt_csg
 
 # ============================================================================
 # Parameter Classes for Mortise and Tenon Joints
@@ -802,24 +803,50 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
         end_distance=tenon_length,
     )
 
+    tenon_prism_cropping_csgs: Optional[List[CutCSG]] = None
+    if crop_tenon_to_mortise_orientation_on_angled_joints:
+        mortise_face_center = get_point_on_face_global(mortise_face, mortise_timber)
+
+        oblique_axis_index = 0 # TODO
+        mortise_oblique_end = TimberFace.TOP # TODO
+        
+        mortise_hole_length_oblique_direction = mortise_timber.get_face_direction_global(mortise_oblique_end)
+        end_crop_distance = tenon_size[oblique_axis_index] / sin_angle_safe / Rational(2)
+
+        # Crop 1: far end of prism perpendicular to mortise face
+        mortise_hole_end_crop_global = HalfSpace(
+            normal=mortise_hole_length_oblique_direction,
+            offset=end_crop_distance + safe_dot_product(mortise_hole_length_oblique_direction, shoulder_point_global),
+        )
+
+        # Crop 2: depth of tenon — plane parallel to shoulder, mortise_depth from shoulder (into mortise).
+        # Remove tenon where dot(p, tenon_end_direction) >= dot(origin, tenon_end_direction) + depth
+        mortise_depth_crop_global = HalfSpace(
+            normal=-mortise_face_normal,
+            offset=mortise_depth - safe_dot_product(mortise_face_normal, mortise_face_center),
+        )
+
+        tenon_prism_cropping_csgs = [mortise_hole_end_crop_global, mortise_depth_crop_global]
+
     # Shoulder half-space: plane through centerline ∩ shoulder (marking origin), normal = shoulder plane normal
     shoulder_half_space_global = HalfSpace(
         normal=-shoulder_plane.normal,
         offset=safe_dot_product(-shoulder_plane.normal, marking_space.transform.position),
     )
 
+    tenon_prism_cropped = (
+        tenon_prism_global
+        if tenon_prism_cropping_csgs is None
+        else Difference(base=tenon_prism_global, subtract=tenon_prism_cropping_csgs)
+    )
+
     # Convert from global to tenon timber local (orig_timber=None => CSG is in global space)
-    tenon_prism_local = adopt_csg(None, tenon_timber, tenon_prism_global)
+    tenon_prism_local = adopt_csg(None, tenon_timber, tenon_prism_cropped)
     shoulder_half_space_local = adopt_csg(None, tenon_timber, shoulder_half_space_global)
 
     # -------------------------------------------------------------------------
     # Tenon cut CSG (for testing: return joint cutting only the tenon timber)
     # -------------------------------------------------------------------------
-    marking_origin_local = safe_transform_vector(
-        tenon_timber.orientation.matrix.T,
-        (marking_origin_global - tenon_timber.get_bottom_position_global()),
-    )
-
 
     tenon_cut_csg = Difference(
         base=shoulder_half_space_local,
