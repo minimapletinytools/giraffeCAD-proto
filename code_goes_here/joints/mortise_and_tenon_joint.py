@@ -707,74 +707,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
 
 
 
-def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
-    tenon_timber: TimberLike,
-    mortise_timber: TimberLike,
-    tenon_end: TimberReferenceEnd,
-    tenon_size: V2,
-    tenon_length: Numeric,
-    mortise_depth: Optional[Numeric] = None,
-    tenon_position: Optional[V2] = None,
-    peg_parameters: Optional[SimplePegParameters] = None,
-) -> Joint:
-    """
-    Creates a mortise and tenon joint with optional pegs.
-    
-    This is the recommended function for mortise and tenon joints.
-    Requires face-aligned and orthogonal timbers.
-    
-    Args:
-        tenon_timber: Timber that will receive the tenon cut
-        mortise_timber: Timber that will receive the mortise cut
-        tenon_end: Which end of the tenon timber gets the tenon (TOP or BOTTOM)
-        tenon_size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
-        tenon_length: Length of tenon extending from mortise face
-        mortise_depth: Depth of mortise (None = through mortise)
-        tenon_position: Offset of tenon center from timber centerline (X, Y) in tenon timber's local space
-                       Default is (0, 0) for centered tenon
-        peg_parameters: Optional parameters for pegs to secure the joint (SimplePegParameters)
-        
-    Returns:
-        Joint object containing the two CutTimbers and any peg accessories (in global space)
-        
-    Raises:
-        AssertionError: If timbers are not properly oriented for this joint type
-        AssertionError: If tenon size + position exceeds timber cross-section bounds
-        
-    Example:
-        >>> # Create a mortise and tenon with 2x2 inch tenon, 3 inches long, with pegs
-        >>> joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
-        ...     tenon_timber=vertical_post,
-        ...     mortise_timber=horizontal_beam,
-        ...     tenon_end=TimberReferenceEnd.TOP,
-        ...     tenon_size=Matrix([Rational(2), Rational(2)]),
-        ...     tenon_length=Rational(3),
-        ...     mortise_depth=Rational(4),  # or None for through mortise
-        ...     tenon_position=Matrix([Rational(0), Rational(0)]),  # centered
-        ...     peg_parameters=SimplePegParameters(...)  # optional pegs
-        ... )
-    """
-    # Default tenon_position to centered (0, 0)
-    if tenon_position is None:
-        tenon_position = Matrix([Rational(0), Rational(0)])
-    
-    return cut_mortise_and_tenon_many_options_do_not_call_me_directly(
-        tenon_timber=tenon_timber,
-        mortise_timber=mortise_timber,
-        tenon_end=tenon_end,
-        tenon_size=tenon_size,
-        tenon_length=tenon_length,
-        mortise_depth=mortise_depth,
-        tenon_position=tenon_position,
-        tenon_rotation=Orientation.identity(),
-        wedge_parameters=None,
-        peg_parameters=peg_parameters
-    )
 
-
-
-
-# TODO add mortise_shoulder_distance_from_centerline: Optional[Numeric] = None, parameter, this is intended for non plane aligned cases.
 def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     tenon_timber: TimberLike,
     mortise_timber: TimberLike,
@@ -782,11 +715,16 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     tenon_size: V2,
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
+
+    # TODO replace with mortise_shoulder_distance_from_centerline: Optional[Numeric] = None
     mortise_shoulder_inset: Numeric = Rational(0),
+
     tenon_position: Optional[V2] = None,
     tenon_rotation: Optional[Orientation] = None,
     wedge_parameters: Optional[WedgeParameters] = None,
-    peg_parameters: Optional[SimplePegParameters] = None
+    peg_parameters: Optional[SimplePegParameters] = None,
+
+    crop_tenon_to_mortise_orientation_on_angled_joints: bool = False,
 ) -> Joint:
     # Default tenon_position to centered (0, 0)
     if tenon_position is None:
@@ -794,6 +732,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
 
     # -------------------------------------------------------------------------
     # Step 1: Assert plane-aligned
+    # TODO remove
     # -------------------------------------------------------------------------
     assert are_timbers_plane_aligned(tenon_timber, mortise_timber), (
         "Timbers must be plane-aligned for cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION"
@@ -801,6 +740,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
 
     # -------------------------------------------------------------------------
     # Step 2: Determine which face of the mortise timber the tenon enters from
+    # TODO remove, calculate directly from tenon_end_direction and mortise_shoulder_distance_from_centerline
     # -------------------------------------------------------------------------
     tenon_end_direction = tenon_timber.get_face_direction_global(
         TimberFace.TOP if tenon_end == TimberReferenceEnd.TOP else TimberFace.BOTTOM
@@ -817,15 +757,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     shoulder_from_tenon_end_mark = mark_onto_centerline(shoulder_plane, tenon_timber, tenon_end)
 
     tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
-    shoulder_point_global = (
-        shoulder_from_tenon_end_mark.point + shoulder_from_tenon_end_mark.distance * tenon_end_direction
-    )
-
-    # SOMETHING IS WRONG EHER IT SHOULD BE THIS
-    # why are the shoulder plane cuts correct????
     shoulder_point_global = shoulder_from_tenon_end_mark.measure().position
-
-    
 
     tenon_right = tenon_timber.get_face_direction_global(TimberFace.RIGHT)
     tenon_front = tenon_timber.get_face_direction_global(TimberFace.FRONT)
@@ -928,3 +860,128 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     # determine the peg CSGs using the marking space on the tenon timber to position everything (can copy logic from previosu implementation)
 
     # union/diff all the CSGs and return the joint
+
+
+
+# TODO FINISH
+def cut_mortise_and_tenon_joint_on_plane_aligned_timbers(
+    tenon_timber: TimberLike,
+    mortise_timber: TimberLike,
+    tenon_end: TimberReferenceEnd,
+    tenon_size: V2,
+    tenon_length: Numeric,
+    mortise_depth: Optional[Numeric] = None,
+    tenon_position: Optional[V2] = None,
+    mortise_shoulder_inset: Numeric = Rational(0),
+) -> Joint:
+
+    # -------------------------------------------------------------------------
+    # Step 1: Assert plane-aligned
+    # -------------------------------------------------------------------------
+    assert are_timbers_plane_aligned(tenon_timber, mortise_timber), (
+        "Timbers must be plane-aligned for cut_mortise_and_tenon_joint_on_plane_aligned_timbers"
+    )
+
+    # -------------------------------------------------------------------------
+    # Step 2: Determine which face of the mortise timber the tenon enters from
+    # -------------------------------------------------------------------------
+    tenon_end_direction = tenon_timber.get_face_direction_global(
+        TimberFace.TOP if tenon_end == TimberReferenceEnd.TOP else TimberFace.BOTTOM
+    )
+    mortise_face = mortise_timber.get_closest_oriented_long_face_from_global_direction(
+        -tenon_end_direction
+    ).to.face()
+
+    
+    # TODO finish
+    #mortise_shoulder_plane = measure_into_face(mortise_shoulder_inset, mortise_face, mortise_timber)
+    # TODO you need a mark the plane onto the mortise timebr and measure the distance of the plane from the centerline
+    #mortise_shoulder_distance_from_centerline = mark_onto_centerline(mortise_shoulder_plane, mortise_timber).distance
+
+    mortise_shoulder_distance_from_centerline = 0
+
+    return cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
+        tenon_timber=tenon_timber,
+        mortise_timber=mortise_timber,
+        tenon_end=tenon_end,
+        tenon_size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+
+        # TODO finish
+        #mortise_shoulder_distance_from_centerline=mortise_shoulder_distance_from_centerline,
+        mortise_shoulder_inset=mortise_shoulder_inset,
+
+        tenon_position=tenon_position,
+        tenon_rotation=Orientation.identity(),
+        wedge_parameters=None,
+        peg_parameters=None,
+        crop_tenon_to_mortise_orientation_on_angled_joints=False,
+    )
+
+
+def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    tenon_timber: TimberLike,
+    mortise_timber: TimberLike,
+    tenon_end: TimberReferenceEnd,
+    tenon_size: V2,
+    tenon_length: Numeric,
+    mortise_depth: Optional[Numeric] = None,
+    tenon_position: Optional[V2] = None,
+    peg_parameters: Optional[SimplePegParameters] = None,
+) -> Joint:
+    """
+    Creates a mortise and tenon joint with optional pegs.
+    
+    This is the recommended function for mortise and tenon joints.
+    Requires face-aligned and orthogonal timbers.
+    
+    Args:
+        tenon_timber: Timber that will receive the tenon cut
+        mortise_timber: Timber that will receive the mortise cut
+        tenon_end: Which end of the tenon timber gets the tenon (TOP or BOTTOM)
+        tenon_size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
+        tenon_length: Length of tenon extending from mortise face
+        mortise_depth: Depth of mortise (None = through mortise)
+        tenon_position: Offset of tenon center from timber centerline (X, Y) in tenon timber's local space
+                       Default is (0, 0) for centered tenon
+        peg_parameters: Optional parameters for pegs to secure the joint (SimplePegParameters)
+        
+    Returns:
+        Joint object containing the two CutTimbers and any peg accessories (in global space)
+        
+    Raises:
+        AssertionError: If timbers are not properly oriented for this joint type
+        AssertionError: If tenon size + position exceeds timber cross-section bounds
+        
+    Example:
+        >>> # Create a mortise and tenon with 2x2 inch tenon, 3 inches long, with pegs
+        >>> joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        ...     tenon_timber=vertical_post,
+        ...     mortise_timber=horizontal_beam,
+        ...     tenon_end=TimberReferenceEnd.TOP,
+        ...     tenon_size=Matrix([Rational(2), Rational(2)]),
+        ...     tenon_length=Rational(3),
+        ...     mortise_depth=Rational(4),  # or None for through mortise
+        ...     tenon_position=Matrix([Rational(0), Rational(0)]),  # centered
+        ...     peg_parameters=SimplePegParameters(...)  # optional pegs
+        ... )
+    """
+    # Default tenon_position to centered (0, 0)
+    if tenon_position is None:
+        tenon_position = Matrix([Rational(0), Rational(0)])
+    
+    return cut_mortise_and_tenon_many_options_do_not_call_me_directly(
+        tenon_timber=tenon_timber,
+        mortise_timber=mortise_timber,
+        tenon_end=tenon_end,
+        tenon_size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        tenon_position=tenon_position,
+        tenon_rotation=Orientation.identity(),
+        wedge_parameters=None,
+        peg_parameters=peg_parameters
+    )
+
+
