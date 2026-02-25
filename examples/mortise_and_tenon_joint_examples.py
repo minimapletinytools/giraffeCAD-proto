@@ -383,6 +383,22 @@ def example_brace_joint(position=None):
     tenon_size = Matrix([inches(2), inches(2)])  # 2" x 2" tenon
     tenon_length = inches(5)  # 2" long tenon
     mortise_depth = inches(2)  # 3" deep mortise
+
+        
+    # Define peg parameters
+    # Two pegs through the FRONT face, offset from the centerline
+    # - First peg: 1" from shoulder, -0.5" from centerline
+    # - Second peg: 2" from shoulder, +0.5" from centerline
+    peg_params = SimplePegParameters(
+        shape=PegShape.SQUARE,
+        tenon_face=TimberLongFace.RIGHT,
+        peg_positions=[
+            (inches(1), inches(0)),  # 1" from shoulder, -0.5" from centerline
+        ],
+        #depth=inches(4),  # 4" deep into mortise timber
+        size=inches(1, 2)  # 0.5" peg diameter/side length
+    )
+    
     
     # Create mortise and tenon joint between brace (tenon) and timber1 (mortise)
     # The brace connects to timber1 at its midpoint
@@ -393,7 +409,8 @@ def example_brace_joint(position=None):
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        crop_tenon_to_mortise_orientation_on_angled_joints = True
+        crop_tenon_to_mortise_orientation_on_angled_joints = True,
+        peg_parameters=peg_params
     )
     
     # Create mortise and tenon joint between brace (tenon) and timber2 (mortise)
@@ -405,7 +422,8 @@ def example_brace_joint(position=None):
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        crop_tenon_to_mortise_orientation_on_angled_joints = True
+        crop_tenon_to_mortise_orientation_on_angled_joints = True,
+        peg_parameters=peg_params
     )
     
     # Combine miter + both mortise-and-tenon joints into a single Frame
