@@ -825,7 +825,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     )
 
     tenon_prism_cropping_csgs: Optional[List[CutCSG]] = None
-    if crop_tenon_to_mortise_orientation_on_angled_joints and not zero_test(cos_angle):
+    do_cropping = crop_tenon_to_mortise_orientation_on_angled_joints and not zero_test(cos_angle)
+    if do_cropping:
         
         mortise_oblique_end = mortise_timber.get_closest_oriented_end_face_from_global_direction(tenon_end_direction)
         joint_angle_axis_face = tenon_timber.get_closest_oriented_long_face_from_global_direction(mortise_timber.get_face_direction_global(mortise_oblique_end))
@@ -866,13 +867,58 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     shoulder_half_space_local = adopt_csg(None, tenon_timber, shoulder_half_space_global)
 
     # -------------------------------------------------------------------------
-    # Tenon cut CSG (for testing: return joint cutting only the tenon timber)
+    # mortise hole
+    # -------------------------------------------------------------------------
+
+    mortise_hole_prism_global = None
+
+    if do_cropping:
+        mortise_hole_size = create_v2(0,0)
+        mortise_hole_size[1] = tenon_size[joint_angle_axis_index] / sin_angle_safe
+        opp_index = 1 if joint_angle_axis_index == 0 else 0
+        mortise_hole_size[0] = tenon_size[opp_index]
+
+        mortise_hole_orientation = Orientation.from_z_and_y(
+            z_direction=-mortise_face_normal,
+            y_direction=mortise_hole_length_oblique_direction,
+        )
+
+        mortise_hole_transform = Transform(
+            position=marking_space.transform.position,
+            orientation=mortise_hole_orientation,
+        )
+        
+        mortise_hole_prism_global = RectangularPrism(
+            size=mortise_hole_size,
+            transform=mortise_hole_transform,
+            start_distance=-back_extension,
+            end_distance=mortise_depth,
+        )
+    else:
+        mortise_hole_prism_global = RectangularPrism(
+            size=tenon_size,
+            transform=marking_space.transform,
+            start_distance=-back_extension,
+            end_distance=mortise_depth,
+        )
+
+    # -------------------------------------------------------------------------
+    # make the final cut CSGs
     # -------------------------------------------------------------------------
 
     tenon_cut_csg = Difference(
         base=shoulder_half_space_local,
         subtract=[tenon_prism_local],
     )
+
+    mortise_hole_prism_local = adopt_csg(None, mortise_timber, mortise_hole_prism_global)
+    mortise_cut = Cutting(
+        timber=mortise_timber,
+        maybe_top_end_cut=None,
+        maybe_bottom_end_cut=None,
+        negative_csg=mortise_hole_prism_local,
+    )
+    mortise_cut_timber = CutTimber(mortise_timber, cuts=[mortise_cut])
 
     # Redundant end cut at the tip of the tenon prism (in tenon timber local)
     tenon_length_direction_global = safe_transform_vector(
@@ -895,19 +941,12 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     tenon_cut_timber = CutTimber(timber=tenon_timber, cuts=[tenon_cut])
 
     return Joint(
-        cut_timbers={tenon_timber.ticket.name: tenon_cut_timber},
+        cut_timbers={
+            tenon_timber.ticket.name: tenon_cut_timber,
+            mortise_timber.ticket.name: mortise_cut_timber,
+        },
         jointAccessories={},
     ) 
-
-
-    # compute the size of the tenon timber in the mortise length axis accounting for the angle that the tenon timber is entering at
-    # make a housing cut on the mortise timber to fit the tenon timber shoulder
-    # next determine the size of the tenon in the mortise timebr length axis, this is one dimension of the mortise hole sive the other dimension can be pulled from tenon_size (i.e. one component of tenon_size needs to be divided by the cosine of the angle)
-    # create a Rectangular prism for the mortise hole based on these parameters, if depth is none then it is a through mortise
-
-    # determine the peg CSGs using the marking space on the tenon timber to position everything (can copy logic from previosu implementation)
-
-    # union/diff all the CSGs and return the joint
 
 
 
