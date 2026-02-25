@@ -721,12 +721,33 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     mortise_shoulder_inset: Numeric = Rational(0),
 
     tenon_position: Optional[V2] = None,
-    tenon_rotation: Optional[Orientation] = None,
     wedge_parameters: Optional[WedgeParameters] = None,
     peg_parameters: Optional[SimplePegParameters] = None,
 
     crop_tenon_to_mortise_orientation_on_angled_joints: bool = False,
 ) -> Joint:
+    """
+    Generic mortise and tenon joint creation function with support for various options.
+    
+    Args:
+        tenon_timber: Timber that will receive the tenon cut
+        mortise_timber: Timber that will receive the mortise cut
+        tenon_end: Which end of the tenon timber gets the tenon (TOP or BOTTOM)
+        tenon_size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
+        tenon_length: Length of tenon extending from mortise face. you may need to set this a little longer than you think for angled joints.
+        mortise_depth: Depth of mortise (None = through mortise) this is measured different depending on the value of crop_tenon_to_mortise_orientation_on_angled_joints
+        mortise_shoulder_inset: Inset distance from mortise face to shoulder plane
+        tenon_position: Position of tenon in local coordinates of tenon timber (0,0 = centered on centerline)
+        wedge_parameters: Optional wedge configuration (not yet supported)
+        peg_parameters: Optional peg configuration 
+
+        crop_tenon_to_mortise_orientation_on_angled_joints: if true, "crops" the tenon so it's depth in the mortise face axis is equal to mortise_depth, and the pointy end of the tenon is cropped to the mortise hole right where the tenon edge and joint shoulder meet. If false, the mortise hole is sized to the tenon with its depth in the tenon axis direction measured from the shoulder is mortise_depth.
+        
+    Returns:
+        Joint object containing the two CutTimbers and any accessories (in global space)
+
+    Args:
+    """
     # Default tenon_position to centered (0, 0)
     if tenon_position is None:
         tenon_position = Matrix([Rational(0), Rational(0)])
@@ -804,13 +825,11 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     )
 
     tenon_prism_cropping_csgs: Optional[List[CutCSG]] = None
-    if crop_tenon_to_mortise_orientation_on_angled_joints:
+    if crop_tenon_to_mortise_orientation_on_angled_joints and not zero_test(cos_angle):
         
-        # TODO I think you need to make this completely generic, mrotise_oblique_end should be just any face if we want to support shoulder planes that have 2 angles to the tenon timber (which maybe we don't...)
-        # TODO you actualy maybe want to crop on both angles...
-        # TODO oblique_axis_index 
-        joint_angle_axis_index = 0 # TODO
-        mortise_oblique_end = TimberFace.TOP # TODO
+        mortise_oblique_end = mortise_timber.get_closest_oriented_end_face_from_global_direction(tenon_end_direction)
+        joint_angle_axis_face = tenon_timber.get_closest_oriented_long_face_from_global_direction(mortise_timber.get_face_direction_global(mortise_oblique_end))
+        joint_angle_axis_index = tenon_timber.get_size_index_in_long_face_normal_axis(joint_angle_axis_face)
 
         mortise_hole_length_oblique_direction = mortise_timber.get_face_direction_global(mortise_oblique_end)
         end_crop_distance = tenon_size[joint_angle_axis_index] / sin_angle_safe / Rational(2)
