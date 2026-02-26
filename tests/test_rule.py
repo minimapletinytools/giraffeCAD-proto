@@ -17,7 +17,16 @@ from code_goes_here.rule import (
     INCH_TO_METER, FOOT_TO_METER, SHAKU_TO_METER,
     create_v3,
     normalize_vector,
-    radians
+    radians,
+    is_complex_expr,
+    with_timeout_fallback,
+    safe_det,
+    safe_simplify,
+    safe_compare,
+    Comparison,
+    equality_test,
+    degrees,
+    are_vectors_perpendicular,
 )
 import random
 from tests.testing_shavings import generate_random_orientation, assert_is_valid_rotation_matrix
@@ -1122,3 +1131,86 @@ class TestTransformRotateAroundAxis:
         
         # Check that the resulting orientation is a valid rotation matrix
         assert_is_valid_rotation_matrix(rotated.orientation.matrix)
+
+
+# =============================================================================
+# Simple tests for previously uncovered rule.py functions (one test per method)
+# =============================================================================
+
+class TestIsComplexExpr:
+    def test_simple_rational_is_not_complex(self):
+        assert is_complex_expr(Rational(1, 2)) is False
+
+
+class TestWithTimeoutFallback:
+    def test_returns_symbolic_result_when_fast(self):
+        result = with_timeout_fallback(lambda: 42, lambda: 0)
+        assert result == 42
+
+
+class TestSafeDet:
+    def test_det_identity_is_one(self):
+        M = Matrix.eye(3)
+        assert safe_det(M) == 1
+
+
+class TestSafeSimplify:
+    def test_simplify_leaves_rational_unchanged(self):
+        x = Rational(1, 2) + Rational(1, 3)
+        assert safe_simplify(x) == Rational(5, 6)
+
+
+class TestSafeCompare:
+    def test_gt_positive(self):
+        assert safe_compare(Rational(1, 2), Comparison.GT) == True
+
+
+class TestEqualityTest:
+    def test_equal_rationals(self):
+        assert equality_test(Rational(1, 2), Rational(1, 2)) == True
+
+
+class TestDegrees:
+    def test_90_degrees_to_radians(self):
+        assert degrees(90) == pi / 2
+
+
+class TestAreVectorsPerpendicular:
+    def test_orthogonal_vectors(self):
+        v1 = create_v3(1, 0, 0)
+        v2 = create_v3(0, 1, 0)
+        assert are_vectors_perpendicular(v1, v2) == True
+
+
+class TestTransformMul:
+    def test_identity_times_identity(self):
+        T = Transform(position=create_v3(0, 0, 0), orientation=Orientation.identity())
+        result = T * T
+        assert result.position == create_v3(0, 0, 0)
+        assert result.orientation.matrix == Matrix.eye(3)
+
+
+class TestTransformInvert:
+    def test_invert_identity_is_identity(self):
+        T = Transform(position=create_v3(0, 0, 0), orientation=Orientation.identity())
+        inv = T.invert()
+        assert inv.position == create_v3(0, 0, 0)
+        assert inv.orientation.matrix == Matrix.eye(3)
+
+
+class TestTransformToGlobalTransform:
+    def test_to_global_with_identity_parent(self):
+        T = Transform(position=create_v3(1, 2, 3), orientation=Orientation.identity())
+        parent = Transform(position=create_v3(0, 0, 0), orientation=Orientation.identity())
+        global_t = T.to_global_transform(parent)
+        assert global_t.position == T.position
+        assert global_t.orientation.matrix == T.orientation.matrix
+
+
+class TestTransformToLocalTransform:
+    def test_to_local_with_identity_parent(self):
+        T = Transform(position=create_v3(1, 2, 3), orientation=Orientation.identity())
+        parent = Transform(position=create_v3(0, 0, 0), orientation=Orientation.identity())
+        local_t = T.to_local_transform(parent)
+        assert local_t.position == T.position
+        assert local_t.orientation.matrix == T.orientation.matrix

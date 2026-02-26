@@ -8,9 +8,19 @@ import pytest
 from sympy import Matrix, Rational, Integer, simplify, sqrt, cos, sin, pi
 from code_goes_here.rule import Orientation, Transform, create_v3, radians
 from code_goes_here.cutcsg import (
-    HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
+    HalfSpace,
+    RectangularPrism,
+    Cylinder,
+    SolidUnion,
+    Difference,
+    ConvexPolygonExtrusion,
+    adopt_csg,
+    translate_csg,
+    translate_profile,
+    translate_profiles,
 )
-from tests.testing_shavings import assert_is_valid_rotation_matrix
+from code_goes_here.rule import create_v2
+from tests.testing_shavings import assert_is_valid_rotation_matrix, create_standard_vertical_timber
 import random
 
 
@@ -1871,4 +1881,49 @@ class TestBoundaryDetectionComprehensive:
             for point in non_boundary_points:
                 assert extrusion.is_point_on_boundary(point) == False, \
                     f"ConvexPolygon {i}: Point {point.T} should NOT be on boundary"
+
+
+# =============================================================================
+# Simple tests for translate_profile, translate_profiles, translate_csg, adopt_csg
+# =============================================================================
+
+class TestTranslateProfile:
+    def test_translate_profile_moves_points(self):
+        profile = [Matrix([Rational(0), Rational(0)]), Matrix([Rational(1), Rational(0)])]
+        trans = create_v2(Rational(2), Rational(3))
+        result = translate_profile(profile, trans)
+        assert result[0] == Matrix([Rational(2), Rational(3)])
+        assert result[1] == Matrix([Rational(3), Rational(3)])
+
+
+class TestTranslateProfiles:
+    def test_translate_profiles_moves_all_profiles(self):
+        p1 = [Matrix([Rational(0), Rational(0)])]
+        p2 = [Matrix([Rational(1), Rational(1)])]
+        profiles = [p1, p2]
+        trans = create_v2(Rational(1), Rational(1))
+        result = translate_profiles(profiles, trans)
+        assert result[0][0] == Matrix([Rational(1), Rational(1)])
+        assert result[1][0] == Matrix([Rational(2), Rational(2)])
+
+
+class TestTranslateCsg:
+    def test_translate_csg_halfspace(self):
+        hs = HalfSpace(normal=Matrix([Integer(1), Integer(0), Integer(0)]), offset=Rational(0))
+        trans = Matrix([Rational(5), Integer(0), Integer(0)])
+        translated = translate_csg(hs, trans)
+        # Original: x >= 0. After translate by (5,0,0): (x-5) >= 0 => x >= 5
+        assert translated.contains_point(Matrix([Rational(6), Integer(0), Integer(0)])) == True
+        assert translated.contains_point(Matrix([Rational(4), Integer(0), Integer(0)])) == False
+
+
+class TestAdoptCsg:
+    def test_adopt_csg_global_to_timber_local_identity_timber(self):
+        # Timber at origin with identity orientation: global = local
+        timber = create_standard_vertical_timber(ticket="t")
+        hs_global = HalfSpace(normal=Matrix([Integer(1), Integer(0), Integer(0)]), offset=Rational(10))
+        adopted = adopt_csg(None, timber, hs_global)
+        assert isinstance(adopted, HalfSpace)
+        # In global, point (11,0,0) is inside (x >= 10). In local same coords.
+        assert adopted.contains_point(Matrix([Rational(11), Integer(0), Integer(0)])) == True
 

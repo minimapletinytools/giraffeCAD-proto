@@ -6,7 +6,11 @@ import pytest
 from code_goes_here.timber_shavings import *
 from code_goes_here.timber import *
 from code_goes_here.rule import create_v3, create_v2, radians
-from tests.testing_shavings import create_standard_vertical_timber
+from tests.testing_shavings import (
+    create_standard_vertical_timber,
+    create_standard_horizontal_timber,
+    create_centered_horizontal_timber,
+)
 from sympy import Rational
 
 
@@ -1289,4 +1293,45 @@ class TestTimberRelationshipHelpers:
             assert False, "Should have raised AssertionError for non-parallel timbers"
         except AssertionError as e:
             assert "must be parallel" in str(e)
+
+
+# =============================================================================
+# Simple tests for are_timbers_parallel, are_timbers_orthogonal, are_timbers_plane_aligned
+# =============================================================================
+
+class TestAreTimbersParallel:
+    def test_two_horizontal_same_direction_are_parallel(self):
+        t1 = create_standard_horizontal_timber(direction='x', ticket="t1")
+        t2 = create_standard_horizontal_timber(direction='x', ticket="t2")
+        assert are_timbers_parallel(t1, t2) == True
+
+    def test_horizontal_and_vertical_are_not_parallel(self):
+        t_h = create_standard_horizontal_timber(direction='x', ticket="th")
+        t_v = create_standard_vertical_timber(ticket="tv")
+        assert are_timbers_parallel(t_h, t_v) == False
+
+
+class TestAreTimbersOrthogonal:
+    def test_vertical_and_horizontal_are_orthogonal(self):
+        t_v = create_standard_vertical_timber(ticket="tv")
+        t_h = create_standard_horizontal_timber(direction='x', ticket="th")
+        assert are_timbers_orthogonal(t_v, t_h) == True
+
+    def test_two_horizontal_same_direction_not_orthogonal(self):
+        t1 = create_standard_horizontal_timber(direction='x', ticket="t1")
+        t2 = create_standard_horizontal_timber(direction='x', ticket="t2")
+        assert are_timbers_orthogonal(t1, t2) == False
+
+
+class TestAreTimbersPlaneAligned:
+    def test_two_horizontal_same_orientation_plane_aligned(self):
+        t1 = create_standard_horizontal_timber(direction='x', ticket="t1")
+        t2 = create_standard_horizontal_timber(direction='x', ticket="t2")
+        assert are_timbers_plane_aligned(t1, t2) == True
+
+    def test_horizontal_x_and_horizontal_y_share_z_face_so_plane_aligned(self):
+        # Both have a long face in Z, so at least one pair of faces is parallel
+        t_x = create_standard_horizontal_timber(direction='x', ticket="tx")
+        t_y = create_standard_horizontal_timber(direction='y', ticket="ty")
+        assert are_timbers_plane_aligned(t_x, t_y) == True
 
