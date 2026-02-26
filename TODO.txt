@@ -191,7 +191,7 @@ DONE-CutCSG_examples -> CSG_debug_examples.py
 DONE-make timber names mandatory and if not provided a random one is generated?
   -if you do random ones they need to be deterministic so that they can be remapped in the viewer
 
--fix timberlongface methods to take timberface or assert or something
+DONE-fix timberlongface methods to take timberface or assert or something
 
 -update morties and tenon to support
   -perpendicular but not face aligned
