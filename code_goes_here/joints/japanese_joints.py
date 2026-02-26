@@ -138,7 +138,8 @@ def cut_lapped_gooseneck_joint(
         - The lap provides additional bearing surface for compression loads
         - This joint is traditionally used for connecting beams end-to-end
     """
-    
+    assert isinstance(receiving_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(receiving_timber_end).__name__}"
+    assert isinstance(gooseneck_timber_face, TimberLongFace), f"expected TimberLongFace, got {type(gooseneck_timber_face).__name__}"
     # ========================================================================
     # Parameter validation
     # ========================================================================
@@ -689,6 +690,9 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     Raises:
         ValueError: If parameters are invalid or timbers are not properly positioned
     """
+    assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
+    assert isinstance(timberA_reference_miter_face, TimberLongFace), f"expected TimberLongFace, got {type(timberA_reference_miter_face).__name__}"
+    assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
     from sympy import acos, pi
     
     # ========================================================================

@@ -121,7 +121,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
     Raises:
         AssertionError: If unsupported parameters are provided or if timbers are not face-aligned
     """
-
+    assert isinstance(tenon_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(tenon_end).__name__}"
     # ========================================================================
     # Set default values
     # ========================================================================
@@ -748,6 +748,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
 
     Args:
     """
+    assert isinstance(tenon_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(tenon_end).__name__}"
     # Default tenon_position to centered (0, 0)
     if tenon_position is None:
         tenon_position = Matrix([Rational(0), Rational(0)])
@@ -1112,7 +1113,7 @@ def cut_mortise_and_tenon_joint_on_plane_aligned_timbers(
     tenon_position: Optional[V2] = None,
     mortise_shoulder_inset: Numeric = Rational(0),
 ) -> Joint:
-
+    assert isinstance(tenon_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(tenon_end).__name__}"
     # -------------------------------------------------------------------------
     # Step 1: Assert plane-aligned
     # -------------------------------------------------------------------------
@@ -1205,6 +1206,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         ...     peg_parameters=SimplePegParameters(...)  # optional pegs
         ... )
     """
+    assert isinstance(tenon_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(tenon_end).__name__}"
     # Default tenon_position to centered (0, 0)
     if tenon_position is None:
         tenon_position = Matrix([Rational(0), Rational(0)])

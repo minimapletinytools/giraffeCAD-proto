@@ -593,8 +593,7 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
     Returns the distance from timber_end to where the plane intersects the timber's long edge.
     Positive distance means the intersection is in the direction away from the end (into the timber).
     """
-
-
+    assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     # Get the edge line
     if edge == TimberEdge.CENTERLINE:
         edge_line = measure_centerline(timber)
@@ -651,10 +650,7 @@ def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectT
         
         Asserts if lines are parallel
     """
-
-    
-
-
+    assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     # Get the edge line
     if edge == TimberEdge.CENTERLINE:
         edge_line = measure_centerline(timber)
@@ -717,6 +713,7 @@ def mark_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
         to the centerline. Positive means into the timber from the end. The point is set to the end's
         centerline position.
     """
+    assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane):
         distance = mark_onto_long_edge_by_intersecting_plane(feature, timber, TimberEdge.CENTERLINE, end)
     elif isinstance(feature, Line):

@@ -31,6 +31,8 @@ def cut_plain_miter_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, 
     Raises:
         ValueError: If the timbers are parallel or if they don't intersect
     """
+    assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
+    assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
     import warnings
     
     # Get the end directions for each timber (pointing outward from the timber)
@@ -188,6 +190,7 @@ def cut_plain_miter_joint_on_face_aligned_timbers(timberA: TimberLike, timberA_e
 
 
 def cut_plain_butt_joint_on_face_aligned_timbers(receiving_timber: TimberLike, butt_timber: TimberLike, butt_end: TimberReferenceEnd) -> Joint:
+    assert isinstance(butt_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(butt_end).__name__}"
     """
     Creates a plain butt joint between two timbers. The butt timber is cut flush with the face 
     of the receiving timber. The receiving timber has no cuts.
@@ -273,6 +276,8 @@ def cut_plain_butt_splice_joint_on_aligned_timbers(timberA: TimberLike, timberA_
     Raises:
         ValueError: If the timbers are not parallel (aligned)
     """
+    assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
+    assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
     import warnings
     from code_goes_here.construction import _are_directions_parallel
     
@@ -972,6 +977,9 @@ def cut_plain_splice_lap_joint_on_aligned_timbers(
         ...     TimberFace.BOTTOM, lap_length=4, shoulder_pos=1
         ... )
     """
+    assert isinstance(top_lap_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(top_lap_timber_end).__name__}"
+    assert isinstance(bottom_lap_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(bottom_lap_timber_end).__name__}"
+    assert isinstance(top_lap_timber_face, TimberLongFace), f"expected TimberLongFace, got {type(top_lap_timber_face).__name__}"
     from sympy import Rational
     
     # Calculate default lap_depth if not provided
