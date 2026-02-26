@@ -85,7 +85,7 @@ def cut_basic_splice_lap_joint_on_aligned_timbers(
         top_lap_timber_end,
         bottom_lap_timber,
         bottom_lap_timber_end,
-        top_lap_timber_face,
+        top_lap_timber_face.to.long_face(),
         lap_length,
         top_lap_shoulder_position_from_top_lap_shoulder_timber_end = lap_length
     )
@@ -130,7 +130,7 @@ def cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers(
         peg_parameters = SimplePegParameters(
             shape=PegShape.SQUARE,
             tenon_face=joint_side_tenon_timber_face.to.long_face(),
-            peg_positions=[(tenon_length/3, 0)],
+            peg_positions=[(tenon_length / 3, Integer(0))],
             size=inches(1, 2),
             depth=None,
             tenon_hole_offset=inches(Rational(1, 16))
@@ -195,8 +195,8 @@ def cut_basic_housed_dovetail_butt_joint(
     assert isinstance(dovetail_timber_face, TimberLongFace), f"expected TimberLongFace, got {type(dovetail_timber_face).__name__}"
     width = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face.rotate_right())
     dovetail_length = width/Integer(2)
-    dovetail_small_width: width*Rational(1, 2)
-    dovetail_large_width: width*Rational(2, 3)
+    dovetail_small_width = width*Rational(1, 2)
+    dovetail_large_width = width*Rational(2, 3)
 
     return cut_housed_dovetail_butt_joint(
         dovetail_timber,

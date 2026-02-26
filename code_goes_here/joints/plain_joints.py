@@ -511,7 +511,9 @@ def cut_plain_cross_lap_joint(timberA: TimberLike, timberB: TimberLike, timberA_
                     best_face = face
             
             timberB_cut_face = best_face
-    
+
+    # Both cut faces are now set (narrow type for type checker)
+    assert timberA_cut_face is not None and timberB_cut_face is not None
     # Get face normals (pointing outward from the timber) in GLOBAL space
     # get_face_direction returns the direction vector in world coordinates
     normalA = timberA.get_face_direction_global(timberA_cut_face)
