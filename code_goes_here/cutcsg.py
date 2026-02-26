@@ -10,6 +10,7 @@ from typing import List, Optional, Union, cast
 from dataclasses import dataclass, field, replace
 from abc import ABC, abstractmethod
 from .rule import *
+from .timber import TimberLike
 
 
 class CutCSG(ABC):

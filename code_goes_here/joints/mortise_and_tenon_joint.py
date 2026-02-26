@@ -1152,7 +1152,6 @@ def cut_mortise_and_tenon_joint_on_plane_aligned_timbers(
         mortise_shoulder_inset=mortise_shoulder_inset,
 
         tenon_position=tenon_position,
-        tenon_rotation=Orientation.identity(),
         wedge_parameters=None,
         peg_parameters=None,
         crop_tenon_to_mortise_orientation_on_angled_joints=False,

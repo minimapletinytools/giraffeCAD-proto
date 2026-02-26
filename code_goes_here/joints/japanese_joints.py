@@ -993,7 +993,7 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     B_finger_indices = [i for i in range(num_laps) if i % 2 == 1]
     
     # Helper function to convert finger from global to local and apply crop
-    def convert_finger_to_local(finger_global: RectangularPrism, target_timber: Timber, is_timber_a_finger: bool) -> CutCSG:
+    def convert_finger_to_local(finger_global: RectangularPrism, target_timber: TimberLike, is_timber_a_finger: bool) -> CutCSG:
         """Convert finger from global to local coordinates and apply crop using opposing timber's inner face."""
         # Determine opposing timber from finger type
         if is_timber_a_finger:
