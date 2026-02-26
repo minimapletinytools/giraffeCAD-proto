@@ -451,6 +451,7 @@ class PerfectTimberWithin(ABC):
         """
         Get the index of the size in the direction normal to the specified face.
         """
+        assert isinstance(face, TimberLongFace), f"expected TimberLongFace, got {type(face).__name__}"
         if face == TimberLongFace.RIGHT or face == TimberLongFace.LEFT:
             return 0
         elif face == TimberLongFace.FRONT or face == TimberLongFace.BACK:
@@ -1106,6 +1107,7 @@ class Cutting:
         Returns:
             HalfSpace representing the end cut in local coordinates
         """
+        assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
         if end == TimberReferenceEnd.TOP:
             return HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(1)), offset=timber.length - distance_from_end_to_cut)
         else:

@@ -460,6 +460,7 @@ def stretch_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Nume
         overlap_length: Length of timber to overlap with existing timber
         extend_length: Length of timber to extend beyond the end of the original timber (does not include the overlap length)
     """
+    assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     # Calculate new position based on end
     if end == TimberReferenceEnd.TOP:
         # Extend from top

@@ -118,6 +118,8 @@ def check_timber_overlap_for_splice_joint_is_sensible(
         >>> if error:
         ...     print(f"Joint configuration error: {error}")
     """
+    assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
+    assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
     # Get the length directions for both timbers
     timberA_length_direction = timberA.get_length_direction_global()
     timberB_length_direction = timberB.get_length_direction_global()
@@ -250,6 +252,7 @@ def chop_timber_end_with_prism(timber: TimberLike, end: TimberReferenceEnd, dist
         >>> chop_prism = chop_timber_end_with_prism(my_timber, TimberReferenceEnd.TOP, Rational(2))
         >>> # This creates a semi-infinite prism starting 2 inches from the top
     """
+    assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     # In timber local coordinates:
     # - Bottom is at 0
     # - Top is at timber.length
@@ -302,6 +305,7 @@ def chop_timber_end_with_half_plane(timber: TimberLike, end: TimberReferenceEnd,
         >>> chop_plane = chop_timber_end_with_half_plane(my_timber, TimberReferenceEnd.TOP, Rational(2))
         >>> # This creates a half-plane 2 inches from the top, removing everything beyond
     """
+    assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     # In timber local coordinates:
     # - Bottom is at 0
     # - Top is at timber.length
@@ -376,6 +380,7 @@ def chop_lap_on_timber_end(
         ...     TimberFace.BOTTOM, lap_length=4, lap_depth=2, shoulder_pos=1
         ... )
     """
+    assert isinstance(lap_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(lap_timber_end).__name__}"
     from sympy import Rational
     
     # Step 1: Determine the end positions and shoulder position of the top lap timber
@@ -523,9 +528,11 @@ def chop_lap_on_timber_ends(
 
     # assert the face types are correct
     assert isinstance(top_lap_timber_end, TimberReferenceEnd), \
-        f"lap_timber_end must be a TimberReferenceEnd, got {top_lap_timber_end}"
+        f"expected TimberReferenceEnd, got {type(top_lap_timber_end).__name__}"
+    assert isinstance(bottom_lap_timber_end, TimberReferenceEnd), \
+        f"expected TimberReferenceEnd, got {type(bottom_lap_timber_end).__name__}"
     assert isinstance(top_lap_timber_face, TimberLongFace), \
-        f"top_lap_timber_face must be a TimberLongFace, got {top_lap_timber_face}"
+        f"expected TimberLongFace, got {type(top_lap_timber_face).__name__}"
 
     # Assert that the 2 timbers are face aligned
     assert are_timbers_face_aligned(top_lap_timber, bottom_lap_timber), \
@@ -650,6 +657,7 @@ def chop_profile_on_timber_face(timber: TimberLike, end: TimberReferenceEnd, fac
         - Each individual profile uses ConvexPolygonExtrusion, so complex non-convex shapes
           should be decomposed into multiple convex profiles
     """
+    assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     from sympy import Rational, Matrix
     from code_goes_here.rule import Orientation, Transform, create_v3, cross_product, normalize_vector
     from code_goes_here.cutcsg import ConvexPolygonExtrusion

@@ -18,6 +18,7 @@ def find_opposing_face_on_another_timber(reference_timber: PerfectTimberWithin, 
     """
     Find the opposing face on another timber. Assumes that the target_timber has a face parallel to the reference face on the reference_timber.
     """
+    assert isinstance(reference_face, TimberLongFace), f"expected TimberLongFace, got {type(reference_face).__name__}"
     target_face = target_timber.get_closest_oriented_face_from_global_direction(-reference_timber.get_face_direction_global(reference_face))
 
     # assert that the target_face is parallel to the reference_face
@@ -60,6 +61,7 @@ def create_peg_going_into_face(
     Returns:
         Peg object positioned and oriented appropriately in timber's local space
     """
+    assert isinstance(face, TimberLongFace), f"expected TimberLongFace, got {type(face).__name__}"
     # Get the face direction in local space (timber coordinate system)
     # In local coords: X = width, Y = height, Z = length
     face_normal_local = face.to.face().get_direction()
