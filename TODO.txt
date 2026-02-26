@@ -190,24 +190,22 @@ class Ticket
 DONE-CutCSG_examples -> CSG_debug_examples.py
 DONE-make timber names mandatory and if not provided a random one is generated?
   -if you do random ones they need to be deterministic so that they can be remapped in the viewer
-
 DONE-fix timberlongface methods to take timberface or assert or something
 
 -update morties and tenon to support
-  -perpendicular but not face aligned
-  -not perpendicular but partially face aligned (for braces)
-    -maybe have an add brace function?
-  -neither perpendicular nor face aligned
-    -for this one you need to define the shoulder plane a certain distance away from centerline
-  -decide how to position pegs at an angle
   DONE-do cropping on angled mortise and tenon joints
   -TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
+    -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
   -make 3 versions
     -perpendicular (simplest)
-    -angled plane aligned
+    -plane aligned
     -no alignment (most complicated)
+      -for this one you need to define the shoulder plane a certain distance away from centerline
+  -consider making a brace function that both creates a timber and joins it!
 -cleanup mortise and tenon joint examples so they actually test out th edifferent parameters and use canonicla ctors
 -reorg joints by joint type 
+IGNORE-update oscar shed to use updated joint methods?
+
 
 
 -do sympy numeric conversion at the start of each joint... Or just have the numeric stuff cached in the timber or maybe transform class
@@ -217,36 +215,12 @@ DONE-fix timberlongface methods to take timberface or assert or something
   -you might want to make a sizing helpre class for this to simplify the args?.... idk...
   -prompt address @TODO.txt (202-204)  in the helper, first assert that the 2 timbers are are_timbers_plane_aligned. next assert that the 2 timbers are not parallel. then proceed with the logic @basic_joints.py (97-113). put this helper function in mortise_and_tenon_joint.py
 
-VIEWER PREP
-  -BIG QUESTION, how to "highlight" a feature...
-    -seems like you can flag meshes... but you noly want to flag part of the mesh?
-  -consider doing csg feature tree thingy
-    -face: convex polygon, union (face), difference(face, face), infiniteplane?, rectangularface?
-      -is_valid (checks all points are coplanar)
-      -get_normal (based on dircetion of polygon points I guess)
-    -linesegment: point pair, face intersection?
-  -add hash function
-  -I think tickets can be done as dictionary... or maybe there are compositoin fo classes?
-    -e.g. material ticket, grain direction ticket?
-
-  -is there some way to make orientation/direction generic more like a measuring function?
-
-
-TESTIFY
-  -setup one test template so it can be used as an agent template for everything else
-  -add test timber construction thingies on top of the example ones
-    -btw you should update your current example so that everything is in the XY plane I think yo uhave soem in the Z plane
-  -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
-  -create test runner for examples so the exmaples are also tests :O
-
-
-
 EXEMPLIFY
   DONE-make a set of canonical joint configurations for each joint type to use ine xamples
   DONE/IGNORE-create all_joints.py 
     -exports all joints
+  IGNORE-make examples of how to use measure/mark to set parameters in cutting functions
   -write docs for at least one joint function to use as reference for the rest
-  -make examples of how to use measure/mark to set parameters in cutting functions
   -agent prompt examples
   -make sawhores example nice (eh, maybe you need to wedged dovetail mortise and tenons... or nuki joints or whatever)
   -examplify 
@@ -283,6 +257,29 @@ RENAMEIFY
     -does
     -contains (specific to cutcsg...)
     -are
+
+
+
+VIEWER PREP
+  -BIG QUESTION, how to "highlight" a feature...
+    -seems like you can flag meshes... but you noly want to flag part of the mesh?
+  -consider doing csg feature tree thingy
+    -face: convex polygon, union (face), difference(face, face), infiniteplane?, rectangularface?
+      -is_valid (checks all points are coplanar)
+      -get_normal (based on dircetion of polygon points I guess)
+    -linesegment: point pair, face intersection?
+  -add hash function
+  -I think tickets can be done as dictionary... or maybe there are compositoin fo classes?
+    -e.g. material ticket, grain direction ticket?
+  -is there some way to make orientation/direction generic more like a measuring function?
+
+TESTIFY
+  -setup one test template so it can be used as an agent template for everything else
+  -add test timber construction thingies on top of the example ones
+    -btw you should update your current example so that everything is in the XY plane I think yo uhave soem in the Z plane
+  -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
+  -create test runner for examples so the exmaples are also tests :O
+  -add test for finger miter joint thingy
 
 
 -M1 (reward is reimburse H2D LOL)

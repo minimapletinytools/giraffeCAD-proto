@@ -667,10 +667,7 @@ def join_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction, ticket=ticket)
 
 # TODO rename to create/raise_joining_timber_perpendicular_on_face_parallel_timbers
-# TODO change offset_from_timber1 to lateral_offset_from_timber1
-# TODO well the tricky part is we haven't created the joining timber yet so how can we measure from it?
-# TODO so you sorta need imaginary timbers??? Or the ctor needs to take a fetaure on the joined timber to align to
-# TOOD e.g. feature_to_position_on_joining_timber (which defaults to centerline)
+# TODO this function kinda sucks... awkward to measure to use, yo uneed to measure_face(timber1).mark_onto_centerline().distance or osmething crap like that to set lateral_offset_from_centerline_timber1 :(
 def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
                                                 location_on_timber1: Numeric,
                                                 stickout: Stickout,
