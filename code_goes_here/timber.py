@@ -426,7 +426,7 @@ class PerfectTimberWithin(ABC):
         Get the world direction vector for a specific face of this timber.
         
         Args:
-            face: The face to get the direction for (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
+            face: The face to get the direction for (can be TimberFace, TimberEnd, or TimberLongFace)
             
         Returns:
             Direction vector pointing outward from the specified face in world coordinates
@@ -464,7 +464,7 @@ class PerfectTimberWithin(ABC):
         Get the size of the timber in the direction normal to the specified face.
         
         Args:
-            face: The face to get the size for (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
+            face: The face to get the size for (can be TimberFace, TimberEnd, or TimberLongFace)
         """
         # Convert to TimberFace
         face = face.to.face()
@@ -481,7 +481,7 @@ class PerfectTimberWithin(ABC):
         Get the nominal size of the timber in the direction normal to the specified face.
         
         Args:
-            face: The face to get the size for (can be TimberFace, TimberReferenceEnd, or TimberLongFace)
+            face: The face to get the size for (can be TimberFace, TimberEnd, or TimberLongFace)
         """
 
         nominal_size = self.get_nominal_size()
