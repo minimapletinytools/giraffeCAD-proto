@@ -18,10 +18,10 @@ from giraffe import *
 from code_goes_here.ticket import Ticket
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 from code_goes_here.construction import (
-    create_canonical_splice_joint_timbers,
-    create_canonical_butt_joint_timbers,
-    create_canonical_corner_joint_timbers,
-    create_canonical_right_angle_corner_joint_timbers,
+    create_canonical_example_splice_joint_timbers,
+    create_canonical_example_butt_joint_timbers,
+    create_canonical_example_corner_joint_timbers,
+    create_canonical_example_right_angle_corner_joint_timbers,
 )
 from code_goes_here.rule import inches, degrees
 
@@ -62,7 +62,7 @@ def create_simple_gooseneck_example(position: Optional[V3] = None):
     """
     # Create splice joint arrangement using canonical function
     # This creates two horizontal timbers meeting end-to-end
-    arrangement = create_canonical_splice_joint_timbers(position=position)
+    arrangement = create_canonical_example_splice_joint_timbers(position=position)
     
     # Rename timbers for clarity in this joint context
     from dataclasses import replace
@@ -107,7 +107,7 @@ def create_dovetail_butt_joint_example(position: Optional[V3] = None):
     """
     from dataclasses import replace
 
-    arrangement = create_canonical_butt_joint_timbers(position=position)
+    arrangement = create_canonical_example_butt_joint_timbers(position=position)
     dovetail_timber = replace(arrangement.butt_timber, ticket=Ticket("dovetail_timber"))
     receiving_timber = arrangement.receiving_timber
     # Face perpendicular to receiving length (X): use RIGHT (normal +Z) on butt timber
@@ -153,7 +153,7 @@ def create_mitered_and_keyed_lap_joint_example(position: Optional[V3] = None):
         position: Center position of the joint (V3). Defaults to origin.
     """
     # Create right-angle corner joint arrangement using canonical function
-    arrangement = create_canonical_right_angle_corner_joint_timbers(position=position)
+    arrangement = create_canonical_example_right_angle_corner_joint_timbers(position=position)
     
     # Rename timbers for clarity in this joint context
     from dataclasses import replace
@@ -202,7 +202,7 @@ def create_mitered_and_keyed_lap_joint_130deg_example(position: Optional[V3] = N
     """
     # Create corner joint arrangement with 130-degree angle (convert to radians)
     angle_130_rad = degrees(Integer(130))
-    arrangement = create_canonical_corner_joint_timbers(corner_angle=angle_130_rad, position=position)
+    arrangement = create_canonical_example_corner_joint_timbers(corner_angle=angle_130_rad, position=position)
     
     # Rename timbers for clarity in this joint context
     from dataclasses import replace

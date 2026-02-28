@@ -30,10 +30,10 @@ from code_goes_here.joints.plain_joints import (
     cut_plain_splice_lap_joint_on_aligned_timbers,
 )
 from code_goes_here.construction import (
-    create_canonical_corner_joint_timbers,
-    create_canonical_right_angle_corner_joint_timbers,
-    create_canonical_butt_joint_timbers,
-    create_canonical_splice_joint_timbers,
+    create_canonical_example_corner_joint_timbers,
+    create_canonical_example_right_angle_corner_joint_timbers,
+    create_canonical_example_butt_joint_timbers,
+    create_canonical_example_splice_joint_timbers,
 )
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 
@@ -56,7 +56,7 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     Returns:
         List of CutTimber objects representing the joint
     """
-    arrangement = create_canonical_corner_joint_timbers(
+    arrangement = create_canonical_example_corner_joint_timbers(
         corner_angle=degrees(67),
         position=position,
     )
@@ -82,7 +82,7 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
         List of CutTimber objects representing the joint
     """
     # Get canonical corner joint timbers at position
-    arrangement = create_canonical_right_angle_corner_joint_timbers(position=position)
+    arrangement = create_canonical_example_right_angle_corner_joint_timbers(position=position)
 
     # Rename timbers for clarity (timber2 is +X, timber1 is +Y)
     timberA = replace(arrangement.timber2, ticket=Ticket("MiterFaceAligned_TimberA"))  # +X direction
@@ -109,7 +109,7 @@ def make_butt_joint_example(position: V3) -> list[CutTimber]:
         List of CutTimber objects representing the joint
     """
     # Get canonical butt joint timbers at position
-    arrangement = create_canonical_butt_joint_timbers(position=position)
+    arrangement = create_canonical_example_butt_joint_timbers(position=position)
 
     # Rename timbers for clarity
     receiving_timber = replace(arrangement.receiving_timber, ticket=Ticket("ButtJoint_Receiving"))
@@ -137,7 +137,7 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
         List of CutTimber objects representing the joint
     """
     # Get canonical splice joint timbers at position
-    arrangement = create_canonical_splice_joint_timbers(position=position)
+    arrangement = create_canonical_example_splice_joint_timbers(position=position)
 
     # Rename timbers for clarity
     timberA = replace(arrangement.timber1, ticket=Ticket("SpliceJoint_TimberA"))

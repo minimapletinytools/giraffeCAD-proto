@@ -17,8 +17,8 @@ from code_goes_here.joints.mortise_and_tenon_joint import (
 )
 from code_goes_here.construction import (
     create_axis_aligned_timber,
-    create_canonical_brace_joint_timbers,
-    create_canonical_butt_joint_timbers,
+    create_canonical_example_brace_joint_timbers,
+    create_canonical_example_butt_joint_timbers,
 )
 from code_goes_here.joints.basic_joints import cut_basic_miter_joint
 from code_goes_here.patternbook import PatternBook, PatternMetadata, make_pattern_from_joint, make_pattern_from_frame
@@ -35,7 +35,7 @@ def example_basic_mortise_and_tenon(position=None):
     if position is None:
         position = create_v3(0, 0, 0)
 
-    arrangement = create_canonical_butt_joint_timbers(position)
+    arrangement = create_canonical_example_butt_joint_timbers(position)
     tenon_size = Matrix([inches(2), inches(2)])
     tenon_length = inches(3)  # 3" long tenon
     mortise_depth = inches(7, 2)  # 3.5" deep mortise (slightly deeper than tenon)
@@ -366,7 +366,7 @@ def example_brace_joint(position=None):
         position = create_v3(0, 0, 0)
     
     # Create the brace joint timber arrangement
-    brace_arrangement = create_canonical_brace_joint_timbers(position)
+    brace_arrangement = create_canonical_example_brace_joint_timbers(position)
     timber1 = brace_arrangement.timber1
     timber2 = brace_arrangement.timber2
     brace_timber = brace_arrangement.brace_timber

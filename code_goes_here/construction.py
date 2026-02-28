@@ -972,7 +972,7 @@ class ButtJointTimberArrangement:
     butt_timber_end: TimberReferenceEnd
 
     
-def create_canonical_butt_joint_timbers(position: Optional[V3] = None) -> ButtJointTimberArrangement:
+def create_canonical_example_butt_joint_timbers(position: Optional[V3] = None) -> ButtJointTimberArrangement:
     """
     Create a canonical butt joint timber arrangement. 
     All canonical example joints are 4"x5"x4' timbers.
@@ -1023,7 +1023,7 @@ class SpliceJointTimberArrangement:
     timber1_end: TimberReferenceEnd
     timber2_end: TimberReferenceEnd 
 
-def create_canonical_splice_joint_timbers(position: Optional[V3] = None) -> SpliceJointTimberArrangement:
+def create_canonical_example_splice_joint_timbers(position: Optional[V3] = None) -> SpliceJointTimberArrangement:
     """
     Create a canonical splice joint timber arrangement. 
     All canonical example joints are 4"x5"x4' timbers.
@@ -1075,7 +1075,7 @@ class CornerJointTimberArrangement:
     timber1_end: TimberReferenceEnd
     timber2_end: TimberReferenceEnd
 
-def create_canonical_corner_joint_timbers(corner_angle: Optional[Numeric] = None, position: Optional[V3] = None) -> CornerJointTimberArrangement:
+def create_canonical_example_corner_joint_timbers(corner_angle: Optional[Numeric] = None, position: Optional[V3] = None) -> CornerJointTimberArrangement:
     """
     Create a canonical corner joint timber arrangement at an angle.
     All canonical example joints are 4"x5"x4' timbers.
@@ -1126,7 +1126,7 @@ def create_canonical_corner_joint_timbers(corner_angle: Optional[Numeric] = None
         timber2_end=TimberReferenceEnd.BOTTOM
     )
 
-def create_canonical_right_angle_corner_joint_timbers(position: Optional[V3] = None) -> CornerJointTimberArrangement:
+def create_canonical_example_right_angle_corner_joint_timbers(position: Optional[V3] = None) -> CornerJointTimberArrangement:
     """
     Create a canonical corner joint timber arrangement at a right angle (90 degrees).
     All canonical example joints are 4"x5"x4' timbers.
@@ -1138,13 +1138,13 @@ def create_canonical_right_angle_corner_joint_timbers(position: Optional[V3] = N
         position: Bottom position where timbers meet. Defaults to origin.
     """
     from sympy import pi
-    return create_canonical_corner_joint_timbers(corner_angle=radians(pi / Integer(2)), position=position)
+    return create_canonical_example_corner_joint_timbers(corner_angle=radians(pi / Integer(2)), position=position)
 @dataclass(frozen=True)
 class CrossJointTimberArrangement:
     timber1: Timber
     timber2: Timber
 
-def create_canonical_cross_joint_timbers(lateral_offset: Numeric = Integer(0), position: Optional[V3] = None) -> CrossJointTimberArrangement:
+def create_canonical_example_cross_joint_timbers(lateral_offset: Numeric = Integer(0), position: Optional[V3] = None) -> CrossJointTimberArrangement:
     """
     Create a canonical cross joint timber arrangement.
     All canonical example joints are 4"x5"x4' timbers.
@@ -1197,7 +1197,7 @@ class BraceJointTimberArrangement:
     timber1_end: TimberReferenceEnd
     timber2_end: TimberReferenceEnd
 
-def create_canonical_brace_joint_timbers(position: Optional[V3] = None) -> BraceJointTimberArrangement:
+def create_canonical_example_brace_joint_timbers(position: Optional[V3] = None) -> BraceJointTimberArrangement:
     """
     Create a canonical brace joint timber arrangement.
     All canonical example joints are 4"x5"x4' timbers.
@@ -1223,7 +1223,7 @@ def create_canonical_brace_joint_timbers(position: Optional[V3] = None) -> Brace
         position = create_v3(Integer(0), Integer(0), Integer(0))
     
     # Create the two corner timbers (same as right angle corner joint)
-    corner_arrangement = create_canonical_right_angle_corner_joint_timbers(position)
+    corner_arrangement = create_canonical_example_right_angle_corner_joint_timbers(position)
     timber1 = corner_arrangement.timber1
     timber2 = corner_arrangement.timber2
     
