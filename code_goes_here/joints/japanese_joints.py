@@ -369,7 +369,7 @@ def cut_lapped_gooseneck_joint(
 
     # Transform the gooseneck profile CSG from gooseneck_timber coordinates to receiving_timber coordinates
     # Use the generic adopt_csg function to handle all CSG types (SolidUnion, Difference, RectangularPrism, etc.)
-    gooseneck_csg_on_receiving_timber = adopt_csg(gooseneck_timber, receiving_timber, gooseneck_profile_csg) 
+    gooseneck_csg_on_receiving_timber = adopt_csg(gooseneck_timber.transform, receiving_timber.transform, gooseneck_profile_csg) 
 
 
     
@@ -601,7 +601,7 @@ def cut_housed_dovetail_butt_joint(
     # ========================================================================
     
     # Transform the dovetail profile CSG from dovetail_timber coordinates to receiving_timber coordinates
-    dovetail_socket_csg = adopt_csg(dovetail_timber, receiving_timber, dovetail_profile_csg)
+    dovetail_socket_csg = adopt_csg(dovetail_timber.transform, receiving_timber.transform, dovetail_profile_csg)
     
     # ========================================================================
     # Create Cut objects for each timber
