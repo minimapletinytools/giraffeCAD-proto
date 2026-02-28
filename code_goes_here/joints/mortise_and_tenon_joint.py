@@ -864,8 +864,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     )
 
     # Convert from global to tenon timber local (orig_timber=None => CSG is in global space)
-    tenon_prism_local = adopt_csg(None, tenon_timber, tenon_prism_cropped)
-    shoulder_half_space_local = adopt_csg(None, tenon_timber, shoulder_half_space_global)
+    tenon_prism_local = adopt_csg(None, tenon_timber.transform, tenon_prism_cropped)
+    shoulder_half_space_local = adopt_csg(None, tenon_timber.transform, shoulder_half_space_global)
 
     # -------------------------------------------------------------------------
     # mortise hole
@@ -912,7 +912,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
         subtract=[tenon_prism_local],
     )
 
-    mortise_hole_prism_local = adopt_csg(None, mortise_timber, mortise_hole_prism_global)
+    mortise_hole_prism_local = adopt_csg(None, mortise_timber.transform, mortise_hole_prism_global)
     mortise_cut = Cutting(
         timber=mortise_timber,
         maybe_top_end_cut=None,

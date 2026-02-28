@@ -1922,7 +1922,7 @@ class TestAdoptCsg:
         # Timber at origin with identity orientation: global = local
         timber = create_standard_vertical_timber(ticket="t")
         hs_global = HalfSpace(normal=Matrix([Integer(1), Integer(0), Integer(0)]), offset=Rational(10))
-        adopted = adopt_csg(None, timber, hs_global)
+        adopted = adopt_csg(None, timber.transform, hs_global)
         assert isinstance(adopted, HalfSpace)
         # In global, point (11,0,0) is inside (x >= 10). In local same coords.
         assert adopted.contains_point(Matrix([Rational(11), Integer(0), Integer(0)])) == True
