@@ -191,6 +191,18 @@ DONE-CutCSG_examples -> CSG_debug_examples.py
 DONE-make timber names mandatory and if not provided a random one is generated?
   -if you do random ones they need to be deterministic so that they can be remapped in the viewer
 DONE-fix timberlongface methods to take timberface or assert or something
+IGNORE-update oscar shed to use updated joint methods?
+
+
+-joint consturction objects
+  -contains timbers, joint ends, reference faces if applicable
+  -contains assertm methods for checking joint sensibility
+    -or you could subclass these and assert in their ctors to make it type safe at the tradeoff of more OOP...(nah don't do it, still runtime assert etiher way)
+  -contains common computations for the joint configuration
+  -contains dumping groups for any additional computed data?
+DONE-create_canonical_ -> create_canonical_example_example_
+-move create_canonical_example_ stuff intointo example_shavings.py or sometihng.
+
 
 -update morties and tenon to support
   DONE-do cropping on angled mortise and tenon joints
@@ -204,8 +216,6 @@ DONE-fix timberlongface methods to take timberface or assert or something
   -consider making a brace function that both creates a timber and joins it!
 -cleanup mortise and tenon joint examples so they actually test out th edifferent parameters and use canonicla ctors
 -reorg joints by joint type 
-IGNORE-update oscar shed to use updated joint methods?
-
 
 
 -do sympy numeric conversion at the start of each joint... Or just have the numeric stuff cached in the timber or maybe transform class
