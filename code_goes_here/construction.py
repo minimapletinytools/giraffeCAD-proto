@@ -971,7 +971,7 @@ class ButtJointTimberArrangement:
     butt_timber: Timber
     receiving_timber: Timber
     butt_timber_end: TimberReferenceEnd
-    front_face_on_butt_timber: Optional[TimberLongFace] = None,
+    front_face_on_butt_timber: Optional[TimberLongFace] = None
 
     # this is totally silly. please delete me. We're not doing any hard computations in here...
     _memo: Dict[str, Any] = field(default_factory=dict, repr=False)
