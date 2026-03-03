@@ -9,6 +9,7 @@ from code_goes_here.rule import *
 from code_goes_here.measuring import *
 from code_goes_here.timber_shavings import *
 from code_goes_here.ticket import Ticket
+from typing import Dict, Any
 
 
 # ============================================================================
@@ -970,7 +971,53 @@ class ButtJointTimberArrangement:
     butt_timber: Timber
     receiving_timber: Timber
     butt_timber_end: TimberReferenceEnd
-    front_face_on_butt_timber: Optional[TimberLongFace] = None
+    front_face_on_butt_timber: Optional[TimberLongFace] = None,
+
+    # this is totally silly. please delete me. We're not doing any hard computations in here...
+    _memo: Dict[str, Any] = field(default_factory=dict, repr=False)
+
+    def compute_normalized_timber_cross_product(self) -> Direction3D:
+        """Compute the normalized cross product of the butt timber and receiving timber length directions."""
+        key = "normalized_timber_cross_product"
+        if self._memo.get(key) is not None:
+            return self._memo[key]
+        result = normalize_vector(cross_product(self.butt_timber.get_length_direction_global(), self.receiving_timber.get_length_direction_global()))
+        self._memo[key] = result
+        return result
+
+    def check_types_valid(self) -> Optional[str]:
+        """Return None if all types are valid, otherwise an error message for use in assert."""
+        if not isinstance(self.butt_timber, Timber):
+            return f"butt_timber must be Timber, got {type(self.butt_timber).__name__}"
+        if not isinstance(self.receiving_timber, Timber):
+            return f"receiving_timber must be Timber, got {type(self.receiving_timber).__name__}"
+        if not isinstance(self.butt_timber_end, TimberReferenceEnd):
+            return f"butt_timber_end must be TimberReferenceEnd, got {type(self.butt_timber_end).__name__}"
+        if self.front_face_on_butt_timber is not None and not isinstance(self.front_face_on_butt_timber, TimberLongFace):
+            return f"front_face_on_butt_timber must be TimberLongFace or None, got {type(self.front_face_on_butt_timber).__name__}"
+        return None
+
+    def __post_init__(self):
+        require_check(self.check_types_valid())
+
+    def check_plane_aligned(self) -> Optional[str]:
+        """Return None if timbers are plane-aligned and front face is in plane, else an error message."""
+        if not are_timbers_plane_aligned(self.butt_timber, self.receiving_timber):
+            return "Timbers must be plane-aligned"
+        if self.front_face_on_butt_timber is not None and not are_vectors_parallel(
+            self.butt_timber.get_face_direction_global(self.front_face_on_butt_timber),
+            self.compute_normalized_timber_cross_product(),
+        ):
+            return "front_face_on_butt_timber must point in the aligned plane normal"
+        return None
+
+    def check_face_aligned_and_orthogonal(self) -> Optional[str]:
+        """Return None if timbers are face-aligned and orthogonal, else an error message."""
+        if not are_timbers_face_aligned(self.butt_timber, self.receiving_timber):
+            return "Timbers must be face-aligned"
+        if not are_timbers_orthogonal(self.butt_timber, self.receiving_timber):
+            return "Timbers must be orthogonal"
+        return None
 
     
 def create_canonical_example_butt_joint_timbers(position: Optional[V3] = None) -> ButtJointTimberArrangement:

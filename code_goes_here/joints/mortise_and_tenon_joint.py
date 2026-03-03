@@ -1103,17 +1103,16 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
 
 
 # TODO FINISH
-def cut_mortise_and_tenon_joint_on_plane_aligned_timbers(
-    tenon_timber: TimberLike,
-    mortise_timber: TimberLike,
-    tenon_end: TimberReferenceEnd,
+def cut_mortise_and_tenon_joint_on_PAT(
+    timbers: ButtJointTimberArrangement,
     tenon_size: V2,
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
     tenon_position: Optional[V2] = None,
-    mortise_shoulder_inset: Numeric = Rational(0),
+    wedge_parameters: Optional[WedgeParameters] = None,
+    peg_parameters: Optional[SimplePegParameters] = None,
 ) -> Joint:
-    assert isinstance(tenon_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(tenon_end).__name__}"
+
     # -------------------------------------------------------------------------
     # Step 1: Assert plane-aligned
     # -------------------------------------------------------------------------
@@ -1157,7 +1156,35 @@ def cut_mortise_and_tenon_joint_on_plane_aligned_timbers(
         crop_tenon_to_mortise_orientation_on_angled_joints=False,
     )
 
+def cut_mortise_and_tenon_joint_on_FAT(
+    timbers: ButtJointTimberArrangement,
+    tenon_size: V2,
+    tenon_length: Numeric,
+    mortise_depth: Optional[Numeric] = None,
+    tenon_position: Optional[V2] = None,
+    wedge_parameters: Optional[WedgeParameters] = None,
+    peg_parameters: Optional[SimplePegParameters] = None,
+) -> Joint:
 
+    require_check(timbers.check_face_aligned_and_orthogonal())
+
+    if timbers.front_face_on_butt_timber is not None and peg_parameters is not None:
+        assert timbers.front_face_on_butt_timber.to.face() == peg_parameters.tenon_face.to.face(), "if front_face_on_butt_timber is specified, it must match peg tenon face"
+
+    return cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
+        tenon_timber=timbers.butt_timber,
+        mortise_timber=timbers.receiving_timber,
+        tenon_end=timbers.butt_timber_end,
+        tenon_size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        wedge_parameters=wedge_parameters,
+        peg_parameters=peg_parameters,
+    )
+    
+
+
+# TODO DELETE ME
 def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
     tenon_timber: TimberLike,
     mortise_timber: TimberLike,

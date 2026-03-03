@@ -206,10 +206,11 @@ DONE-create_canonical_ -> create_canonical_example_example_
 
 -update morties and tenon to support
   DONE-do cropping on angled mortise and tenon joints
+  -do the mortise_shoulder_distance_from_centerline conversion
   -TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
     -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
   -make 3 versions
-    -perpendicular (simplest)
+    DONE-perpendicular (simplest)
     -plane aligned
     -no alignment (most complicated)
       -for this one you need to define the shoulder plane a certain distance away from centerline
@@ -246,7 +247,7 @@ RENAMEIFY
   -come up with joint naming rules, in particular if _on_face_aligned_timbers sholud be used or not
     -oFAT on face aligned timbers
     -oFAACaT on face aligned coaxial timbers
-    -oPT on plane aligned timbers (one pair of faces are parallel)
+    -oPAT on plane aligned timbers (one pair of faces are parallel)
     -oPT on parallel timbers
     -oOT on orthognal timbers
   -do the horseCoAD rename
