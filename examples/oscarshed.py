@@ -251,7 +251,7 @@ def create_oscarshed(center: Optional[V3] = None):
     
     # Front-left post (left side, offset +1" towards center/right)
     tenon_offset_left = Matrix([inches(1), Rational(0)])  # +1" in X
-    joint_post_front_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_post_front_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_front_left,
         mortise_timber=mudsill_front,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -263,7 +263,7 @@ def create_oscarshed(center: Optional[V3] = None):
     
     # Front-right post (right side, offset -1" towards center/left)
     tenon_offset_right = Matrix([inches(-1), Rational(0)])  # -1" in X
-    joint_post_front_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_post_front_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_front_right,
         mortise_timber=mudsill_front,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -274,7 +274,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Back-right post (right side, offset -1" towards center/left)
-    joint_post_back_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_post_back_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_back_right,
         mortise_timber=mudsill_back,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -285,7 +285,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Back-left post (left side, offset +1" towards center/right)
-    joint_post_back_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_post_back_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_back_left,
         mortise_timber=mudsill_back,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -309,7 +309,7 @@ def create_oscarshed(center: Optional[V3] = None):
     middle_post_mortise_depth = inches(3.5)
     
     # Back middle-right post
-    joint_post_back_middle_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_post_back_middle_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_back_middle_right,
         mortise_timber=mudsill_back,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -320,7 +320,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Back middle-left post
-    joint_post_back_middle_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_post_back_middle_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_back_middle_left,
         mortise_timber=mudsill_back,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -380,7 +380,7 @@ def create_oscarshed(center: Optional[V3] = None):
     side_girt_back_mortise_depth = inches(Rational(9, 2))  # 4.5 inches (through mortise)
     
     # Back left post TOP end meets left side girt BOTTOM end
-    joint_side_girt_left_back = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_side_girt_left_back = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_back_left,
         mortise_timber=side_girt_left,
         tenon_end=TimberReferenceEnd.TOP,
@@ -391,7 +391,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Back right post TOP end meets right side girt BOTTOM end
-    joint_side_girt_right_back = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_side_girt_right_back = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_back_right,
         mortise_timber=side_girt_right,
         tenon_end=TimberReferenceEnd.TOP,
@@ -430,7 +430,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Left side girt TOP end meets front left post
-    joint_side_girt_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_side_girt_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=side_girt_left,
         mortise_timber=post_front_left,
         tenon_end=TimberReferenceEnd.TOP,
@@ -442,7 +442,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Right side girt TOP end meets front right post
-    joint_side_girt_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_side_girt_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=side_girt_right,
         mortise_timber=post_front_right,
         tenon_end=TimberReferenceEnd.TOP,
@@ -579,7 +579,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Left end: Front girt left piece BOTTOM meets left front post
-    joint_front_girt_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_front_girt_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=front_girt_left,
         mortise_timber=post_front_left,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -591,7 +591,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Right end: Front girt right piece TOP meets right front post
-    joint_front_girt_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_front_girt_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=front_girt_right,
         mortise_timber=post_front_right,
         tenon_end=TimberReferenceEnd.TOP,
@@ -685,7 +685,7 @@ def create_oscarshed(center: Optional[V3] = None):
     # No peg
     
     # Back middle-right post TOP end meets back top plate
-    joint_back_middle_right_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_back_middle_right_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_back_middle_right,
         mortise_timber=top_plate_back,
         tenon_end=TimberReferenceEnd.TOP,
@@ -696,7 +696,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Back middle-left post TOP end meets back top plate
-    joint_back_middle_left_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_back_middle_left_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_back_middle_left,
         mortise_timber=top_plate_back,
         tenon_end=TimberReferenceEnd.TOP,
@@ -713,7 +713,7 @@ def create_oscarshed(center: Optional[V3] = None):
     # Use same parameters as middle posts: 2" x 1" tenon, 3" length, 3.5" depth
     
     # Front left post TOP end meets front top plate
-    joint_front_left_post_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_front_left_post_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_front_left,
         mortise_timber=top_plate_front,
         tenon_end=TimberReferenceEnd.TOP,
@@ -724,7 +724,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Front right post TOP end meets front top plate
-    joint_front_right_post_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_front_right_post_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_front_right,
         mortise_timber=top_plate_front,
         tenon_end=TimberReferenceEnd.TOP,
@@ -766,7 +766,7 @@ def create_oscarshed(center: Optional[V3] = None):
     corner_post_to_beam_mortise_depth = inches(Rational(5, 2))  # 2.5 inches
     
     # Back left corner post TOP end meets back top plate
-    joint_back_left_post_to_beam = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_back_left_post_to_beam = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_back_left,
         mortise_timber=top_plate_back,
         tenon_end=TimberReferenceEnd.TOP,
@@ -777,7 +777,7 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Back right corner post TOP end meets back top plate
-    joint_back_right_post_to_beam = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint_back_right_post_to_beam = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post_back_right,
         mortise_timber=top_plate_back,
         tenon_end=TimberReferenceEnd.TOP,

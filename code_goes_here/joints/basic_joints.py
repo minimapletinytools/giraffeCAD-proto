@@ -18,7 +18,7 @@ from .plain_joints import (
     cut_plain_splice_lap_joint_on_aligned_timbers,
 )
 from .mortise_and_tenon_joint import (
-    cut_mortise_and_tenon_joint_on_face_aligned_timbers,
+    cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED,
     SimplePegParameters,
 )
 from .japanese_joints import (
@@ -101,7 +101,7 @@ def cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers(
     tenon_end: TimberReferenceEnd,
     use_peg: bool = False,
 ) -> Joint:
-    """Wrapper for cut_mortise_and_tenon_joint_on_face_aligned_timbers."""
+    """Wrapper for cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED."""
     assert isinstance(tenon_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(tenon_end).__name__}"
     # this is the "side" of the joint
     joint_side_mortise_timber_face = mortise_timber.get_closest_oriented_face_from_global_direction(cross_product(mortise_timber.get_length_direction_global(), tenon_timber.get_face_direction_global(tenon_end.to.face())))
@@ -137,7 +137,7 @@ def cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers(
         )
     
 
-    return cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    return cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber,
         mortise_timber,
         tenon_end,

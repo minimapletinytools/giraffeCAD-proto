@@ -165,7 +165,7 @@ def create_honeycomb_shed():
     for i in range(6):
         print(f"  Post-mudsill joint {i}...")
         # Post i sits on mudsill i
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
             tenon_timber=posts[i],
             mortise_timber=mudsills[i],
             tenon_end=TimberReferenceEnd.BOTTOM,
@@ -244,7 +244,7 @@ def create_honeycomb_shed():
         
         if same_height:
             print(f"  Post-ring beam joint {i} (face-aligned)...")
-            joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+            joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
                 tenon_timber=posts[i],
                 mortise_timber=ring_beams[i],
                 tenon_end=TimberReferenceEnd.TOP,
@@ -287,7 +287,7 @@ def create_honeycomb_shed():
     # For simplicity, we'll create a through-tenon from hub post to mudsill 0
     
     print("Creating hub-mudsill joint...")
-    hub_mudsill_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    hub_mudsill_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=hub_post,
         mortise_timber=mudsills[0],
         tenon_end=TimberReferenceEnd.BOTTOM,

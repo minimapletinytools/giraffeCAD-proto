@@ -14,8 +14,8 @@ from code_goes_here.timber import (
 from code_goes_here.joints.mortise_and_tenon_joint import (
     SimplePegParameters,
     WedgeParameters,
-    cut_mortise_and_tenon_many_options_do_not_call_me_directly,
-    cut_mortise_and_tenon_joint_on_face_aligned_timbers
+    cut_mortise_and_tenon_DEPRECATED,
+    cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED
 )
 from tests.testing_shavings import (
     create_standard_vertical_timber,
@@ -112,7 +112,7 @@ class TestMortiseAndTenonGeometry:
         
         mortise_depth = Rational(5)
         tenon_length = Rational(4)
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
@@ -181,7 +181,7 @@ class TestPegStuff:
             size=Rational(1, 2)
         )
         
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
@@ -238,7 +238,7 @@ class TestPegStuff:
             size=peg_size
         )
         
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
@@ -318,7 +318,7 @@ class TestPegStuff:
             size=Rational(1, 2)
         )
         
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
@@ -361,7 +361,7 @@ class TestPegStuff:
             tenon_hole_offset=offset
         )
         
-        joint_with_offset = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        joint_with_offset = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,
@@ -381,7 +381,7 @@ class TestPegStuff:
             tenon_hole_offset=Rational(0)
         )
         
-        joint_no_offset = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        joint_no_offset = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
             tenon_timber=tenon_timber,
             mortise_timber=mortise_timber,
             tenon_end=TimberReferenceEnd.BOTTOM,

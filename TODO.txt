@@ -1002,11 +1002,11 @@ this function is very generic and does a bunch of things. in particluar we want 
 
 for now, create the super generic 
 
-cut_mortise_and_tenon_many_options_do_not_call_me_directly
+cut_mortise_and_tenon_DEPRECATED
 
 then do simple_mortise_and_tenon function that has no pegs or wedges
 
-the cut_mortise_and_tenon_many_options_do_not_call_me_directly function, it should take the following parameters
+the cut_mortise_and_tenon_DEPRECATED function, it should take the following parameters
 
 -tenon timber
 -mortise timber

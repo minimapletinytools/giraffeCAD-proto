@@ -113,7 +113,7 @@ def create_sawhorse() -> Frame:
     cut_stretcher = CutTimber(stretcher)
 
     # next create mortise and tenon joints between the posts and the mudsills
-    mudsill_left_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    mudsill_left_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         mortise_timber=left_mudsill,
         tenon_timber=left_post,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
@@ -121,7 +121,7 @@ def create_sawhorse() -> Frame:
         tenon_length=tenon_length
     )
 
-    mudsill_right_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    mudsill_right_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         mortise_timber=right_mudsill,
         tenon_timber=right_post,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
@@ -130,7 +130,7 @@ def create_sawhorse() -> Frame:
     )
 
     # next create mortise and tenon joints between the posts and the stretcher
-    stretcher_left_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    stretcher_left_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         mortise_timber=left_post,
         tenon_timber=stretcher,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom end of stretcher
@@ -138,7 +138,7 @@ def create_sawhorse() -> Frame:
         tenon_length=tenon_length
     )
 
-    stretcher_right_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    stretcher_right_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         mortise_timber=right_post,
         tenon_timber=stretcher,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of stretcher
@@ -147,7 +147,7 @@ def create_sawhorse() -> Frame:
     )
 
     # now create mortise and tenon joints between the posts and the beam
-    beam_left_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    beam_left_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         mortise_timber=beam,
         tenon_timber=left_post,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from bottom end of beam
@@ -155,7 +155,7 @@ def create_sawhorse() -> Frame:
         tenon_length=tenon_length
     )
 
-    beam_right_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    beam_right_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         mortise_timber=beam,
         tenon_timber=right_post,
         tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of beam
