@@ -211,8 +211,8 @@ DONE-create_canonical_ -> create_canonical_example_example_
     -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
   -make 3 versions
     DONE-perpendicular (simplest)
-    -plane aligned
-    -no alignment (most complicated)
+    DONE-plane aligned
+    DONE-no alignment (most complicated)
       -for this one you need to define the shoulder plane a certain distance away from centerline
   -consider making a brace function that both creates a timber and joins it!
 -cleanup mortise and tenon joint examples so they actually test out th edifferent parameters and use canonicla ctors
