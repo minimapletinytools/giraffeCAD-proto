@@ -970,6 +970,7 @@ class ButtJointTimberArrangement:
     butt_timber: Timber
     receiving_timber: Timber
     butt_timber_end: TimberReferenceEnd
+    front_face_on_butt_timber: Optional[TimberLongFace] = None
 
     
 def create_canonical_example_butt_joint_timbers(position: Optional[V3] = None) -> ButtJointTimberArrangement:
@@ -1013,7 +1014,8 @@ def create_canonical_example_butt_joint_timbers(position: Optional[V3] = None) -
     return ButtJointTimberArrangement(
         butt_timber=butt_timber,
         receiving_timber=receiving_timber,
-        butt_timber_end=TimberReferenceEnd.TOP
+        butt_timber_end=TimberReferenceEnd.TOP,
+        front_face_on_butt_timber=TimberLongFace.RIGHT
     )
 
 @dataclass(frozen=True)
@@ -1022,6 +1024,7 @@ class SpliceJointTimberArrangement:
     timber2: Timber
     timber1_end: TimberReferenceEnd
     timber2_end: TimberReferenceEnd 
+    front_face_on_timber1: Optional[TimberLongFace] = None
 
 def create_canonical_example_splice_joint_timbers(position: Optional[V3] = None) -> SpliceJointTimberArrangement:
     """
@@ -1065,7 +1068,8 @@ def create_canonical_example_splice_joint_timbers(position: Optional[V3] = None)
         timber1=timber1,
         timber2=timber2,
         timber1_end=TimberReferenceEnd.TOP,
-        timber2_end=TimberReferenceEnd.BOTTOM
+        timber2_end=TimberReferenceEnd.BOTTOM,
+        front_face_on_timber1=TimberLongFace.RIGHT
     )
 
 @dataclass(frozen=True)
@@ -1074,6 +1078,7 @@ class CornerJointTimberArrangement:
     timber2: Timber
     timber1_end: TimberReferenceEnd
     timber2_end: TimberReferenceEnd
+    front_face_on_timber1: Optional[TimberLongFace] = None
 
 def create_canonical_example_corner_joint_timbers(corner_angle: Optional[Numeric] = None, position: Optional[V3] = None) -> CornerJointTimberArrangement:
     """
@@ -1123,7 +1128,8 @@ def create_canonical_example_corner_joint_timbers(corner_angle: Optional[Numeric
         timber1=timber1,
         timber2=timber2,
         timber1_end=TimberReferenceEnd.BOTTOM,
-        timber2_end=TimberReferenceEnd.BOTTOM
+        timber2_end=TimberReferenceEnd.BOTTOM,
+        front_face_on_timber1=TimberLongFace.RIGHT
     )
 
 def create_canonical_example_right_angle_corner_joint_timbers(position: Optional[V3] = None) -> CornerJointTimberArrangement:
@@ -1196,6 +1202,7 @@ class BraceJointTimberArrangement:
     brace_timber: Timber
     timber1_end: TimberReferenceEnd
     timber2_end: TimberReferenceEnd
+    front_face_on_timber1: Optional[TimberLongFace] = None
 
 def create_canonical_example_brace_joint_timbers(position: Optional[V3] = None) -> BraceJointTimberArrangement:
     """
@@ -1269,7 +1276,8 @@ def create_canonical_example_brace_joint_timbers(position: Optional[V3] = None) 
         timber2=timber2,
         brace_timber=brace_timber,
         timber1_end=corner_arrangement.timber1_end,
-        timber2_end=corner_arrangement.timber2_end
+        timber2_end=corner_arrangement.timber2_end,
+        front_face_on_timber1=corner_arrangement.front_face_on_timber1
     )
 
 
