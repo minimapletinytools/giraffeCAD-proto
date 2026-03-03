@@ -2033,3 +2033,6 @@ class Frame:
 
 
 
+def require_check(err: Optional[str]):
+    if err is not None:
+        raise AssertionError(err)
