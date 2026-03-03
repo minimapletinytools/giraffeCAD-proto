@@ -9,13 +9,10 @@ from code_goes_here.timber import (
     PegShape, timber_from_directions,
     create_v3, V2, CutTimber, Frame
 )
-from code_goes_here.joints.mortise_and_tenon_joint import (
-    cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED,
-    cut_mortise_and_tenon_DEPRECATED,
-    cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION,
-    SimplePegParameters
-)
+from code_goes_here.joints.mortise_and_tenon_joint import *
+
 from code_goes_here.construction import (
+    ButtJointTimberArrangement,
     create_axis_aligned_timber,
     create_canonical_example_brace_joint_timbers,
     create_canonical_example_butt_joint_timbers,
@@ -402,28 +399,34 @@ def example_brace_joint(position=None):
     
     # Create mortise and tenon joint between brace (tenon) and timber1 (mortise)
     # The brace connects to timber1 at its midpoint
-    joint1 = cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
-        tenon_timber=brace_timber,
-        mortise_timber=timber1,
-        tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon on the end of brace that connects to timber1
+    arrangement1 = ButtJointTimberArrangement(
+        butt_timber=brace_timber,
+        receiving_timber=timber1,
+        butt_timber_end=TimberReferenceEnd.BOTTOM,  # Tenon on the end of brace that connects to timber1
+        front_face_on_butt_timber=TimberLongFace.RIGHT,  # matches peg_parameters.tenon_face
+    )
+    joint1 = cut_mortise_and_tenon_joint_on_PAT(
+        arrangement=arrangement1,
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        crop_tenon_to_mortise_orientation_on_angled_joints = True,
-        peg_parameters=peg_params
+        peg_parameters=peg_params,
     )
-    
+
     # Create mortise and tenon joint between brace (tenon) and timber2 (mortise)
     # The brace connects to timber2 at its midpoint
-    joint2 = cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
-        tenon_timber=brace_timber,
-        mortise_timber=timber2,
-        tenon_end=TimberReferenceEnd.TOP,  # Tenon on the end of brace that connects to timber2
+    arrangement2 = ButtJointTimberArrangement(
+        butt_timber=brace_timber,
+        receiving_timber=timber2,
+        butt_timber_end=TimberReferenceEnd.TOP,  # Tenon on the end of brace that connects to timber2
+        front_face_on_butt_timber=TimberLongFace.RIGHT,  # matches peg_parameters.tenon_face
+    )
+    joint2 = cut_mortise_and_tenon_joint_on_PAT(
+        arrangement=arrangement2,
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        crop_tenon_to_mortise_orientation_on_angled_joints = True,
-        peg_parameters=peg_params
+        peg_parameters=peg_params,
     )
     
     # Combine miter + both mortise-and-tenon joints into a single Frame

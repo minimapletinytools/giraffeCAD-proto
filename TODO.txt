@@ -206,15 +206,18 @@ DONE-create_canonical_ -> create_canonical_example_example_
 
 -update morties and tenon to support
   DONE-do cropping on angled mortise and tenon joints
-  -do the mortise_shoulder_distance_from_centerline conversion
-  -TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
-    -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
-  -make 3 versions
+  DONE-make 3 versions
     DONE-perpendicular (simplest)
     DONE-plane aligned
     DONE-no alignment (most complicated)
       -for this one you need to define the shoulder plane a certain distance away from centerline
+  -allow pegs to be positioned in either tenon space or mortise space via parameter
+    -remind folks like +y direction depends on orientation of timber, not joint angle
+  -do the mortise_shoulder_distance_from_centerline conversion
+  -TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
+    -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
   -consider making a brace function that both creates a timber and joins it!
+
 -cleanup mortise and tenon joint examples so they actually test out th edifferent parameters and use canonicla ctors
 -reorg joints by joint type 
 
