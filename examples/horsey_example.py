@@ -153,7 +153,7 @@ def create_sawhorse() -> Frame:
     # Tenon at post BOTTOM going up into beam - peg goes through RIGHT face
     peg_params_post_beam = base_peg_params  # Already has RIGHT face
     
-    left_beam_post_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    left_beam_post_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=left_post,
         mortise_timber=left_beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -164,7 +164,7 @@ def create_sawhorse() -> Frame:
     )
     
     # Joint 2: Right beam to right post
-    right_beam_post_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    right_beam_post_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=right_post,
         mortise_timber=right_beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -184,7 +184,7 @@ def create_sawhorse() -> Frame:
         tenon_face=TimberLongFace.LEFT
     )
     
-    left_post_stretcher_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    left_post_stretcher_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=stretcher,
         mortise_timber=left_post,
         tenon_end=TimberReferenceEnd.BOTTOM,  # Left end of stretcher
@@ -195,7 +195,7 @@ def create_sawhorse() -> Frame:
     )
     
     # Joint 4: Right post to stretcher (right end)
-    right_post_stretcher_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    right_post_stretcher_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=stretcher,
         mortise_timber=right_post,
         tenon_end=TimberReferenceEnd.TOP,  # Right end of stretcher
@@ -214,7 +214,7 @@ def create_sawhorse() -> Frame:
         tenon_face=TimberLongFace.FRONT
     )
     
-    left_post_plate_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    left_post_plate_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=left_post,
         mortise_timber=plate,
         tenon_end=TimberReferenceEnd.TOP,
@@ -225,7 +225,7 @@ def create_sawhorse() -> Frame:
     )
     
     # Joint 6: Right post to plate
-    right_post_plate_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    right_post_plate_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=right_post,
         mortise_timber=plate,
         tenon_end=TimberReferenceEnd.TOP,

@@ -80,7 +80,7 @@ class WedgeParameters:
 # ============================================================================
 
 
-def cut_mortise_and_tenon_many_options_do_not_call_me_directly(
+def cut_mortise_and_tenon_DEPRECATED(
     tenon_timber: TimberLike,
     mortise_timber: TimberLike,
     tenon_end: TimberReferenceEnd,
@@ -1170,7 +1170,7 @@ def cut_mortise_and_tenon_joint_on_FAT(
     require_check(arrangement.check_face_aligned_and_orthogonal())
 
     return cut_mortise_and_tenon_joint_on_PAT(
-        timbers=arrangement,
+        arrangement=arrangement,
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
@@ -1181,8 +1181,8 @@ def cut_mortise_and_tenon_joint_on_FAT(
     )
 
 
-# TODO DELETE ME
-def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+# TODO update all calls to cut_mortise_and_tenon_joint_on_FAT
+def cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
     tenon_timber: TimberLike,
     mortise_timber: TimberLike,
     tenon_end: TimberReferenceEnd,
@@ -1218,7 +1218,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
         
     Example:
         >>> # Create a mortise and tenon with 2x2 inch tenon, 3 inches long, with pegs
-        >>> joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+        >>> joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         ...     tenon_timber=vertical_post,
         ...     mortise_timber=horizontal_beam,
         ...     tenon_end=TimberReferenceEnd.TOP,
@@ -1234,7 +1234,7 @@ def cut_mortise_and_tenon_joint_on_face_aligned_timbers(
     if tenon_position is None:
         tenon_position = Matrix([Rational(0), Rational(0)])
     
-    return cut_mortise_and_tenon_many_options_do_not_call_me_directly(
+    return cut_mortise_and_tenon_DEPRECATED(
         tenon_timber=tenon_timber,
         mortise_timber=mortise_timber,
         tenon_end=tenon_end,

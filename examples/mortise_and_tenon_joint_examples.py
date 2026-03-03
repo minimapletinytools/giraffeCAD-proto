@@ -10,8 +10,8 @@ from code_goes_here.timber import (
     create_v3, V2, CutTimber, Frame
 )
 from code_goes_here.joints.mortise_and_tenon_joint import (
-    cut_mortise_and_tenon_joint_on_face_aligned_timbers,
-    cut_mortise_and_tenon_many_options_do_not_call_me_directly,
+    cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED,
+    cut_mortise_and_tenon_DEPRECATED,
     cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION,
     SimplePegParameters
 )
@@ -40,7 +40,7 @@ def example_basic_mortise_and_tenon(position=None):
     tenon_length = inches(3)  # 3" long tenon
     mortise_depth = inches(7, 2)  # 3.5" deep mortise (slightly deeper than tenon)
 
-    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=arrangement.butt_timber,
         mortise_timber=arrangement.receiving_timber,
         tenon_end=arrangement.butt_timber_end,
@@ -92,7 +92,7 @@ def example_4x6_into_6x8_mortise_and_tenon(position=None):
     mortise_depth = inches(7, 2)  # 3.5" deep mortise
     
     # Create the joint
-    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -148,7 +148,7 @@ def example_through_tenon_with_6_inch_stickout(position=None):
     mortise_depth = None  # Through mortise (None means it goes all the way through)
     
     # Create the joint
-    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -204,7 +204,7 @@ def example_full_size_4x4_tenon(position=None):
     mortise_depth = inches(5)  # 5" deep mortise (slightly deeper than tenon)
     
     # Create the joint
-    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -263,7 +263,7 @@ def example_offset_corner_tenon(position=None):
     tenon_position = Matrix([inches(1), inches(1)])  # Offset to +X, +Y corner
     
     # Create the joint
-    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
@@ -336,7 +336,7 @@ def example_mortise_and_tenon_with_pegs(position=None):
     )
     
     # Create the joint with pegs
-    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers(
+    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
         tenon_timber=post,
         mortise_timber=beam,
         tenon_end=TimberReferenceEnd.BOTTOM,
