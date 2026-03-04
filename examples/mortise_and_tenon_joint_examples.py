@@ -48,6 +48,83 @@ def example_basic_mortise_and_tenon(position=None):
     return joint
 
 
+def example_basic_mortise_and_tenon_on_FAT(position=None):
+    """
+    Basic blind mortise and tenon using cut_mortise_and_tenon_joint_on_FAT.
+    Canonical 4"x5"x4' butt joint timbers, 2"x2" tenon, 3" long, 3.5" deep mortise.
+    """
+    if position is None:
+        position = create_v3(0, 0, 0)
+
+    arrangement = create_canonical_example_butt_joint_timbers(position)
+    return cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=arrangement,
+        tenon_size=Matrix([inches(2), inches(2)]),
+        tenon_length=inches(3),
+        mortise_depth=inches(7, 2),
+    )
+
+
+def example_basic_mortise_and_tenon_on_FAT_with_wedge(position=None):
+    # TODO: wedge support not yet implemented
+    pass
+
+
+def example_basic_mortise_and_tenon_on_FAT_with_through_tenon(position=None):
+    """
+    Through tenon with 3" stickout past the mortise timber, and the tenon offset
+    so that one side of the tenon lines up with the edge of the butt timber.
+
+    Canonical timbers: butt is 4"x5" along +Y, receiving is 4"x5" along +X.
+    The butt timber TOP end faces the receiving timber. The tenon enters the
+    receiving timber's height face (5" dimension). Through mortise means
+    mortise_depth=None.
+
+    tenon_length = half the receiving timber entry dimension + 3" stickout
+                 = 5/2 + 3 = 5.5"
+    tenon_position X offset = butt_timber half-width - tenon half-width
+                            = 4/2 - 2/2 = 1"
+    """
+    if position is None:
+        position = create_v3(0, 0, 0)
+
+    arrangement = create_canonical_example_butt_joint_timbers(position)
+    return cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=arrangement,
+        tenon_size=Matrix([inches(2), inches(2)]),
+        tenon_length=inches(11, 2),
+        mortise_depth=None,
+        tenon_position=Matrix([inches(0), inches(1)]),
+    )
+
+
+def example_basic_mortise_and_tenon_on_FAT_with_inset_mortise_shoulder(position=None):
+    """
+    Mortise and tenon with a 0.5" shoulder inset from the mortise entry face.
+    This pushes the shoulder plane 0.5" into the mortise timber from the face,
+    so the tenon shoulder sits slightly recessed.
+    """
+    if position is None:
+        position = create_v3(0, 0, 0)
+
+    arrangement = create_canonical_example_butt_joint_timbers(position)
+    return cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=arrangement,
+        tenon_size=Matrix([inches(2), inches(2)]),
+        tenon_length=inches(3),
+        mortise_depth=inches(7, 2),
+        mortise_shoulder_inset=inches(1, 2),
+    )
+
+
+def example_basic_mortise_and_tenon_on_FAT_with_wedge(position=None):
+    # TODO: wedge support not yet implemented
+    pass
+
+
+# TODO
+def example_basic_mortise_and_tenon_on_PAT(position=None):
+    pass
 
 def example_brace_joint(position=None):
     """
@@ -150,7 +227,16 @@ def create_mortise_and_tenon_patternbook() -> PatternBook:
     patterns = [
         (PatternMetadata("basic_4x4", ["mortise_tenon", "basic"], "frame"),
          make_pattern_from_joint(example_basic_mortise_and_tenon)),
-        
+
+        (PatternMetadata("basic_FAT", ["mortise_tenon", "basic_fat"], "frame"),
+         make_pattern_from_joint(example_basic_mortise_and_tenon_on_FAT)),
+
+        (PatternMetadata("through_tenon_FAT", ["mortise_tenon", "through_fat"], "frame"),
+         make_pattern_from_joint(example_basic_mortise_and_tenon_on_FAT_with_through_tenon)),
+
+        (PatternMetadata("inset_shoulder_FAT", ["mortise_tenon", "inset_shoulder_fat"], "frame"),
+         make_pattern_from_joint(example_basic_mortise_and_tenon_on_FAT_with_inset_mortise_shoulder)),
+
         (PatternMetadata("brace_joint", ["mortise_tenon", "brace"], "frame"),
          make_pattern_from_frame(example_brace_joint)),
     ]
@@ -179,6 +265,9 @@ if __name__ == "__main__":
     # Run all examples
     examples = [
         ("Basic 4x4 Mortise and Tenon", example_basic_mortise_and_tenon),
+        ("Basic FAT Mortise and Tenon", example_basic_mortise_and_tenon_on_FAT),
+        ("Through Tenon FAT", example_basic_mortise_and_tenon_on_FAT_with_through_tenon),
+        ("Inset Shoulder FAT", example_basic_mortise_and_tenon_on_FAT_with_inset_mortise_shoulder),
         ("Brace Joint with Mortise and Tenon", example_brace_joint),
     ]
     
