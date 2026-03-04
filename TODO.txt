@@ -214,6 +214,7 @@ DONE-create_canonical_ -> create_canonical_example_example_
   -allow pegs to be positioned in either tenon space or mortise space via parameter
     -remind folks like +y direction depends on orientation of timber, not joint angle
   -do the mortise_shoulder_distance_from_centerline conversion
+  -do the generic notch function
   -TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
     -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
   -consider making a brace function that both creates a timber and joins it!
