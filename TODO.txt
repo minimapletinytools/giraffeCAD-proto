@@ -203,6 +203,11 @@ IGNORE-update oscar shed to use updated joint methods?
 DONE-create_canonical_ -> create_canonical_example_example_
 -move create_canonical_example_ stuff intointo example_shavings.py or sometihng.
 
+-non FAT/PAT sohulder plane
+  -measure_plane_from_centerline
+  -still intersect tenon on shoulderplane and use intersection point to size everything (no changes needed)
+    -use this point to generate the notch
+      -I guess... you could orient the Z of the notch cutout box with the tenon timber... and orient the XY to be parallel to mortise length axis and perp to tenon length axis... and then cut a box out
 
 -update morties and tenon to support
   DONE-do cropping on angled mortise and tenon joints
