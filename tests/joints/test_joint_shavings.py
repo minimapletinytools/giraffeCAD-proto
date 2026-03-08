@@ -1011,16 +1011,11 @@ class TestScribeFaceOnCenterline:
         distance = marking.distance
         
         # Expected calculation (true geometric intersection):
-        # - timber_a's centerline: P = (0, 0, 24") + t*(0, 0, -1) [measuring from TOP, going down]
-        # - timber_b's BOTTOM face plane: normal = (0, 0, -1), plane at z = 36"
-        # - Intersection: -1 * (z - 36") = 0 => z = 36"
-        # - From line: 24" - t = 36" => t = -12", but due to the direction alignment calculation:
-        # - numerator = (0,0,-1) · ((0,0,36") - (0,0,24")) = -12"
-        # - denominator = (0,0,-1) · (0,0,-1) = 1
-        # - t = -12" / 1 = -12"
-        # - signed_distance = -12" * ((0,0,1) · (0,0,-1)) = -12" * (-1) = 12"
-        # - Positive means the plane is farther along (above the TOP end)
-        expected_distance = inches(12)
+        # - timber_a's centerline from TOP: P = (0, 0, 24") + t*(0, 0, -1) [going down]
+        # - timber_b's BOTTOM face plane: normal = (0, 0, -1), point at center of bottom face = (0, 0, 36")
+        # - Intersection: (0,0,-1) · ((0,0,36") - (0,0,24")) / ((0,0,-1) · (0,0,-1)) = -12/1 = -12"
+        # - Distance = -12" (negative = plane is outside the timber, above TOP end)
+        expected_distance = -inches(12)
         assert distance == expected_distance, \
             f"Expected distance {expected_distance}, got {distance}"
 

@@ -24,10 +24,10 @@ class TestGetPointOnFace:
         
         point = get_point_on_face_global(TimberFace.RIGHT, timber)
         
-        # RIGHT face is at x=5 (half the width), should be at the center
+        # RIGHT face center: x=5 (half the width), y=0, z=50 (mid-length)
         assert point[0] == Rational(5)
-        assert point[1] == Rational(0)  # Centered in height
-        assert point[2] == Rational(0)  # At bottom in length
+        assert point[1] == Rational(0)
+        assert point[2] == Rational(50)
     
     def test_get_point_on_top_face(self):
         """Test getting a point on the TOP face of a vertical timber"""
@@ -41,11 +41,10 @@ class TestGetPointOnFace:
         
         point = get_point_on_face_global(TimberFace.TOP, timber)
         
-        # get_point_on_face_global returns a point at the center of the face
-        # For TOP face, it's at the centerline (z=50) plus half the timber length
-        assert point[0] == Rational(0)  # Centered in width
-        assert point[1] == Rational(0)  # Centered in height
-        assert point[2] == Rational(50)  # At centerline along length axis
+        # TOP face center: x=0, y=0, z=100 (actual top of 100-long timber)
+        assert point[0] == Rational(0)
+        assert point[1] == Rational(0)
+        assert point[2] == Rational(100)
 
 
 class TestMeasureOntoFace:
@@ -406,10 +405,10 @@ class TestMeasureFace:
         assert isinstance(plane, Plane)
         # Normal should point outward (+X for RIGHT face)
         assert plane.normal.equals(create_v3(1, 0, 0))
-        # Point should be at the face surface (x=5, y=0, z=0)
+        # Point should be at the face center (x=5, y=0, z=50)
         assert plane.point[0] == Rational(5)
         assert plane.point[1] == Rational(0)
-        assert plane.point[2] == Rational(0)
+        assert plane.point[2] == Rational(50)
     
     def test_measure_face_front(self):
         """Test measuring the FRONT face of a vertical timber"""
@@ -426,10 +425,10 @@ class TestMeasureFace:
         
         # Normal should point outward (+Y for FRONT face)
         assert plane.normal.equals(create_v3(0, 1, 0))
-        # Point should be at the face surface (x=0, y=10, z=0)
+        # Point should be at the face center (x=0, y=10, z=50)
         assert plane.point[0] == Rational(0)
         assert plane.point[1] == Rational(10)
-        assert plane.point[2] == Rational(0)
+        assert plane.point[2] == Rational(50)
 
 
 class TestMeasureLongEdge:
@@ -664,8 +663,9 @@ class TestDistanceFromPointIntoFaceMark:
         
         point = measurement.measure()
         
-        # Line should point away from RIGHT face (negative X direction)
-        assert point.position.equals(create_v3(0, 0, 0))
+        # Starting from face center (5, 0, 50), measuring 5 into timber (-X)
+        # gives position (0, 0, 50)
+        assert point.position.equals(create_v3(0, 0, 50))
     
     def test_mark_from_custom_point(self):
         """Test marking a line from a custom point going into timber"""
