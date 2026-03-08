@@ -160,8 +160,8 @@ def example_brace_joint(position=None):
     
     # Define tenon dimensions (smaller than full timber size)
     tenon_size = Matrix([inches(2), inches(2)])  # 2" x 2" tenon
-    tenon_length = inches(5)  # 2" long tenon
-    mortise_depth = inches(2)  # 3" deep mortise
+    tenon_length = inches(5) 
+    mortise_depth = inches(2) 
 
         
     # Define peg parameters
@@ -193,6 +193,8 @@ def example_brace_joint(position=None):
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         peg_parameters=peg_params,
+        mortise_shoulder_inset=inches(1, 2),
+        crop_tenon_to_mortise_orientation_on_angled_joints=True,
     )
 
     # Create mortise and tenon joint between brace (tenon) and timber2 (mortise)
@@ -209,6 +211,8 @@ def example_brace_joint(position=None):
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         peg_parameters=peg_params,
+        mortise_shoulder_inset=inches(1),
+        crop_tenon_to_mortise_orientation_on_angled_joints=True,
     )
     
     # Combine miter + both mortise-and-tenon joints into a single Frame

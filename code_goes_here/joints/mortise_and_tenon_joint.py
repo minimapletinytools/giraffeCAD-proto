@@ -1191,6 +1191,7 @@ def cut_mortise_and_tenon_joint_on_PAT(
     mortise_shoulder_inset: Numeric = Rational(0),
     wedge_parameters: Optional[WedgeParameters] = None,
     peg_parameters: Optional[SimplePegParameters] = None,
+    crop_tenon_to_mortise_orientation_on_angled_joints = False,
 ) -> Joint:
 
     require_check(arrangement.check_plane_aligned())
@@ -1229,7 +1230,7 @@ def cut_mortise_and_tenon_joint_on_PAT(
         tenon_position=tenon_position,
         wedge_parameters=wedge_parameters,
         peg_parameters=peg_parameters,
-        crop_tenon_to_mortise_orientation_on_angled_joints=False,
+        crop_tenon_to_mortise_orientation_on_angled_joints=crop_tenon_to_mortise_orientation_on_angled_joints,
     )
 
     
