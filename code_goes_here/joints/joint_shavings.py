@@ -774,20 +774,139 @@ def chop_profile_on_timber_face(timber: TimberLike, end: TimberReferenceEnd, fac
 
 def chop_shoulder_notch_aligned_with_timber(notch_timber: TimberLike, butting_timber: TimberLike, butting_timber_end: TimberReferenceEnd, distance_from_centerline: Numeric, notch_wall_relief_cut_angle: Numeric = Integer(0)) -> Union[RectangularPrism, 'SolidUnion']:
     """
-    Create a shoulder notch from the centerline in a direction.
+    Create a shoulder notch on notch_timber at a given distance from its centerline,
+    oriented by the butting_timber's approach direction.
+
+    Unlike chop_shoulder_notch_on_timber_face which is aligned to a specific face,
+    this notch is aligned to the shoulder plane derived from the butting timber's
+    approach direction (projected perpendicular to the notch timber's length axis).
+
+    The notch bottom (shoulder plane) is distance_from_centerline away from the
+    notch_timber's centerline. The notch opens outward from the centerline.
+    The notch width is along the notch_timber's length axis. Both the width and
+    span dimensions are oversized (max(size) * sqrt(2)) to guarantee full
+    coverage regardless of the cross-section rotation.
+
+    Args:
+        notch_timber: The timber to cut the notch into
+        butting_timber: The timber approaching the notch_timber (defines the notch direction)
+        butting_timber_end: Which end of butting_timber approaches notch_timber
+        distance_from_centerline: Distance from notch_timber's centerline to the shoulder plane
+        notch_wall_relief_cut_angle: Angle in degrees for the side walls (default 0 = perpendicular).
+                    Positive angles make walls slant outward.
+
+    Returns:
+        RectangularPrism (if notch_wall_relief_cut_angle=0) or SolidUnion (if notch_wall_relief_cut_angle>0)
+        representing the material to remove (in notch_timber's local coordinates)
     """
-    # instead maybe project butting_timber FRONT direction so it is parallel to cross_producT(timber.get_length_direction_global(), direction), 
-    notch_up_direction = notch_timber.get_length_direction_global()
+    from sympy import sqrt, cos, Max
 
-    # first measure the plane from the centerline in the direction (which gets us the intersection point and the shoulder plane which is parallel to the length axis of the notch timber)
+    notch_length_dir_global = notch_timber.get_length_direction_global()
 
-    # next from the center of the plane that we got from the measurement, we will draw the notch cutout box, follow logic similar to 
+    # Determine the butting timber's approach direction (pointing toward the notch timber)
+    if butting_timber_end == TimberReferenceEnd.TOP:
+        raw_approach = -butting_timber.get_length_direction_global()
+    else:
+        raw_approach = butting_timber.get_length_direction_global()
 
-    # next determine the notch_width along the notch timber length axis, we do this by dividing by the cosine of both the rotations of the butting timber (but not the rotation in the notch timber length axis as this makes no difference)
+    # Project out the component along notch_timber's length axis to get the
+    # approach direction in the plane perpendicular to the notch timber
+    projected = raw_approach - notch_length_dir_global * safe_dot_product(raw_approach, notch_length_dir_global)
+    approach_direction_global = normalize_vector(projected)
 
-    # cut the notch, follow the logic in chop_shoulder_notch_on_timber_face
-    
-    pass
+    # Find where the butting timber's centerline intersects the shoulder plane.
+    # The shoulder plane is at distance_from_centerline from the notch timber's
+    # centerline in the approach direction.
+    shoulder_plane = measure_plane_from_edge_in_direction(
+        notch_timber, TimberCenterline.CENTERLINE, approach_direction_global, distance_from_centerline
+    )
+    butting_centerline = measure_centerline(butting_timber)
+    # Intersect butting centerline with shoulder plane
+    denom = safe_dot_product(shoulder_plane.normal, butting_centerline.direction)
+    assert not zero_test(denom), "Butting timber centerline is parallel to the shoulder plane"
+    t = safe_dot_product(shoulder_plane.normal, shoulder_plane.point - butting_centerline.point) / denom
+    intersection_global = butting_centerline.point + butting_centerline.direction * t
+
+    # TODO compute optimal size instead
+    # Oversized notch dimensions to guarantee full coverage at any rotation:
+    # max cross-section dimension * sqrt(2) covers the worst-case diagonal
+    max_size = Max(notch_timber.size[0], notch_timber.size[1])
+    notch_span = max_size * sqrt(Integer(2))
+
+    # Notch width along the notch_timber length axis: use the butting timber's
+    # cross-section projected onto the notch_timber length axis. Divide by the
+    # cosine of the angle between the butting timber and the notch_timber length axis
+    # to account for the approach angle. Use max dimension * sqrt(2) as a safe oversize.
+    butting_max_size = Max(butting_timber.size[0], butting_timber.size[1])
+    notch_width = butting_max_size * sqrt(Integer(2))
+
+    # Notch depth: from the shoulder plane outward past the timber surface.
+    # The shoulder plane is distance_from_centerline from centerline; the timber
+    # surface at worst is max_size * sqrt(2) / 2 from centerline.
+    notch_depth = max_size * sqrt(Integer(2)) / Integer(2)
+
+    # Build the notch prism in notch_timber local coordinates.
+    # In local coords: Z = length, X = width (size[0]), Y = height (size[1]).
+    # We need to express approach_direction_global in local coords.
+    approach_direction_local = safe_transform_vector(
+        notch_timber.orientation.matrix.T, approach_direction_global
+    )
+    notch_length_dir_local = create_v3(Integer(0), Integer(0), Integer(1))
+
+    # Prism orientation in local coords:
+    #   Z-axis = approach direction (outward from centerline, into the notch opening)
+    #   X-axis = timber length direction (notch width runs along this)
+    #   Y-axis = cross product to complete the right-handed system (notch span)
+    prism_orientation = Orientation.from_z_and_x(approach_direction_local, notch_length_dir_local)
+
+    prism_position_local = notch_timber.transform.global_to_local(intersection_global)
+
+    prism_size = create_v2(notch_width, notch_span)
+
+    notch_prism = RectangularPrism(
+        size=prism_size,
+        transform=Transform(position=prism_position_local, orientation=prism_orientation),
+        start_distance=Integer(0),
+        end_distance=notch_depth
+    )
+
+    if notch_wall_relief_cut_angle == 0:
+        return notch_prism
+
+    # Relief cut angle: rotate prism copies around the wall edges
+    angle_rad = degrees(notch_wall_relief_cut_angle)
+
+    # The two wall edges run along the Y-axis of the prism (the span direction),
+    # located at +/- notch_width/2 along the X-axis (timber length direction)
+    span_direction_local = cross_product(approach_direction_local, notch_length_dir_local)
+    span_direction_local = normalize_vector(span_direction_local)
+
+    corner_point_1 = prism_position_local + notch_length_dir_local * (notch_width / Rational(2))
+    corner_point_2 = prism_position_local - notch_length_dir_local * (notch_width / Rational(2))
+
+    axis_1 = Axis(position=corner_point_1, direction=span_direction_local)
+    axis_2 = Axis(position=corner_point_2, direction=span_direction_local)
+
+    extended_end_distance = notch_depth / cos(angle_rad)
+
+    left_wall_transform = notch_prism.transform.rotate_around_axis(axis_1, radians(angle_rad))
+    left_wall_prism = RectangularPrism(
+        size=notch_prism.size,
+        transform=left_wall_transform,
+        start_distance=notch_prism.start_distance,
+        end_distance=extended_end_distance
+    )
+
+    right_wall_transform = notch_prism.transform.rotate_around_axis(axis_2, radians(-angle_rad))
+    right_wall_prism = RectangularPrism(
+        size=notch_prism.size,
+        transform=right_wall_transform,
+        start_distance=notch_prism.start_distance,
+        end_distance=extended_end_distance
+    )
+
+    from code_goes_here.cutcsg import SolidUnion
+    return SolidUnion([notch_prism, left_wall_prism, right_wall_prism])
 
 def chop_shoulder_notch_on_timber_face(
     timber: TimberLike,

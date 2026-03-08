@@ -211,7 +211,7 @@ def example_brace_joint(position=None):
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
         peg_parameters=peg_params,
-        mortise_shoulder_inset=inches(1),
+        mortise_shoulder_inset=inches(1, 2),
         crop_tenon_to_mortise_orientation_on_angled_joints=True,
     )
     
@@ -251,19 +251,13 @@ def example_double_angled_mortise_and_tenon(position=None):
         receiving_timber=mortise_timber,
         butt_timber_end=TimberReferenceEnd.BOTTOM,
     )
-
-    face_half = mortise_timber.get_size_in_face_normal_axis(
-        mortise_timber.get_closest_oriented_long_face_from_global_direction(
-            -brace_timber.get_face_direction_global(TimberReferenceEnd.BOTTOM)
-        ).to.face()
-    ) / Integer(2)
-
+    
     return cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
         arrangement=arrangement,
         tenon_size=Matrix([inches(2), inches(2)]),
         tenon_length=inches(5),
         mortise_depth=inches(3),
-        mortise_shoulder_distance_from_centerline=face_half,
+        mortise_shoulder_distance_from_centerline=inches(2),
         crop_tenon_to_mortise_orientation_on_angled_joints=True,
     )
 

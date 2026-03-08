@@ -222,7 +222,10 @@ DONE-joint consturction objects
     DONE-no alignment (most complicated)
       -for this one you need to define the shoulder plane a certain distance away from centerline
   DONE-do the mortise_shoulder_distance_from_centerline conversion
-  -tenon cutting on braces seems to have broken :(
+  DONE-tenon cutting on braces seems to have broken :(
+  -non PAT stuff
+    -update peg logic to assume not PAT
+    -mortise hole logic needs to be updated too
   -allow pegs to be positioned in either tenon space or mortise space via parameter
     -remind folks like +y direction depends on orientation of timber, not joint angle
   -do the generic notch function

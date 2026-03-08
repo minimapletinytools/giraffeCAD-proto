@@ -27,6 +27,7 @@ from code_goes_here.timber_shavings import are_timbers_plane_aligned
 from code_goes_here.rule import *
 from code_goes_here.rule import safe_transform_vector, safe_dot_product
 from code_goes_here.cutcsg import CutCSG, RectangularPrism, HalfSpace, Difference, adopt_csg
+from .joint_shavings import chop_shoulder_notch_aligned_with_timber
 
 
 # ============================================================================
@@ -839,6 +840,8 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     if tenon_position is None:
         tenon_position = Matrix([Rational(0), Rational(0)])
 
+    # TODO default mortise depth if mortise_depth is None
+
     # -------------------------------------------------------------------------
     # Step 2: Determine which face of the mortise timber the tenon enters from
     # TODO remove, calculate directly from tenon_end_direction and mortise_shoulder_distance_from_centerline
@@ -984,6 +987,28 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
         )
 
     # -------------------------------------------------------------------------
+    # shoulder notch on mortise timber (when shoulder is inset from face)
+    # -------------------------------------------------------------------------
+
+    face_half_size = mortise_timber.get_size_in_face_normal_axis(mortise_face) / Integer(2)
+    needs_shoulder_notch = (
+        mortise_shoulder_distance_from_centerline < face_half_size
+        and not zero_test(face_half_size - mortise_shoulder_distance_from_centerline)
+    )
+
+    shoulder_notch_local = None
+    if needs_shoulder_notch:
+        from sympy import acos, pi
+        approach_angle_degrees = acos(Abs(cos_angle)) * Integer(180) / pi
+        shoulder_notch_local = chop_shoulder_notch_aligned_with_timber(
+            notch_timber=mortise_timber,
+            butting_timber=tenon_timber,
+            butting_timber_end=tenon_end,
+            distance_from_centerline=mortise_shoulder_distance_from_centerline,
+            notch_wall_relief_cut_angle=approach_angle_degrees,
+        )
+
+    # -------------------------------------------------------------------------
     # make the final cut CSGs
     # -------------------------------------------------------------------------
 
@@ -993,11 +1018,17 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     )
 
     mortise_hole_prism_local = adopt_csg(None, mortise_timber.transform, mortise_hole_prism_global)
+
+    if shoulder_notch_local is not None:
+        mortise_negative_csg = CSGUnion(children=[mortise_hole_prism_local, shoulder_notch_local])
+    else:
+        mortise_negative_csg = mortise_hole_prism_local
+
     mortise_cut = Cutting(
         timber=mortise_timber,
         maybe_top_end_cut=None,
         maybe_bottom_end_cut=None,
-        negative_csg=mortise_hole_prism_local,
+        negative_csg=mortise_negative_csg,
     )
 
     # Redundant end cut at the tip of the tenon prism (in tenon timber local)
@@ -1161,7 +1192,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
                 negative_csg=tenon_cut_with_pegs_csg
             )
         if peg_holes_in_mortise_local:
-            mortise_cut_with_pegs_csg = CSGUnion(children=[mortise_hole_prism_local] + peg_holes_in_mortise_local)
+            mortise_cut_with_pegs_csg = CSGUnion(children=[mortise_negative_csg] + peg_holes_in_mortise_local)
             mortise_cut = Cutting(
                 timber=mortise_timber,
                 maybe_top_end_cut=None,
