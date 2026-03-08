@@ -499,6 +499,29 @@ class TestMeasureLongEdge:
         assert line.point[2] == Rational(3)   # Front face (height/2)
 
 
+class TestMeasurePlaneFromEdgeInDirection:
+    """Tests for measure_plane_from_edge_in_direction function"""
+
+    def test_plane_from_centerline_offset_in_x(self):
+        """Plane through centerline offset 3 in +X should have normal +X and point at (3, 0, 50)."""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            ticket="test_timber"
+        )
+        plane = measure_plane_from_edge_in_direction(
+            timber, TimberEdge.CENTERLINE, create_v3(1, 0, 0), Rational(3)
+        )
+        assert isinstance(plane, Plane)
+        assert plane.normal.equals(create_v3(1, 0, 0))
+        assert plane.point[0] == Rational(3)
+        assert plane.point[1] == Rational(0)
+        assert plane.point[2] == Rational(50)
+
+
 class TestMeasureCenterLine:
     """Tests for measure_centerline function"""
     

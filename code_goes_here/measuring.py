@@ -537,8 +537,19 @@ def measure_into_face(distance: Numeric, face: SomeTimberFace, timber: PerfectTi
 
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
-def measure_plane_from_edge_in_direction(timber: PerfectTimberWithin, edge: TimberEdge, direction: Direction3D) -> Plane:
-    pass
+def measure_plane_from_edge_in_direction(timber: PerfectTimberWithin, edge: TimberEdge, direction: Direction3D, distance: Numeric = Integer(0)) -> Plane:
+    """
+    Return a Plane that is parallel to the given edge, has `direction` as its
+    normal, and sits `distance` away from the edge in that direction.
+
+    Args:
+        timber: The timber whose edge to measure from
+        edge: Which edge (centerline, long edge, or short edge)
+        direction: Normal direction of the resulting plane
+        distance: How far from the edge to place the plane (default 0 = through the edge)
+    """
+    edge_line = measure_edge(timber, edge)
+    return Plane(normal=direction, point=edge_line.point + direction * distance)
 
 def measure_plane_from_centerline_in_direction(timber: PerfectTimberWithin, direction: Direction3D) -> Plane:
     return measure_plane_from_edge_in_direction(timber, TimberEdge.CENTERLINE, direction)
