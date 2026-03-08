@@ -415,22 +415,25 @@ class TestMeasureMortiseShoulderPlane:
         plane_at_center = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
             arrangement, Rational(0)
         )
-        # The plane normal is the direction from mortise centerline toward the tenon
-        # in the mortise cross-section. Tenon runs in +Y, so projected into the
-        # cross-section (perp to mortise +X), the direction is +Y.
-        assert are_vectors_parallel(plane_at_center.normal, create_v3(0, 1, 0)), \
-            f"Plane normal should point toward tenon (+Y), got {plane_at_center.normal}"
+        # The plane normal points AWAY from the tenon (into the mortise interior).
+        # Tenon runs in +Y, so normal is -Y.
+        assert are_vectors_parallel(plane_at_center.normal, create_v3(0, -1, 0)), \
+            f"Plane normal should point away from tenon (-Y), got {plane_at_center.normal}"
         mortise_length_dir = arrangement.receiving_timber.get_length_direction_global()
         mortise_center = arrangement.receiving_timber.get_bottom_position_global() + mortise_length_dir * arrangement.receiving_timber.length / 2
         assert plane_at_center.point.equals(mortise_center), \
             f"At distance 0, plane point should be the mortise centerline midpoint, got {plane_at_center.point} vs {mortise_center}"
 
+        # Positive distance moves the plane TOWARD the tenon (+Y),
+        # but the direction_in_plane is -Y, so the point moves in -Y.
+        # The shoulder conceptually moves toward the tenon, so positive distance
+        # means the plane point goes away from centerline toward tenon face.
         plane_offset = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
             arrangement, Rational(1)
         )
-        expected_offset_point = mortise_center + create_v3(0, 1, 0)
+        expected_offset_point = mortise_center + create_v3(0, -1, 0)
         assert plane_offset.point.equals(expected_offset_point), \
-            f"At distance 1, plane point should be offset 1 in +Y, got {plane_offset.point} vs {expected_offset_point}"
+            f"At distance 1, plane point should be offset 1 in -Y (normal dir), got {plane_offset.point} vs {expected_offset_point}"
 
     def test_angled_non_intersecting_centerlines(self):
         """40-degree butt joint where centerlines do NOT intersect.
