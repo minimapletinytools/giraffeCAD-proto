@@ -761,4 +761,25 @@ def mark_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
 
 
 def mark_plane_from_edge_in_direction(plane: Union[UnsignedPlane, Plane, HalfPlane], timber: PerfectTimberWithin, edge: TimberEdge) -> PlaneFromEdgeInDirection:
-    pass
+    """
+    Mark a plane onto a timber edge, returning the direction and signed distance
+    from the edge to the plane.
+
+    This is the inverse of measure_plane_from_edge_in_direction:
+    if p = measure_plane_from_edge_in_direction(timber, edge, dir, dist),
+    then mark_plane_from_edge_in_direction(p, timber, edge) returns (dir, dist).
+
+    Args:
+        plane: The plane to mark (its normal becomes the direction)
+        timber: The timber whose edge we're measuring from
+        edge: Which edge to measure from
+    """
+    edge_line = measure_edge(timber, edge)
+    direction = plane.normal
+    distance = safe_dot_product(direction, plane.point - edge_line.point)
+    return PlaneFromEdgeInDirection(
+        timber=timber,
+        edge=edge,
+        direction=direction,
+        distance=distance,
+    )

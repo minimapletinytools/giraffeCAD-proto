@@ -810,3 +810,50 @@ class TestMeasureOntoCenterline:
         # Test round-trip
         marked_point = marking.measure()
         assert marked_point.position.equals(create_v3(0, 0, 40))
+
+
+class TestMarkPlaneFromEdgeInDirection:
+    """Tests for mark_plane_from_edge_in_direction function"""
+
+    def test_round_trip_with_measure(self):
+        """measure then mark should recover the original direction and distance."""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            ticket="test_timber"
+        )
+        direction = create_v3(1, 0, 0)
+        distance = Rational(7)
+        plane = measure_plane_from_edge_in_direction(timber, TimberEdge.CENTERLINE, direction, distance)
+        result = mark_plane_from_edge_in_direction(plane, timber, TimberEdge.CENTERLINE)
+        assert result.direction.equals(direction)
+        assert result.distance == distance
+        assert result.measure().point.equals(plane.point)
+
+    def test_round_trip_diagonal_timber_and_direction(self):
+        """Round-trip on a diagonal timber with a non-axis-aligned direction."""
+        from code_goes_here.rule import normalize_vector, zero_test
+        from sympy import simplify
+
+        timber = timber_from_directions(
+            length=Rational(60),
+            size=create_v2(4, 6),
+            bottom_position=create_v3(10, 20, 5),
+            length_direction=normalize_vector(create_v3(1, 1, 0)),
+            width_direction=normalize_vector(create_v3(-1, 1, 0)),
+            ticket="diag_timber"
+        )
+        direction = normalize_vector(create_v3(2, -1, 3))
+        distance = Rational(11, 3)
+        plane = measure_plane_from_edge_in_direction(
+            timber, TimberEdge.RIGHT_FRONT, direction, distance
+        )
+        result = mark_plane_from_edge_in_direction(plane, timber, TimberEdge.RIGHT_FRONT)
+        assert result.direction.equals(direction)
+        assert zero_test(simplify(result.distance - distance))
+        round_trip_plane = result.measure()
+        for i in range(3):
+            assert zero_test(simplify(round_trip_plane.point[i] - plane.point[i]))
