@@ -998,14 +998,14 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
 
     shoulder_notch_local = None
     if needs_shoulder_notch:
-        from sympy import acos, pi
-        approach_angle_degrees = acos(Abs(cos_angle)) * Integer(180) / pi
+        from sympy import acos
+        approach_angle_radians = acos(Abs(cos_angle))
         shoulder_notch_local = chop_shoulder_notch_aligned_with_timber(
             notch_timber=mortise_timber,
             butting_timber=tenon_timber,
             butting_timber_end=tenon_end,
             distance_from_centerline=mortise_shoulder_distance_from_centerline,
-            notch_wall_relief_cut_angle=approach_angle_degrees,
+            notch_wall_relief_cut_angle_radians=approach_angle_radians,
         )
 
     # -------------------------------------------------------------------------

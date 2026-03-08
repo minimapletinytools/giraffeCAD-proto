@@ -772,7 +772,7 @@ def chop_profile_on_timber_face(timber: TimberLike, end: TimberReferenceEnd, fac
     return extrusion
 
 
-def chop_shoulder_notch_aligned_with_timber(notch_timber: TimberLike, butting_timber: TimberLike, butting_timber_end: TimberReferenceEnd, distance_from_centerline: Numeric, notch_wall_relief_cut_angle: Numeric = Integer(0)) -> Union[RectangularPrism, 'SolidUnion']:
+def chop_shoulder_notch_aligned_with_timber(notch_timber: TimberLike, butting_timber: TimberLike, butting_timber_end: TimberReferenceEnd, distance_from_centerline: Numeric, notch_wall_relief_cut_angle_radians: Numeric = Integer(0)) -> Union[RectangularPrism, 'SolidUnion']:
     """
     Create a shoulder notch on notch_timber at a given distance from its centerline,
     oriented by the butting_timber's approach direction.
@@ -792,7 +792,7 @@ def chop_shoulder_notch_aligned_with_timber(notch_timber: TimberLike, butting_ti
         butting_timber: The timber approaching the notch_timber (defines the notch direction)
         butting_timber_end: Which end of butting_timber approaches notch_timber
         distance_from_centerline: Distance from notch_timber's centerline to the shoulder plane
-        notch_wall_relief_cut_angle: Angle in degrees for the side walls (default 0 = perpendicular).
+        notch_wall_relief_cut_angle_radians: Angle in radians for the side walls (default 0 = perpendicular).
                     Positive angles make walls slant outward.
 
     Returns:
@@ -870,11 +870,10 @@ def chop_shoulder_notch_aligned_with_timber(notch_timber: TimberLike, butting_ti
         end_distance=notch_depth
     )
 
-    if notch_wall_relief_cut_angle == 0:
+    if notch_wall_relief_cut_angle_radians == 0:
         return notch_prism
 
-    # Relief cut angle: rotate prism copies around the wall edges
-    angle_rad = degrees(notch_wall_relief_cut_angle)
+    angle_rad = notch_wall_relief_cut_angle_radians
 
     # The two wall edges run along the Y-axis of the prism (the span direction),
     # located at +/- notch_width/2 along the X-axis (timber length direction)
@@ -889,7 +888,7 @@ def chop_shoulder_notch_aligned_with_timber(notch_timber: TimberLike, butting_ti
 
     extended_end_distance = notch_depth / cos(angle_rad)
 
-    left_wall_transform = notch_prism.transform.rotate_around_axis(axis_1, radians(angle_rad))
+    left_wall_transform = notch_prism.transform.rotate_around_axis(axis_1, angle_rad)
     left_wall_prism = RectangularPrism(
         size=notch_prism.size,
         transform=left_wall_transform,
@@ -897,7 +896,7 @@ def chop_shoulder_notch_aligned_with_timber(notch_timber: TimberLike, butting_ti
         end_distance=extended_end_distance
     )
 
-    right_wall_transform = notch_prism.transform.rotate_around_axis(axis_2, radians(-angle_rad))
+    right_wall_transform = notch_prism.transform.rotate_around_axis(axis_2, -angle_rad)
     right_wall_prism = RectangularPrism(
         size=notch_prism.size,
         transform=right_wall_transform,
