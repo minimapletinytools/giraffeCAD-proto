@@ -17,7 +17,7 @@ from sympy import Rational, Integer
 from giraffe import *
 from code_goes_here.ticket import Ticket
 from code_goes_here.patternbook import PatternBook, PatternMetadata
-from code_goes_here.construction import (
+from code_goes_here.example_shavings import (
     create_canonical_example_splice_joint_timbers,
     create_canonical_example_butt_joint_timbers,
     create_canonical_example_corner_joint_timbers,

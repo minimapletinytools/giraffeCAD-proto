@@ -29,7 +29,7 @@ from code_goes_here.joints.plain_joints import (
     cut_plain_house_joint,
     cut_plain_splice_lap_joint_on_aligned_timbers,
 )
-from code_goes_here.construction import (
+from code_goes_here.example_shavings import (
     create_canonical_example_corner_joint_timbers,
     create_canonical_example_right_angle_corner_joint_timbers,
     create_canonical_example_butt_joint_timbers,

@@ -201,7 +201,7 @@ IGNORE-update oscar shed to use updated joint methods?
   -contains common computations for the joint configuration
   -contains dumping groups for any additional computed data?
 DONE-create_canonical_ -> create_canonical_example_example_
--move create_canonical_example_ stuff intointo example_shavings.py or sometihng.
+DONE-move create_canonical_example_ stuff intointo example_shavings.py or sometihng.
 
 -non FAT/PAT sohulder plane
   -measure_plane_from_centerline

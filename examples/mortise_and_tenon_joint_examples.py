@@ -14,6 +14,8 @@ from code_goes_here.joints.mortise_and_tenon_joint import *
 from code_goes_here.construction import (
     ButtJointTimberArrangement,
     create_axis_aligned_timber,
+)
+from code_goes_here.example_shavings import (
     create_canonical_example_brace_joint_timbers,
     create_canonical_example_butt_joint_timbers,
 )
@@ -123,7 +125,7 @@ def example_basic_mortise_and_tenon_on_FAT_with_wedge(position=None):
 
 
 # TODO
-def example_basic_mortise_and_tenon_on_PAT(position=None):
+def example_angled_mortise_and_tenon_on_PAT(position=None):
     pass
 
 def example_brace_joint(position=None):

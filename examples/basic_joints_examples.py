@@ -24,7 +24,7 @@ from code_goes_here.joints.basic_joints import (
     cut_basic_housed_dovetail_butt_joint,
     cut_basic_mitered_and_keyed_lap_joint,
 )
-from code_goes_here.construction import (
+from code_goes_here.example_shavings import (
     create_canonical_example_right_angle_corner_joint_timbers,
     create_canonical_example_butt_joint_timbers,
     create_canonical_example_splice_joint_timbers,
