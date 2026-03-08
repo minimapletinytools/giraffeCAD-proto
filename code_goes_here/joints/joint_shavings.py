@@ -771,8 +771,23 @@ def chop_profile_on_timber_face(timber: TimberLike, end: TimberReferenceEnd, fac
     
     return extrusion
 
-# TODO something like this
-#def chop_shoulder_notch_on_plane()
+
+def chop_shoulder_notch_aligned_with_timber(notch_timber: TimberLike, butting_timber: TimberLike, butting_timber_end: TimberReferenceEnd, distance_from_centerline: Numeric, notch_wall_relief_cut_angle: Numeric = Integer(0)) -> Union[RectangularPrism, 'SolidUnion']:
+    """
+    Create a shoulder notch from the centerline in a direction.
+    """
+    # instead maybe project butting_timber FRONT direction so it is parallel to cross_producT(timber.get_length_direction_global(), direction), 
+    notch_up_direction = notch_timber.get_length_direction_global()
+
+    # first measure the plane from the centerline in the direction (which gets us the intersection point and the shoulder plane which is parallel to the length axis of the notch timber)
+
+    # next from the center of the plane that we got from the measurement, we will draw the notch cutout box, follow logic similar to 
+
+    # next determine the notch_width along the notch timber length axis, we do this by dividing by the cosine of both the rotations of the butting timber (but not the rotation in the notch timber length axis as this makes no difference)
+
+    # cut the notch, follow the logic in chop_shoulder_notch_on_timber_face
+    
+    pass
 
 def chop_shoulder_notch_on_timber_face(
     timber: TimberLike,
