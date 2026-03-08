@@ -91,10 +91,16 @@ class TimberFeature(Enum):
         return TimberLongFace(self.value)
 
     def edge(self) -> 'TimberEdge':
-        """Convert to TimberEdge. Value 7 is centerline, values 8-19 map to edges."""
-        if self.value not in range(7, 20):
-            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberEdge. Only values 7-19 are valid edges.")
+        """Convert to TimberEdge. Values 8-19 map to edges."""
+        if self.value not in range(8, 20):
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberEdge. Only values 8-19 are valid edges.")
         return TimberEdge(self.value)
+
+    def centerline(self) -> 'TimberCenterline':
+        """Convert to TimberCenterline. Value 7 maps to CENTERLINE."""
+        if self.value != 7:
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberCenterline. Only value 7 is valid.")
+        return TimberCenterline(self.value)
     
     def long_edge(self) -> 'TimberLongEdge':
         """Convert to TimberLongEdge. Values 8-11 map to long edges."""
@@ -235,10 +241,15 @@ class TimberCorner(Enum):
     TOP_FRONT_LEFT = 25
     TOP_LEFT_BACK = 26
     TOP_BACK_RIGHT = 27
-class TimberEdge(Enum):
-    # TODO consider removing CENTERLINE.... and making TimberCenterline enum
+class TimberCenterline(Enum):
     CENTERLINE = 7
 
+    @property
+    def to(self) -> TimberFeature:
+        """Convert to TimberFeature for further conversions."""
+        return TimberFeature(self.value)
+
+class TimberEdge(Enum):
     # Long edges (edges running along the length of the timber)
     RIGHT_FRONT = 8
     FRONT_LEFT = 9
@@ -266,7 +277,6 @@ class TimberEdge(Enum):
 
         For long edges the line starts at the bottom corner and points toward TOP.
         For short edges the direction follows cross(long_face_normal, end_outward).
-        CENTERLINE has no corner representation and raises ValueError.
         """
         _map = {
             TimberEdge.RIGHT_FRONT: (TimberCorner.BOT_RIGHT_FRONT, TimberFace.TOP),
@@ -284,8 +294,6 @@ class TimberEdge(Enum):
             TimberEdge.TOP_LEFT:  (TimberCorner.TOP_LEFT_BACK,   TimberFace.FRONT),
             TimberEdge.TOP_BACK:  (TimberCorner.TOP_BACK_RIGHT,  TimberFace.LEFT),
         }
-        if self == TimberEdge.CENTERLINE:
-            raise ValueError("CENTERLINE has no corner representation")
         return _map[self]
 
     

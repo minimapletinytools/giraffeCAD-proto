@@ -106,7 +106,7 @@ def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(a
         direction_in_plane = normalize_vector(MP)
 
     return measure_plane_from_edge_in_direction(
-        mortise_timber, TimberEdge.CENTERLINE, direction_in_plane, distance_from_centerline
+        mortise_timber, TimberCenterline.CENTERLINE, direction_in_plane, distance_from_centerline
     )
 
 # ============================================================================
@@ -1218,7 +1218,7 @@ def cut_mortise_and_tenon_joint_on_PAT(
         arrangement, face_half_size
     )
     inset_plane = measure_into_face(mortise_shoulder_inset, mortise_face, arrangement.receiving_timber)
-    inset_marking = mark_plane_from_edge_in_direction(inset_plane, arrangement.receiving_timber, TimberEdge.CENTERLINE)
+    inset_marking = mark_plane_from_edge_in_direction(inset_plane, arrangement.receiving_timber, TimberCenterline.CENTERLINE)
     mortise_shoulder_distance_from_centerline = inset_marking.distance
 
     return cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(

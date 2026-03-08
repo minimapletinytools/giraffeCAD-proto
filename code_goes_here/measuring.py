@@ -62,6 +62,9 @@ from .timber import *
 
 
 
+EdgeOrCenterline = Union[TimberEdge, TimberCenterline]
+
+
 # ============================================================================
 # Geometric Feature Types
 # ============================================================================
@@ -305,7 +308,7 @@ class PlaneFromEdgeInDirection(Marking):
     Plane with normal `direction` and `distance` from an edge in `direction`.
     """
     timber: Timber
-    edge: TimberEdge
+    edge: EdgeOrCenterline
     direction: Direction3D
     distance: Numeric
     
@@ -426,22 +429,22 @@ def measure_face(timber: PerfectTimberWithin, face: SomeTimberFace) -> Plane:
     return Plane(face_normal, face_point)
 
 
-def measure_edge(timber: PerfectTimberWithin, edge: TimberEdge) -> Line:
+def measure_edge(timber: PerfectTimberWithin, edge: EdgeOrCenterline) -> Line:
     """
-    Measure any edge on a timber, returning a Line along that edge.
+    Measure any edge or centerline on a timber, returning a Line along it.
 
-    For CENTERLINE: direction = timber length direction, point at mid-length center.
-    For all other edges: uses canonical_line_from_corner to get the starting
+    For TimberCenterline.CENTERLINE: direction = timber length direction, point at mid-length center.
+    For TimberEdge values: uses canonical_line_from_corner to get the starting
     corner and direction face, then computes the global position and direction.
 
     Args:
         timber: The timber to measure
-        edge: Which edge to measure (any TimberEdge value)
+        edge: Which edge or centerline to measure
 
     Returns:
         Line representing the edge in global coordinates
     """
-    if edge == TimberEdge.CENTERLINE:
+    if isinstance(edge, TimberCenterline):
         length_direction = timber.get_length_direction_global()
         center_position = timber.get_bottom_position_global() + length_direction * timber.length / 2
         return Line(length_direction, center_position)
@@ -459,7 +462,7 @@ def measure_long_edge(timber: PerfectTimberWithin, edge: TimberLongEdge) -> Line
 
 def measure_centerline(timber: PerfectTimberWithin) -> Line:
     """Measure the centerline of a timber. Thin wrapper around measure_edge."""
-    return measure_edge(timber, TimberEdge.CENTERLINE)
+    return measure_edge(timber, TimberCenterline.CENTERLINE)
 
 def measure_edge_on_face(timber: PerfectTimberWithin, edge: TimberLongEdge, face: TimberFace) -> HalfPlane:
     # TODO: Implement this function
@@ -534,14 +537,14 @@ def measure_into_face(distance: Numeric, face: SomeTimberFace, timber: PerfectTi
 
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
-def measure_plane_from_edge_in_direction(timber: PerfectTimberWithin, edge: TimberEdge, direction: Direction3D, distance: Numeric = Integer(0)) -> Plane:
+def measure_plane_from_edge_in_direction(timber: PerfectTimberWithin, edge: EdgeOrCenterline, direction: Direction3D, distance: Numeric = Integer(0)) -> Plane:
     """
     Return a Plane that is parallel to the given edge, has `direction` as its
     normal, and sits `distance` away from the edge in that direction.
 
     Args:
         timber: The timber whose edge to measure from
-        edge: Which edge (centerline, long edge, or short edge)
+        edge: Which edge or centerline
         direction: Normal direction of the resulting plane
         distance: How far from the edge to place the plane (default 0 = through the edge)
     """
@@ -549,7 +552,7 @@ def measure_plane_from_edge_in_direction(timber: PerfectTimberWithin, edge: Timb
     return Plane(normal=direction, point=edge_line.point + direction * distance)
 
 def measure_plane_from_centerline_in_direction(timber: PerfectTimberWithin, direction: Direction3D) -> Plane:
-    return measure_plane_from_edge_in_direction(timber, TimberEdge.CENTERLINE, direction)
+    return measure_plane_from_edge_in_direction(timber, TimberCenterline.CENTERLINE, direction)
 
 # ============================================================================
 # Marking functions
@@ -597,7 +600,7 @@ def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane],
 
 # TODO return DistanceAlongEdge or just return a PointInTimberSpace or osmething
 # TODO rename to mark_distance_along_edge or mark_point_on_edge
-def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane], timber: PerfectTimberWithin, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
+def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane], timber: PerfectTimberWithin, edge: Union[TimberLongEdge, EdgeOrCenterline], end: TimberReferenceEnd) -> Numeric:
     """
     Mark onto a long edge of a timber (including centerline) by intersecting a plane.
 
@@ -607,33 +610,28 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
     Args:
         plane: the plane to intersect with
         timber: the timber whose edge we're intersecting
-        edge: the edge to intersect with (TimberLongEdge or TimberEdge.CENTERLINE)
+        edge: the edge to intersect with (TimberLongEdge, TimberEdge, or TimberCenterline)
         end: the end of the timber to mark from
 
     Returns the distance from timber_end to where the plane intersects the timber's long edge.
     Positive distance means the intersection is in the direction away from the end (into the timber).
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
-    edge_line = measure_edge(timber, edge if isinstance(edge, TimberEdge) else TimberEdge(edge.value))
+    if isinstance(edge, TimberLongEdge):
+        edge_line = measure_edge(timber, TimberEdge(edge.value))
+    else:
+        edge_line = measure_edge(timber, edge)
 
     if end == TimberReferenceEnd.TOP:
         end_position = edge_line.point + edge_line.direction * (timber.length / Integer(2))
-        # Direction from end into timber is negative length direction
         into_timber_direction = -timber.get_length_direction_global()
     else:  # BOTTOM
         end_position = edge_line.point - edge_line.direction * (timber.length / Integer(2))
-        # Direction from end into timber is positive length direction
         into_timber_direction = timber.get_length_direction_global()
-    
-    # Compute line-plane intersection using the standard formula
-    # Line: P = end_position + t * into_timber_direction
-    # Plane: plane.normal · (P - plane.point) = 0
-    # Solving for t: t = plane.normal · (plane.point - end_position) / (plane.normal · into_timber_direction)
-    
+
     numerator = safe_dot_product(plane.normal, (plane.point - end_position))
     denominator = safe_dot_product(plane.normal, into_timber_direction)
-    
-    # If denominator is zero, the line is parallel to the plane (no intersection)
+
     if zero_test(denominator):
         raise ValueError(f"Edge is parallel to plane - no intersection exists")
 
@@ -642,28 +640,24 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
 
 # TODO return DistanceAlongEdge or just return a PointInTimberSpace or osmething
 # TODO rename to mark_distance_along_edge or mark_point_on_edge
-def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectTimberWithin, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
+def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectTimberWithin, edge: Union[TimberLongEdge, EdgeOrCenterline], end: TimberReferenceEnd) -> Numeric:
     """
     Mark onto a timber edge (including centerline) by finding the closest point on a line.
-
-    This computes the closest point on the timber edge to the given line, which is useful
-    for finding where two centerlines come closest to each other (even if they don't intersect).
 
     Args:
         line: The line feature to mark from
         timber: The timber whose edge we're marking to
-        edge: The edge to mark to (TimberLongEdge or TimberEdge.CENTERLINE)
+        edge: The edge to mark to (TimberLongEdge, TimberEdge, or TimberCenterline)
         end: Which end of the timber to mark from
 
     Returns:
         The signed distance along the timber's length direction from the specified end to the closest point.
-        Positive means the closest point is in the direction of the timber's length_direction (toward TOP).
-        Negative means the closest point is opposite the timber's length_direction (toward BOTTOM).
-        
-        Asserts if lines are parallel
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
-    edge_line = measure_edge(timber, edge if isinstance(edge, TimberEdge) else TimberEdge(edge.value))
+    if isinstance(edge, TimberLongEdge):
+        edge_line = measure_edge(timber, TimberEdge(edge.value))
+    else:
+        edge_line = measure_edge(timber, edge)
 
     if are_vectors_parallel(line.direction, edge_line.direction):
         raise ValueError(f"Lines are parallel - no intersection exists")
@@ -721,9 +715,9 @@ def mark_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane):
-        distance = mark_onto_long_edge_by_intersecting_plane(feature, timber, TimberEdge.CENTERLINE, end)
+        distance = mark_onto_long_edge_by_intersecting_plane(feature, timber, TimberCenterline.CENTERLINE, end)
     elif isinstance(feature, Line):
-        distance = mark_onto_edge_by_finding_closest_point_on_line(feature, timber, TimberEdge.CENTERLINE, end)
+        distance = mark_onto_edge_by_finding_closest_point_on_line(feature, timber, TimberCenterline.CENTERLINE, end)
     else:
         assert False, f"Not implemented for feature type {type(feature)}"
 
@@ -744,7 +738,7 @@ def mark_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
     )
 
 
-def mark_plane_from_edge_in_direction(plane: Union[UnsignedPlane, Plane, HalfPlane], timber: PerfectTimberWithin, edge: TimberEdge) -> PlaneFromEdgeInDirection:
+def mark_plane_from_edge_in_direction(plane: Union[UnsignedPlane, Plane, HalfPlane], timber: PerfectTimberWithin, edge: EdgeOrCenterline) -> PlaneFromEdgeInDirection:
     """
     Mark a plane onto a timber edge, returning the direction and signed distance
     from the edge to the plane.

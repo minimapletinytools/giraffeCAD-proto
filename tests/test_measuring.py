@@ -4,7 +4,7 @@ Tests for the measuring module (geometric primitives).
 
 import pytest
 from code_goes_here.measuring import *
-from code_goes_here.timber import timber_from_directions, TimberFace, TimberLongEdge, TimberEdge
+from code_goes_here.timber import timber_from_directions, TimberFace, TimberLongEdge, TimberEdge, TimberCenterline
 from code_goes_here.rule import create_v3, create_v2, Transform, Orientation
 from sympy import Matrix, Rational
 
@@ -560,7 +560,7 @@ class TestMeasurePlaneFromEdgeInDirection:
             ticket="test_timber"
         )
         plane = measure_plane_from_edge_in_direction(
-            timber, TimberEdge.CENTERLINE, create_v3(1, 0, 0), Rational(3)
+            timber, TimberCenterline.CENTERLINE, create_v3(1, 0, 0), Rational(3)
         )
         assert isinstance(plane, Plane)
         assert plane.normal.equals(create_v3(1, 0, 0))
@@ -825,8 +825,8 @@ class TestMarkPlaneFromEdgeInDirection:
         )
         direction = create_v3(1, 0, 0)
         distance = Rational(7)
-        plane = measure_plane_from_edge_in_direction(timber, TimberEdge.CENTERLINE, direction, distance)
-        result = mark_plane_from_edge_in_direction(plane, timber, TimberEdge.CENTERLINE)
+        plane = measure_plane_from_edge_in_direction(timber, TimberCenterline.CENTERLINE, direction, distance)
+        result = mark_plane_from_edge_in_direction(plane, timber, TimberCenterline.CENTERLINE)
         assert result.direction.equals(direction)
         assert result.distance == distance
         assert result.measure().point.equals(plane.point)

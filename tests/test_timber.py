@@ -130,7 +130,7 @@ class TestTimberEnumConversions:
     
     def test_timber_edge_to_feature(self):
         """Test TimberEdge to TimberFeature conversion."""
-        assert TimberEdge.CENTERLINE.to == TimberFeature.CENTERLINE
+        assert TimberCenterline.CENTERLINE.to == TimberFeature.CENTERLINE
         # Long edges
         assert TimberEdge.RIGHT_FRONT.to == TimberFeature.RIGHT_FRONT_EDGE
         assert TimberEdge.FRONT_LEFT.to == TimberFeature.FRONT_LEFT_EDGE
@@ -149,7 +149,7 @@ class TestTimberEnumConversions:
     
     def test_timber_feature_to_edge(self):
         """Test TimberFeature to TimberEdge conversion."""
-        assert TimberFeature.CENTERLINE.edge() == TimberEdge.CENTERLINE
+        assert TimberFeature.CENTERLINE.centerline() == TimberCenterline.CENTERLINE
         # Long edges
         assert TimberFeature.RIGHT_FRONT_EDGE.edge() == TimberEdge.RIGHT_FRONT
         assert TimberFeature.FRONT_LEFT_EDGE.edge() == TimberEdge.FRONT_LEFT
