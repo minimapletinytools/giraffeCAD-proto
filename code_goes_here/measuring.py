@@ -303,6 +303,55 @@ class DistanceFromLongEdgeOnFace(Marking):
         return Line(edge_line.direction, new_point)
 
 @dataclass(frozen=True)
+class PointFromCornerInFaceDirection(Marking):
+    """
+    Point on an edge in a given direction.
+    """
+    timber: Timber
+    corner: TimberCorner
+    face: TimberFace
+    distance: Numeric
+
+    def measure(self) -> Point:
+        _corner_to_faces = {
+            TimberCorner.BOT_RIGHT_FRONT: (TimberFace.BOTTOM, TimberFace.RIGHT, TimberFace.FRONT),
+            TimberCorner.BOT_FRONT_LEFT:  (TimberFace.BOTTOM, TimberFace.FRONT, TimberFace.LEFT),
+            TimberCorner.BOT_LEFT_BACK:   (TimberFace.BOTTOM, TimberFace.LEFT,  TimberFace.BACK),
+            TimberCorner.BOT_BACK_RIGHT:  (TimberFace.BOTTOM, TimberFace.BACK,  TimberFace.RIGHT),
+            TimberCorner.TOP_RIGHT_FRONT: (TimberFace.TOP,    TimberFace.RIGHT, TimberFace.FRONT),
+            TimberCorner.TOP_FRONT_LEFT:  (TimberFace.TOP,    TimberFace.FRONT, TimberFace.LEFT),
+            TimberCorner.TOP_LEFT_BACK:   (TimberFace.TOP,    TimberFace.LEFT,  TimberFace.BACK),
+            TimberCorner.TOP_BACK_RIGHT:  (TimberFace.TOP,    TimberFace.BACK,  TimberFace.RIGHT),
+        }
+        corner_faces = _corner_to_faces[self.corner]
+        assert self.face not in corner_faces, (
+            f"Face {self.face} defines corner {self.corner} and points away from the timber. "
+            f"Use the opposite face ({self.face.get_opposite_face()}) to point inward."
+        )
+        return Point(self.timber.get_corner_position_global(self.corner) + self.timber.get_face_direction_global(self.face) * self.distance)
+
+@dataclass(frozen=True)
+class DistanceFromCornerAlongEdge(Marking):
+    """
+    Distance along a timber edge from a reference end (corner) to an intersection
+    or closest point. Positive means into the timber from the end.
+    """
+    distance: Numeric
+    timber: PerfectTimberWithin
+    edge: EdgeOrCenterline
+    end: TimberReferenceEnd
+
+    def measure(self) -> Point:
+        edge_line = measure_edge(self.timber, self.edge)
+        if self.end == TimberReferenceEnd.TOP:
+            end_position = edge_line.point + edge_line.direction * (self.timber.length / Integer(2))
+            into_direction = -self.timber.get_length_direction_global()
+        else:
+            end_position = edge_line.point - edge_line.direction * (self.timber.length / Integer(2))
+            into_direction = self.timber.get_length_direction_global()
+        return Point(end_position + into_direction * self.distance)
+
+@dataclass(frozen=True)
 class PlaneFromEdgeInDirection(Marking):
     """
     Plane with normal `direction` and `distance` from an edge in `direction`.
@@ -356,25 +405,6 @@ def get_point_on_face_global(face: SomeTimberFace, timber: PerfectTimberWithin) 
     return get_center_point_on_face_global(face, timber)
 
 
-
-def get_corner_position_global(corner: TimberCorner, timber: PerfectTimberWithin) -> V3:
-    """Get the position of a timber corner in global coordinates."""
-    _corner_to_faces = {
-        TimberCorner.BOT_RIGHT_FRONT: (TimberFace.BOTTOM, TimberFace.RIGHT, TimberFace.FRONT),
-        TimberCorner.BOT_FRONT_LEFT:  (TimberFace.BOTTOM, TimberFace.FRONT, TimberFace.LEFT),
-        TimberCorner.BOT_LEFT_BACK:   (TimberFace.BOTTOM, TimberFace.LEFT,  TimberFace.BACK),
-        TimberCorner.BOT_BACK_RIGHT:  (TimberFace.BOTTOM, TimberFace.BACK,  TimberFace.RIGHT),
-        TimberCorner.TOP_RIGHT_FRONT: (TimberFace.TOP,    TimberFace.RIGHT, TimberFace.FRONT),
-        TimberCorner.TOP_FRONT_LEFT:  (TimberFace.TOP,    TimberFace.FRONT, TimberFace.LEFT),
-        TimberCorner.TOP_LEFT_BACK:   (TimberFace.TOP,    TimberFace.LEFT,  TimberFace.BACK),
-        TimberCorner.TOP_BACK_RIGHT:  (TimberFace.TOP,    TimberFace.BACK,  TimberFace.RIGHT),
-    }
-    faces = _corner_to_faces[corner]
-    timber_center = timber.get_bottom_position_global() + timber.get_length_direction_global() * timber.length / 2
-    position = timber_center
-    for face in faces:
-        position = position + timber.get_face_direction_global(face) * timber.get_size_in_face_normal_axis(face) / 2
-    return position
 
 
 def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin) -> V3:
@@ -450,7 +480,7 @@ def measure_edge(timber: PerfectTimberWithin, edge: EdgeOrCenterline) -> Line:
         return Line(length_direction, center_position)
 
     corner, direction_face = edge.canonical_line_from_corner()
-    corner_position = get_corner_position_global(corner, timber)
+    corner_position = timber.get_corner_position_global(corner)
     direction = timber.get_face_direction_global(direction_face)
     return Line(direction, corner_position)
 
@@ -558,7 +588,7 @@ def measure_plane_from_centerline_in_direction(timber: PerfectTimberWithin, dire
 # Marking functions
 # ============================================================================
 
-# TODO rename to mark_distance_from_face
+# TODO rename to mark_distance_from_face_in_normal_direction
 def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin, face: SomeTimberFace) -> DistanceFromFace:
     """
     Mark a feature onto a face on a timber.
@@ -598,14 +628,9 @@ def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane],
     return DistanceFromFace(distance=distance, timber=timber, face=face)
 
 
-# TODO return DistanceAlongEdge or just return a PointInTimberSpace or osmething
-# TODO rename to mark_distance_along_edge or mark_point_on_edge
-def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane], timber: PerfectTimberWithin, edge: Union[TimberLongEdge, EdgeOrCenterline], end: TimberReferenceEnd) -> Numeric:
+def mark_distance_from_corner_along_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane], timber: PerfectTimberWithin, edge: Union[TimberLongEdge, EdgeOrCenterline], end: TimberReferenceEnd) -> DistanceFromCornerAlongEdge:
     """
-    Mark onto a long edge of a timber (including centerline) by intersecting a plane.
-
-    Computes the true geometric intersection between the plane and the edge line,
-    returning the signed distance from the specified end to the intersection point.
+    Mark onto an edge by intersecting a plane, returning a DistanceFromCornerAlongEdge.
 
     Args:
         plane: the plane to intersect with
@@ -613,8 +638,9 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
         edge: the edge to intersect with (TimberLongEdge, TimberEdge, or TimberCenterline)
         end: the end of the timber to mark from
 
-    Returns the distance from timber_end to where the plane intersects the timber's long edge.
-    Positive distance means the intersection is in the direction away from the end (into the timber).
+    Returns:
+        DistanceFromCornerAlongEdge with the signed distance from the end to the
+        intersection. Positive means into the timber from the end.
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     if isinstance(edge, TimberLongEdge):
@@ -635,14 +661,18 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
     if zero_test(denominator):
         raise ValueError(f"Edge is parallel to plane - no intersection exists")
 
-    return numerator / denominator
+    resolved_edge: EdgeOrCenterline = TimberEdge(edge.value) if isinstance(edge, TimberLongEdge) else edge
+    return DistanceFromCornerAlongEdge(
+        distance=numerator / denominator,
+        timber=timber,
+        edge=resolved_edge,
+        end=end,
+    )
 
 
-# TODO return DistanceAlongEdge or just return a PointInTimberSpace or osmething
-# TODO rename to mark_distance_along_edge or mark_point_on_edge
-def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectTimberWithin, edge: Union[TimberLongEdge, EdgeOrCenterline], end: TimberReferenceEnd) -> Numeric:
+def mark_distance_from_corner_along_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectTimberWithin, edge: Union[TimberLongEdge, EdgeOrCenterline], end: TimberReferenceEnd) -> DistanceFromCornerAlongEdge:
     """
-    Mark onto a timber edge (including centerline) by finding the closest point on a line.
+    Mark onto an edge by finding the closest point to a line, returning a DistanceFromCornerAlongEdge.
 
     Args:
         line: The line feature to mark from
@@ -651,7 +681,7 @@ def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectT
         end: Which end of the timber to mark from
 
     Returns:
-        The signed distance along the timber's length direction from the specified end to the closest point.
+        DistanceFromCornerAlongEdge with the signed distance from the end to the closest point.
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     if isinstance(edge, TimberLongEdge):
@@ -682,19 +712,20 @@ def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectT
     
     denominator = a * c - b * b
     
-    # Check if lines are parallel (denominator near zero)
     if zero_test(denominator):
-        # Lines are parallel - any perpendicular works, use starting point (distance = 0)
-        return Rational(0)
-    
-    # Calculate parameter for closest point on the edge
-    # This gives us the distance along edge_line.direction from edge_end_position
-    # edge_line.direction is the timber's length_direction (from BOTTOM to TOP)
-    # So t is the signed distance along the timber's length direction from the specified end
-    t = (a * e - b * d) / denominator
-    
-    return t
+        t = Rational(0)
+    else:
+        t = (a * e - b * d) / denominator
 
+    resolved_edge: EdgeOrCenterline = TimberEdge(edge.value) if isinstance(edge, TimberLongEdge) else edge
+    return DistanceFromCornerAlongEdge(
+        distance=t,
+        timber=timber,
+        edge=resolved_edge,
+        end=end,
+    )
+
+# TODO DELETE
 # TODO rename to mark_distance_from_end_along_centerline
 def mark_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin, end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> DistanceFromPointIntoFace:
     """
@@ -715,9 +746,9 @@ def mark_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane):
-        distance = mark_onto_long_edge_by_intersecting_plane(feature, timber, TimberCenterline.CENTERLINE, end)
+        distance = mark_distance_from_corner_along_edge_by_intersecting_plane(feature, timber, TimberCenterline.CENTERLINE, end).distance
     elif isinstance(feature, Line):
-        distance = mark_onto_edge_by_finding_closest_point_on_line(feature, timber, TimberCenterline.CENTERLINE, end)
+        distance = mark_distance_from_corner_along_edge_by_finding_closest_point_on_line(feature, timber, TimberCenterline.CENTERLINE, end).distance
     else:
         assert False, f"Not implemented for feature type {type(feature)}"
 

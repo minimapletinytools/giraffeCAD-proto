@@ -509,6 +509,25 @@ class PerfectTimberWithin(ABC):
         else:  # BACK
             return -self.get_height_direction_global()
 
+    def get_corner_position_global(self, corner: TimberCorner) -> V3:
+        """Get the position of a corner in global coordinates."""
+        _corner_to_faces = {
+            TimberCorner.BOT_RIGHT_FRONT: (TimberFace.BOTTOM, TimberFace.RIGHT, TimberFace.FRONT),
+            TimberCorner.BOT_FRONT_LEFT:  (TimberFace.BOTTOM, TimberFace.FRONT, TimberFace.LEFT),
+            TimberCorner.BOT_LEFT_BACK:   (TimberFace.BOTTOM, TimberFace.LEFT,  TimberFace.BACK),
+            TimberCorner.BOT_BACK_RIGHT:  (TimberFace.BOTTOM, TimberFace.BACK,  TimberFace.RIGHT),
+            TimberCorner.TOP_RIGHT_FRONT: (TimberFace.TOP,    TimberFace.RIGHT, TimberFace.FRONT),
+            TimberCorner.TOP_FRONT_LEFT:  (TimberFace.TOP,    TimberFace.FRONT, TimberFace.LEFT),
+            TimberCorner.TOP_LEFT_BACK:   (TimberFace.TOP,    TimberFace.LEFT,  TimberFace.BACK),
+            TimberCorner.TOP_BACK_RIGHT:  (TimberFace.TOP,    TimberFace.BACK,  TimberFace.RIGHT),
+        }
+        faces = _corner_to_faces[corner]
+        timber_center = self.get_bottom_position_global() + self.get_length_direction_global() * self.length / 2
+        position = timber_center
+        for face in faces:
+            position = position + self.get_face_direction_global(face) * self.get_size_in_face_normal_axis(face) / 2
+        return position
+
     def get_size_index_in_long_face_normal_axis(self, face: TimberLongFace) -> int:
         """
         Get the index of the size in the direction normal to the specified face.

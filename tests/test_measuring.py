@@ -4,7 +4,7 @@ Tests for the measuring module (geometric primitives).
 
 import pytest
 from code_goes_here.measuring import *
-from code_goes_here.timber import timber_from_directions, TimberFace, TimberLongEdge, TimberEdge, TimberCenterline
+from code_goes_here.timber import timber_from_directions, TimberFace, TimberLongEdge, TimberEdge, TimberCenterline, TimberCorner
 from code_goes_here.rule import create_v3, create_v2, Transform, Orientation
 from sympy import Matrix, Rational
 
@@ -855,3 +855,85 @@ class TestMarkPlaneFromEdgeInDirection:
         round_trip_plane = result.measure()
         for i in range(3):
             assert zero_test(simplify(round_trip_plane.point[i] - plane.point[i]))
+
+
+class TestPointFromCornerInFaceDirection:
+    """Tests for PointFromCornerInFaceDirection"""
+
+    def test_valid_and_invalid_face_direction(self):
+        """TOP is valid from BOT_RIGHT_FRONT (points inward); RIGHT is invalid (points outward)."""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            ticket="test_timber"
+        )
+        valid = PointFromCornerInFaceDirection(
+            timber=timber,
+            corner=TimberCorner.BOT_RIGHT_FRONT,
+            face=TimberFace.TOP,
+            distance=Rational(3),
+        )
+        pt = valid.measure()
+        assert pt.position[0] == Rational(5)
+        assert pt.position[1] == Rational(10)
+        assert pt.position[2] == Rational(3)
+
+        import pytest
+        invalid = PointFromCornerInFaceDirection(
+            timber=timber,
+            corner=TimberCorner.BOT_RIGHT_FRONT,
+            face=TimberFace.RIGHT,
+            distance=Rational(3),
+        )
+        with pytest.raises(AssertionError, match="points away"):
+            invalid.measure()
+
+
+class TestMarkDistanceFromCornerAlongEdge:
+    """Tests for mark_distance_from_corner_along_edge_by_intersecting_plane"""
+
+    def test_intersect_plane_with_centerline(self):
+        """Plane at z=30 intersects the centerline of a 100-long vertical timber.
+        From BOTTOM (z=0), distance should be 30."""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            ticket="test_timber"
+        )
+        plane = Plane(normal=create_v3(0, 0, 1), point=create_v3(0, 0, 30))
+        result = mark_distance_from_corner_along_edge_by_intersecting_plane(
+            plane, timber, TimberCenterline.CENTERLINE, TimberReferenceEnd.BOTTOM
+        )
+        assert isinstance(result, DistanceFromCornerAlongEdge)
+        assert result.distance == Rational(30)
+        assert result.end == TimberReferenceEnd.BOTTOM
+        pt = result.measure()
+        assert pt.position[2] == Rational(30)
+
+    def test_closest_point_on_centerline_to_perpendicular_line(self):
+        """A horizontal line at z=40 perpendicular to a vertical timber's centerline.
+        The closest point on the centerline is at z=40, so distance from BOTTOM = 40."""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            ticket="test_timber"
+        )
+        horiz_line = Line(direction=create_v3(1, 0, 0), point=create_v3(5, 0, 40))
+        result = mark_distance_from_corner_along_edge_by_finding_closest_point_on_line(
+            horiz_line, timber, TimberCenterline.CENTERLINE, TimberReferenceEnd.BOTTOM
+        )
+        assert isinstance(result, DistanceFromCornerAlongEdge)
+        assert result.distance == Rational(40)
+        pt = result.measure()
+        assert pt.position[0] == Rational(0)
+        assert pt.position[1] == Rational(0)
+        assert pt.position[2] == Rational(40)

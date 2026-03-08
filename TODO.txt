@@ -206,8 +206,10 @@ DONE-non FAT/PAT sohulder plane
   DONE-use this point to generate the notch
     -I guess... you could orient the Z of the notch cutout box with the tenon timber... and orient the XY to be parallel to mortise length axis and perp to tenon length axis... and then cut a box out
 DONE-cleanup mortise and tenon joint examples so they actually test out th edifferent parameters and use canonicla ctors
+
+
 -measuring changes
-  -address TODOs in measuring
+  DONE-address TODOs in measuring
   -rename marking classes so instafe of DistanceFromFace its PointFromFace or in general <marking feature type>from<reference><constraints>
   -add a few tests where we measure/mark together and verify the results
 

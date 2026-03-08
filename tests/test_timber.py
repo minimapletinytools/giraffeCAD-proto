@@ -658,6 +658,25 @@ class TestEnumsAndDataStructures:
 
 
 
+class TestGetCornerPositionGlobal:
+    """Test PerfectTimberWithin.get_corner_position_global."""
+
+    def test_bot_right_front_vertical_timber(self):
+        """BOT_RIGHT_FRONT corner of a 10x20x100 vertical timber at origin = (5, 10, 0)."""
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            ticket="test_timber"
+        )
+        pos = timber.get_corner_position_global(TimberCorner.BOT_RIGHT_FRONT)
+        assert pos[0] == Rational(5)
+        assert pos[1] == Rational(10)
+        assert pos[2] == Rational(0)
+
+
 class TestCutTimber:
     """Test CutTimber CSG operations."""
     
