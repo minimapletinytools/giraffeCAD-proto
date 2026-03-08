@@ -313,18 +313,33 @@ class MarkingSpace(Marking):
 # Helper Functions
 # ============================================================================
 
+def get_center_point_on_face_global(face: SomeTimberFace, timber: PerfectTimberWithin) -> V3:
+    """
+    Get the center point of a timber face in global coordinates.
+
+    Args:
+        face: The face to get the center of
+        timber: The timber
+
+    Returns:
+        Center point of the face surface in global coordinates
+    """
+    timber_center = timber.get_bottom_position_global() + timber.get_length_direction_global() * timber.length / 2
+    return timber_center + timber.get_face_direction_global(face) * timber.get_size_in_face_normal_axis(face) / 2
+
+
+# DELETE ME
 def get_point_on_face_global(face: SomeTimberFace, timber: PerfectTimberWithin) -> V3:
     """
-    Get a point on the timber face. Useful for projecting points onto the face.
-    
-    Args:
-        face: The face to get a point on
-        timber: The timber
-        
-    Returns:
-        A point on the face surface in global coordinates
+    Get a point on the timber face surface (at the bottom-end of the timber).
+    Useful for defining infinite planes through the face where the exact
+    position along the face doesn't matter.
+
+    For the actual center of the face, use get_center_point_on_face_global.
     """
-    return timber.get_bottom_position_global() + timber.get_face_direction_global(face) * timber.get_size_in_face_normal_axis(face) / 2
+    return get_center_point_on_face_global(face, timber)
+
+
 
 def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin) -> V3:
     """
@@ -378,87 +393,76 @@ def measure_face(timber: PerfectTimberWithin, face: SomeTimberFace) -> Plane:
     return Plane(face_normal, face_point)
 
 
-# TODO change this to just measure edge
-def measure_long_edge(timber: PerfectTimberWithin, edge: TimberLongEdge) -> Line:
+def measure_edge(timber: PerfectTimberWithin, edge: TimberEdge) -> Line:
     """
-    Measure a long edge on a timber, returning a Line centered on the edge pointing in +Z.
+    Measure any edge on a timber, returning a Line along that edge.
 
-    The line runs along the timber's length direction (+Z in timber local coordinates),
-    positioned at the specified edge (intersection of two long faces).
+    Handles three categories of edges:
+      - CENTERLINE: direction = timber length direction, point at mid-length center.
+      - Long edges (RIGHT_FRONT .. BACK_RIGHT): direction = timber length direction,
+        point at the corner where the two adjacent long faces meet (at the bottom end).
+      - Short edges (BOTTOM_RIGHT .. TOP_BACK): direction = face normal of the named
+        long face (e.g. RIGHT direction for BOTTOM_RIGHT), point at the center of the
+        named end face offset to the named long face edge.
 
     Args:
         timber: The timber to measure
-        edge: The long edge to measure
+        edge: Which edge to measure (any TimberEdge value)
 
     Returns:
-        Line with direction pointing in the timber's +Z direction and point at the edge center
-
-    Example:
-        >>> line = measure_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
-        >>> # line.direction points in the timber's length direction
-        >>> # line.point is at the RIGHT_FRONT edge, halfway along the length
+        Line representing the edge in global coordinates
     """
-    
-    # Map edge enum to the two faces it connects
-    edge_to_faces = {
-        TimberLongEdge.RIGHT_FRONT: (TimberFace.RIGHT, TimberFace.FRONT),
-        TimberLongEdge.FRONT_LEFT: (TimberFace.FRONT, TimberFace.LEFT),
-        TimberLongEdge.LEFT_BACK: (TimberFace.LEFT, TimberFace.BACK),
-        TimberLongEdge.BACK_RIGHT: (TimberFace.BACK, TimberFace.RIGHT),
+    long_edge_to_faces = {
+        TimberEdge.RIGHT_FRONT: (TimberFace.RIGHT, TimberFace.FRONT),
+        TimberEdge.FRONT_LEFT:  (TimberFace.FRONT, TimberFace.LEFT),
+        TimberEdge.LEFT_BACK:   (TimberFace.LEFT,  TimberFace.BACK),
+        TimberEdge.BACK_RIGHT:  (TimberFace.BACK,  TimberFace.RIGHT),
     }
-    
-    if edge not in edge_to_faces:
-        raise ValueError(f"Unknown edge: {edge}")
-    
-    face1, face2 = edge_to_faces[edge]
-    
-    # Get the timber's length direction (always +Z in local coords, the direction from BOTTOM to TOP)
-    length_direction = timber.get_length_direction_global()
-    
-    # Calculate edge position by finding the intersection of the two faces
-    # The edge is at the corner where both face normals point away from
-    face1_normal = timber.get_face_direction_global(face1)
-    face2_normal = timber.get_face_direction_global(face2)
-    
-    # Get the timber's bottom center position
-    bottom_center = timber.get_bottom_position_global()
-    
-    # Calculate offset from center to edge
-    # Edge is at +/- (size/2) in the directions of both face normals
-    face1_offset = face1_normal * timber.get_size_in_face_normal_axis(face1) / 2
-    face2_offset = face2_normal * timber.get_size_in_face_normal_axis(face2) / 2
-    
-    # Edge position is at the corner (both offsets applied)
-    edge_position = bottom_center + face1_offset + face2_offset
-    
-    return Line(length_direction, edge_position)
+
+    short_edge_to_faces = {
+        TimberEdge.BOTTOM_RIGHT: (TimberFace.BOTTOM, TimberFace.RIGHT),
+        TimberEdge.BOTTOM_FRONT: (TimberFace.BOTTOM, TimberFace.FRONT),
+        TimberEdge.BOTTOM_LEFT:  (TimberFace.BOTTOM, TimberFace.LEFT),
+        TimberEdge.BOTTOM_BACK:  (TimberFace.BOTTOM, TimberFace.BACK),
+        TimberEdge.TOP_RIGHT:    (TimberFace.TOP,    TimberFace.RIGHT),
+        TimberEdge.TOP_FRONT:    (TimberFace.TOP,    TimberFace.FRONT),
+        TimberEdge.TOP_LEFT:     (TimberFace.TOP,    TimberFace.LEFT),
+        TimberEdge.TOP_BACK:     (TimberFace.TOP,    TimberFace.BACK),
+    }
+
+    if edge == TimberEdge.CENTERLINE:
+        length_direction = timber.get_length_direction_global()
+        center_position = timber.get_bottom_position_global() + length_direction * timber.length / 2
+        return Line(length_direction, center_position)
+
+    if edge in long_edge_to_faces:
+        face1, face2 = long_edge_to_faces[edge]
+        length_direction = timber.get_length_direction_global()
+        bottom_center = timber.get_bottom_position_global()
+        face1_offset = timber.get_face_direction_global(face1) * timber.get_size_in_face_normal_axis(face1) / 2
+        face2_offset = timber.get_face_direction_global(face2) * timber.get_size_in_face_normal_axis(face2) / 2
+        return Line(length_direction, bottom_center + face1_offset + face2_offset)
+
+    if edge in short_edge_to_faces:
+        end_face, long_face = short_edge_to_faces[edge]
+        end_outward = timber.get_face_direction_global(end_face)
+        long_face_normal = timber.get_face_direction_global(long_face)
+        direction = cross_product(long_face_normal, end_outward)
+        end_face_center = get_center_point_on_face_global(end_face, timber)
+        long_face_offset = long_face_normal * timber.get_size_in_face_normal_axis(long_face) / 2
+        return Line(direction, end_face_center + long_face_offset)
+
+    raise ValueError(f"Unknown edge: {edge}")
+
+
+def measure_long_edge(timber: PerfectTimberWithin, edge: TimberLongEdge) -> Line:
+    """Measure a long edge on a timber. Thin wrapper around measure_edge."""
+    return measure_edge(timber, TimberEdge(edge.value))
 
 
 def measure_centerline(timber: PerfectTimberWithin) -> Line:
-    """
-    Measure the center line of a timber, returning a Line through the timber's center.
-
-    The line runs along the timber's length direction (+Z in timber local coordinates),
-    positioned at the center of the timber's cross-section.
-
-    Args:
-        timber: The timber to measure
-
-    Returns:
-        Line with direction pointing in the timber's +Z direction and point at the centerline
-
-    Example:
-        >>> line = measure_centerline(timber)
-        >>> # line.direction points in the timber's length direction
-        >>> # line.point is at the center of the timber (halfway along length, centered in cross-section)
-    """
-    # Get the timber's length direction
-    length_direction = timber.get_length_direction_global()
-    
-    # Get the center position (at mid-length)
-    center_position = timber.get_bottom_position_global() + length_direction * timber.length / 2
-    
-    return Line(length_direction, center_position)
+    """Measure the centerline of a timber. Thin wrapper around measure_edge."""
+    return measure_edge(timber, TimberEdge.CENTERLINE)
 
 def measure_edge_on_face(timber: PerfectTimberWithin, edge: TimberLongEdge, face: TimberFace) -> HalfPlane:
     # TODO: Implement this function
@@ -533,6 +537,11 @@ def measure_into_face(distance: Numeric, face: SomeTimberFace, timber: PerfectTi
 
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
+def measure_plane_from_edge_in_direction(timber: PerfectTimberWithin, edge: TimberEdge, direction: Direction3D) -> Plane:
+    pass
+
+def measure_plane_from_centerline_in_direction(timber: PerfectTimberWithin, direction: Direction3D) -> Plane:
+    return measure_plane_from_edge_in_direction(timber, TimberEdge.CENTERLINE, direction)
 
 # ============================================================================
 # Marking functions
@@ -594,14 +603,8 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
     Positive distance means the intersection is in the direction away from the end (into the timber).
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
-    # Get the edge line
-    if edge == TimberEdge.CENTERLINE:
-        edge_line = measure_centerline(timber)
-    else:
-        edge_line = measure_long_edge(timber, cast(TimberLongEdge, edge))
-    
-    # Get the end position on the edge
-    # edge_line.point is at mid-length, so we need to offset by half the length
+    edge_line = measure_edge(timber, edge if isinstance(edge, TimberEdge) else TimberEdge(edge.value))
+
     if end == TimberReferenceEnd.TOP:
         end_position = edge_line.point + edge_line.direction * (timber.length / Integer(2))
         # Direction from end into timber is negative length direction
@@ -621,14 +624,9 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
     
     # If denominator is zero, the line is parallel to the plane (no intersection)
     if zero_test(denominator):
-        # Line is parallel to plane - this shouldn't happen in normal usage
-        # Return None or raise an error to indicate no intersection
         raise ValueError(f"Edge is parallel to plane - no intersection exists")
-    
-    # Distance along the line from end_position to intersection
-    signed_distance = numerator / denominator
-    
-    return signed_distance
+
+    return numerator / denominator
 
 def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectTimberWithin, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
     """
@@ -651,18 +649,11 @@ def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectT
         Asserts if lines are parallel
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
-    # Get the edge line
-    if edge == TimberEdge.CENTERLINE:
-        edge_line = measure_centerline(timber)
-    else:
-        edge_line = measure_long_edge(timber, cast(TimberLongEdge, edge))
+    edge_line = measure_edge(timber, edge if isinstance(edge, TimberEdge) else TimberEdge(edge.value))
 
     if are_vectors_parallel(line.direction, edge_line.direction):
         raise ValueError(f"Lines are parallel - no intersection exists")
-    
-    # Get the end position on the edge
-    # edge_line.point is at mid-length, so we need to offset by half the length
-    # edge_line.direction is the timber's length direction (points from BOTTOM to TOP)
+
     if end == TimberReferenceEnd.TOP:
         edge_end_position = edge_line.point + edge_line.direction * (timber.length / Integer(2))
     else:  # BOTTOM

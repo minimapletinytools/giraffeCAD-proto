@@ -192,16 +192,15 @@ DONE-make timber names mandatory and if not provided a random one is generated?
   -if you do random ones they need to be deterministic so that they can be remapped in the viewer
 DONE-fix timberlongface methods to take timberface or assert or something
 IGNORE-update oscar shed to use updated joint methods?
-
-
--joint consturction objects
+DONE-create_canonical_ -> create_canonical_example_example_
+DONE-move create_canonical_example_ stuff intointo example_shavings.py or sometihng.
+DONE-joint consturction objects
   -contains timbers, joint ends, reference faces if applicable
   -contains assertm methods for checking joint sensibility
     -or you could subclass these and assert in their ctors to make it type safe at the tradeoff of more OOP...(nah don't do it, still runtime assert etiher way)
   -contains common computations for the joint configuration
   -contains dumping groups for any additional computed data?
-DONE-create_canonical_ -> create_canonical_example_example_
-DONE-move create_canonical_example_ stuff intointo example_shavings.py or sometihng.
+
 
 -non FAT/PAT sohulder plane
   -measure_plane_from_centerline
