@@ -4,7 +4,7 @@ Tests for the measuring module (geometric primitives).
 
 import pytest
 from code_goes_here.measuring import *
-from code_goes_here.timber import timber_from_directions, TimberFace, TimberLongEdge
+from code_goes_here.timber import timber_from_directions, TimberFace, TimberLongEdge, TimberEdge
 from code_goes_here.rule import create_v3, create_v2, Transform, Orientation
 from sympy import Matrix, Rational
 
@@ -497,6 +497,56 @@ class TestMeasureLongEdge:
         assert line.point[0] == Rational(0)   # At bottom
         assert line.point[1] == Rational(2)   # Right face (width/2)
         assert line.point[2] == Rational(3)   # Front face (height/2)
+
+
+class TestMeasureShortEdge:
+    """Tests for measure_edge with short edges"""
+
+    def test_bottom_right_edge_vertical_timber(self):
+        """BOTTOM_RIGHT edge on a vertical 10x20 timber at origin.
+
+        The edge sits on the bottom face along the right side, running from
+        the back-right corner (5, -10, 0) to the front-right corner (5, 10, 0).
+        Direction = cross(RIGHT_normal, BOTTOM_outward) = cross(+X, -Z) = +Y.
+        Point = center of bottom face (0,0,0) + right offset (5,0,0) = (5,0,0).
+        """
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            ticket="test_timber"
+        )
+        line = measure_edge(timber, TimberEdge.BOTTOM_RIGHT)
+        assert isinstance(line, Line)
+        assert line.direction.equals(create_v3(0, 1, 0))
+        assert line.point[0] == Rational(5)
+        assert line.point[1] == Rational(0)
+        assert line.point[2] == Rational(0)
+
+    def test_top_front_edge_vertical_timber(self):
+        """TOP_FRONT edge on a vertical 10x20 timber at origin.
+
+        The edge sits on the top face along the front side, running from the
+        front-left corner (-5, 10, 100) to the right-front corner (5, 10, 100).
+        Direction = cross(FRONT_normal, TOP_outward) = cross(+Y, +Z) = +X.
+        Point = center of top face (0,0,100) + front offset (0,10,0) = (0,10,100).
+        """
+        timber = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(10, 20),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(0, 0, 1),
+            width_direction=create_v3(1, 0, 0),
+            ticket="test_timber"
+        )
+        line = measure_edge(timber, TimberEdge.TOP_FRONT)
+        assert isinstance(line, Line)
+        assert line.direction.equals(create_v3(1, 0, 0))
+        assert line.point[0] == Rational(0)
+        assert line.point[1] == Rational(10)
+        assert line.point[2] == Rational(100)
 
 
 class TestMeasurePlaneFromEdgeInDirection:
