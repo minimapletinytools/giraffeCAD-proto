@@ -208,6 +208,8 @@ DONE-joint consturction objects
     -use this point to generate the notch
       -I guess... you could orient the Z of the notch cutout box with the tenon timber... and orient the XY to be parallel to mortise length axis and perp to tenon length axis... and then cut a box out
 
+-address TODOs in measuring
+-consider renaming marking classes so instafe of DistanceFromFace its PointFromFace or in general <marking feature type>from<reference><constraints>
 -update morties and tenon to support
   DONE-do cropping on angled mortise and tenon joints
   DONE-make 3 versions

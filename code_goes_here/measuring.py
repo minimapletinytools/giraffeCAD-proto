@@ -299,6 +299,19 @@ class DistanceFromLongEdgeOnFace(Marking):
         # Return a line parallel to the edge at the new position
         return Line(edge_line.direction, new_point)
 
+@dataclass(frozen=True)
+class PlaneFromEdgeInDirection(Marking):
+    """
+    Plane with normal `direction` and `distance` from an edge in `direction`.
+    """
+    timber: Timber
+    edge: TimberEdge
+    direction: Direction3D
+    distance: Numeric
+    
+    def measure(self) -> Plane:
+        return measure_plane_from_edge_in_direction(self.timber, self.edge, self.direction, self.distance)
+
 class MarkingSpace(Marking):
     """
     Represents a space to mark in.
@@ -558,6 +571,7 @@ def measure_plane_from_centerline_in_direction(timber: PerfectTimberWithin, dire
 # Marking functions
 # ============================================================================
 
+# TODO rename to mark_distance_from_face
 def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin, face: SomeTimberFace) -> DistanceFromFace:
     """
     Mark a feature onto a face on a timber.
@@ -597,6 +611,8 @@ def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane],
     return DistanceFromFace(distance=distance, timber=timber, face=face)
 
 
+# TODO return DistanceAlongEdge or just return a PointInTimberSpace or osmething
+# TODO rename to mark_distance_along_edge or mark_point_on_edge
 def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane], timber: PerfectTimberWithin, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
     """
     Mark onto a long edge of a timber (including centerline) by intersecting a plane.
@@ -639,6 +655,9 @@ def mark_onto_long_edge_by_intersecting_plane(plane: Union[UnsignedPlane, Plane]
 
     return numerator / denominator
 
+
+# TODO return DistanceAlongEdge or just return a PointInTimberSpace or osmething
+# TODO rename to mark_distance_along_edge or mark_point_on_edge
 def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectTimberWithin, edge: Union[TimberLongEdge, TimberEdge], end: TimberReferenceEnd) -> Numeric:
     """
     Mark onto a timber edge (including centerline) by finding the closest point on a line.
@@ -698,6 +717,7 @@ def mark_onto_edge_by_finding_closest_point_on_line(line: Line, timber: PerfectT
     
     return t
 
+# TODO rename to mark_distance_from_end_along_centerline
 def mark_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin, end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> DistanceFromPointIntoFace:
     """
     Mark a feature onto the centerline of a timber.
@@ -738,3 +758,7 @@ def mark_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
         face=reference_face,
         point=end_centerline_position
     )
+
+
+def mark_plane_from_edge_in_direction(plane: Union[UnsignedPlane, Plane, HalfPlane], timber: PerfectTimberWithin, edge: TimberEdge) -> PlaneFromEdgeInDirection:
+    pass
