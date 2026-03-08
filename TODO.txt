@@ -203,10 +203,10 @@ DONE-joint consturction objects
 
 
 -non FAT/PAT sohulder plane
-  DONE-measure_plane_from_centerline
-  -still intersect tenon on shoulderplane and use intersection point to size everything (no changes needed)
-    -use this point to generate the notch
-      -I guess... you could orient the Z of the notch cutout box with the tenon timber... and orient the XY to be parallel to mortise length axis and perp to tenon length axis... and then cut a box out
+  DONE-measure_plane_from_centerline  
+  DONE-still intersect tenon on shoulderplane and use intersection point to size everything (no changes needed)
+  -use this point to generate the notch
+    -I guess... you could orient the Z of the notch cutout box with the tenon timber... and orient the XY to be parallel to mortise length axis and perp to tenon length axis... and then cut a box out
 
 -measuring changes
   -address TODOs in measuring
@@ -221,9 +221,10 @@ DONE-joint consturction objects
     DONE-plane aligned
     DONE-no alignment (most complicated)
       -for this one you need to define the shoulder plane a certain distance away from centerline
+  DONE-do the mortise_shoulder_distance_from_centerline conversion
+  -tenon cutting on braces seems to have broken :(
   -allow pegs to be positioned in either tenon space or mortise space via parameter
     -remind folks like +y direction depends on orientation of timber, not joint angle
-  -do the mortise_shoulder_distance_from_centerline conversion
   -do the generic notch function
   -TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
     -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)

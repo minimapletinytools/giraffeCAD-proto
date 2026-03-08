@@ -1017,6 +1017,20 @@ class Orientation:
             [0, 0, 1]
         ])
         return cls(matrix)
+
+    @classmethod
+    def from_angle_axis(cls, radians: Numeric, axis: Direction3D) -> 'Orientation':
+        """Create an orientation from an angle-axis rotation (Rodrigues' formula)."""
+        from sympy import cos, sin, eye
+        k = normalize_vector(axis)
+        kx, ky, kz = k[0], k[1], k[2]
+        K = Matrix([
+            [Integer(0), -kz, ky],
+            [kz, Integer(0), -kx],
+            [-ky, kx, Integer(0)]
+        ])
+        R = eye(3) + sin(radians) * K + (Integer(1) - cos(radians)) * K * K
+        return cls(R)
         
     
     # TODO change veeryhting below to static methods....

@@ -219,6 +219,55 @@ def example_brace_joint(position=None):
     # Frame.from_joints will handle merging cuts on timbers that appear in multiple joints
     return Frame.from_joints([miter_joint, joint1, joint2], name="Brace Joint with Mortise and Tenon")
 
+def example_double_angled_mortise_and_tenon(position=None):
+    """
+    Mortise and tenon with timbers meeting at two non-orthogonal angles.
+
+    Takes the brace arrangement (timber1 in +Y, brace at 45 deg in XY plane),
+    then rotates timber1 by 45 degrees around the Z axis so the mortise timber
+    is no longer axis-aligned. The brace enters the rotated timber1 at a
+    compound angle -- non-orthogonal in both the horizontal and vertical planes.
+    """
+    from sympy import Integer, pi
+    from dataclasses import replace
+    from code_goes_here.rule import Orientation, radians
+    from code_goes_here.ticket import Ticket
+
+    if position is None:
+        position = create_v3(0, 0, 0)
+
+    brace_arrangement = create_canonical_example_brace_joint_timbers(position)
+    timber1 = brace_arrangement.timber1
+    brace_timber = brace_arrangement.brace_timber
+
+    local_z = create_v3(Integer(0), Integer(0), Integer(1))
+    rotation = Orientation.from_angle_axis(radians(pi / Integer(6)), local_z)
+    rotated_orientation = timber1.orientation * rotation
+    rotated_transform = Transform(position=timber1.transform.position, orientation=rotated_orientation)
+    mortise_timber = replace(timber1, transform=rotated_transform, ticket=Ticket("rotated_mortise"))
+
+    arrangement = ButtJointTimberArrangement(
+        butt_timber=brace_timber,
+        receiving_timber=mortise_timber,
+        butt_timber_end=TimberReferenceEnd.BOTTOM,
+    )
+
+    face_half = mortise_timber.get_size_in_face_normal_axis(
+        mortise_timber.get_closest_oriented_long_face_from_global_direction(
+            -brace_timber.get_face_direction_global(TimberReferenceEnd.BOTTOM)
+        ).to.face()
+    ) / Integer(2)
+
+    return cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
+        arrangement=arrangement,
+        tenon_size=Matrix([inches(2), inches(2)]),
+        tenon_length=inches(5),
+        mortise_depth=inches(3),
+        mortise_shoulder_distance_from_centerline=face_half,
+        crop_tenon_to_mortise_orientation_on_angled_joints=True,
+    )
+
+
 
 def create_mortise_and_tenon_patternbook() -> PatternBook:
     """
@@ -245,6 +294,9 @@ def create_mortise_and_tenon_patternbook() -> PatternBook:
 
         (PatternMetadata("brace_joint", ["mortise_tenon", "brace"], "frame"),
          make_pattern_from_frame(example_brace_joint)),
+
+        (PatternMetadata("double_angled", ["mortise_tenon", "double_angled"], "frame"),
+         make_pattern_from_joint(example_double_angled_mortise_and_tenon)),
     ]
     
     return PatternBook(patterns=patterns)
@@ -275,6 +327,7 @@ if __name__ == "__main__":
         ("Through Tenon FAT", example_basic_mortise_and_tenon_on_FAT_with_through_tenon),
         ("Inset Shoulder FAT", example_basic_mortise_and_tenon_on_FAT_with_inset_mortise_shoulder),
         ("Brace Joint with Mortise and Tenon", example_brace_joint),
+        ("Double Angled Mortise and Tenon", example_double_angled_mortise_and_tenon),
     ]
     
     for example_name, example_func in examples:
