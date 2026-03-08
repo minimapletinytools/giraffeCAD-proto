@@ -354,6 +354,26 @@ def get_point_on_face_global(face: SomeTimberFace, timber: PerfectTimberWithin) 
 
 
 
+def get_corner_position_global(corner: TimberCorner, timber: PerfectTimberWithin) -> V3:
+    """Get the position of a timber corner in global coordinates."""
+    _corner_to_faces = {
+        TimberCorner.BOT_RIGHT_FRONT: (TimberFace.BOTTOM, TimberFace.RIGHT, TimberFace.FRONT),
+        TimberCorner.BOT_FRONT_LEFT:  (TimberFace.BOTTOM, TimberFace.FRONT, TimberFace.LEFT),
+        TimberCorner.BOT_LEFT_BACK:   (TimberFace.BOTTOM, TimberFace.LEFT,  TimberFace.BACK),
+        TimberCorner.BOT_BACK_RIGHT:  (TimberFace.BOTTOM, TimberFace.BACK,  TimberFace.RIGHT),
+        TimberCorner.TOP_RIGHT_FRONT: (TimberFace.TOP,    TimberFace.RIGHT, TimberFace.FRONT),
+        TimberCorner.TOP_FRONT_LEFT:  (TimberFace.TOP,    TimberFace.FRONT, TimberFace.LEFT),
+        TimberCorner.TOP_LEFT_BACK:   (TimberFace.TOP,    TimberFace.LEFT,  TimberFace.BACK),
+        TimberCorner.TOP_BACK_RIGHT:  (TimberFace.TOP,    TimberFace.BACK,  TimberFace.RIGHT),
+    }
+    faces = _corner_to_faces[corner]
+    timber_center = timber.get_bottom_position_global() + timber.get_length_direction_global() * timber.length / 2
+    position = timber_center
+    for face in faces:
+        position = position + timber.get_face_direction_global(face) * timber.get_size_in_face_normal_axis(face) / 2
+    return position
+
+
 def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin) -> V3:
     """
     Get a point on a feature.
@@ -410,13 +430,9 @@ def measure_edge(timber: PerfectTimberWithin, edge: TimberEdge) -> Line:
     """
     Measure any edge on a timber, returning a Line along that edge.
 
-    Handles three categories of edges:
-      - CENTERLINE: direction = timber length direction, point at mid-length center.
-      - Long edges (RIGHT_FRONT .. BACK_RIGHT): direction = timber length direction,
-        point at the corner where the two adjacent long faces meet (at the bottom end).
-      - Short edges (BOTTOM_RIGHT .. TOP_BACK): direction = face normal of the named
-        long face (e.g. RIGHT direction for BOTTOM_RIGHT), point at the center of the
-        named end face offset to the named long face edge.
+    For CENTERLINE: direction = timber length direction, point at mid-length center.
+    For all other edges: uses canonical_line_from_corner to get the starting
+    corner and direction face, then computes the global position and direction.
 
     Args:
         timber: The timber to measure
@@ -425,47 +441,15 @@ def measure_edge(timber: PerfectTimberWithin, edge: TimberEdge) -> Line:
     Returns:
         Line representing the edge in global coordinates
     """
-    long_edge_to_faces = {
-        TimberEdge.RIGHT_FRONT: (TimberFace.RIGHT, TimberFace.FRONT),
-        TimberEdge.FRONT_LEFT:  (TimberFace.FRONT, TimberFace.LEFT),
-        TimberEdge.LEFT_BACK:   (TimberFace.LEFT,  TimberFace.BACK),
-        TimberEdge.BACK_RIGHT:  (TimberFace.BACK,  TimberFace.RIGHT),
-    }
-
-    short_edge_to_faces = {
-        TimberEdge.BOTTOM_RIGHT: (TimberFace.BOTTOM, TimberFace.RIGHT),
-        TimberEdge.BOTTOM_FRONT: (TimberFace.BOTTOM, TimberFace.FRONT),
-        TimberEdge.BOTTOM_LEFT:  (TimberFace.BOTTOM, TimberFace.LEFT),
-        TimberEdge.BOTTOM_BACK:  (TimberFace.BOTTOM, TimberFace.BACK),
-        TimberEdge.TOP_RIGHT:    (TimberFace.TOP,    TimberFace.RIGHT),
-        TimberEdge.TOP_FRONT:    (TimberFace.TOP,    TimberFace.FRONT),
-        TimberEdge.TOP_LEFT:     (TimberFace.TOP,    TimberFace.LEFT),
-        TimberEdge.TOP_BACK:     (TimberFace.TOP,    TimberFace.BACK),
-    }
-
     if edge == TimberEdge.CENTERLINE:
         length_direction = timber.get_length_direction_global()
         center_position = timber.get_bottom_position_global() + length_direction * timber.length / 2
         return Line(length_direction, center_position)
 
-    if edge in long_edge_to_faces:
-        face1, face2 = long_edge_to_faces[edge]
-        length_direction = timber.get_length_direction_global()
-        bottom_center = timber.get_bottom_position_global()
-        face1_offset = timber.get_face_direction_global(face1) * timber.get_size_in_face_normal_axis(face1) / 2
-        face2_offset = timber.get_face_direction_global(face2) * timber.get_size_in_face_normal_axis(face2) / 2
-        return Line(length_direction, bottom_center + face1_offset + face2_offset)
-
-    if edge in short_edge_to_faces:
-        end_face, long_face = short_edge_to_faces[edge]
-        end_outward = timber.get_face_direction_global(end_face)
-        long_face_normal = timber.get_face_direction_global(long_face)
-        direction = cross_product(long_face_normal, end_outward)
-        end_face_center = get_center_point_on_face_global(end_face, timber)
-        long_face_offset = long_face_normal * timber.get_size_in_face_normal_axis(long_face) / 2
-        return Line(direction, end_face_center + long_face_offset)
-
-    raise ValueError(f"Unknown edge: {edge}")
+    corner, direction_face = edge.canonical_line_from_corner()
+    corner_position = get_corner_position_global(corner, timber)
+    direction = timber.get_face_direction_global(direction_face)
+    return Line(direction, corner_position)
 
 
 def measure_long_edge(timber: PerfectTimberWithin, edge: TimberLongEdge) -> Line:

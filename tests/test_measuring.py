@@ -504,10 +504,9 @@ class TestMeasureShortEdge:
     def test_bottom_right_edge_vertical_timber(self):
         """BOTTOM_RIGHT edge on a vertical 10x20 timber at origin.
 
-        The edge sits on the bottom face along the right side, running from
-        the back-right corner (5, -10, 0) to the front-right corner (5, 10, 0).
-        Direction = cross(RIGHT_normal, BOTTOM_outward) = cross(+X, -Z) = +Y.
-        Point = center of bottom face (0,0,0) + right offset (5,0,0) = (5,0,0).
+        The edge runs from the back-right corner (5, -10, 0) to the
+        front-right corner (5, 10, 0). Direction = FRONT = +Y.
+        Point = BOT_BACK_RIGHT corner = (5, -10, 0).
         """
         timber = timber_from_directions(
             length=Rational(100),
@@ -521,16 +520,15 @@ class TestMeasureShortEdge:
         assert isinstance(line, Line)
         assert line.direction.equals(create_v3(0, 1, 0))
         assert line.point[0] == Rational(5)
-        assert line.point[1] == Rational(0)
+        assert line.point[1] == Rational(-10)
         assert line.point[2] == Rational(0)
 
     def test_top_front_edge_vertical_timber(self):
         """TOP_FRONT edge on a vertical 10x20 timber at origin.
 
-        The edge sits on the top face along the front side, running from the
-        front-left corner (-5, 10, 100) to the right-front corner (5, 10, 100).
-        Direction = cross(FRONT_normal, TOP_outward) = cross(+Y, +Z) = +X.
-        Point = center of top face (0,0,100) + front offset (0,10,0) = (0,10,100).
+        The edge runs from the front-left corner (-5, 10, 100) to the
+        right-front corner (5, 10, 100). Direction = RIGHT = +X.
+        Point = TOP_FRONT_LEFT corner = (-5, 10, 100).
         """
         timber = timber_from_directions(
             length=Rational(100),
@@ -543,7 +541,7 @@ class TestMeasureShortEdge:
         line = measure_edge(timber, TimberEdge.TOP_FRONT)
         assert isinstance(line, Line)
         assert line.direction.equals(create_v3(1, 0, 0))
-        assert line.point[0] == Rational(0)
+        assert line.point[0] == Rational(-5)
         assert line.point[1] == Rational(10)
         assert line.point[2] == Rational(100)
 

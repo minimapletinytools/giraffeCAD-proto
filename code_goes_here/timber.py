@@ -53,7 +53,15 @@ class TimberFeature(Enum):
     TOP_FRONT_EDGE = 17
     TOP_LEFT_EDGE = 18
     TOP_BACK_EDGE = 19
-    # TODO maybe do the corners?
+    # corners
+    BOT_RIGHT_FRONT = 20
+    BOT_FRONT_LEFT = 21
+    BOT_LEFT_BACK = 22
+    BOT_BACK_RIGHT = 23
+    TOP_RIGHT_FRONT = 24
+    TOP_FRONT_LEFT = 25
+    TOP_LEFT_BACK = 26
+    TOP_BACK_RIGHT = 27
 
     @property
     def to(self) -> 'TimberFeature':
@@ -93,6 +101,12 @@ class TimberFeature(Enum):
         if self.value not in range(8, 12):
             raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberLongEdge. Only values 8-11 are valid long edges.")
         return TimberLongEdge(self.value)
+
+    def corner(self) -> 'TimberCorner':
+        """Convert to TimberCorner. Values 20-27 map to corners."""
+        if self.value not in range(20, 28):
+            raise ValueError(f"Cannot convert {self} (value={self.value}) to TimberCorner. Only values 20-27 are valid corners.")
+        return TimberCorner(self.value)
     
 class TimberFace(Enum):
     TOP = 1 # the face vector with normal vector in the +Z axis direction
@@ -212,8 +226,19 @@ class TimberLongFace(Enum):
         # Map from 3-6 to 0-3, rotate, then map back to 3-6
         return TimberLongFace((self.value - 3 - 1) % 4 + 3)
 
+class TimberCorner(Enum):
+    BOT_RIGHT_FRONT = 20
+    BOT_FRONT_LEFT = 21
+    BOT_LEFT_BACK = 22
+    BOT_BACK_RIGHT = 23
+    TOP_RIGHT_FRONT = 24
+    TOP_FRONT_LEFT = 25
+    TOP_LEFT_BACK = 26
+    TOP_BACK_RIGHT = 27
 class TimberEdge(Enum):
+    # TODO consider removing CENTERLINE.... and making TimberCenterline enum
     CENTERLINE = 7
+
     # Long edges (edges running along the length of the timber)
     RIGHT_FRONT = 8
     FRONT_LEFT = 9
@@ -233,6 +258,35 @@ class TimberEdge(Enum):
     def to(self) -> TimberFeature:
         """Convert to TimberFeature for further conversions."""
         return TimberFeature(self.value)
+
+    def canonical_line_from_corner(self) -> Tuple['TimberCorner', 'TimberFace']:
+        """Returns canonical way to express a line from an edge.
+        The line is defined by starting from the TimberCorner and pointing
+        in the direction of the returned TimberFace's outward normal.
+
+        For long edges the line starts at the bottom corner and points toward TOP.
+        For short edges the direction follows cross(long_face_normal, end_outward).
+        CENTERLINE has no corner representation and raises ValueError.
+        """
+        _map = {
+            TimberEdge.RIGHT_FRONT: (TimberCorner.BOT_RIGHT_FRONT, TimberFace.TOP),
+            TimberEdge.FRONT_LEFT:  (TimberCorner.BOT_FRONT_LEFT,  TimberFace.TOP),
+            TimberEdge.LEFT_BACK:   (TimberCorner.BOT_LEFT_BACK,   TimberFace.TOP),
+            TimberEdge.BACK_RIGHT:  (TimberCorner.BOT_BACK_RIGHT,  TimberFace.TOP),
+
+            TimberEdge.BOTTOM_RIGHT: (TimberCorner.BOT_BACK_RIGHT,  TimberFace.FRONT),
+            TimberEdge.BOTTOM_FRONT: (TimberCorner.BOT_RIGHT_FRONT, TimberFace.LEFT),
+            TimberEdge.BOTTOM_LEFT:  (TimberCorner.BOT_FRONT_LEFT,  TimberFace.BACK),
+            TimberEdge.BOTTOM_BACK:  (TimberCorner.BOT_LEFT_BACK,   TimberFace.RIGHT),
+
+            TimberEdge.TOP_RIGHT: (TimberCorner.TOP_RIGHT_FRONT, TimberFace.BACK),
+            TimberEdge.TOP_FRONT: (TimberCorner.TOP_FRONT_LEFT,  TimberFace.RIGHT),
+            TimberEdge.TOP_LEFT:  (TimberCorner.TOP_LEFT_BACK,   TimberFace.FRONT),
+            TimberEdge.TOP_BACK:  (TimberCorner.TOP_BACK_RIGHT,  TimberFace.LEFT),
+        }
+        if self == TimberEdge.CENTERLINE:
+            raise ValueError("CENTERLINE has no corner representation")
+        return _map[self]
 
     
 class TimberLongEdge(Enum):
