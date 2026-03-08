@@ -1022,6 +1022,23 @@ class SpliceJointTimberArrangement:
     timber2_end: TimberReferenceEnd 
     front_face_on_timber1: Optional[TimberLongFace] = None
 
+    def check_types_valid(self) -> Optional[str]:
+        """Return None if all types are valid, otherwise an error message for use in assert."""
+        if not isinstance(self.timber1, Timber):
+            return f"timber1 must be Timber, got {type(self.timber1).__name__}"
+        if not isinstance(self.timber2, Timber):
+            return f"timber2 must be Timber, got {type(self.timber2).__name__}"
+        if not isinstance(self.timber1_end, TimberReferenceEnd):
+            return f"timber1_end must be TimberReferenceEnd, got {type(self.timber1_end).__name__}"
+        if not isinstance(self.timber2_end, TimberReferenceEnd):
+            return f"timber2_end must be TimberReferenceEnd, got {type(self.timber2_end).__name__}"
+        if self.front_face_on_timber1 is not None and not isinstance(self.front_face_on_timber1, TimberLongFace):
+            return f"front_face_on_timber1 must be TimberLongFace or None, got {type(self.front_face_on_timber1).__name__}"
+        return None
+
+    def __post_init__(self):
+        require_check(self.check_types_valid())
+
 
 @dataclass(frozen=True)
 class CornerJointTimberArrangement:
@@ -1031,11 +1048,39 @@ class CornerJointTimberArrangement:
     timber2_end: TimberReferenceEnd
     front_face_on_timber1: Optional[TimberLongFace] = None
 
+    def check_types_valid(self) -> Optional[str]:
+        """Return None if all types are valid, otherwise an error message for use in assert."""
+        if not isinstance(self.timber1, Timber):
+            return f"timber1 must be Timber, got {type(self.timber1).__name__}"
+        if not isinstance(self.timber2, Timber):
+            return f"timber2 must be Timber, got {type(self.timber2).__name__}"
+        if not isinstance(self.timber1_end, TimberReferenceEnd):
+            return f"timber1_end must be TimberReferenceEnd, got {type(self.timber1_end).__name__}"
+        if not isinstance(self.timber2_end, TimberReferenceEnd):
+            return f"timber2_end must be TimberReferenceEnd, got {type(self.timber2_end).__name__}"
+        if self.front_face_on_timber1 is not None and not isinstance(self.front_face_on_timber1, TimberLongFace):
+            return f"front_face_on_timber1 must be TimberLongFace or None, got {type(self.front_face_on_timber1).__name__}"
+        return None
+
+    def __post_init__(self):
+        require_check(self.check_types_valid())
+
 
 @dataclass(frozen=True)
 class CrossJointTimberArrangement:
     timber1: Timber
     timber2: Timber
+
+    def check_types_valid(self) -> Optional[str]:
+        """Return None if all types are valid, otherwise an error message for use in assert."""
+        if not isinstance(self.timber1, Timber):
+            return f"timber1 must be Timber, got {type(self.timber1).__name__}"
+        if not isinstance(self.timber2, Timber):
+            return f"timber2 must be Timber, got {type(self.timber2).__name__}"
+        return None
+
+    def __post_init__(self):
+        require_check(self.check_types_valid())
 
 
 @dataclass(frozen=True)
@@ -1046,6 +1091,25 @@ class BraceJointTimberArrangement:
     timber1_end: TimberReferenceEnd
     timber2_end: TimberReferenceEnd
     front_face_on_timber1: Optional[TimberLongFace] = None
+
+    def check_types_valid(self) -> Optional[str]:
+        """Return None if all types are valid, otherwise an error message for use in assert."""
+        if not isinstance(self.timber1, Timber):
+            return f"timber1 must be Timber, got {type(self.timber1).__name__}"
+        if not isinstance(self.timber2, Timber):
+            return f"timber2 must be Timber, got {type(self.timber2).__name__}"
+        if not isinstance(self.brace_timber, Timber):
+            return f"brace_timber must be Timber, got {type(self.brace_timber).__name__}"
+        if not isinstance(self.timber1_end, TimberReferenceEnd):
+            return f"timber1_end must be TimberReferenceEnd, got {type(self.timber1_end).__name__}"
+        if not isinstance(self.timber2_end, TimberReferenceEnd):
+            return f"timber2_end must be TimberReferenceEnd, got {type(self.timber2_end).__name__}"
+        if self.front_face_on_timber1 is not None and not isinstance(self.front_face_on_timber1, TimberLongFace):
+            return f"front_face_on_timber1 must be TimberLongFace or None, got {type(self.front_face_on_timber1).__name__}"
+        return None
+
+    def __post_init__(self):
+        require_check(self.check_types_valid())
 
 
 # =========================================
