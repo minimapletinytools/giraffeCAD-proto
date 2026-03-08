@@ -15,7 +15,7 @@ from code_goes_here.measuring import (
     measure_centerline,
     measure_edge,
     measure_plane_from_edge_in_direction,
-    mark_onto_centerline,
+    mark_distance_from_end_along_centerline,
     mark_plane_from_edge_in_direction,
     get_point_on_face_global,
     Space,
@@ -860,7 +860,7 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     shoulder_plane = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
         arrangement, mortise_shoulder_distance_from_centerline
     )
-    shoulder_from_tenon_end_mark = mark_onto_centerline(shoulder_plane, tenon_timber, tenon_end)
+    shoulder_from_tenon_end_mark = mark_distance_from_end_along_centerline(shoulder_plane, tenon_timber, tenon_end)
 
     tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
     shoulder_point_global = shoulder_from_tenon_end_mark.measure().position

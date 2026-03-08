@@ -30,7 +30,7 @@ In addition we have `mark_*_by_*` methods which take specific features where as 
 Using these functions, we can take measurements relative to features on one timber and measure them onto another timber. Measurements always exist in some context, and together with their context, they become colloqial ways to refer to features as it is easier to understand and work with measurements than it is to work with features directly. So measuring and marking functions are precisely used to convert between these expressions!
 
 For example, if we `my_feature = measure_into_face(mm(10), TimberFace.RIGHT, timberA)` we mean the feature that is a plane 10mm into and parallel with the right face of the timber.
-And then if we `mark_onto_face(my_feature, timberB, TimberFace.RIGHT)` we mean find the distance from the feature above to the right face of timberB
+And then if we `mark_distance_from_face_in_normal_direction(my_feature, timberB, TimberFace.RIGHT)` we mean find the distance from the feature above to the right face of timberB
 
 Measuring features assumes the features are "comparable". In most cases this means the features are parallel such that measurements can be taken in the orthognal axis. If the features are not "comparable" the functions will assert!
 
@@ -588,8 +588,7 @@ def measure_plane_from_centerline_in_direction(timber: PerfectTimberWithin, dire
 # Marking functions
 # ============================================================================
 
-# TODO rename to mark_distance_from_face_in_normal_direction
-def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin, face: SomeTimberFace) -> DistanceFromFace:
+def mark_distance_from_face_in_normal_direction(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin, face: SomeTimberFace) -> DistanceFromFace:
     """
     Mark a feature onto a face on a timber.
 
@@ -598,10 +597,9 @@ def mark_onto_face(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane],
     Negative means the feature is outside the timber (shallower than the face surface).
 
     This is the inverse of measure_into_face:
-    If feature = measure_into_face(d, face, timber), then mark_onto_face(feature, timber, face).distance = d
+    If feature = measure_into_face(d, face, timber), then mark_distance_from_face_in_normal_direction(feature, timber, face).distance = d
     """
 
-    # TODO assert that UnsignedPlane/Plane/HalfPlane/Line are parallel to the face
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane) or isinstance(feature, HalfPlane):
         assert are_vectors_parallel(feature.normal, timber.get_face_direction_global(face)), \
             f"Feature must be parallel to the face. Feature {feature} is not parallel to face {face} on timber {timber}"
@@ -725,9 +723,8 @@ def mark_distance_from_corner_along_edge_by_finding_closest_point_on_line(line: 
         end=end,
     )
 
-# TODO DELETE
-# TODO rename to mark_distance_from_end_along_centerline
-def mark_onto_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin, end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> DistanceFromPointIntoFace:
+# TODO DELETE?
+def mark_distance_from_end_along_centerline(feature: Union[UnsignedPlane, Plane, Line, Point, HalfPlane], timber: PerfectTimberWithin, end: TimberReferenceEnd = TimberReferenceEnd.BOTTOM) -> DistanceFromPointIntoFace:
     """
     Mark a feature onto the centerline of a timber.
 

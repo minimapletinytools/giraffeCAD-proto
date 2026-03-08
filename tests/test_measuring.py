@@ -62,7 +62,7 @@ class TestMeasureOntoFace:
         
         # Point exactly on RIGHT face (x=5)
         point = create_v3(5, 0, 50)
-        marking = mark_onto_face(Point(point), timber, TimberFace.RIGHT)
+        marking = mark_distance_from_face_in_normal_direction(Point(point), timber, TimberFace.RIGHT)
         
         # Should be 0 (on the surface)
         assert marking.distance == Rational(0)
@@ -79,7 +79,7 @@ class TestMeasureOntoFace:
         
         # Point at x=2 (3 units inside from RIGHT face which is at x=5)
         point = create_v3(2, 0, 50)
-        marking = mark_onto_face(Point(point), timber, TimberFace.RIGHT)
+        marking = mark_distance_from_face_in_normal_direction(Point(point), timber, TimberFace.RIGHT)
         
         # Should be positive (inside the timber)
         assert marking.distance == Rational(3)
@@ -96,7 +96,7 @@ class TestMeasureOntoFace:
         
         # Point at x=8 (3 units outside from RIGHT face which is at x=5)
         point = create_v3(8, 0, 50)
-        marking = mark_onto_face(Point(point), timber, TimberFace.RIGHT)
+        marking = mark_distance_from_face_in_normal_direction(Point(point), timber, TimberFace.RIGHT)
         
         # Should be negative (outside the timber)
         assert marking.distance == Rational(-3)
@@ -114,7 +114,7 @@ class TestMeasureOntoFace:
         # LEFT face is at x=-5
         # Point at x=-2 (3 units inside from LEFT face)
         point = create_v3(-2, 0, 50)
-        marking = mark_onto_face(Point(point), timber, TimberFace.LEFT)
+        marking = mark_distance_from_face_in_normal_direction(Point(point), timber, TimberFace.LEFT)
         
         # Should be positive (inside the timber from LEFT face)
         assert marking.distance == Rational(3)
@@ -132,7 +132,7 @@ class TestMeasureOntoFace:
         # FRONT face is at y=10
         # Point at y=5 (5 units inside from FRONT face)
         point = create_v3(0, 5, 50)
-        marking = mark_onto_face(Point(point), timber, TimberFace.FRONT)
+        marking = mark_distance_from_face_in_normal_direction(Point(point), timber, TimberFace.FRONT)
         
         # Should be positive (inside the timber from FRONT face)
         assert marking.distance == Rational(5)
@@ -150,7 +150,7 @@ class TestMeasureOntoFace:
         # RIGHT face is at x=10+3=13
         # Point at x=11 (2 units inside from RIGHT face)
         point = create_v3(11, 20, 20)
-        marking = mark_onto_face(Point(point), timber, TimberFace.RIGHT)
+        marking = mark_distance_from_face_in_normal_direction(Point(point), timber, TimberFace.RIGHT)
         
         # Should be positive (inside the timber)
         assert marking.distance == Rational(2)
@@ -350,10 +350,10 @@ class TestMeasureFromFace:
 
 
 class TestMarkFromFace:
-    """Tests for mark_onto_face function"""
+    """Tests for mark_distance_from_face_in_normal_direction function"""
     
     def test_mark_onto_face_round_trip(self):
-        """Test that mark_onto_face is inverse of measure_into_face"""
+        """Test that mark_distance_from_face_in_normal_direction is inverse of measure_into_face"""
         timber = timber_from_directions(
             length=Rational(100),
             size=create_v2(10, 10),
@@ -365,7 +365,7 @@ class TestMarkFromFace:
         # Test round trip for various distances
         for distance in [Rational(0), Rational(5), Rational(10), Rational(-2)]:
             plane = measure_into_face(distance, TimberFace.RIGHT, timber)
-            marking = mark_onto_face(plane, timber, TimberFace.RIGHT)
+            marking = mark_distance_from_face_in_normal_direction(plane, timber, TimberFace.RIGHT)
             assert marking.distance == distance
     
     def test_mark_point_from_face(self):
@@ -380,7 +380,7 @@ class TestMarkFromFace:
         
         # Point at x=2 (3 units inside from RIGHT face which is at x=5)
         point = Point(create_v3(2, 0, 0))
-        marking = mark_onto_face(point, timber, TimberFace.RIGHT)
+        marking = mark_distance_from_face_in_normal_direction(point, timber, TimberFace.RIGHT)
         
         assert marking.distance == Rational(3)
 
@@ -745,7 +745,7 @@ class TestDistanceFromLongEdgeOnFaceMark:
 
 
 class TestMeasureOntoCenterline:
-    """Test mark_onto_centerline function"""
+    """Test mark_distance_from_end_along_centerline function"""
     
     def test_measure_plane_onto_centerline(self):
         """Test measuring a plane intersection onto centerline"""
@@ -760,7 +760,7 @@ class TestMeasureOntoCenterline:
         # Create a horizontal plane at z=30
         plane = UnsignedPlane(create_v3(0, 0, 1), create_v3(0, 0, 30))
         
-        marking = mark_onto_centerline(plane, timber)
+        marking = mark_distance_from_end_along_centerline(plane, timber)
         
         # Should return a DistanceFromPointIntoFace measurement
         assert isinstance(marking, DistanceFromPointIntoFace)
@@ -791,7 +791,7 @@ class TestMeasureOntoCenterline:
         # Create a line parallel to X-axis at z=40, y=5
         line = Line(create_v3(1, 0, 0), create_v3(0, 5, 40))
         
-        marking = mark_onto_centerline(line, timber)
+        marking = mark_distance_from_end_along_centerline(line, timber)
         
         # Should return a DistanceFromPointIntoFace measurement
         assert isinstance(marking, DistanceFromPointIntoFace)

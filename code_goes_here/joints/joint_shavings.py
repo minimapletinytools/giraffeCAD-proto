@@ -38,7 +38,7 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: TimberLike)
     
     Returns:
         UnsignedPlane representing the face plane. This can be measured onto a centerline using
-        mark_onto_centerline() to find intersection points.
+        mark_distance_from_end_along_centerline() to find intersection points.
     
     Example:
         >>> # Mark the plane for timber_b's FRONT face
@@ -47,7 +47,7 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: TimberLike)
         ...     face_timber=timber_b
         ... )
         >>> # Then measure onto timber_a's centerline
-        >>> marking = mark_onto_centerline(face_plane, timber_a)
+        >>> marking = mark_distance_from_end_along_centerline(face_plane, timber_a)
         >>> shoulder_distance = measurement.distance
     """
     # Get the face plane (any point on the face works - we use measure_into_face for simplicity)
@@ -70,13 +70,13 @@ def scribe_centerline_onto_centerline(timber: TimberLike) -> Line:
 
     Returns:
         Line representing the timber's centerline. This can be measured onto another
-        timber's centerline using mark_onto_centerline() to find closest points.
+        timber's centerline using mark_distance_from_end_along_centerline() to find closest points.
         
     Example:
         >>> # Mark the centerline of timber_b
         >>> centerline_b = scribe_centerline_onto_centerline(timber_b)
         >>> # Then measure onto timber_a's centerline
-        >>> measurement_a = mark_onto_centerline(centerline_b, timber_a)
+        >>> measurement_a = mark_distance_from_end_along_centerline(centerline_b, timber_a)
         >>> dist_a = measurement_a.distance
     """
     # Mark the centerline of the timber as a Line feature
@@ -574,7 +574,7 @@ def chop_lap_on_timber_ends(
     bottom_face_direction = -top_face_direction
     bottom_face = bottom_lap_timber.get_closest_oriented_face_from_global_direction(bottom_face_direction)
     # Measure from the bottom face to the cutting plane
-    marking = mark_onto_face(top_cutting_plane, bottom_lap_timber, bottom_face)
+    marking = mark_distance_from_face_in_normal_direction(top_cutting_plane, bottom_lap_timber, bottom_face)
     bottom_lap_depth = Abs(marking.distance)
     
     # Step 4: Calculate the shoulder position for the bottom lap timber

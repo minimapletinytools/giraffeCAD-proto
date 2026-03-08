@@ -210,7 +210,7 @@ DONE-cleanup mortise and tenon joint examples so they actually test out th ediff
 
 -measuring changes
   DONE-address TODOs in measuring
-  -rename marking classes so instafe of DistanceFromFace its PointFromFace or in general <marking feature type>from<reference><constraints>
+  DONE-rename marking classes so instafe of DistanceFromFace its PointFromFace or in general <marking feature type>from<reference><constraints>
   -add a few tests where we measure/mark together and verify the results
 
 -update morties and tenon to support

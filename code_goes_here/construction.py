@@ -668,7 +668,7 @@ def join_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction, ticket=ticket)
 
 # TODO rename to create/raise_joining_timber_perpendicular_on_face_parallel_timbers
-# TODO this function kinda sucks... awkward to measure to use, yo uneed to measure_face(timber1).mark_onto_centerline().distance or osmething crap like that to set lateral_offset_from_centerline_timber1 :(
+# TODO this function kinda sucks... awkward to measure to use, yo uneed to measure_face(timber1).mark_distance_from_end_along_centerline().distance or osmething crap like that to set lateral_offset_from_centerline_timber1 :(
 def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
                                                 location_on_timber1: Numeric,
                                                 stickout: Stickout,
