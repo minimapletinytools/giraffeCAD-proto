@@ -51,9 +51,15 @@ def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(a
     """
     mortise_timber = arrangement.receiving_timber
     tenon_timber = arrangement.butt_timber
+    tenon_end = arrangement.butt_timber_end
 
     mortise_centerline = measure_centerline(mortise_timber)
-    tenon_centerline = measure_centerline(tenon_timber)
+    tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
+    if tenon_end == TimberReferenceEnd.TOP:
+        tenon_end_position = tenon_timber.get_bottom_position_global() + tenon_timber.get_length_direction_global() * tenon_timber.length
+    else:
+        tenon_end_position = tenon_timber.get_bottom_position_global()
+    tenon_centerline = Line(-tenon_end_direction, tenon_end_position)
     mortise_length_dir = mortise_timber.get_length_direction_global()
 
     # Find M = closest point on mortise centerline to tenon centerline
@@ -791,15 +797,12 @@ def cut_mortise_and_tenon_DEPRECATED(
 
 # TODO rename to cut_mortise_and_tenon
 def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
-    tenon_timber: TimberLike,
-    mortise_timber: TimberLike,
-    tenon_end: TimberReferenceEnd,
+    arrangement: ButtJointTimberArrangement,
     tenon_size: V2,
     tenon_length: Numeric,
     mortise_depth: Optional[Numeric] = None,
 
-    # TODO replace with mortise_shoulder_distance_from_centerline: Optional[Numeric] = None
-    mortise_shoulder_inset: Numeric = Rational(0),
+    mortise_shoulder_distance_from_centerline: Numeric = Rational(0),
 
     tenon_position: Optional[V2] = None,
     wedge_parameters: Optional[WedgeParameters] = None,
@@ -811,13 +814,14 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     Generic mortise and tenon joint creation function with support for various options.
     
     Args:
-        tenon_timber: Timber that will receive the tenon cut
-        mortise_timber: Timber that will receive the mortise cut
-        tenon_end: Which end of the tenon timber gets the tenon (TOP or BOTTOM)
+        arrangement: Butt joint timber arrangement (butt_timber = tenon, receiving_timber = mortise)
         tenon_size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
         tenon_length: Length of tenon extending from mortise face. you may need to set this a little longer than you think for angled joints.
         mortise_depth: Depth of mortise (None = through mortise) this is measured different depending on the value of crop_tenon_to_mortise_orientation_on_angled_joints
-        mortise_shoulder_inset: Inset distance from mortise face to shoulder plane
+        mortise_shoulder_distance_from_centerline: Signed distance from the mortise
+            centerline to the shoulder plane, measured within the mortise cross-section
+            in the direction toward the tenon centerline. 0 = shoulder at the mortise
+            centerline. Positive pushes the shoulder toward the tenon.
         tenon_position: Position of tenon in local coordinates of tenon timber (0,0 = centered on centerline)
         wedge_parameters: Optional wedge configuration (not yet supported)
         peg_parameters: Optional peg configuration. TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
@@ -826,21 +830,14 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
         
     Returns:
         Joint object containing the two CutTimbers and any accessories (in global space)
-
-    Args:
     """
-    assert isinstance(tenon_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(tenon_end).__name__}"
+    tenon_timber = arrangement.butt_timber
+    mortise_timber = arrangement.receiving_timber
+    tenon_end = arrangement.butt_timber_end
+
     # Default tenon_position to centered (0, 0)
     if tenon_position is None:
         tenon_position = Matrix([Rational(0), Rational(0)])
-
-    # -------------------------------------------------------------------------
-    # Step 1: Assert plane-aligned
-    # TODO remove
-    # -------------------------------------------------------------------------
-    assert are_timbers_plane_aligned(tenon_timber, mortise_timber), (
-        "Timbers must be plane-aligned for cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION"
-    )
 
     # -------------------------------------------------------------------------
     # Step 2: Determine which face of the mortise timber the tenon enters from
@@ -855,9 +852,11 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
 
 
     # -------------------------------------------------------------------------
-    # Step 3: Shoulder plane with inset (measure/mark)
+    # Step 3: Shoulder plane from centerline toward tenon
     # -------------------------------------------------------------------------
-    shoulder_plane = measure_into_face(mortise_shoulder_inset, mortise_face, mortise_timber)
+    shoulder_plane = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+        arrangement, mortise_shoulder_distance_from_centerline
+    )
     shoulder_from_tenon_end_mark = mark_onto_centerline(shoulder_plane, tenon_timber, tenon_end)
 
     tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
@@ -1222,17 +1221,11 @@ def cut_mortise_and_tenon_joint_on_PAT(
     mortise_shoulder_distance_from_centerline = inset_marking.distance
 
     return cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
-        tenon_timber=arrangement.butt_timber,
-        mortise_timber=arrangement.receiving_timber,
-        tenon_end=arrangement.butt_timber_end,
+        arrangement=arrangement,
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-
-        # TODO finish
-        #mortise_shoulder_distance_from_centerline=mortise_shoulder_distance_from_centerline,
-        mortise_shoulder_inset=mortise_shoulder_inset,
-
+        mortise_shoulder_distance_from_centerline=mortise_shoulder_distance_from_centerline,
         tenon_position=tenon_position,
         wedge_parameters=wedge_parameters,
         peg_parameters=peg_parameters,
