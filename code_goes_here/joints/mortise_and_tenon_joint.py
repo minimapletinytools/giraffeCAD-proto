@@ -12,15 +12,95 @@ from code_goes_here.measuring import (
     measure_position_on_centerline_from_bottom,
     measure_position_on_centerline_from_top,
     measure_into_face,
+    measure_centerline,
+    measure_edge,
+    measure_plane_from_edge_in_direction,
     mark_onto_centerline,
     get_point_on_face_global,
     Space,
+    Plane,
+    Line,
 )
 from code_goes_here.construction import *
 from code_goes_here.timber_shavings import are_timbers_plane_aligned
 from code_goes_here.rule import *
 from code_goes_here.rule import safe_transform_vector, safe_dot_product
 from code_goes_here.cutcsg import CutCSG, RectangularPrism, HalfSpace, Difference, adopt_csg
+
+
+# ============================================================================
+# Helepers
+# ============================================================================
+
+def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(arrangement: ButtJointTimberArrangement, distance_from_centerline: Numeric) -> Plane:
+    """
+    Measure the shoulder plane of the mortise timber from the centerline towards the tenon timber.
+
+    The shoulder plane is perpendicular to the mortise timber length axis and
+    offset from the mortise centerline in the cross-section direction toward
+    the tenon timber centerline.
+
+    The returned Plane's point lies at the intersection of the tenon centerline
+    with the plane (offset by distance_from_centerline from the mortise centerline).
+
+    Args:
+        arrangement: Butt joint arrangement (receiving_timber = mortise, butt_timber = tenon)
+        distance_from_centerline: Signed offset from the mortise centerline toward
+            the tenon. 0 = plane through the mortise centerline. Positive = toward tenon.
+    """
+    mortise_timber = arrangement.receiving_timber
+    tenon_timber = arrangement.butt_timber
+
+    mortise_centerline = measure_centerline(mortise_timber)
+    tenon_centerline = measure_centerline(tenon_timber)
+    mortise_length_dir = mortise_timber.get_length_direction_global()
+
+    # Find M = closest point on mortise centerline to tenon centerline
+    w = mortise_centerline.point - tenon_centerline.point
+    a = safe_dot_product(mortise_centerline.direction, mortise_centerline.direction)
+    b = safe_dot_product(mortise_centerline.direction, tenon_centerline.direction)
+    c = safe_dot_product(tenon_centerline.direction, tenon_centerline.direction)
+    d = safe_dot_product(w, mortise_centerline.direction)
+    e = safe_dot_product(w, tenon_centerline.direction)
+
+    denom = a * c - b * b
+    if zero_test(denom):
+        M = mortise_centerline.point
+    else:
+        t_mortise = (b * e - c * d) / denom
+        M = mortise_centerline.point + mortise_centerline.direction * t_mortise
+
+    # Find P = intersection of tenon centerline with cross-section plane at M
+    plane_dot_dir = safe_dot_product(mortise_length_dir, tenon_centerline.direction)
+    if zero_test(plane_dot_dir):
+        if zero_test(denom):
+            P = tenon_centerline.point
+        else:
+            s_tenon = (a * e - b * d) / denom
+            P = tenon_centerline.point + tenon_centerline.direction * s_tenon
+    else:
+        s = safe_dot_product(mortise_length_dir, M - tenon_centerline.point) / plane_dot_dir
+        P = tenon_centerline.point + tenon_centerline.direction * s
+
+    # Direction from M toward P in the cross-section
+    MP = P - M
+    mp_len_sq = safe_dot_product(MP, MP)
+    if zero_test(mp_len_sq):
+        # Centerlines intersect (or are parallel). Use the tenon direction
+        # projected into the mortise cross-section as fallback.
+        tenon_dir = tenon_centerline.direction
+        proj = tenon_dir - mortise_length_dir * safe_dot_product(tenon_dir, mortise_length_dir)
+        proj_len_sq = safe_dot_product(proj, proj)
+        if zero_test(proj_len_sq):
+            direction_in_plane = mortise_timber.get_width_direction_global()
+        else:
+            direction_in_plane = normalize_vector(proj)
+    else:
+        direction_in_plane = normalize_vector(MP)
+
+    return measure_plane_from_edge_in_direction(
+        mortise_timber, TimberEdge.CENTERLINE, direction_in_plane, distance_from_centerline
+    )
 
 # ============================================================================
 # Parameter Classes for Mortise and Tenon Joints

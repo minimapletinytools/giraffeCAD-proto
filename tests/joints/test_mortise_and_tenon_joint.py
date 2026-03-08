@@ -4,18 +4,20 @@ Tests for mortise and tenon joint construction functions
 
 import pytest
 from typing import List
-from sympy import Matrix, Rational, simplify
-from code_goes_here.rule import Orientation
+from sympy import Matrix, Rational, simplify, sin, cos, pi
+from code_goes_here.rule import Orientation, create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product
 from code_goes_here.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberLongFace,
     V2, V3, Numeric, PegShape, WedgeShape, Peg,
     timber_from_directions, create_v3
 )
+from code_goes_here.construction import ButtJointTimberArrangement
 from code_goes_here.joints.mortise_and_tenon_joint import (
     SimplePegParameters,
     WedgeParameters,
     cut_mortise_and_tenon_DEPRECATED,
-    cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED
+    cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED,
+    measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber,
 )
 from tests.testing_shavings import (
     create_standard_vertical_timber,
@@ -392,3 +394,94 @@ class TestPegStuff:
         )
         
         # TODO test actual stuff here
+
+
+class TestMeasureMortiseShoulderPlane:
+    """Tests for measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber"""
+
+    def test_perpendicular_intersecting_centerlines(self):
+        """90-degree butt joint where centerlines intersect at origin.
+
+        Receiving (mortise) timber along +X, butt (tenon) timber along +Y.
+        Both timbers are 4"x5"x48" centered at origin.
+        Direction from mortise centerline toward tenon = +Y.
+
+        With distance_from_centerline = 0, the plane passes through the
+        mortise centerline. With distance = 1, the plane is 1" toward the tenon.
+        """
+        from code_goes_here.example_shavings import create_canonical_example_butt_joint_timbers
+        arrangement = create_canonical_example_butt_joint_timbers()
+
+        plane_at_center = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+            arrangement, Rational(0)
+        )
+        # The plane normal is the direction from mortise centerline toward the tenon
+        # in the mortise cross-section. Tenon runs in +Y, so projected into the
+        # cross-section (perp to mortise +X), the direction is +Y.
+        assert are_vectors_parallel(plane_at_center.normal, create_v3(0, 1, 0)), \
+            f"Plane normal should point toward tenon (+Y), got {plane_at_center.normal}"
+        mortise_length_dir = arrangement.receiving_timber.get_length_direction_global()
+        mortise_center = arrangement.receiving_timber.get_bottom_position_global() + mortise_length_dir * arrangement.receiving_timber.length / 2
+        assert plane_at_center.point.equals(mortise_center), \
+            f"At distance 0, plane point should be the mortise centerline midpoint, got {plane_at_center.point} vs {mortise_center}"
+
+        plane_offset = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+            arrangement, Rational(1)
+        )
+        expected_offset_point = mortise_center + create_v3(0, 1, 0)
+        assert plane_offset.point.equals(expected_offset_point), \
+            f"At distance 1, plane point should be offset 1 in +Y, got {plane_offset.point} vs {expected_offset_point}"
+
+    def test_angled_non_intersecting_centerlines(self):
+        """40-degree butt joint where centerlines do NOT intersect.
+
+        Mortise timber along +X at origin, tenon timber at 40 degrees in the
+        XY plane offset 3" in +Z so the centerlines are skew (non-intersecting).
+        """
+        from sympy import Integer
+        angle_rad = radians(Rational(2, 9) * pi)  # 40 degrees
+
+        mortise_timber = timber_from_directions(
+            length=inches(48), size=create_v2(inches(4), inches(5)),
+            bottom_position=create_v3(-inches(24), Integer(0), Integer(0)),
+            length_direction=create_v3(Integer(1), Integer(0), Integer(0)),
+            width_direction=create_v3(Integer(0), Integer(0), Integer(1)),
+            ticket="mortise"
+        )
+        tenon_length_dir = create_v3(cos(angle_rad), sin(angle_rad), Integer(0))
+        tenon_timber = timber_from_directions(
+            length=inches(48), size=create_v2(inches(4), inches(5)),
+            bottom_position=create_v3(-inches(24) * cos(angle_rad), -inches(24) * sin(angle_rad), inches(3)),
+            length_direction=tenon_length_dir,
+            width_direction=create_v3(Integer(0), Integer(0), Integer(1)),
+            ticket="tenon"
+        )
+        arrangement = ButtJointTimberArrangement(
+            butt_timber=tenon_timber,
+            receiving_timber=mortise_timber,
+            butt_timber_end=TimberReferenceEnd.TOP,
+        )
+
+        plane = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+            arrangement, Rational(0)
+        )
+        # The plane normal should be in the mortise cross-section, pointing
+        # toward the tenon (which is offset at +Z=3").
+        mortise_length_dir = mortise_timber.get_length_direction_global()
+        assert zero_test(safe_dot_product(plane.normal, mortise_length_dir)), \
+            "Plane normal should be perpendicular to the mortise length direction"
+        assert safe_dot_product(plane.normal, create_v3(Integer(0), Integer(0), Integer(1))) > 0, \
+            "Plane normal should have a +Z component (toward the tenon which is at +Z=3)"
+
+        plane_positive = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+            arrangement, inches(1)
+        )
+        plane_negative = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+            arrangement, -inches(1)
+        )
+        direction_to_tenon = plane_positive.point - plane.point
+        assert safe_dot_product(direction_to_tenon, create_v3(Integer(0), Integer(0), Integer(1))) > 0, \
+            "Positive distance should offset toward the tenon (which is at +Z)"
+        direction_away = plane_negative.point - plane.point
+        assert safe_dot_product(direction_away, create_v3(Integer(0), Integer(0), Integer(1))) < 0, \
+            "Negative distance should offset away from the tenon"
