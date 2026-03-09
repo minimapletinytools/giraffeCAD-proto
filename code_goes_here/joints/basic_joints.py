@@ -5,7 +5,7 @@ Contains cut_basic_* wrapper functions that forward to the original joint functi
 These are temporary wrappers that will be simplified later.
 """
 
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, cast
 from code_goes_here.timber import *
 from code_goes_here.rule import *
 from .plain_joints import (
@@ -130,7 +130,7 @@ def cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers(
         peg_parameters = SimplePegParameters(
             shape=PegShape.SQUARE,
             tenon_face=joint_side_tenon_timber_face.to.long_face(),
-            peg_positions=[(tenon_length / 3, Integer(0))],
+            peg_positions=[cast(Tuple[Numeric, Numeric], (tenon_length / 3, 0))],
             size=inches(1, 2),
             depth=None,
             tenon_hole_offset=inches(Rational(1, 16))

@@ -356,7 +356,7 @@ class PlaneFromEdgeInDirection(Marking):
     """
     Plane with normal `direction` and `distance` from an edge in `direction`.
     """
-    timber: Timber
+    timber: PerfectTimberWithin
     edge: EdgeOrCenterline
     direction: Direction3D
     distance: Numeric
@@ -782,7 +782,8 @@ def mark_plane_from_edge_in_direction(plane: Union[UnsignedPlane, Plane, HalfPla
     """
     edge_line = measure_edge(timber, edge)
     direction = plane.normal
-    distance = safe_dot_product(direction, plane.point - edge_line.point)
+    plane_point = plane.point_on_line if isinstance(plane, HalfPlane) else plane.point
+    distance = safe_dot_product(direction, plane_point - edge_line.point)
     return PlaneFromEdgeInDirection(
         timber=timber,
         edge=edge,
