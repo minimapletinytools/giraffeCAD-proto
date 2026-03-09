@@ -174,7 +174,7 @@ class WedgeParameters:
 
 
 # TODO rename to cut_mortise_and_tenon
-def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
+def cut_mortise_and_tenon_joint(
     arrangement: ButtJointTimberArrangement,
     tenon_size: V2,
     tenon_length: Numeric,
@@ -625,7 +625,7 @@ def cut_mortise_and_tenon_joint_on_PAT(
     inset_marking = mark_plane_from_edge_in_direction(inset_plane, arrangement.receiving_timber, TimberCenterline.CENTERLINE)
     mortise_shoulder_distance_from_centerline = inset_marking.distance
 
-    return cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
+    return cut_mortise_and_tenon_joint(
         arrangement=arrangement,
         tenon_size=tenon_size,
         tenon_length=tenon_length,

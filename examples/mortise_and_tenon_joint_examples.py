@@ -250,7 +250,7 @@ def example_double_angled_mortise_and_tenon(position=None):
         butt_timber_end=TimberReferenceEnd.BOTTOM,
     )
     
-    return cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
+    return cut_mortise_and_tenon_joint(
         arrangement=arrangement,
         tenon_size=Matrix([inches(2), inches(2)]),
         tenon_length=inches(5),
