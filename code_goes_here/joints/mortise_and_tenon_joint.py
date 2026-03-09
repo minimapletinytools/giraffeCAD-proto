@@ -622,9 +622,6 @@ def cut_mortise_and_tenon_joint_on_PAT(
     # from centerline (measured toward the tenon). The face surface sits at
     # face_half_size from the centerline in the toward-tenon direction.
     face_half_size = arrangement.receiving_timber.get_size_in_face_normal_axis(mortise_face) / Integer(2)
-    shoulder_plane_at_face = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
-        arrangement, face_half_size
-    )
     inset_plane = measure_into_face(mortise_shoulder_inset, mortise_face, arrangement.receiving_timber)
     inset_marking = mark_plane_from_edge_in_direction(inset_plane, arrangement.receiving_timber, TimberCenterline.CENTERLINE)
     mortise_shoulder_distance_from_centerline = inset_marking.distance
