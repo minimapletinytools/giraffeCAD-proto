@@ -114,21 +114,29 @@ def with_timeout_fallback(symbolic_func, numerical_func, timeout_seconds=0.1):
     def timeout_handler(signum, frame):
         raise TimeoutException()
     
+    def restore_alarm_handler(handler):
+        # In embedded environments (e.g. Fusion 360), the previous handler may not be
+        # valid to pass back to signal.signal(); only restore if it's SIG_IGN, SIG_DFL, or callable.
+        if handler is signal.SIG_IGN or handler is signal.SIG_DFL or callable(handler):
+            signal.signal(signal.SIGALRM, handler)
+        else:
+            signal.signal(signal.SIGALRM, signal.SIG_DFL)
+    
     old_handler = signal.signal(signal.SIGALRM, timeout_handler)
     signal.setitimer(signal.ITIMER_REAL, timeout_seconds)
     
     try:
         result = symbolic_func()
         signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, old_handler)
+        restore_alarm_handler(old_handler)
         return result
     except TimeoutException:
         signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, old_handler)
+        restore_alarm_handler(old_handler)
         return numerical_func()
     except Exception as e:
         signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, old_handler)
+        restore_alarm_handler(old_handler)
         # For non-timeout exceptions, try numerical fallback
         try:
             return numerical_func()
