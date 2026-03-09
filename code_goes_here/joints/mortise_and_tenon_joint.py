@@ -589,7 +589,6 @@ def cut_mortise_and_tenon_many_options_do_not_call_me_directly_NEWVERSION(
     ) 
 
 
-# TODO FINISH
 def cut_mortise_and_tenon_joint_on_PAT(
     arrangement: ButtJointTimberArrangement,
     tenon_size: V2,
