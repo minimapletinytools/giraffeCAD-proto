@@ -152,57 +152,66 @@ def create_sawhorse() -> Frame:
     # Beam: length=Y (FRONT)
     # Tenon at post BOTTOM going up into beam - peg goes through RIGHT face
     peg_params_post_beam = base_peg_params  # Already has RIGHT face
-    
-    left_beam_post_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=left_post,
-        mortise_timber=left_beam,
-        tenon_end=TimberReferenceEnd.BOTTOM,
+
+    left_beam_post_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=left_beam,
+            butt_timber=left_post,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=TimberLongFace.RIGHT,
+        ),
         tenon_size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in beam's Y direction)
         tenon_length=tenon_length,
         mortise_depth=None,  # Through mortise
-        peg_parameters=peg_params_post_beam
+        peg_parameters=peg_params_post_beam,
     )
-    
-    # Joint 2: Right beam to right post
-    right_beam_post_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=right_post,
-        mortise_timber=right_beam,
-        tenon_end=TimberReferenceEnd.BOTTOM,
+
+    right_beam_post_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=right_beam,
+            butt_timber=right_post,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=TimberLongFace.RIGHT,
+        ),
         tenon_size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in beam's Y direction)
         tenon_length=tenon_length,
         mortise_depth=None,  # Through mortise
-        peg_parameters=peg_params_post_beam
+        peg_parameters=peg_params_post_beam,
     )
     
     # Joint 3 & 4: Stretcher into posts
     # Stretcher: length=X (RIGHT), width=Y (FRONT), depth=Z
     # Post: length=Z (TOP), mortise on LEFT/RIGHT face
-    # Tenon at stretcher ends going sideways into posts
-    # Try LEFT face for pegs
+    # Tenon at stretcher ends going sideways into posts - peg through LEFT face
     peg_params_stretcher = replace(
         base_peg_params,
         tenon_face=TimberLongFace.LEFT
     )
-    
-    left_post_stretcher_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=stretcher,
-        mortise_timber=left_post,
-        tenon_end=TimberReferenceEnd.BOTTOM,  # Left end of stretcher
+
+    left_post_stretcher_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=left_post,
+            butt_timber=stretcher,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,  # Left end of stretcher
+            front_face_on_butt_timber=TimberLongFace.LEFT,
+        ),
         tenon_size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in post's Z direction)
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        peg_parameters=peg_params_stretcher
+        peg_parameters=peg_params_stretcher,
     )
-    
-    # Joint 4: Right post to stretcher (right end)
-    right_post_stretcher_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=stretcher,
-        mortise_timber=right_post,
-        tenon_end=TimberReferenceEnd.TOP,  # Right end of stretcher
+
+    right_post_stretcher_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=right_post,
+            butt_timber=stretcher,
+            butt_timber_end=TimberReferenceEnd.TOP,  # Right end of stretcher
+            front_face_on_butt_timber=TimberLongFace.LEFT,
+        ),
         tenon_size=Matrix([tenon_thickness, tenon_width]),  # 1" x 3" (3" in post's Z direction)
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        peg_parameters=peg_params_stretcher
+        peg_parameters=peg_params_stretcher,
     )
     
     # Joint 5 & 6: Posts into plate
@@ -213,26 +222,31 @@ def create_sawhorse() -> Frame:
         base_peg_params,
         tenon_face=TimberLongFace.FRONT
     )
-    
-    left_post_plate_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=left_post,
-        mortise_timber=plate,
-        tenon_end=TimberReferenceEnd.TOP,
+
+    left_post_plate_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=plate,
+            butt_timber=left_post,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=TimberLongFace.FRONT,
+        ),
         tenon_size=Matrix([tenon_width, tenon_thickness]),  # 3" x 1" (3" in plate's X direction)
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        peg_parameters=peg_params_post_plate
+        peg_parameters=peg_params_post_plate,
     )
-    
-    # Joint 6: Right post to plate
-    right_post_plate_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=right_post,
-        mortise_timber=plate,
-        tenon_end=TimberReferenceEnd.TOP,
+
+    right_post_plate_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=plate,
+            butt_timber=right_post,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=TimberLongFace.FRONT,
+        ),
         tenon_size=Matrix([tenon_width, tenon_thickness]),  # 3" x 1" (3" in plate's X direction)
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        peg_parameters=peg_params_post_plate
+        peg_parameters=peg_params_post_plate,
     )
     
     # ============================================================================
