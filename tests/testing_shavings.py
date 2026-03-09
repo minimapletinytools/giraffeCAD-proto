@@ -139,7 +139,8 @@ def create_centered_horizontal_timber(
         direction=direction,
         length=length,
         size=size,
-        position=position)
+        position=position,
+        ticket=name)
 
 # ============================================================================
 # Assertion Helpers

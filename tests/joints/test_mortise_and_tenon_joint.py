@@ -15,8 +15,7 @@ from code_goes_here.construction import ButtJointTimberArrangement
 from code_goes_here.joints.mortise_and_tenon_joint import (
     SimplePegParameters,
     WedgeParameters,
-    cut_mortise_and_tenon_DEPRECATED,
-    cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED,
+    cut_mortise_and_tenon_joint_on_FAT,
     measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber,
 )
 from tests.testing_shavings import (
@@ -42,10 +41,10 @@ def simple_T_configuration():
             - mortise_timber: Horizontal 6x6 timber, length 100, along x-axis
     """
     tenon_timber = create_standard_vertical_timber(
-        height=100, size=(4, 4), position=(0, 0, 0)
+        height=100, size=(4, 4), position=(0, 0, 0), ticket="tenon_timber"
     )
     mortise_timber = create_centered_horizontal_timber(
-        direction='x', length=100, size=(6, 6)
+        direction='x', length=100, size=(6, 6), name="mortise_timber"
     )
     return (tenon_timber, mortise_timber)
 
@@ -114,13 +113,17 @@ class TestMortiseAndTenonGeometry:
         
         mortise_depth = Rational(5)
         tenon_length = Rational(4)
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.BOTTOM,
+        arrangement = ButtJointTimberArrangement(
+            receiving_timber=mortise_timber,
+            butt_timber=tenon_timber,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=None,
+        )
+        joint = cut_mortise_and_tenon_joint_on_FAT(
+            arrangement=arrangement,
             tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=tenon_length,
-            mortise_depth=mortise_depth
+            mortise_depth=mortise_depth,
         )
         
         # Get the CSGs for the cut timbers (these are the REMAINING material after cuts)
@@ -183,14 +186,18 @@ class TestPegStuff:
             size=Rational(1, 2)
         )
         
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.BOTTOM,
+        arrangement = ButtJointTimberArrangement(
+            receiving_timber=mortise_timber,
+            butt_timber=tenon_timber,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=TimberLongFace.FRONT,
+        )
+        joint = cut_mortise_and_tenon_joint_on_FAT(
+            arrangement=arrangement,
             tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
-            peg_parameters=peg_params
+            peg_parameters=peg_params,
         )
 
         assert joint.cut_timbers["tenon_timber"].timber == tenon_timber
@@ -240,14 +247,18 @@ class TestPegStuff:
             size=peg_size
         )
         
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.BOTTOM,
+        arrangement = ButtJointTimberArrangement(
+            receiving_timber=mortise_timber,
+            butt_timber=tenon_timber,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=TimberLongFace.FRONT,
+        )
+        joint = cut_mortise_and_tenon_joint_on_FAT(
+            arrangement=arrangement,
             tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
-            peg_parameters=peg_params
+            peg_parameters=peg_params,
         )
         
         peg = joint.jointAccessories["peg_0"]
@@ -320,14 +331,18 @@ class TestPegStuff:
             size=Rational(1, 2)
         )
         
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.BOTTOM,
+        arrangement = ButtJointTimberArrangement(
+            receiving_timber=mortise_timber,
+            butt_timber=tenon_timber,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=TimberLongFace.FRONT,
+        )
+        joint = cut_mortise_and_tenon_joint_on_FAT(
+            arrangement=arrangement,
             tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
-            peg_parameters=peg_params
+            peg_parameters=peg_params,
         )
         
         # Should have 3 peg accessories
@@ -363,14 +378,18 @@ class TestPegStuff:
             tenon_hole_offset=offset
         )
         
-        joint_with_offset = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.BOTTOM,
+        arrangement = ButtJointTimberArrangement(
+            receiving_timber=mortise_timber,
+            butt_timber=tenon_timber,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=TimberLongFace.FRONT,
+        )
+        joint_with_offset = cut_mortise_and_tenon_joint_on_FAT(
+            arrangement=arrangement,
             tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
-            peg_parameters=peg_params_with_offset
+            peg_parameters=peg_params_with_offset,
         )
         
         # Create joint without offset for comparison
@@ -383,14 +402,12 @@ class TestPegStuff:
             tenon_hole_offset=Rational(0)
         )
         
-        joint_no_offset = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-            tenon_timber=tenon_timber,
-            mortise_timber=mortise_timber,
-            tenon_end=TimberReferenceEnd.BOTTOM,
+        joint_no_offset = cut_mortise_and_tenon_joint_on_FAT(
+            arrangement=arrangement,
             tenon_size=Matrix([Rational(2), Rational(2)]),
             tenon_length=Rational(4),
             mortise_depth=Rational(4),
-            peg_parameters=peg_params_no_offset
+            peg_parameters=peg_params_no_offset,
         )
         
         # TODO test actual stuff here

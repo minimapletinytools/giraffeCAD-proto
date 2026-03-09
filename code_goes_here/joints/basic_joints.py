@@ -17,8 +17,9 @@ from .plain_joints import (
     cut_plain_house_joint,
     cut_plain_splice_lap_joint_on_aligned_timbers,
 )
+from code_goes_here.construction import ButtJointTimberArrangement
 from .mortise_and_tenon_joint import (
-    cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED,
+    cut_mortise_and_tenon_joint_on_FAT,
     SimplePegParameters,
 )
 from .japanese_joints import (
@@ -101,7 +102,7 @@ def cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers(
     tenon_end: TimberReferenceEnd,
     use_peg: bool = False,
 ) -> Joint:
-    """Wrapper for cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED."""
+    """Wrapper for cut_mortise_and_tenon_joint_on_FAT with ButtJointTimberArrangement."""
     assert isinstance(tenon_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(tenon_end).__name__}"
     # this is the "side" of the joint
     joint_side_mortise_timber_face = mortise_timber.get_closest_oriented_face_from_global_direction(cross_product(mortise_timber.get_length_direction_global(), tenon_timber.get_face_direction_global(tenon_end.to.face())))
@@ -124,28 +125,33 @@ def cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers(
     tenon_length = mortise_timber.get_size_in_face_normal_axis(mortise_timber_entry_face)
     mortise_depth = tenon_length
 
-    tenon_position = create_v3(0, 0, 0)
+    tenon_position = create_v2(Rational(0), Rational(0))
     peg_parameters = None
-    if use_peg: 
+    front_face_on_butt_timber = None
+    if use_peg:
+        front_face_on_butt_timber = joint_side_tenon_timber_face.to.long_face()
         peg_parameters = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=joint_side_tenon_timber_face.to.long_face(),
+            tenon_face=front_face_on_butt_timber,
             peg_positions=[cast(Tuple[Numeric, Numeric], (tenon_length / 3, 0))],
             size=inches(1, 2),
             depth=None,
             tenon_hole_offset=inches(Rational(1, 16))
         )
-    
 
-    return cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber,
-        mortise_timber,
-        tenon_end,
-        tenon_size,
-        tenon_length,
-        mortise_depth,
-        tenon_position,
-        peg_parameters
+    arrangement = ButtJointTimberArrangement(
+        receiving_timber=cast(Timber, mortise_timber),
+        butt_timber=cast(Timber, tenon_timber),
+        butt_timber_end=tenon_end,
+        front_face_on_butt_timber=front_face_on_butt_timber,
+    )
+    return cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=arrangement,
+        tenon_size=tenon_size,
+        tenon_length=tenon_length,
+        mortise_depth=mortise_depth,
+        tenon_position=tenon_position,
+        peg_parameters=peg_parameters,
     )
 
 

@@ -5,6 +5,9 @@ Contains various mortise and tenon joint implementations
 
 from __future__ import annotations  # Enable deferred annotation evaluation
 
+import warnings
+from functools import wraps
+
 from code_goes_here.timber import *
 from code_goes_here.measuring import (
     measure_top_center_position,
@@ -168,6 +171,20 @@ class WedgeParameters:
 # ============================================================================
 
 
+def _deprecated_mortise_tenon(fn):
+    """Mark a mortise-and-tenon function as deprecated in favor of cut_mortise_and_tenon_joint_on_FAT."""
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        warnings.warn(
+            f"{fn.__name__} is deprecated; use cut_mortise_and_tenon_joint_on_FAT with ButtJointTimberArrangement instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+@_deprecated_mortise_tenon
 def cut_mortise_and_tenon_DEPRECATED(
     tenon_timber: TimberLike,
     mortise_timber: TimberLike,
@@ -1292,6 +1309,7 @@ def cut_mortise_and_tenon_joint_on_FAT(
 
 
 # TODO update all calls to cut_mortise_and_tenon_joint_on_FAT
+@_deprecated_mortise_tenon
 def cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
     tenon_timber: TimberLike,
     mortise_timber: TimberLike,

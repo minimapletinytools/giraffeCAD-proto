@@ -251,48 +251,60 @@ def create_oscarshed(center: Optional[V3] = None):
     
     # Front-left post (left side, offset +1" towards center/right)
     tenon_offset_left = Matrix([inches(1), Rational(0)])  # +1" in X
-    joint_post_front_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_front_left,
-        mortise_timber=mudsill_front,
-        tenon_end=TimberReferenceEnd.BOTTOM,
+    joint_post_front_left = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=mudsill_front,
+            butt_timber=post_front_left,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        tenon_position=tenon_offset_left
+        tenon_position=tenon_offset_left,
     )
     
     # Front-right post (right side, offset -1" towards center/left)
     tenon_offset_right = Matrix([inches(-1), Rational(0)])  # -1" in X
-    joint_post_front_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_front_right,
-        mortise_timber=mudsill_front,
-        tenon_end=TimberReferenceEnd.BOTTOM,
+    joint_post_front_right = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=mudsill_front,
+            butt_timber=post_front_right,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        tenon_position=tenon_offset_right
+        tenon_position=tenon_offset_right,
     )
     
     # Back-right post (right side, offset -1" towards center/left)
-    joint_post_back_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_back_right,
-        mortise_timber=mudsill_back,
-        tenon_end=TimberReferenceEnd.BOTTOM,
+    joint_post_back_right = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=mudsill_back,
+            butt_timber=post_back_right,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        tenon_position=tenon_offset_left
+        tenon_position=tenon_offset_left,
     )
     
     # Back-left post (left side, offset +1" towards center/right)
-    joint_post_back_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_back_left,
-        mortise_timber=mudsill_back,
-        tenon_end=TimberReferenceEnd.BOTTOM,
+    joint_post_back_left = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=mudsill_back,
+            butt_timber=post_back_left,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=tenon_size,
         tenon_length=tenon_length,
         mortise_depth=mortise_depth,
-        tenon_position=tenon_offset_right
+        tenon_position=tenon_offset_right,
     )
     
     # ============================================================================
@@ -309,25 +321,29 @@ def create_oscarshed(center: Optional[V3] = None):
     middle_post_mortise_depth = inches(3.5)
     
     # Back middle-right post
-    joint_post_back_middle_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_back_middle_right,
-        mortise_timber=mudsill_back,
-        tenon_end=TimberReferenceEnd.BOTTOM,
+    joint_post_back_middle_right = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=mudsill_back,
+            butt_timber=post_back_middle_right,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
-        tenon_position=None  # Centered (no offset needed)
     )
     
     # Back middle-left post
-    joint_post_back_middle_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_back_middle_left,
-        mortise_timber=mudsill_back,
-        tenon_end=TimberReferenceEnd.BOTTOM,
+    joint_post_back_middle_left = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=mudsill_back,
+            butt_timber=post_back_middle_left,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
-        tenon_position=None  # Centered (no offset needed)
     )
 
     # ============================================================================
@@ -380,25 +396,29 @@ def create_oscarshed(center: Optional[V3] = None):
     side_girt_back_mortise_depth = inches(Rational(9, 2))  # 4.5 inches (through mortise)
     
     # Back left post TOP end meets left side girt BOTTOM end
-    joint_side_girt_left_back = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_back_left,
-        mortise_timber=side_girt_left,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_side_girt_left_back = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=side_girt_left,
+            butt_timber=post_back_left,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=side_girt_back_tenon_size,
         tenon_length=side_girt_back_tenon_length,
         mortise_depth=side_girt_back_mortise_depth,
-        tenon_position=None  # Centered
     )
     
     # Back right post TOP end meets right side girt BOTTOM end
-    joint_side_girt_right_back = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_back_right,
-        mortise_timber=side_girt_right,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_side_girt_right_back = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=side_girt_right,
+            butt_timber=post_back_right,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=side_girt_back_tenon_size,
         tenon_length=side_girt_back_tenon_length,
         mortise_depth=side_girt_back_mortise_depth,
-        tenon_position=None  # Centered
     )
 
     # ============================================================================
@@ -430,27 +450,31 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Left side girt TOP end meets front left post
-    joint_side_girt_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=side_girt_left,
-        mortise_timber=post_front_left,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_side_girt_left = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=post_front_left,
+            butt_timber=side_girt_left,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=TimberLongFace.FRONT,
+        ),
         tenon_size=side_girt_tenon_size,
         tenon_length=side_girt_tenon_length,
         mortise_depth=side_girt_mortise_depth,
-        tenon_position=None,  # Centered
-        peg_parameters=side_girt_peg_params_left
+        peg_parameters=side_girt_peg_params_left,
     )
     
     # Right side girt TOP end meets front right post
-    joint_side_girt_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=side_girt_right,
-        mortise_timber=post_front_right,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_side_girt_right = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=post_front_right,
+            butt_timber=side_girt_right,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=TimberLongFace.BACK,
+        ),
         tenon_size=side_girt_tenon_size,
         tenon_length=side_girt_tenon_length,
         mortise_depth=side_girt_mortise_depth,
-        tenon_position=None,  # Centered
-        peg_parameters=side_girt_peg_params_right
+        peg_parameters=side_girt_peg_params_right,
     )
     
     # Collect joint accessories (pegs) for rendering
@@ -579,27 +603,31 @@ def create_oscarshed(center: Optional[V3] = None):
     )
     
     # Left end: Front girt left piece BOTTOM meets left front post
-    joint_front_girt_left = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=front_girt_left,
-        mortise_timber=post_front_left,
-        tenon_end=TimberReferenceEnd.BOTTOM,
+    joint_front_girt_left = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=post_front_left,
+            butt_timber=front_girt_left,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=TimberLongFace.FRONT,
+        ),
         tenon_size=front_girt_tenon_size,
         tenon_length=front_girt_tenon_length,
         mortise_depth=front_girt_mortise_depth,
-        tenon_position=None,  # Centered
-        peg_parameters=front_girt_peg_params
+        peg_parameters=front_girt_peg_params,
     )
     
     # Right end: Front girt right piece TOP meets right front post
-    joint_front_girt_right = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=front_girt_right,
-        mortise_timber=post_front_right,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_front_girt_right = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=post_front_right,
+            butt_timber=front_girt_right,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=TimberLongFace.FRONT,
+        ),
         tenon_size=front_girt_tenon_size,
         tenon_length=front_girt_tenon_length,
         mortise_depth=front_girt_mortise_depth,
-        tenon_position=None,  # Centered
-        peg_parameters=front_girt_peg_params
+        peg_parameters=front_girt_peg_params,
     )
     
     # Collect cuts for each piece:
@@ -609,7 +637,7 @@ def create_oscarshed(center: Optional[V3] = None):
     
     # The left piece gets cuts from mortise & tenon joint and left gooseneck joint
     front_girt_left_cuts = []
-    front_girt_left_cuts.extend(joint_front_girt_left.cut_timbers["tenon_timber"].cuts)  # Tenon cuts
+    front_girt_left_cuts.extend(joint_front_girt_left.cut_timbers[front_girt_left.ticket.name].cuts)  # Tenon cuts
     front_girt_left_cuts.extend(front_girt_gooseneck_joint_left.cut_timbers[front_girt_left.ticket.name].cuts)  # Gooseneck cuts
     
     # The middle piece gets cuts from both gooseneck joints
@@ -622,7 +650,7 @@ def create_oscarshed(center: Optional[V3] = None):
     
     # The right piece gets cuts from mortise & tenon joint and right gooseneck joint
     front_girt_right_cuts = []
-    front_girt_right_cuts.extend(joint_front_girt_right.cut_timbers["tenon_timber"].cuts)  # Tenon cuts
+    front_girt_right_cuts.extend(joint_front_girt_right.cut_timbers[front_girt_right.ticket.name].cuts)  # Tenon cuts
     front_girt_right_cuts.extend(front_girt_gooseneck_joint_right.cut_timbers[front_girt_right.ticket.name].cuts)  # Gooseneck cuts
     
     # Create CutTimbers for the split pieces with all their cuts
@@ -685,25 +713,29 @@ def create_oscarshed(center: Optional[V3] = None):
     # No peg
     
     # Back middle-right post TOP end meets back top plate
-    joint_back_middle_right_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_back_middle_right,
-        mortise_timber=top_plate_back,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_back_middle_right_to_top_plate = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=top_plate_back,
+            butt_timber=post_back_middle_right,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
-        tenon_position=None  # Centered
     )
     
     # Back middle-left post TOP end meets back top plate
-    joint_back_middle_left_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_back_middle_left,
-        mortise_timber=top_plate_back,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_back_middle_left_to_top_plate = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=top_plate_back,
+            butt_timber=post_back_middle_left,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
-        tenon_position=None  # Centered
     )
 
     # ============================================================================
@@ -713,25 +745,29 @@ def create_oscarshed(center: Optional[V3] = None):
     # Use same parameters as middle posts: 2" x 1" tenon, 3" length, 3.5" depth
     
     # Front left post TOP end meets front top plate
-    joint_front_left_post_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_front_left,
-        mortise_timber=top_plate_front,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_front_left_post_to_top_plate = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=top_plate_front,
+            butt_timber=post_front_left,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
-        tenon_position=None  # Centered
     )
     
     # Front right post TOP end meets front top plate
-    joint_front_right_post_to_top_plate = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_front_right,
-        mortise_timber=top_plate_front,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_front_right_post_to_top_plate = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=top_plate_front,
+            butt_timber=post_front_right,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=middle_post_tenon_size,
         tenon_length=middle_post_tenon_length,
         mortise_depth=middle_post_mortise_depth,
-        tenon_position=None  # Centered
     )
 
     # ============================================================================
@@ -766,25 +802,29 @@ def create_oscarshed(center: Optional[V3] = None):
     corner_post_to_beam_mortise_depth = inches(Rational(5, 2))  # 2.5 inches
     
     # Back left corner post TOP end meets back top plate
-    joint_back_left_post_to_beam = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_back_left,
-        mortise_timber=top_plate_back,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_back_left_post_to_beam = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=top_plate_back,
+            butt_timber=post_back_left,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=corner_post_to_beam_tenon_size,
         tenon_length=corner_post_to_beam_tenon_length,
         mortise_depth=corner_post_to_beam_mortise_depth,
-        tenon_position=None  # Centered
     )
     
     # Back right corner post TOP end meets back top plate
-    joint_back_right_post_to_beam = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=post_back_right,
-        mortise_timber=top_plate_back,
-        tenon_end=TimberReferenceEnd.TOP,
+    joint_back_right_post_to_beam = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=top_plate_back,
+            butt_timber=post_back_right,
+            butt_timber_end=TimberReferenceEnd.TOP,
+            front_face_on_butt_timber=None,
+        ),
         tenon_size=corner_post_to_beam_tenon_size,
         tenon_length=corner_post_to_beam_tenon_length,
         mortise_depth=corner_post_to_beam_mortise_depth,
-        tenon_position=None  # Centered
     )
 
     # ============================================================================

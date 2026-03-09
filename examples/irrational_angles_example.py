@@ -8,7 +8,8 @@ representations are converted to floating point values in CAD systems.
 
 from sympy import Rational, pi, Matrix, cos, sin
 from code_goes_here.timber import Frame, TimberFace, TimberReferenceEnd, create_v3, timber_from_directions
-from code_goes_here.joints.mortise_and_tenon_joint import cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED
+from code_goes_here.construction import ButtJointTimberArrangement
+from code_goes_here.joints.mortise_and_tenon_joint import cut_mortise_and_tenon_joint_on_FAT
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 from code_goes_here.rule import degrees
 
@@ -63,13 +64,17 @@ def create_all_irrational_examples() -> Frame:
     
     # Create mortise and tenon joint
     tenon_size = Matrix([Rational(2), Rational(3)])  # width x thickness
-    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=beam,
-        mortise_timber=post,
-        tenon_end=TimberReferenceEnd.BOTTOM,  # Cut tenon on bottom end of beam
+    arrangement = ButtJointTimberArrangement(
+        receiving_timber=post,
+        butt_timber=beam,
+        butt_timber_end=TimberReferenceEnd.BOTTOM,
+        front_face_on_butt_timber=None,
+    )
+    joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=arrangement,
         tenon_size=tenon_size,
         tenon_length=Rational(4),
-        mortise_depth=Rational(4)
+        mortise_depth=Rational(4),
     )
     
     frame = Frame.from_joints([joint], name="Mortise and Tenon at 37°")

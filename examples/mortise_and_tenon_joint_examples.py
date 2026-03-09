@@ -39,13 +39,11 @@ def example_basic_mortise_and_tenon(position=None):
     tenon_length = inches(3)  # 3" long tenon
     mortise_depth = inches(7, 2)  # 3.5" deep mortise (slightly deeper than tenon)
 
-    joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=arrangement.butt_timber,
-        mortise_timber=arrangement.receiving_timber,
-        tenon_end=arrangement.butt_timber_end,
+    joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=arrangement,
         tenon_size=tenon_size,
         tenon_length=tenon_length,
-        mortise_depth=mortise_depth
+        mortise_depth=mortise_depth,
     )
     return joint
 

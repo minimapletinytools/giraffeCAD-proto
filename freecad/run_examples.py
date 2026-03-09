@@ -56,14 +56,14 @@ RENDER_TYPE = 'pattern'
 #PATTERN_NAME = 'mortise_and_tenon_simple'
 #PATTERN_NAME = 'brace_joint'  # Brace joint with mortise and tenon connections
 #PATTERN_NAME = 'dovetail_half_lap'
-#PATTERN_NAME = 'oscar_shed'
+PATTERN_NAME = 'oscar_shed'
 #PATTERN_NAME = 'gooseneck_simple'
 #PATTERN_NAME = 'shoulder_notch'
 #PATTERN_NAME = 'short_post'
 #PATTERN_NAME = 'honeycomb_shed'
 #PATTERN_NAME = 'mitered_keyed_lap'
 #PATTERN_NAME = 'brace_joint'
-PATTERN_NAME = 'sawhorse'
+#PATTERN_NAME = 'sawhorse'
 
 # GROUP_NAME: Name of a pattern group to render (when RENDER_TYPE = 'group')
 # Available groups: 'plain_joints', 'mortise_tenon', 'basic_joints', 'construction', 

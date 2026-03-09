@@ -165,14 +165,17 @@ def create_honeycomb_shed():
     for i in range(6):
         print(f"  Post-mudsill joint {i}...")
         # Post i sits on mudsill i
-        joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-            tenon_timber=posts[i],
-            mortise_timber=mudsills[i],
-            tenon_end=TimberReferenceEnd.BOTTOM,
+        arrangement = ButtJointTimberArrangement(
+            receiving_timber=mudsills[i],
+            butt_timber=posts[i],
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=None,
+        )
+        joint = cut_mortise_and_tenon_joint_on_FAT(
+            arrangement=arrangement,
             tenon_size=tenon_size,
             tenon_length=tenon_length,
             mortise_depth=mortise_depth,
-            tenon_position=None  # Centered
         )
         post_mudsill_joints.append(joint)
     
@@ -244,14 +247,17 @@ def create_honeycomb_shed():
         
         if same_height:
             print(f"  Post-ring beam joint {i} (face-aligned)...")
-            joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-                tenon_timber=posts[i],
-                mortise_timber=ring_beams[i],
-                tenon_end=TimberReferenceEnd.TOP,
+            arrangement = ButtJointTimberArrangement(
+                receiving_timber=ring_beams[i],
+                butt_timber=posts[i],
+                butt_timber_end=TimberReferenceEnd.TOP,
+                front_face_on_butt_timber=None,
+            )
+            joint = cut_mortise_and_tenon_joint_on_FAT(
+                arrangement=arrangement,
                 tenon_size=beam_tenon_size,
                 tenon_length=beam_tenon_length,
                 mortise_depth=beam_mortise_depth,
-                tenon_position=None  # Centered
             )
             post_ring_beam_joints.append(joint)
         else:
@@ -287,14 +293,17 @@ def create_honeycomb_shed():
     # For simplicity, we'll create a through-tenon from hub post to mudsill 0
     
     print("Creating hub-mudsill joint...")
-    hub_mudsill_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        tenon_timber=hub_post,
-        mortise_timber=mudsills[0],
-        tenon_end=TimberReferenceEnd.BOTTOM,
+    hub_mudsill_arrangement = ButtJointTimberArrangement(
+        receiving_timber=mudsills[0],
+        butt_timber=hub_post,
+        butt_timber_end=TimberReferenceEnd.BOTTOM,
+        front_face_on_butt_timber=None,
+    )
+    hub_mudsill_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=hub_mudsill_arrangement,
         tenon_size=Matrix([inches(3), inches(3)]),  # 3" x 3" square tenon
         tenon_length=inches(3),
         mortise_depth=inches(3.5),
-        tenon_position=None
     )
 
     # ============================================================================
