@@ -1,3 +1,60 @@
+
+:: 3/8/2025 viewer next steps
+-update vscode plugin to use python IPC or something
+  -probably wrap in an interface s you can use websocket or stdio or whatever
+
+-triangulation in python
+  -try triangulating CSG in python first, you can add more triangle data in the future but for now just need tris
+  -actualy I think you want to store fetaure information as features need to be highlightable, not trias correspond to facees, you need to store edges and points separately
+    -I guess after generating mesh you walk the mesh to tie back to features :( hope that's not too slow
+
+-smart refresh
+  -add filewatcher
+  -add hashing on timbers to determine which ones changed
+  -the runner keeps a hash map
+  -then only generate triangles for stuff that changed
+
+-debug console lol
+
+-cute backgrounds
+  -creamy gradient background
+  -simple drop shadows? (you can fake this one)
+  -simple reflections? 
+  -fun horse walking trhough background or osmething
+
+-select support
+  -select timber highlights it in 3d
+
+-navigation support
+  -by default camera center is in center of focused objects, can be moved in view plane by panning
+  -middle mouse pans
+  -scroll wheel zooms and pans towards where mouse location is
+  -right click drag rotates camera (or maybe just left click...)
+  -or do the simple version with no panning
+  -maybe include cube gizmo with preset views
+  -ortho perspective toggle?
+  -must lerp between all transitions!!!
+
+-simple list view
+  -needs parent list hirearchy support
+  -for now just show a list of timbers
+    -double clicking on a timber focuses in on it
+  -also show list of joints
+    -double clicking focuses in on the joint (you probably need some joint center metadata, but you can just derive from the 2 timbers that make the joint for now)
+
+-save as STL or STEp or whatever button
+
+-bonus feature highlighting
+  -clicking on a timber that is in focus highlight sthe featuer on the timber
+    -umm, but yo udon't want to do this when too much is selecetd, maybe only do this if a joint or single timber is selected
+
+-bonus, simple drawing support??
+  -identify 2 features and draw a distance line between them, lines always show up above everything
+  -distance lines can be clicked on which highlight the fetaures they measure from, hence features need to be selectively rendered
+
+
+
+
 :: 2/24/2025 measure/mark rules
 
 we have the following measurements
@@ -188,7 +245,6 @@ class Ticket
 
 :: TODO
 
-
 -update morties and tenon to support
   DONE-do cropping on angled mortise and tenon joints
   DONE-make 3 versions
@@ -199,6 +255,7 @@ class Ticket
   DONE-do the mortise_shoulder_distance_from_centerline conversion
   DONE-tenon cutting on braces seems to have broken :(
   DONE-do the generic notch function
+
   -non PAT stuff
     -update peg logic to assume not PAT
     -mortise hole logic needs to be updated too
@@ -209,8 +266,6 @@ class Ticket
     -is this really whaty ou want? and how does this intercact with positing in mortise/tenon space I guess this is a generalized version of that...
 
 -reorg joints by joint type 
-
-
 -consider making a brace function that both creates a timber and joins it!
 -do sympy numeric conversion at the start of each joint... Or just have the numeric stuff cached in the timber or maybe transform class
 -add CutCSG::get_surface_curvature(point: V3) -> Optional[Tuple[V3, Numeric, V3, Numeric]] (returns derivative and basis for the derivative) so you can properly do the point on boundary check.. welly ou may as well just have a get_surface_info that returns stuff like its curvature, whether it's an edge or face, and the curvature info.
