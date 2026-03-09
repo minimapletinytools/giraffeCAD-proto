@@ -112,80 +112,92 @@ def create_sawhorse() -> Frame:
     cut_right_post = CutTimber(right_post)
     cut_stretcher = CutTimber(stretcher)
 
-    # next create mortise and tenon joints between the posts and the mudsills
-    mudsill_left_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        mortise_timber=left_mudsill,
-        tenon_timber=left_post,
-        tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
+    # next create mortise and tenon joints between the posts and the mudsills (on_FAT = face-aligned timbers)
+    mudsill_left_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=left_mudsill,
+            butt_timber=left_post,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
+        ),
         tenon_size=tenon_size,
-        tenon_length=tenon_length
+        tenon_length=tenon_length,
     )
 
-    mudsill_right_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        mortise_timber=right_mudsill,
-        tenon_timber=right_post,
-        tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
+    mudsill_right_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=right_mudsill,
+            butt_timber=right_post,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom of post
+        ),
         tenon_size=tenon_size,
-        tenon_length=tenon_length
+        tenon_length=tenon_length,
     )
 
     # next create mortise and tenon joints between the posts and the stretcher
-    stretcher_left_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        mortise_timber=left_post,
-        tenon_timber=stretcher,
-        tenon_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom end of stretcher
+    stretcher_left_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=left_post,
+            butt_timber=stretcher,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,  # Tenon comes from bottom end of stretcher
+        ),
         tenon_size=tenon_size,
-        tenon_length=tenon_length
+        tenon_length=tenon_length,
     )
 
-    stretcher_right_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        mortise_timber=right_post,
-        tenon_timber=stretcher,
-        tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of stretcher
+    stretcher_right_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=right_post,
+            butt_timber=stretcher,
+            butt_timber_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of stretcher
+        ),
         tenon_size=tenon_size,
-        tenon_length=tenon_length
+        tenon_length=tenon_length,
     )
 
     # now create mortise and tenon joints between the posts and the beam
-    beam_left_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        mortise_timber=beam,
-        tenon_timber=left_post,
-        tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from bottom end of beam
+    beam_left_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=beam,
+            butt_timber=left_post,
+            butt_timber_end=TimberReferenceEnd.TOP,  # Tenon comes from top of post
+        ),
         tenon_size=tenon_size,
-        tenon_length=tenon_length
+        tenon_length=tenon_length,
     )
 
-    beam_right_joint = cut_mortise_and_tenon_joint_on_face_aligned_timbers_DEPRECATED(
-        mortise_timber=beam,
-        tenon_timber=right_post,
-        tenon_end=TimberReferenceEnd.TOP,  # Tenon comes from top end of beam
+    beam_right_joint = cut_mortise_and_tenon_joint_on_FAT(
+        arrangement=ButtJointTimberArrangement(
+            receiving_timber=beam,
+            butt_timber=right_post,
+            butt_timber_end=TimberReferenceEnd.TOP,  # Tenon comes from top of post
+        ),
         tenon_size=tenon_size,
-        tenon_length=tenon_length
+        tenon_length=tenon_length,
     )
 
-    # Apply joints to the cut timbers
-    # Each joint affects multiple timbers, so we need to add the cut operations to the appropriate timbers
-    
+    # Apply joints to the cut timbers (FAT joint returns cut_timbers keyed by ticket name)
+    # Each joint affects multiple timbers, so we add the cut operations to the appropriate CutTimbers.
+
     # Mudsill joints
-    cut_left_mudsill.joints.extend(mudsill_left_joint.cut_timbers["mortise_timber"].cuts)
-    cut_left_post.joints.extend(mudsill_left_joint.cut_timbers["tenon_timber"].cuts)
-    
-    cut_right_mudsill.joints.extend(mudsill_right_joint.cut_timbers["mortise_timber"].cuts)
-    cut_right_post.joints.extend(mudsill_right_joint.cut_timbers["tenon_timber"].cuts)
-    
+    cut_left_mudsill.joints.extend(mudsill_left_joint.cut_timbers["Left Mudsill"].cuts)
+    cut_left_post.joints.extend(mudsill_left_joint.cut_timbers["Left Post"].cuts)
+
+    cut_right_mudsill.joints.extend(mudsill_right_joint.cut_timbers["Right Mudsill"].cuts)
+    cut_right_post.joints.extend(mudsill_right_joint.cut_timbers["Right Post"].cuts)
+
     # Stretcher joints
-    cut_left_post.joints.extend(stretcher_left_joint.cut_timbers["mortise_timber"].cuts)
-    cut_stretcher.joints.extend(stretcher_left_joint.cut_timbers["tenon_timber"].cuts)
-    
-    cut_right_post.joints.extend(stretcher_right_joint.cut_timbers["mortise_timber"].cuts)
-    cut_stretcher.joints.extend(stretcher_right_joint.cut_timbers["tenon_timber"].cuts)
-    
+    cut_left_post.joints.extend(stretcher_left_joint.cut_timbers["Left Post"].cuts)
+    cut_stretcher.joints.extend(stretcher_left_joint.cut_timbers["Stretcher"].cuts)
+
+    cut_right_post.joints.extend(stretcher_right_joint.cut_timbers["Right Post"].cuts)
+    cut_stretcher.joints.extend(stretcher_right_joint.cut_timbers["Stretcher"].cuts)
+
     # Beam joints
-    cut_left_post.joints.extend(beam_left_joint.cut_timbers["mortise_timber"].cuts)
-    cut_beam.joints.extend(beam_left_joint.cut_timbers["tenon_timber"].cuts)
-    
-    cut_right_post.joints.extend(beam_right_joint.cut_timbers["mortise_timber"].cuts)
-    cut_beam.joints.extend(beam_right_joint.cut_timbers["tenon_timber"].cuts)
+    cut_left_post.joints.extend(beam_left_joint.cut_timbers["Left Post"].cuts)
+    cut_beam.joints.extend(beam_left_joint.cut_timbers["Top Beam"].cuts)
+
+    cut_right_post.joints.extend(beam_right_joint.cut_timbers["Right Post"].cuts)
+    cut_beam.joints.extend(beam_right_joint.cut_timbers["Top Beam"].cuts)
 
     # Return all cut timbers in a Frame
     return Frame(
@@ -197,7 +209,7 @@ def create_sawhorse() -> Frame:
             cut_right_post,
             cut_stretcher
         ],
-        ticket="Sawhorse"
+        name="Sawhorse"
     )
 
 def main():
