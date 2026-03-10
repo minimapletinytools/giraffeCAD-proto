@@ -34,17 +34,17 @@ Footprint is a key utility class for positioning Timbers and cuts and thus gets 
 
 Joints are split into separate files by groups
 
-### code_goes_here/moothmoth.py
+### code_goes_here/rule.py
 
 Defines math types, units, and other math related utilities. All math code is expected to use these types and helpers.
 
-### code_goes_here/test_* code_goes_here/helperonis.py 
+### code_goes_here/measure.py
 
-Tests and test helperonis.
+Contains patterns and methods for locating features on timbers and marking things relative to features on timbers
 
 ## Key Dependencies
 
-- `sympy` - Symbolic mathematics for exact computations
+- `sympy` - Symbolic math library used throughout
 - `pytest` - Testing framework
 
 
@@ -59,10 +59,11 @@ Tests and test helperonis.
 
 ## General Coding Conventions
 
-- ALWAYS use symbolic arithmetic with SymPy (Rational)
-- Use math types in moothmoth.py
+- Always use SymPy types and never use python floats.
+- Use math types in rule.py
 - ALWAYS Run tests after making changes
-
+- ALWASY run type checker after making changes
+    
 ## Coding Conventions when Implementing Joints
 
 Joints involve creating CSG cuts on one or more timbers. A typicall joint implementation will look as such.
