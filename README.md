@@ -9,8 +9,40 @@ HorseCoAD is written as an **AI friendly** library meaning it was designed to be
 HorseCoAD is intended to ship with its own viewing app as a VSCode extension.
 Until then, HorseCoAD designs is visualized by writing to Fusion 360 and FreeCAD via their scripting APIs. This is intended to be replaced with exporting to common CAD file formats in the future as the scripting API workflow for most CAD programs is clunky.
 
+## Setup
 
-## Trying out Examples
+TODO viewer setup instructions
+TODO pip package instructions
+
+## trying out the exmaple
+
+You've setup your tools and you're almost ready to make your first sawhorse.
+
+But first, lets admire the one in the exmaples folder
+
+```python
+from horse.examples.saw_horsey import *
+...
+```
+
+TODO finish
+
+## your first horsey
+
+TODO finish
+
+## for advanced students
+
+TODO finish
+
+
+# APPENDIX
+
+## FreeCAD and Fusion360 usage
+
+Rendering in FreeCAD and Fusion360 currently requires checking out the entire repo. We do not plan to work around this and support for these tools will be removed soon. 
+
+To add your own examples, modify the respective example running file to point to your own example.
 
 ### FreeCAD Integration
 
