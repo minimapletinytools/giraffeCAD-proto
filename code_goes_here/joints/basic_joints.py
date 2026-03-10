@@ -132,7 +132,6 @@ def cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers(
         front_face_on_butt_timber = joint_side_tenon_timber_face.to.long_face()
         peg_parameters = SimplePegParameters(
             shape=PegShape.SQUARE,
-            tenon_face=front_face_on_butt_timber,
             peg_positions=[cast(Tuple[Numeric, Numeric], (tenon_length / 3, 0))],
             size=inches(1, 2),
             depth=None,

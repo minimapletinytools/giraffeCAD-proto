@@ -168,7 +168,6 @@ def example_brace_joint(position=None):
     # - Second peg: 2" from shoulder, +0.5" from centerline
     peg_params = SimplePegParameters(
         shape=PegShape.SQUARE,
-        tenon_face=TimberLongFace.RIGHT,
         peg_positions=[
             (inches(1), inches(0)),  # 1" from shoulder, -0.5" from centerline
         ],

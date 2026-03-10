@@ -10,7 +10,6 @@ This example creates a sawhorse with:
 All joints are mortise and tenon with pegs.
 """
 
-from dataclasses import replace
 from giraffe import *
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 
@@ -140,7 +139,6 @@ def create_sawhorse() -> Frame:
     # Base peg parameters: 5/8" diameter, 1" from shoulder, centered on tenon
     base_peg_params = SimplePegParameters(
         shape=PegShape.ROUND,
-        tenon_face=TimberLongFace.RIGHT,  # Will be customized per joint
         peg_positions=[(peg_distance_from_shoulder, Rational(0))],  # 1" from shoulder, centered
         size=peg_diameter,
         depth=None,  # Through peg
@@ -183,10 +181,7 @@ def create_sawhorse() -> Frame:
     # Stretcher: length=X (RIGHT), width=Y (FRONT), depth=Z
     # Post: length=Z (TOP), mortise on LEFT/RIGHT face
     # Tenon at stretcher ends going sideways into posts - peg through LEFT face
-    peg_params_stretcher = replace(
-        base_peg_params,
-        tenon_face=TimberLongFace.LEFT
-    )
+    peg_params_stretcher = base_peg_params
 
     left_post_stretcher_joint = cut_mortise_and_tenon_joint_on_FAT(
         arrangement=ButtJointTimberArrangement(
@@ -218,10 +213,7 @@ def create_sawhorse() -> Frame:
     # Post: length=Z (TOP), width=X (RIGHT), depth=Y (FRONT)
     # Plate: length=X (RIGHT)
     # Tenon at post TOP going up into plate - peg goes through FRONT face
-    peg_params_post_plate = replace(
-        base_peg_params,
-        tenon_face=TimberLongFace.FRONT
-    )
+    peg_params_post_plate = base_peg_params
 
     left_post_plate_joint = cut_mortise_and_tenon_joint_on_FAT(
         arrangement=ButtJointTimberArrangement(

@@ -4,7 +4,6 @@ Built using the GiraffeCAD API
 """
 
 from sympy import Rational
-from dataclasses import replace
 from typing import Optional
 import sys
 sys.path.append('..')
@@ -437,17 +436,13 @@ def create_oscarshed(center: Optional[V3] = None):
     # Peg parameters: 5/8" square peg, 1" from shoulder, on centerline
     side_girt_peg_params_left = SimplePegParameters(
         shape=PegShape.SQUARE,
-        tenon_face=TimberLongFace.FRONT,
         peg_positions=[(inches(1), Rational(0))],  # 1" from shoulder, centered
         size=inches(Rational(5, 8)),  # 5/8" square
         depth=inches(Rational(7, 2)),
         tenon_hole_offset=inches(Rational(1, 16))
     )
-    # Create right side params by replacing just the tenon_face
-    side_girt_peg_params_right = replace(
-        side_girt_peg_params_left,
-        tenon_face=TimberLongFace.BACK
-    )
+    # Right side uses the same peg params (peg face comes from arrangement)
+    side_girt_peg_params_right = side_girt_peg_params_left
     
     # Left side girt TOP end meets front left post
     joint_side_girt_left = cut_mortise_and_tenon_joint_on_FAT(
@@ -595,7 +590,6 @@ def create_oscarshed(center: Optional[V3] = None):
     # Peg parameters: 5/8" square peg, 1" from shoulder, on centerline
     front_girt_peg_params = SimplePegParameters(
         shape=PegShape.SQUARE,
-        tenon_face=TimberLongFace.FRONT,
         peg_positions=[(inches(1), Rational(0))],  # 1" from shoulder, centered
         size=inches(Rational(5, 8)),  # 5/8" square
         depth=inches(Rational(7, 2)),
