@@ -358,6 +358,48 @@ class TestPegStuff:
                 f"Each peg should have depth 5, got {peg.forward_length}"
     
     # 🐪
+    def test_peg_depth_from_mortise_surface_projection(self):
+        """Peg depth (auto) is the full chord through the mortise timber in the peg direction.
+
+        Uses a non-square mortise (width=4 in peg direction, height=10) so the test
+        distinguishes the correct axis (size[0]=4) from the other (size[1]=10).
+        """
+        tenon_timber = create_standard_vertical_timber(
+            height=100, size=(4, 4), position=(0, 0, 0), ticket="tenon_timber"
+        )
+        # The peg face is FRONT of the vertical tenon, whose normal is +Y globally.
+        # The mortise runs along +X; its local X dimension (size[0]=4) is in the +Y direction.
+        mortise_timber = create_centered_horizontal_timber(
+            direction='x', length=100, size=(4, 10), name="mortise_timber"
+        )
+        peg_params = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            peg_positions=[(Rational(2), Rational(0))],
+            depth=None,  # auto: computed from chord through mortise timber
+            size=Rational(1, 2),
+        )
+        arrangement = ButtJointTimberArrangement(
+            receiving_timber=mortise_timber,
+            butt_timber=tenon_timber,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=TimberLongFace.FRONT,
+        )
+        joint = cut_mortise_and_tenon_joint_on_FAT(
+            arrangement=arrangement,
+            tenon_size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(4),
+            peg_parameters=peg_params,
+        )
+        peg = joint.jointAccessories["peg_0"]
+        # The peg travels in the +Y direction through the mortise.
+        # The mortise chord in that direction equals size[0]=4, not size[1]=10.
+        assert peg.forward_length == mortise_timber.size[0], (
+            f"Peg depth should equal the chord through the mortise in the peg direction "
+            f"({mortise_timber.size[0]}), got {peg.forward_length}"
+        )
+
+    # 🐪
     def test_peg_with_tenon_hole_offset(self, simple_T_configuration):
         """Test that tenon_hole_offset shifts the peg hole in the tenon towards the shoulder."""
         tenon_timber, mortise_timber = simple_T_configuration

@@ -269,10 +269,11 @@ class Ticket
   DONE-do the generic notch function
   DONE-allow pegs to be positioned in either tenon space or mortise space via parameter
     -remind folks like +y direction depends on orientation of timber, not joint angle
+  -fix peg depth calculation...
+  -add peg orientation parameter (mortise/tenon, ccw_rotation_angle) = (tenon, 0)
   -non PAT stuff
-    -update peg logic to assume not PAT
+    DONE-update peg logic to assume not PAT
     -mortise hole logic needs to be updated too
-  
   -TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
     -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
     -is this really whaty ou want? and how does this intercact with positing in mortise/tenon space I guess this is a generalized version of that...

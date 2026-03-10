@@ -231,42 +231,51 @@ def compute_peg_positions(
             peg_pos_on_tenon_face_global + offset_direction * peg_parameters.tenon_hole_offset
         )
 
-        # TODO update this logic to not depend on a specific face. Instead project the point to the surface of the mortise timber to determine how deep it needs to reach in from the mortise timber
-        # --- Find best mortise entry face (highest dot product with tenon face normal) ---
-        best_face = None
-        best_dot = -float('inf')
-        for face in [TimberFace.RIGHT, TimberFace.LEFT, TimberFace.FRONT, TimberFace.BACK]:
-            if face == mortise_face:
-                continue
-            face_normal = mortise_timber.get_face_direction_global(face)
-            dot_val = safe_dot_product(peg_face_normal_global, face_normal)
-            if dot_val > best_dot:
-                best_dot = dot_val
-                best_face = face
-        assert best_face is not None, "Could not find mortise peg entry face"
-        mortise_entry_face = best_face
+        # --- Project peg ray onto mortise timber surface (ray-AABB intersection) ---
+        # Transform the peg ray into mortise timber local coordinates.
+        ray_origin_local = mortise_timber.transform.global_to_local(peg_pos_on_tenon_face_global)
+        ray_dir_local = safe_transform_vector(mortise_timber.transform.orientation.matrix.T, peg_ray_direction)
 
-        # --- Measure/mark: mortise entry face plane ---
-        mortise_entry_plane = measure_face(mortise_timber, mortise_entry_face)
+        # Mortise timber local AABB: X ∈ [-w/2, w/2], Y ∈ [-h/2, h/2], Z ∈ [0, length]
+        box_mins = [-mortise_timber.size[0] / 2, -mortise_timber.size[1] / 2, Integer(0)]
+        box_maxs = [mortise_timber.size[0] / 2, mortise_timber.size[1] / 2, mortise_timber.length]
 
-        # --- Ray-plane intersection: tenon face position → mortise entry face ---
-        # Ray goes outward from tenon face toward the mortise entry face.
-        denominator = safe_dot_product(peg_ray_direction, mortise_entry_plane.normal)
-        assert abs(denominator) > EPSILON_GENERIC, (
-            f"Peg direction is perpendicular to mortise peg entry face {mortise_entry_face} "
-            f"(dot product: {denominator}), pick a different tenon face or direction for the peg"
+        t_enter_vals = []
+        t_exit_vals = []
+        for axis in range(3):
+            d = ray_dir_local[axis]
+            if zero_test(d):
+                assert box_mins[axis] <= ray_origin_local[axis] <= box_maxs[axis], (
+                    f"Peg ray is parallel to mortise timber axis {axis} but peg position is "
+                    f"outside the mortise timber bounds on that axis"
+                )
+            else:
+                t1 = (box_mins[axis] - ray_origin_local[axis]) / d
+                t2 = (box_maxs[axis] - ray_origin_local[axis]) / d
+                t_enter_vals.append(min(t1, t2))
+                t_exit_vals.append(max(t1, t2))
+
+        assert t_enter_vals and t_exit_vals, (
+            "Peg ray is parallel to all three mortise timber axes"
         )
-        t_peg = safe_dot_product(
-            mortise_entry_plane.normal,
-            mortise_entry_plane.point - peg_pos_on_tenon_face_global,
-        ) / denominator
-        peg_pos_on_mortise_face_global = peg_pos_on_tenon_face_global + peg_ray_direction * t_peg
+        t_enter = max(t_enter_vals)
+        t_exit = min(t_exit_vals)
+        assert t_exit > t_enter, (
+            "Peg ray does not intersect the mortise timber; "
+            "check that the peg position and direction are correct"
+        )
 
-        # --- Compute depth ---
+        # The peg entry face is the mortise timber surface in the peg direction.
+        # If the peg origin is inside the mortise (t_enter < 0), the drilling entry
+        # is the exit face (t_exit). Otherwise it is the entry face (t_enter).
+        peg_entry_t = t_exit if t_enter < 0 else t_enter
+        peg_pos_on_mortise_face_global = peg_pos_on_tenon_face_global + peg_ray_direction * peg_entry_t
+
+        # --- Compute depth (full chord through mortise, or explicit) ---
         if peg_parameters.depth is not None:
             peg_depth = peg_parameters.depth
         else:
-            peg_depth = mortise_timber.get_size_in_face_normal_axis(mortise_entry_face)
+            peg_depth = t_exit - t_enter
         stickout_length = peg_depth * Rational(1, 2)
 
         results.append(PegPositionResult(
@@ -274,7 +283,6 @@ def compute_peg_positions(
             tenon_face_position_with_offset_global=peg_pos_on_tenon_face_with_offset_global,
             mortise_entry_position_global=peg_pos_on_mortise_face_global,
             orientation_global=peg_orientation_global,
-            mortise_entry_face=mortise_entry_face,
             peg_depth=peg_depth,
             stickout_length=stickout_length,
         ))
@@ -328,7 +336,6 @@ class PegPositionResult:
     tenon_face_position_with_offset_global: V3
     mortise_entry_position_global: V3
     orientation_global: Orientation
-    mortise_entry_face: TimberFace
     peg_depth: Numeric
     stickout_length: Numeric
 

@@ -243,18 +243,28 @@ def example_double_angled_mortise_and_tenon(position=None):
     rotated_transform = Transform(position=timber1.transform.position, orientation=rotated_orientation)
     mortise_timber = replace(timber1, transform=rotated_transform, ticket=Ticket("rotated_mortise"))
 
+    peg_params = SimplePegParameters(
+        shape=PegShape.SQUARE,
+        peg_positions=[(inches(1), Rational(0))],
+        size=inches(1, 2)
+    )
+
     arrangement = ButtJointTimberArrangement(
         butt_timber=brace_timber,
         receiving_timber=mortise_timber,
         butt_timber_end=TimberReferenceEnd.BOTTOM,
+        #front_face_on_butt_timber=TimberLongFace.RIGHT,
+        # use this example, fix bug on peg length
+        front_face_on_butt_timber=TimberLongFace.FRONT,
     )
-    
+
     return cut_mortise_and_tenon_joint(
         arrangement=arrangement,
         tenon_size=Matrix([inches(2), inches(2)]),
         tenon_length=inches(5),
         mortise_depth=inches(3),
         mortise_shoulder_distance_from_centerline=inches(2),
+        peg_parameters=peg_params,
         crop_tenon_to_mortise_orientation_on_angled_joints=True,
     )
 
