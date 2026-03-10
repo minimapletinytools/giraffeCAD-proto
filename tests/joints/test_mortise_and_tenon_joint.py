@@ -15,7 +15,9 @@ from code_goes_here.construction import ButtJointTimberArrangement
 from code_goes_here.joints.mortise_and_tenon_joint import (
     SimplePegParameters,
     WedgeParameters,
+    PegPositionSpace,
     cut_mortise_and_tenon_joint_on_FAT,
+    cut_mortise_and_tenon_joint_on_PAT,
     measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber,
 )
 from tests.testing_shavings import (
@@ -448,6 +450,65 @@ class TestPegStuff:
         )
         
         # TODO test actual stuff here
+
+    # 🐪
+    def test_peg_orientation_mortise_space_face_aligned(self):
+        """When peg_orientation uses MORTISE space the peg X and Y axes must be
+        face-aligned with the mortise timber, even when tenon and mortise are not
+        face-aligned with each other.
+
+        Uses the canonical brace arrangement: brace_timber runs at 45° in the XY
+        plane (tenon), timber1 runs along +Y (mortise).  They are NOT face-aligned.
+        The peg face is FRONT of the brace timber (normal = +Z globally).
+        Requesting MORTISE orientation means the peg Y-axis must be parallel to
+        the mortise length axis (+Y), not the brace length axis.
+        """
+        from code_goes_here.example_shavings import create_canonical_example_brace_joint_timbers
+        from code_goes_here.rule import are_vectors_parallel
+
+        brace_arrangement = create_canonical_example_brace_joint_timbers()
+        brace_timber = brace_arrangement.brace_timber
+        timber1 = brace_arrangement.timber1
+
+        peg_params = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            peg_positions=[(inches(1), Rational(0))],
+            size=inches(1, 2),
+            depth=inches(4),
+            peg_orientation=(PegPositionSpace.MORTISE, Rational(0)),
+        )
+
+        arrangement = ButtJointTimberArrangement(
+            butt_timber=brace_timber,
+            receiving_timber=timber1,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=TimberLongFace.RIGHT,
+        )
+        joint = cut_mortise_and_tenon_joint_on_PAT(
+            arrangement=arrangement,
+            tenon_size=Matrix([inches(2), inches(2)]),
+            tenon_length=inches(4),
+            mortise_depth=inches(3),
+            peg_parameters=peg_params,
+            mortise_shoulder_inset=inches(1, 2),
+        )
+
+        peg = joint.jointAccessories["peg_0"]
+        assert isinstance(peg, Peg)
+
+        # The peg's Y column (index 1) must be parallel to the mortise length axis (+Y)
+        mortise_length_dir = timber1.get_length_direction_global()
+        peg_y_axis = peg.transform.orientation.matrix[:, 1]
+        assert are_vectors_parallel(peg_y_axis, mortise_length_dir), (
+            f"Peg Y axis should be parallel to mortise length direction {mortise_length_dir}, "
+            f"got {peg_y_axis}"
+        )
+
+        # It must NOT be parallel to the brace (tenon) length axis
+        brace_length_dir = brace_timber.get_length_direction_global()
+        assert not are_vectors_parallel(peg_y_axis, brace_length_dir), (
+            f"Peg Y axis should NOT be parallel to brace (tenon) length direction {brace_length_dir}"
+        )
 
 
 class TestMeasureMortiseShoulderPlane:

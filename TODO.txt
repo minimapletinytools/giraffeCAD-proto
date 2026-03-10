@@ -269,8 +269,8 @@ class Ticket
   DONE-do the generic notch function
   DONE-allow pegs to be positioned in either tenon space or mortise space via parameter
     -remind folks like +y direction depends on orientation of timber, not joint angle
+  DONE-add peg orientation parameter (mortise/tenon, ccw_rotation_angle) = (tenon, 0)
   -fix peg depth calculation...
-  -add peg orientation parameter (mortise/tenon, ccw_rotation_angle) = (tenon, 0)
   -non PAT stuff
     DONE-update peg logic to assume not PAT
     -mortise hole logic needs to be updated too

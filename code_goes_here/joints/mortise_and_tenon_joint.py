@@ -173,15 +173,36 @@ def compute_peg_positions(
     tenon_centerline = measure_centerline(tenon_timber)
     mortise_centerline = measure_centerline(mortise_timber)
 
-    # Peg orientation: Z axis = drilling direction (inward from face), Y = tenon length.
+    # Peg orientation: Z axis = drilling direction (inward from face).
     # The peg drills INTO the timber, so Z points opposite to the face normal.
     # The ray direction (outward from face, toward mortise) is separate.
     peg_drill_direction = -peg_face_normal_global
     peg_ray_direction = peg_face_normal_global
-    peg_orientation_global = Orientation.from_z_and_y(
-        z_direction=peg_drill_direction,
-        y_direction=tenon_centerline.direction,
-    )
+
+    # Choose the face-aligned Y basis from the requested timber space.
+    orient_space, ccw_rotation_angle = peg_parameters.peg_orientation
+    if orient_space == PegPositionSpace.TENON:
+        peg_y_base = tenon_centerline.direction
+    else:
+        # Mortise space: use mortise length axis, oriented to agree with tenon end direction
+        mortise_len_dir = mortise_centerline.direction
+        if safe_dot_product(mortise_len_dir, tenon_end_direction) < 0:
+            mortise_len_dir = -mortise_len_dir
+        peg_y_base = mortise_len_dir
+
+    # Apply CCW rotation around the drill axis (Z) on top of the face-aligned basis.
+    if zero_test(ccw_rotation_angle):
+        peg_orientation_global = Orientation.from_z_and_y(
+            z_direction=peg_drill_direction,
+            y_direction=peg_y_base,
+        )
+    else:
+        base_orientation = Orientation.from_z_and_y(
+            z_direction=peg_drill_direction,
+            y_direction=peg_y_base,
+        )
+        rotation_around_z = Orientation.from_angle_axis(ccw_rotation_angle, peg_drill_direction)
+        peg_orientation_global = Orientation(rotation_around_z.matrix * base_orientation.matrix)
 
     # Lateral direction in tenon space: the cross-section axis perpendicular to
     # both the peg face normal and the tenon length axis.
@@ -320,6 +341,12 @@ class SimplePegParameters:
         size: Peg diameter (for round pegs) or side length (for square pegs)
         depth: Depth measured from mortise face where peg goes in (None means all the way through the mortise timber)
         tenon_hole_offset: Offset distance of the hole in the tenon towards the shoulder so that the peg tightens the joint up. You should usually set this to 1-2mm
+        peg_orientation: Controls which timber's face axes the peg cross-section is aligned to, plus an
+                         optional CCW rotation around the drill axis. A tuple of (space, ccw_rotation_angle).
+                         - space: TENON = align peg Y axis with the tenon length axis.
+                                  MORTISE = align peg Y axis with the mortise length axis.
+                         - ccw_rotation_angle: counter-clockwise rotation (in radians) around the drill
+                           axis applied on top of the face-aligned basis. 0 = no rotation.
     """
     shape: PegShape
     peg_positions: List[Tuple[Numeric, Numeric]]
@@ -327,6 +354,7 @@ class SimplePegParameters:
     depth: Optional[Numeric] = None
     tenon_hole_offset: Numeric = Rational(0)
     peg_position_space: Tuple[PegPositionSpace, PegPositionSpace] = (PegPositionSpace.TENON, PegPositionSpace.TENON)
+    peg_orientation: Tuple[PegPositionSpace, Numeric] = (PegPositionSpace.TENON, Rational(0))
 
 
 @dataclass(frozen=True)
