@@ -270,6 +270,7 @@ class Ticket
   DONE-allow pegs to be positioned in either tenon space or mortise space via parameter
     -remind folks like +y direction depends on orientation of timber, not joint angle
   DONE-add peg orientation parameter (mortise/tenon, ccw_rotation_angle) = (tenon, 0)
+
   -fix peg depth calculation...
   -non PAT stuff
     DONE-update peg logic to assume not PAT
@@ -301,6 +302,8 @@ EXEMPLIFY
 
 
 RENAMEIFY
+  -rename measure to locate
+  -then you can use measure to measure between two located features (which we don't actually care about, we need to measure between 2 CSG features...)
   -be consistent about function local/golbal naming
     -local input vars should have the suffix  _local
       -some things must be interpreted locally such as "face" or "distance", these d onot have the suffix

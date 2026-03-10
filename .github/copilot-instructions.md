@@ -104,6 +104,3 @@ In addition (but not required) we may add tests as follows:
 2. test specific parameters on the joint behave as expected
 3. test invalid configurations are caught
 4. test degenerate and edge cases are handled appropriately, e.g. tenon length of 0
-
-
-
