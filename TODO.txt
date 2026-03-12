@@ -256,6 +256,7 @@ class Ticket
 -document example/patternbook stuff
 -start viewer I guess?
 -after viewer, you should integrate patternbook into viewer
+-update agenti nsturction
 
 -update morties and tenon to support
   DONE-do cropping on angled mortise and tenon joints
