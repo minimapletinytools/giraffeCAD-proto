@@ -20,79 +20,42 @@ from giraffe import *
   inches(3, 2)            # 3/2 inches = 1.5"
   feet(Rational(7, 2))    # 3.5 feet
   ```
+- Use `mm()`, `cm()` and `m()` for metric
+- Use `degrees()` and `radians()` for angles
 - Use `Matrix([...])` for vectors, always with `Rational` or `Integer` values.
+
+## Philosophy
+
+TODO point to docs
 
 ## Creating Timbers
 
-Use `timber_from_directions` or `create_axis_aligned_timber`:
-```python
-post = timber_from_directions(
-    length=feet(2),
-    size=Matrix([inches(4), inches(4)]),
-    bottom_position=create_v3(0, 0, 0),
-    length_direction=create_v3(0, 0, 1),   # +Z = up
-    width_direction=create_v3(1, 0, 0),    # +X = right face
-    ticket="post"
-)
-```
+Timbers for a typical structure are usually defined 
 
-Timber axes:
-- **Z** = length direction (bottom → top)
-- **+X** = `TimberFace.RIGHT`
-- **+Y** = `TimberFace.FRONT`
+- first create a `Footprint` for the footprint of the structure.
+- use methods in `footprint.py` to define timbers on the footprint
+    - ... TODO
+- use methods in `construction.py` to define remaining timbers
+    - ... TODO
+    - `create_axis_aligned_timber` for timbers aligned to cartesian axis
+    - `timber_from_directions` for arbitrarily aligned timbers
 
-## Arranging Joints
-
-Use `ButtJointTimberArrangement` to describe which timber has the tenon (`butt_timber`) and which has the mortise (`receiving_timber`):
-```python
-arrangement = ButtJointTimberArrangement(
-    butt_timber=post,
-    receiving_timber=beam,
-    butt_timber_end=TimberReferenceEnd.TOP,
-    front_face_on_butt_timber=TimberLongFace.FRONT,  # required when using pegs
-)
-```
+TODO point to example
 
 ## Cutting Joints
 
-Prefer the `_on_FAT` (face-aligned and orthogonal) or `_on_PAT` (plane-aligned) variants when timbers are axis-aligned:
-```python
-joint = cut_mortise_and_tenon_joint_on_FAT(
-    arrangement=arrangement,
-    tenon_size=Matrix([inches(2), inches(2)]),
-    tenon_length=inches(3),
-    mortise_depth=inches(7, 2),
-)
-```
+TODO 
 
-## Pegs
+TODO always use joints for basic_joints which provide sensible default parameters if no specifics about the joint were provided
 
-```python
-peg_params = SimplePegParameters(
-    shape=PegShape.SQUARE,
-    peg_positions=[(inches(1), Rational(0))],  # (distance_from_shoulder, lateral_offset)
-    size=inches(5, 8),
-    depth=inches(4),           # None = full through-mortise
-    tenon_hole_offset=inches(1, 16),  # draw-bore offset, typically 1–2mm
-)
-```
-
-`peg.stickout_length` = `depth / 2` by default.
-
-## Combining into a Frame
+## Combining everything into a Frame
 
 Use `Frame.from_joints` to merge cuts on shared timbers across multiple joints:
 ```python
 frame = Frame.from_joints([joint1, joint2, joint3], name="my_frame")
 ```
 
-## PatternBook (for rendering / export)
+TODO how to actually return the frame for rendering (not through a pattern)
 
-Wrap designs in a `PatternBook` for rendering support:
-```python
-book = PatternBook(patterns=[
-    (PatternMetadata("my_frame", ["group", "variant"], "frame"),
-     make_pattern_from_frame(my_frame_fn)),
-])
-frame = book.raise_pattern_group("group", separation_distance=inches(72))
-```
+## Creating new Patterns
+

@@ -16,6 +16,8 @@
 
 -debug console lol
 
+-doc tab support?
+
 -cute backgrounds
   -creamy gradient background
   -simple drop shadows? (you can fake this one)
@@ -45,10 +47,10 @@
 -save as STL or STEP or whatever button
 
 
--doc setup stuff
-  -patternbook integration 
-  -I guess you should have tab support
-  -doc support?
+-patternbook integration 
+  -patterns are loaded in a hierarchy (horesCoAd < imported libraries < user space)
+  -"try me" button creates a copy of teh pattern script in user space with comments indicating that this is temporar yand ovewriting
+  -"view source" button takes you to github or something? or maybe just makes a copy in user space or whatever
 
 -bonus feature highlighting
   -clicking on a timber that is in focus highlight sthe featuer on the timber
@@ -253,6 +255,8 @@ class Ticket
 
 -finish mortise and tenon joint non angle stuff
 -clean up docs on one joint function
+-rename joint examples to patterns
+  -there can still be a examples folder in the patterns folder
 -document example/patternbook stuff
 -start viewer I guess?
 -after viewer, you should integrate patternbook into viewer
@@ -275,7 +279,7 @@ class Ticket
   -non PAT stuff
     DONE-update peg logic to assume not PAT
     -mortise hole logic needs to be updated too
-  -TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
+  DONE-TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
     -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
     -is this really whaty ou want? and how does this intercact with positing in mortise/tenon space I guess this is a generalized version of that...
 
