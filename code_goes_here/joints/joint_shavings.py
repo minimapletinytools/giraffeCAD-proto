@@ -19,8 +19,20 @@ from sympy import Abs, Rational
 
 def orientation_pointing_towards_face_sitting_on_face(towards_face : TimberFace, sitting_face : TimberFace) -> 'Orientation':
     """
-    marking orientations live within a timber's local space and are used to help mark joint features on the timber. They can be anything, but in general they should be chosen such that:
-    for marking_transforms on the surface of the timber the "+y" should point into the timber
+    Returns a marking orientation with +z toward towards_face and +y pointing into the timber from sitting_face.
+
+    Marking transforms use a convention where, for transforms sitting on a timber face,
+    +y points into the timber. This helper builds that orientation from two perpendicular faces.
+
+    Args:
+        towards_face: The face the orientation's +z axis should point toward.
+        sitting_face: The face the orientation is sitting on; its outward normal becomes -y.
+
+    Returns:
+        Orientation with +z pointing toward towards_face and +y pointing into the timber.
+
+    Raises:
+        AssertionError: If towards_face and sitting_face are not perpendicular.
     """
     assert are_vectors_perpendicular(towards_face.get_direction(), sitting_face.get_direction())
     return Orientation.from_z_and_y(towards_face.get_direction(), -sitting_face.get_direction())

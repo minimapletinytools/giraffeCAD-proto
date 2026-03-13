@@ -1,8 +1,10 @@
 """
 GiraffeCAD - Basic joint construction functions
-Contains cut_basic_* wrapper functions that forward to the original joint functions.
 
-These are temporary wrappers that will be simplified later.
+Convenience wrappers (cut_basic_*) that call the underlying joint functions with
+sensible default sizing. Use these for quick prototyping; for full control over
+dimensions and parameters, call the underlying cut_plain_*, cut_mortise_and_tenon_*,
+or cut_lapped_* functions directly.
 """
 
 from typing import Optional, List, Tuple, cast
@@ -34,39 +36,117 @@ from .japanese_joints import (
 # ============================================================================
 
 def cut_basic_miter_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd) -> Joint:
-    """Wrapper for cut_plain_miter_joint."""
+    """
+    Creates a miter joint between two timbers, cutting each end at half the angle between them.
+
+    Convenience wrapper with no additional sizing logic. See `cut_plain_miter_joint` for details.
+
+    Args:
+        timberA: First timber to join.
+        timberA_end: Which end of timberA to cut (TOP or BOTTOM).
+        timberB: Second timber to join.
+        timberB_end: Which end of timberB to cut (TOP or BOTTOM).
+
+    Returns:
+        Joint object containing the two CutTimbers.
+    """
     assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
     assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
     return cut_plain_miter_joint(timberA, timberA_end, timberB, timberB_end)
 
 
 def cut_basic_miter_joint_on_face_aligned_timbers(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd) -> Joint:
-    """Wrapper for cut_plain_miter_joint_on_face_aligned_timbers."""
+    """
+    Creates a miter joint between two face-aligned timbers meeting at a 90-degree corner.
+
+    Timbers must be orthogonal. Convenience wrapper; see
+    `cut_plain_miter_joint_on_face_aligned_timbers` for details.
+
+    Args:
+        timberA: First timber to join.
+        timberA_end: Which end of timberA to cut (TOP or BOTTOM).
+        timberB: Second timber to join.
+        timberB_end: Which end of timberB to cut (TOP or BOTTOM).
+
+    Returns:
+        Joint object containing the two CutTimbers.
+    """
     assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
     assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
     return cut_plain_miter_joint_on_face_aligned_timbers(timberA, timberA_end, timberB, timberB_end)
 
 
 def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: TimberLike, butt_timber: TimberLike, butt_end: TimberReferenceEnd) -> Joint:
-    """Wrapper for cut_plain_butt_joint_on_face_aligned_timbers."""
+    """
+    Creates a butt joint where the butt timber is cut flush with the receiving timber's face.
+
+    The receiving timber is not cut. Convenience wrapper; see
+    `cut_plain_butt_joint_on_face_aligned_timbers` for details.
+
+    Args:
+        receiving_timber: The timber that receives the butt (remains uncut).
+        butt_timber: The timber whose end is cut flush.
+        butt_end: Which end of the butt timber to cut (TOP or BOTTOM).
+
+    Returns:
+        Joint object containing the cut butt timber and uncut receiving timber.
+    """
     assert isinstance(butt_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(butt_end).__name__}"
     return cut_plain_butt_joint_on_face_aligned_timbers(receiving_timber, butt_timber, butt_end)
 
 
 def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd) -> Joint:
-    """Wrapper for cut_plain_butt_splice_joint_on_aligned_timbers."""
+    """
+    Creates a plain butt splice joint between two parallel timbers cut at a shared plane.
+
+    Convenience wrapper with no additional sizing logic. See
+    `cut_plain_butt_splice_joint_on_aligned_timbers` for details.
+
+    Args:
+        timberA: First timber to join.
+        timberA_end: Which end of timberA to cut (TOP or BOTTOM).
+        timberB: Second timber to join.
+        timberB_end: Which end of timberB to cut (TOP or BOTTOM).
+
+    Returns:
+        Joint object containing the two CutTimbers.
+    """
     assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
     assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
     return cut_plain_butt_splice_joint_on_aligned_timbers(timberA, timberA_end, timberB, timberB_end)
 
 
 def cut_basic_cross_lap_joint(timberA: TimberLike, timberB: TimberLike) -> Joint:
-    """Wrapper for cut_plain_cross_lap_joint."""
+    """
+    Creates a cross-lap joint between two intersecting timbers with equal material removal.
+
+    Material is split equally (half from each timber). Convenience wrapper; see
+    `cut_plain_cross_lap_joint` for full control over cut faces and split ratio.
+
+    Args:
+        timberA: First timber to join.
+        timberB: Second timber to join.
+
+    Returns:
+        Joint object containing the two CutTimbers.
+    """
     return cut_plain_cross_lap_joint(timberA, timberB)
 
 
 def cut_basic_house_joint(housing_timber: TimberLike, housed_timber: TimberLike) -> Joint:
-    """Wrapper for cut_plain_house_joint."""
+    """
+    Creates a house (dado/housing) joint where the housing timber is notched to receive the housed timber.
+
+    Only the housing timber is cut; the housed timber is unaffected. Convenience wrapper; see
+    `cut_plain_house_joint` for details.
+
+    Args:
+        housing_timber: The timber that will be notched (gets the groove).
+        housed_timber: The timber that fits into the groove (remains uncut).
+
+    Returns:
+        Joint object containing both timbers.
+    """
     return cut_plain_house_joint(housing_timber, housed_timber)
 
 
@@ -77,7 +157,22 @@ def cut_basic_splice_lap_joint_on_aligned_timbers(
     bottom_lap_timber_end: TimberReferenceEnd,
     top_lap_timber_face: TimberFace
 ) -> Joint:
-    """Wrapper for cut_plain_splice_lap_joint_on_aligned_timbers."""
+    """
+    Creates a splice lap joint between two parallel timbers with default half-lap sizing.
+
+    The lap length and shoulder position are derived from the top lap timber's face dimension.
+    For full control over dimensions, use `cut_plain_splice_lap_joint_on_aligned_timbers` directly.
+
+    Args:
+        top_lap_timber: The timber with material removed from the specified face.
+        top_lap_timber_end: Which end of the top lap timber is joined (TOP or BOTTOM).
+        bottom_lap_timber: The timber with material removed from the opposite face.
+        bottom_lap_timber_end: Which end of the bottom lap timber is joined (TOP or BOTTOM).
+        top_lap_timber_face: Face of the top lap timber to remove material from.
+
+    Returns:
+        Joint object containing the two CutTimbers with lap cuts.
+    """
     assert isinstance(top_lap_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(top_lap_timber_end).__name__}"
     assert isinstance(bottom_lap_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(bottom_lap_timber_end).__name__}"
     lap_length = top_lap_timber.get_size_in_face_normal_axis(top_lap_timber_face)
@@ -102,7 +197,22 @@ def cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers(
     tenon_end: TimberReferenceEnd,
     use_peg: bool = False,
 ) -> Joint:
-    """Wrapper for cut_mortise_and_tenon_joint_on_FAT with ButtJointTimberArrangement."""
+    """
+    Creates a mortise and tenon joint between two face-aligned orthogonal timbers, with automatic sizing.
+
+    Tenon dimensions are derived automatically: 3/4 of the mortise timber's relevant depth for
+    the height and 1/3 of its face width for the width. Tenon length equals the full width of the
+    mortise timber. For full control over sizing, use `cut_mortise_and_tenon_joint_on_FAT` directly.
+
+    Args:
+        tenon_timber: The timber that will receive the tenon cut.
+        mortise_timber: The timber that will receive the mortise hole.
+        tenon_end: Which end of the tenon timber gets the tenon (TOP or BOTTOM).
+        use_peg: If True, adds a square peg through the joint for draw-bore tightening.
+
+    Returns:
+        Joint object containing the two CutTimbers and, if use_peg=True, a Peg accessory.
+    """
     assert isinstance(tenon_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(tenon_end).__name__}"
     # this is the "side" of the joint
     joint_side_mortise_timber_face = mortise_timber.get_closest_oriented_face_from_global_direction(cross_product(mortise_timber.get_length_direction_global(), tenon_timber.get_face_direction_global(tenon_end.to.face())))
@@ -164,7 +274,22 @@ def cut_basic_lapped_gooseneck_joint(
     receiving_timber_end: TimberReferenceEnd,
     gooseneck_timber_face: TimberLongFace,
 ) -> Joint:
-    """Wrapper for cut_lapped_gooseneck_joint."""
+    """
+    Creates a lapped gooseneck splice joint (腰掛鎌継ぎ / Koshikake Kama Tsugi) with default proportions.
+
+    Gooseneck dimensions scale with the timber width: length = 2×width, small_width = 1/4×width,
+    large_width = 1/2×width, head_length = 1/2×width. For full control, use
+    `cut_lapped_gooseneck_joint` directly.
+
+    Args:
+        gooseneck_timber: The timber with the gooseneck feature cut into it.
+        receiving_timber: The timber that receives the gooseneck.
+        receiving_timber_end: Which end of the receiving timber is joined.
+        gooseneck_timber_face: The face on the gooseneck timber where the profile is visible.
+
+    Returns:
+        Joint object containing the two CutTimbers with gooseneck cuts.
+    """
     assert isinstance(receiving_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(receiving_timber_end).__name__}"
     assert isinstance(gooseneck_timber_face, TimberLongFace), f"expected TimberLongFace, got {type(gooseneck_timber_face).__name__}"
     width = gooseneck_timber.get_size_in_face_normal_axis(gooseneck_timber_face.rotate_right())
@@ -195,7 +320,27 @@ def cut_basic_housed_dovetail_butt_joint(
     dovetail_small_width: Numeric,
     dovetail_large_width: Numeric,
 ) -> Joint:
-    """Wrapper for cut_housed_dovetail_butt_joint."""
+    """
+    Creates a housed dovetail butt joint (蟻継ぎ / Ari Tsugi) with default proportions.
+
+    Dovetail dimensions scale with the timber width regardless of the values passed for
+    dovetail_length, dovetail_small_width, and dovetail_large_width — those parameters are
+    overridden internally (present for API compatibility). For full control, use
+    `cut_housed_dovetail_butt_joint` directly.
+
+    Args:
+        dovetail_timber: The timber with the dovetail tenon.
+        receiving_timber: The timber that receives the dovetail socket.
+        dovetail_timber_end: Which end of the dovetail timber is cut.
+        dovetail_timber_face: The face on the dovetail timber where the profile is visible.
+        receiving_timber_shoulder_inset: Distance to inset the shoulder notch on the receiving timber.
+        dovetail_length: Overridden internally by default proportions.
+        dovetail_small_width: Overridden internally by default proportions.
+        dovetail_large_width: Overridden internally by default proportions.
+
+    Returns:
+        Joint object containing the two CutTimbers with dovetail cuts.
+    """
     assert isinstance(dovetail_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(dovetail_timber_end).__name__}"
     assert isinstance(dovetail_timber_face, TimberLongFace), f"expected TimberLongFace, got {type(dovetail_timber_face).__name__}"
     width = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face.rotate_right())
@@ -222,7 +367,23 @@ def cut_basic_mitered_and_keyed_lap_joint(
     timberB: TimberLike,
     timberB_end: TimberReferenceEnd,
 ) -> Joint:
-    """Wrapper for cut_mitered_and_keyed_lap_joint."""
+    """
+    Creates a mitered and keyed lap joint (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi) with default proportions.
+
+    Combines a miter cut with interlocking finger laps on the inside of the corner for
+    mechanical strength. All lap and key dimensions are auto-calculated. For full control,
+    use `cut_mitered_and_keyed_lap_joint` directly.
+
+    Args:
+        timberA: First timber to join.
+        timberA_end: Which end of timberA to cut.
+        timberA_reference_miter_face: The long face on timberA that defines the miter plane.
+        timberB: Second timber to join.
+        timberB_end: Which end of timberB to cut.
+
+    Returns:
+        Joint object containing the two CutTimbers with miter and finger cuts.
+    """
     assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
     assert isinstance(timberA_reference_miter_face, TimberLongFace), f"expected TimberLongFace, got {type(timberA_reference_miter_face).__name__}"
     assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"

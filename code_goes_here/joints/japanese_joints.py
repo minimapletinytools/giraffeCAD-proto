@@ -23,7 +23,20 @@ CSGUnion = SolidUnion
 # see diagram below
 def draw_gooseneck_polygon_NONCONVEX(length: Numeric, small_width: Numeric, large_width: Numeric, head_length: Numeric) -> List[V2]:
     """
-    Draw the gooseneck shape. 
+    Returns the non-convex gooseneck profile as a single polygon (for reference/visualization).
+
+    The gooseneck shape has a narrow neck that widens into a trapezoidal head. This polygon
+    is non-convex and cannot be used directly with chop_profile_on_timber_face. Use
+    draw_gooseneck_polygon_CONVEX (aliased as draw_gooseneck_polygon) for actual cutting.
+
+    Args:
+        length: Total length of the gooseneck shape along the profile Y-axis.
+        small_width: Width of the neck (the narrow portion).
+        large_width: Width of the head (the wide trapezoid base; must be > small_width).
+        head_length: Length of the trapezoidal head portion.
+
+    Returns:
+        List of 2D points forming the non-convex gooseneck polygon (counter-clockwise).
     """
     return [
             Matrix([small_width/2, 0]),
@@ -39,11 +52,20 @@ def draw_gooseneck_polygon_NONCONVEX(length: Numeric, small_width: Numeric, larg
 # see diagram below
 def draw_gooseneck_polygon_CONVEX(length: Numeric, small_width: Numeric, large_width: Numeric, head_length: Numeric) -> List[List[V2]]:
     """
-    Draw the gooseneck shape as multiple convex polygons.
-    
-    Returns a list of convex polygons that together form the gooseneck shape.
-    This can be used with chop_profile_on_timber_face which accepts List[List[V2]]
-    for creating non-convex profiles via union of convex shapes.
+    Returns the gooseneck profile decomposed into convex polygons for use with chop_profile_on_timber_face.
+
+    The non-convex gooseneck shape is split into two convex polygons — a neck rectangle and
+    a head trapezoid — whose union gives the full gooseneck. This is the format required by
+    chop_profile_on_timber_face (List[List[V2]]).
+
+    Args:
+        length: Total length of the gooseneck shape along the profile Y-axis.
+        small_width: Width of the neck (the narrow portion).
+        large_width: Width of the head (the wide trapezoid base; must be > small_width).
+        head_length: Length of the trapezoidal head portion.
+
+    Returns:
+        List of two convex polygon point lists: [neck_rectangle, head_trapezoid].
     """
     # Decompose the gooseneck into 2 convex polygons
     # Center rectangle and head trapezoid
@@ -681,8 +703,10 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
         lap_start_distance_from_reference_miter_face: Distance from miter face to first lap (optional)
         distance_between_lap_and_outside: Inset distance from outer face (optional)
         num_laps: Number of interlocking laps/fingers (minimum 2)
-        key_width: Not implemented yet (reserved for future key feature)
-        key_thickness: Not implemented yet (reserved for future key feature)
+        key_width: Width of each key measured along the diagonal direction. If None,
+            defaults to lap_thickness.
+        key_thickness: Thickness of each key (the narrow dimension). If None,
+            defaults to lap_thickness / 3.
     
     Returns:
         Joint object containing the two CutTimbers with miter and finger cuts applied

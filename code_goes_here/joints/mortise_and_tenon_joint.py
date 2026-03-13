@@ -40,19 +40,19 @@ from .joint_shavings import chop_shoulder_notch_aligned_with_timber
 
 def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(arrangement: ButtJointTimberArrangement, distance_from_centerline: Numeric) -> Plane:
     """
-    Measure the shoulder plane of the mortise timber from the centerline towards the tenon timber.
+    Computes the shoulder plane of the mortise timber, offset from its centerline toward the tenon.
 
-    The shoulder plane is perpendicular to the mortise timber length axis and
-    offset from the mortise centerline in the cross-section direction toward
-    the tenon timber centerline.
-
-    The returned Plane's point lies at the intersection of the tenon centerline
-    with the plane (offset by distance_from_centerline from the mortise centerline).
+    The shoulder plane is perpendicular to the mortise timber's length axis. Its reference
+    point is at the intersection of the tenon centerline with the offset plane.
 
     Args:
-        arrangement: Butt joint arrangement (receiving_timber = mortise, butt_timber = tenon)
-        distance_from_centerline: Signed offset from the mortise centerline toward
-            the tenon. 0 = plane through the mortise centerline. Positive = toward tenon.
+        arrangement: Butt joint arrangement (receiving_timber = mortise, butt_timber = tenon).
+        distance_from_centerline: Signed offset from the mortise centerline toward the tenon.
+            0 = plane through the mortise centerline. Positive = toward tenon.
+
+    Returns:
+        Plane perpendicular to the mortise length axis, offset by distance_from_centerline
+        from the mortise centerline toward the tenon, with its center at the reference point.
     """
     mortise_timber = arrangement.receiving_timber
     tenon_timber = arrangement.butt_timber
@@ -317,6 +317,7 @@ def compute_peg_positions(
 
 
 class PegPositionSpace(Enum):
+    """Which timber's coordinate space to use when interpreting peg positions and orientations."""
     TENON = 1
     MORTISE = 2
 
@@ -359,7 +360,18 @@ class SimplePegParameters:
 
 @dataclass(frozen=True)
 class PegPositionResult:
-    """Result of compute_peg_positions for a single peg, all in global space."""
+    """
+    Computed geometry for a single peg, all positions and orientations in global space.
+
+    Attributes:
+        tenon_face_position_global: Center of the peg hole on the tenon face (no draw-bore offset).
+        tenon_face_position_with_offset_global: Center of the peg hole on the tenon face,
+            shifted toward the shoulder by tenon_hole_offset for draw-bore tightening.
+        mortise_entry_position_global: Center of the peg hole on the mortise entry face.
+        orientation_global: Orientation of the peg (Z-axis = drill direction into the timber).
+        peg_depth: Depth of the peg hole (full chord through the mortise, or explicit depth).
+        stickout_length: Length the peg protrudes beyond the mortise entry face.
+    """
     tenon_face_position_global: V3
     tenon_face_position_with_offset_global: V3
     mortise_entry_position_global: V3
@@ -413,25 +425,37 @@ def cut_mortise_and_tenon_joint(
     crop_tenon_to_mortise_orientation_on_angled_joints: bool = False,
 ) -> Joint:
     """
-    Generic mortise and tenon joint creation function with support for various options.
-    
+    Creates a mortise and tenon joint with full control over all parameters.
+
+    This is the generic implementation used by all specialized variants
+    (`cut_mortise_and_tenon_joint_on_PAT`, `cut_mortise_and_tenon_joint_on_FAT`).
+    Prefer those variants for common cases.
+
     Args:
-        arrangement: Butt joint timber arrangement (butt_timber = tenon, receiving_timber = mortise)
-        tenon_size: Cross-sectional size of tenon (X, Y) in tenon timber's local space
-        tenon_length: Length of tenon extending from mortise face. you may need to set this a little longer than you think for angled joints.
-        mortise_depth: Depth of mortise (None = through mortise) this is measured different depending on the value of crop_tenon_to_mortise_orientation_on_angled_joints
+        arrangement: Butt joint timber arrangement (butt_timber = tenon, receiving_timber = mortise).
+        tenon_size: Cross-sectional size of the tenon (X, Y) in the tenon timber's local space.
+        tenon_length: Length of the tenon extending from the mortise entry face. For angled
+            joints, set this slightly longer than expected to ensure full penetration.
+        mortise_depth: Depth of the mortise (None = through mortise). Measurement differs
+            depending on crop_tenon_to_mortise_orientation_on_angled_joints.
         mortise_shoulder_distance_from_centerline: Signed distance from the mortise
             centerline to the shoulder plane, measured within the mortise cross-section
             in the direction toward the tenon centerline. 0 = shoulder at the mortise
             centerline. Positive pushes the shoulder toward the tenon.
-        tenon_position: Position of tenon in local coordinates of tenon timber (0,0 = centered on centerline)
-        wedge_parameters: Optional wedge configuration (not yet supported)
-        peg_parameters: Optional peg configuration. TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
+        tenon_position: Offset of the tenon center from the timber centerline in the tenon's
+            local cross-section. (0, 0) = centered on the centerline.
+        wedge_parameters: Wedge configuration (not currently used).
+        peg_parameters: Peg configuration for draw-bore tightening (optional). Note: peg
+            distance_from_shoulder is measured along the tenon axis, while
+            distance_from_centerline is measured along the mortise axis — this makes
+            positioning pegs on angled braces easier.
+        crop_tenon_to_mortise_orientation_on_angled_joints: If True, the tenon is cropped
+            so its depth along the mortise face axis equals mortise_depth and its tip is
+            trimmed to the mortise hole boundary. If False, mortise depth is measured along
+            the tenon axis from the shoulder.
 
-        crop_tenon_to_mortise_orientation_on_angled_joints: if true, "crops" the tenon so it's depth in the mortise face axis is equal to mortise_depth, and the pointy end of the tenon is cropped to the mortise hole right where the tenon edge and joint shoulder meet. If false, the mortise hole is sized to the tenon with its depth in the tenon axis direction measured from the shoulder is mortise_depth.
-        
     Returns:
-        Joint object containing the two CutTimbers and any accessories (in global space)
+        Joint object containing the two CutTimbers and any accessories, all in global space.
     """
     tenon_timber = arrangement.butt_timber
     mortise_timber = arrangement.receiving_timber
@@ -743,6 +767,39 @@ def cut_mortise_and_tenon_joint_on_PAT(
     peg_parameters: Optional[SimplePegParameters] = None,
     crop_tenon_to_mortise_orientation_on_angled_joints = False,
 ) -> Joint:
+    """
+    Creates a mortise and tenon joint for plane-aligned timbers (PAT).
+
+    PAT (plane-aligned timbers) means both timbers lie in the same plane. The timbers may
+    meet at any angle — use `cut_mortise_and_tenon_joint_on_FAT` for the standard 90-degree
+    case.
+
+    Like the generic `cut_mortise_and_tenon_joint`, but accepts `mortise_shoulder_inset`
+    measured from the mortise entry face surface (the intuitive user-facing parameter),
+    converting it internally to `mortise_shoulder_distance_from_centerline`.
+
+    Args:
+        arrangement: Butt joint timber arrangement (butt_timber = tenon, receiving_timber = mortise).
+            Must satisfy arrangement.check_plane_aligned().
+        tenon_size: Cross-sectional size of the tenon (X, Y) in the tenon timber's local space.
+        tenon_length: Length of the tenon extending from the mortise entry face. For angled
+            joints, set this slightly longer than expected.
+        mortise_depth: Depth of the mortise (None = through mortise).
+        tenon_position: Offset of the tenon center from the timber centerline in the tenon's
+            local cross-section. (0, 0) = centered on the centerline.
+        mortise_shoulder_inset: Distance from the mortise entry face to the shoulder plane,
+            measured perpendicular to the face inward. 0 = shoulder flush with the entry face.
+        wedge_parameters: Wedge configuration (not currently used).
+        peg_parameters: Peg configuration for draw-bore tightening (optional).
+        crop_tenon_to_mortise_orientation_on_angled_joints: If True, the tenon tip is cropped
+            to the mortise hole boundary. If False, mortise depth is measured along the tenon axis.
+
+    Returns:
+        Joint object containing the two CutTimbers and any accessories.
+
+    Raises:
+        CheckFailure: If the arrangement is not plane-aligned.
+    """
 
     require_check(arrangement.check_plane_aligned())
 
@@ -788,6 +845,36 @@ def cut_mortise_and_tenon_joint_on_FAT(
     wedge_parameters: Optional[WedgeParameters] = None,
     peg_parameters: Optional[SimplePegParameters] = None,
 ) -> Joint:
+    """
+    Creates a mortise and tenon joint for face-aligned orthogonal timbers (FAT).
+
+    FAT (face-aligned and orthogonal timbers) means both timbers are face-aligned
+    (orientations related by 90-degree rotations) and their length axes are perpendicular.
+    This is the standard configuration for timber-frame T-joints and corners. For angled
+    joints in the same plane, use `cut_mortise_and_tenon_joint_on_PAT`.
+
+    This is a stricter variant of `cut_mortise_and_tenon_joint_on_PAT` that enforces
+    perpendicularity and does not support crop_tenon_to_mortise_orientation_on_angled_joints.
+
+    Args:
+        arrangement: Butt joint timber arrangement (butt_timber = tenon, receiving_timber = mortise).
+            Must satisfy arrangement.check_face_aligned_and_orthogonal().
+        tenon_size: Cross-sectional size of the tenon (X, Y) in the tenon timber's local space.
+        tenon_length: Length of the tenon extending from the mortise entry face.
+        mortise_depth: Depth of the mortise (None = through mortise).
+        tenon_position: Offset of the tenon center from the timber centerline in the tenon's
+            local cross-section. (0, 0) = centered on the centerline.
+        mortise_shoulder_inset: Distance from the mortise entry face to the shoulder plane,
+            measured perpendicular to the face inward. 0 = shoulder flush with the entry face.
+        wedge_parameters: Wedge configuration (not currently used).
+        peg_parameters: Peg configuration for draw-bore tightening (optional).
+
+    Returns:
+        Joint object containing the two CutTimbers and any accessories.
+
+    Raises:
+        CheckFailure: If the arrangement is not face-aligned and orthogonal.
+    """
 
     require_check(arrangement.check_face_aligned_and_orthogonal())
 

@@ -17,19 +17,22 @@ from code_goes_here.measuring import measure_top_center_position, measure_bottom
 
 def cut_plain_miter_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd) -> Joint:
     """
-    Creates a basic miter joint between two timbers such that the 2 ends meet and each has a miter cut at half the angle between the two timbers.
-    
+    Creates a miter joint between two timbers, cutting each end at half the angle between them.
+
+    Both ends are cut by the same bisecting plane so they meet flush at the corner.
+    Works for any non-parallel angle.
+
     Args:
-        timberA: First timber to join
-        timberA_end: Which end of timberA to cut (TOP or BOTTOM)
-        timberB: Second timber to join
-        timberB_end: Which end of timberB to cut (TOP or BOTTOM)
-        
+        timberA: First timber to join.
+        timberA_end: Which end of timberA to cut (TOP or BOTTOM).
+        timberB: Second timber to join.
+        timberB_end: Which end of timberB to cut (TOP or BOTTOM).
+
     Returns:
-        Joint object containing the two CutTimbers
-        
+        Joint object containing the two CutTimbers.
+
     Raises:
-        ValueError: If the timbers are parallel or if they don't intersect
+        ValueError: If the timbers are parallel or the intersection is degenerate.
     """
     assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
     assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
@@ -180,7 +183,22 @@ def cut_plain_miter_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, 
 
 def cut_plain_miter_joint_on_face_aligned_timbers(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd) -> Joint:
     """
-    Creates a plain miter joint between two timbers such that the 2 ends meet at a 90 degree angle miter corner.
+    Creates a miter joint between two face-aligned timbers meeting at a 90-degree corner.
+
+    Like `cut_plain_miter_joint`, but requires the timbers to be orthogonal (perpendicular
+    length axes). This is the common case for timber-frame corners.
+
+    Args:
+        timberA: First timber to join.
+        timberA_end: Which end of timberA to cut (TOP or BOTTOM).
+        timberB: Second timber to join.
+        timberB_end: Which end of timberB to cut (TOP or BOTTOM).
+
+    Returns:
+        Joint object containing the two CutTimbers.
+
+    Raises:
+        AssertionError: If the timbers are not orthogonal.
     """
     # Assert that the timber length axes are perpendicular (90-degree corner)
     assert are_timbers_orthogonal(timberA, timberB), \
@@ -190,19 +208,24 @@ def cut_plain_miter_joint_on_face_aligned_timbers(timberA: TimberLike, timberA_e
 
 
 def cut_plain_butt_joint_on_face_aligned_timbers(receiving_timber: TimberLike, butt_timber: TimberLike, butt_end: TimberReferenceEnd) -> Joint:
-    assert isinstance(butt_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(butt_end).__name__}"
     """
-    Creates a plain butt joint between two timbers. The butt timber is cut flush with the face 
-    of the receiving timber. The receiving timber has no cuts.
-    
+    Creates a butt joint where the butt timber is cut flush with the face of the receiving timber.
+
+    The receiving timber is not cut. The butt timber's end is trimmed to sit flat against the
+    receiving timber's face. Timbers must be face-aligned and non-parallel.
+
     Args:
-        receiving_timber: The timber that receives the butt (remains uncut)
-        butt_timber: The timber whose end is cut to meet the receiving timber's face
-        butt_end: Which end of the butt timber to cut (TOP or BOTTOM)
-        
+        receiving_timber: The timber that receives the butt (remains uncut).
+        butt_timber: The timber whose end is cut to meet the receiving timber's face.
+        butt_end: Which end of the butt timber to cut (TOP or BOTTOM).
+
     Returns:
-        Joint object containing the cut butt timber and uncut receiving timber
+        Joint object containing the cut butt timber and uncut receiving timber.
+
+    Raises:
+        AssertionError: If the timbers are not face-aligned or are parallel.
     """
+    assert isinstance(butt_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(butt_end).__name__}"
     assert are_timbers_face_aligned(receiving_timber, butt_timber), \
         "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
     
@@ -258,23 +281,24 @@ def cut_plain_butt_joint_on_face_aligned_timbers(receiving_timber: TimberLike, b
 
 def cut_plain_butt_splice_joint_on_aligned_timbers(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd, splice_point: Optional[V3] = None) -> Joint:
     """
-    Creates a plain splice joint between two timbers with parallel (aligned) length axes.
-    Both timbers are cut at the splice plane, creating a butt joint connection.
+    Creates a plain butt splice joint between two parallel timbers cut at a shared plane.
+
+    Both timbers are cut at the splice plane, creating a flush end-to-end connection.
 
     Args:
-        timberA: First timber to join
-        timberA_end: Which end of timberA to cut (TOP or BOTTOM)
-        timberB: Second timber to join
-        timberB_end: Which end of timberB to cut (TOP or BOTTOM)
-        splice_point: Optional point where the splice occurs. If not provided, 
-                     calculated as the midpoint between the two timber ends.
-                     If provided but not on timberA's centerline, it will be projected onto it.
+        timberA: First timber to join.
+        timberA_end: Which end of timberA to cut (TOP or BOTTOM).
+        timberB: Second timber to join.
+        timberB_end: Which end of timberB to cut (TOP or BOTTOM).
+        splice_point: Point where the splice occurs. If not provided, the midpoint between
+            the two timber ends is used. If provided but off the centerline, it is projected
+            onto timberA's centerline.
 
     Returns:
-        Joint object containing the two CutTimbers
+        Joint object containing the two CutTimbers.
 
     Raises:
-        ValueError: If the timbers are not parallel (aligned)
+        ValueError: If the timbers do not have parallel length axes.
     """
     assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
     assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
@@ -381,22 +405,27 @@ def cut_plain_butt_splice_joint_on_aligned_timbers(timberA: TimberLike, timberA_
 
 def cut_plain_cross_lap_joint(timberA: TimberLike, timberB: TimberLike, timberA_cut_face: Optional[TimberFace] = None, timberB_cut_face: Optional[TimberFace] = None, cut_ratio: Numeric = Rational(1, 2)) -> Joint:
     """
-    Creates a plain cross lap joint between two timbers.
+    Creates a cross-lap joint between two intersecting timbers.
+
+    Each timber has a notch cut into it so they interlock at their crossing point,
+    maintaining a flush outer face on both sides. By default material removal is split
+    equally (half from each timber).
 
     Args:
-        timberA: First timber to join
-        timberB: Second timber to join
-        timberA_cut_face: Optional face of timberA to cut the lap from. If not provided, the face is chosen automatically to minimize the amount of material removed.
-        timberB_cut_face: Optional face of timberB to cut the lap from. If not provided, the face is chosen automatically to minimize the amount of material removed.
-        cut_ratio: ratio [0,1] of timberA : timberB to cut the lap from. 
-            example: if cut_ratio is 1, then timberA is cut entirely such that timberB fits into the cut and timberB is not cut at all.
-        
+        timberA: First timber to join.
+        timberB: Second timber to join.
+        timberA_cut_face: Face of timberA to remove material from. If None, chosen
+            automatically to minimize material removed.
+        timberB_cut_face: Face of timberB to remove material from. If None, chosen
+            automatically as the face opposing timberA's cut face.
+        cut_ratio: Fraction [0, 1] controlling how much is removed from each timber.
+            0 = only timberB is cut; 1 = only timberA is cut; 0.5 = equal split (default).
 
     Returns:
-        Joint object containing the two CutTimbers
+        Joint object containing the two CutTimbers.
 
     Raises:
-        AssertionError: If timbers don't intersect, are parallel, or face normals are invalid
+        AssertionError: If the timbers don't intersect, are parallel, or cut_ratio is out of range.
     """
     from code_goes_here.cutcsg import Difference, RectangularPrism, HalfSpace
     from code_goes_here.rule import safe_dot_product, safe_transform_vector, safe_norm
@@ -754,28 +783,22 @@ def _find_closest_face_to_timber(timber: PerfectTimberWithin, other_timber: Perf
 
 def cut_plain_house_joint(housing_timber: TimberLike, housed_timber: TimberLike, housing_timber_cut_face: Optional[TimberFace] = None, housed_timber_cut_face: Optional[TimberFace] = None) -> Joint:
     """
-    Creates a plain housed joint (also called housing joint or dado joint) where the 
-    housing_timber is notched to fit the housed_timber. The housed timber fits completely
-    into a notch cut in the housing timber.
-    
-    This is implemented as a cross lap joint with cut_ratio=1, meaning only the housing
-    timber is cut.
-    
+    Creates a house (dado/housing) joint where the housing timber is notched to receive the housed timber.
+
+    Only the housing timber is cut; the housed timber is not modified. Implemented as a
+    cross-lap joint with cut_ratio=1.
+
     Args:
-        housing_timber: Timber that will receive the housing cut (gets the groove)
-        housed_timber: Timber that will be housed (fits into the groove, remains uncut)
-        housing_timber_cut_face: Optional face of housing timber to cut. If not provided, automatically chosen.
-        housed_timber_cut_face: Optional face of housed timber (for reference). If not provided, automatically chosen.
-        
+        housing_timber: The timber that will be notched (gets the groove).
+        housed_timber: The timber that fits into the groove (remains uncut).
+        housing_timber_cut_face: Face of housing timber to notch. If None, chosen automatically.
+        housed_timber_cut_face: Face of the housed timber (used for reference). If None, chosen automatically.
+
     Returns:
-        Joint object containing both timbers
-        
+        Joint object containing both timbers.
+
     Raises:
-        AssertionError: If timbers don't intersect or are parallel
-        
-    Example:
-        A shelf (housed_timber) fitting into the side of a cabinet (housing_timber).
-        The cabinet side gets a groove cut into it to receive the shelf.
+        AssertionError: If the timbers don't intersect or are parallel.
     """
     # Use cross lap joint with cut_ratio=1 (only cut housing_timber, not housed_timber)
     return cut_plain_cross_lap_joint(
@@ -941,11 +964,10 @@ def cut_plain_splice_lap_joint_on_aligned_timbers(
     lap_depth: Optional[Numeric] = None
 ) -> Joint:
     """
-    Creates a splice lap joint between two timber ends.
-    
-    A splice lap joint connects two timbers end-to-end with interlocking notches,
-    where one timber has material removed from one face and the other has material
-    removed from the opposite face.
+    Creates a splice lap joint between two parallel timber ends with interlocking notches.
+
+    One timber has material removed from the specified face; the other has material
+    removed from the opposite face. Timbers must be parallel and face-aligned.
     
         top_lap_timber_face
         v           |--------| lap_length
@@ -958,26 +980,19 @@ def cut_plain_splice_lap_joint_on_aligned_timbers(
                     ^ top_lap_shoulder_position_from_top_lap_shoulder_timber_end
     
     Args:
-        top_lap_timber: The timber that will have material removed from the specified face
-        top_lap_timber_end: Which end of the top lap timber is being joined (TOP or BOTTOM)
-        bottom_lap_timber: The timber that will have material removed from the opposite face
-        bottom_lap_timber_end: Which end of the bottom lap timber is being joined (TOP or BOTTOM)
-        top_lap_timber_face: Which face of the top lap timber to remove material from
-        lap_length: Length of the lap region along the timber length
-        top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Distance from the timber end to the shoulder (inward)
-        lap_depth: Depth of material to remove (perpendicular to the face). 
-                   If None, defaults to half the timber thickness in the axis perpendicular to top_lap_timber_face
-    
+        top_lap_timber: The timber with material removed from the specified face.
+        top_lap_timber_end: Which end of the top lap timber is being joined (TOP or BOTTOM).
+        bottom_lap_timber: The timber with material removed from the opposite face.
+        bottom_lap_timber_end: Which end of the bottom lap timber is being joined (TOP or BOTTOM).
+        top_lap_timber_face: Which face of the top lap timber to remove material from.
+        lap_length: Length of the lap region along the timber length.
+        top_lap_shoulder_position_from_top_lap_shoulder_timber_end: Distance from the
+            timber end to the shoulder, measured inward along the timber.
+        lap_depth: Depth of material to remove perpendicular to the face. If None,
+            defaults to half the timber thickness in the face normal axis.
+
     Returns:
-        Joint object containing the two CutTimbers with lap cuts
-    
-    Example:
-        >>> # Create a half-lap splice joint
-        >>> joint = cut_plain_splice_lap_joint_on_aligned_timbers(
-        ...     timber_a, TimberReferenceEnd.TOP,
-        ...     timber_b, TimberReferenceEnd.BOTTOM,
-        ...     TimberFace.BOTTOM, lap_length=4, shoulder_pos=1
-        ... )
+        Joint object containing the two CutTimbers with lap cuts.
     """
     assert isinstance(top_lap_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(top_lap_timber_end).__name__}"
     assert isinstance(bottom_lap_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(bottom_lap_timber_end).__name__}"
