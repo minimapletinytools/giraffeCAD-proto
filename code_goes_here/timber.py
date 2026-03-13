@@ -901,6 +901,17 @@ class Board(PerfectTimberWithin):
     Boards are structurally identical to perfect timbers but semantically different.
     They tend to be big in size and stubby in lengeth.
     """
+
+    def get_nominal_size(self) -> V2:
+        """
+        Returns the nominal cross sectional size of the board.
+        
+        For Board, this is the same as the perfect timber within size (the bounding box).
+        
+        Returns:
+            V2 with (width, height)
+        """
+        return self.size
     
     def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
         """
@@ -923,6 +934,34 @@ class Board(PerfectTimberWithin):
         )
     
     # TODO: Add board-specific validation and methods
+
+
+# TODO finish
+@dataclass(frozen=True)
+class FauxTimber(PerfectTimberWithin):
+    """proxy class allowing us to pretend rotated boards are timbers which allows us to use timber joints on boards"""
+
+    board: Board
+    
+    # init from a Board
+    @classmethod
+    def from_board(cls, board: Board, map_top_to : TimberFace = TimberFace.TOP, map_right_to: TimberFace = TimberFace.RIGHT) -> 'FauxTimber':
+        #TODO create a PerfectTimberWithin from the reoriented board
+        pass
+
+    def get_nominal_size(self) -> V2:
+        #TODO return the nominal size of the faux timber which should be the same as the original board
+        return self.board.get_nominal_size()
+        pass
+
+    def reorient_csg(self, csg: CutCSG) -> CutCSG:
+        #TODO reorient the csg from the faux timber's orientation to the board's orientation
+        pass
+
+    def reconstruct_joint(self, joint: Joint) -> Joint:
+        #TODO reconstruct a joint by reorienting all the cut CSGs and replacing the FauxTimber with the original Board
+        pass
+        
 
 
 # TODO consider renaming to Log LOL

@@ -271,7 +271,6 @@ class Ticket
   DONE-allow pegs to be positioned in either tenon space or mortise space via parameter
     -remind folks like +y direction depends on orientation of timber, not joint angle
   DONE-add peg orientation parameter (mortise/tenon, ccw_rotation_angle) = (tenon, 0)
-
   -fix peg depth calculation...
   -non PAT stuff
     DONE-update peg logic to assume not PAT
@@ -288,6 +287,17 @@ class Ticket
   -just copy code from basic_mortise_and_tenon and update tha functino to use the helper
   -you might want to make a sizing helpre class for this to simplify the args?.... idk...
   -prompt address @TODO.txt (202-204)  in the helper, first assert that the 2 timbers are are_timbers_plane_aligned. next assert that the 2 timbers are not parallel. then proceed with the logic @basic_joints.py (97-113). put this helper function in mortise_and_tenon_joint.py
+
+
+-new joints (need wedge accessory)
+  -nuki_end_joint
+  -nuki_cross_joint
+  -wedged_half_dovetail_mortise_and_tenon
+
+-board support 
+  -convert_to_timberlike(board : Board, top_maps_to : TimberFace, right_maps_to : TimberFace) -> Timber (or maybe some temp Timber class)
+    
+
 
 EXEMPLIFY
   DONE-make a set of canonical joint configurations for each joint type to use ine xamples
