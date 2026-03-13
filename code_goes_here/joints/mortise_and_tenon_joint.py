@@ -407,9 +407,6 @@ class WedgeParameters:
 # ============================================================================
 
 
-
-
-# TODO rename to cut_mortise_and_tenon
 def cut_mortise_and_tenon_joint(
     arrangement: ButtJointTimberArrangement,
     tenon_size: V2,

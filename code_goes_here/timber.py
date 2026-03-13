@@ -941,7 +941,7 @@ class Board(PerfectTimberWithin):
 class FauxTimber(PerfectTimberWithin):
     """proxy class allowing us to pretend rotated boards are timbers which allows us to use timber joints on boards"""
 
-    board: Board
+    board: Board = field(kw_only=True)
     
     # init from a Board
     @classmethod
@@ -958,7 +958,7 @@ class FauxTimber(PerfectTimberWithin):
         #TODO reorient the csg from the faux timber's orientation to the board's orientation
         pass
 
-    def reconstruct_joint(self, joint: Joint) -> Joint:
+    def reconstruct_joint(self, joint: 'Joint') -> 'Joint':
         #TODO reconstruct a joint by reorienting all the cut CSGs and replacing the FauxTimber with the original Board
         pass
         
