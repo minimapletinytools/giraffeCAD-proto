@@ -115,12 +115,43 @@ def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(a
     )
 
 
+def _does_shoulder_plane_need_notching(
+    arrangement: ButtJointTimberArrangement,
+    mortise_shoulder_distance_from_centerline: Numeric,
+) -> bool:
+    """
+    Determines whether a shoulder notch is needed on the mortise timber.
+
+    For plane-aligned timbers, checks whether the shoulder is inset from the
+    mortise face surface. For non-plane-aligned timbers, always returns True.
+    """
+    mortise_timber = arrangement.receiving_timber
+    tenon_timber = arrangement.butt_timber
+    tenon_end = arrangement.butt_timber_end
+
+    # we could check if the shoulder plane intersects the timber here, but then you'd have an unsupported tenon shoulder which is likely unintentional and certainly rare.
+    # so just assume it does intersect and a notch is required
+    if not are_timbers_plane_aligned(mortise_timber, tenon_timber):
+        return True
+
+    tenon_end_direction = tenon_timber.get_face_direction_global(
+        TimberFace.TOP if tenon_end == TimberReferenceEnd.TOP else TimberFace.BOTTOM
+    )
+    mortise_face = mortise_timber.get_closest_oriented_long_face_from_global_direction(
+        -tenon_end_direction
+    ).to.face()
+    face_half_size = mortise_timber.get_size_in_face_normal_axis(mortise_face) / Integer(2)
+    return (
+        mortise_shoulder_distance_from_centerline < face_half_size
+        and not zero_test(face_half_size - mortise_shoulder_distance_from_centerline)
+    )
+
+
 def compute_peg_positions(
     arrangement: ButtJointTimberArrangement,
     shoulder_plane: Plane,
     peg_parameters: SimplePegParameters,
     tenon_position: V2,
-    mortise_face: TimberFace,
 ) -> List[PegPositionResult]:
     """
     Compute peg positions in global space for a mortise and tenon joint.
@@ -135,7 +166,6 @@ def compute_peg_positions(
                         measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber).
         peg_parameters: Peg configuration (shape, positions, size, depth, offset).
         tenon_position: Offset of tenon center from timber centerline in tenon local cross-section (X, Y).
-        mortise_face: Which face of the mortise timber the tenon enters from.
 
     Returns:
         List of PegPositionResult, one per peg_position entry.
@@ -465,18 +495,6 @@ def cut_mortise_and_tenon_joint(
     # TODO default mortise depth if mortise_depth is None
 
     # -------------------------------------------------------------------------
-    # Step 2: Determine which face of the mortise timber the tenon enters from
-    # TODO remove, calculate directly from tenon_end_direction and mortise_shoulder_distance_from_centerline
-    # -------------------------------------------------------------------------
-    tenon_end_direction = tenon_timber.get_face_direction_global(
-        TimberFace.TOP if tenon_end == TimberReferenceEnd.TOP else TimberFace.BOTTOM
-    )
-    mortise_face = mortise_timber.get_closest_oriented_long_face_from_global_direction(
-        -tenon_end_direction
-    ).to.face()
-
-
-    # -------------------------------------------------------------------------
     # Step 3: Shoulder plane from centerline toward tenon
     # -------------------------------------------------------------------------
     shoulder_plane = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
@@ -505,9 +523,9 @@ def cut_mortise_and_tenon_joint(
     marking_space: Space = Space(transform=tenon_base_transform)
 
     # -------------------------------------------------------------------------
-    # Step 5: Determine the angle of the mortise timber to the tenon timber
+    # Step 5: Determine the angle between the mortise entry direction and tenon
     # -------------------------------------------------------------------------
-    mortise_face_normal = mortise_timber.get_face_direction_global(mortise_face)
+    mortise_face_normal = shoulder_plane.normal
     cos_angle = safe_dot_product(
         normalize_vector(mortise_face_normal), normalize_vector(tenon_end_direction)
     )
@@ -533,7 +551,12 @@ def cut_mortise_and_tenon_joint(
     tenon_prism_cropping_csgs: Optional[List[CutCSG]] = None
     do_cropping = crop_tenon_to_mortise_orientation_on_angled_joints and not zero_test(cos_angle)
     if do_cropping:
-        
+        # Compute mortise_face locally — cropping is only used for plane-aligned timbers
+        mortise_face = mortise_timber.get_closest_oriented_long_face_from_global_direction(
+            -tenon_end_direction
+        ).to.face()
+        mortise_face_direction = mortise_timber.get_face_direction_global(mortise_face)
+
         mortise_oblique_end = mortise_timber.get_closest_oriented_end_face_from_global_direction(tenon_end_direction)
         joint_angle_axis_face = tenon_timber.get_closest_oriented_long_face_from_global_direction(mortise_timber.get_face_direction_global(mortise_oblique_end))
         joint_angle_axis_index = tenon_timber.get_size_index_in_long_face_normal_axis(joint_angle_axis_face)
@@ -547,11 +570,11 @@ def cut_mortise_and_tenon_joint(
             offset=end_crop_distance + safe_dot_product(mortise_hole_length_oblique_direction, shoulder_point_global),
         )
 
-        # Crop 2: depth of tenon — plane parallel to shoulder, mortise_depth from shoulder (into mortise).
-        # Remove tenon where dot(p, tenon_end_direction) >= dot(origin, tenon_end_direction) + depth
+        # Crop 2: depth of tenon — plane parallel to the mortise face surface,
+        # mortise_depth measured from the face inward.
         mortise_depth_crop_global = HalfSpace(
-            normal=-mortise_face_normal,
-            offset=mortise_depth - safe_dot_product(mortise_face_normal, get_point_on_face_global(mortise_face, mortise_timber)),
+            normal=-mortise_face_direction,
+            offset=mortise_depth - safe_dot_product(mortise_face_direction, get_point_on_face_global(mortise_face, mortise_timber)),
         )
 
         tenon_prism_cropping_csgs = [mortise_hole_end_crop_global, mortise_depth_crop_global]
@@ -612,10 +635,8 @@ def cut_mortise_and_tenon_joint(
     # shoulder notch on mortise timber (when shoulder is inset from face)
     # -------------------------------------------------------------------------
 
-    face_half_size = mortise_timber.get_size_in_face_normal_axis(mortise_face) / Integer(2)
-    needs_shoulder_notch = (
-        mortise_shoulder_distance_from_centerline < face_half_size
-        and not zero_test(face_half_size - mortise_shoulder_distance_from_centerline)
+    needs_shoulder_notch = _does_shoulder_plane_need_notching(
+        arrangement, mortise_shoulder_distance_from_centerline
     )
 
     shoulder_notch_local = None
@@ -679,7 +700,6 @@ def cut_mortise_and_tenon_joint(
             shoulder_plane=shoulder_plane,
             peg_parameters=peg_parameters,
             tenon_position=tenon_position,
-            mortise_face=mortise_face,
         )
 
         peg_size = peg_parameters.size
