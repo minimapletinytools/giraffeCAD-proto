@@ -292,6 +292,9 @@ def create_patternbook_example_patternbook() -> PatternBook:
     return PatternBook.merge_multiple(books)
 
 
+patternbook = create_patternbook_example_patternbook()
+
+
 def main():
     """Run all examples."""
     print("=" * 60)

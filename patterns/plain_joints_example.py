@@ -336,6 +336,9 @@ def create_plain_joints_patternbook() -> PatternBook:
     return PatternBook(patterns=patterns)
 
 
+patternbook = create_plain_joints_patternbook()
+
+
 def create_all_joint_examples() -> Union[Frame, List]:
     """
     Create joint examples with automatic spacing starting from the origin.

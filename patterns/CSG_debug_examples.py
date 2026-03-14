@@ -596,6 +596,9 @@ def create_csg_examples_patternbook():
     return PatternBook(patterns=patterns)
 
 
+patternbook = create_csg_examples_patternbook()
+
+
 def get_example(example_key: str):
     """
     Get a CSG example by key.

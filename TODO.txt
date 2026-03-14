@@ -253,36 +253,13 @@ class Ticket
 
 :: TODO
 
--finish mortise and tenon joint non angle stuff and peg depth
-DONE/IGNORE-clean up docs on one joint function
--rename joint examples to patterns
-  -there can still be a examples folder in the patterns folder
+-decide what "vanilla" project looks like
+  -can we just run the cdoe and take what it returns
+  -or do we scan for certain patterns
 -document example/patternbook stuff
 -start viewer I guess?
 -after viewer, you should integrate patternbook into viewer
 -update agent insturction
-
--update morties and tenon to support
-  DONE-do cropping on angled mortise and tenon joints
-  DONE-make 3 versions
-    DONE-perpendicular (simplest)
-    DONE-plane aligned
-    DONE-no alignment (most complicated)
-      -for this one you need to define the shoulder plane a certain distance away from centerline
-  DONE-do the mortise_shoulder_distance_from_centerline conversion
-  DONE-tenon cutting on braces seems to have broken :(
-  DONE-do the generic notch function
-  DONE-allow pegs to be positioned in either tenon space or mortise space via parameter
-    -remind folks like +y direction depends on orientation of timber, not joint angle
-  DONE-add peg orientation parameter (mortise/tenon, ccw_rotation_angle) = (tenon, 0)
-  DONE-non PAT stuff
-    DONE-update peg logic to assume not PAT
-    DONE-mortise hole logic needs to be updated too
-  DONE-TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
-    -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
-    -is this really whaty ou want? and how does this intercact with positing in mortise/tenon space I guess this is a generalized version of that...
-  -fix peg depth calculation...
-
 -reorg joints by joint type 
 -consider making a brace function that both creates a timber and joins it!
 -do sympy numeric conversion at the start of each joint... Or just have the numeric stuff cached in the timber or maybe transform class
@@ -487,6 +464,31 @@ TESTIFY
 
 
 :: TODONE
+
+DONE-finish mortise and tenon joint non angle stuff and peg depth
+DONE/IGNORE-clean up docs on one joint function
+DONE-rename joint examples to patterns
+  -there can still be a examples folder in the patterns folder
+DONE-update morties and tenon to support
+  DONE-do cropping on angled mortise and tenon joints
+  DONE-make 3 versions
+    DONE-perpendicular (simplest)
+    DONE-plane aligned
+    DONE-no alignment (most complicated)
+      -for this one you need to define the shoulder plane a certain distance away from centerline
+  DONE-do the mortise_shoulder_distance_from_centerline conversion
+  DONE-tenon cutting on braces seems to have broken :(
+  DONE-do the generic notch function
+  DONE-allow pegs to be positioned in either tenon space or mortise space via parameter
+    -remind folks like +y direction depends on orientation of timber, not joint angle
+  DONE-add peg orientation parameter (mortise/tenon, ccw_rotation_angle) = (tenon, 0)
+  DONE-non PAT stuff
+    DONE-update peg logic to assume not PAT
+    DONE-mortise hole logic needs to be updated too
+  DONE-TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
+    -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
+    -is this really whaty ou want? and how does this intercact with positing in mortise/tenon space I guess this is a generalized version of that...
+  DONE/IGNORE-fix peg depth calculation...
 DONE-CutCSG_examples -> CSG_debug_examples.py
 DONE-make timber names mandatory and if not provided a random one is generated?
   -if you do random ones they need to be deterministic so that they can be remapped in the viewer

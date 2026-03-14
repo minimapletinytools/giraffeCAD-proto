@@ -304,6 +304,9 @@ def create_mortise_and_tenon_patternbook() -> PatternBook:
     return PatternBook(patterns=patterns)
 
 
+patternbook = create_mortise_and_tenon_patternbook()
+
+
 def create_all_mortise_and_tenon_examples():
     """
     Create mortise and tenon joint examples with automatic spacing.

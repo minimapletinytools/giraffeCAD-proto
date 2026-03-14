@@ -44,6 +44,9 @@ def create_honeycomb_shed_patternbook() -> PatternBook:
     return PatternBook(patterns=patterns)
 
 
+patternbook = create_honeycomb_shed_patternbook()
+
+
 def create_honeycomb_shed():
     """
     Create the Honeycomb Shed - A hexagonal timber frame structure.

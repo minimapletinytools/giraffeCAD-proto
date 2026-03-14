@@ -52,6 +52,9 @@ def create_japanese_joints_patternbook() -> PatternBook:
     return PatternBook(patterns=patterns)
 
 
+patternbook = create_japanese_joints_patternbook()
+
+
 
 def create_simple_gooseneck_example(position: Optional[V3] = None):
     """

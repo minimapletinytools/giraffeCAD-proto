@@ -51,6 +51,9 @@ def create_oscar_shed_patternbook() -> PatternBook:
     return PatternBook(patterns=patterns)
 
 
+patternbook = create_oscar_shed_patternbook()
+
+
 def create_oscarshed(center: Optional[V3] = None):
     """
     Create Oscar's Shed structure.

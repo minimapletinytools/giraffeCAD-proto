@@ -29,6 +29,9 @@ def create_irrational_angles_patternbook() -> PatternBook:
     return PatternBook(patterns=patterns)
 
 
+patternbook = create_irrational_angles_patternbook()
+
+
 def create_all_irrational_examples() -> Frame:
     """
     Create a mortise and tenon joint at 37 degrees (an irrational angle).

@@ -50,6 +50,9 @@ def create_horsey_patternbook() -> PatternBook:
     return PatternBook(patterns=patterns)
 
 
+patternbook = create_horsey_patternbook()
+
+
 def create_sawhorse() -> Frame:
     """
     Create a complete sawhorse structure with mortise and tenon joints with pegs.

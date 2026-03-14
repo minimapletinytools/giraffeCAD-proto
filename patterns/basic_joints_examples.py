@@ -307,6 +307,9 @@ def create_basic_joints_patternbook() -> PatternBook:
     return PatternBook(patterns=patterns)
 
 
+patternbook = create_basic_joints_patternbook()
+
+
 def create_all_basic_joints_examples():
     """
     Create basic joint examples with automatic spacing.

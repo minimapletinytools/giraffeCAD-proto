@@ -82,6 +82,9 @@ def create_construction_patternbook() -> PatternBook:
     return PatternBook(patterns=patterns)
 
 
+patternbook = create_construction_patternbook()
+
+
 def create_all_construction_examples():
     """Create all construction examples for testing."""
     # For now, just return the centerline example
