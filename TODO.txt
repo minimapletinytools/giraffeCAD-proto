@@ -253,14 +253,14 @@ class Ticket
 
 :: TODO
 
--finish mortise and tenon joint non angle stuff
--clean up docs on one joint function
+-finish mortise and tenon joint non angle stuff and peg depth
+DONE/IGNORE-clean up docs on one joint function
 -rename joint examples to patterns
   -there can still be a examples folder in the patterns folder
 -document example/patternbook stuff
 -start viewer I guess?
 -after viewer, you should integrate patternbook into viewer
--update agenti nsturction
+-update agent insturction
 
 -update morties and tenon to support
   DONE-do cropping on angled mortise and tenon joints
@@ -275,13 +275,13 @@ class Ticket
   DONE-allow pegs to be positioned in either tenon space or mortise space via parameter
     -remind folks like +y direction depends on orientation of timber, not joint angle
   DONE-add peg orientation parameter (mortise/tenon, ccw_rotation_angle) = (tenon, 0)
-  -fix peg depth calculation...
-  -non PAT stuff
+  DONE-non PAT stuff
     DONE-update peg logic to assume not PAT
-    -mortise hole logic needs to be updated too
+    DONE-mortise hole logic needs to be updated too
   DONE-TODO: peg X position is measured in the tenon length axis, whereas peg Y position is measured in the mortise length axis! This makes positioning pegs on angled braces a lot easier.
     -extract peg function into its own utility... (main tricky part is determining peg length actually, position is more clear...)
     -is this really whaty ou want? and how does this intercact with positing in mortise/tenon space I guess this is a generalized version of that...
+  -fix peg depth calculation...
 
 -reorg joints by joint type 
 -consider making a brace function that both creates a timber and joins it!

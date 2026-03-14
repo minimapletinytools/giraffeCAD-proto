@@ -5,17 +5,19 @@ Tests for mortise and tenon joint construction functions
 import pytest
 from typing import List
 from sympy import Matrix, Rational, simplify, sin, cos, pi
-from code_goes_here.rule import Orientation, create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product
+from code_goes_here.rule import Orientation, create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product, normalize_vector
 from code_goes_here.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberLongFace,
     V2, V3, Numeric, PegShape, WedgeShape, Peg,
     timber_from_directions, create_v3
 )
 from code_goes_here.construction import ButtJointTimberArrangement
+from code_goes_here.timber_shavings import are_timbers_plane_aligned
 from code_goes_here.joints.mortise_and_tenon_joint import (
     SimplePegParameters,
     WedgeParameters,
     PegPositionSpace,
+    _does_shoulder_plane_need_notching,
     cut_mortise_and_tenon_joint_on_FAT,
     cut_mortise_and_tenon_joint_on_PAT,
     measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber,
@@ -603,3 +605,52 @@ class TestMeasureMortiseShoulderPlane:
         direction_away = plane_negative.point - plane.point
         assert safe_dot_product(direction_away, create_v3(Integer(0), Integer(0), Integer(1))) < 0, \
             "Negative distance should offset away from the tenon"
+
+
+class TestShoulderNotchingDecision:
+    """Tests for _does_shoulder_plane_need_notching."""
+
+    def test_does_shoulder_plane_need_notching(self, simple_T_configuration):
+        """Uses face/plane-aligned logic when aligned, and always True when not plane-aligned."""
+        tenon_timber, mortise_timber = simple_T_configuration
+
+        aligned_arrangement = ButtJointTimberArrangement(
+            receiving_timber=mortise_timber,
+            butt_timber=tenon_timber,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+        )
+        assert are_timbers_plane_aligned(mortise_timber, tenon_timber)
+
+        tenon_end_direction = tenon_timber.get_face_direction_global(TimberReferenceEnd.BOTTOM)
+        mortise_face = mortise_timber.get_closest_oriented_long_face_from_global_direction(
+            -tenon_end_direction
+        ).to.face()
+        face_half_size = mortise_timber.get_size_in_face_normal_axis(mortise_face) / Rational(2)
+
+        assert _does_shoulder_plane_need_notching(aligned_arrangement, face_half_size - Rational(1))
+        assert not _does_shoulder_plane_need_notching(aligned_arrangement, face_half_size)
+
+        non_plane_mortise = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(Rational(6), Rational(6)),
+            bottom_position=create_v3(-Rational(50), Rational(0), Rational(0)),
+            length_direction=create_v3(Rational(1), Rational(0), Rational(0)),
+            width_direction=create_v3(Rational(0), Rational(0), Rational(1)),
+            ticket="non_plane_mortise",
+        )
+        non_plane_tenon = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(Rational(4), Rational(4)),
+            bottom_position=create_v3(Rational(0), Rational(0), Rational(0)),
+            length_direction=create_v3(Rational(0), Rational(1), Rational(0)),
+            width_direction=normalize_vector(create_v3(Rational(1), Rational(0), Rational(1))),
+            ticket="non_plane_tenon",
+        )
+        non_plane_arrangement = ButtJointTimberArrangement(
+            receiving_timber=non_plane_mortise,
+            butt_timber=non_plane_tenon,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+        )
+
+        assert not are_timbers_plane_aligned(non_plane_mortise, non_plane_tenon)
+        assert _does_shoulder_plane_need_notching(non_plane_arrangement, Rational(100))

@@ -76,7 +76,8 @@ def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(a
     e = safe_dot_product(w, tenon_centerline.direction)
 
     denom = a * c - b * b
-    if zero_test(denom):
+    denom_is_zero = fast_zero_test(denom)
+    if denom_is_zero:
         M = mortise_centerline.point
     else:
         t_mortise = (b * e - c * d) / denom
@@ -84,8 +85,9 @@ def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(a
 
     # Find P = intersection of tenon centerline with cross-section plane at M
     plane_dot_dir = safe_dot_product(mortise_length_dir, tenon_centerline.direction)
-    if zero_test(plane_dot_dir):
-        if zero_test(denom):
+    plane_dot_dir_is_zero = fast_zero_test(plane_dot_dir)
+    if plane_dot_dir_is_zero:
+        if denom_is_zero:
             P = tenon_centerline.point
         else:
             s_tenon = (a * e - b * d) / denom
@@ -97,13 +99,15 @@ def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(a
     # Direction from M toward P in the cross-section
     MP = P - M
     mp_len_sq = safe_dot_product(MP, MP)
-    if zero_test(mp_len_sq):
+    mp_len_sq_is_zero = fast_zero_test(mp_len_sq)
+    if mp_len_sq_is_zero:
         # Centerlines intersect (or are parallel). Use the tenon direction
         # projected into the mortise cross-section as fallback.
         tenon_dir = tenon_centerline.direction
         proj = tenon_dir - mortise_length_dir * safe_dot_product(tenon_dir, mortise_length_dir)
         proj_len_sq = safe_dot_product(proj, proj)
-        if zero_test(proj_len_sq):
+        proj_len_sq_is_zero = fast_zero_test(proj_len_sq)
+        if proj_len_sq_is_zero:
             direction_in_plane = mortise_timber.get_width_direction_global()
         else:
             direction_in_plane = normalize_vector(proj)

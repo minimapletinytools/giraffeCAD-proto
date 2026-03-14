@@ -862,6 +862,15 @@ def zero_test(value) -> bool:
     return equality_test(value, 0)
 
 
+def fast_zero_test(value) -> bool:
+    """
+    Fast zero check that forces numerical coercion.
+
+    This is intended for hot paths where symbolic assumption checks are too slow.
+    """
+    return fast_equality_test(value, 0)
+
+
 # maybe rename to equality_test_with_fuzzy_fallback
 def equality_test(value, expected) -> bool:
     """
@@ -900,6 +909,16 @@ def equality_test(value, expected) -> bool:
     
     # should never reach here?
     return Abs(value - expected) < SYMPY_EXPR_EPSILON
+
+
+def fast_equality_test(value, expected) -> bool:
+    """
+    Fast equality check that forces numerical coercion.
+
+    This avoids SymPy symbolic assumption/equality machinery and is useful in
+    performance-sensitive geometric branch decisions.
+    """
+    return abs(float(value - expected)) < float(SYMPY_EXPR_EPSILON)
 
 
 # ============================================================================
