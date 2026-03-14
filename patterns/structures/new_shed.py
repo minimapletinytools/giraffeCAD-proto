@@ -174,7 +174,7 @@ def create_honeycomb_shed():
             butt_timber_end=TimberReferenceEnd.BOTTOM,
             front_face_on_butt_timber=None,
         )
-        joint = cut_mortise_and_tenon_joint_on_FAT(
+        joint = cut_mortise_and_tenon_joint(
             arrangement=arrangement,
             tenon_size=tenon_size,
             tenon_length=tenon_length,
@@ -256,7 +256,7 @@ def create_honeycomb_shed():
                 butt_timber_end=TimberReferenceEnd.TOP,
                 front_face_on_butt_timber=None,
             )
-            joint = cut_mortise_and_tenon_joint_on_FAT(
+            joint = cut_mortise_and_tenon_joint(
                 arrangement=arrangement,
                 tenon_size=beam_tenon_size,
                 tenon_length=beam_tenon_length,
@@ -302,7 +302,7 @@ def create_honeycomb_shed():
         butt_timber_end=TimberReferenceEnd.BOTTOM,
         front_face_on_butt_timber=None,
     )
-    hub_mudsill_joint = cut_mortise_and_tenon_joint_on_FAT(
+    hub_mudsill_joint = cut_mortise_and_tenon_joint(
         arrangement=hub_mudsill_arrangement,
         tenon_size=Matrix([inches(3), inches(3)]),  # 3" x 3" square tenon
         tenon_length=inches(3),
@@ -480,6 +480,9 @@ def create_honeycomb_shed():
         additional_unjointed_timbers=unjointed_timbers,
         ticket="Honeycomb Shed"
     )
+
+
+example = create_honeycomb_shed()
 
 
 # ============================================================================

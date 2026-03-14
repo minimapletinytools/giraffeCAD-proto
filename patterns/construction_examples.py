@@ -90,3 +90,6 @@ def create_all_construction_examples():
     # For now, just return the centerline example
     # You can create a combined frame if needed
     return create_test_posts_with_beam_centerline()
+
+
+example = create_all_construction_examples()

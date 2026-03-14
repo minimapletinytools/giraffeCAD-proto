@@ -325,3 +325,6 @@ def create_all_basic_joints_examples():
     frame = book.raise_pattern_group("basic_joints", separation_distance=inches(72))
     
     return frame
+
+
+example = create_all_basic_joints_examples()

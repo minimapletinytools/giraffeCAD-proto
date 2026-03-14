@@ -264,6 +264,9 @@ def create_sawhorse() -> Frame:
     return Frame.from_joints(all_joints, name="Sawhorse")
 
 
+example = create_sawhorse()
+
+
 def main():
     """Main function that creates and returns the sawhorse frame."""
     frame = create_sawhorse()

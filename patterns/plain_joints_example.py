@@ -356,6 +356,9 @@ def create_all_joint_examples() -> Union[Frame, List]:
     return frame
 
 
+example = create_all_joint_examples()
+
+
 # ============================================================================
 # Main execution
 # ============================================================================

@@ -9,9 +9,8 @@ representations are converted to floating point values in CAD systems.
 from sympy import Rational, pi, Matrix, cos, sin
 from code_goes_here.timber import Frame, TimberFace, TimberReferenceEnd, create_v3, timber_from_directions
 from code_goes_here.construction import ButtJointTimberArrangement
-from code_goes_here.joints.mortise_and_tenon_joint import cut_mortise_and_tenon_joint_on_FAT
+from code_goes_here.joints.mortise_and_tenon_joint import cut_mortise_and_tenon_joint
 from code_goes_here.patternbook import PatternBook, PatternMetadata
-from code_goes_here.rule import degrees
 
 
 def create_irrational_angles_patternbook() -> PatternBook:
@@ -50,7 +49,7 @@ def create_all_irrational_examples() -> Frame:
     )
     
     # Angled beam at 37° (tenon timber)
-    angle_37 = degrees(Rational(37))  # 37 degrees in radians (irrational)
+    angle_37 = pi * Rational(37, 180)  # 37 degrees in radians (irrational, exact)
     
     # Direction vector at 37° in XY plane
     length_dir = create_v3(cos(angle_37), sin(angle_37), Rational(0))
@@ -73,7 +72,7 @@ def create_all_irrational_examples() -> Frame:
         butt_timber_end=TimberReferenceEnd.BOTTOM,
         front_face_on_butt_timber=None,
     )
-    joint = cut_mortise_and_tenon_joint_on_FAT(
+    joint = cut_mortise_and_tenon_joint(
         arrangement=arrangement,
         tenon_size=tenon_size,
         tenon_length=Rational(4),
@@ -95,6 +94,9 @@ def create_all_irrational_examples() -> Frame:
     print()
     
     return frame
+
+
+example = create_all_irrational_examples()
 
 
 if __name__ == "__main__":
