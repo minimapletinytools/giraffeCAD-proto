@@ -12,9 +12,9 @@ This directory contains a complete, self-contained Fusion 360 script for renderi
 ### Imported from Parent Directory
 - **`../giraffe.py`** - Core GiraffeCAD timber framing library
 - **`../code_goes_here/`** - Core modules (rule, footprint, etc.)
-- **`../examples/sawhorse_example.py`** - Sawhorse structure
-- **`../examples/oscarshed.py`** - Oscar's Shed structure
-- **`../examples/basic_joints_examples.py`** - Basic joint type demonstrations and patternbook
+- **`../patterns/structures/horsey_example.py`** - Sawhorse structure
+- **`../patterns/structures/oscarshed.py`** - Oscar's Shed structure
+- **`../patterns/basic_joints_examples.py`** - Basic joint type demonstrations and patternbook
 
 ### Local Dependencies
 - **`libs/`** - Contains locally installed Python packages:
@@ -102,11 +102,11 @@ This will test:
 You can also test examples directly:
 ```bash
 # Test Basic Joints
-cd ../examples/reference
+cd ../patterns/reference
 python3 plain_joints_example.py
 
 # Test Oscar's Shed
-cd ../examples
+cd ../patterns/structures
 python3 oscarshed.py
 ```
 
@@ -146,10 +146,10 @@ fusion360/
     │   ├── timber.py (timber class)
     │   ├── construction.py (timber helpers)
     │   └── plain_joints.py (joint functions)
-    └── ../examples/
-        ├── sawhorse_example.py
-        ├── oscarshed.py
-        └── reference/plain_joints_example.py
+    └── ../patterns/
+      ├── structures/horsey_example.py
+      ├── structures/oscarshed.py
+      └── reference/plain_joints_example.py
 ```
 
 ## 🔧 Troubleshooting

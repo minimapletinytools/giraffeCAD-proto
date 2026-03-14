@@ -30,4 +30,4 @@ dev = [
 ]
 
 [tool.ty.src]
-exclude = ["oldcrap", "fusion360/libs", "horsey-viewer", "fusion360", "freecad", "examples"]
+exclude = ["oldcrap", "fusion360/libs", "horsey-viewer", "fusion360", "freecad", "patterns"]

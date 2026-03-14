@@ -95,7 +95,7 @@ Shows mortise and tenon joints with accessories:
 - Through mortises
 - Offset tenons
 
-Configure which variants to render in `examples/mortise_and_tenon_joint_examples.py`.
+Configure which variants to render in `patterns/mortise_and_tenon_joint_examples.py`.
 
 ### 3. Oscar's Shed (`oscar_shed`)
 Complete timber frame structure (8ft x 4ft):
@@ -132,13 +132,13 @@ The scripts reload modules in dependency order:
 7. `code_goes_here.joints.mortise_and_tenon_joint` - Mortise & tenon functions
 8. `giraffe` - Main API module
 9. `giraffe_render_freecad` - FreeCAD renderer
-10. `examples.*` - All example modules
+10. `patterns.*` - All pattern modules
 
 ## Troubleshooting
 
 **Import Errors:**
 - Make sure you're running from the `freecad/` directory
-- Check that the parent directory contains `code_goes_here/` and `examples/`
+- Check that the parent directory contains `code_goes_here/` and `patterns/`
 
 **Module Not Reloading:**
 - Check the console output to see which modules were reloaded
@@ -165,7 +165,7 @@ Reloading all GiraffeCAD modules...
   ✓ Reloaded code_goes_here.construction
   ✓ Reloaded code_goes_here.joints.mortise_and_tenon_joint
   ✓ Reloaded giraffe_render_freecad
-  ✓ Reloaded examples.oscarshed
+  ✓ Reloaded patterns.structures.oscarshed
 
 Module reload complete.
 

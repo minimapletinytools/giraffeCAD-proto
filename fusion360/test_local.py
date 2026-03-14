@@ -60,7 +60,7 @@ def test_giraffe_modules():
         return False
     
     try:
-        from examples.sawhorse_example import create_sawhorse
+        from patterns.structures.horsey_example import create_sawhorse
         print("✓ sawhorse_example imported successfully from parent dir")
     except ImportError as e:
         print(f"✗ Failed to import sawhorse_example from parent dir: {e}")
@@ -85,8 +85,9 @@ def test_sawhorse_creation():
     print("\nTesting sawhorse creation with path imports...")
     
     try:
-        from examples.sawhorse_example import create_sawhorse
-        cut_timbers = create_sawhorse()
+        from patterns.structures.horsey_example import create_sawhorse
+        sawhorse = create_sawhorse()
+        cut_timbers = sawhorse.cut_timbers if hasattr(sawhorse, 'cut_timbers') else sawhorse
         
         print(f"✓ Created sawhorse with {len(cut_timbers)} timbers:")
         for i, cut_timber in enumerate(cut_timbers):
@@ -114,7 +115,7 @@ def test_path_structure():
     parent_required_files = [
         'giraffe.py',
         'code_goes_here/rule.py', 
-        'examples/sawhorse_example.py',
+        'patterns/structures/horsey_example.py',
     ]
     
     # Files that should be in current (fusion360) directory

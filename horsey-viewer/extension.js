@@ -43,7 +43,7 @@ function activate(context) {
 
 function runPythonScript(filePath, context) {
     const runnerScriptPath = path.join(context.extensionPath, 'runner.py');
-    const projectRoot = path.dirname(path.dirname(filePath)); // Assume file is in code_goes_here or examples
+    const projectRoot = path.dirname(path.dirname(filePath)); // Assume file is in code_goes_here or patterns
 
     // Try to use venv python if it exists, otherwise fall back to python3
     const venvPython = path.join(projectRoot, 'venv', 'bin', 'python');

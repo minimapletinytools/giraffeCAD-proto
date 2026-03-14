@@ -18,10 +18,10 @@ TODO pip package instructions
 
 You've setup your tools and you're almost ready to make your first sawhorse.
 
-But first, lets admire the one in the exmaples folder
+But first, lets admire the one in the patterns folder
 
 ```python
-from horse.examples.saw_horsey import *
+from patterns.structures.horsey_example import *
 ...
 ```
 

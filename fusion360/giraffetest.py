@@ -71,15 +71,15 @@ def create_anthology_pattern_book():
         PatternBook: A single PatternBook with all patterns from all examples
     """
     from code_goes_here.patternbook import PatternBook
-    from examples.basic_joints_examples import create_basic_joints_patternbook
-    from examples.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
-    from examples.construction_examples import create_construction_patternbook
-    from examples.horsey_example import create_horsey_patternbook
-    from examples.oscarshed import create_oscar_shed_patternbook
-    from examples.japanese_joints_example import create_japanese_joints_patternbook
-    from examples.irrational_angles_example import create_irrational_angles_patternbook
-    from examples.CSG_debug_examples import create_csg_examples_patternbook
-    from examples.patternbook_example import create_patternbook_example_patternbook
+    from patterns.basic_joints_examples import create_basic_joints_patternbook
+    from patterns.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
+    from patterns.construction_examples import create_construction_patternbook
+    from patterns.structures.horsey_example import create_horsey_patternbook
+    from patterns.structures.oscarshed import create_oscar_shed_patternbook
+    from patterns.japanese_joints_example import create_japanese_joints_patternbook
+    from patterns.irrational_angles_example import create_irrational_angles_patternbook
+    from patterns.CSG_debug_examples import create_csg_examples_patternbook
+    from patterns.patternbook_example import create_patternbook_example_patternbook
     
     # Create all individual pattern books
     books = [
@@ -119,7 +119,7 @@ def reload_all_modules():
     for module_name in list(sys.modules.keys()):
         # Delete any module that starts with our project prefixes
         if (module_name.startswith('code_goes_here') or 
-            module_name.startswith('examples') or 
+            module_name.startswith('patterns') or 
             module_name == 'giraffe' or
             module_name.startswith('giraffe.') or
             module_name == 'giraffe_render_fusion360'):
@@ -147,16 +147,16 @@ def reload_all_modules():
         'code_goes_here.joints.japanese_joints',
         'code_goes_here.patternbook',
         'giraffe',
-        'examples',  # Reload the examples package
+        'patterns',  # Reload the patterns package
         'giraffe_render_fusion360',  # Add this so the rendering module itself gets reloaded
-        'examples.mortise_and_tenon_joint_examples',
-        'examples.basic_joints_examples',
-        'examples.horsey_example',
-        'examples.oscarshed',
-        'examples.japanese_joints_example',
-        'examples.irrational_angles_example',
-        'examples.CSG_debug_examples',
-        'examples.patternbook_example',
+        'patterns.mortise_and_tenon_joint_examples',
+        'patterns.basic_joints_examples',
+        'patterns.structures.horsey_example',
+        'patterns.structures.oscarshed',
+        'patterns.japanese_joints_example',
+        'patterns.irrational_angles_example',
+        'patterns.CSG_debug_examples',
+        'patterns.patternbook_example',
     ]
     
     # Re-import all modules in dependency order
@@ -397,7 +397,7 @@ def render_irrational_angles():
 def render_csg():
     """Render CSG examples from anthology PatternBook."""
     from giraffe_render_fusion360 import render_csg_pattern, clear_design
-    from examples.CSG_debug_examples import EXAMPLES
+    from patterns.CSG_debug_examples import EXAMPLES
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - CSG Examples")
