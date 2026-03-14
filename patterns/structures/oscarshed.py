@@ -11,6 +11,7 @@ sys.path.append('..')
 from giraffe import *
 from code_goes_here.timber import Frame
 from code_goes_here.patternbook import PatternBook, PatternMetadata
+from code_goes_here.joints.basic_joints import cut_basic_mitered_and_keyed_lap_joint
 
 # ============================================================================
 # PARAMETERS - Modify these to adjust the shed design
@@ -118,33 +119,45 @@ def create_oscarshed(center: Optional[V3] = None):
     # Corner 0 (front-left): Front mudsill BOTTOM meets Left mudsill TOP
     # Front mudsill goes from corner 0 to corner 1 (BOTTOM=corner 0, TOP=corner 1)
     # Left mudsill goes from corner 3 to corner 0 (BOTTOM=corner 3, TOP=corner 0)
-    joint_corner_0 = cut_plain_miter_joint(
-        mudsill_front, TimberReferenceEnd.BOTTOM,
-        mudsill_left, TimberReferenceEnd.TOP
+    joint_corner_0 = cut_basic_mitered_and_keyed_lap_joint(
+        timberA=mudsill_front,
+        timberA_end=TimberReferenceEnd.BOTTOM,
+        timberA_reference_miter_face=TimberLongFace.RIGHT,
+        timberB=mudsill_left,
+        timberB_end=TimberReferenceEnd.TOP,
     )
     
     # Corner 1 (front-right): Front mudsill TOP meets Right mudsill BOTTOM
     # Front mudsill goes from corner 0 to corner 1 (BOTTOM=corner 0, TOP=corner 1)
     # Right mudsill goes from corner 1 to corner 2 (BOTTOM=corner 1, TOP=corner 2)
-    joint_corner_1 = cut_plain_miter_joint(
-        mudsill_front, TimberReferenceEnd.TOP,
-        mudsill_right, TimberReferenceEnd.BOTTOM
+    joint_corner_1 = cut_basic_mitered_and_keyed_lap_joint(
+        timberA=mudsill_front,
+        timberA_end=TimberReferenceEnd.TOP,
+        timberA_reference_miter_face=TimberLongFace.RIGHT,
+        timberB=mudsill_right,
+        timberB_end=TimberReferenceEnd.BOTTOM,
     )
     
     # Corner 2 (back-right): Right mudsill TOP meets Back mudsill BOTTOM
     # Right mudsill goes from corner 1 to corner 2 (BOTTOM=corner 1, TOP=corner 2)
     # Back mudsill goes from corner 2 to corner 3 (BOTTOM=corner 2, TOP=corner 3)
-    joint_corner_2 = cut_plain_miter_joint(
-        mudsill_right, TimberReferenceEnd.TOP,
-        mudsill_back, TimberReferenceEnd.BOTTOM
+    joint_corner_2 = cut_basic_mitered_and_keyed_lap_joint(
+        timberA=mudsill_right,
+        timberA_end=TimberReferenceEnd.TOP,
+        timberA_reference_miter_face=TimberLongFace.RIGHT,
+        timberB=mudsill_back,
+        timberB_end=TimberReferenceEnd.BOTTOM,
     )
     
     # Corner 3 (back-left): Back mudsill TOP meets Left mudsill BOTTOM
     # Back mudsill goes from corner 2 to corner 3 (BOTTOM=corner 2, TOP=corner 3)
     # Left mudsill goes from corner 3 to corner 0 (BOTTOM=corner 3, TOP=corner 0)
-    joint_corner_3 = cut_plain_miter_joint(
-        mudsill_back, TimberReferenceEnd.TOP,
-        mudsill_left, TimberReferenceEnd.BOTTOM
+    joint_corner_3 = cut_basic_mitered_and_keyed_lap_joint(
+        timberA=mudsill_back,
+        timberA_end=TimberReferenceEnd.TOP,
+        timberA_reference_miter_face=TimberLongFace.RIGHT,
+        timberB=mudsill_left,
+        timberB_end=TimberReferenceEnd.BOTTOM,
     )
 
     # ============================================================================

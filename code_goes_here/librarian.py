@@ -9,12 +9,10 @@ fallbacks when those entries are missing).
 from dataclasses import dataclass, field
 from pathlib import Path
 import importlib.util
-import inspect
 import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 from .patternbook import PatternBook
-from .timber import Frame
 
 
 _DYNAMIC_MODULE_PREFIX = "giraffe_librarian_dynamic"
@@ -130,53 +128,17 @@ def _resolve_patternbook(module: Any, warnings: List[str]) -> Optional[PatternBo
     return None
 
 
-def _call_no_arg_candidate(module: Any, name: str) -> Tuple[bool, Optional[Any], Optional[str]]:
-    candidate = getattr(module, name)
-    if not callable(candidate):
-        return False, None, None
-
-    try:
-        signature = inspect.signature(candidate)
-    except (TypeError, ValueError):
-        return False, None, None
-
-    required_params = [
-        p for p in signature.parameters.values()
-        if p.default is inspect._empty and p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
-    ]
-    if required_params:
-        return False, None, None
-
-    try:
-        return True, candidate(), None
-    except Exception as exc:
-        return True, None, f"{name}() failed: {type(exc).__name__}: {exc}"
-
-
 def _resolve_example(module: Any, warnings: List[str]) -> Optional[Any]:
     if hasattr(module, "example"):
         return getattr(module, "example")
 
-    prioritized = [
-        name
+    if any(
+        name.startswith("create_") and not name.endswith("_patternbook")
         for name in dir(module)
-        if name.startswith("create_all_") and (name.endswith("_examples") or name.endswith("_example"))
-    ]
-    fallback = [
-        name
-        for name in dir(module)
-        if name.startswith("create_") and not name.endswith("_patternbook")
-    ]
-
-    for name in sorted(prioritized) + sorted(fallback):
-        attempted, result, error = _call_no_arg_candidate(module, name)
-        if not attempted:
-            continue
-        if error is not None:
-            warnings.append(error)
-            continue
-        if isinstance(result, (Frame, PatternBook)) or result is not None:
-            return result
+    ):
+        warnings.append(
+            "No module-level example found; skipping example factory execution during scan"
+        )
 
     return None
 
