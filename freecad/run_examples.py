@@ -45,8 +45,8 @@ if script_dir not in sys.path:
 # RENDER_TYPE: 'pattern' or 'group'
 # - 'pattern': Render a single pattern by name
 # - 'group': Render all patterns in a group with spacing
-RENDER_TYPE = 'group'
-#RENDER_TYPE = 'pattern'
+#creaRENDER_TYPE = 'group'
+RENDER_TYPE = 'pattern'
 
 # PATTERN_NAME: Name of a specific pattern to render (when RENDER_TYPE = 'pattern')
 # Examples of available patterns:
@@ -91,36 +91,19 @@ def create_anthology_pattern_book():
     Returns:
         PatternBook: A single PatternBook with all patterns from all examples
     """
-    from code_goes_here.patternbook import PatternBook
-    from patterns.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
-    from patterns.basic_joints_examples import create_basic_joints_patternbook
-    from patterns.plain_joints_example import create_plain_joints_patternbook
-    from patterns.construction_examples import create_construction_patternbook
-    from patterns.structures.horsey_example import create_horsey_patternbook
-    from patterns.structures.oscarshed import create_oscar_shed_patternbook
-    from patterns.structures.new_shed import create_honeycomb_shed_patternbook
-    from patterns.japanese_joints_example import create_japanese_joints_patternbook
-    from patterns.irrational_angles_example import create_irrational_angles_patternbook
-    from patterns.CSG_debug_examples import create_csg_examples_patternbook
-    from patterns.patternbook_example import create_patternbook_example_patternbook
-    
-    # Create all individual pattern books
-    books = [
-        create_basic_joints_patternbook(),
-        create_plain_joints_patternbook(),
-        create_mortise_and_tenon_patternbook(),
-        create_construction_patternbook(),
-        create_horsey_patternbook(),
-        create_oscar_shed_patternbook(),
-        create_honeycomb_shed_patternbook(),
-        create_japanese_joints_patternbook(),
-        create_irrational_angles_patternbook(),
-        create_csg_examples_patternbook(),
-        create_patternbook_example_patternbook(),
-    ]
-    
-    # Merge them all into one anthology book
-    anthology_book = PatternBook.merge_multiple(books)
+    from code_goes_here.librarian import create_anthology_pattern_book_from_folder
+
+    patterns_dir = os.path.join(parent_dir, 'patterns')
+    anthology_book, scan_result = create_anthology_pattern_book_from_folder(patterns_dir)
+
+    print(f"Scanned {len(scan_result.modules)} module files in {patterns_dir}")
+    print(f"Loaded {len(scan_result.pattern_books)} PatternBooks")
+    print(f"Loaded {len(scan_result.examples)} examples")
+
+    if scan_result.errors:
+        print(f"Encountered {len(scan_result.errors)} module import errors:")
+        for error in scan_result.errors:
+            print(f"  ⚠ {error}")
     
     print(f"Anthology PatternBook created with {len(anthology_book.list_patterns())} patterns")
     print(f"Available groups: {', '.join(anthology_book.list_groups())}")
@@ -142,6 +125,7 @@ def reload_all_modules():
         # Delete any module that starts with our project prefixes
         if (module_name.startswith('code_goes_here') or 
             module_name.startswith('patterns') or 
+            module_name.startswith('giraffe_librarian_dynamic') or
             module_name == 'giraffe' or
             module_name.startswith('giraffe.') or
             module_name == 'giraffe_render_freecad'):
@@ -168,19 +152,10 @@ def reload_all_modules():
         'code_goes_here.joints.mortise_and_tenon_joint',
         'code_goes_here.joints.japanese_joints',
         'code_goes_here.patternbook',
+        'code_goes_here.librarian',
         'giraffe',
         'patterns',  # Reload the patterns package
         'giraffe_render_freecad',
-        'patterns.mortise_and_tenon_joint_examples',
-        'patterns.basic_joints_examples',
-        'patterns.structures.horsey_example',
-        'patterns.structures.oscarshed',
-        'patterns.structures.new_shed',
-        'patterns.japanese_joints_example',
-        'patterns.irrational_angles_example',
-        'patterns.construction_examples',
-        'patterns.CSG_debug_examples',
-        'patterns.patternbook_example',
     ]
     
     # Re-import all modules in dependency order
