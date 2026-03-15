@@ -11,6 +11,7 @@ Protocol:
 from __future__ import annotations
 
 import contextlib
+import importlib
 import importlib.util
 import json
 import os
@@ -55,11 +56,6 @@ if _project_root is not None:
         os.execv(str(_venv_python), [str(_venv_python)] + sys.argv)
         # os.execv replaces the current process; code below never runs if it succeeds
 
-
-from code_goes_here.patternbook import PatternBook  # noqa: E402
-from code_goes_here.timber import Frame  # noqa: E402
-
-
 TARGET_MODULE_NAME = "_horsey_viewer_target"
 
 
@@ -67,7 +63,7 @@ TARGET_MODULE_NAME = "_horsey_viewer_target"
 class RunnerState:
     file_path: Path
     module: Any
-    frame: Frame
+    frame: Any
 
 
 def log_stderr(message: str) -> None:
@@ -174,7 +170,7 @@ def prism_to_mesh(prism: Any) -> Dict[str, Any]:
     }
 
 
-def build_real_geometry(frame: Frame) -> Dict[str, Any]:
+def build_real_geometry(frame: Any) -> Dict[str, Any]:
     """Build bounding-box mesh geometry for every timber in the frame."""
     meshes = []
     for cut_timber in frame.cut_timbers:
@@ -195,7 +191,7 @@ def build_real_geometry(frame: Frame) -> Dict[str, Any]:
     return {"kind": "bounding-box-geometry", "meshes": meshes}
 
 
-def serialize_frame(frame: Frame) -> Dict[str, Any]:
+def serialize_frame(frame: Any) -> Dict[str, Any]:
     accessories = list(frame.accessories) if hasattr(frame, "accessories") and frame.accessories else []
     timbers = [serialize_cut_timber(cut_timber) for cut_timber in frame.cut_timbers]
     return {
@@ -212,58 +208,140 @@ def serialize_frame(frame: Frame) -> Dict[str, Any]:
     }
 
 
-def build_placeholder_geometry(frame: Frame) -> Dict[str, Any]:
+def build_placeholder_geometry(frame: Any) -> Dict[str, Any]:
     # kept for reference – use build_real_geometry instead
     return build_real_geometry(frame)
 
 
+def _module_file_path(module: Any) -> Optional[Path]:
+    module_file = getattr(module, "__file__", None)
+    if not module_file:
+        return None
+    try:
+        return Path(module_file).resolve()
+    except Exception:
+        return None
+
+
+def _is_venv_path(path: Path) -> bool:
+    path_parts = path.parts
+    return ".venv" in path_parts or "venv" in path_parts
+
+
+def _purge_project_modules(project_root: Path, keep_paths: set[Path]) -> None:
+    removable: list[str] = []
+
+    for module_name, module in list(sys.modules.items()):
+        module_path = _module_file_path(module)
+        if module_path is None:
+            continue
+        if module_path in keep_paths:
+            continue
+        if _is_venv_path(module_path):
+            continue
+        if project_root not in module_path.parents and module_path != project_root:
+            continue
+        removable.append(module_name)
+
+    for module_name in removable:
+        sys.modules.pop(module_name, None)
+
+
+def _looks_like_frame(value: Any) -> bool:
+    return hasattr(value, "cut_timbers") and hasattr(value, "accessories")
+
+
+def _looks_like_patternbook(value: Any) -> bool:
+    return callable(getattr(value, "list_patterns", None)) and callable(getattr(value, "raise_pattern", None))
+
+
+def _is_valid_module_part(name: str) -> bool:
+    return name.isidentifier() and not name.startswith("_")
+
+
+def _module_name_for_path(file_path: Path) -> str:
+    if _project_root is None:
+        return TARGET_MODULE_NAME
+
+    try:
+        rel = file_path.resolve().relative_to(_project_root)
+    except ValueError:
+        return TARGET_MODULE_NAME
+
+    if rel.suffix != ".py":
+        return TARGET_MODULE_NAME
+
+    parts = list(rel.with_suffix("").parts)
+    if not parts:
+        return TARGET_MODULE_NAME
+    if parts[-1] == "__init__":
+        parts = parts[:-1]
+    if not parts:
+        return TARGET_MODULE_NAME
+    if not all(_is_valid_module_part(part) for part in parts):
+        return TARGET_MODULE_NAME
+    return ".".join(parts)
+
+
 def load_module_from_path(file_path: Path) -> Any:
+    importlib.invalidate_caches()
+
+    if _project_root is not None:
+        keep_paths = {Path(__file__).resolve(), file_path.resolve()}
+        _purge_project_modules(_project_root, keep_paths)
+
+    module_name = _module_name_for_path(file_path)
+
     if TARGET_MODULE_NAME in sys.modules:
         del sys.modules[TARGET_MODULE_NAME]
+    if module_name in sys.modules:
+        del sys.modules[module_name]
 
-    spec = importlib.util.spec_from_file_location(TARGET_MODULE_NAME, file_path)
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Could not load module from {file_path}")
 
     module = importlib.util.module_from_spec(spec)
-    sys.modules[TARGET_MODULE_NAME] = module
+    sys.modules[module_name] = module
+    if module_name != TARGET_MODULE_NAME:
+        sys.modules[TARGET_MODULE_NAME] = module
 
     with contextlib.redirect_stdout(sys.stderr):
         spec.loader.exec_module(module)
     return module
 
 
-def frame_from_patternbook(patternbook: PatternBook) -> Frame:
+def frame_from_patternbook(patternbook: Any) -> Any:
     pattern_names = patternbook.list_patterns()
     if not pattern_names:
         raise ValueError("PatternBook is empty")
     first_pattern = pattern_names[0]
     result = patternbook.raise_pattern(first_pattern)
-    if not isinstance(result, Frame):
+    if not _looks_like_frame(result):
         raise TypeError(
-            f"First pattern '{first_pattern}' returned {type(result).__name__}, expected Frame"
+            f"First pattern '{first_pattern}' returned {type(result).__name__}, expected frame-like object"
         )
     return result
 
 
-def resolve_frame_from_module(module: Any) -> Frame:
+def resolve_frame_from_module(module: Any) -> Any:
     if hasattr(module, "example"):
         example = getattr(module, "example")
-        if isinstance(example, Frame):
+        if _looks_like_frame(example):
             return example
-        if isinstance(example, PatternBook):
+        if _looks_like_patternbook(example):
             return frame_from_patternbook(example)
 
     if hasattr(module, "build_frame") and callable(module.build_frame):
         with contextlib.redirect_stdout(sys.stderr):
             frame = module.build_frame()
-        if isinstance(frame, Frame):
+        if _looks_like_frame(frame):
             return frame
-        raise TypeError(f"build_frame() returned {type(frame).__name__}, expected Frame")
+        raise TypeError(f"build_frame() returned {type(frame).__name__}, expected frame-like object")
 
     if hasattr(module, "patternbook"):
         patternbook = getattr(module, "patternbook")
-        if isinstance(patternbook, PatternBook):
+        if _looks_like_patternbook(patternbook):
             return frame_from_patternbook(patternbook)
 
     raise AttributeError(
@@ -317,7 +395,7 @@ def make_error_response(request_id: Any, command: str, exc: Exception) -> Dict[s
     }
 
 
-def get_member_result(frame: Frame, member_name: str) -> Dict[str, Any]:
+def get_member_result(frame: Any, member_name: str) -> Dict[str, Any]:
     for cut_timber in frame.cut_timbers:
         if get_timber_display_name(cut_timber.timber) == member_name:
             return {

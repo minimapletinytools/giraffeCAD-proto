@@ -320,6 +320,7 @@ function showFrameViewer(frameData, geometryData) {
 }
 
 function getWebviewContent(frameData, geometryData) {
+    const frameJson = JSON.stringify(frameData);
     const geometryJson = JSON.stringify(geometryData);
     const frameName = JSON.stringify(frameData.name || 'Unnamed');
     const timberCount = frameData.timber_count || 0;
@@ -337,10 +338,13 @@ function getWebviewContent(frameData, geometryData) {
     ${SS} src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">${SE}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; background: #1e1e1e; overflow: hidden; }
+        html, body { height: 100%; background: #1e1e1e; overflow: auto; color: #ccc; }
         #viewport {
-            position: absolute; top: 0; left: 0; right: 0;
-            height: calc(100vh - 160px);
+            position: relative;
+            width: 100%;
+            height: 72vh;
+            min-height: 420px;
+            border-bottom: 1px solid #333;
         }
         canvas { display: block; width: 100%; height: 100%; }
         #info {
@@ -356,10 +360,30 @@ function getWebviewContent(frameData, geometryData) {
             color: rgba(160,160,160,0.4); font: 11px 'Segoe UI', sans-serif;
             pointer-events: none; user-select: none; white-space: nowrap;
         }
+        #panels {
+            max-width: 1200px;
+            margin: 16px auto 28px;
+            padding: 0 14px;
+            display: grid;
+            gap: 14px;
+        }
+        .panel-box {
+            background: #161616;
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .panel-title {
+            background: #252526;
+            color: #9cdcfe;
+            font: 12px 'Segoe UI', sans-serif;
+            padding: 8px 10px;
+            border-bottom: 1px solid #404040;
+        }
         #timber-panel {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 160px; overflow-y: auto; overflow-x: hidden;
-            background: #161616; border-top: 1px solid #333;
+            max-height: 220px;
+            overflow-y: auto;
+            overflow-x: auto;
         }
         #timber-panel table {
             width: 100%; border-collapse: collapse;
@@ -379,25 +403,62 @@ function getWebviewContent(frameData, geometryData) {
         #timber-panel tbody td:first-child {
             color: #ce9178; font-family: 'Segoe UI', sans-serif;
         }
+        #raw-output {
+            max-height: 260px;
+            overflow: auto;
+            padding: 10px;
+            color: #d4d4d4;
+            font: 11px/1.5 'Courier New', monospace;
+            white-space: pre;
+        }
+        #to-v3d {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 10px;
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            background: #252526;
+            color: #9cdcfe;
+            font: 12px 'Segoe UI', sans-serif;
+            cursor: pointer;
+            display: none;
+            z-index: 50;
+        }
+        #to-v3d:hover {
+            background: #2f2f31;
+        }
         .dim { color: #b5cea8; }
     </style>
 </head>
 <body>
+    <button id="to-v3d" title="Jump back to 3D view">to v3d view</button>
     <div id="viewport">
         <canvas id="c"></canvas>
         <div id="info"></div>
         <div id="hint">drag to orbit &bull; scroll to zoom</div>
     </div>
-    <div id="timber-panel">
-        <table>
-            <thead><tr>
-                <th>#</th><th>Name</th>
-                <th>Length</th><th>Width</th><th>Height</th>
-            </tr></thead>
-            <tbody id="timber-rows"></tbody>
-        </table>
+    <div id="panels">
+        <div class="panel-box">
+            <div class="panel-title">Timber List</div>
+            <div id="timber-panel">
+                <table>
+                    <thead><tr>
+                        <th>#</th><th>Name</th>
+                        <th>Length</th><th>Width</th><th>Height</th>
+                    </tr></thead>
+                    <tbody id="timber-rows"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="panel-box">
+            <div class="panel-title">Raw Python Output</div>
+            <pre id="raw-output"></pre>
+        </div>
     </div>
     ${SS}>
+const FRAME_DATA = ${frameJson};
 const GEOM = ${geometryJson};
 const FRAME_NAME = ${frameName};
 const TIMBER_COUNT = ${timberCount};
@@ -420,6 +481,19 @@ for (var ti = 0; ti < GEOM.meshes.length; ti++) {
         '<td class="dim">' + (m.prism_height !== undefined ? fmt(m.prism_height) : '—') + '</td>';
     tbody.appendChild(tr);
 }
+
+document.getElementById('raw-output').textContent = JSON.stringify({
+    frame: FRAME_DATA,
+    geometry: GEOM,
+}, null, 2);
+
+var toV3d = document.getElementById('to-v3d');
+toV3d.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+window.addEventListener('scroll', function() {
+    toV3d.style.display = window.scrollY > 260 ? 'block' : 'none';
+});
 
 var viewport = document.getElementById('viewport');
 var canvas = document.getElementById('c');
