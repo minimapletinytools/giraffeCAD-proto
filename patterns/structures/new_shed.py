@@ -291,23 +291,10 @@ def create_honeycomb_shed():
     )
 
     # ============================================================================
-    # Create mortise and tenon joint between hub post and center mudsill area
+    # Central hub post currently stands free at the center
     # ============================================================================
-    # For simplicity, we'll create a through-tenon from hub post to mudsill 0
-    
-    print("Creating hub-mudsill joint...")
-    hub_mudsill_arrangement = ButtJointTimberArrangement(
-        receiving_timber=mudsills[0],
-        butt_timber=hub_post,
-        butt_timber_end=TimberReferenceEnd.BOTTOM,
-        front_face_on_butt_timber=None,
-    )
-    hub_mudsill_joint = cut_mortise_and_tenon_joint(
-        arrangement=hub_mudsill_arrangement,
-        tenon_size=Matrix([inches(3), inches(3)]),  # 3" x 3" square tenon
-        tenon_length=inches(3),
-        mortise_depth=inches(3.5),
-    )
+    # There is no central sill member to receive a hub tenon, so keep the hub post
+    # as an unjointed timber rather than forcing an invalid joint to perimeter mudsill 0.
 
     # ============================================================================
     # Create radial rafters from hub to each corner
@@ -465,11 +452,11 @@ def create_honeycomb_shed():
     all_joints.extend(post_mudsill_joints)  # Posts to mudsills
     all_joints.extend(ring_beam_joints)  # Ring beam corners
     all_joints.extend(post_ring_beam_joints)  # Posts to ring beams
-    all_joints.append(hub_mudsill_joint)  # Hub to mudsill
     # all_joints.extend(joist_joints)  # Joists to mudsills - COMMENTED OUT FOR TESTING
     
     # Unjointed timbers (those without joints)
     unjointed_timbers = []
+    unjointed_timbers.append(hub_post)  # Central hub post
     unjointed_timbers.extend(rafters)  # Rafters
     unjointed_timbers.extend(braces)  # Knee braces
     unjointed_timbers.extend(joists)  # Joists (no joints for now)
@@ -478,7 +465,7 @@ def create_honeycomb_shed():
     return Frame.from_joints(
         all_joints, 
         additional_unjointed_timbers=unjointed_timbers,
-        ticket="Honeycomb Shed"
+        name="Honeycomb Shed"
     )
 
 

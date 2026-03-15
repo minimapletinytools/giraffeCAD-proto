@@ -537,12 +537,11 @@ def cut_mortise_and_tenon_joint(
     # -------------------------------------------------------------------------
     # Tenon prism (origin at marking_space) and shoulder half-space
     # -------------------------------------------------------------------------
-    from sympy import sqrt
+    from sympy import Abs, sqrt
 
     # Back-extension from shoulder so prism fully contains tenon at oblique angles
     sin_angle_sq = Integer(1) - cos_angle * cos_angle
-    sin_angle = sqrt(sin_angle_sq) if sin_angle_sq >= 0 else Integer(1)
-    sin_angle_safe = max(sin_angle, Rational(1, 10000))  # avoid division by zero when parallel
+    sin_angle_safe = Rational(1, 10000) if fast_zero_test(sin_angle_sq) else sqrt(Abs(sin_angle_sq))
     back_extension = max(tenon_size[0], tenon_size[1]) / sin_angle_safe
 
     tenon_prism_global = RectangularPrism(
