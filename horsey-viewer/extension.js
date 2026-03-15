@@ -320,214 +320,202 @@ function showFrameViewer(frameData, geometryData) {
 }
 
 function getWebviewContent(frameData, geometryData) {
+    const geometryJson = JSON.stringify(geometryData);
+    const frameName = JSON.stringify(frameData.name || 'Unnamed');
+    const timberCount = frameData.timber_count || 0;
+    const accessoriesCount = frameData.accessories_count || 0;
+
+    // Split </script> tags so the HTML parser doesn't terminate the outer script early
+    const SE = '<' + '/script>';
+    const SS = '<script';
+
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horsey Frame Viewer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    ${SS} src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">${SE}
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 0;
-            margin: 0;
-            color: var(--vscode-foreground);
-            background-color: var(--vscode-editor-background);
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; background: #1e1e1e; overflow: hidden; }
+        #viewport {
+            position: absolute; top: 0; left: 0; right: 0;
+            height: calc(100vh - 160px);
         }
-        #three-container {
-            width: 100%;
-            height: 400px;
-            background-color: #1e1e1e;
-            border-bottom: 2px solid var(--vscode-textLink-foreground);
-            position: relative;
+        canvas { display: block; width: 100%; height: 100%; }
+        #info {
+            position: absolute; top: 12px; left: 12px;
+            background: rgba(20,20,20,0.88); color: #ccc;
+            font: 12px/1.6 'Segoe UI', sans-serif;
+            padding: 8px 14px; border-radius: 4px;
+            border-left: 3px solid #569cd6; pointer-events: none; user-select: none;
         }
-        #three-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
+        #info strong { color: #fff; font-size: 13px; }
+        #hint {
+            position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+            color: rgba(160,160,160,0.4); font: 11px 'Segoe UI', sans-serif;
+            pointer-events: none; user-select: none; white-space: nowrap;
         }
-        .content {
-            padding: 20px;
+        #timber-panel {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 160px; overflow-y: auto; overflow-x: hidden;
+            background: #161616; border-top: 1px solid #333;
         }
-        h1 {
-            color: var(--vscode-foreground);
-            border-bottom: 2px solid var(--vscode-textLink-foreground);
-            padding-bottom: 10px;
-            margin-top: 0;
+        #timber-panel table {
+            width: 100%; border-collapse: collapse;
+            font: 11px/1.5 'Segoe UI', monospace; color: #ccc;
         }
-        h2 {
-            color: var(--vscode-textLink-foreground);
-            margin-top: 30px;
+        #timber-panel thead th {
+            position: sticky; top: 0; background: #252526;
+            color: #9cdcfe; font-weight: 600; text-align: left;
+            padding: 4px 10px; border-bottom: 1px solid #404040;
+            white-space: nowrap;
         }
-        .info-section {
-            background-color: var(--vscode-textBlockQuote-background);
-            border-left: 4px solid var(--vscode-textLink-foreground);
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 4px;
+        #timber-panel tbody tr:hover { background: #2a2d2e; }
+        #timber-panel tbody td {
+            padding: 3px 10px; border-bottom: 1px solid #2a2a2a;
+            white-space: nowrap; font-family: 'Courier New', monospace;
         }
-        .timber-item {
-            background-color: var(--vscode-editor-background);
-            border: 1px solid var(--vscode-panel-border);
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 4px;
+        #timber-panel tbody td:first-child {
+            color: #ce9178; font-family: 'Segoe UI', sans-serif;
         }
-        .timber-name {
-            font-weight: bold;
-            color: var(--vscode-textLink-foreground);
-            font-size: 1.1em;
-            margin-bottom: 10px;
-        }
-        .timber-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-        }
-        .detail-label {
-            font-weight: 600;
-            color: var(--vscode-descriptionForeground);
-            font-size: 0.9em;
-        }
-        .detail-value {
-            font-family: 'Courier New', monospace;
-            color: var(--vscode-foreground);
-            margin-top: 4px;
-        }
-        pre {
-            background-color: var(--vscode-textCodeBlock-background);
-            border: 1px solid var(--vscode-panel-border);
-            border-radius: 4px;
-            padding: 10px;
-            overflow-x: auto;
-            font-size: 0.9em;
-        }
-        .stat {
-            display: inline-block;
-            background-color: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
-            padding: 5px 15px;
-            border-radius: 15px;
-            margin: 5px;
-            font-weight: 600;
-        }
+        .dim { color: #b5cea8; }
     </style>
 </head>
 <body>
-    <div id="three-container">
-        <canvas id="three-canvas"></canvas>
+    <div id="viewport">
+        <canvas id="c"></canvas>
+        <div id="info"></div>
+        <div id="hint">drag to orbit &bull; scroll to zoom</div>
     </div>
-
-    <div class="content">
-        <h1>Horsey Frame Viewer</h1>
-
-        <div class="info-section">
-            <h2>Frame Overview</h2>
-            <div>
-                <span class="stat">Frame: ${frameData.name || 'Unnamed'}</span>
-                <span class="stat">${frameData.timber_count} Timbers</span>
-                <span class="stat">${frameData.accessories_count} Accessories</span>
-            </div>
-        </div>
-
-        <div class="info-section">
-            <h2>Geometry Pipeline</h2>
-            <pre>${JSON.stringify(geometryData, null, 2)}</pre>
-        </div>
-
-        <h2>Timbers (${frameData.timber_count})</h2>
-        ${frameData.timbers.map((timber, index) => `
-            <div class="timber-item">
-                <div class="timber-name">${index + 1}. ${timber.name || 'Unnamed Timber'}</div>
-                <div class="timber-details">
-                    <div class="detail-item">
-                        <span class="detail-label">Length</span>
-                        <span class="detail-value">${timber.length}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Width</span>
-                        <span class="detail-value">${timber.width}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Height</span>
-                        <span class="detail-value">${timber.height}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Position</span>
-                        <span class="detail-value">[${timber.bottom_position.join(', ')}]</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Cuts</span>
-                        <span class="detail-value">${timber.cuts_count} cut operations</span>
-                    </div>
-                </div>
-            </div>
-        `).join('')}
-
-        <h2>Raw Frame JSON</h2>
-        <pre>${JSON.stringify(frameData, null, 2)}</pre>
+    <div id="timber-panel">
+        <table>
+            <thead><tr>
+                <th>#</th><th>Name</th>
+                <th>Length</th><th>Width</th><th>Height</th>
+            </tr></thead>
+            <tbody id="timber-rows"></tbody>
+        </table>
     </div>
+    ${SS}>
+const GEOM = ${geometryJson};
+const FRAME_NAME = ${frameName};
+const TIMBER_COUNT = ${timberCount};
+const ACCESSORIES_COUNT = ${accessoriesCount};
 
-    <script>
-        const container = document.getElementById('three-container');
-        const canvas = document.getElementById('three-canvas');
+document.getElementById('info').innerHTML =
+    '<strong>' + FRAME_NAME + '</strong><br>' +
+    TIMBER_COUNT + ' timbers &bull; ' + ACCESSORIES_COUNT + ' accessories';
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1e1e1e);
+// Populate timber table
+var tbody = document.getElementById('timber-rows');
+for (var ti = 0; ti < GEOM.meshes.length; ti++) {
+    var m = GEOM.meshes[ti];
+    var tr = document.createElement('tr');
+    function fmt(v) { return (v * 1000).toFixed(1) + ' mm'; }
+    tr.innerHTML = '<td>' + (ti + 1) + '</td>' +
+        '<td>' + (m.name || '?') + '</td>' +
+        '<td class="dim">' + (m.prism_length !== undefined ? fmt(m.prism_length) : '—') + '</td>' +
+        '<td class="dim">' + (m.prism_width  !== undefined ? fmt(m.prism_width)  : '—') + '</td>' +
+        '<td class="dim">' + (m.prism_height !== undefined ? fmt(m.prism_height) : '—') + '</td>';
+    tbody.appendChild(tr);
+}
 
-        const camera = new THREE.PerspectiveCamera(
-            75,
-            container.clientWidth / container.clientHeight,
-            0.1,
-            1000
-        );
-        camera.position.z = 5;
+var viewport = document.getElementById('viewport');
+var canvas = document.getElementById('c');
+var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+// false = don't set inline style on canvas; CSS controls display size
+renderer.setSize(viewport.offsetWidth, viewport.offsetHeight, false);
 
-        const renderer = new THREE.WebGLRenderer({
-            canvas: canvas,
-            antialias: true
-        });
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1e1e1e);
 
-        const geometry = new THREE.BoxGeometry(2, 2, 2);
-        const material = new THREE.MeshPhongMaterial({
-            color: 0x4488ff,
-            shininess: 100
-        });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
+var camera = new THREE.PerspectiveCamera(45, viewport.offsetWidth / viewport.offsetHeight, 0.01, 10000);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambientLight);
+// Lighting: warm sun from upper-right + soft blue fill
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+var sun = new THREE.DirectionalLight(0xfff5e0, 0.85);
+sun.position.set(5, 8, 4);
+scene.add(sun);
+var fill = new THREE.DirectionalLight(0xe0f0ff, 0.25);
+fill.position.set(-4, 3, -6);
+scene.add(fill);
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 5, 5);
-        scene.add(directionalLight);
+var solidMat = new THREE.MeshPhongMaterial({ color: 0xC8954A, shininess: 30 });
+var edgeMat  = new THREE.LineBasicMaterial({ color: 0x3a1800 });
 
-        function animate() {
-            requestAnimationFrame(animate);
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
-            renderer.render(scene, camera);
-        }
+// Build meshes and accumulate vertex extents for camera fit
+var minX =  Infinity, minY =  Infinity, minZ =  Infinity;
+var maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
 
-        window.addEventListener('resize', () => {
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
-            renderer.setSize(width, height);
-        });
+for (var mi = 0; mi < GEOM.meshes.length; mi++) {
+    var mesh = GEOM.meshes[mi];
+    var positions = new Float32Array(mesh.vertices);
+    for (var vi = 0; vi < positions.length; vi += 3) {
+        var vx = positions[vi], vy = positions[vi+1], vz = positions[vi+2];
+        if (vx < minX) minX = vx;  if (vx > maxX) maxX = vx;
+        if (vy < minY) minY = vy;  if (vy > maxY) maxY = vy;
+        if (vz < minZ) minZ = vz;  if (vz > maxZ) maxZ = vz;
+    }
+    var geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geom.setIndex(mesh.indices);
+    geom.computeVertexNormals();
+    scene.add(new THREE.Mesh(geom, solidMat));
+    scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(geom, 25), edgeMat));
+}
 
-        animate();
-    </script>
+// Fit camera to the frame's bounding sphere
+var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
+var dx = maxX - minX, dy = maxY - minY, dz = maxZ - minZ;
+var radius = Math.sqrt(dx*dx + dy*dy + dz*dz) / 2 || 5;
+var fovRad = camera.fov * Math.PI / 180;
+var orbitDist = radius / Math.sin(fovRad / 2) * 1.3;
+camera.near = radius * 0.001;
+camera.far  = radius * 50;
+camera.updateProjectionMatrix();
+
+// Orbit state: theta = horizontal angle, phi = vertical angle from +Y axis
+var theta = -Math.PI / 5;
+var phi   =  Math.PI / 3;
+
+function updateCamera() {
+    camera.position.set(
+        cx + orbitDist * Math.sin(phi) * Math.sin(theta),
+        cy + orbitDist * Math.cos(phi),
+        cz + orbitDist * Math.sin(phi) * Math.cos(theta)
+    );
+    camera.lookAt(cx, cy, cz);
+}
+updateCamera();
+
+// Mouse orbit (left drag) and scroll zoom
+var dragging = false, lastX = 0, lastY = 0;
+canvas.addEventListener('mousedown', function(e) { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+window.addEventListener('mouseup', function() { dragging = false; });
+window.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    theta -= (e.clientX - lastX) * 0.008;
+    phi = Math.max(0.05, Math.min(Math.PI - 0.05, phi - (e.clientY - lastY) * 0.008));
+    lastX = e.clientX; lastY = e.clientY;
+    updateCamera();
+});
+viewport.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    orbitDist *= e.deltaY > 0 ? 1.1 : 0.9;
+    updateCamera();
+}, { passive: false });
+
+window.addEventListener('resize', function() {
+    var w = viewport.offsetWidth, h = viewport.offsetHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+});
+
+(function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); })();
+    ${SE}
 </body>
 </html>`;
 }

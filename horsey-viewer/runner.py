@@ -121,6 +121,80 @@ def serialize_cut_timber(cut_timber: Any) -> Dict[str, Any]:
     }
 
 
+def prism_to_mesh(prism: Any) -> Dict[str, Any]:
+    """Convert a RectangularPrism to a flat vertex list + index list triangle mesh.
+
+    Vertex layout (8 corners, indices 0-7):
+        0: -hw, -hh, z0    1: +hw, -hh, z0    2: +hw, +hh, z0    3: -hw, +hh, z0
+        4: -hw, -hh, z1    5: +hw, -hh, z1    6: +hw, +hh, z1    7: -hw, +hh, z1
+    where z0 = -start_distance (bottom) and z1 = end_distance (top) in local Z.
+    """
+    hw = float(prism.size[0]) / 2.0
+    hh = float(prism.size[1]) / 2.0
+    z0 = -float(prism.start_distance) if prism.start_distance is not None else 0.0
+    z1 = float(prism.end_distance) if prism.end_distance is not None else 0.0
+
+    M = prism.transform.orientation.matrix
+    P = prism.transform.position
+    # Convert SymPy values to Python floats once
+    m = [[float(M[r, c]) for c in range(3)] for r in range(3)]
+    p = [float(P[0]), float(P[1]), float(P[2])]
+
+    def g(x: float, y: float, z: float) -> list:
+        return [
+            p[0] + m[0][0] * x + m[0][1] * y + m[0][2] * z,
+            p[1] + m[1][0] * x + m[1][1] * y + m[1][2] * z,
+            p[2] + m[2][0] * x + m[2][1] * y + m[2][2] * z,
+        ]
+
+    verts = [
+        g(-hw, -hh, z0),  # 0
+        g( hw, -hh, z0),  # 1
+        g( hw,  hh, z0),  # 2
+        g(-hw,  hh, z0),  # 3
+        g(-hw, -hh, z1),  # 4
+        g( hw, -hh, z1),  # 5
+        g( hw,  hh, z1),  # 6
+        g(-hw,  hh, z1),  # 7
+    ]
+
+    # 12 triangles with outward-facing CCW normals (verified via cross-product)
+    indices = [
+        0, 2, 1,   0, 3, 2,  # bottom (-Z face)
+        4, 5, 6,   4, 6, 7,  # top    (+Z face)
+        0, 1, 5,   0, 5, 4,  # front  (-Y face)
+        3, 7, 6,   3, 6, 2,  # back   (+Y face)
+        3, 0, 4,   3, 4, 7,  # left   (-X face)
+        1, 2, 6,   1, 6, 5,  # right  (+X face)
+    ]
+
+    return {
+        "vertices": [coord for v in verts for coord in v],  # flat [x0,y0,z0, x1,y1,z1, ...]
+        "indices": indices,
+    }
+
+
+def build_real_geometry(frame: Frame) -> Dict[str, Any]:
+    """Build bounding-box mesh geometry for every timber in the frame."""
+    meshes = []
+    for cut_timber in frame.cut_timbers:
+        try:
+            prism = cut_timber.get_bounding_box_prism()
+            mesh = prism_to_mesh(prism)
+            span = float(prism.end_distance) - (-float(prism.start_distance) if prism.start_distance is not None else 0.0)
+            meshes.append({
+                "name": get_timber_display_name(cut_timber.timber),
+                "vertices": mesh["vertices"],
+                "indices": mesh["indices"],
+                "prism_length": round(float(prism.end_distance - prism.start_distance), 6),
+                "prism_width":  round(float(prism.size[0]), 6),
+                "prism_height": round(float(prism.size[1]), 6),
+            })
+        except Exception as exc:
+            log_stderr(f"Warning: skipping geometry for {get_timber_display_name(cut_timber.timber)}: {exc}")
+    return {"kind": "bounding-box-geometry", "meshes": meshes}
+
+
 def serialize_frame(frame: Frame) -> Dict[str, Any]:
     accessories = list(frame.accessories) if hasattr(frame, "accessories") and frame.accessories else []
     timbers = [serialize_cut_timber(cut_timber) for cut_timber in frame.cut_timbers]
@@ -139,17 +213,8 @@ def serialize_frame(frame: Frame) -> Dict[str, Any]:
 
 
 def build_placeholder_geometry(frame: Frame) -> Dict[str, Any]:
-    return {
-        "kind": "placeholder-geometry",
-        "frame_name": frame.name if hasattr(frame, "name") else None,
-        "meshes": [
-            {
-                "name": get_timber_display_name(cut_timber.timber),
-                "status": "placeholder",
-            }
-            for cut_timber in frame.cut_timbers
-        ],
-    }
+    # kept for reference – use build_real_geometry instead
+    return build_real_geometry(frame)
 
 
 def load_module_from_path(file_path: Path) -> Any:
@@ -293,7 +358,7 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
         return state, make_success_response(request_id, command, serialize_frame(state.frame)), False
 
     if command == "get_geometry":
-        return state, make_success_response(request_id, command, build_placeholder_geometry(state.frame)), False
+        return state, make_success_response(request_id, command, build_real_geometry(state.frame)), False
 
     if command == "get_member":
         member_name = payload.get("name")
