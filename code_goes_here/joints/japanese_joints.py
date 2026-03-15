@@ -378,7 +378,8 @@ def cut_lapped_gooseneck_joint(
     # Calculate where the gooseneck end is in gooseneck timber local coordinates
     # gooseneck_timber_lap_shoulder_from_end is where the lap starts
     # The gooseneck extends from there by gooseneck_extension_from_receiving_end
-    gooseneck_end_position_from_timber_end = gooseneck_timber_lap_shoulder_from_end - gooseneck_extension_from_receiving_end
+    # TODO this seems to be wrong?
+    gooseneck_end_position_from_timber_end = gooseneck_timber_lap_shoulder_from_end + gooseneck_extension_from_receiving_end
     
     if gooseneck_timber_end == TimberReferenceEnd.TOP:
         # End cut at distance from top
@@ -386,6 +387,7 @@ def cut_lapped_gooseneck_joint(
         gooseneck_timber_end_cut = HalfSpace(normal=create_v3(0, 0, 1), offset=gooseneck_end_cut_local_z)
     else:  # BOTTOM
         # End cut at distance from bottom
+        # TODO this case seems to be broken?
         gooseneck_end_cut_local_z = gooseneck_end_position_from_timber_end
         gooseneck_timber_end_cut = HalfSpace(normal=create_v3(0, 0, -1), offset=-gooseneck_end_cut_local_z)
 
