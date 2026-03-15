@@ -678,10 +678,8 @@ def cut_mortise_and_tenon_joint(
     )
 
     # Redundant end cut at the tip of the tenon prism (in tenon timber local)
-    tenon_length_direction_global = safe_transform_vector(
-        marking_space.transform.orientation.matrix, Matrix([Integer(0), Integer(0), Integer(1)])
-    )
-    tip_position_global = marking_space.transform.position + tenon_length_direction_global * max(tenon_length, max(tenon_size[0], tenon_size[1])/sin_angle_safe)
+    tenon_length_direction_global = tenon_timber.get_face_direction_global(tenon_end)
+    tip_position_global = marking_space.transform.position + tenon_length_direction_global * max(tenon_length, max(tenon_size[0], tenon_size[1])/cos_angle)
     tip_position_local = tenon_timber.transform.global_to_local(tip_position_global)
     tip_z_local = tip_position_local[2]
     redundant_end_cut = (
@@ -689,6 +687,7 @@ def cut_mortise_and_tenon_joint(
         if tenon_end == TimberReferenceEnd.TOP
         else HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(-1)), offset=-tip_z_local)
     )
+    print(f"Redundant end cut at z={tip_z_local} in tenon local space to ensure clean tip")
     tenon_cut = Cutting(
         timber=tenon_timber,
         maybe_top_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.TOP else None,
