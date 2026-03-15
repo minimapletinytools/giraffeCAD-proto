@@ -256,9 +256,13 @@ class Ticket
 DONE-decide what "vanilla" project looks like
   DONE-can we just run the cdoe and take what it returns
   DONE-or do we scan for certain patterns
--new shed and irrational angles are failing
+DONE-new shed and irrational angles are failing
 -document example/patternbook stuff
 -start viewer I guess?
+  -setup stdio
+  -load example
+  -do basic frame rendering (as boxes) get_bounding_box_prism
+  -do camera centering and navigation using 3js package I guess
 -after viewer, you should integrate patternbook into viewer
 -update agent insturction
 -reorg joints by joint type 

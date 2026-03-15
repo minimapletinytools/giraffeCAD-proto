@@ -1411,6 +1411,7 @@ class CutTimber:
         Get the bounding box prism for this timber including all its cuts.
         The bounding box is aligned with the timber's orientation.
         
+        Uses PerfectTimberWithin size to determine the cross-sectional size of the bounding box.
         Uses the end cuts (maybe_top_end_cut and maybe_bottom_end_cut) to determine
         the extent of the timber along its length. For skewed end cuts, finds where
         the plane intersects the four long edges of the timber and takes the max/min.

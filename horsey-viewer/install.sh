@@ -3,37 +3,33 @@
 
 echo "🐴 Installing Horsey Viewer extension..."
 
-# Determine the extension directory
-if [ -d "$HOME/.cursor/extensions" ]; then
-    EXT_DIR="$HOME/.cursor/extensions/horsey-viewer"
-    EDITOR="Cursor"
-elif [ -d "$HOME/.vscode/extensions" ]; then
-    EXT_DIR="$HOME/.vscode/extensions/horsey-viewer"
-    EDITOR="VSCode"
-else
-    echo "❌ Could not find VSCode or Cursor extensions directory"
-    echo "Creating VSCode extensions directory..."
-    mkdir -p "$HOME/.vscode/extensions"
-    EXT_DIR="$HOME/.vscode/extensions/horsey-viewer"
-    EDITOR="VSCode"
-fi
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "Installing to: $EXT_DIR"
+VSCODE_EXT_DIR="$HOME/.vscode/extensions/horsey-viewer"
+CURSOR_EXT_DIR="$HOME/.cursor/extensions/horsey-viewer"
 
-# Create directory and copy files
-mkdir -p "$EXT_DIR"
-cp -r . "$EXT_DIR/"
+TARGETS=("$VSCODE_EXT_DIR" "$CURSOR_EXT_DIR")
+EDITORS=("VSCode" "Cursor")
 
-# Clean up unnecessary files in the extension directory
-rm -f "$EXT_DIR/install.sh"
-rm -f "$EXT_DIR/test-frame.py"
-rm -rf "$EXT_DIR/.vscode"
+for i in "${!TARGETS[@]}"; do
+    EXT_DIR="${TARGETS[$i]}"
+    EDITOR="${EDITORS[$i]}"
 
-echo "✅ Horsey Viewer installed successfully!"
+    echo "Installing to $EDITOR: $EXT_DIR"
+    mkdir -p "$EXT_DIR"
+
+    cp -R "$SCRIPT_DIR"/. "$EXT_DIR"/
+
+    rm -f "$EXT_DIR/install.sh"
+    rm -f "$EXT_DIR/test-frame.py"
+    rm -rf "$EXT_DIR/.vscode"
+done
+
+echo "✅ Horsey Viewer installed successfully in VSCode and Cursor!"
 echo ""
 echo "Next steps:"
-echo "1. Reload $EDITOR: Cmd+Shift+P → 'Developer: Reload Window'"
+echo "1. Reload VSCode and Cursor: Cmd+Shift+P → 'Developer: Reload Window'"
 echo "2. Open a Python file with a build_frame() function"
 echo "3. Run command: 'Render Horsey'"
 echo ""
-echo "Test file available at: $(pwd)/test-frame.py"
+echo "Test file available at: $SCRIPT_DIR/test-frame.py"
