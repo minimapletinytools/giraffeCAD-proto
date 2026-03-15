@@ -41,6 +41,20 @@ if _project_root is not None:
     if _project_root_str not in sys.path:
         sys.path.insert(0, _project_root_str)
 
+    # If we're not running from the venv, re-exec with the venv python so all
+    # dependencies (sympy etc.) are available.
+    def _find_venv_python(root: Path) -> "Path | None":
+        for rel in (".venv/bin/python3", ".venv/bin/python", "venv/bin/python3", "venv/bin/python"):
+            p = root / rel
+            if p.exists():
+                return p
+        return None
+
+    _venv_python = _find_venv_python(_project_root)
+    if _venv_python is not None and Path(sys.executable).resolve() != _venv_python.resolve():
+        os.execv(str(_venv_python), [str(_venv_python)] + sys.argv)
+        # os.execv replaces the current process; code below never runs if it succeeds
+
 
 from code_goes_here.patternbook import PatternBook  # noqa: E402
 from code_goes_here.timber import Frame  # noqa: E402
