@@ -13,10 +13,11 @@ const path = require('path');
 const fs = require('fs');
 
 class FileWatcher {
-    constructor(exampleFilePath, projectRoot, onChangeCallback) {
+    constructor(exampleFilePath, projectRoot, onChangeCallback, logCallback = null) {
         this.exampleFilePath = exampleFilePath;
         this.projectRoot = projectRoot;
         this.onChangeCallback = onChangeCallback;
+        this.logCallback = logCallback;
         this.watchers = [];
         this.debounceTimer = null;
         this.debounceDelay = 300; // ms
@@ -31,13 +32,19 @@ class FileWatcher {
             return;
         }
 
+        this.logChange(`File watcher started for example: ${this.exampleFilePath}`);
+
         // Watch the example file itself
         this.watchExampleFile();
 
         // Watch code_goes_here library (local dev only)
         if (this.projectRoot && this.hasLocalCodeGoesHere()) {
+            this.logChange(`Library watcher enabled for: ${path.join(this.projectRoot, 'code_goes_here')}`);
             this.watchLibrary();
+            return;
         }
+
+        this.logChange('Library watcher disabled: no local code_goes_here checkout detected');
     }
 
     /**
@@ -54,20 +61,24 @@ class FileWatcher {
      * Create a watcher for the example file.
      */
     watchExampleFile() {
-        const watcher = vscode.workspace.createFileSystemWatcher(this.exampleFilePath);
+        const pattern = new vscode.RelativePattern(
+            path.dirname(this.exampleFilePath),
+            path.basename(this.exampleFilePath)
+        );
+        const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
-        watcher.onDidChange(() => {
-            this.logChange(`Example file changed: ${this.exampleFilePath}`);
+        watcher.onDidChange((uri) => {
+            this.logChange(`Detected example file change: ${uri?.fsPath || this.exampleFilePath}`);
             this.debounceReload('example file');
         });
 
-        watcher.onDidCreate(() => {
-            this.logChange(`Example file created: ${this.exampleFilePath}`);
+        watcher.onDidCreate((uri) => {
+            this.logChange(`Detected example file creation: ${uri?.fsPath || this.exampleFilePath}`);
             this.debounceReload('example file');
         });
 
-        watcher.onDidDelete(() => {
-            this.logChange(`Example file deleted: ${this.exampleFilePath}`);
+        watcher.onDidDelete((uri) => {
+            this.logChange(`Detected example file deletion: ${uri?.fsPath || this.exampleFilePath}`);
             this.debounceReload('example file');
         });
 
@@ -81,18 +92,18 @@ class FileWatcher {
         const pattern = new vscode.RelativePattern(this.projectRoot, 'code_goes_here/**/*.py');
         const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
-        watcher.onDidChange(() => {
-            this.logChange('Library file changed');
+        watcher.onDidChange((uri) => {
+            this.logChange(`Detected library file change: ${uri?.fsPath || 'unknown path'}`);
             this.debounceReload('library file');
         });
 
-        watcher.onDidCreate(() => {
-            this.logChange('Library file created');
+        watcher.onDidCreate((uri) => {
+            this.logChange(`Detected library file creation: ${uri?.fsPath || 'unknown path'}`);
             this.debounceReload('library file');
         });
 
-        watcher.onDidDelete(() => {
-            this.logChange('Library file deleted');
+        watcher.onDidDelete((uri) => {
+            this.logChange(`Detected library file deletion: ${uri?.fsPath || 'unknown path'}`);
             this.debounceReload('library file');
         });
 
@@ -108,11 +119,13 @@ class FileWatcher {
         }
 
         if (this.debounceTimer !== null) {
+            this.logChange(`Coalescing additional ${source} event into pending reload`);
             clearTimeout(this.debounceTimer);
         }
 
         this.debounceTimer = setTimeout(() => {
             if (!this.isDisposed && this.onChangeCallback) {
+                this.logChange(`Firing reload callback for ${source}`);
                 this.onChangeCallback(source);
             }
             this.debounceTimer = null;
@@ -126,7 +139,9 @@ class FileWatcher {
         if (this.isDisposed) {
             return;
         }
-        // Intentionally minimal logging here; callers can add output channel logging
+        if (this.logCallback) {
+            this.logCallback(message);
+        }
     }
 
     /**

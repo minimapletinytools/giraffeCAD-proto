@@ -73,6 +73,14 @@ describe('FileWatcher', () => {
       const watcher = new FileWatcher('/path/to/example.py', '/path/to/project', null);
       expect(watcher.debounceDelay).toBe(300);
     });
+
+    test('should accept an optional log callback', () => {
+      const logCallback = jest.fn();
+      const watcher = new FileWatcher('/path/to/example.py', '/path/to/project', null, logCallback);
+      watcher.start();
+
+      expect(logCallback).toHaveBeenCalledWith('File watcher started for example: /path/to/example.py');
+    });
   });
 
   describe('start()', () => {
@@ -81,7 +89,9 @@ describe('FileWatcher', () => {
       const watcher = new FileWatcher('/path/to/example.py', '/path/to/project', callback);
       watcher.start();
 
-      expect(mockVscodeWorkspace.createFileSystemWatcher).toHaveBeenCalledWith('/path/to/example.py');
+      const exampleWatcherCall = mockVscodeWorkspace.createFileSystemWatcher.mock.calls[0][0];
+      expect(exampleWatcherCall.baseFolder).toBe('/path/to');
+      expect(exampleWatcherCall.pattern).toBe('example.py');
       expect(watcher.watchers.length).toBeGreaterThan(0);
     });
 
@@ -138,6 +148,23 @@ describe('FileWatcher', () => {
 
       jest.advanceTimersByTime(300);
 
+      expect(callback).toHaveBeenCalledWith('example file');
+    });
+
+    test('should log detection and callback firing for example file change', () => {
+      const callback = jest.fn();
+      const logCallback = jest.fn();
+      const watcher = new FileWatcher('/path/to/example.py', null, callback, logCallback);
+      watcher.start();
+
+      const exampleWatcher = mockWatcherSubscriptions[0];
+      exampleWatcher._onDidChange({ fsPath: '/path/to/example.py' });
+
+      expect(logCallback).toHaveBeenCalledWith('Detected example file change: /path/to/example.py');
+
+      jest.advanceTimersByTime(300);
+
+      expect(logCallback).toHaveBeenCalledWith('Firing reload callback for example file');
       expect(callback).toHaveBeenCalledWith('example file');
     });
 

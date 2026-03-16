@@ -83,7 +83,8 @@ async function getOrCreateSession(filePath, context) {
     fileWatcher = new FileWatcher(
         filePath,
         runnerSession.projectRoot,
-        (source) => onFileChanged(source)
+        (source) => onFileChanged(source),
+        (message) => outputChannel.appendLine(`[watcher] ${message}`)
     );
     fileWatcher.start();
 
@@ -99,11 +100,12 @@ async function onFileChanged(source) {
         return;
     }
 
-    outputChannel.appendLine(`Auto-reloading due to ${source} change...`);
+    outputChannel.appendLine(`[watcher] Auto-reloading due to ${source} change...`);
     try {
         await reloadAndRefreshFrame(runnerSession);
+        outputChannel.appendLine(`[watcher] Reload complete for ${source}`);
     } catch (error) {
-        outputChannel.appendLine(`Auto-reload failed: ${error.message}`);
+        outputChannel.appendLine(`[watcher] Auto-reload failed: ${error.message}`);
         outputChannel.show(true);
     }
 }
