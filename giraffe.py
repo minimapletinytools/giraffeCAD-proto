@@ -17,6 +17,7 @@ from code_goes_here.joints.mortise_and_tenon_joint import *
 from code_goes_here.joints.japanese_joints import *
 from code_goes_here.measuring import *
 from code_goes_here.patternbook import *
+from code_goes_here.triangles import *
 
 # Explicitly import private helper functions that are used by tests
 # These start with _ so they won't be included in "import *" by default

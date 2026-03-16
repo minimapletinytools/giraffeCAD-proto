@@ -9,7 +9,7 @@ DONE-update vscode plugin to use python IPC or something
     -I guess after generating mesh you walk the mesh to tie back to features :( hope that's not too slow
 
 -smart refresh
-  -add filewatcher
+  DONE-add filewatcher
   DONE-add hashing on timbers to determine which ones changed
   -the runner keeps a hash map
   -then only generate triangles for stuff that changed
