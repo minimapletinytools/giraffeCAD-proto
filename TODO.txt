@@ -1,6 +1,6 @@
 
 :: 3/8/2025 viewer next steps
--update vscode plugin to use python IPC or something
+DONE-update vscode plugin to use python IPC or something
   -probably wrap in an interface s you can use websocket or stdio or whatever
 
 -triangulation in python
@@ -10,7 +10,7 @@
 
 -smart refresh
   -add filewatcher
-  -add hashing on timbers to determine which ones changed
+  DONE-add hashing on timbers to determine which ones changed
   -the runner keeps a hash map
   -then only generate triangles for stuff that changed
 
@@ -257,12 +257,13 @@ DONE-decide what "vanilla" project looks like
   DONE-can we just run the cdoe and take what it returns
   DONE-or do we scan for certain patterns
 DONE-new shed and irrational angles are failing
+DONE-start viewer I guess?
+  DONE-setup stdio
+  DONE-load example
+  ODNE-do basic frame rendering (as boxes) get_bounding_box_prism
+  DONE-do camera centering and navigation using 3js package I guess
+
 -document example/patternbook stuff
--start viewer I guess?
-  -setup stdio
-  -load example
-  -do basic frame rendering (as boxes) get_bounding_box_prism
-  -do camera centering and navigation using 3js package I guess
 -after viewer, you should integrate patternbook into viewer
 -update agent insturction
 -reorg joints by joint type 
