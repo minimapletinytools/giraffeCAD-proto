@@ -18,6 +18,7 @@ DONE-update vscode plugin to use python IPC or something
 
 IGNORE-doc tab support?
 
+
 -cute backgrounds
   -creamy gradient background
   -simple drop shadows? (you can fake this one)
@@ -262,6 +263,17 @@ DONE-start viewer I guess?
   DONE-load example
   ODNE-do basic frame rendering (as boxes) get_bounding_box_prism
   DONE-do camera centering and navigation using 3js package I guess
+
+-render accessories
+-figure out why gooseneck isn't rendering
+-3d view
+  -add gizmo in upper right corner
+  -add focus button
+  -do new mouse navigation
+-layout
+  -move out CSS html and frontend scripts into their own thing
+  -do some design on the frontend side I guesss
+
 
 -document example/patternbook stuff
 -after viewer, you should integrate patternbook into viewer

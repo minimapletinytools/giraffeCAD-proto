@@ -10,8 +10,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Optional, Sequence, Tuple, Union
 
-import numpy as np
-import trimesh
+try:
+    import numpy as np
+    import trimesh
+    _TRIMESH_AVAILABLE = True
+except ImportError:
+    np = None  # type: ignore[assignment]
+    trimesh = None  # type: ignore[assignment]
+    _TRIMESH_AVAILABLE = False
+
 from sympy import Expr
 
 from .cutcsg import (
@@ -67,7 +74,16 @@ class RaycastHit:
 MeshableTarget = Union[TriangleMesh, CutCSG]
 
 
+def _require_trimesh() -> None:
+    if not _TRIMESH_AVAILABLE:
+        raise ImportError(
+            "trimesh and numpy are required for triangle meshing. "
+            "Install them with: pip install trimesh numpy"
+        )
+
+
 def triangulate_cutcsg(csg: CutCSG) -> TriangleMesh:
+    _require_trimesh()
     return _triangulate_with_label(csg, label=type(csg).__name__)
 
 
@@ -85,6 +101,7 @@ def raw_raycast_first(target: MeshableTarget, origin: V3, direction: V3) -> Opti
 
 # TODO raycast on TriangleMesh only
 def raw_raycast_all(target: MeshableTarget, origin: V3, direction: V3) -> list[RaycastHit]:
+    _require_trimesh()
     triangle_mesh = target if isinstance(target, TriangleMesh) else triangulate_cutcsg(target)
     mesh = triangle_mesh.mesh
 
