@@ -37,7 +37,9 @@ function activate(context) {
             await session.refresh();
         } catch (error) {
             outputChannel.show(true);
-            vscode.window.showErrorMessage(`Horsey Viewer error: ${error.message}`);
+            if (!error || !error.horseyErrorNotified) {
+                vscode.window.showErrorMessage(`Horsey Viewer error: ${error.message}`);
+            }
         }
     });
 

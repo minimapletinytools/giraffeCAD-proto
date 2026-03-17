@@ -145,7 +145,7 @@ class PythonRunnerSession {
         }
 
         if (message.type === 'fatal_error') {
-            const error = new Error(this.extractErrorMessage(message.error));
+            const error = this.createRunnerError(message.error, 'Runner fatal error');
             this.channel.appendLine(`Runner fatal error: ${this.extractErrorMessage(message.error)}`);
             this.startResolved = true;
             rejectStart(error);
@@ -163,7 +163,7 @@ class PythonRunnerSession {
             if (message.ok) {
                 pending.resolve(message.result);
             } else {
-                pending.reject(new Error(this.extractErrorMessage(message.error)));
+                pending.reject(this.createRunnerError(message.error, `Runner command '${message.command || 'unknown'}' failed`));
             }
             return;
         }
@@ -182,6 +182,19 @@ class PythonRunnerSession {
             return errorPayload.message;
         }
         return JSON.stringify(errorPayload);
+    }
+
+    createRunnerError(errorPayload, prefix = 'Runner error') {
+        const message = this.extractErrorMessage(errorPayload);
+        const error = new Error(`${prefix}: ${message}`);
+        error.runnerError = errorPayload || null;
+        error.runnerTraceback = errorPayload && typeof errorPayload.traceback === 'string'
+            ? errorPayload.traceback
+            : null;
+        error.runnerErrorType = errorPayload && typeof errorPayload.type === 'string'
+            ? errorPayload.type
+            : null;
+        return error;
     }
 
     async request(command, payload = {}) {

@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const vscode = require('vscode');
 const { PythonRunnerSession } = require('./runner-session');
 const { FileWatcher } = require('./file-watcher');
 const { createFrameViewer, renderFrameViewer, requestViewerScreenshot } = require('./viewer');
@@ -71,6 +72,9 @@ class FrameViewSession {
             const geometryData = await this.runnerSession.request('get_geometry');
             renderFrameViewer(this.panel, this.filePath, frameData, geometryData);
             this.log(`[refresh] Reload complete for ${path.basename(this.filePath)}`);
+        } catch (error) {
+            await this.reportRunnerError(error, `[refresh] ${path.basename(this.filePath)} (${reason})`);
+            throw error;
         } finally {
             this.isRefreshing = false;
         }
@@ -114,8 +118,97 @@ class FrameViewSession {
         try {
             await this.refresh(`${source} change`);
         } catch (error) {
-            this.log(`[watcher] Auto-reload failed for ${path.basename(this.filePath)}: ${error.message}`);
+            this.log(`[watcher] Auto-reload failed for ${path.basename(this.filePath)}: ${error.message || error}`);
+        }
+    }
+
+    extractRunnerErrorDetails(error) {
+        const payload = error && error.runnerError && typeof error.runnerError === 'object'
+            ? error.runnerError
+            : null;
+        const message = payload && typeof payload.message === 'string'
+            ? payload.message
+            : (error && error.message ? error.message : String(error));
+        const traceback = payload && typeof payload.traceback === 'string'
+            ? payload.traceback
+            : (error && typeof error.runnerTraceback === 'string' ? error.runnerTraceback : null);
+        const type = payload && typeof payload.type === 'string'
+            ? payload.type
+            : (error && typeof error.runnerErrorType === 'string' ? error.runnerErrorType : null);
+        return { message, traceback, type };
+    }
+
+    parseTracebackLocation(traceback) {
+        if (!traceback || typeof traceback !== 'string') {
+            return null;
+        }
+        const fileLineRegex = /File "([^"]+)", line (\d+)/g;
+        const candidates = [];
+        let match = fileLineRegex.exec(traceback);
+        while (match) {
+            candidates.push({ filePath: match[1], lineNumber: Number(match[2]) });
+            match = fileLineRegex.exec(traceback);
+        }
+        for (let index = candidates.length - 1; index >= 0; index -= 1) {
+            const candidate = candidates[index];
+            if (candidate.filePath && fs.existsSync(candidate.filePath) && Number.isFinite(candidate.lineNumber)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    async openTracebackLocation(location) {
+        if (!location) {
+            return;
+        }
+        try {
+            const uri = vscode.Uri.file(location.filePath);
+            const document = await vscode.workspace.openTextDocument(uri);
+            const editor = await vscode.window.showTextDocument(document, { preview: false });
+            const lineIndex = Math.max(0, location.lineNumber - 1);
+            const range = new vscode.Range(lineIndex, 0, lineIndex, 0);
+            editor.selection = new vscode.Selection(range.start, range.end);
+            editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+        } catch (openError) {
+            this.log(`[error] Failed to open traceback location: ${openError.message || openError}`);
+        }
+    }
+
+    async reportRunnerError(error, contextLabel) {
+        const details = this.extractRunnerErrorDetails(error);
+        const errorTypePart = details.type ? `${details.type}: ` : '';
+        this.log(`[error] ${contextLabel} -> ${errorTypePart}${details.message}`);
+
+        if (details.traceback) {
+            this.channel.appendLine(`[${path.basename(this.filePath)}] [traceback] BEGIN`);
+            for (const tracebackLine of details.traceback.split('\n')) {
+                this.channel.appendLine(`[${path.basename(this.filePath)}] ${tracebackLine}`);
+            }
+            this.channel.appendLine(`[${path.basename(this.filePath)}] [traceback] END`);
+        }
+
+        this.channel.show(true);
+        const location = this.parseTracebackLocation(details.traceback);
+        const actions = ['Open Horsey Output'];
+        if (location) {
+            actions.push('Go to Error');
+        }
+
+        const choice = await vscode.window.showErrorMessage(
+            `Horsey Viewer Python error: ${details.message}`,
+            ...actions
+        );
+
+        if (choice === 'Open Horsey Output') {
             this.channel.show(true);
+        }
+        if (choice === 'Go to Error' && location) {
+            await this.openTracebackLocation(location);
+        }
+
+        if (error && typeof error === 'object') {
+            error.horseyErrorNotified = true;
         }
     }
 

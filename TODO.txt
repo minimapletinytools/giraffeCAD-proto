@@ -23,21 +23,20 @@ pressing F focuses on the selection
 DONE-update vscode plugin to use python IPC or something
   -probably wrap in an interface s you can use websocket or stdio or whatever
 
--triangulation in python
+DONE-triangulation in python
   -try triangulating CSG in python first, you can add more triangle data in the future but for now just need tris
   -actualy I think you want to store fetaure information as features need to be highlightable, not trias correspond to facees, you need to store edges and points separately
     -I guess after generating mesh you walk the mesh to tie back to features :( hope that's not too slow
 
--smart refresh
+DONE-smart refresh
   DONE-add filewatcher
   DONE-add hashing on timbers to determine which ones changed
-  -the runner keeps a hash map
-  -then only generate triangles for stuff that changed
-
--debug console lol
+  DONE-the runner keeps a hash map
+  DONE-then only generate triangles for stuff that changed
 
 IGNORE-doc tab support?
 
+IGNORE-debug console lol
 
 -cute backgrounds
   -creamy gradient background
