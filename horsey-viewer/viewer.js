@@ -69,10 +69,20 @@ class HorseyViewerApp extends LitElement {
     static styles = css\`
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :host {
+            --hv-bg-top: #fff8dc;
+            --hv-bg-bottom: #ffeef4;
+            --hv-panel-bg: rgba(255, 255, 255, 0.78);
+            --hv-panel-border: #d7dbe8;
+            --hv-text: #3a4152;
+            --hv-title: #5873a6;
+            --hv-dim: #6e7691;
+            --hv-accent: #8ca4cf;
+            --hv-mesh: #afbccf;
+            --hv-edge: #5d6882;
             display: block;
             min-height: 100vh;
-            background: #1e1e1e;
-            color: #ccc;
+            background: linear-gradient(180deg, var(--hv-bg-top) 0%, var(--hv-bg-bottom) 100%);
+            color: var(--hv-text);
             overflow: auto;
         }
         #viewport {
@@ -80,35 +90,42 @@ class HorseyViewerApp extends LitElement {
             width: 100%;
             height: 72vh;
             min-height: 420px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--hv-panel-border);
         }
         canvas { display: block; width: 100%; height: 100%; }
         #info {
             position: absolute; top: 12px; left: 12px;
-            background: rgba(20,20,20,0.88); color: #ccc;
+            background: var(--hv-panel-bg);
+            color: var(--hv-text);
             font: 12px/1.6 'Segoe UI', sans-serif;
             padding: 8px 14px; border-radius: 4px;
-            border-left: 3px solid #569cd6; pointer-events: none; user-select: none;
+            border: 1px solid var(--hv-panel-border);
+            border-left: 3px solid var(--hv-accent);
+            pointer-events: none;
+            user-select: none;
+            backdrop-filter: blur(4px);
         }
-        #info strong { color: #fff; font-size: 13px; }
+        #info strong { color: #39496e; font-size: 13px; }
         #debug {
             position: absolute;
             top: 12px;
             right: 12px;
-            background: rgba(20,20,20,0.88);
-            color: #ccc;
+            background: var(--hv-panel-bg);
+            color: var(--hv-text);
             font: 12px/1.6 'Segoe UI', sans-serif;
             padding: 8px 12px;
             border-radius: 4px;
-            border-left: 3px solid #b5cea8;
+            border: 1px solid var(--hv-panel-border);
+            border-left: 3px solid #9eb5dc;
             pointer-events: none;
             user-select: none;
             text-align: right;
+            backdrop-filter: blur(4px);
         }
-        #debug strong { color: #fff; font-size: 13px; }
+        #debug strong { color: #39496e; font-size: 13px; }
         #hint {
             position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
-            color: rgba(160,160,160,0.4); font: 11px 'Segoe UI', sans-serif;
+            color: rgba(72, 77, 94, 0.58); font: 11px 'Segoe UI', sans-serif;
             pointer-events: none; user-select: none; white-space: nowrap;
         }
         #panels {
@@ -119,17 +136,18 @@ class HorseyViewerApp extends LitElement {
             gap: 14px;
         }
         .panel-box {
-            background: #161616;
-            border: 1px solid #333;
+            background: var(--hv-panel-bg);
+            border: 1px solid var(--hv-panel-border);
             border-radius: 8px;
             overflow: hidden;
+            backdrop-filter: blur(4px);
         }
         .panel-title {
-            background: #252526;
-            color: #9cdcfe;
+            background: rgba(255, 255, 255, 0.6);
+            color: var(--hv-title);
             font: 12px 'Segoe UI', sans-serif;
             padding: 8px 10px;
-            border-bottom: 1px solid #404040;
+            border-bottom: 1px solid var(--hv-panel-border);
         }
         #timber-panel {
             max-height: 220px;
@@ -138,27 +156,27 @@ class HorseyViewerApp extends LitElement {
         }
         #timber-panel table {
             width: 100%; border-collapse: collapse;
-            font: 11px/1.5 'Segoe UI', monospace; color: #ccc;
+            font: 11px/1.5 'Segoe UI', monospace; color: var(--hv-text);
         }
         #timber-panel thead th {
-            position: sticky; top: 0; background: #252526;
-            color: #9cdcfe; font-weight: 600; text-align: left;
-            padding: 4px 10px; border-bottom: 1px solid #404040;
+            position: sticky; top: 0; background: rgba(255, 255, 255, 0.95);
+            color: var(--hv-title); font-weight: 600; text-align: left;
+            padding: 4px 10px; border-bottom: 1px solid var(--hv-panel-border);
             white-space: nowrap;
         }
-        #timber-panel tbody tr:hover { background: #2a2d2e; }
+        #timber-panel tbody tr:hover { background: rgba(145, 161, 192, 0.12); }
         #timber-panel tbody td {
-            padding: 3px 10px; border-bottom: 1px solid #2a2a2a;
+            padding: 3px 10px; border-bottom: 1px solid #e8ebf3;
             white-space: nowrap; font-family: 'Courier New', monospace;
         }
         #timber-panel tbody td:first-child {
-            color: #ce9178; font-family: 'Segoe UI', sans-serif;
+            color: #707a97; font-family: 'Segoe UI', sans-serif;
         }
         #raw-output {
             max-height: 260px;
             overflow: auto;
             padding: 10px;
-            color: #d4d4d4;
+            color: var(--hv-text);
             font: 11px/1.5 'Courier New', monospace;
             white-space: pre;
         }
@@ -168,19 +186,19 @@ class HorseyViewerApp extends LitElement {
             left: 50%;
             transform: translateX(-50%);
             padding: 6px 10px;
-            border: 1px solid #4a4a4a;
+            border: 1px solid var(--hv-panel-border);
             border-radius: 6px;
-            background: #252526;
-            color: #9cdcfe;
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--hv-title);
             font: 12px 'Segoe UI', sans-serif;
             cursor: pointer;
             display: none;
             z-index: 50;
         }
         #to-v3d:hover {
-            background: #2f2f31;
+            background: #ffffff;
         }
-        .dim { color: #b5cea8; }
+        .dim { color: var(--hv-dim); }
     \`;
 
     constructor() {
@@ -290,25 +308,44 @@ class HorseyViewerApp extends LitElement {
         const viewport = this.shadowRoot.getElementById('viewport');
         const canvas = this.shadowRoot.getElementById('c');
 
-        this.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        this.renderer = new THREE.WebGLRenderer({
+            canvas: canvas,
+            antialias: true,
+            logarithmicDepthBuffer: true,
+        });
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(viewport.offsetWidth, viewport.offsetHeight, false);
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
 
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x1e1e1e);
+        this.scene.background = new THREE.Color(0xfff8dc);
 
         this.camera = new THREE.PerspectiveCamera(45, viewport.offsetWidth / viewport.offsetHeight, 0.01, 10000);
 
-        this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-        const sun = new THREE.DirectionalLight(0xfff5e0, 0.85);
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const sun = new THREE.DirectionalLight(0xffffff, 0.75);
         sun.position.set(5, 8, 4);
         this.scene.add(sun);
-        const fill = new THREE.DirectionalLight(0xe0f0ff, 0.25);
+        const fill = new THREE.DirectionalLight(0xecf2ff, 0.45);
         fill.position.set(-4, 3, -6);
         this.scene.add(fill);
 
-        this.solidMat = new THREE.MeshPhongMaterial({ color: 0xC8954A, shininess: 30 });
-        this.edgeMat = new THREE.LineBasicMaterial({ color: 0x3a1800 });
+        this.solidMat = new THREE.MeshStandardMaterial({
+            color: 0xafbccf,
+            metalness: 0.02,
+            roughness: 0.68,
+            flatShading: true,
+            polygonOffset: true,
+            polygonOffsetFactor: 0.6,
+            polygonOffsetUnits: 2,
+        });
+        this.edgeMat = new THREE.LineBasicMaterial({
+            color: 0x5d6882,
+            transparent: true,
+            opacity: 0.4,
+            depthTest: false,
+            depthWrite: false,
+        });
 
         this.updateCamera();
         const animate = () => {
@@ -434,10 +471,13 @@ class HorseyViewerApp extends LitElement {
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
             geometry.setIndex(mesh.indices || []);
             geometry.computeVertexNormals();
+            geometry.computeBoundingSphere();
 
             const solidMesh = new THREE.Mesh(geometry, this.solidMat);
             const edgeGeometry = new THREE.EdgesGeometry(geometry, 25);
             const edgeMesh = new THREE.LineSegments(edgeGeometry, this.edgeMat);
+            solidMesh.renderOrder = 1;
+            edgeMesh.renderOrder = 2;
 
             this.scene.add(solidMesh);
             this.scene.add(edgeMesh);
@@ -510,8 +550,8 @@ class HorseyViewerApp extends LitElement {
         const radius = Math.sqrt(dx * dx + dy * dy + dz * dz) / 2 || 5;
         const fovRad = this.camera.fov * Math.PI / 180;
         this.orbitDist = radius / Math.sin(fovRad / 2) * 1.3;
-        this.camera.near = radius * 0.001;
-        this.camera.far = radius * 50;
+        this.camera.near = Math.max(0.05, radius * 0.05);
+        this.camera.far = Math.max(this.camera.near * 20, radius * 20);
         this.camera.updateProjectionMatrix();
         this.updateCamera();
     }
