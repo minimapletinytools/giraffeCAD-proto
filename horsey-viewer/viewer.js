@@ -9,6 +9,7 @@ const fs = require('fs');
 const initializedPanels = new WeakSet();
 const webviewDir = path.join(__dirname, 'webview');
 let screenshotRequestCounter = 1;
+const VIEWER_APP_VERSION = '2026.03.17.4';
 
 function getNonce() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -58,9 +59,9 @@ function renderFrameViewer(panel, filePath, frameData, geometryData) {
 function getViewerTitle(filePath, frameName = null) {
     const fileName = path.basename(filePath);
     if (frameName) {
-        return `Horsey: ${fileName} (${frameName})`;
+        return `Horsey: ${fileName} (${frameName}) · v${VIEWER_APP_VERSION}`;
     }
-    return `Horsey: ${fileName}`;
+    return `Horsey: ${fileName} · v${VIEWER_APP_VERSION}`;
 }
 
 function getWebviewContent(webview, frameData, geometryData) {

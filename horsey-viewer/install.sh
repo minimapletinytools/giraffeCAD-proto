@@ -8,8 +8,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VSCODE_EXT_DIR="$HOME/.vscode/extensions/horsey-viewer"
 CURSOR_EXT_DIR="$HOME/.cursor/extensions/horsey-viewer"
 
-TARGETS=("$VSCODE_EXT_DIR" "$CURSOR_EXT_DIR")
-EDITORS=("VSCode" "Cursor")
+#TARGETS=("$VSCODE_EXT_DIR" "$CURSOR_EXT_DIR")
+#EDITORS=("VSCode" "Cursor")
+TARGETS=("$CURSOR_EXT_DIR")
+EDITORS=("Cursor")
+
 
 for i in "${!TARGETS[@]}"; do
     EXT_DIR="${TARGETS[$i]}"

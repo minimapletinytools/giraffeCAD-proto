@@ -31,6 +31,19 @@ class FrameViewSession {
             this.panel = null;
             void this.dispose();
         });
+        this.panel.webview.onDidReceiveMessage((message) => {
+            if (!message || message.type !== 'viewerLog') {
+                return;
+            }
+            const eventName = typeof message.event === 'string' ? message.event : 'unknown';
+            const source = typeof message.source === 'string' ? message.source : 'webview';
+            const version = typeof message.version === 'string' ? message.version : 'unknown';
+            const details = message.details && typeof message.details === 'object'
+                ? JSON.stringify(message.details)
+                : '{}';
+            this.log(`[webview:${source}] ${eventName} v${version} ${details}`);
+        });
+        this.log('[webview] viewer log bridge active');
 
         this.runnerSession = new PythonRunnerSession(this.filePath, this.context, this.channel);
         await this.runnerSession.start();

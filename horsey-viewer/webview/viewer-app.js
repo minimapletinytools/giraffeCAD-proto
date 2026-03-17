@@ -2,6 +2,7 @@ import { LitElement, html } from 'https://unpkg.com/lit@3.2.0/index.js?module';
 
 const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || { frame: {}, geometry: { meshes: [] } };
 const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
+const VIEWER_APP_VERSION = '2026.03.17.4';
 
 class HorseyViewerApp extends LitElement {
     constructor() {
@@ -59,6 +60,15 @@ class HorseyViewerApp extends LitElement {
         this.shadowCatcher = null;
         this.orbitCenterGizmo = null;
 
+        this.idleTimeoutMs = 5000;
+        this.lastUserInteractionMs = Date.now();
+        this.idleCritterMode = false;
+        this.idleCritters = [];
+        this.nextCritterSpawnAt = 0;
+        this.lastAnimationFrameMs = 0;
+        this.structureScreenBounds = null;
+        this.critterSpecies = ['🐴', '🐑', '🐐', '🐄', '🦌', '🐖'];
+
         this.animationHandle = null;
         this.onWindowMessage = this.onWindowMessage.bind(this);
         this.onWindowScroll = this.onWindowScroll.bind(this);
@@ -70,6 +80,7 @@ class HorseyViewerApp extends LitElement {
         this.onLightDialPointerMove = this.onLightDialPointerMove.bind(this);
         this.onLightDialPointerUp = this.onLightDialPointerUp.bind(this);
         this.onWindowKeyDown = this.onWindowKeyDown.bind(this);
+        this.onAnyUserActivity = this.onAnyUserActivity.bind(this);
     }
 
     createRenderRoot() {
@@ -81,6 +92,7 @@ class HorseyViewerApp extends LitElement {
             <button id="to-v3d" title="Jump back to 3D view">to v3d view</button>
             <div id="viewport">
                 <canvas id="c"></canvas>
+                <div id="idle-critter-layer" aria-hidden="true"></div>
                 <div id="info"></div>
                 <div id="gizmo-panel" aria-label="Camera and light gizmos">
                     <div class="gizmo-block">
@@ -139,6 +151,9 @@ class HorseyViewerApp extends LitElement {
         this.setupThreeScene();
         window.addEventListener('message', this.onWindowMessage);
         this.applyPayload(INITIAL_PAYLOAD);
+        this.emitViewerLog('viewer-ready', {
+            idleTimeoutMs: this.idleTimeoutMs,
+        });
     }
 
     disconnectedCallback() {
@@ -149,10 +164,14 @@ class HorseyViewerApp extends LitElement {
         window.removeEventListener('mousemove', this.onWindowMouseMove);
         window.removeEventListener('resize', this.onWindowResize);
         window.removeEventListener('keydown', this.onWindowKeyDown);
+        window.removeEventListener('pointerdown', this.onAnyUserActivity, true);
+        window.removeEventListener('wheel', this.onAnyUserActivity, true);
+        window.removeEventListener('keydown', this.onAnyUserActivity, true);
         window.removeEventListener('pointermove', this.onGizmoPointerMove);
         window.removeEventListener('pointerup', this.onGizmoPointerUp);
         window.removeEventListener('pointermove', this.onLightDialPointerMove);
         window.removeEventListener('pointerup', this.onLightDialPointerUp);
+        this.clearIdleCritters();
         if (this.animationHandle) {
             cancelAnimationFrame(this.animationHandle);
             this.animationHandle = null;
@@ -268,6 +287,9 @@ class HorseyViewerApp extends LitElement {
         window.addEventListener('pointerup', this.onLightDialPointerUp);
         window.addEventListener('resize', this.onWindowResize);
         window.addEventListener('keydown', this.onWindowKeyDown);
+        window.addEventListener('pointerdown', this.onAnyUserActivity, true);
+        window.addEventListener('wheel', this.onAnyUserActivity, true);
+        window.addEventListener('keydown', this.onAnyUserActivity, true);
     }
 
     setupThreeScene() {
@@ -342,11 +364,273 @@ class HorseyViewerApp extends LitElement {
         this.updateCamera();
         const animate = () => {
             this.animationHandle = requestAnimationFrame(animate);
+            const nowMs = performance.now();
+            const deltaSeconds = this.lastAnimationFrameMs > 0 ? (nowMs - this.lastAnimationFrameMs) / 1000 : 0;
+            this.lastAnimationFrameMs = nowMs;
             this.stepCameraAnimation();
             this.renderCameraGizmo();
+            this.updateIdleCritters(nowMs, deltaSeconds);
             this.renderer.render(this.scene, this.camera);
         };
         animate();
+    }
+
+    onAnyUserActivity() {
+        this.markUserInteraction();
+    }
+
+    emitViewerLog(eventName, details = {}) {
+        const payload = {
+            type: 'viewerLog',
+            event: eventName,
+            source: 'idle-critter',
+            level: 'info',
+            version: VIEWER_APP_VERSION,
+            details,
+            timestamp: new Date().toISOString(),
+        };
+        console.info('[HorseyViewer]', payload);
+        if (vscode) {
+            vscode.postMessage(payload);
+        }
+    }
+
+    markUserInteraction() {
+        this.lastUserInteractionMs = Date.now();
+        if (this.idleCritterMode) {
+            this.stopIdleCritterMode('activity');
+        }
+    }
+
+    getCritterLayer() {
+        return this.renderRoot.querySelector('#idle-critter-layer');
+    }
+
+    startIdleCritterMode(nowMs) {
+        this.idleCritterMode = true;
+        this.nextCritterSpawnAt = nowMs + 250;
+        this.emitViewerLog('idle-start', {
+            timeoutMs: this.idleTimeoutMs,
+        });
+    }
+
+    stopIdleCritterMode(reason = 'activity') {
+        const activeCount = this.idleCritters.length;
+        this.idleCritterMode = false;
+        this.nextCritterSpawnAt = 0;
+        this.emitViewerLog('idle-end', {
+            reason,
+            activeCritters: activeCount,
+        });
+    }
+
+    clearIdleCritters() {
+        const layer = this.getCritterLayer();
+        if (!layer) {
+            this.idleCritters = [];
+            return;
+        }
+        for (const critter of this.idleCritters) {
+            if (critter.element && critter.element.parentElement === layer) {
+                layer.removeChild(critter.element);
+            }
+        }
+        this.idleCritters = [];
+    }
+
+    updateIdleCritters(nowMs, deltaSeconds) {
+        const idleForMs = Date.now() - this.lastUserInteractionMs;
+        if (idleForMs >= this.idleTimeoutMs) {
+            if (!this.idleCritterMode) {
+                this.startIdleCritterMode(nowMs);
+            }
+        } else if (this.idleCritterMode) {
+            this.stopIdleCritterMode('activity-check');
+            return;
+        }
+
+        if (!this.idleCritterMode) {
+            return;
+        }
+
+        if (nowMs >= this.nextCritterSpawnAt) {
+            this.spawnIdleCritter(nowMs);
+            this.nextCritterSpawnAt = nowMs + 700 + Math.random() * 1400;
+        }
+
+        if (!deltaSeconds || this.idleCritters.length === 0) {
+            return;
+        }
+
+        const layer = this.getCritterLayer();
+        if (!layer) {
+            return;
+        }
+        const layerWidth = layer.clientWidth;
+        const layerHeight = layer.clientHeight;
+        const nextCritters = [];
+
+        for (const critter of this.idleCritters) {
+            critter.x += critter.speedPxPerSec * critter.direction * deltaSeconds;
+            critter.gaitPhase += deltaSeconds * critter.gaitRate;
+            const bounce = Math.sin(critter.gaitPhase) * critter.bouncePx;
+            const bob = Math.sin(critter.gaitPhase * 2) * critter.leanDeg;
+            const renderY = Math.max(0, Math.min(layerHeight - critter.sizePx, critter.baseY + bounce));
+            critter.element.style.transform = `translate(${critter.x.toFixed(1)}px, ${renderY.toFixed(1)}px) scaleX(1) rotate(${bob.toFixed(2)}deg)`;
+
+            const minX = -critter.sizePx * 2.4;
+            const maxX = layerWidth + critter.sizePx * 2.4;
+            if (critter.x >= minX && critter.x <= maxX) {
+                nextCritters.push(critter);
+                continue;
+            }
+
+            if (critter.element.parentElement === layer) {
+                layer.removeChild(critter.element);
+            }
+        }
+
+        this.idleCritters = nextCritters;
+    }
+
+    pickCritterLaneY(layerHeight, critterSize) {
+        const minY = 10;
+        const maxY = Math.max(minY + 1, layerHeight - critterSize - 10);
+        const blocked = this.structureScreenBounds;
+        const margin = critterSize * 0.85;
+
+        for (let attempt = 0; attempt < 16; attempt += 1) {
+            const candidate = minY + Math.random() * (maxY - minY);
+            if (!blocked) {
+                return candidate;
+            }
+            if (candidate + critterSize < blocked.minY - margin || candidate > blocked.maxY + margin) {
+                return candidate;
+            }
+        }
+
+        if (!blocked) {
+            return maxY * 0.85;
+        }
+
+        const below = blocked.maxY + margin + 8;
+        if (below <= maxY) {
+            return below;
+        }
+        const above = blocked.minY - critterSize - margin - 8;
+        if (above >= minY) {
+            return above;
+        }
+        return Math.max(minY, Math.min(maxY, blocked.maxY + margin));
+    }
+
+    spawnIdleCritter(nowMs) {
+        const layer = this.getCritterLayer();
+        if (!layer) {
+            return;
+        }
+
+        const layerWidth = layer.clientWidth;
+        const layerHeight = layer.clientHeight;
+        if (layerWidth < 10 || layerHeight < 10) {
+            return;
+        }
+
+        const direction = Math.random() < 0.5 ? 1 : -1;
+        const species = this.critterSpecies[Math.floor(Math.random() * this.critterSpecies.length)] || '🐴';
+        const sizePx = 18 + Math.floor(Math.random() * 10);
+        const baseY = this.pickCritterLaneY(layerHeight, sizePx);
+        const startX = direction > 0 ? -sizePx * 1.4 : layerWidth + sizePx * 1.4;
+
+        const element = document.createElement('div');
+        element.className = 'idle-critter';
+        element.textContent = species;
+        element.style.fontSize = `${sizePx}px`;
+        element.style.transform = `translate(${startX}px, ${baseY}px) scaleX(${direction})`;
+        layer.appendChild(element);
+
+        this.idleCritters.push({
+            x: startX,
+            baseY,
+            direction,
+            sizePx,
+            speedPxPerSec: 30 + Math.random() * 40,
+            bouncePx: 1.5 + Math.random() * 3.2,
+            leanDeg: 0.8 + Math.random() * 2,
+            gaitRate: 7 + Math.random() * 5,
+            gaitPhase: (nowMs / 400) + Math.random() * Math.PI * 2,
+            element,
+        });
+
+        this.emitViewerLog('critter-created', {
+            species,
+            direction: direction > 0 ? 'right' : 'left',
+            laneY: Math.round(baseY),
+            sizePx,
+            activeCritters: this.idleCritters.length,
+        });
+    }
+
+    updateStructureScreenBounds() {
+        if (!this.camera || !this.lastBounds) {
+            this.structureScreenBounds = null;
+            return;
+        }
+        const viewport = this.renderRoot.querySelector('#viewport');
+        if (!viewport) {
+            this.structureScreenBounds = null;
+            return;
+        }
+        const width = viewport.clientWidth;
+        const height = viewport.clientHeight;
+        if (width <= 0 || height <= 0) {
+            this.structureScreenBounds = null;
+            return;
+        }
+
+        const bounds = this.lastBounds;
+        const corners = [
+            [bounds.minX, bounds.minY, bounds.minZ],
+            [bounds.minX, bounds.minY, bounds.maxZ],
+            [bounds.minX, bounds.maxY, bounds.minZ],
+            [bounds.minX, bounds.maxY, bounds.maxZ],
+            [bounds.maxX, bounds.minY, bounds.minZ],
+            [bounds.maxX, bounds.minY, bounds.maxZ],
+            [bounds.maxX, bounds.maxY, bounds.minZ],
+            [bounds.maxX, bounds.maxY, bounds.maxZ],
+        ];
+
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+        let hasPoint = false;
+
+        for (const corner of corners) {
+            const projected = new THREE.Vector3(corner[0], corner[1], corner[2]).project(this.camera);
+            if (!Number.isFinite(projected.x) || !Number.isFinite(projected.y)) {
+                continue;
+            }
+            const sx = ((projected.x + 1) * 0.5) * width;
+            const sy = ((1 - projected.y) * 0.5) * height;
+            minX = Math.min(minX, sx);
+            maxX = Math.max(maxX, sx);
+            minY = Math.min(minY, sy);
+            maxY = Math.max(maxY, sy);
+            hasPoint = true;
+        }
+
+        if (!hasPoint) {
+            this.structureScreenBounds = null;
+            return;
+        }
+
+        this.structureScreenBounds = {
+            minX: Math.max(0, minX),
+            maxX: Math.min(width, maxX),
+            minY: Math.max(0, minY),
+            maxY: Math.min(height, maxY),
+        };
     }
 
     onWindowMessage(event) {
@@ -451,6 +735,7 @@ class HorseyViewerApp extends LitElement {
         this.renderer.setSize(width, height, false);
         this.resizeGizmoRenderer();
         this.drawLightDial();
+        this.updateStructureScreenBounds();
     }
 
     onGizmoPointerMove(event) {
@@ -1075,7 +1360,9 @@ class HorseyViewerApp extends LitElement {
             'total: ' + total + '<br>' +
             'rebuilt: ' + rebuilt + '<br>' +
             'reused: ' + reused + '<br>' +
-            'removed: ' + removed;
+            'removed: ' + removed + '<br>' +
+            'idle: ' + (this.idleCritterMode ? 'on' : 'off') + '<br>' +
+            'critters: ' + this.idleCritters.length;
     }
 
     updateMeshScene(geometryData) {
@@ -1206,6 +1493,7 @@ class HorseyViewerApp extends LitElement {
         this.updateCamera();
         this.updateLightFromAngles();
         this.drawLightDial();
+        this.updateStructureScreenBounds();
     }
 
     updateCamera() {
@@ -1220,6 +1508,7 @@ class HorseyViewerApp extends LitElement {
         this.camera.up.copy(this.cameraUpVector);
         this.camera.lookAt(this.cx, this.cy, this.cz);
         this.updateOrbitCenterGizmo();
+        this.updateStructureScreenBounds();
     }
 }
 
