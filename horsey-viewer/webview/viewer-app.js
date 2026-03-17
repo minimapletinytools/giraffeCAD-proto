@@ -3,84 +3,10 @@ import { LitElement, html } from 'https://unpkg.com/lit@3.2.0/index.js?module';
 const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || { frame: {}, geometry: { meshes: [] } };
 const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
 const VIEWER_APP_VERSION = '2026.03.17.4';
+const SelectionStore = window.SelectionStore;
 
-/**
- * SelectionManager - Manages timber and feature selection state
- */
-class SelectionManager {
-    constructor() {
-        this.selectedTimbers = new Set(); // Set<string> timber names
-        this.selectedFeatures = []; // Array<{ timberName: string, featureId: string }>
-        this.listeners = new Set(); // Set<(event) => void>
-    }
-
-    selectTimber(name, addToSelection = false) {
-        if (!addToSelection) {
-            this.selectedTimbers.clear();
-        }
-        this.selectedTimbers.add(name);
-        this.emit({ type: 'timber-selected', timberName: name });
-    }
-
-    deselectTimber(name) {
-        this.selectedTimbers.delete(name);
-        this.emit({ type: 'timber-deselected', timberName: name });
-    }
-
-    toggleTimber(name) {
-        if (this.selectedTimbers.has(name)) {
-            this.deselectTimber(name);
-        } else {
-            this.selectTimber(name, true);
-        }
-    }
-
-    clearTimberSelection() {
-        if (this.selectedTimbers.size > 0) {
-            this.selectedTimbers.clear();
-            this.emit({ type: 'clear' });
-        }
-    }
-
-    isTimberSelected(name) {
-        return this.selectedTimbers.has(name);
-    }
-
-    getSelectedTimbers() {
-        return Array.from(this.selectedTimbers);
-    }
-
-    selectFeature(timberName, featureId) {
-        this.selectedFeatures = [{ timberName, featureId }];
-        this.emit({ type: 'feature-selected', timberName, featureId });
-    }
-
-    addFeature(timberName, featureId) {
-        const exists = this.selectedFeatures.some(f => f.timberName === timberName && f.featureId === featureId);
-        if (!exists) {
-            this.selectedFeatures.push({ timberName, featureId });
-            this.emit({ type: 'feature-added', timberName, featureId });
-        }
-    }
-
-    clearFeatureSelection() {
-        if (this.selectedFeatures.length > 0) {
-            this.selectedFeatures = [];
-            this.emit({ type: 'feature-cleared' });
-        }
-    }
-
-    hasSelection() {
-        return this.selectedTimbers.size > 0 || this.selectedFeatures.length > 0;
-    }
-
-    onSelectionChanged(callback) {
-        this.listeners.add(callback);
-    }
-
-    emit(event) {
-        this.listeners.forEach(listener => listener(event));
-    }
+if (!SelectionStore) {
+    throw new Error('SelectionStore is not loaded. Ensure selection-store.js is included before viewer-app.js.');
 }
 
 class HorseyViewerApp extends LitElement {
@@ -150,7 +76,7 @@ class HorseyViewerApp extends LitElement {
         this.critterGroup = null;
         this.critterTextureCache = new Map();
 
-        this.selectionManager = new SelectionManager();
+        this.selectionManager = new SelectionStore();
         this.meshNameMap = new Map(); // mesh object -> timber name
 
         this.animationHandle = null;

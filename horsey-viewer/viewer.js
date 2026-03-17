@@ -69,6 +69,7 @@ function getWebviewContent(webview, frameData, geometryData) {
     const template = fs.readFileSync(templatePath, 'utf8');
 
     const appJsUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, 'viewer-app.js'))).toString();
+    const selectionStoreJsUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, 'selection-store.js'))).toString();
     const stylesCssUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, 'viewer.css'))).toString();
     const nonce = getNonce();
 
@@ -81,6 +82,7 @@ function getWebviewContent(webview, frameData, geometryData) {
         .replace(/__CSP_SOURCE__/g, webview.cspSource)
         .replace(/__NONCE__/g, nonce)
         .replace('__INITIAL_PAYLOAD_JSON__', payloadJson)
+        .replace('__SELECTION_STORE_JS_URI__', selectionStoreJsUri)
         .replace('__APP_JS_URI__', appJsUri)
         .replace('__STYLES_CSS_URI__', stylesCssUri);
 }
