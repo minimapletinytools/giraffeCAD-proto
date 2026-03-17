@@ -266,6 +266,8 @@ DONE-start viewer I guess?
 
 -render accessories
 -add wireframe rendering
+-add front facing direction3d to Frame
+-maybe add "assume upright structure" to limit camera movement with mouse?
 -figure out why box view doesn't render right for the gooseneck, end cut is correct
 -3d view
   -add gizmo in upper right corner
