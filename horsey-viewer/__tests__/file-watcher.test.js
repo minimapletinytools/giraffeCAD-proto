@@ -4,8 +4,6 @@
  * Tests the file watching, debouncing, and callback behavior.
  */
 
-const { FileWatcher } = require('../file-watcher');
-
 // Mock vscode module to avoid needing the full VS Code dependency
 const mockWatcherSubscriptions = [];
 
@@ -39,7 +37,9 @@ jest.mock('vscode', () => ({
       this.pattern = pattern;
     }
   },
-}));
+}), { virtual: true });
+
+const { FileWatcher } = require('../file-watcher');
 
 // Helper to simulate fs checks when needed
 const path = require('path');

@@ -161,6 +161,10 @@ cython_debug/
 
 # VS Code
 .vscode/
+.vscode-test/
+.vscode-test-web/
+horsey-viewer/.vscode-test/
+horsey-viewer/.vscode-test-web/
 
 # macOS
 .DS_Store

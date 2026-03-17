@@ -336,13 +336,14 @@ class HorseyViewerApp extends LitElement {
             roughness: 0.68,
             flatShading: true,
             polygonOffset: true,
-            polygonOffsetFactor: 0.6,
+            polygonOffsetFactor: 2,
             polygonOffsetUnits: 2,
+            side: THREE.FrontSide,
         });
         this.edgeMat = new THREE.LineBasicMaterial({
             color: 0x5d6882,
             transparent: true,
-            opacity: 0.4,
+            opacity: 0.42,
             depthTest: false,
             depthWrite: false,
         });
@@ -467,11 +468,14 @@ class HorseyViewerApp extends LitElement {
             }
 
             const positions = new Float32Array(mesh.vertices || []);
-            const geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            geometry.setIndex(mesh.indices || []);
+            const indexedGeometry = new THREE.BufferGeometry();
+            indexedGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            indexedGeometry.setIndex(mesh.indices || []);
+
+            const geometry = indexedGeometry.toNonIndexed();
             geometry.computeVertexNormals();
             geometry.computeBoundingSphere();
+            indexedGeometry.dispose();
 
             const solidMesh = new THREE.Mesh(geometry, this.solidMat);
             const edgeGeometry = new THREE.EdgesGeometry(geometry, 25);
@@ -550,8 +554,8 @@ class HorseyViewerApp extends LitElement {
         const radius = Math.sqrt(dx * dx + dy * dy + dz * dz) / 2 || 5;
         const fovRad = this.camera.fov * Math.PI / 180;
         this.orbitDist = radius / Math.sin(fovRad / 2) * 1.3;
-        this.camera.near = Math.max(0.05, radius * 0.05);
-        this.camera.far = Math.max(this.camera.near * 20, radius * 20);
+        this.camera.near = Math.max(0.1, radius * 0.03);
+        this.camera.far = Math.max(200, radius * 20);
         this.camera.updateProjectionMatrix();
         this.updateCamera();
     }

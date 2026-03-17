@@ -71,6 +71,17 @@ You can also use the included `test-frame.py` for testing.
 
 This extension is part of the GiraffeCAD project for timber frame design and visualization.
 
+### Test workflow
+
+Use a layered loop so agents and humans can pick the fastest test level:
+
+- `npm run test:unit` — all Jest tests (`__tests__`), including the headless runner protocol test.
+- `npm run test:runner` — only the stdio protocol integration test against `runner.py`.
+- `npm run test:ext` — extension-host smoke tests via `@vscode/test-electron`.
+- `npm run test:all` — unit + extension-host smoke tests.
+
+If Python discovery is non-standard, set `HORSEY_VIEWER_PYTHON` to the Python executable used for runner tests.
+
 ## Roadmap
 
 - [ ] Add Three.js 3D visualization
