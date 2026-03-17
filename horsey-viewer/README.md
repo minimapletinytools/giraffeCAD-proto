@@ -80,6 +80,13 @@ Use a layered loop so agents and humans can pick the fastest test level:
 - `npm run test:ext` — extension-host smoke tests via `@vscode/test-electron`.
 - `npm run test:all` — unit + extension-host smoke tests.
 
+Optional extension-host screenshot capture:
+
+- `HORSEY_EXT_SCREENSHOT_MODE=never` (default) — no screenshots.
+- `HORSEY_EXT_SCREENSHOT_MODE=always` — capture screenshots on successful render assertions.
+- `HORSEY_EXT_SCREENSHOT_MODE=on-failure` — capture only when the render smoke assertion fails.
+- `HORSEY_EXT_SCREENSHOT_DIR=/custom/path` — override output directory (default: `horsey-viewer/.artifacts/screenshots`).
+
 If Python discovery is non-standard, set `HORSEY_VIEWER_PYTHON` to the Python executable used for runner tests.
 
 ## Roadmap

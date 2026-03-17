@@ -1,7 +1,8 @@
 const path = require('path');
+const fs = require('fs');
 const { PythonRunnerSession } = require('./runner-session');
 const { FileWatcher } = require('./file-watcher');
-const { createFrameViewer, renderFrameViewer } = require('./viewer');
+const { createFrameViewer, renderFrameViewer, requestViewerScreenshot } = require('./viewer');
 
 class FrameViewSession {
     constructor(filePath, context, channel, onDispose) {
@@ -73,6 +74,35 @@ class FrameViewSession {
         } finally {
             this.isRefreshing = false;
         }
+    }
+
+    async captureScreenshot(options = {}) {
+        if (this.isDisposed || !this.panel) {
+            throw new Error(`Viewer panel is not available for ${this.filePath}`);
+        }
+
+        const timeoutMs = typeof options.timeoutMs === 'number' ? options.timeoutMs : 8000;
+        const result = await requestViewerScreenshot(this.panel, { timeoutMs });
+
+        const dataUrl = result.dataUrl || '';
+        const match = /^data:image\/png;base64,(.+)$/u.exec(dataUrl);
+        if (!match) {
+            throw new Error('Screenshot payload is not a PNG data URL');
+        }
+
+        const imageBuffer = Buffer.from(match[1], 'base64');
+        if (options.outputPath) {
+            fs.mkdirSync(path.dirname(options.outputPath), { recursive: true });
+            fs.writeFileSync(options.outputPath, imageBuffer);
+            this.log(`[screenshot] Wrote ${options.outputPath}`);
+        }
+
+        return {
+            outputPath: options.outputPath || null,
+            byteLength: imageBuffer.length,
+            width: result.width,
+            height: result.height,
+        };
     }
 
     async onFileChanged(source) {

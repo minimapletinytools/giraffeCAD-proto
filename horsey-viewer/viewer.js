@@ -8,6 +8,7 @@ const fs = require('fs');
 
 const initializedPanels = new WeakSet();
 const webviewDir = path.join(__dirname, 'webview');
+let screenshotRequestCounter = 1;
 
 function getNonce() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -83,4 +84,72 @@ function getWebviewContent(webview, frameData, geometryData) {
         .replace('__STYLES_CSS_URI__', stylesCssUri);
 }
 
-module.exports = { createFrameViewer, renderFrameViewer };
+function requestViewerScreenshot(panel, options = {}) {
+    if (!panel) {
+        return Promise.reject(new Error('Viewer panel is not available'));
+    }
+
+    const timeoutMs = typeof options.timeoutMs === 'number' ? options.timeoutMs : 8000;
+    const requestId = `capture-${Date.now()}-${screenshotRequestCounter}`;
+    screenshotRequestCounter += 1;
+
+    return new Promise((resolve, reject) => {
+        let settled = false;
+        let timeoutHandle = null;
+
+        const cleanup = () => {
+            if (timeoutHandle) {
+                clearTimeout(timeoutHandle);
+                timeoutHandle = null;
+            }
+            listener.dispose();
+        };
+
+        const listener = panel.webview.onDidReceiveMessage((message) => {
+            if (!message || message.type !== 'captureScreenshotResult' || message.requestId !== requestId) {
+                return;
+            }
+            if (settled) {
+                return;
+            }
+            settled = true;
+            cleanup();
+            if (message.ok) {
+                resolve({
+                    dataUrl: message.dataUrl,
+                    width: message.width,
+                    height: message.height,
+                });
+                return;
+            }
+            reject(new Error(message.error || 'Screenshot capture failed'));
+        });
+
+        if (timeoutMs > 0) {
+            timeoutHandle = setTimeout(() => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                cleanup();
+                reject(new Error(`Timed out waiting for screenshot (${timeoutMs}ms)`));
+            }, timeoutMs);
+        }
+
+        panel.webview.postMessage({ type: 'captureScreenshotRequest', requestId }).then((posted) => {
+            if (!posted && !settled) {
+                settled = true;
+                cleanup();
+                reject(new Error('Failed to send screenshot request to webview'));
+            }
+        }, (error) => {
+            if (!settled) {
+                settled = true;
+                cleanup();
+                reject(error);
+            }
+        });
+    });
+}
+
+module.exports = { createFrameViewer, renderFrameViewer, requestViewerScreenshot };

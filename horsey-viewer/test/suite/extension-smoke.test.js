@@ -1,6 +1,31 @@
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const vscode = require('vscode');
+
+const SCREENSHOT_MODE = String(process.env.HORSEY_EXT_SCREENSHOT_MODE || 'never').toLowerCase();
+const SHOULD_CAPTURE_ALWAYS = SCREENSHOT_MODE === 'always';
+const SHOULD_CAPTURE_ON_FAILURE = SCREENSHOT_MODE === 'on-failure';
+
+function screenshotArtifactsDir() {
+  return process.env.HORSEY_EXT_SCREENSHOT_DIR
+    ? path.resolve(process.env.HORSEY_EXT_SCREENSHOT_DIR)
+    : path.resolve(__dirname, '..', '..', '.artifacts', 'screenshots');
+}
+
+async function captureScreenshot(filePath, name) {
+  const outputPath = path.join(screenshotArtifactsDir(), `${name}.png`);
+  const result = await vscode.commands.executeCommand('horsey-viewer.captureRenderedScreenshot', {
+    filePath,
+    outputPath,
+    timeoutMs: 10000,
+  });
+
+  assert.ok(result, 'Expected screenshot command to return metadata');
+  assert.ok(result.byteLength > 0, 'Expected screenshot bytes to be non-empty');
+  assert.ok(fs.existsSync(outputPath), `Expected screenshot to be written: ${outputPath}`);
+  return outputPath;
+}
 
 async function waitFor(condition, timeoutMs = 12000, intervalMs = 100) {
   const deadline = Date.now() + timeoutMs;
@@ -47,17 +72,37 @@ describe('Horsey Viewer extension smoke', () => {
     const document = await vscode.workspace.openTextDocument(fixtureUri);
     await vscode.window.showTextDocument(document, { preview: false });
 
-    await vscode.commands.executeCommand('horsey-viewer.renderHorsey');
+    const expectedTab = 'Horsey: minimal_frame.py (Runner Test Frame)';
 
-    await waitFor(() => {
+    const runAssertions = async () => {
+      await vscode.commands.executeCommand('horsey-viewer.renderHorsey');
+
+      await waitFor(() => {
+        const tabs = getAllTabs();
+        return tabs.some((tab) => tab.label === expectedTab);
+      }, 20000, 120);
+
       const tabs = getAllTabs();
-      return tabs.some((tab) => tab.label === 'Horsey: minimal_frame.py (Runner Test Frame)');
-    }, 20000, 120);
+      assert.ok(
+        tabs.some((tab) => tab.label === expectedTab),
+        'Expected Horsey webview tab for minimal_frame.py with rendered frame name'
+      );
+    };
 
-    const tabs = getAllTabs();
-    assert.ok(
-      tabs.some((tab) => tab.label === 'Horsey: minimal_frame.py (Runner Test Frame)'),
-      'Expected Horsey webview tab for minimal_frame.py with rendered frame name'
-    );
+    try {
+      await runAssertions();
+      if (SHOULD_CAPTURE_ALWAYS) {
+        await captureScreenshot(fixturePath, 'extension-smoke-minimal-frame-success');
+      }
+    } catch (error) {
+      if (SHOULD_CAPTURE_ALWAYS || SHOULD_CAPTURE_ON_FAILURE) {
+        try {
+          await captureScreenshot(fixturePath, 'extension-smoke-minimal-frame-failure');
+        } catch (captureError) {
+          console.warn('Failed to capture smoke failure screenshot:', captureError.message);
+        }
+      }
+      throw error;
+    }
   });
 });

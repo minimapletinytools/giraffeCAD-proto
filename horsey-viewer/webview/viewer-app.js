@@ -1,17 +1,12 @@
 import { LitElement, html } from 'https://unpkg.com/lit@3.2.0/index.js?module';
 
 const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || { frame: {}, geometry: { meshes: [] } };
+const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
 
 class HorseyViewerApp extends LitElement {
     constructor() {
         super();
         this.meshObjectsByKey = new Map();
-        this.enableShadows = true;
-        this.enableReflections = false;
-        this.ground = null;
-        this.shadowCatcher = null;
-        this.sun = null;
-        this.lastBounds = null;
         this.cx = 0;
         this.cy = 0;
         this.cz = 0;
@@ -40,10 +35,6 @@ class HorseyViewerApp extends LitElement {
                 <canvas id="c"></canvas>
                 <div id="info"></div>
                 <div id="debug"></div>
-                <div id="render-controls">
-                    <label><input id="toggle-shadows" type="checkbox" checked> shadows</label>
-                    <label><input id="toggle-reflections" type="checkbox"> reflections</label>
-                </div>
                 <div id="hint">drag to orbit • scroll to zoom</div>
             </div>
             <div id="panels">
@@ -91,24 +82,12 @@ class HorseyViewerApp extends LitElement {
             this.disposeMeshBundle(bundle);
         }
         this.meshObjectsByKey.clear();
-        this.disposeGround();
-        if (this.shadowCatcher) {
-            this.scene.remove(this.shadowCatcher);
-            this.shadowCatcher.geometry.dispose();
-            this.shadowCatcher.material.dispose();
-            this.shadowCatcher = null;
-        }
     }
 
     setupUiEvents() {
         const toV3d = this.renderRoot.querySelector('#to-v3d');
         const canvas = this.renderRoot.querySelector('#c');
         const viewport = this.renderRoot.querySelector('#viewport');
-        const shadowToggle = this.renderRoot.querySelector('#toggle-shadows');
-        const reflectionToggle = this.renderRoot.querySelector('#toggle-reflections');
-
-        shadowToggle.checked = this.enableShadows;
-        reflectionToggle.checked = this.enableReflections;
 
         toV3d.addEventListener('click', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -125,16 +104,6 @@ class HorseyViewerApp extends LitElement {
             this.orbitDist *= event.deltaY > 0 ? 1.1 : 0.9;
             this.updateCamera();
         }, { passive: false });
-
-        shadowToggle.addEventListener('change', () => {
-            this.enableShadows = shadowToggle.checked;
-            this.syncRenderMode();
-        });
-
-        reflectionToggle.addEventListener('change', () => {
-            this.enableReflections = reflectionToggle.checked;
-            this.createOrUpdateGround(this.lastBounds || { minX: -1, minY: -1, minZ: -1, maxX: 1, maxY: 1, maxZ: 1 });
-        });
 
         window.addEventListener('scroll', this.onWindowScroll);
         window.addEventListener('mouseup', this.onWindowMouseUp);
@@ -154,22 +123,16 @@ class HorseyViewerApp extends LitElement {
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(viewport.offsetWidth, viewport.offsetHeight, false);
         this.renderer.outputEncoding = THREE.sRGBEncoding;
-        this.renderer.shadowMap.enabled = this.enableShadows;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0xfff8dc);
 
         this.camera = new THREE.PerspectiveCamera(45, viewport.offsetWidth / viewport.offsetHeight, 0.01, 10000);
-        this.camera.up.set(0, 0, 1);
 
         this.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        this.sun = new THREE.DirectionalLight(0xffffff, 0.75);
-        this.sun.position.set(3, 2, 12);
-        this.sun.castShadow = this.enableShadows;
-        this.sun.shadow.bias = -0.00008;
-        this.sun.shadow.mapSize.set(2048, 2048);
-        this.scene.add(this.sun);
+        const sun = new THREE.DirectionalLight(0xffffff, 0.75);
+        sun.position.set(5, 8, 4);
+        this.scene.add(sun);
         const fill = new THREE.DirectionalLight(0xecf2ff, 0.45);
         fill.position.set(-4, 3, -6);
         this.scene.add(fill);
@@ -192,9 +155,6 @@ class HorseyViewerApp extends LitElement {
             depthWrite: false,
         });
 
-        this.createOrUpdateGround({ minX: -1, minY: -1, minZ: -1, maxX: 1, maxY: 1, maxZ: 1 });
-        this.syncRenderMode();
-
         this.updateCamera();
         const animate = () => {
             this.animationHandle = requestAnimationFrame(animate);
@@ -207,6 +167,51 @@ class HorseyViewerApp extends LitElement {
         const message = event.data || {};
         if (message.type === 'refresh') {
             this.applyPayload({ frame: message.frame || {}, geometry: message.geometry || { meshes: [] } });
+            return;
+        }
+
+        if (message.type === 'captureScreenshotRequest') {
+            this.handleCaptureScreenshotRequest(message);
+        }
+    }
+
+    async handleCaptureScreenshotRequest(message) {
+        const requestId = message && message.requestId;
+        const canvas = this.renderRoot.querySelector('#c');
+
+        if (!vscode || !requestId) {
+            return;
+        }
+
+        if (!canvas) {
+            vscode.postMessage({
+                type: 'captureScreenshotResult',
+                requestId,
+                ok: false,
+                error: 'Renderer canvas was not found',
+            });
+            return;
+        }
+
+        await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+        try {
+            const dataUrl = canvas.toDataURL('image/png');
+            vscode.postMessage({
+                type: 'captureScreenshotResult',
+                requestId,
+                ok: true,
+                dataUrl,
+                width: canvas.width,
+                height: canvas.height,
+            });
+        } catch (error) {
+            vscode.postMessage({
+                type: 'captureScreenshotResult',
+                requestId,
+                ok: false,
+                error: error && error.message ? error.message : 'Unknown screenshot capture error',
+            });
         }
     }
 
@@ -241,110 +246,6 @@ class HorseyViewerApp extends LitElement {
 
     fmt(value) {
         return (value * 1000).toFixed(1) + ' mm';
-    }
-
-    disposeGround() {
-        if (!this.ground) {
-            return;
-        }
-        this.scene.remove(this.ground);
-        if (this.ground.geometry) {
-            this.ground.geometry.dispose();
-        }
-        if (this.ground.material && this.ground.material.dispose) {
-            this.ground.material.dispose();
-        }
-        this.ground = null;
-    }
-
-    createOrUpdateGround(bounds) {
-        const dx = bounds.maxX - bounds.minX;
-        const dy = bounds.maxY - bounds.minY;
-        const centerX = (bounds.minX + bounds.maxX) / 2;
-        const centerY = (bounds.minY + bounds.maxY) / 2;
-        const groundZ = bounds.minZ - 0.0005;
-        const reflectorSize = Math.max(6, Math.max(dx, dy) * 1.8 || 6);
-        const shadowSize = Math.max(60, Math.max(dx, dy) * 8 || 60);
-
-        this.disposeGround();
-
-        if (this.enableReflections && THREE.Reflector) {
-            this.ground = new THREE.Reflector(new THREE.PlaneBufferGeometry(reflectorSize, reflectorSize), {
-                clipBias: 0.003,
-                textureWidth: Math.max(256, Math.floor(window.innerWidth * window.devicePixelRatio)),
-                textureHeight: Math.max(256, Math.floor(window.innerHeight * window.devicePixelRatio)),
-                color: 0xfff8dc,
-            });
-            this.ground.position.set(centerX, centerY, groundZ);
-            this.ground.material.transparent = true;
-            this.ground.material.opacity = 0.5;
-            this.ground.material.depthWrite = false;
-            this.scene.add(this.ground);
-        }
-
-        if (!this.shadowCatcher) {
-            this.shadowCatcher = new THREE.Mesh(
-                new THREE.PlaneBufferGeometry(1, 1),
-                new THREE.ShadowMaterial({ opacity: 0.22 })
-            );
-            this.shadowCatcher.receiveShadow = true;
-            this.shadowCatcher.renderOrder = 1;
-            this.scene.add(this.shadowCatcher);
-        } else {
-            this.shadowCatcher.geometry.dispose();
-            this.shadowCatcher.geometry = new THREE.PlaneBufferGeometry(1, 1);
-        }
-
-        this.shadowCatcher.position.set(centerX, centerY, groundZ + 0.0001);
-        this.shadowCatcher.scale.set(shadowSize, shadowSize, 1);
-        this.syncRenderMode();
-        this.configureShadowCamera(bounds, shadowSize);
-    }
-
-    configureShadowCamera(bounds, size) {
-        if (!this.sun || !this.sun.shadow || !this.sun.shadow.camera) {
-            return;
-        }
-        const shadowCam = this.sun.shadow.camera;
-        const half = size / 2;
-        shadowCam.left = -half;
-        shadowCam.right = half;
-        shadowCam.top = half;
-        shadowCam.bottom = -half;
-        shadowCam.near = 0.5;
-        shadowCam.far = Math.max(40, (bounds.maxZ - bounds.minZ) * 8 || 40);
-        shadowCam.updateProjectionMatrix();
-        const centerX = (bounds.minX + bounds.maxX) / 2;
-        const centerY = (bounds.minY + bounds.maxY) / 2;
-        const centerZ = (bounds.minZ + bounds.maxZ) / 2;
-        this.sun.target.position.set(centerX, centerY, centerZ);
-        if (!this.sun.target.parent) {
-            this.scene.add(this.sun.target);
-        }
-    }
-
-    syncRenderMode() {
-        if (!this.renderer) {
-            return;
-        }
-        this.renderer.shadowMap.enabled = this.enableShadows;
-
-        if (this.sun) {
-            this.sun.castShadow = this.enableShadows;
-        }
-
-        this.meshObjectsByKey.forEach((bundle) => {
-            bundle.mesh.castShadow = this.enableShadows;
-            bundle.mesh.receiveShadow = this.enableShadows;
-        });
-
-        if (this.ground) {
-            this.ground.visible = true;
-        }
-
-        if (this.shadowCatcher) {
-            this.shadowCatcher.visible = this.enableShadows;
-        }
     }
 
     disposeMeshBundle(bundle) {
@@ -433,8 +334,6 @@ class HorseyViewerApp extends LitElement {
             const edgeMesh = new THREE.LineSegments(edgeGeometry, this.edgeMat);
             solidMesh.renderOrder = 1;
             edgeMesh.renderOrder = 2;
-            solidMesh.castShadow = this.enableShadows;
-            solidMesh.receiveShadow = this.enableShadows;
 
             this.scene.add(solidMesh);
             this.scene.add(edgeMesh);
@@ -498,8 +397,6 @@ class HorseyViewerApp extends LitElement {
         }, null, 2);
 
         const bounds = this.getSceneBounds();
-        this.lastBounds = bounds;
-        this.createOrUpdateGround(bounds);
         this.cx = (bounds.minX + bounds.maxX) / 2;
         this.cy = (bounds.minY + bounds.maxY) / 2;
         this.cz = (bounds.minZ + bounds.maxZ) / 2;
@@ -520,9 +417,9 @@ class HorseyViewerApp extends LitElement {
             return;
         }
         this.camera.position.set(
-            this.cx + this.orbitDist * Math.sin(this.phi) * Math.cos(this.theta),
-            this.cy + this.orbitDist * Math.sin(this.phi) * Math.sin(this.theta),
-            this.cz + this.orbitDist * Math.cos(this.phi)
+            this.cx + this.orbitDist * Math.sin(this.phi) * Math.sin(this.theta),
+            this.cy + this.orbitDist * Math.cos(this.phi),
+            this.cz + this.orbitDist * Math.sin(this.phi) * Math.cos(this.theta)
         );
         this.camera.lookAt(this.cx, this.cy, this.cz);
     }

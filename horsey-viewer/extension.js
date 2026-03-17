@@ -42,6 +42,36 @@ function activate(context) {
     });
 
     context.subscriptions.push(disposable);
+
+    const screenshotDisposable = vscode.commands.registerCommand(
+        'horsey-viewer.captureRenderedScreenshot',
+        async (options = {}) => {
+            const targetFilePath =
+                typeof options.filePath === 'string' && options.filePath
+                    ? options.filePath
+                    : vscode.window.activeTextEditor && vscode.window.activeTextEditor.document
+                        ? vscode.window.activeTextEditor.document.fileName
+                        : null;
+
+            if (!targetFilePath) {
+                throw new Error('No target file path available for screenshot capture');
+            }
+
+            const session = frameSessions.get(targetFilePath);
+            if (!session || session.isDisposed) {
+                throw new Error(`No active Horsey viewer session for ${targetFilePath}`);
+            }
+
+            const timeoutMs =
+                typeof options.timeoutMs === 'number' ? options.timeoutMs : undefined;
+            const outputPath =
+                typeof options.outputPath === 'string' && options.outputPath ? options.outputPath : undefined;
+
+            return session.captureScreenshot({ timeoutMs, outputPath });
+        }
+    );
+
+    context.subscriptions.push(screenshotDisposable);
     context.subscriptions.push({
         dispose: async () => {
             const sessions = Array.from(frameSessions.values());
