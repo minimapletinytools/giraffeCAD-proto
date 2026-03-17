@@ -379,7 +379,7 @@ def cut_lapped_gooseneck_joint(
     # gooseneck_timber_lap_shoulder_from_end is where the lap starts
     # The gooseneck extends from there by gooseneck_extension_from_receiving_end
     # TODO this seems to be wrong?
-    gooseneck_end_position_from_timber_end = gooseneck_timber_lap_shoulder_from_end + gooseneck_extension_from_receiving_end
+    gooseneck_end_position_from_timber_end = gooseneck_timber_lap_shoulder_from_end - gooseneck_extension_from_receiving_end
     
     if gooseneck_timber_end == TimberReferenceEnd.TOP:
         # End cut at distance from top

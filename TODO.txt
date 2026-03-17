@@ -265,7 +265,8 @@ DONE-start viewer I guess?
   DONE-do camera centering and navigation using 3js package I guess
 
 -render accessories
--figure out why gooseneck isn't rendering
+-add wireframe rendering
+-figure out why box view doesn't render right for the gooseneck, end cut is correct
 -3d view
   -add gizmo in upper right corner
   -add focus button
