@@ -16,7 +16,7 @@ DONE-update vscode plugin to use python IPC or something
 
 -debug console lol
 
--doc tab support?
+IGNORE-doc tab support?
 
 -cute backgrounds
   -creamy gradient background

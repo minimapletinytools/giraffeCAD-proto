@@ -17,7 +17,7 @@ import json
 import os
 import sys
 import traceback
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -64,6 +64,7 @@ class RunnerState:
     file_path: Path
     module: Any
     frame: Any
+    mesh_cache: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
 
 def log_stderr(message: str) -> None:
@@ -170,25 +171,97 @@ def prism_to_mesh(prism: Any) -> Dict[str, Any]:
     }
 
 
-def build_real_geometry(frame: Any) -> Dict[str, Any]:
-    """Build bounding-box mesh geometry for every timber in the frame."""
+def _cut_timber_to_triangle_mesh_payload(
+    cut_timber: Any,
+    local_csg: Any,
+    timber_key: str,
+    geometry_hash: str,
+) -> Dict[str, Any]:
+    from code_goes_here.cutcsg import adopt_csg
+    from code_goes_here.rule import Transform
+    from code_goes_here.triangles import triangulate_cutcsg
+
+    global_csg = adopt_csg(cut_timber.timber.transform, Transform.identity(), local_csg)
+    triangle_mesh = triangulate_cutcsg(global_csg).mesh
+
+    vertices = triangle_mesh.vertices.reshape(-1).tolist()
+    indices = triangle_mesh.faces.reshape(-1).tolist()
+
+    bounds = triangle_mesh.bounds
+    dims = bounds[1] - bounds[0]
+
+    timber = cut_timber.timber
+    return {
+        "name": get_timber_display_name(timber),
+        "timberKey": timber_key,
+        "hash": geometry_hash,
+        "vertices": vertices,
+        "indices": indices,
+        "prism_length": round(float(getattr(timber, "length", dims[2])), 6),
+        "prism_width": round(float(getattr(timber, "size", [dims[0], dims[1]])[0]), 6),
+        "prism_height": round(float(getattr(timber, "size", [dims[0], dims[1]])[1]), 6),
+    }
+
+
+def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
+    """Build triangle mesh geometry for every cut timber, reusing unchanged cached meshes."""
+    frame = state.frame
     meshes = []
+    changed_keys = []
+    seen_keys = set()
+    key_counts: Dict[str, int] = {}
+
     for cut_timber in frame.cut_timbers:
         try:
-            prism = cut_timber.get_bounding_box_prism()
-            mesh = prism_to_mesh(prism)
-            span = float(prism.end_distance) - (-float(prism.start_distance) if prism.start_distance is not None else 0.0)
-            meshes.append({
-                "name": get_timber_display_name(cut_timber.timber),
-                "vertices": mesh["vertices"],
-                "indices": mesh["indices"],
-                "prism_length": round(float(prism.end_distance - prism.start_distance), 6),
-                "prism_width":  round(float(prism.size[0]), 6),
-                "prism_height": round(float(prism.size[1]), 6),
-            })
+            timber = cut_timber.timber
+            if hasattr(cut_timber, "get_viewer_cache_key_base") and callable(cut_timber.get_viewer_cache_key_base):
+                key_base = str(cut_timber.get_viewer_cache_key_base())
+            else:
+                key_base = get_timber_display_name(timber)
+
+            occurrence = key_counts.get(key_base, 0)
+            key_counts[key_base] = occurrence + 1
+            timber_key = f"{key_base}#{occurrence}"
+
+            local_csg = cut_timber.render_timber_with_cuts_csg_local()
+            if hasattr(cut_timber, "deep_hash") and callable(cut_timber.deep_hash):
+                geometry_hash = str(cut_timber.deep_hash())
+            else:
+                geometry_hash = repr(local_csg)
+
+            cached = state.mesh_cache.get(timber_key)
+            if cached is not None and cached.get("hash") == geometry_hash:
+                mesh_payload = cached["mesh"]
+            else:
+                mesh_payload = _cut_timber_to_triangle_mesh_payload(
+                    cut_timber,
+                    local_csg,
+                    timber_key,
+                    geometry_hash,
+                )
+                state.mesh_cache[timber_key] = {
+                    "hash": geometry_hash,
+                    "mesh": mesh_payload,
+                }
+                changed_keys.append(timber_key)
+
+            meshes.append(mesh_payload)
+            seen_keys.add(timber_key)
         except Exception as exc:
             log_stderr(f"Warning: skipping geometry for {get_timber_display_name(cut_timber.timber)}: {exc}")
-    return {"kind": "bounding-box-geometry", "meshes": meshes}
+
+    removed_keys = []
+    for cached_key in list(state.mesh_cache.keys()):
+        if cached_key not in seen_keys:
+            removed_keys.append(cached_key)
+            del state.mesh_cache[cached_key]
+
+    return {
+        "kind": "triangle-geometry",
+        "meshes": meshes,
+        "changedKeys": changed_keys,
+        "removedKeys": removed_keys,
+    }
 
 
 def serialize_frame(frame: Any) -> Dict[str, Any]:
@@ -210,7 +283,8 @@ def serialize_frame(frame: Any) -> Dict[str, Any]:
 
 def build_placeholder_geometry(frame: Any) -> Dict[str, Any]:
     # kept for reference – use build_real_geometry instead
-    return build_real_geometry(frame)
+    dummy_state = RunnerState(file_path=Path("."), module=None, frame=frame)
+    return build_real_geometry(dummy_state)
 
 
 def _module_file_path(module: Any) -> Optional[Path]:
@@ -349,14 +423,19 @@ def resolve_frame_from_module(module: Any) -> Any:
     )
 
 
-def load_runner_state(file_path: str) -> RunnerState:
+def load_runner_state(file_path: str, previous_mesh_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> RunnerState:
     resolved_path = Path(file_path).resolve()
     if not resolved_path.exists():
         raise FileNotFoundError(f"File not found: {resolved_path}")
 
     module = load_module_from_path(resolved_path)
     frame = resolve_frame_from_module(module)
-    return RunnerState(file_path=resolved_path, module=module, frame=frame)
+    return RunnerState(
+        file_path=resolved_path,
+        module=module,
+        frame=frame,
+        mesh_cache=previous_mesh_cache if previous_mesh_cache is not None else {},
+    )
 
 
 def make_ready_event(state: RunnerState) -> Dict[str, Any]:
@@ -421,7 +500,7 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
 
     if command == "reload_example":
         next_path = payload.get("filePath", str(state.file_path))
-        next_state = load_runner_state(next_path)
+        next_state = load_runner_state(next_path, state.mesh_cache)
         result = {
             "examplePath": str(next_state.file_path),
             "frame": {
@@ -436,7 +515,7 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
         return state, make_success_response(request_id, command, serialize_frame(state.frame)), False
 
     if command == "get_geometry":
-        return state, make_success_response(request_id, command, build_real_geometry(state.frame)), False
+        return state, make_success_response(request_id, command, build_real_geometry(state)), False
 
     if command == "get_member":
         member_name = payload.get("name")
