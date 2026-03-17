@@ -4,6 +4,85 @@ const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || { frame: {}, geomet
 const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
 const VIEWER_APP_VERSION = '2026.03.17.4';
 
+/**
+ * SelectionManager - Manages timber and feature selection state
+ */
+class SelectionManager {
+    constructor() {
+        this.selectedTimbers = new Set(); // Set<string> timber names
+        this.selectedFeatures = []; // Array<{ timberName: string, featureId: string }>
+        this.listeners = new Set(); // Set<(event) => void>
+    }
+
+    selectTimber(name, addToSelection = false) {
+        if (!addToSelection) {
+            this.selectedTimbers.clear();
+        }
+        this.selectedTimbers.add(name);
+        this.emit({ type: 'timber-selected', timberName: name });
+    }
+
+    deselectTimber(name) {
+        this.selectedTimbers.delete(name);
+        this.emit({ type: 'timber-deselected', timberName: name });
+    }
+
+    toggleTimber(name) {
+        if (this.selectedTimbers.has(name)) {
+            this.deselectTimber(name);
+        } else {
+            this.selectTimber(name, true);
+        }
+    }
+
+    clearTimberSelection() {
+        if (this.selectedTimbers.size > 0) {
+            this.selectedTimbers.clear();
+            this.emit({ type: 'clear' });
+        }
+    }
+
+    isTimberSelected(name) {
+        return this.selectedTimbers.has(name);
+    }
+
+    getSelectedTimbers() {
+        return Array.from(this.selectedTimbers);
+    }
+
+    selectFeature(timberName, featureId) {
+        this.selectedFeatures = [{ timberName, featureId }];
+        this.emit({ type: 'feature-selected', timberName, featureId });
+    }
+
+    addFeature(timberName, featureId) {
+        const exists = this.selectedFeatures.some(f => f.timberName === timberName && f.featureId === featureId);
+        if (!exists) {
+            this.selectedFeatures.push({ timberName, featureId });
+            this.emit({ type: 'feature-added', timberName, featureId });
+        }
+    }
+
+    clearFeatureSelection() {
+        if (this.selectedFeatures.length > 0) {
+            this.selectedFeatures = [];
+            this.emit({ type: 'feature-cleared' });
+        }
+    }
+
+    hasSelection() {
+        return this.selectedTimbers.size > 0 || this.selectedFeatures.length > 0;
+    }
+
+    onSelectionChanged(callback) {
+        this.listeners.add(callback);
+    }
+
+    emit(event) {
+        this.listeners.forEach(listener => listener(event));
+    }
+}
+
 class HorseyViewerApp extends LitElement {
     constructor() {
         super();
@@ -68,6 +147,11 @@ class HorseyViewerApp extends LitElement {
         this.lastAnimationFrameMs = 0;
         this.structureScreenBounds = null;
         this.critterSpecies = ['🐴', '🐑', '🐐', '🐄', '🦌', '🐖'];
+        this.critterGroup = null;
+        this.critterTextureCache = new Map();
+
+        this.selectionManager = new SelectionManager();
+        this.meshNameMap = new Map(); // mesh object -> timber name
 
         this.animationHandle = null;
         this.onWindowMessage = this.onWindowMessage.bind(this);
@@ -92,7 +176,6 @@ class HorseyViewerApp extends LitElement {
             <button id="to-v3d" title="Jump back to 3D view">to v3d view</button>
             <div id="viewport">
                 <canvas id="c"></canvas>
-                <div id="idle-critter-layer" aria-hidden="true"></div>
                 <div id="info"></div>
                 <div id="gizmo-panel" aria-label="Camera and light gizmos">
                     <div class="gizmo-block">
@@ -151,6 +234,12 @@ class HorseyViewerApp extends LitElement {
         this.setupThreeScene();
         window.addEventListener('message', this.onWindowMessage);
         this.applyPayload(INITIAL_PAYLOAD);
+        
+        // Setup selection listener
+        this.selectionManager.onSelectionChanged(() => {
+            this.applySelectionOpacity();
+        });
+        
         this.emitViewerLog('viewer-ready', {
             idleTimeoutMs: this.idleTimeoutMs,
         });
@@ -206,6 +295,7 @@ class HorseyViewerApp extends LitElement {
             this.disposeMeshBundle(bundle);
         }
         this.meshObjectsByKey.clear();
+        this.meshNameMap.clear();
     }
 
     setupUiEvents() {
@@ -361,6 +451,9 @@ class HorseyViewerApp extends LitElement {
         this.setShadowsEnabled(this.shadowsEnabled);
         this.setReflectionsEnabled(this.reflectionsEnabled);
 
+        this.critterGroup = new THREE.Group();
+        this.scene.add(this.critterGroup);
+
         this.updateCamera();
         const animate = () => {
             this.animationHandle = requestAnimationFrame(animate);
@@ -402,10 +495,6 @@ class HorseyViewerApp extends LitElement {
         }
     }
 
-    getCritterLayer() {
-        return this.renderRoot.querySelector('#idle-critter-layer');
-    }
-
     startIdleCritterMode(nowMs) {
         this.idleCritterMode = true;
         this.nextCritterSpawnAt = nowMs + 250;
@@ -425,14 +514,19 @@ class HorseyViewerApp extends LitElement {
     }
 
     clearIdleCritters() {
-        const layer = this.getCritterLayer();
-        if (!layer) {
-            this.idleCritters = [];
-            return;
-        }
-        for (const critter of this.idleCritters) {
-            if (critter.element && critter.element.parentElement === layer) {
-                layer.removeChild(critter.element);
+        if (this.critterGroup) {
+            while (this.critterGroup.children.length > 0) {
+                const child = this.critterGroup.children[0];
+                this.critterGroup.remove(child);
+                if (child.material && child.material.map) {
+                    child.material.map.dispose();
+                }
+                if (child.material) {
+                    child.material.dispose();
+                }
+                if (child.geometry) {
+                    child.geometry.dispose();
+                }
             }
         }
         this.idleCritters = [];
@@ -446,127 +540,171 @@ class HorseyViewerApp extends LitElement {
             }
         } else if (this.idleCritterMode) {
             this.stopIdleCritterMode('activity-check');
-            return;
+            // Continue animating existing critters even after idle stops
         }
 
-        if (!this.idleCritterMode) {
-            return;
-        }
-
-        if (nowMs >= this.nextCritterSpawnAt) {
-            this.spawnIdleCritter(nowMs);
+        // Spawn new critters only during active idle mode
+        if (this.idleCritterMode && nowMs >= this.nextCritterSpawnAt) {
+            this.spawnIdleCritter3D(nowMs);
             this.nextCritterSpawnAt = nowMs + 700 + Math.random() * 1400;
         }
 
-        if (!deltaSeconds || this.idleCritters.length === 0) {
+        // Always animate existing critters, even after idle mode stops
+        if (!deltaSeconds || this.idleCritters.length === 0 || !this.critterGroup) {
             return;
         }
 
-        const layer = this.getCritterLayer();
-        if (!layer) {
-            return;
-        }
-        const layerWidth = layer.clientWidth;
-        const layerHeight = layer.clientHeight;
         const nextCritters = [];
+        const cullingDistance = 20; // Remove critters beyond this distance
 
         for (const critter of this.idleCritters) {
-            critter.x += critter.speedPxPerSec * critter.direction * deltaSeconds;
+            // Move in 3D world space
+            critter.x += critter.speedUnitsPerSec * critter.direction * deltaSeconds;
             critter.gaitPhase += deltaSeconds * critter.gaitRate;
-            const bounce = Math.sin(critter.gaitPhase) * critter.bouncePx;
-            const bob = Math.sin(critter.gaitPhase * 2) * critter.leanDeg;
-            const renderY = Math.max(0, Math.min(layerHeight - critter.sizePx, critter.baseY + bounce));
-            critter.element.style.transform = `translate(${critter.x.toFixed(1)}px, ${renderY.toFixed(1)}px) scaleX(1) rotate(${bob.toFixed(2)}deg)`;
 
-            const minX = -critter.sizePx * 2.4;
-            const maxX = layerWidth + critter.sizePx * 2.4;
-            if (critter.x >= minX && critter.x <= maxX) {
+            // Gait animation (bounce and lean)
+            const bounce = Math.sin(critter.gaitPhase) * critter.bounceUnits;
+            const bob = Math.sin(critter.gaitPhase * 2) * critter.leanDeg;
+
+            // Update position
+            const baseZ = this.groundZ + 0.3; // Just above ground
+            critter.object.position.set(critter.x, critter.y, baseZ + bounce);
+            critter.object.rotation.z = (bob * Math.PI) / 180;
+
+            // Check if critter is still in view frustum bounds
+            const distFromOrigin = Math.hypot(critter.x, critter.y);
+            if (distFromOrigin <= cullingDistance) {
                 nextCritters.push(critter);
                 continue;
             }
 
-            if (critter.element.parentElement === layer) {
-                layer.removeChild(critter.element);
+            // Remove from scene and dispose
+            this.critterGroup.remove(critter.object);
+            if (critter.object.material && critter.object.material.map) {
+                critter.object.material.map.dispose();
+            }
+            if (critter.object.material) {
+                critter.object.material.dispose();
+            }
+            if (critter.object.geometry) {
+                critter.object.geometry.dispose();
             }
         }
 
         this.idleCritters = nextCritters;
     }
 
-    pickCritterLaneY(layerHeight, critterSize) {
-        const minY = 10;
-        const maxY = Math.max(minY + 1, layerHeight - critterSize - 10);
-        const blocked = this.structureScreenBounds;
-        const margin = critterSize * 0.85;
-
-        for (let attempt = 0; attempt < 16; attempt += 1) {
-            const candidate = minY + Math.random() * (maxY - minY);
-            if (!blocked) {
-                return candidate;
-            }
-            if (candidate + critterSize < blocked.minY - margin || candidate > blocked.maxY + margin) {
-                return candidate;
-            }
+    createCritterTexture(species, size) {
+        const cacheKey = `${species}-${size}`;
+        if (this.critterTextureCache.has(cacheKey)) {
+            return this.critterTextureCache.get(cacheKey);
         }
 
-        if (!blocked) {
-            return maxY * 0.85;
-        }
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.font = `${size * 0.8}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(species, size / 2, size / 2);
 
-        const below = blocked.maxY + margin + 8;
-        if (below <= maxY) {
-            return below;
-        }
-        const above = blocked.minY - critterSize - margin - 8;
-        if (above >= minY) {
-            return above;
-        }
-        return Math.max(minY, Math.min(maxY, blocked.maxY + margin));
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.magFilter = THREE.LinearFilter;
+        texture.minFilter = THREE.LinearFilter;
+        this.critterTextureCache.set(cacheKey, texture);
+        return texture;
     }
 
-    spawnIdleCritter(nowMs) {
-        const layer = this.getCritterLayer();
-        if (!layer) {
-            return;
+    pickCritter3DSpawnLocation() {
+        const bounds = this.lastBounds;
+        if (!bounds) {
+            return { x: 3, y: 0, direction: 1 };
         }
 
-        const layerWidth = layer.clientWidth;
-        const layerHeight = layer.clientHeight;
-        if (layerWidth < 10 || layerHeight < 10) {
+        const minX = bounds.minX;
+        const maxX = bounds.maxX;
+        const minY = bounds.minY;
+        const maxY = bounds.maxY;
+        const margin = 3; // Increased margin for safer spawning
+
+        // Pick random edge (0=left, 1=right, 2=bottom, 3=top)
+        const edge = Math.floor(Math.random() * 4);
+        let x, y, direction;
+
+        switch (edge) {
+            case 0: // Left edge
+                x = minX - margin;
+                y = minY + Math.random() * (maxY - minY);
+                direction = 1; // Moving right
+                break;
+            case 1: // Right edge
+                x = maxX + margin;
+                y = minY + Math.random() * (maxY - minY);
+                direction = -1; // Moving left
+                break;
+            case 2: // Bottom edge
+                x = minX + Math.random() * (maxX - minX);
+                y = minY - margin;
+                direction = Math.random() < 0.5 ? 1 : -1;
+                break;
+            case 3: // Top edge
+                x = minX + Math.random() * (maxX - minX);
+                y = maxY + margin;
+                direction = Math.random() < 0.5 ? 1 : -1;
+                break;
+        }
+
+        return { x, y, direction };
+    }
+
+    spawnIdleCritter3D(nowMs) {
+        if (!this.critterGroup || !this.scene) {
             return;
         }
 
         const direction = Math.random() < 0.5 ? 1 : -1;
         const species = this.critterSpecies[Math.floor(Math.random() * this.critterSpecies.length)] || '🐴';
-        const sizePx = 18 + Math.floor(Math.random() * 10);
-        const baseY = this.pickCritterLaneY(layerHeight, sizePx);
-        const startX = direction > 0 ? -sizePx * 1.4 : layerWidth + sizePx * 1.4;
+        const critterSize = 0.8 + Math.random() * 0.4; // Units in 3D space
+        const textureSize = 128;
 
-        const element = document.createElement('div');
-        element.className = 'idle-critter';
-        element.textContent = species;
-        element.style.fontSize = `${sizePx}px`;
-        element.style.transform = `translate(${startX}px, ${baseY}px) scaleX(${direction})`;
-        layer.appendChild(element);
+        // Pick spawn location outside structure footprint
+        const spawnLoc = this.pickCritter3DSpawnLocation();
+
+        // Create sprite plane
+        const geometry = new THREE.PlaneGeometry(critterSize, critterSize);
+        const texture = this.createCritterTexture(species, textureSize);
+        const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            alphaTest: 0.1, // Only render pixels with alpha > 0.1
+            side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(spawnLoc.x, spawnLoc.y, this.groundZ + 0.3);
+
+        // Orient vertically (standing upright, perpendicular to ground)
+        mesh.rotation.x = Math.PI / 2;
+
+        this.critterGroup.add(mesh);
 
         this.idleCritters.push({
-            x: startX,
-            baseY,
-            direction,
-            sizePx,
-            speedPxPerSec: 30 + Math.random() * 40,
-            bouncePx: 1.5 + Math.random() * 3.2,
-            leanDeg: 0.8 + Math.random() * 2,
+            x: spawnLoc.x,
+            y: spawnLoc.y,
+            direction: spawnLoc.direction,
+            speedUnitsPerSec: 2 + Math.random() * 3, // Units per second in world space
+            bounceUnits: 0.15 + Math.random() * 0.3,
+            leanDeg: 3 + Math.random() * 6,
             gaitRate: 7 + Math.random() * 5,
             gaitPhase: (nowMs / 400) + Math.random() * Math.PI * 2,
-            element,
+            object: mesh,
         });
 
         this.emitViewerLog('critter-created', {
             species,
-            direction: direction > 0 ? 'right' : 'left',
-            laneY: Math.round(baseY),
-            sizePx,
+            direction: spawnLoc.direction > 0 ? 'right' : 'left',
+            position: [Math.round(spawnLoc.x * 10) / 10, Math.round(spawnLoc.y * 10) / 10],
+            size: Math.round(critterSize * 100) / 100,
             activeCritters: this.idleCritters.length,
         });
     }
@@ -690,8 +828,12 @@ class HorseyViewerApp extends LitElement {
         toV3d.style.display = window.scrollY > 260 ? 'block' : 'none';
     }
 
-    onWindowMouseUp() {
+    onWindowMouseUp(event) {
+        const activeMouseAction = this.mouseAction;
         this.mouseAction = null;
+        if (!activeMouseAction) {
+            this.handleCanvasClick(event);
+        }
     }
 
     onWindowMouseMove(event) {
@@ -715,6 +857,12 @@ class HorseyViewerApp extends LitElement {
         if (event.defaultPrevented) {
             return;
         }
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            this.selectionManager.clearTimberSelection();
+            this.selectionManager.clearFeatureSelection();
+            return;
+        }
         if (event.key !== 'f' && event.key !== 'F') {
             return;
         }
@@ -736,6 +884,63 @@ class HorseyViewerApp extends LitElement {
         this.resizeGizmoRenderer();
         this.drawLightDial();
         this.updateStructureScreenBounds();
+    }
+
+    handleCanvasClick(event) {
+        const canvas = this.renderRoot.querySelector('#c');
+        if (!canvas || !event) {
+            return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        if (
+            event.clientX < rect.left || event.clientX > rect.right ||
+            event.clientY < rect.top || event.clientY > rect.bottom
+        ) {
+            return;
+        }
+
+        const normalizedX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        const normalizedY = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+
+        this.navigationPointer.set(normalizedX, normalizedY);
+        this.navigationRaycaster.setFromCamera(this.navigationPointer, this.camera);
+
+        const targetMeshes = Array.from(this.meshObjectsByKey.values()).map((bundle) => bundle.mesh);
+        const intersects = this.navigationRaycaster.intersectObjects(targetMeshes, false);
+
+        if (intersects.length === 0) {
+            this.selectionManager.clearTimberSelection();
+            this.selectionManager.clearFeatureSelection();
+            return;
+        }
+
+        const hit = intersects[0];
+        const timberName = this.meshNameMap.get(hit.object);
+        if (!timberName) {
+            return;
+        }
+
+        if (event.shiftKey) {
+            this.selectionManager.toggleTimber(timberName);
+        } else {
+            this.selectionManager.selectTimber(timberName, false);
+        }
+
+        this.emitViewerLog('selection-changed', {
+            selectedTimbers: this.selectionManager.getSelectedTimbers(),
+            selectedFeatures: this.selectionManager.selectedFeatures,
+        });
+    }
+
+    applySelectionOpacity() {
+        const hasTimberSelection = this.selectionManager.selectedTimbers.size > 0;
+        const unselectedOpacity = 0.3;
+        for (const [name, bundle] of this.meshObjectsByKey) {
+            const selected = this.selectionManager.isTimberSelected(name);
+            const opacity = hasTimberSelection ? (selected ? 1.0 : unselectedOpacity) : 1.0;
+            bundle.mesh.material.transparent = opacity < 1.0;
+            bundle.mesh.material.opacity = opacity;
+        }
     }
 
     onGizmoPointerMove(event) {
@@ -870,7 +1075,44 @@ class HorseyViewerApp extends LitElement {
     }
 
     getSelectionBounds() {
-        return this.getSceneBounds();
+        const selected = this.selectionManager.getSelectedTimbers();
+        if (!selected.length) {
+            return this.getSceneBounds();
+        }
+
+        let minX = Infinity;
+        let minY = Infinity;
+        let minZ = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+        let maxZ = -Infinity;
+        let hasAny = false;
+
+        for (const key of selected) {
+            const bundle = this.meshObjectsByKey.get(key);
+            if (!bundle || !bundle.mesh || !bundle.mesh.geometry) {
+                continue;
+            }
+            const positions = bundle.mesh.geometry.getAttribute('position').array;
+            for (let index = 0; index < positions.length; index += 3) {
+                hasAny = true;
+                const vx = positions[index];
+                const vy = positions[index + 1];
+                const vz = positions[index + 2];
+                if (vx < minX) minX = vx;
+                if (vx > maxX) maxX = vx;
+                if (vy < minY) minY = vy;
+                if (vy > maxY) maxY = vy;
+                if (vz < minZ) minZ = vz;
+                if (vz > maxZ) maxZ = vz;
+            }
+        }
+
+        if (!hasAny) {
+            return this.getSceneBounds();
+        }
+
+        return { minX, minY, minZ, maxX, maxY, maxZ };
     }
 
     focusSelection() {
@@ -1319,7 +1561,16 @@ class HorseyViewerApp extends LitElement {
             this.scene.remove(bundle.reflection);
         }
         bundle.mesh.geometry.dispose();
+        if (bundle.mesh.material && typeof bundle.mesh.material.dispose === 'function') {
+            bundle.mesh.material.dispose();
+        }
         bundle.edges.geometry.dispose();
+        if (bundle.edges.material && typeof bundle.edges.material.dispose === 'function') {
+            bundle.edges.material.dispose();
+        }
+        if (bundle.reflection && bundle.reflection.material && typeof bundle.reflection.material.dispose === 'function') {
+            bundle.reflection.material.dispose();
+        }
     }
 
     rebuildTimberTable(meshes) {
@@ -1372,15 +1623,18 @@ class HorseyViewerApp extends LitElement {
         for (let index = 0; index < meshes.length; index += 1) {
             const mesh = meshes[index];
             const key = mesh.timberKey || ('index-' + index);
+            const timberName = mesh.timberKey || ('index-' + index);
             const hash = mesh.hash || '';
             nextKeys.add(key);
 
             const existing = this.meshObjectsByKey.get(key);
             if (existing && existing.hash === hash) {
+                this.meshNameMap.set(existing.mesh, timberName);
                 continue;
             }
 
             if (existing) {
+                this.meshNameMap.delete(existing.mesh);
                 this.disposeMeshBundle(existing);
                 this.meshObjectsByKey.delete(key);
             }
@@ -1395,10 +1649,10 @@ class HorseyViewerApp extends LitElement {
             geometry.computeBoundingSphere();
             indexedGeometry.dispose();
 
-            const solidMesh = new THREE.Mesh(geometry, this.solidMat);
+            const solidMesh = new THREE.Mesh(geometry, this.solidMat.clone());
             const edgeGeometry = new THREE.EdgesGeometry(geometry, 25);
-            const edgeMesh = new THREE.LineSegments(edgeGeometry, this.edgeMat);
-            const reflectionMesh = new THREE.Mesh(geometry, this.reflectionMat);
+            const edgeMesh = new THREE.LineSegments(edgeGeometry, this.edgeMat.clone());
+            const reflectionMesh = new THREE.Mesh(geometry, this.reflectionMat.clone());
             solidMesh.renderOrder = 1;
             edgeMesh.renderOrder = 2;
             reflectionMesh.renderOrder = 0;
@@ -1411,12 +1665,14 @@ class HorseyViewerApp extends LitElement {
             this.scene.add(solidMesh);
             this.scene.add(edgeMesh);
             this.scene.add(reflectionMesh);
+            this.meshNameMap.set(solidMesh, timberName);
             this.meshObjectsByKey.set(key, { hash: hash, mesh: solidMesh, edges: edgeMesh, reflection: reflectionMesh });
         }
 
         for (const existingKey of Array.from(this.meshObjectsByKey.keys())) {
             if (!nextKeys.has(existingKey)) {
                 const bundle = this.meshObjectsByKey.get(existingKey);
+                this.meshNameMap.delete(bundle.mesh);
                 this.disposeMeshBundle(bundle);
                 this.meshObjectsByKey.delete(existingKey);
             }
@@ -1424,6 +1680,7 @@ class HorseyViewerApp extends LitElement {
 
         this.rebuildTimberTable(meshes);
         this.updateReflectionTransforms();
+        this.applySelectionOpacity();
     }
 
     getSceneBounds() {
