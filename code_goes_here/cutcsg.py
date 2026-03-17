@@ -9,7 +9,45 @@ from sympy import Matrix, Rational, Expr, sqrt, oo
 from typing import List, Optional, Union, cast
 from dataclasses import dataclass, field, replace
 from abc import ABC, abstractmethod
+import warnings
 from .rule import *
+
+
+# ============================================================================
+# AABB utilities
+# ============================================================================
+
+def _numeric_min(*vals):
+    """Return the minimum of given SymPy numeric values using safe comparison."""
+    result = vals[0]
+    for v in vals[1:]:
+        if safe_compare(v - result, Comparison.LT):
+            result = v
+    return result
+
+
+def _numeric_max(*vals):
+    """Return the maximum of given SymPy numeric values using safe comparison."""
+    result = vals[0]
+    for v in vals[1:]:
+        if safe_compare(v - result, Comparison.GT):
+            result = v
+    return result
+
+
+@dataclass(frozen=True)
+class BoundingBox:
+    """
+    Axis-aligned bounding box (AABB) for a CSG object.
+
+    Each bound is Optional[Numeric] where None means unbounded in that direction.
+    """
+    min_x: Optional[Numeric]
+    min_y: Optional[Numeric]
+    min_z: Optional[Numeric]
+    max_x: Optional[Numeric]
+    max_y: Optional[Numeric]
+    max_z: Optional[Numeric]
 
 
 class CutCSG(ABC):
@@ -60,6 +98,19 @@ class CutCSG(ABC):
             
         Returns:
             The outward normal vector at the point, or None if cannot be determined
+        """
+        pass
+
+    @abstractmethod
+    def get_aabb(self) -> 'BoundingBox':
+        """
+        Return the axis-aligned bounding box (AABB) of this CSG object.
+
+        Each bound is Optional[Numeric] — None means unbounded in that direction.
+
+        Primitives with infinite extent (HalfSpace, or prisms/cylinders with
+        start_distance or end_distance set to None) cannot produce a finite AABB.
+        They emit a UserWarning and return a BoundingBox with all fields set to None.
         """
         pass
 
@@ -130,6 +181,14 @@ class HalfSpace(CutCSG):
             The outward normal vector (the HalfSpace's normal)
         """
         return -self.normal
+
+    def get_aabb(self) -> BoundingBox:
+        warnings.warn(
+            "get_aabb() called on HalfSpace, which has infinite extent — result is unbounded",
+            UserWarning,
+            stacklevel=2,
+        )
+        return BoundingBox(None, None, None, None, None, None)
 
 
 @dataclass(frozen=True)
@@ -426,6 +485,33 @@ class RectangularPrism(CutCSG):
         # Should not reach here if point is actually on boundary
         return None
 
+    def get_aabb(self) -> BoundingBox:
+        if self.start_distance is None or self.end_distance is None:
+            warnings.warn(
+                "get_aabb() called on an infinite RectangularPrism — result is unbounded",
+                UserWarning,
+                stacklevel=2,
+            )
+            return BoundingBox(None, None, None, None, None, None)
+
+        half_w = self.size[0] / Integer(2)
+        half_h = self.size[1] / Integer(2)
+
+        corners_global = [
+            self.transform.local_to_global(Matrix([x_sign * half_w, y_sign * half_h, z]))
+            for x_sign in (Integer(-1), Integer(1))
+            for y_sign in (Integer(-1), Integer(1))
+            for z in (self.start_distance, self.end_distance)
+        ]
+
+        xs = [p[0] for p in corners_global]
+        ys = [p[1] for p in corners_global]
+        zs = [p[2] for p in corners_global]
+        return BoundingBox(
+            _numeric_min(*xs), _numeric_min(*ys), _numeric_min(*zs),
+            _numeric_max(*xs), _numeric_max(*ys), _numeric_max(*zs),
+        )
+
 
 @dataclass(frozen=True)
 class Cylinder(CutCSG):
@@ -586,6 +672,32 @@ class Cylinder(CutCSG):
         # Should not reach here if point is on boundary
         return None
 
+    def get_aabb(self) -> BoundingBox:
+        if self.start_distance is None or self.end_distance is None:
+            warnings.warn(
+                "get_aabb() called on an infinite Cylinder — result is unbounded",
+                UserWarning,
+                stacklevel=2,
+            )
+            return BoundingBox(None, None, None, None, None, None)
+
+        axis_norm = self.axis_direction / safe_norm(self.axis_direction)
+        p1 = self.position + axis_norm * self.start_distance
+        p2 = self.position + axis_norm * self.end_distance
+
+        bounds = []
+        for i in range(3):
+            ai = axis_norm[i]
+            radial_i = self.radius * sqrt(Integer(1) - ai * ai)
+            lo = _numeric_min(p1[i], p2[i]) - radial_i
+            hi = _numeric_max(p1[i], p2[i]) + radial_i
+            bounds.append((lo, hi))
+
+        return BoundingBox(
+            bounds[0][0], bounds[1][0], bounds[2][0],
+            bounds[0][1], bounds[1][1], bounds[2][1],
+        )
+
 
 @dataclass(frozen=True)
 class SolidUnion(CutCSG):
@@ -680,6 +792,31 @@ class SolidUnion(CutCSG):
             if norm == Integer(0):
                 return None
             return avg_normal / norm
+
+    def get_aabb(self) -> BoundingBox:
+        if not self.children:
+            return BoundingBox(None, None, None, None, None, None)
+
+        bboxes = [child.get_aabb() for child in self.children]
+
+        def union_min(vals):
+            if any(v is None for v in vals):
+                return None
+            return _numeric_min(*vals)
+
+        def union_max(vals):
+            if any(v is None for v in vals):
+                return None
+            return _numeric_max(*vals)
+
+        return BoundingBox(
+            union_min([b.min_x for b in bboxes]),
+            union_min([b.min_y for b in bboxes]),
+            union_min([b.min_z for b in bboxes]),
+            union_max([b.max_x for b in bboxes]),
+            union_max([b.max_y for b in bboxes]),
+            union_max([b.max_z for b in bboxes]),
+        )
 
 
 @dataclass(frozen=True)
@@ -838,6 +975,12 @@ class Difference(CutCSG):
                 return None
             return avg_normal / norm
 
+    def get_aabb(self) -> BoundingBox:
+        bbox = self.base.get_aabb()
+        for sub in self.subtract:
+            if isinstance(sub, HalfSpace):
+                bbox = _clip_bbox_by_halfspace_complement(bbox, sub)
+        return bbox
 
 
 # TODO come upw ith a cuter/better name for these
@@ -1162,6 +1305,107 @@ class ConvexPolygonExtrusion(CutCSG):
                     return safe_transform_vector(self.transform.orientation.matrix, local_normal)
         
         return None
+
+    def get_aabb(self) -> BoundingBox:
+        if self.start_distance is None or self.end_distance is None:
+            warnings.warn(
+                "get_aabb() called on an infinite ConvexPolygonExtrusion — result is unbounded",
+                UserWarning,
+                stacklevel=2,
+            )
+            return BoundingBox(None, None, None, None, None, None)
+
+        corners_global = [
+            self.transform.local_to_global(Matrix([pt[0], pt[1], z]))
+            for pt in self.points
+            for z in (self.start_distance, self.end_distance)
+        ]
+
+        xs = [p[0] for p in corners_global]
+        ys = [p[1] for p in corners_global]
+        zs = [p[2] for p in corners_global]
+        return BoundingBox(
+            _numeric_min(*xs), _numeric_min(*ys), _numeric_min(*zs),
+            _numeric_max(*xs), _numeric_max(*ys), _numeric_max(*zs),
+        )
+
+
+# ============================================================================
+# AABB clipping utility
+# ============================================================================
+
+def _clip_bbox_by_halfspace_complement(bbox: BoundingBox, hs: HalfSpace) -> BoundingBox:
+    """
+    Tighten a bounding box by removing the region inside ``hs``.
+
+    Returns the AABB of the intersection of ``bbox`` with the complement of ``hs``
+    (i.e., the set of points where ``hs.contains_point()`` is False).
+
+    If any bound of ``bbox`` is None the box is returned unchanged, because
+    we cannot enumerate the corners of an infinite box.
+    """
+    if any(v is None for v in [bbox.min_x, bbox.min_y, bbox.min_z,
+                                bbox.max_x, bbox.max_y, bbox.max_z]):
+        return bbox
+
+    # 8 corners of the AABB
+    corners = [
+        Matrix([x, y, z])
+        for x in (bbox.min_x, bbox.max_x)
+        for y in (bbox.min_y, bbox.max_y)
+        for z in (bbox.min_z, bbox.max_z)
+    ]
+
+    # 12 edges (each edge connects two corners that differ in exactly one coordinate)
+    edges = [
+        # 4 edges parallel to X
+        (Matrix([bbox.min_x, bbox.min_y, bbox.min_z]), Matrix([bbox.max_x, bbox.min_y, bbox.min_z])),
+        (Matrix([bbox.min_x, bbox.max_y, bbox.min_z]), Matrix([bbox.max_x, bbox.max_y, bbox.min_z])),
+        (Matrix([bbox.min_x, bbox.min_y, bbox.max_z]), Matrix([bbox.max_x, bbox.min_y, bbox.max_z])),
+        (Matrix([bbox.min_x, bbox.max_y, bbox.max_z]), Matrix([bbox.max_x, bbox.max_y, bbox.max_z])),
+        # 4 edges parallel to Y
+        (Matrix([bbox.min_x, bbox.min_y, bbox.min_z]), Matrix([bbox.min_x, bbox.max_y, bbox.min_z])),
+        (Matrix([bbox.max_x, bbox.min_y, bbox.min_z]), Matrix([bbox.max_x, bbox.max_y, bbox.min_z])),
+        (Matrix([bbox.min_x, bbox.min_y, bbox.max_z]), Matrix([bbox.min_x, bbox.max_y, bbox.max_z])),
+        (Matrix([bbox.max_x, bbox.min_y, bbox.max_z]), Matrix([bbox.max_x, bbox.max_y, bbox.max_z])),
+        # 4 edges parallel to Z
+        (Matrix([bbox.min_x, bbox.min_y, bbox.min_z]), Matrix([bbox.min_x, bbox.min_y, bbox.max_z])),
+        (Matrix([bbox.max_x, bbox.min_y, bbox.min_z]), Matrix([bbox.max_x, bbox.min_y, bbox.max_z])),
+        (Matrix([bbox.min_x, bbox.max_y, bbox.min_z]), Matrix([bbox.min_x, bbox.max_y, bbox.max_z])),
+        (Matrix([bbox.max_x, bbox.max_y, bbox.min_z]), Matrix([bbox.max_x, bbox.max_y, bbox.max_z])),
+    ]
+
+    valid_points = []
+
+    # Keep corners that lie outside (or on the boundary of) the halfspace
+    for c in corners:
+        if not hs.contains_point(c):
+            valid_points.append(c)
+
+    # Find intersections of each AABB edge with the halfspace boundary plane
+    for a, b in edges:
+        na = safe_dot_product(hs.normal, a)
+        nb = safe_dot_product(hs.normal, b)
+        denom = nb - na
+        if safe_compare(denom, Comparison.EQ):
+            # Edge parallel to the plane — no intersection
+            continue
+        t = (hs.offset - na) / denom
+        if safe_compare(t, Comparison.GE) and safe_compare(t - Integer(1), Comparison.LE):
+            valid_points.append(a + (b - a) * t)
+
+    if not valid_points:
+        # The entire bbox is consumed by the halfspace — return a degenerate (point) bbox
+        return BoundingBox(bbox.min_x, bbox.min_y, bbox.min_z,
+                           bbox.min_x, bbox.min_y, bbox.min_z)
+
+    xs = [p[0] for p in valid_points]
+    ys = [p[1] for p in valid_points]
+    zs = [p[2] for p in valid_points]
+    return BoundingBox(
+        _numeric_min(*xs), _numeric_min(*ys), _numeric_min(*zs),
+        _numeric_max(*xs), _numeric_max(*ys), _numeric_max(*zs),
+    )
 
 
 # ============================================================================

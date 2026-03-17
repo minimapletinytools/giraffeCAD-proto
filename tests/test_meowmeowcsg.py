@@ -14,6 +14,7 @@ from code_goes_here.cutcsg import (
     SolidUnion,
     Difference,
     ConvexPolygonExtrusion,
+    BoundingBox,
     adopt_csg,
     translate_csg,
     translate_profile,
@@ -1926,4 +1927,186 @@ class TestAdoptCsg:
         assert isinstance(adopted, HalfSpace)
         # In global, point (11,0,0) is inside (x >= 10). In local same coords.
         assert adopted.contains_point(Matrix([Rational(11), Integer(0), Integer(0)])) == True
+
+
+# ============================================================================
+# TestGetAABB
+# ============================================================================
+
+class TestGetAABB:
+    """Tests for CutCSG.get_aabb() — axis-aligned bounding boxes."""
+
+    # ------------------------------------------------------------------
+    # Primitives
+    # ------------------------------------------------------------------
+
+    def test_bbox_axis_aligned_prism(self):
+        """Identity-oriented prism at origin — AABB equals the exact local extents."""
+        prism = RectangularPrism(
+            size=Matrix([Rational(6), Rational(4)]),
+            transform=Transform.identity(),
+            start_distance=Rational(0),
+            end_distance=Rational(10),
+        )
+        bbox = prism.get_aabb()
+        assert bbox.min_x == Rational(-3)
+        assert bbox.max_x == Rational(3)
+        assert bbox.min_y == Rational(-2)
+        assert bbox.max_y == Rational(2)
+        assert bbox.min_z == Rational(0)
+        assert bbox.max_z == Rational(10)
+
+    def test_bbox_rotated_prism(self):
+        """Prism rotated 90° around Z — local X and Y axes swap in global space."""
+        # rotate_left: local +X → global +Y, local +Y → global -X
+        orientation = Orientation.rotate_left()
+        prism = RectangularPrism(
+            size=Matrix([Rational(6), Rational(4)]),
+            transform=Transform(position=Matrix([Integer(0), Integer(0), Integer(0)]), orientation=orientation),
+            start_distance=Rational(0),
+            end_distance=Rational(10),
+        )
+        bbox = prism.get_aabb()
+        # width (6) is now along global Y: [-3, 3]
+        # height (4) is now along global -X direction: [-2, 2]
+        assert bbox.min_x == Rational(-2)
+        assert bbox.max_x == Rational(2)
+        assert bbox.min_y == Rational(-3)
+        assert bbox.max_y == Rational(3)
+        assert bbox.min_z == Rational(0)
+        assert bbox.max_z == Rational(10)
+
+    def test_bbox_axis_aligned_cylinder(self):
+        """Z-axis cylinder at origin — AABB is [-r,r]×[-r,r]×[start,end]."""
+        cyl = Cylinder(
+            axis_direction=Matrix([Integer(0), Integer(0), Integer(1)]),
+            radius=Rational(5),
+            position=Matrix([Integer(0), Integer(0), Integer(0)]),
+            start_distance=Rational(2),
+            end_distance=Rational(8),
+        )
+        bbox = cyl.get_aabb()
+        assert bbox.min_x == Rational(-5)
+        assert bbox.max_x == Rational(5)
+        assert bbox.min_y == Rational(-5)
+        assert bbox.max_y == Rational(5)
+        assert bbox.min_z == Rational(2)
+        assert bbox.max_z == Rational(8)
+
+    def test_bbox_convex_polygon_extrusion(self):
+        """Square polygon extrusion at origin — matches equivalent prism bounds."""
+        # Square with corners at (±3, ±3) in CCW order
+        points = [
+            Matrix([Rational(3), Rational(-3)]),
+            Matrix([Rational(3), Rational(3)]),
+            Matrix([Rational(-3), Rational(3)]),
+            Matrix([Rational(-3), Rational(-3)]),
+        ]
+        extrusion = ConvexPolygonExtrusion(
+            points=points,
+            transform=Transform.identity(),
+            start_distance=Rational(0),
+            end_distance=Rational(5),
+        )
+        bbox = extrusion.get_aabb()
+        assert bbox.min_x == Rational(-3)
+        assert bbox.max_x == Rational(3)
+        assert bbox.min_y == Rational(-3)
+        assert bbox.max_y == Rational(3)
+        assert bbox.min_z == Rational(0)
+        assert bbox.max_z == Rational(5)
+
+    # ------------------------------------------------------------------
+    # Infinite-extent warnings
+    # ------------------------------------------------------------------
+
+    def test_bbox_halfspace_warns(self):
+        """HalfSpace.get_aabb() should emit a UserWarning and return all-None."""
+        hs = HalfSpace(
+            normal=Matrix([Integer(1), Integer(0), Integer(0)]),
+            offset=Rational(5),
+        )
+        with pytest.warns(UserWarning, match="HalfSpace"):
+            bbox = hs.get_aabb()
+        assert bbox.min_x is None
+        assert bbox.max_x is None
+        assert bbox.min_y is None
+        assert bbox.max_y is None
+        assert bbox.min_z is None
+        assert bbox.max_z is None
+
+    def test_bbox_infinite_prism_warns(self):
+        """RectangularPrism with end_distance=None should emit a UserWarning."""
+        prism = RectangularPrism(
+            size=Matrix([Rational(4), Rational(4)]),
+            transform=Transform.identity(),
+            start_distance=Rational(0),
+            end_distance=None,
+        )
+        with pytest.warns(UserWarning, match="infinite"):
+            bbox = prism.get_aabb()
+        assert bbox.min_x is None
+        assert bbox.max_x is None
+
+    # ------------------------------------------------------------------
+    # Composites
+    # ------------------------------------------------------------------
+
+    def test_bbox_union(self):
+        """Union of two offset prisms — merged bbox spans both."""
+        # Prism A at origin: [-2,2]×[-2,2]×[0,5]
+        prism_a = RectangularPrism(
+            size=Matrix([Rational(4), Rational(4)]),
+            transform=Transform.identity(),
+            start_distance=Rational(0),
+            end_distance=Rational(5),
+        )
+        # Prism B shifted (+10, +10, +10): [8,12]×[8,12]×[10,15]
+        prism_b = RectangularPrism(
+            size=Matrix([Rational(4), Rational(4)]),
+            transform=Transform(
+                position=Matrix([Rational(10), Rational(10), Rational(10)]),
+                orientation=Orientation.identity(),
+            ),
+            start_distance=Rational(0),
+            end_distance=Rational(5),
+        )
+        union = SolidUnion(children=[prism_a, prism_b])
+        bbox = union.get_aabb()
+        assert bbox.min_x == Rational(-2)
+        assert bbox.max_x == Rational(12)
+        assert bbox.min_y == Rational(-2)
+        assert bbox.max_y == Rational(12)
+        assert bbox.min_z == Rational(0)
+        assert bbox.max_z == Rational(15)
+
+    def test_bbox_difference_halfspace_crop_non_orthogonal(self):
+        """Box [0,10]³ minus diagonal halfspace — bbox is tightened on X and Y."""
+        # Prism centred at (5,5,5): spans [0,10]×[0,10]×[0,10]
+        prism = RectangularPrism(
+            size=Matrix([Rational(10), Rational(10)]),
+            transform=Transform(
+                position=Matrix([Rational(5), Rational(5), Rational(5)]),
+                orientation=Orientation.identity(),
+            ),
+            start_distance=Rational(-5),
+            end_distance=Rational(5),
+        )
+        # Halfspace: n = (1,1,0)/√2, offset = 5
+        # Contains {P : (x+y)/√2 >= 5}, i.e., x+y >= 5√2 ≈ 7.07
+        normal = Matrix([Integer(1), Integer(1), Integer(0)]) / sqrt(Integer(2))
+        hs = HalfSpace(normal=normal, offset=Rational(5))
+
+        diff = Difference(base=prism, subtract=[hs])
+        bbox = diff.get_aabb()
+
+        # Z is unaffected by the cut
+        assert bbox.min_z == Rational(0)
+        assert bbox.max_z == Rational(10)
+
+        # X and Y should be tightened to [0, 5√2]
+        assert bbox.min_x == Rational(0)
+        assert bbox.min_y == Rational(0)
+        assert simplify(bbox.max_x - 5 * sqrt(Integer(2))) == Integer(0)
+        assert simplify(bbox.max_y - 5 * sqrt(Integer(2))) == Integer(0)
 

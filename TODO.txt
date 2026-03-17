@@ -48,7 +48,7 @@ IGNORE-doc tab support?
 -select support
   -select timber highlights it in 3d
 
--navigation support
+DONE-navigation support
   -by default camera center is in center of focused objects, can be moved in view plane by panning
   -middle mouse pans
   -scroll wheel zooms and pans towards where mouse location is (in particular, it zooms to the mous eprojected onto the focal plane which is parallel to the screen and intersects the mouse orbit center)
