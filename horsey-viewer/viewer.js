@@ -3,32 +3,31 @@
  */
 
 const vscode = require('vscode');
+const path = require('path');
 
-let activePanel = null;
-
-function createFrameViewer() {
-    if (!activePanel) {
-        activePanel = vscode.window.createWebviewPanel(
-            'horseyViewer',
-            'Horsey Frame Viewer',
-            vscode.ViewColumn.Two,
-            {
-                enableScripts: true,
-            }
-        );
-
-        activePanel.onDidDispose(() => {
-            activePanel = null;
-        });
-    }
-    return activePanel;
+function createFrameViewer(filePath) {
+    return vscode.window.createWebviewPanel(
+        'horseyViewer',
+        getViewerTitle(filePath),
+        vscode.ViewColumn.Two,
+        {
+            enableScripts: true,
+        }
+    );
 }
 
-function showFrameViewer(frameData, geometryData) {
-    const panel = createFrameViewer();
-    panel.title = `Horsey Frame Viewer: ${frameData.name || 'Unnamed'}`;
+function renderFrameViewer(panel, filePath, frameData, geometryData) {
+    panel.title = getViewerTitle(filePath, frameData.name);
     panel.webview.html = getWebviewContent(frameData, geometryData);
     panel.reveal(vscode.ViewColumn.Two);
+}
+
+function getViewerTitle(filePath, frameName = null) {
+    const fileName = path.basename(filePath);
+    if (frameName) {
+        return `Horsey: ${fileName} (${frameName})`;
+    }
+    return `Horsey: ${fileName}`;
 }
 
 function getWebviewContent(frameData, geometryData) {
@@ -306,4 +305,4 @@ window.addEventListener('resize', function() {
 </html>`;
 }
 
-module.exports = { showFrameViewer, createFrameViewer };
+module.exports = { createFrameViewer, renderFrameViewer };

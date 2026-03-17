@@ -1,11 +1,8 @@
 const vscode = require('vscode');
-const { PythonRunnerSession } = require('./runner-session');
-const { FileWatcher } = require('./file-watcher');
-const { showFrameViewer } = require('./viewer');
+const { FrameViewSession } = require('./frame-view-session');
 
-let runnerSession = null;
 let outputChannel = null;
-let fileWatcher = null;
+const frameSessions = new Map();
 
 /**
  * Main activation function for the Horsey Viewer extension.
@@ -36,7 +33,8 @@ function activate(context) {
 
         try {
             const session = await getOrCreateSession(filePath, context);
-            await reloadAndRefreshFrame(session);
+            session.reveal();
+            await session.refresh();
         } catch (error) {
             outputChannel.show(true);
             vscode.window.showErrorMessage(`Horsey Viewer error: ${error.message}`);
@@ -45,90 +43,43 @@ function activate(context) {
 
     context.subscriptions.push(disposable);
     context.subscriptions.push({
-        dispose: () => {
-            if (fileWatcher) {
-                fileWatcher.dispose();
-                fileWatcher = null;
-            }
-            if (runnerSession) {
-                runnerSession.dispose();
-                runnerSession = null;
-            }
+        dispose: async () => {
+            const sessions = Array.from(frameSessions.values());
+            frameSessions.clear();
+            await Promise.allSettled(sessions.map((session) => session.dispose()));
         },
     });
 }
 
 /**
  * Get or create a session for the given file path.
- * Disposes the old file watcher and creates a new one for the new session.
+ * Reuses an existing session for the same file or creates a new panel/session.
  */
 async function getOrCreateSession(filePath, context) {
-    if (runnerSession && runnerSession.filePath === filePath && runnerSession.isAlive()) {
-        return runnerSession;
+    const existingSession = frameSessions.get(filePath);
+    if (existingSession && !existingSession.isDisposed) {
+        return existingSession;
     }
 
-    if (runnerSession) {
-        await runnerSession.dispose();
-    }
-
-    if (fileWatcher) {
-        fileWatcher.dispose();
-        fileWatcher = null;
-    }
-
-    runnerSession = new PythonRunnerSession(filePath, context, outputChannel);
-    await runnerSession.start();
-
-    // Set up file watcher for auto-reload on save
-    fileWatcher = new FileWatcher(
+    const session = new FrameViewSession(
         filePath,
-        runnerSession.projectRoot,
-        (source) => onFileChanged(source),
-        (message) => outputChannel.appendLine(`[watcher] ${message}`)
+        context,
+        outputChannel,
+        (disposedFilePath) => {
+            if (frameSessions.get(disposedFilePath) === session) {
+                frameSessions.delete(disposedFilePath);
+            }
+        }
     );
-    fileWatcher.start();
-
-    return runnerSession;
+    frameSessions.set(filePath, session);
+    await session.initialize();
+    return session;
 }
 
-/**
- * Callback when a watched file changes.
- * Reloads the example and refreshes the viewer.
- */
-async function onFileChanged(source) {
-    if (!runnerSession || !runnerSession.isAlive()) {
-        return;
-    }
-
-    outputChannel.appendLine(`[watcher] Auto-reloading due to ${source} change...`);
-    try {
-        await reloadAndRefreshFrame(runnerSession);
-        outputChannel.appendLine(`[watcher] Reload complete for ${source}`);
-    } catch (error) {
-        outputChannel.appendLine(`[watcher] Auto-reload failed: ${error.message}`);
-        outputChannel.show(true);
-    }
-}
-
-/**
- * Reload the example in the runner and refresh the viewer.
- */
-async function reloadAndRefreshFrame(session) {
-    await session.request('reload_example', { filePath: session.filePath });
-    const frameData = await session.request('get_frame');
-    const geometryData = await session.request('get_geometry');
-    showFrameViewer(frameData, geometryData);
-}
-
-function deactivate() {
-    if (fileWatcher) {
-        fileWatcher.dispose();
-        fileWatcher = null;
-    }
-    if (runnerSession) {
-        runnerSession.dispose();
-        runnerSession = null;
-    }
+async function deactivate() {
+    const sessions = Array.from(frameSessions.values());
+    frameSessions.clear();
+    await Promise.allSettled(sessions.map((session) => session.dispose()));
 }
 
 module.exports = {
