@@ -107,25 +107,36 @@ canvas { display: block; width: 100%; height: 100%; }
     background: #ffffff;
 }
 #render-controls {
-    position: absolute;
-    left: 12px;
-    bottom: 12px;
+    max-width: 1200px;
+    margin: 14px auto 0;
+    padding: 10px 14px;
     background: var(--hv-panel-bg);
     color: var(--hv-text);
     border: 1px solid var(--hv-panel-border);
-    border-radius: 6px;
-    padding: 6px 10px;
+    border-radius: 10px;
     font: 12px/1.5 'Segoe UI', sans-serif;
     display: flex;
     gap: 12px;
     align-items: center;
+    flex-wrap: wrap;
     backdrop-filter: blur(4px);
+}
+.render-controls-title {
+    color: var(--hv-title);
+    font: 600 12px 'Segoe UI', sans-serif;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    margin-right: 6px;
 }
 #render-controls label {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     user-select: none;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(140, 164, 207, 0.22);
 }
 #render-controls input {
     accent-color: var(--hv-accent);

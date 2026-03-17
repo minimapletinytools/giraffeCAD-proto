@@ -9,6 +9,9 @@ class HorseyViewerApp extends LitElement {
         this.meshObjectsByKey = new Map();
         this.lastBounds = { minX: -1, minY: -1, minZ: -1, maxX: 1, maxY: 1, maxZ: 1 };
 
+        this.focusedCx = 0;
+        this.focusedCy = 0;
+        this.focusedCz = 0;
         this.cx = 0;
         this.cy = 0;
         this.cz = 0;
@@ -19,9 +22,13 @@ class HorseyViewerApp extends LitElement {
 
         this.cameraAnimation = null;
 
-        this.dragging = false;
+        this.mouseAction = null;
         this.lastX = 0;
         this.lastY = 0;
+
+        this.showCenterGizmo = true;
+        this.shadowsEnabled = true;
+        this.reflectionsEnabled = true;
 
         this.lightAzimuth = 0;
         this.lightElevation = 0.8;
@@ -29,6 +36,7 @@ class HorseyViewerApp extends LitElement {
         this.lightDialDragging = false;
 
         this.shadowSize = 60;
+        this.groundZ = -1.0005;
 
         this.gizmoDragging = false;
         this.gizmoMoved = false;
@@ -40,9 +48,16 @@ class HorseyViewerApp extends LitElement {
         this.gizmoCube = null;
         this.gizmoRaycaster = new THREE.Raycaster();
         this.gizmoPointer = new THREE.Vector2();
+        this.navigationRaycaster = new THREE.Raycaster();
+        this.navigationPointer = new THREE.Vector2();
+        this.focalPlane = new THREE.Plane();
+        this.tempOrbitCenter = new THREE.Vector3();
+        this.tempViewDirection = new THREE.Vector3();
+        this.tempPlaneHit = new THREE.Vector3();
 
         this.sun = null;
         this.shadowCatcher = null;
+        this.orbitCenterGizmo = null;
 
         this.animationHandle = null;
         this.onWindowMessage = this.onWindowMessage.bind(this);
@@ -54,6 +69,7 @@ class HorseyViewerApp extends LitElement {
         this.onGizmoPointerUp = this.onGizmoPointerUp.bind(this);
         this.onLightDialPointerMove = this.onLightDialPointerMove.bind(this);
         this.onLightDialPointerUp = this.onLightDialPointerUp.bind(this);
+        this.onWindowKeyDown = this.onWindowKeyDown.bind(this);
     }
 
     createRenderRoot() {
@@ -78,8 +94,23 @@ class HorseyViewerApp extends LitElement {
                     </div>
                 </div>
                 <div id="debug"></div>
-                <div id="hint">drag to orbit • scroll to zoom</div>
+                <div id="hint">right drag orbit • middle drag pan • scroll zoom • F focus</div>
             </div>
+            <section id="render-controls" aria-label="Viewer options">
+                <div class="render-controls-title">viewer options</div>
+                <label>
+                    <input id="center-gizmo-toggle" type="checkbox" ?checked=${this.showCenterGizmo}>
+                    center gizmo
+                </label>
+                <label>
+                    <input id="shadows-toggle" type="checkbox" ?checked=${this.shadowsEnabled}>
+                    shadows
+                </label>
+                <label>
+                    <input id="reflections-toggle" type="checkbox" ?checked=${this.reflectionsEnabled}>
+                    reflection
+                </label>
+            </section>
             <div id="panels">
                 <div class="panel-box">
                     <div class="panel-title">Timber List</div>
@@ -117,6 +148,7 @@ class HorseyViewerApp extends LitElement {
         window.removeEventListener('mouseup', this.onWindowMouseUp);
         window.removeEventListener('mousemove', this.onWindowMouseMove);
         window.removeEventListener('resize', this.onWindowResize);
+        window.removeEventListener('keydown', this.onWindowKeyDown);
         window.removeEventListener('pointermove', this.onGizmoPointerMove);
         window.removeEventListener('pointerup', this.onGizmoPointerUp);
         window.removeEventListener('pointermove', this.onLightDialPointerMove);
@@ -135,6 +167,22 @@ class HorseyViewerApp extends LitElement {
             this.shadowCatcher.material.dispose();
             this.shadowCatcher = null;
         }
+        if (this.orbitCenterGizmo) {
+            this.scene.remove(this.orbitCenterGizmo);
+            this.orbitCenterGizmo.traverse((child) => {
+                if (child.geometry) {
+                    child.geometry.dispose();
+                }
+                if (child.material && typeof child.material.dispose === 'function') {
+                    child.material.dispose();
+                }
+            });
+            this.orbitCenterGizmo = null;
+        }
+        if (this.reflectionMat) {
+            this.reflectionMat.dispose();
+            this.reflectionMat = null;
+        }
         for (const bundle of this.meshObjectsByKey.values()) {
             this.disposeMeshBundle(bundle);
         }
@@ -148,22 +196,35 @@ class HorseyViewerApp extends LitElement {
         const gizmoCanvas = this.renderRoot.querySelector('#gizmo-cube-c');
         const focusButton = this.renderRoot.querySelector('#focus-btn');
         const lightDialCanvas = this.renderRoot.querySelector('#light-dial-c');
+        const centerGizmoToggle = this.renderRoot.querySelector('#center-gizmo-toggle');
+        const shadowsToggle = this.renderRoot.querySelector('#shadows-toggle');
+        const reflectionsToggle = this.renderRoot.querySelector('#reflections-toggle');
 
         toV3d.addEventListener('click', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
         canvas.addEventListener('mousedown', (event) => {
-            this.dragging = true;
+            if (event.button === 2) {
+                this.mouseAction = 'orbit';
+            } else if (event.button === 1) {
+                this.mouseAction = 'pan';
+            } else {
+                return;
+            }
+            event.preventDefault();
             this.lastX = event.clientX;
             this.lastY = event.clientY;
+            this.cameraAnimation = null;
+        });
+
+        canvas.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
         });
 
         viewport.addEventListener('wheel', (event) => {
             event.preventDefault();
-            this.orbitDist *= event.deltaY > 0 ? 1.1 : 0.9;
-            this.cameraAnimation = null;
-            this.updateCamera();
+            this.zoomTowardPointer(event.clientX, event.clientY, event.deltaY > 0 ? 1.1 : 0.9);
         }, { passive: false });
 
         gizmoCanvas.addEventListener('pointerdown', (event) => {
@@ -186,6 +247,18 @@ class HorseyViewerApp extends LitElement {
             this.applyLightDialFromPointer(event);
         });
 
+        centerGizmoToggle.addEventListener('change', (event) => {
+            this.setCenterGizmoEnabled(event.target.checked);
+        });
+
+        shadowsToggle.addEventListener('change', (event) => {
+            this.setShadowsEnabled(event.target.checked);
+        });
+
+        reflectionsToggle.addEventListener('change', (event) => {
+            this.setReflectionsEnabled(event.target.checked);
+        });
+
         window.addEventListener('scroll', this.onWindowScroll);
         window.addEventListener('mouseup', this.onWindowMouseUp);
         window.addEventListener('mousemove', this.onWindowMouseMove);
@@ -194,6 +267,7 @@ class HorseyViewerApp extends LitElement {
         window.addEventListener('pointermove', this.onLightDialPointerMove);
         window.addEventListener('pointerup', this.onLightDialPointerUp);
         window.addEventListener('resize', this.onWindowResize);
+        window.addEventListener('keydown', this.onWindowKeyDown);
     }
 
     setupThreeScene() {
@@ -245,11 +319,25 @@ class HorseyViewerApp extends LitElement {
             depthTest: false,
             depthWrite: false,
         });
+        this.reflectionMat = new THREE.MeshStandardMaterial({
+            color: 0xe7edf8,
+            metalness: 0.04,
+            roughness: 0.28,
+            transparent: true,
+            opacity: 0.14,
+            flatShading: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+        });
 
         this.createOrUpdateShadowCatcher(this.lastBounds);
+        this.createOrbitCenterGizmo();
         this.setupCameraGizmoScene();
         this.syncLightAnglesFromSun();
         this.drawLightDial();
+        this.setCenterGizmoEnabled(this.showCenterGizmo);
+        this.setShadowsEnabled(this.shadowsEnabled);
+        this.setReflectionsEnabled(this.reflectionsEnabled);
 
         this.updateCamera();
         const animate = () => {
@@ -319,20 +407,39 @@ class HorseyViewerApp extends LitElement {
     }
 
     onWindowMouseUp() {
-        this.dragging = false;
+        this.mouseAction = null;
     }
 
     onWindowMouseMove(event) {
-        if (!this.dragging) {
+        if (!this.mouseAction) {
             return;
         }
-        this.cameraUpVector.set(0, 0, 1);
-        this.theta -= (event.clientX - this.lastX) * 0.008;
-        this.phi = this.clampPhi(this.phi - (event.clientY - this.lastY) * 0.008);
+        if (this.mouseAction === 'orbit') {
+            this.cameraUpVector.set(0, 0, 1);
+            this.theta -= (event.clientX - this.lastX) * 0.008;
+            this.phi = this.clampPhi(this.phi - (event.clientY - this.lastY) * 0.008);
+        } else if (this.mouseAction === 'pan') {
+            this.panCameraInViewPlane(this.lastX, this.lastY, event.clientX, event.clientY);
+        }
         this.lastX = event.clientX;
         this.lastY = event.clientY;
         this.cameraAnimation = null;
         this.updateCamera();
+    }
+
+    onWindowKeyDown(event) {
+        if (event.defaultPrevented) {
+            return;
+        }
+        if (event.key !== 'f' && event.key !== 'F') {
+            return;
+        }
+        const activeTag = document.activeElement && document.activeElement.tagName;
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') {
+            return;
+        }
+        event.preventDefault();
+        this.focusSelection();
     }
 
     onWindowResize() {
@@ -423,20 +530,27 @@ class HorseyViewerApp extends LitElement {
         return { theta, phi };
     }
 
-    animateCameraTo(targetTheta, targetPhi, targetOrbitDist, durationMs = 260, targetUpVector = null) {
+    animateCameraTo(targetTheta, targetPhi, targetOrbitDist, durationMs = 260, targetUpVector = null, targetCenter = null) {
         const nextUp = targetUpVector || { x: 0, y: 0, z: 1 };
+        const nextCenter = targetCenter || { x: this.cx, y: this.cy, z: this.cz };
         this.cameraAnimation = {
             startedAt: performance.now(),
             durationMs,
             startTheta: this.theta,
             startPhi: this.phi,
             startDist: this.orbitDist,
+            startCx: this.cx,
+            startCy: this.cy,
+            startCz: this.cz,
             startUpX: this.cameraUpVector.x,
             startUpY: this.cameraUpVector.y,
             startUpZ: this.cameraUpVector.z,
             deltaTheta: this.shortestAngleDelta(this.theta, targetTheta),
             deltaPhi: targetPhi - this.phi,
             deltaDist: targetOrbitDist - this.orbitDist,
+            deltaCx: nextCenter.x - this.cx,
+            deltaCy: nextCenter.y - this.cy,
+            deltaCz: nextCenter.z - this.cz,
             targetUpX: nextUp.x,
             targetUpY: nextUp.y,
             targetUpZ: nextUp.z,
@@ -455,6 +569,9 @@ class HorseyViewerApp extends LitElement {
         this.theta = this.cameraAnimation.startTheta + this.cameraAnimation.deltaTheta * eased;
         this.phi = this.clampPhi(this.cameraAnimation.startPhi + this.cameraAnimation.deltaPhi * eased);
         this.orbitDist = Math.max(0.01, this.cameraAnimation.startDist + this.cameraAnimation.deltaDist * eased);
+        this.cx = this.cameraAnimation.startCx + this.cameraAnimation.deltaCx * eased;
+        this.cy = this.cameraAnimation.startCy + this.cameraAnimation.deltaCy * eased;
+        this.cz = this.cameraAnimation.startCz + this.cameraAnimation.deltaCz * eased;
         this.cameraUpVector.set(
             this.cameraAnimation.startUpX + (this.cameraAnimation.targetUpX - this.cameraAnimation.startUpX) * eased,
             this.cameraAnimation.startUpY + (this.cameraAnimation.targetUpY - this.cameraAnimation.startUpY) * eased,
@@ -474,17 +591,166 @@ class HorseyViewerApp extends LitElement {
     focusSelection() {
         const bounds = this.getSelectionBounds();
         this.lastBounds = bounds;
-        this.cx = (bounds.minX + bounds.maxX) / 2;
-        this.cy = (bounds.minY + bounds.maxY) / 2;
-        this.cz = (bounds.minZ + bounds.maxZ) / 2;
+        this.focusedCx = (bounds.minX + bounds.maxX) / 2;
+        this.focusedCy = (bounds.minY + bounds.maxY) / 2;
+        this.focusedCz = (bounds.minZ + bounds.maxZ) / 2;
         const dx = bounds.maxX - bounds.minX;
         const dy = bounds.maxY - bounds.minY;
         const dz = bounds.maxZ - bounds.minZ;
         const radius = Math.sqrt(dx * dx + dy * dy + dz * dz) / 2 || 5;
         const fovRad = this.camera.fov * Math.PI / 180;
         const targetDist = radius / Math.sin(fovRad / 2) * 1.3;
-        this.animateCameraTo(-Math.PI / 2, Math.PI / 2, targetDist, 280, { x: 0, y: 0, z: 1 });
+        this.animateCameraTo(
+            -Math.PI / 2,
+            Math.PI / 2,
+            targetDist,
+            280,
+            { x: 0, y: 0, z: 1 },
+            { x: this.focusedCx, y: this.focusedCy, z: this.focusedCz },
+        );
         this.updateLightFromAngles();
+    }
+
+    getCameraCenterVector(target = null) {
+        const out = target || new THREE.Vector3();
+        return out.set(this.cx, this.cy, this.cz);
+    }
+
+    projectPointerToFocalPlane(clientX, clientY, planeCenter = null) {
+        if (!this.camera) {
+            return null;
+        }
+        const canvas = this.renderRoot.querySelector('#c');
+        if (!canvas) {
+            return null;
+        }
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) {
+            return null;
+        }
+
+        this.navigationPointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        this.navigationPointer.y = -(((clientY - rect.top) / rect.height) * 2 - 1);
+        this.navigationRaycaster.setFromCamera(this.navigationPointer, this.camera);
+
+        const focalCenter = planeCenter || this.getCameraCenterVector(this.tempOrbitCenter);
+        const viewDirection = this.camera.getWorldDirection(this.tempViewDirection).normalize();
+        this.focalPlane.setFromNormalAndCoplanarPoint(viewDirection, focalCenter);
+        const hit = this.navigationRaycaster.ray.intersectPlane(this.focalPlane, this.tempPlaneHit);
+        return hit ? hit.clone() : null;
+    }
+
+    panCameraInViewPlane(fromClientX, fromClientY, toClientX, toClientY) {
+        const planeCenter = this.getCameraCenterVector(this.tempOrbitCenter);
+        const fromPoint = this.projectPointerToFocalPlane(fromClientX, fromClientY, planeCenter);
+        const toPoint = this.projectPointerToFocalPlane(toClientX, toClientY, planeCenter);
+        if (!fromPoint || !toPoint) {
+            return;
+        }
+        const delta = fromPoint.sub(toPoint);
+        this.cx += delta.x;
+        this.cy += delta.y;
+        this.cz += delta.z;
+    }
+
+    zoomTowardPointer(clientX, clientY, zoomFactor) {
+        const oldDist = Math.max(0.01, this.orbitDist);
+        const nextDist = Math.max(0.01, oldDist * zoomFactor);
+        const planeCenter = this.getCameraCenterVector(this.tempOrbitCenter);
+        const focalPoint = this.projectPointerToFocalPlane(clientX, clientY, planeCenter);
+        let targetCenter = { x: this.cx, y: this.cy, z: this.cz };
+
+        if (focalPoint) {
+            const ratio = nextDist / oldDist;
+            targetCenter = {
+                x: this.cx + (focalPoint.x - planeCenter.x) * (1 - ratio),
+                y: this.cy + (focalPoint.y - planeCenter.y) * (1 - ratio),
+                z: this.cz + (focalPoint.z - planeCenter.z) * (1 - ratio),
+            };
+        }
+
+        this.animateCameraTo(
+            this.theta,
+            this.phi,
+            nextDist,
+            140,
+            { x: this.cameraUpVector.x, y: this.cameraUpVector.y, z: this.cameraUpVector.z },
+            targetCenter,
+        );
+    }
+
+    createOrbitCenterGizmo() {
+        const group = new THREE.Group();
+
+        const orb = new THREE.Mesh(
+            new THREE.SphereGeometry(1, 20, 20),
+            new THREE.MeshBasicMaterial({ color: 0xffd8a8, transparent: true, opacity: 0.96 })
+        );
+        group.add(orb);
+
+        const ringConfigs = [
+            { color: 0xff8fa3, rotation: [0, Math.PI / 2, 0] },
+            { color: 0x7fc8f8, rotation: [Math.PI / 2, 0, 0] },
+            { color: 0x95d5b2, rotation: [0, 0, 0] },
+        ];
+
+        for (const config of ringConfigs) {
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(1.85, 0.12, 12, 48),
+                new THREE.MeshBasicMaterial({ color: config.color, transparent: true, opacity: 0.52 })
+            );
+            ring.rotation.set(config.rotation[0], config.rotation[1], config.rotation[2]);
+            group.add(ring);
+        }
+
+        group.visible = this.showCenterGizmo;
+        this.orbitCenterGizmo = group;
+        this.scene.add(group);
+    }
+
+    updateOrbitCenterGizmo() {
+        if (!this.orbitCenterGizmo) {
+            return;
+        }
+        const gizmoScale = Math.max(0.02, this.orbitDist * 0.00875);
+        this.orbitCenterGizmo.visible = this.showCenterGizmo;
+        this.orbitCenterGizmo.position.set(this.cx, this.cy, this.cz);
+        this.orbitCenterGizmo.scale.setScalar(gizmoScale);
+    }
+
+    updateReflectionTransforms() {
+        const reflectionOffsetZ = this.groundZ * 2 - 0.001;
+        for (const bundle of this.meshObjectsByKey.values()) {
+            if (!bundle.reflection) {
+                continue;
+            }
+            bundle.reflection.position.set(0, 0, reflectionOffsetZ);
+            bundle.reflection.scale.set(1, 1, -1);
+            bundle.reflection.visible = this.reflectionsEnabled;
+        }
+    }
+
+    setCenterGizmoEnabled(enabled) {
+        this.showCenterGizmo = enabled;
+        this.updateOrbitCenterGizmo();
+    }
+
+    setShadowsEnabled(enabled) {
+        this.shadowsEnabled = enabled;
+        if (this.renderer) {
+            this.renderer.shadowMap.enabled = enabled;
+        }
+        if (this.sun) {
+            this.sun.castShadow = enabled;
+        }
+        if (this.shadowCatcher) {
+            this.shadowCatcher.visible = enabled;
+        }
+    }
+
+    setReflectionsEnabled(enabled) {
+        this.reflectionsEnabled = enabled;
+        this.updateReflectionTransforms();
     }
 
     createGizmoFaceMaterial(label, backgroundColor) {
@@ -517,6 +783,7 @@ class HorseyViewerApp extends LitElement {
         const centerX = (bounds.minX + bounds.maxX) / 2;
         const centerY = (bounds.minY + bounds.maxY) / 2;
         const groundZ = bounds.minZ - 0.0005;
+        this.groundZ = groundZ;
         this.shadowSize = Math.max(60, Math.max(dx, dy) * 8 || 60);
 
         if (!this.shadowCatcher) {
@@ -534,6 +801,8 @@ class HorseyViewerApp extends LitElement {
 
         this.shadowCatcher.position.set(centerX, centerY, groundZ + 0.0001);
         this.shadowCatcher.scale.set(this.shadowSize, this.shadowSize, 1);
+        this.shadowCatcher.visible = this.shadowsEnabled;
+        this.updateReflectionTransforms();
         this.configureShadowCamera(bounds, this.shadowSize);
     }
 
@@ -661,9 +930,9 @@ class HorseyViewerApp extends LitElement {
         if (!this.sun) {
             return;
         }
-        const dx = this.sun.position.x - this.cx;
-        const dy = this.sun.position.y - this.cy;
-        const dz = this.sun.position.z - this.cz;
+        const dx = this.sun.position.x - this.focusedCx;
+        const dy = this.sun.position.y - this.focusedCy;
+        const dz = this.sun.position.z - this.focusedCz;
         const distance = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
         this.lightDistance = distance;
         this.lightAzimuth = Math.atan2(dy, dx);
@@ -679,8 +948,8 @@ class HorseyViewerApp extends LitElement {
         const dy = cosElevation * Math.sin(this.lightAzimuth) * this.lightDistance;
         const dz = Math.sin(this.lightElevation) * this.lightDistance;
 
-        this.sun.position.set(this.cx + dx, this.cy + dy, this.cz + dz);
-        this.sun.target.position.set(this.cx, this.cy, this.cz);
+        this.sun.position.set(this.focusedCx + dx, this.focusedCy + dy, this.focusedCz + dz);
+        this.sun.target.position.set(this.focusedCx, this.focusedCy, this.focusedCz);
         if (!this.sun.target.parent) {
             this.scene.add(this.sun.target);
         }
@@ -761,6 +1030,9 @@ class HorseyViewerApp extends LitElement {
         }
         this.scene.remove(bundle.mesh);
         this.scene.remove(bundle.edges);
+        if (bundle.reflection) {
+            this.scene.remove(bundle.reflection);
+        }
         bundle.mesh.geometry.dispose();
         bundle.edges.geometry.dispose();
     }
@@ -839,14 +1111,20 @@ class HorseyViewerApp extends LitElement {
             const solidMesh = new THREE.Mesh(geometry, this.solidMat);
             const edgeGeometry = new THREE.EdgesGeometry(geometry, 25);
             const edgeMesh = new THREE.LineSegments(edgeGeometry, this.edgeMat);
+            const reflectionMesh = new THREE.Mesh(geometry, this.reflectionMat);
             solidMesh.renderOrder = 1;
             edgeMesh.renderOrder = 2;
+            reflectionMesh.renderOrder = 0;
             solidMesh.castShadow = true;
             solidMesh.receiveShadow = true;
+            reflectionMesh.castShadow = false;
+            reflectionMesh.receiveShadow = false;
+            reflectionMesh.visible = this.reflectionsEnabled;
 
             this.scene.add(solidMesh);
             this.scene.add(edgeMesh);
-            this.meshObjectsByKey.set(key, { hash: hash, mesh: solidMesh, edges: edgeMesh });
+            this.scene.add(reflectionMesh);
+            this.meshObjectsByKey.set(key, { hash: hash, mesh: solidMesh, edges: edgeMesh, reflection: reflectionMesh });
         }
 
         for (const existingKey of Array.from(this.meshObjectsByKey.keys())) {
@@ -858,6 +1136,7 @@ class HorseyViewerApp extends LitElement {
         }
 
         this.rebuildTimberTable(meshes);
+        this.updateReflectionTransforms();
     }
 
     getSceneBounds() {
@@ -908,9 +1187,12 @@ class HorseyViewerApp extends LitElement {
         const bounds = this.getSceneBounds();
         this.lastBounds = bounds;
         this.createOrUpdateShadowCatcher(bounds);
-        this.cx = (bounds.minX + bounds.maxX) / 2;
-        this.cy = (bounds.minY + bounds.maxY) / 2;
-        this.cz = (bounds.minZ + bounds.maxZ) / 2;
+        this.focusedCx = (bounds.minX + bounds.maxX) / 2;
+        this.focusedCy = (bounds.minY + bounds.maxY) / 2;
+        this.focusedCz = (bounds.minZ + bounds.maxZ) / 2;
+        this.cx = this.focusedCx;
+        this.cy = this.focusedCy;
+        this.cz = this.focusedCz;
         const dx = bounds.maxX - bounds.minX;
         const dy = bounds.maxY - bounds.minY;
         const dz = bounds.maxZ - bounds.minZ;
@@ -937,6 +1219,7 @@ class HorseyViewerApp extends LitElement {
         );
         this.camera.up.copy(this.cameraUpVector);
         this.camera.lookAt(this.cx, this.cy, this.cz);
+        this.updateOrbitCenterGizmo();
     }
 }
 

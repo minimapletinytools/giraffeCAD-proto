@@ -1,3 +1,23 @@
+:: 3/17/2026 selection / layer view
+
+Lets add a layout view.... We want a little menu on that spans the entire left side collumn that has an option >> expansion thingy to collapse it.
+
+it should have no background or a light transparent background.
+
+it should contain a hirerchacial list view. For now, the list view contais the following:
+
+- timbers
+  - list of all timbers
+- joints
+  - list of all joints
+     - list of timbers belonging to that joint (these will be duplicated)
+
+introduce a concept of selection.  we can keep it simple. when objcets are selected make everything else slightly mor etransparent
+escape deselects
+pressing F focuses on the selection
+
+
+
 
 :: 3/8/2025 viewer next steps
 DONE-update vscode plugin to use python IPC or something
@@ -31,12 +51,12 @@ IGNORE-doc tab support?
 -navigation support
   -by default camera center is in center of focused objects, can be moved in view plane by panning
   -middle mouse pans
-  -scroll wheel zooms and pans towards where mouse location is
-  -right click drag rotates camera (or maybe just left click...)
-  -or do the simple version with no panning
-  -maybe include cube gizmo with preset views
+  -scroll wheel zooms and pans towards where mouse location is (in particular, it zooms to the mous eprojected onto the focal plane which is parallel to the screen and intersects the mouse orbit center)
+  -pressing F resets focus (using lepr)
+  DONE-right click drag rotates camera (or maybe just left click...)
+  DONE-maybe include cube gizmo with preset views
   -ortho perspective toggle?
-  -must lerp between all transitions!!!
+  DONE-must lerp between all transitions!!!
 
 -simple list view
   -needs parent list hirearchy support
@@ -263,21 +283,26 @@ DONE-start viewer I guess?
   DONE-load example
   ODNE-do basic frame rendering (as boxes) get_bounding_box_prism
   DONE-do camera centering and navigation using 3js package I guess
-
--render accessories
 DONE-add wireframe rendering
+DONE-3d view
+  DONE-add gizmo in upper right corner
+  DONE-add focus button
+DONE-move out CSS html and frontend scripts into their own thing
+
+-do layout
+  -pop out left tab for hierarchy
+  -pop up right tab for gizmos
+  -info tab at right/bottom right???
+  -bottom left/center section to help you scroll further down to bottom views
+    -view options can go here
+
+-do new mouse navigation
+-render accessories
 -fix reflection rendering and make background nicer?
 -maybe background colors should inehirt from vscode theme :O
 -add front facing direction3d to Frame
 -maybe add "assume upright structure" to limit camera movement with mouse?
 -figure out why box view doesn't render right for the gooseneck, end cut is correct
--3d view
-  -add gizmo in upper right corner
-  -add focus button
-  -do new mouse navigation
--layout
-  -move out CSS html and frontend scripts into their own thing
-  -do some design on the frontend side I guesss
 
 
 -document example/patternbook stuff
