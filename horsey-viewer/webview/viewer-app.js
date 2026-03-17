@@ -7,21 +7,52 @@ class HorseyViewerApp extends LitElement {
     constructor() {
         super();
         this.meshObjectsByKey = new Map();
+        this.lastBounds = { minX: -1, minY: -1, minZ: -1, maxX: 1, maxY: 1, maxZ: 1 };
+
         this.cx = 0;
         this.cy = 0;
         this.cz = 0;
         this.orbitDist = 10;
         this.theta = -Math.PI / 5;
         this.phi = Math.PI / 3;
+
+        this.cameraAnimation = null;
+
         this.dragging = false;
         this.lastX = 0;
         this.lastY = 0;
+
+        this.lightAzimuth = 0;
+        this.lightElevation = 0.8;
+        this.lightDistance = 16;
+        this.lightDialDragging = false;
+
+        this.shadowSize = 60;
+
+        this.gizmoDragging = false;
+        this.gizmoMoved = false;
+        this.gizmoLastX = 0;
+        this.gizmoLastY = 0;
+        this.gizmoRenderer = null;
+        this.gizmoScene = null;
+        this.gizmoCamera = null;
+        this.gizmoCube = null;
+        this.gizmoRaycaster = new THREE.Raycaster();
+        this.gizmoPointer = new THREE.Vector2();
+
+        this.sun = null;
+        this.shadowCatcher = null;
+
         this.animationHandle = null;
         this.onWindowMessage = this.onWindowMessage.bind(this);
         this.onWindowScroll = this.onWindowScroll.bind(this);
         this.onWindowMouseUp = this.onWindowMouseUp.bind(this);
         this.onWindowMouseMove = this.onWindowMouseMove.bind(this);
         this.onWindowResize = this.onWindowResize.bind(this);
+        this.onGizmoPointerMove = this.onGizmoPointerMove.bind(this);
+        this.onGizmoPointerUp = this.onGizmoPointerUp.bind(this);
+        this.onLightDialPointerMove = this.onLightDialPointerMove.bind(this);
+        this.onLightDialPointerUp = this.onLightDialPointerUp.bind(this);
     }
 
     createRenderRoot() {
@@ -34,6 +65,17 @@ class HorseyViewerApp extends LitElement {
             <div id="viewport">
                 <canvas id="c"></canvas>
                 <div id="info"></div>
+                <div id="gizmo-panel" aria-label="Camera and light gizmos">
+                    <div class="gizmo-block">
+                        <div class="gizmo-title">camera</div>
+                        <canvas id="gizmo-cube-c"></canvas>
+                    </div>
+                    <button id="focus-btn" type="button" title="Focus selection">focus</button>
+                    <div class="gizmo-block">
+                        <div class="gizmo-title">light</div>
+                        <canvas id="light-dial-c"></canvas>
+                    </div>
+                </div>
                 <div id="debug"></div>
                 <div id="hint">drag to orbit • scroll to zoom</div>
             </div>
@@ -74,9 +116,23 @@ class HorseyViewerApp extends LitElement {
         window.removeEventListener('mouseup', this.onWindowMouseUp);
         window.removeEventListener('mousemove', this.onWindowMouseMove);
         window.removeEventListener('resize', this.onWindowResize);
+        window.removeEventListener('pointermove', this.onGizmoPointerMove);
+        window.removeEventListener('pointerup', this.onGizmoPointerUp);
+        window.removeEventListener('pointermove', this.onLightDialPointerMove);
+        window.removeEventListener('pointerup', this.onLightDialPointerUp);
         if (this.animationHandle) {
             cancelAnimationFrame(this.animationHandle);
             this.animationHandle = null;
+        }
+        if (this.gizmoRenderer) {
+            this.gizmoRenderer.dispose();
+            this.gizmoRenderer = null;
+        }
+        if (this.shadowCatcher) {
+            this.scene.remove(this.shadowCatcher);
+            this.shadowCatcher.geometry.dispose();
+            this.shadowCatcher.material.dispose();
+            this.shadowCatcher = null;
         }
         for (const bundle of this.meshObjectsByKey.values()) {
             this.disposeMeshBundle(bundle);
@@ -88,6 +144,9 @@ class HorseyViewerApp extends LitElement {
         const toV3d = this.renderRoot.querySelector('#to-v3d');
         const canvas = this.renderRoot.querySelector('#c');
         const viewport = this.renderRoot.querySelector('#viewport');
+        const gizmoCanvas = this.renderRoot.querySelector('#gizmo-cube-c');
+        const focusButton = this.renderRoot.querySelector('#focus-btn');
+        const lightDialCanvas = this.renderRoot.querySelector('#light-dial-c');
 
         toV3d.addEventListener('click', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -102,12 +161,37 @@ class HorseyViewerApp extends LitElement {
         viewport.addEventListener('wheel', (event) => {
             event.preventDefault();
             this.orbitDist *= event.deltaY > 0 ? 1.1 : 0.9;
+            this.cameraAnimation = null;
             this.updateCamera();
         }, { passive: false });
+
+        gizmoCanvas.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            this.gizmoDragging = true;
+            this.gizmoMoved = false;
+            this.gizmoLastX = event.clientX;
+            this.gizmoLastY = event.clientY;
+            gizmoCanvas.setPointerCapture(event.pointerId);
+        });
+
+        focusButton.addEventListener('click', () => {
+            this.focusSelection();
+        });
+
+        lightDialCanvas.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            this.lightDialDragging = true;
+            lightDialCanvas.setPointerCapture(event.pointerId);
+            this.applyLightDialFromPointer(event);
+        });
 
         window.addEventListener('scroll', this.onWindowScroll);
         window.addEventListener('mouseup', this.onWindowMouseUp);
         window.addEventListener('mousemove', this.onWindowMouseMove);
+        window.addEventListener('pointermove', this.onGizmoPointerMove);
+        window.addEventListener('pointerup', this.onGizmoPointerUp);
+        window.addEventListener('pointermove', this.onLightDialPointerMove);
+        window.addEventListener('pointerup', this.onLightDialPointerUp);
         window.addEventListener('resize', this.onWindowResize);
     }
 
@@ -123,16 +207,22 @@ class HorseyViewerApp extends LitElement {
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setSize(viewport.offsetWidth, viewport.offsetHeight, false);
         this.renderer.outputEncoding = THREE.sRGBEncoding;
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0xfff8dc);
 
         this.camera = new THREE.PerspectiveCamera(45, viewport.offsetWidth / viewport.offsetHeight, 0.01, 10000);
+        this.camera.up.set(0, 0, 1);
 
         this.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        const sun = new THREE.DirectionalLight(0xffffff, 0.75);
-        sun.position.set(5, 8, 4);
-        this.scene.add(sun);
+        this.sun = new THREE.DirectionalLight(0xffffff, 0.75);
+        this.sun.position.set(3, 2, 12);
+        this.sun.castShadow = true;
+        this.sun.shadow.bias = -0.00008;
+        this.sun.shadow.mapSize.set(2048, 2048);
+        this.scene.add(this.sun);
         const fill = new THREE.DirectionalLight(0xecf2ff, 0.45);
         fill.position.set(-4, 3, -6);
         this.scene.add(fill);
@@ -155,9 +245,16 @@ class HorseyViewerApp extends LitElement {
             depthWrite: false,
         });
 
+        this.createOrUpdateShadowCatcher(this.lastBounds);
+        this.setupCameraGizmoScene();
+        this.syncLightAnglesFromSun();
+        this.drawLightDial();
+
         this.updateCamera();
         const animate = () => {
             this.animationHandle = requestAnimationFrame(animate);
+            this.stepCameraAnimation();
+            this.renderCameraGizmo();
             this.renderer.render(this.scene, this.camera);
         };
         animate();
@@ -229,9 +326,10 @@ class HorseyViewerApp extends LitElement {
             return;
         }
         this.theta -= (event.clientX - this.lastX) * 0.008;
-        this.phi = Math.max(0.05, Math.min(Math.PI - 0.05, this.phi - (event.clientY - this.lastY) * 0.008));
+        this.phi = this.clampPhi(this.phi - (event.clientY - this.lastY) * 0.008);
         this.lastX = event.clientX;
         this.lastY = event.clientY;
+        this.cameraAnimation = null;
         this.updateCamera();
     }
 
@@ -242,10 +340,369 @@ class HorseyViewerApp extends LitElement {
         this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(width, height, false);
+        this.resizeGizmoRenderer();
+        this.drawLightDial();
+    }
+
+    onGizmoPointerMove(event) {
+        if (!this.gizmoDragging) {
+            return;
+        }
+        const dx = event.clientX - this.gizmoLastX;
+        const dy = event.clientY - this.gizmoLastY;
+        if (Math.abs(dx) + Math.abs(dy) > 1) {
+            this.gizmoMoved = true;
+        }
+        this.theta -= dx * 0.008;
+        this.phi = this.clampPhi(this.phi - dy * 0.008);
+        this.gizmoLastX = event.clientX;
+        this.gizmoLastY = event.clientY;
+        this.cameraAnimation = null;
+        this.updateCamera();
+    }
+
+    onGizmoPointerUp(event) {
+        if (!this.gizmoDragging) {
+            return;
+        }
+        this.gizmoDragging = false;
+        if (this.gizmoMoved) {
+            return;
+        }
+        const canvas = this.renderRoot.querySelector('#gizmo-cube-c');
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        this.snapCameraFromGizmoFace(x, y);
+    }
+
+    onLightDialPointerMove(event) {
+        if (!this.lightDialDragging) {
+            return;
+        }
+        this.applyLightDialFromPointer(event);
+    }
+
+    onLightDialPointerUp() {
+        this.lightDialDragging = false;
     }
 
     fmt(value) {
         return (value * 1000).toFixed(1) + ' mm';
+    }
+
+    clampPhi(value) {
+        return Math.max(0.05, Math.min(Math.PI - 0.05, value));
+    }
+
+    normalizeAngle(value) {
+        let out = value;
+        while (out <= -Math.PI) {
+            out += Math.PI * 2;
+        }
+        while (out > Math.PI) {
+            out -= Math.PI * 2;
+        }
+        return out;
+    }
+
+    shortestAngleDelta(from, to) {
+        return this.normalizeAngle(to - from);
+    }
+
+    directionToAngles(direction) {
+        const length = Math.sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z) || 1;
+        const nx = direction.x / length;
+        const ny = direction.y / length;
+        const nz = direction.z / length;
+        const theta = Math.atan2(ny, nx);
+        const phi = this.clampPhi(Math.acos(Math.max(-1, Math.min(1, nz))));
+        return { theta, phi };
+    }
+
+    animateCameraTo(targetTheta, targetPhi, targetOrbitDist, durationMs = 260) {
+        this.cameraAnimation = {
+            startedAt: performance.now(),
+            durationMs,
+            startTheta: this.theta,
+            startPhi: this.phi,
+            startDist: this.orbitDist,
+            deltaTheta: this.shortestAngleDelta(this.theta, targetTheta),
+            deltaPhi: targetPhi - this.phi,
+            deltaDist: targetOrbitDist - this.orbitDist,
+        };
+    }
+
+    stepCameraAnimation() {
+        if (!this.cameraAnimation) {
+            return;
+        }
+        const now = performance.now();
+        const elapsed = now - this.cameraAnimation.startedAt;
+        const t = Math.max(0, Math.min(1, elapsed / this.cameraAnimation.durationMs));
+        const eased = 1 - Math.pow(1 - t, 3);
+
+        this.theta = this.cameraAnimation.startTheta + this.cameraAnimation.deltaTheta * eased;
+        this.phi = this.clampPhi(this.cameraAnimation.startPhi + this.cameraAnimation.deltaPhi * eased);
+        this.orbitDist = Math.max(0.01, this.cameraAnimation.startDist + this.cameraAnimation.deltaDist * eased);
+        this.updateCamera();
+
+        if (t >= 1) {
+            this.cameraAnimation = null;
+        }
+    }
+
+    getSelectionBounds() {
+        return this.getSceneBounds();
+    }
+
+    focusSelection() {
+        const bounds = this.getSelectionBounds();
+        this.lastBounds = bounds;
+        this.cx = (bounds.minX + bounds.maxX) / 2;
+        this.cy = (bounds.minY + bounds.maxY) / 2;
+        this.cz = (bounds.minZ + bounds.maxZ) / 2;
+        const dx = bounds.maxX - bounds.minX;
+        const dy = bounds.maxY - bounds.minY;
+        const dz = bounds.maxZ - bounds.minZ;
+        const radius = Math.sqrt(dx * dx + dy * dy + dz * dz) / 2 || 5;
+        const fovRad = this.camera.fov * Math.PI / 180;
+        const targetDist = radius / Math.sin(fovRad / 2) * 1.3;
+        this.animateCameraTo(-Math.PI / 2, Math.PI / 2, targetDist, 280);
+        this.updateLightFromAngles();
+    }
+
+    createOrUpdateShadowCatcher(bounds) {
+        const dx = bounds.maxX - bounds.minX;
+        const dy = bounds.maxY - bounds.minY;
+        const centerX = (bounds.minX + bounds.maxX) / 2;
+        const centerY = (bounds.minY + bounds.maxY) / 2;
+        const groundZ = bounds.minZ - 0.0005;
+        this.shadowSize = Math.max(60, Math.max(dx, dy) * 8 || 60);
+
+        if (!this.shadowCatcher) {
+            this.shadowCatcher = new THREE.Mesh(
+                new THREE.PlaneBufferGeometry(1, 1),
+                new THREE.ShadowMaterial({ opacity: 0.22 })
+            );
+            this.shadowCatcher.receiveShadow = true;
+            this.shadowCatcher.renderOrder = 1;
+            this.scene.add(this.shadowCatcher);
+        } else {
+            this.shadowCatcher.geometry.dispose();
+            this.shadowCatcher.geometry = new THREE.PlaneBufferGeometry(1, 1);
+        }
+
+        this.shadowCatcher.position.set(centerX, centerY, groundZ + 0.0001);
+        this.shadowCatcher.scale.set(this.shadowSize, this.shadowSize, 1);
+        this.configureShadowCamera(bounds, this.shadowSize);
+    }
+
+    configureShadowCamera(bounds, size) {
+        if (!this.sun || !this.sun.shadow || !this.sun.shadow.camera) {
+            return;
+        }
+        const shadowCam = this.sun.shadow.camera;
+        const half = size / 2;
+        shadowCam.left = -half;
+        shadowCam.right = half;
+        shadowCam.top = half;
+        shadowCam.bottom = -half;
+        shadowCam.near = 0.5;
+        shadowCam.far = Math.max(40, (bounds.maxZ - bounds.minZ) * 8 || 40);
+        shadowCam.updateProjectionMatrix();
+        const centerX = (bounds.minX + bounds.maxX) / 2;
+        const centerY = (bounds.minY + bounds.maxY) / 2;
+        const centerZ = (bounds.minZ + bounds.maxZ) / 2;
+        this.sun.target.position.set(centerX, centerY, centerZ);
+        if (!this.sun.target.parent) {
+            this.scene.add(this.sun.target);
+        }
+    }
+
+    setupCameraGizmoScene() {
+        const canvas = this.renderRoot.querySelector('#gizmo-cube-c');
+        this.gizmoRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        this.gizmoRenderer.setClearColor(0x000000, 0);
+
+        this.gizmoScene = new THREE.Scene();
+        this.gizmoCamera = new THREE.PerspectiveCamera(35, 1, 0.1, 20);
+
+        this.gizmoScene.add(new THREE.AmbientLight(0xffffff, 0.82));
+        const light = new THREE.DirectionalLight(0xffffff, 0.65);
+        light.position.set(2, 2, 3);
+        this.gizmoScene.add(light);
+
+        const materials = [
+            new THREE.MeshStandardMaterial({ color: 0xc9d6ea }),
+            new THREE.MeshStandardMaterial({ color: 0xbfcee4 }),
+            new THREE.MeshStandardMaterial({ color: 0xd6deee }),
+            new THREE.MeshStandardMaterial({ color: 0xc4d2e8 }),
+            new THREE.MeshStandardMaterial({ color: 0xbccbe2 }),
+            new THREE.MeshStandardMaterial({ color: 0xb6c6df }),
+        ];
+        this.gizmoCube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), materials);
+        this.gizmoScene.add(this.gizmoCube);
+        this.resizeGizmoRenderer();
+    }
+
+    resizeGizmoRenderer() {
+        if (!this.gizmoRenderer || !this.gizmoCamera) {
+            return;
+        }
+        const canvas = this.renderRoot.querySelector('#gizmo-cube-c');
+        const width = Math.max(1, canvas.clientWidth);
+        const height = Math.max(1, canvas.clientHeight);
+        this.gizmoRenderer.setPixelRatio(window.devicePixelRatio || 1);
+        this.gizmoRenderer.setSize(width, height, false);
+        this.gizmoCamera.aspect = width / height;
+        this.gizmoCamera.updateProjectionMatrix();
+    }
+
+    renderCameraGizmo() {
+        if (!this.gizmoRenderer || !this.gizmoCamera || !this.camera) {
+            return;
+        }
+        const dx = this.camera.position.x - this.cx;
+        const dy = this.camera.position.y - this.cy;
+        const dz = this.camera.position.z - this.cz;
+        const length = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+        this.gizmoCamera.position.set((dx / length) * 2.8, (dy / length) * 2.8, (dz / length) * 2.8);
+        this.gizmoCamera.up.set(0, 0, 1);
+        this.gizmoCamera.lookAt(0, 0, 0);
+        this.gizmoRenderer.render(this.gizmoScene, this.gizmoCamera);
+    }
+
+    snapCameraFromGizmoFace(localX, localY) {
+        if (!this.gizmoCube || !this.gizmoCamera) {
+            return;
+        }
+        const canvas = this.renderRoot.querySelector('#gizmo-cube-c');
+        const width = canvas.clientWidth || 1;
+        const height = canvas.clientHeight || 1;
+
+        this.gizmoPointer.x = (localX / width) * 2 - 1;
+        this.gizmoPointer.y = -((localY / height) * 2 - 1);
+        this.gizmoRaycaster.setFromCamera(this.gizmoPointer, this.gizmoCamera);
+        const hits = this.gizmoRaycaster.intersectObject(this.gizmoCube, false);
+        if (!hits.length || !hits[0].face) {
+            return;
+        }
+
+        const normal = hits[0].face.normal;
+        const ax = Math.abs(normal.x);
+        const ay = Math.abs(normal.y);
+        const az = Math.abs(normal.z);
+        let direction;
+
+        if (ax >= ay && ax >= az) {
+            direction = { x: Math.sign(normal.x), y: 0, z: 0 };
+        } else if (ay >= ax && ay >= az) {
+            direction = { x: 0, y: Math.sign(normal.y), z: 0 };
+        } else {
+            direction = { x: 0, y: 0, z: Math.sign(normal.z) };
+        }
+
+        const angles = this.directionToAngles(direction);
+        this.animateCameraTo(angles.theta, angles.phi, this.orbitDist, 260);
+    }
+
+    syncLightAnglesFromSun() {
+        if (!this.sun) {
+            return;
+        }
+        const dx = this.sun.position.x - this.cx;
+        const dy = this.sun.position.y - this.cy;
+        const dz = this.sun.position.z - this.cz;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+        this.lightDistance = distance;
+        this.lightAzimuth = Math.atan2(dy, dx);
+        this.lightElevation = Math.max(0.2, Math.min(1.3, Math.asin(dz / distance)));
+    }
+
+    updateLightFromAngles() {
+        if (!this.sun) {
+            return;
+        }
+        const cosElevation = Math.cos(this.lightElevation);
+        const dx = cosElevation * Math.cos(this.lightAzimuth) * this.lightDistance;
+        const dy = cosElevation * Math.sin(this.lightAzimuth) * this.lightDistance;
+        const dz = Math.sin(this.lightElevation) * this.lightDistance;
+
+        this.sun.position.set(this.cx + dx, this.cy + dy, this.cz + dz);
+        this.sun.target.position.set(this.cx, this.cy, this.cz);
+        if (!this.sun.target.parent) {
+            this.scene.add(this.sun.target);
+        }
+        this.configureShadowCamera(this.lastBounds, this.shadowSize || 60);
+    }
+
+    drawLightDial() {
+        const canvas = this.renderRoot.querySelector('#light-dial-c');
+        if (!canvas) {
+            return;
+        }
+        const width = Math.max(1, canvas.clientWidth);
+        const height = Math.max(1, canvas.clientHeight);
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(width * ratio);
+        canvas.height = Math.floor(height * ratio);
+
+        const context = canvas.getContext('2d');
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        context.clearRect(0, 0, width, height);
+
+        const cx = width / 2;
+        const cy = height / 2;
+        const radius = Math.min(width, height) * 0.36;
+
+        context.strokeStyle = 'rgba(88, 115, 166, 0.5)';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.arc(cx, cy, radius, 0, Math.PI * 2);
+        context.stroke();
+
+        const minElevation = 0.2;
+        const maxElevation = 1.3;
+        const elevationRatio = (this.lightElevation - minElevation) / (maxElevation - minElevation);
+        const knobRadius = radius * (1 - elevationRatio * 0.85);
+        const knobX = cx + Math.cos(this.lightAzimuth) * knobRadius;
+        const knobY = cy + Math.sin(this.lightAzimuth) * knobRadius;
+
+        context.strokeStyle = 'rgba(88, 115, 166, 0.45)';
+        context.lineWidth = 1.5;
+        context.beginPath();
+        context.moveTo(cx, cy);
+        context.lineTo(knobX, knobY);
+        context.stroke();
+
+        context.fillStyle = '#5873a6';
+        context.beginPath();
+        context.arc(knobX, knobY, 5, 0, Math.PI * 2);
+        context.fill();
+    }
+
+    applyLightDialFromPointer(event) {
+        const canvas = this.renderRoot.querySelector('#light-dial-c');
+        if (!canvas) {
+            return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = event.clientX - cx;
+        const dy = event.clientY - cy;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const maxDistance = Math.min(rect.width, rect.height) * 0.36;
+
+        const minElevation = 0.2;
+        const maxElevation = 1.3;
+        const clampedDistance = Math.min(maxDistance, distance);
+
+        this.lightAzimuth = Math.atan2(dy, dx);
+        this.lightElevation = minElevation + (1 - clampedDistance / Math.max(1, maxDistance)) * (maxElevation - minElevation);
+        this.updateLightFromAngles();
+        this.drawLightDial();
     }
 
     disposeMeshBundle(bundle) {
@@ -334,6 +791,8 @@ class HorseyViewerApp extends LitElement {
             const edgeMesh = new THREE.LineSegments(edgeGeometry, this.edgeMat);
             solidMesh.renderOrder = 1;
             edgeMesh.renderOrder = 2;
+            solidMesh.castShadow = true;
+            solidMesh.receiveShadow = true;
 
             this.scene.add(solidMesh);
             this.scene.add(edgeMesh);
@@ -397,6 +856,8 @@ class HorseyViewerApp extends LitElement {
         }, null, 2);
 
         const bounds = this.getSceneBounds();
+        this.lastBounds = bounds;
+        this.createOrUpdateShadowCatcher(bounds);
         this.cx = (bounds.minX + bounds.maxX) / 2;
         this.cy = (bounds.minY + bounds.maxY) / 2;
         this.cz = (bounds.minZ + bounds.maxZ) / 2;
@@ -406,10 +867,13 @@ class HorseyViewerApp extends LitElement {
         const radius = Math.sqrt(dx * dx + dy * dy + dz * dz) / 2 || 5;
         const fovRad = this.camera.fov * Math.PI / 180;
         this.orbitDist = radius / Math.sin(fovRad / 2) * 1.3;
+        this.lightDistance = Math.max(12, radius * 4);
         this.camera.near = Math.max(0.1, radius * 0.03);
         this.camera.far = Math.max(200, radius * 20);
         this.camera.updateProjectionMatrix();
         this.updateCamera();
+        this.updateLightFromAngles();
+        this.drawLightDial();
     }
 
     updateCamera() {
@@ -417,9 +881,9 @@ class HorseyViewerApp extends LitElement {
             return;
         }
         this.camera.position.set(
-            this.cx + this.orbitDist * Math.sin(this.phi) * Math.sin(this.theta),
-            this.cy + this.orbitDist * Math.cos(this.phi),
-            this.cz + this.orbitDist * Math.sin(this.phi) * Math.cos(this.theta)
+            this.cx + this.orbitDist * Math.sin(this.phi) * Math.cos(this.theta),
+            this.cy + this.orbitDist * Math.sin(this.phi) * Math.sin(this.theta),
+            this.cz + this.orbitDist * Math.cos(this.phi)
         );
         this.camera.lookAt(this.cx, this.cy, this.cz);
     }
