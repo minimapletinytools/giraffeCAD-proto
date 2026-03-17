@@ -396,6 +396,7 @@ class TestPegStuff:
             peg_parameters=peg_params,
         )
         peg = joint.jointAccessories["peg_0"]
+        assert isinstance(peg, Peg)
         # The peg travels in the +Y direction through the mortise.
         # The mortise chord in that direction equals size[0]=4, not size[1]=10.
         assert peg.forward_length == mortise_timber.size[0], (

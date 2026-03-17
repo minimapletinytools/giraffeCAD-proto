@@ -9,7 +9,7 @@ from .footprint import *
 from .cutcsg import *
 from .ticket import Ticket
 from enum import Enum
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict, Literal, final
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict, Literal, final, cast, Callable
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import hashlib
@@ -970,7 +970,7 @@ class FauxTimber(PerfectTimberWithin):
     @classmethod
     def from_board(cls, board: Board, map_top_to : TimberFace = TimberFace.TOP, map_right_to: TimberFace = TimberFace.RIGHT) -> 'FauxTimber':
         #TODO create a PerfectTimberWithin from the reoriented board
-        pass
+        raise NotImplementedError("TODO")
 
     def get_nominal_size(self) -> V2:
         #TODO return the nominal size of the faux timber which should be the same as the original board
@@ -979,11 +979,11 @@ class FauxTimber(PerfectTimberWithin):
 
     def reorient_csg(self, csg: CutCSG) -> CutCSG:
         #TODO reorient the csg from the faux timber's orientation to the board's orientation
-        pass
+        raise NotImplementedError("TODO")
 
     def reconstruct_joint(self, joint: 'Joint') -> 'Joint':
         #TODO reconstruct a joint by reorienting all the cut CSGs and replacing the FauxTimber with the original Board
-        pass
+        raise NotImplementedError("TODO")
         
 
 
@@ -1536,7 +1536,7 @@ class CutTimber:
         """Stable base key for viewer-side mesh cache identity."""
         name = self.name if self.name is not None else type(self.timber).__name__
         if hasattr(self.timber, "deep_hash") and callable(self.timber.deep_hash):
-            base_hash = str(self.timber.deep_hash())
+            base_hash = str(cast(Callable[[], str], self.timber.deep_hash)())
         else:
             visited: Dict[int, str] = {}
             base_hash = _compute_deep_hash(self.timber, visited)
@@ -1550,7 +1550,7 @@ class CutTimber:
         This is intended for incremental viewer rerender decisions.
         """
         if hasattr(self.timber, "deep_hash") and callable(self.timber.deep_hash):
-            base_hash = str(self.timber.deep_hash())
+            base_hash = str(cast(Callable[[], str], self.timber.deep_hash)())
         else:
             visited: Dict[int, str] = {}
             base_hash = _compute_deep_hash(self.timber, visited)

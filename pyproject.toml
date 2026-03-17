@@ -29,6 +29,7 @@ python_functions = "test_*"
 [dependency-groups]
 dev = [
     "ty>=0.0.15",
+    "pytest",
 ]
 
 [tool.ty.src]
