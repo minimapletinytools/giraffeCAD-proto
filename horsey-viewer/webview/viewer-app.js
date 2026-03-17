@@ -15,6 +15,7 @@ class HorseyViewerApp extends LitElement {
         this.orbitDist = 10;
         this.theta = -Math.PI / 5;
         this.phi = Math.PI / 3;
+        this.cameraUpVector = new THREE.Vector3(0, 0, 1);
 
         this.cameraAnimation = null;
 
@@ -325,6 +326,7 @@ class HorseyViewerApp extends LitElement {
         if (!this.dragging) {
             return;
         }
+        this.cameraUpVector.set(0, 0, 1);
         this.theta -= (event.clientX - this.lastX) * 0.008;
         this.phi = this.clampPhi(this.phi - (event.clientY - this.lastY) * 0.008);
         this.lastX = event.clientX;
@@ -353,6 +355,7 @@ class HorseyViewerApp extends LitElement {
         if (Math.abs(dx) + Math.abs(dy) > 1) {
             this.gizmoMoved = true;
         }
+        this.cameraUpVector.set(0, 0, 1);
         this.theta -= dx * 0.008;
         this.phi = this.clampPhi(this.phi - dy * 0.008);
         this.gizmoLastX = event.clientX;
@@ -420,16 +423,23 @@ class HorseyViewerApp extends LitElement {
         return { theta, phi };
     }
 
-    animateCameraTo(targetTheta, targetPhi, targetOrbitDist, durationMs = 260) {
+    animateCameraTo(targetTheta, targetPhi, targetOrbitDist, durationMs = 260, targetUpVector = null) {
+        const nextUp = targetUpVector || { x: 0, y: 0, z: 1 };
         this.cameraAnimation = {
             startedAt: performance.now(),
             durationMs,
             startTheta: this.theta,
             startPhi: this.phi,
             startDist: this.orbitDist,
+            startUpX: this.cameraUpVector.x,
+            startUpY: this.cameraUpVector.y,
+            startUpZ: this.cameraUpVector.z,
             deltaTheta: this.shortestAngleDelta(this.theta, targetTheta),
             deltaPhi: targetPhi - this.phi,
             deltaDist: targetOrbitDist - this.orbitDist,
+            targetUpX: nextUp.x,
+            targetUpY: nextUp.y,
+            targetUpZ: nextUp.z,
         };
     }
 
@@ -445,6 +455,11 @@ class HorseyViewerApp extends LitElement {
         this.theta = this.cameraAnimation.startTheta + this.cameraAnimation.deltaTheta * eased;
         this.phi = this.clampPhi(this.cameraAnimation.startPhi + this.cameraAnimation.deltaPhi * eased);
         this.orbitDist = Math.max(0.01, this.cameraAnimation.startDist + this.cameraAnimation.deltaDist * eased);
+        this.cameraUpVector.set(
+            this.cameraAnimation.startUpX + (this.cameraAnimation.targetUpX - this.cameraAnimation.startUpX) * eased,
+            this.cameraAnimation.startUpY + (this.cameraAnimation.targetUpY - this.cameraAnimation.startUpY) * eased,
+            this.cameraAnimation.startUpZ + (this.cameraAnimation.targetUpZ - this.cameraAnimation.startUpZ) * eased,
+        ).normalize();
         this.updateCamera();
 
         if (t >= 1) {
@@ -468,8 +483,32 @@ class HorseyViewerApp extends LitElement {
         const radius = Math.sqrt(dx * dx + dy * dy + dz * dz) / 2 || 5;
         const fovRad = this.camera.fov * Math.PI / 180;
         const targetDist = radius / Math.sin(fovRad / 2) * 1.3;
-        this.animateCameraTo(-Math.PI / 2, Math.PI / 2, targetDist, 280);
+        this.animateCameraTo(-Math.PI / 2, Math.PI / 2, targetDist, 280, { x: 0, y: 0, z: 1 });
         this.updateLightFromAngles();
+    }
+
+    createGizmoFaceMaterial(label, backgroundColor) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const context = canvas.getContext('2d');
+
+        context.fillStyle = backgroundColor;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        context.strokeStyle = 'rgba(93, 104, 130, 0.35)';
+        context.lineWidth = 10;
+        context.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
+
+        context.fillStyle = '#39496e';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.font = '600 42px Segoe UI';
+        context.fillText(label, canvas.width / 2, canvas.height / 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        return new THREE.MeshStandardMaterial({ color: 0xffffff, map: texture });
     }
 
     createOrUpdateShadowCatcher(bounds) {
@@ -534,16 +573,27 @@ class HorseyViewerApp extends LitElement {
         this.gizmoScene.add(light);
 
         const materials = [
-            new THREE.MeshStandardMaterial({ color: 0xc9d6ea }),
-            new THREE.MeshStandardMaterial({ color: 0xbfcee4 }),
-            new THREE.MeshStandardMaterial({ color: 0xd6deee }),
-            new THREE.MeshStandardMaterial({ color: 0xc4d2e8 }),
-            new THREE.MeshStandardMaterial({ color: 0xbccbe2 }),
-            new THREE.MeshStandardMaterial({ color: 0xb6c6df }),
+            this.createGizmoFaceMaterial('right', '#c9d6ea'),
+            this.createGizmoFaceMaterial('left', '#bfcee4'),
+            this.createGizmoFaceMaterial('back', '#d6deee'),
+            this.createGizmoFaceMaterial('front', '#c4d2e8'),
+            this.createGizmoFaceMaterial('top', '#bccbe2'),
+            this.createGizmoFaceMaterial('bottom', '#b6c6df'),
         ];
         this.gizmoCube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), materials);
         this.gizmoScene.add(this.gizmoCube);
         this.resizeGizmoRenderer();
+    }
+
+    getCameraSnapForDirection(direction) {
+        const angles = this.directionToAngles(direction);
+        if (direction.z > 0) {
+            return { theta: angles.theta, phi: angles.phi, upVector: { x: 0, y: 1, z: 0 } };
+        }
+        if (direction.z < 0) {
+            return { theta: angles.theta, phi: angles.phi, upVector: { x: 0, y: -1, z: 0 } };
+        }
+        return { theta: angles.theta, phi: angles.phi, upVector: { x: 0, y: 0, z: 1 } };
     }
 
     resizeGizmoRenderer() {
@@ -603,8 +653,8 @@ class HorseyViewerApp extends LitElement {
             direction = { x: 0, y: 0, z: Math.sign(normal.z) };
         }
 
-        const angles = this.directionToAngles(direction);
-        this.animateCameraTo(angles.theta, angles.phi, this.orbitDist, 260);
+        const snap = this.getCameraSnapForDirection(direction);
+        this.animateCameraTo(snap.theta, snap.phi, this.orbitDist, 260, snap.upVector);
     }
 
     syncLightAnglesFromSun() {
@@ -885,6 +935,7 @@ class HorseyViewerApp extends LitElement {
             this.cy + this.orbitDist * Math.sin(this.phi) * Math.sin(this.theta),
             this.cz + this.orbitDist * Math.cos(this.phi)
         );
+        this.camera.up.copy(this.cameraUpVector);
         this.camera.lookAt(this.cx, this.cy, this.cz);
     }
 }
