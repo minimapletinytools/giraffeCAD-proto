@@ -1300,6 +1300,20 @@ def _hash_value(canonical: str) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _encode_csg_for_hash(csg: Optional[CutCSG]) -> str:
+    """Encode a CutCSG tree into a deterministic string for hashing."""
+    if csg is None:
+        return "None"
+    if isinstance(csg, SolidUnion):
+        children = [_encode_csg_for_hash(child) for child in csg.children]
+        return f"SolidUnion:[{'|'.join(children)}]"
+    if isinstance(csg, Difference):
+        base = _encode_csg_for_hash(csg.base)
+        subtract = [_encode_csg_for_hash(child) for child in csg.subtract]
+        return f"Difference:base={base};subtract=[{'|'.join(subtract)}]"
+    return repr(csg)
+
+
 # Type alias for all timber-like objects (excludes Board)
 # TimberLike objects are timbers that can be used in structural joinery
 # TODO come up with a cuter name for this
@@ -1517,6 +1531,46 @@ class CutTimber:
     def name(self) -> str:
         """Get the name from the underlying timber's ticket."""
         return self.timber.ticket.name
+
+    def get_viewer_cache_key_base(self) -> str:
+        """Stable base key for viewer-side mesh cache identity."""
+        name = self.name if self.name is not None else type(self.timber).__name__
+        if hasattr(self.timber, "deep_hash") and callable(self.timber.deep_hash):
+            base_hash = str(self.timber.deep_hash())
+        else:
+            visited: Dict[int, str] = {}
+            base_hash = _compute_deep_hash(self.timber, visited)
+        return f"{name}|{base_hash}"
+
+    def deep_hash(self) -> str:
+        """
+        Deterministic hash of rendered CutTimber geometry inputs.
+
+        Includes base timber hash, all cuts/end-cuts, and the full rendered local CSG.
+        This is intended for incremental viewer rerender decisions.
+        """
+        if hasattr(self.timber, "deep_hash") and callable(self.timber.deep_hash):
+            base_hash = str(self.timber.deep_hash())
+        else:
+            visited: Dict[int, str] = {}
+            base_hash = _compute_deep_hash(self.timber, visited)
+
+        cut_tokens = []
+        for cut in self.cuts:
+            cut_tokens.append("|".join([
+                repr(cut.maybe_top_end_cut),
+                repr(cut.maybe_bottom_end_cut),
+                _encode_csg_for_hash(cut.negative_csg),
+            ]))
+
+        local_csg = self.render_timber_with_cuts_csg_local()
+        payload = "\n".join([
+            f"base={base_hash}",
+            f"csg={_encode_csg_for_hash(local_csg)}",
+            f"cuts={len(self.cuts)}",
+            *cut_tokens,
+        ])
+        return _hash_value(payload)
 
     # this one returns the timber without cuts where ends with joints are infinite in length
     def _extended_timber_without_cuts_csg_local(self) -> CutCSG:

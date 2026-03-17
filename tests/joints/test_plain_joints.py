@@ -705,4 +705,34 @@ class TestSpliceLapJoint:
             "Point deep in timberB should NOT be contained in timberA"
         assert csg_B.contains_point(point_deeper_in_B_local), \
             "Point deep in timberB should be contained in timberB"
+
+
+class TestCutTimberDeepHash:
+    def test_cut_timber_hash_changes_when_joint_geometry_changes(self):
+        timberA_1 = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        timberB_1 = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
+        joint_1 = cut_plain_miter_joint(
+            timberA_1,
+            TimberReferenceEnd.BOTTOM,
+            timberB_1,
+            TimberReferenceEnd.BOTTOM,
+        )
+        hash_1 = joint_1.cut_timbers["timberA"].deep_hash()
+
+        timberA_2 = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        timberB_2 = create_standard_horizontal_timber(
+            direction='y',
+            length=100,
+            size=(6, 6),
+            position=(Rational(1, 10), 0, 0),
+        )
+        joint_2 = cut_plain_miter_joint(
+            timberA_2,
+            TimberReferenceEnd.BOTTOM,
+            timberB_2,
+            TimberReferenceEnd.BOTTOM,
+        )
+        hash_2 = joint_2.cut_timbers["timberA"].deep_hash()
+
+        assert hash_1 != hash_2
         
