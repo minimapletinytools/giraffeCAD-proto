@@ -5,6 +5,37 @@ const { PythonRunnerSession } = require('./runner-session');
 const { FileWatcher } = require('./file-watcher');
 const { createFrameViewer, renderFrameViewer, requestViewerScreenshot } = require('./viewer');
 
+const VIEWER_LOG_LEVEL_ORDER = {
+    debug: 10,
+    info: 20,
+    warn: 30,
+    error: 40,
+};
+
+// Minimum level to allow per log source. Lower levels are suppressed.
+// Example: source "idle-critter" at "warn" means info/debug critter logs are dropped.
+const VIEWER_LOG_SOURCE_MIN_LEVEL = {
+    'idle-critter': 'warn',
+};
+
+function normalizeViewerLogLevel(level) {
+    if (typeof level !== 'string') {
+        return 'info';
+    }
+    const normalized = level.toLowerCase();
+    if (!Object.prototype.hasOwnProperty.call(VIEWER_LOG_LEVEL_ORDER, normalized)) {
+        return 'info';
+    }
+    return normalized;
+}
+
+function shouldSuppressViewerLog(source, level) {
+    const effectiveSource = typeof source === 'string' && source ? source : 'webview';
+    const incomingLevel = normalizeViewerLogLevel(level);
+    const minLevel = normalizeViewerLogLevel(VIEWER_LOG_SOURCE_MIN_LEVEL[effectiveSource] || 'debug');
+    return VIEWER_LOG_LEVEL_ORDER[incomingLevel] < VIEWER_LOG_LEVEL_ORDER[minLevel];
+}
+
 class FrameViewSession {
     constructor(filePath, context, channel, onDispose) {
         this.filePath = filePath;
@@ -37,11 +68,15 @@ class FrameViewSession {
             }
             const eventName = typeof message.event === 'string' ? message.event : 'unknown';
             const source = typeof message.source === 'string' ? message.source : 'webview';
+            const level = normalizeViewerLogLevel(message.level);
+            if (shouldSuppressViewerLog(source, level)) {
+                return;
+            }
             const version = typeof message.version === 'string' ? message.version : 'unknown';
             const details = message.details && typeof message.details === 'object'
                 ? JSON.stringify(message.details)
                 : '{}';
-            this.log(`[webview:${source}] ${eventName} v${version} ${details}`);
+            this.log(`[webview:${source}:${level}] ${eventName} v${version} ${details}`);
         });
         this.log('[webview] viewer log bridge active');
 
@@ -65,12 +100,31 @@ class FrameViewSession {
         }
     }
 
+    async ensureRunnerSession() {
+        if (this.isDisposed) {
+            throw new Error(`Session is disposed for ${this.filePath}`);
+        }
+
+        if (this.runnerSession && this.runnerSession.isAlive()) {
+            return;
+        }
+
+        if (this.runnerSession) {
+            try {
+                await this.runnerSession.dispose();
+            } catch (error) {
+                this.log(`[runner] dispose after failure: ${error.message || error}`);
+            }
+        }
+
+        this.log(`[runner] Restarting Python runner for ${path.basename(this.filePath)}`);
+        this.runnerSession = new PythonRunnerSession(this.filePath, this.context, this.channel);
+        await this.runnerSession.start();
+    }
+
     async refresh(reason = 'manual render') {
         if (this.isDisposed) {
             return;
-        }
-        if (!this.runnerSession || !this.runnerSession.isAlive()) {
-            throw new Error(`Runner session is not available for ${this.filePath}`);
         }
         if (this.isRefreshing) {
             this.log(`[refresh] Skipping overlapping refresh for ${this.filePath}`);
@@ -80,6 +134,7 @@ class FrameViewSession {
         this.isRefreshing = true;
         this.log(`[refresh] Reloading ${path.basename(this.filePath)} (${reason})`);
         try {
+            await this.ensureRunnerSession();
             await this.runnerSession.request('reload_example', { filePath: this.filePath });
             const frameData = await this.runnerSession.request('get_frame');
             const geometryData = await this.runnerSession.request('get_geometry');
@@ -123,7 +178,7 @@ class FrameViewSession {
     }
 
     async onFileChanged(source) {
-        if (this.isDisposed || !this.runnerSession || !this.runnerSession.isAlive()) {
+        if (this.isDisposed) {
             return;
         }
 

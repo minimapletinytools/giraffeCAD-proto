@@ -408,10 +408,11 @@ class HorseyViewerApp extends LitElement {
             details,
             timestamp: new Date().toISOString(),
         };
-        console.info('[HorseyViewer]', payload);
         if (vscode) {
             vscode.postMessage(payload);
+            return;
         }
+        console.info('[HorseyViewer]', payload);
     }
 
     markUserInteraction() {
@@ -1537,9 +1538,7 @@ class HorseyViewerApp extends LitElement {
             'total: ' + total + '<br>' +
             'rebuilt: ' + rebuilt + '<br>' +
             'reused: ' + reused + '<br>' +
-            'removed: ' + removed + '<br>' +
-            'idle: ' + (this.idleCritterMode ? 'on' : 'off') + '<br>' +
-            'critters: ' + this.idleCritters.length;
+            'removed: ' + removed;
     }
 
     updateMeshScene(geometryData) {
