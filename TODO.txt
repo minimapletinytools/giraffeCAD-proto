@@ -290,6 +290,12 @@ DONE-3d view
   DONE-add focus button
 DONE-move out CSS html and frontend scripts into their own thing
 
+-how dose selection change after refresh?
+-highlight timebrs in timber list with selection, or just get rid of timber list?
+-seemst o freak out after a python cash, need to add error handling
+-disable critters or fix it.... (and turn off logging ug)
+-I think you need a 3 way joint, or at least a placeholder for it. Shachisen-tsugi (車知栓継ぎ)
+
 -do layout
   -pop out left tab for hierarchy
   -pop up right tab for gizmos
