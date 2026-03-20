@@ -289,14 +289,18 @@ DONE-3d view
   DONE-add gizmo in upper right corner
   DONE-add focus button
 DONE-move out CSS html and frontend scripts into their own thing
-
-
--add sensibility checks to arrangement (so basically they intersect at least a little bit)
-  -maybe add a generic check intersection function so we can get more precise about it within the joit fuctions.
-
 DONE-double/triple/quadruple butt arrangement
   -assert for butt timbers pointing in cardinal directions
   -check_face_aligned_and_cardinal checks that each butt timber is pointing in one of the 4 cardinal direction orthogonal to the receiving timber, and they should all be different
+
+-lincoln log joints?
+
+-splined opposing double butt joint :D (could have drawbore or key)
+
+-move all jonits over to arrangements
+
+-add sensibility checks to arrangement (so basically they intersect at least a little bit)
+  -maybe add a generic check intersection function so we can get more precise about it within the joit fuctions.
 
 -add tongue and fork joint
 -create experiments folder 

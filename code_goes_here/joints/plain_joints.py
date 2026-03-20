@@ -279,6 +279,211 @@ def cut_plain_butt_joint_on_face_aligned_timbers(arrangement: ButtJointTimberArr
     
     return joint
 
+
+def cut_plain_tongue_and_fork_joint(
+    arrangement: CornerJointTimberArrangement,
+    tongue_thickness: Optional[Numeric] = None,
+    tongue_position: Numeric = Rational(0),
+) -> Joint:
+    """
+    Creates a plain tongue-and-fork corner joint (corner bridle style).
+
+    In this joint, timber1 forms the tongue (material removed on both cheeks), and timber2
+    forms the fork (slot cut into its end). Tongue thickness is measured along the shared
+    plane normal between the two timbers and defaults to one-third of the tongue timber
+    dimension in that axis. Tongue position is an offset from the tongue timber centerline
+    in that same axis.
+
+    End cuts are aligned to the opposing timber's opposite face:
+    - Tongue timber end is cut to the face opposite the fork entry face.
+    - Fork timber end is cut to the face opposite the tongue entry face.
+
+    Args:
+        arrangement: Corner arrangement where timber1 is the tongue timber and timber2 is
+            the fork timber.
+        tongue_thickness: Tongue thickness along the shared plane normal. If None, defaults
+            to 1/3 of the tongue timber dimension in that axis.
+        tongue_position: Offset of the tongue center from the tongue timber centerline along
+            the shared plane normal. 0 means centered.
+
+    Returns:
+        Joint containing both cut timbers.
+
+    Raises:
+        AssertionError: If timbers are not plane aligned, are parallel, or tongue parameters
+            are out of bounds.
+    """
+    from code_goes_here.cutcsg import RectangularPrism, HalfSpace, Difference, adopt_csg
+    from code_goes_here.rule import safe_dot_product, safe_compare, Comparison
+
+    error = arrangement.check_plane_aligned()
+    assert error is None, error
+
+    tongue_timber = arrangement.timber1
+    fork_timber = arrangement.timber2
+    tongue_end = arrangement.timber1_end
+    fork_end = arrangement.timber2_end
+
+    assert not are_vectors_parallel(
+        tongue_timber.get_length_direction_global(),
+        fork_timber.get_length_direction_global(),
+    ), "Timbers cannot be parallel for a tongue-and-fork corner joint"
+
+    shared_plane_normal_hint = arrangement.compute_normalized_timber_cross_product()
+    tongue_normal_face = tongue_timber.get_closest_oriented_long_face_from_global_direction(shared_plane_normal_hint)
+    tongue_normal_direction = tongue_timber.get_face_direction_global(tongue_normal_face)
+
+    tongue_normal_dimension = tongue_timber.get_size_in_face_normal_axis(tongue_normal_face)
+    if tongue_thickness is None:
+        tongue_thickness = tongue_normal_dimension / Rational(3)
+
+    assert safe_compare(tongue_thickness, Comparison.GT), "tongue_thickness must be greater than 0"
+    assert safe_compare(tongue_normal_dimension - tongue_thickness, Comparison.GE), \
+        "tongue_thickness must be <= the tongue timber size in the shared plane normal axis"
+
+    half_tongue_dimension = tongue_normal_dimension / Rational(2)
+    half_tongue_thickness = tongue_thickness / Rational(2)
+    assert safe_compare(half_tongue_dimension - (Abs(tongue_position) + half_tongue_thickness), Comparison.GE), \
+        "tongue_position and tongue_thickness place the tongue outside the tongue timber boundary"
+
+    tongue_normal_axis_index = tongue_timber.get_size_index_in_long_face_normal_axis(tongue_normal_face)
+    tongue_width_axis_index = 1 if tongue_normal_axis_index == 0 else 0
+    tongue_width = tongue_timber.size[tongue_width_axis_index]
+
+    tongue_end_direction = tongue_timber.get_face_direction_global(tongue_end)
+    fork_end_direction = fork_timber.get_face_direction_global(fork_end)
+
+    # Shoulders are determined by the entry face on the opposite timber.
+    fork_entry_face = fork_timber.get_closest_oriented_face_from_global_direction(-tongue_end_direction)
+    fork_entry_face_center = _get_face_center_position(fork_timber, fork_entry_face)
+
+    tongue_entry_face = tongue_timber.get_closest_oriented_face_from_global_direction(-fork_end_direction)
+    tongue_entry_face_center = _get_face_center_position(tongue_timber, tongue_entry_face)
+
+    tongue_length_direction = tongue_timber.get_length_direction_global()
+    fork_length_direction = fork_timber.get_length_direction_global()
+
+    tongue_bottom = tongue_timber.get_bottom_position_global()
+    fork_bottom = fork_timber.get_bottom_position_global()
+
+    tongue_shoulder_distance_from_bottom = safe_dot_product(
+        fork_entry_face_center - tongue_bottom,
+        tongue_length_direction,
+    )
+    tongue_shoulder_point = tongue_bottom + tongue_length_direction * tongue_shoulder_distance_from_bottom
+
+    fork_slot_stop_distance_from_bottom = safe_dot_product(
+        tongue_entry_face_center - fork_bottom,
+        fork_length_direction,
+    )
+    fork_slot_stop_point = fork_bottom + fork_length_direction * fork_slot_stop_distance_from_bottom
+
+    tongue_marking_origin_global = tongue_shoulder_point + tongue_normal_direction * tongue_position
+
+    tongue_orientation_global = Orientation.from_z_and_y(
+        z_direction=normalize_vector(tongue_end_direction),
+        y_direction=normalize_vector(tongue_normal_direction),
+    )
+
+    tongue_back_extension = max(tongue_timber.size[0], tongue_timber.size[1])
+    tongue_prism_global = RectangularPrism(
+        size=create_v2(tongue_width, tongue_thickness),
+        transform=Transform(position=tongue_marking_origin_global, orientation=tongue_orientation_global),
+        start_distance=-tongue_back_extension,
+        end_distance=tongue_timber.length,
+    )
+
+    tongue_shoulder_half_space_global = HalfSpace(
+        normal=tongue_end_direction,
+        offset=safe_dot_product(tongue_end_direction, tongue_shoulder_point),
+    )
+
+    tongue_prism_local = adopt_csg(None, tongue_timber.transform, tongue_prism_global)
+    tongue_shoulder_half_space_local = adopt_csg(None, tongue_timber.transform, tongue_shoulder_half_space_global)
+
+    tongue_negative_csg = Difference(
+        base=tongue_shoulder_half_space_local,
+        subtract=[tongue_prism_local],
+    )
+
+    if fork_end == TimberReferenceEnd.TOP:
+        fork_end_center = measure_top_center_position(fork_timber).position
+    else:
+        fork_end_center = measure_bottom_center_position(fork_timber).position
+
+    fork_slot_length_direction = -fork_end_direction
+    fork_slot_depth = safe_dot_product(
+        fork_slot_stop_point - fork_end_center,
+        fork_slot_length_direction,
+    )
+    assert safe_compare(fork_slot_depth, Comparison.GT), \
+        "Fork slot depth must be > 0; check timber arrangement and end selections"
+
+    fork_marking_origin_global = fork_end_center + tongue_normal_direction * tongue_position
+    fork_orientation_global = Orientation.from_z_and_y(
+        z_direction=normalize_vector(fork_slot_length_direction),
+        y_direction=normalize_vector(tongue_normal_direction),
+    )
+
+    fork_slot_back_extension = max(fork_timber.size[0], fork_timber.size[1])
+    fork_slot_prism_global = RectangularPrism(
+        size=create_v2(tongue_width, tongue_thickness),
+        transform=Transform(position=fork_marking_origin_global, orientation=fork_orientation_global),
+        start_distance=-fork_slot_back_extension,
+        end_distance=fork_slot_depth,
+    )
+    fork_negative_csg = adopt_csg(None, fork_timber.transform, fork_slot_prism_global)
+
+    # End cut on tongue timber aligns with fork face opposite where tongue enters.
+    fork_opposite_face = fork_entry_face.get_opposite_face()
+    fork_opposite_face_center = _get_face_center_position(fork_timber, fork_opposite_face)
+    tongue_cut_distance_from_bottom = safe_dot_product(
+        fork_opposite_face_center - tongue_bottom,
+        tongue_length_direction,
+    )
+    tongue_distance_from_end = (
+        tongue_timber.length - tongue_cut_distance_from_bottom
+        if tongue_end == TimberReferenceEnd.TOP
+        else tongue_cut_distance_from_bottom
+    )
+    tongue_end_cut = Cutting.make_end_cut(tongue_timber, tongue_end, tongue_distance_from_end)
+
+    # End cut on fork timber aligns with tongue face opposite where fork enters.
+    tongue_opposite_face = tongue_entry_face.get_opposite_face()
+    tongue_opposite_face_center = _get_face_center_position(tongue_timber, tongue_opposite_face)
+    fork_cut_distance_from_bottom = safe_dot_product(
+        tongue_opposite_face_center - fork_bottom,
+        fork_length_direction,
+    )
+    fork_distance_from_end = (
+        fork_timber.length - fork_cut_distance_from_bottom
+        if fork_end == TimberReferenceEnd.TOP
+        else fork_cut_distance_from_bottom
+    )
+    fork_end_cut = Cutting.make_end_cut(fork_timber, fork_end, fork_distance_from_end)
+
+    tongue_cut = Cutting(
+        timber=tongue_timber,
+        maybe_top_end_cut=tongue_end_cut if tongue_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=tongue_end_cut if tongue_end == TimberReferenceEnd.BOTTOM else None,
+        negative_csg=tongue_negative_csg,
+    )
+
+    fork_cut = Cutting(
+        timber=fork_timber,
+        maybe_top_end_cut=fork_end_cut if fork_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=fork_end_cut if fork_end == TimberReferenceEnd.BOTTOM else None,
+        negative_csg=fork_negative_csg,
+    )
+
+    return Joint(
+        cut_timbers={
+            "tongue_timber": CutTimber(tongue_timber, cuts=[tongue_cut]),
+            "fork_timber": CutTimber(fork_timber, cuts=[fork_cut]),
+        },
+        jointAccessories={},
+    )
+
 def cut_plain_butt_splice_joint_on_aligned_timbers(arrangement: SpliceJointTimberArrangement, splice_point: Optional[V3] = None) -> Joint:
     """
     Creates a plain butt splice joint between two parallel timbers cut at a shared plane.
@@ -717,7 +922,7 @@ def cut_plain_cross_lap_joint(arrangement: CrossJointTimberArrangement, cut_rati
     return joint
 
 
-def _get_face_center_position(timber: PerfectTimberWithin, face: TimberFace) -> V3:
+def _get_face_center_position(timber: PerfectTimberWithin, face: SomeTimberFace) -> V3:
     """
     Helper function to calculate the center position of a timber face.
     
@@ -728,6 +933,8 @@ def _get_face_center_position(timber: PerfectTimberWithin, face: TimberFace) -> 
     Returns:
         3D position vector at the center of the specified face
     """
+    face = face.to.face()
+
     if face == TimberFace.TOP:
         return measure_top_center_position(timber).position
     elif face == TimberFace.BOTTOM:

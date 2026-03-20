@@ -752,6 +752,158 @@ class TestSpliceLapJoint:
             "Point deep in timberB should be contained in timberB"
 
 
+class TestTongueAndForkJoint:
+    @staticmethod
+    def _face_center(timber: Timber, face: TimberFace) -> V3:
+        if face == TimberFace.TOP:
+            return measure_top_center_position(timber).position
+        if face == TimberFace.BOTTOM:
+            return measure_bottom_center_position(timber).position
+
+        center = timber.get_bottom_position_global() + timber.get_length_direction_global() * (timber.length / Rational(2))
+        if face == TimberFace.RIGHT:
+            return center + timber.get_width_direction_global() * (timber.size[0] / Rational(2))
+        if face == TimberFace.LEFT:
+            return center - timber.get_width_direction_global() * (timber.size[0] / Rational(2))
+        if face == TimberFace.FRONT:
+            return center + timber.get_height_direction_global() * (timber.size[1] / Rational(2))
+        return center - timber.get_height_direction_global() * (timber.size[1] / Rational(2))
+
+    def test_tongue_and_fork_joint_structure_and_opposing_face_end_cuts(self):
+        tongue_timber = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        fork_timber = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
+
+        arrangement = CornerJointTimberArrangement(
+            timber1=tongue_timber,
+            timber2=fork_timber,
+            timber1_end=TimberReferenceEnd.BOTTOM,
+            timber2_end=TimberReferenceEnd.BOTTOM,
+        )
+        joint = cut_plain_tongue_and_fork_joint(arrangement)
+
+        assert len(joint.cut_timbers) == 2
+        assert "tongue_timber" in joint.cut_timbers
+        assert "fork_timber" in joint.cut_timbers
+
+        tongue_cut = joint.cut_timbers["tongue_timber"].cuts[0]
+        fork_cut = joint.cut_timbers["fork_timber"].cuts[0]
+        assert tongue_cut.negative_csg is not None
+        assert fork_cut.negative_csg is not None
+        assert tongue_cut.maybe_bottom_end_cut is not None
+        assert fork_cut.maybe_bottom_end_cut is not None
+
+        tongue_end_direction = -tongue_timber.get_length_direction_global()
+        fork_entry_face = fork_timber.get_closest_oriented_face_from_global_direction(-tongue_end_direction)
+        fork_opposite_face_center = self._face_center(fork_timber, fork_entry_face.get_opposite_face())
+
+        fork_end_direction = -fork_timber.get_length_direction_global()
+        tongue_entry_face = tongue_timber.get_closest_oriented_face_from_global_direction(-fork_end_direction)
+        tongue_opposite_face_center = self._face_center(tongue_timber, tongue_entry_face.get_opposite_face())
+
+        tongue_distance_from_bottom = safe_dot_product(
+            fork_opposite_face_center - tongue_timber.get_bottom_position_global(),
+            tongue_timber.get_length_direction_global(),
+        )
+        expected_tongue_end_cut = Cutting.make_end_cut(
+            tongue_timber,
+            TimberReferenceEnd.BOTTOM,
+            tongue_distance_from_bottom,
+        )
+        actual_tongue_end_cut = tongue_cut.maybe_bottom_end_cut
+        assert actual_tongue_end_cut is not None
+        assert actual_tongue_end_cut.normal.equals(expected_tongue_end_cut.normal)
+        assert actual_tongue_end_cut.offset == expected_tongue_end_cut.offset
+
+        fork_distance_from_bottom = safe_dot_product(
+            tongue_opposite_face_center - fork_timber.get_bottom_position_global(),
+            fork_timber.get_length_direction_global(),
+        )
+        expected_fork_end_cut = Cutting.make_end_cut(
+            fork_timber,
+            TimberReferenceEnd.BOTTOM,
+            fork_distance_from_bottom,
+        )
+        actual_fork_end_cut = fork_cut.maybe_bottom_end_cut
+        assert actual_fork_end_cut is not None
+        assert actual_fork_end_cut.normal.equals(expected_fork_end_cut.normal)
+        assert actual_fork_end_cut.offset == expected_fork_end_cut.offset
+
+    def test_tongue_position_changes_kept_tongue_region(self):
+        tongue_timber_a = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        fork_timber_a = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
+        arrangement_a = CornerJointTimberArrangement(
+            timber1=tongue_timber_a,
+            timber2=fork_timber_a,
+            timber1_end=TimberReferenceEnd.BOTTOM,
+            timber2_end=TimberReferenceEnd.BOTTOM,
+        )
+
+        joint_centered = cut_plain_tongue_and_fork_joint(arrangement_a)
+
+        tongue_timber_b = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        fork_timber_b = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
+        arrangement_b = CornerJointTimberArrangement(
+            timber1=tongue_timber_b,
+            timber2=fork_timber_b,
+            timber1_end=TimberReferenceEnd.BOTTOM,
+            timber2_end=TimberReferenceEnd.BOTTOM,
+        )
+        joint_shifted = cut_plain_tongue_and_fork_joint(
+            arrangement_b,
+            tongue_thickness=Rational(2),
+            tongue_position=Rational(2),
+        )
+
+        plane_normal = arrangement_a.compute_normalized_timber_cross_product()
+        tongue_face = tongue_timber_a.get_closest_oriented_long_face_from_global_direction(plane_normal)
+        tongue_normal = tongue_timber_a.get_face_direction_global(tongue_face)
+
+        sample_point_global = (
+            tongue_timber_a.get_bottom_position_global()
+            + tongue_timber_a.get_length_direction_global() * Rational(1)
+            + tongue_normal * Rational(0)
+        )
+
+        centered_render = joint_centered.cut_timbers["tongue_timber"].render_timber_with_cuts_csg_local()
+        shifted_render = joint_shifted.cut_timbers["tongue_timber"].render_timber_with_cuts_csg_local()
+
+        assert centered_render.contains_point(tongue_timber_a.transform.global_to_local(sample_point_global))
+        assert not shifted_render.contains_point(tongue_timber_b.transform.global_to_local(sample_point_global))
+
+    def test_tongue_and_fork_joint_assertions(self):
+        tongue_parallel = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        fork_parallel = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+
+        with pytest.raises(AssertionError, match="parallel"):
+            cut_plain_tongue_and_fork_joint(
+                CornerJointTimberArrangement(
+                    timber1=tongue_parallel,
+                    timber2=fork_parallel,
+                    timber1_end=TimberReferenceEnd.BOTTOM,
+                    timber2_end=TimberReferenceEnd.BOTTOM,
+                )
+            )
+
+        tongue_non_plane = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+        fork_non_plane = timber_from_directions(
+            length=Rational(100),
+            size=create_v2(6, 6),
+            bottom_position=create_v3(0, 0, 0),
+            length_direction=create_v3(1, 1, 1),
+            width_direction=create_v3(1, -1, 0),
+        )
+
+        with pytest.raises(AssertionError, match="plane-aligned"):
+            cut_plain_tongue_and_fork_joint(
+                CornerJointTimberArrangement(
+                    timber1=tongue_non_plane,
+                    timber2=fork_non_plane,
+                    timber1_end=TimberReferenceEnd.BOTTOM,
+                    timber2_end=TimberReferenceEnd.BOTTOM,
+                )
+            )
+
+
 class TestCutTimberDeepHash:
     def test_cut_timber_hash_changes_when_joint_geometry_changes(self):
         timberA_1 = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))

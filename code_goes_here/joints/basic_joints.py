@@ -14,6 +14,7 @@ from .plain_joints import (
     cut_plain_miter_joint,
     cut_plain_miter_joint_on_face_aligned_timbers,
     cut_plain_butt_joint_on_face_aligned_timbers,
+    cut_plain_tongue_and_fork_joint,
     cut_plain_butt_splice_joint_on_aligned_timbers,
     cut_plain_cross_lap_joint,
     cut_plain_house_joint,
@@ -71,6 +72,35 @@ def cut_basic_miter_joint_on_face_aligned_timbers(arrangement: CornerJointTimber
     error = arrangement.check_face_aligned_and_orthogonal()
     assert error is None, error
     return cut_plain_miter_joint_on_face_aligned_timbers(arrangement)
+
+
+def cut_basic_tongue_and_fork_joint(
+    arrangement: CornerJointTimberArrangement,
+    tongue_thickness: Optional[Numeric] = None,
+    tongue_position: Numeric = Rational(0),
+) -> Joint:
+    """
+    Creates a tongue-and-fork corner joint (corner bridle style).
+
+    Convenience wrapper around `cut_plain_tongue_and_fork_joint`. Timbers must be plane-aligned
+    and non-parallel.
+
+    Args:
+        arrangement: Corner joint arrangement where timber1 is tongue and timber2 is fork.
+        tongue_thickness: Tongue thickness along shared plane normal. None defaults to 1/3
+            of tongue timber dimension in that axis.
+        tongue_position: Offset of tongue center from centerline in shared plane normal axis.
+
+    Returns:
+        Joint object containing both cut timbers.
+    """
+    error = arrangement.check_plane_aligned()
+    assert error is None, error
+    return cut_plain_tongue_and_fork_joint(
+        arrangement=arrangement,
+        tongue_thickness=tongue_thickness,
+        tongue_position=tongue_position,
+    )
 
 
 def cut_basic_butt_joint_on_face_aligned_timbers(arrangement: ButtJointTimberArrangement) -> Joint:
