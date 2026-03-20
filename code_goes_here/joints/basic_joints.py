@@ -279,21 +279,27 @@ def cut_basic_lapped_gooseneck_joint(
     """
     assert isinstance(receiving_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(receiving_timber_end).__name__}"
     assert isinstance(gooseneck_timber_face, TimberLongFace), f"expected TimberLongFace, got {type(gooseneck_timber_face).__name__}"
+    assert isinstance(gooseneck_timber, Timber), f"expected Timber, got {type(gooseneck_timber).__name__}"
+    assert isinstance(receiving_timber, Timber), f"expected Timber, got {type(receiving_timber).__name__}"
     width = gooseneck_timber.get_size_in_face_normal_axis(gooseneck_timber_face.rotate_right())
     gooseneck_length = width*Rational(2)
     gooseneck_small_width = width*Rational(1, 4)
     gooseneck_large_width = width*Rational(1, 2)
     gooseneck_head_length = width*Rational(1, 2)
+    gooseneck_timber_end = TimberReferenceEnd.BOTTOM if receiving_timber_end == TimberReferenceEnd.TOP else TimberReferenceEnd.TOP
 
     return cut_lapped_gooseneck_joint(
-        gooseneck_timber,
-        receiving_timber,
-        receiving_timber_end,
-        gooseneck_timber_face,
-        gooseneck_length,
-        gooseneck_small_width,
-        gooseneck_large_width,
-        gooseneck_head_length
+        arrangement=SpliceJointTimberArrangement(
+            timber1=gooseneck_timber,
+            timber2=receiving_timber,
+            timber1_end=gooseneck_timber_end,
+            timber2_end=receiving_timber_end,
+            front_face_on_timber1=gooseneck_timber_face,
+        ),
+        gooseneck_length=gooseneck_length,
+        gooseneck_small_width=gooseneck_small_width,
+        gooseneck_large_width=gooseneck_large_width,
+        gooseneck_head_length=gooseneck_head_length
     )
 
 
@@ -330,29 +336,29 @@ def cut_basic_housed_dovetail_butt_joint(
     """
     assert isinstance(dovetail_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(dovetail_timber_end).__name__}"
     assert isinstance(dovetail_timber_face, TimberLongFace), f"expected TimberLongFace, got {type(dovetail_timber_face).__name__}"
+    assert isinstance(dovetail_timber, Timber), f"expected Timber, got {type(dovetail_timber).__name__}"
+    assert isinstance(receiving_timber, Timber), f"expected Timber, got {type(receiving_timber).__name__}"
     width = dovetail_timber.get_size_in_face_normal_axis(dovetail_timber_face.rotate_right())
     dovetail_length = width/Integer(2)
     dovetail_small_width = width*Rational(1, 2)
     dovetail_large_width = width*Rational(2, 3)
 
     return cut_housed_dovetail_butt_joint(
-        dovetail_timber,
-        receiving_timber,
-        dovetail_timber_end,
-        dovetail_timber_face,
-        receiving_timber_shoulder_inset,
-        dovetail_length,
-        dovetail_small_width,
-        dovetail_large_width
+        arrangement=ButtJointTimberArrangement(
+            butt_timber=dovetail_timber,
+            receiving_timber=receiving_timber,
+            butt_timber_end=dovetail_timber_end,
+            front_face_on_butt_timber=dovetail_timber_face,
+        ),
+        receiving_timber_shoulder_inset=receiving_timber_shoulder_inset,
+        dovetail_length=dovetail_length,
+        dovetail_small_width=dovetail_small_width,
+        dovetail_large_width=dovetail_large_width
     )
 
 
 def cut_basic_mitered_and_keyed_lap_joint(
-    timberA: TimberLike,
-    timberA_end: TimberReferenceEnd,
-    timberA_reference_miter_face: TimberLongFace,
-    timberB: TimberLike,
-    timberB_end: TimberReferenceEnd,
+    arrangement: CornerJointTimberArrangement,
 ) -> Joint:
     """
     Creates a mitered and keyed lap joint (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi) with default proportions.
@@ -362,22 +368,17 @@ def cut_basic_mitered_and_keyed_lap_joint(
     use `cut_mitered_and_keyed_lap_joint` directly.
 
     Args:
-        timberA: First timber to join.
-        timberA_end: Which end of timberA to cut.
-        timberA_reference_miter_face: The long face on timberA that defines the miter plane.
-        timberB: Second timber to join.
-        timberB_end: Which end of timberB to cut.
+        arrangement: Corner joint arrangement. Timbers must be plane-aligned and
+            `front_face_on_timber1` must specify the reference miter face on timber1.
 
     Returns:
         Joint object containing the two CutTimbers with miter and finger cuts.
     """
-    assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
-    assert isinstance(timberA_reference_miter_face, TimberLongFace), f"expected TimberLongFace, got {type(timberA_reference_miter_face).__name__}"
-    assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
+    error = arrangement.check_plane_aligned()
+    assert error is None, error
+    assert arrangement.front_face_on_timber1 is not None, (
+        "arrangement.front_face_on_timber1 must be set to determine the reference miter face"
+    )
     return cut_mitered_and_keyed_lap_joint(
-        timberA,
-        timberA_end,
-        timberA_reference_miter_face,
-        timberB,
-        timberB_end
+        arrangement=arrangement
     )

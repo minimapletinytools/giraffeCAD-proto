@@ -120,44 +120,52 @@ def create_oscarshed(center: Optional[V3] = None):
     # Front mudsill goes from corner 0 to corner 1 (BOTTOM=corner 0, TOP=corner 1)
     # Left mudsill goes from corner 3 to corner 0 (BOTTOM=corner 3, TOP=corner 0)
     joint_corner_0 = cut_basic_mitered_and_keyed_lap_joint(
-        timberA=mudsill_front,
-        timberA_end=TimberReferenceEnd.BOTTOM,
-        timberA_reference_miter_face=TimberLongFace.RIGHT,
-        timberB=mudsill_left,
-        timberB_end=TimberReferenceEnd.TOP,
+        arrangement=CornerJointTimberArrangement(
+            timber1=mudsill_front,
+            timber2=mudsill_left,
+            timber1_end=TimberReferenceEnd.BOTTOM,
+            timber2_end=TimberReferenceEnd.TOP,
+            front_face_on_timber1=TimberLongFace.RIGHT,
+        ),
     )
     
     # Corner 1 (front-right): Front mudsill TOP meets Right mudsill BOTTOM
     # Front mudsill goes from corner 0 to corner 1 (BOTTOM=corner 0, TOP=corner 1)
     # Right mudsill goes from corner 1 to corner 2 (BOTTOM=corner 1, TOP=corner 2)
     joint_corner_1 = cut_basic_mitered_and_keyed_lap_joint(
-        timberA=mudsill_front,
-        timberA_end=TimberReferenceEnd.TOP,
-        timberA_reference_miter_face=TimberLongFace.RIGHT,
-        timberB=mudsill_right,
-        timberB_end=TimberReferenceEnd.BOTTOM,
+        arrangement=CornerJointTimberArrangement(
+            timber1=mudsill_front,
+            timber2=mudsill_right,
+            timber1_end=TimberReferenceEnd.TOP,
+            timber2_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_timber1=TimberLongFace.RIGHT,
+        ),
     )
     
     # Corner 2 (back-right): Right mudsill TOP meets Back mudsill BOTTOM
     # Right mudsill goes from corner 1 to corner 2 (BOTTOM=corner 1, TOP=corner 2)
     # Back mudsill goes from corner 2 to corner 3 (BOTTOM=corner 2, TOP=corner 3)
     joint_corner_2 = cut_basic_mitered_and_keyed_lap_joint(
-        timberA=mudsill_right,
-        timberA_end=TimberReferenceEnd.TOP,
-        timberA_reference_miter_face=TimberLongFace.RIGHT,
-        timberB=mudsill_back,
-        timberB_end=TimberReferenceEnd.BOTTOM,
+        arrangement=CornerJointTimberArrangement(
+            timber1=mudsill_right,
+            timber2=mudsill_back,
+            timber1_end=TimberReferenceEnd.TOP,
+            timber2_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_timber1=TimberLongFace.RIGHT,
+        ),
     )
     
     # Corner 3 (back-left): Back mudsill TOP meets Left mudsill BOTTOM
     # Back mudsill goes from corner 2 to corner 3 (BOTTOM=corner 2, TOP=corner 3)
     # Left mudsill goes from corner 3 to corner 0 (BOTTOM=corner 3, TOP=corner 0)
     joint_corner_3 = cut_basic_mitered_and_keyed_lap_joint(
-        timberA=mudsill_back,
-        timberA_end=TimberReferenceEnd.TOP,
-        timberA_reference_miter_face=TimberLongFace.RIGHT,
-        timberB=mudsill_left,
-        timberB_end=TimberReferenceEnd.BOTTOM,
+        arrangement=CornerJointTimberArrangement(
+            timber1=mudsill_back,
+            timber2=mudsill_left,
+            timber1_end=TimberReferenceEnd.TOP,
+            timber2_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_timber1=TimberLongFace.RIGHT,
+        ),
     )
 
     # ============================================================================
@@ -563,10 +571,13 @@ def create_oscarshed(center: Optional[V3] = None):
     
     # Left gooseneck joint: middle section BOTTOM end meets left section TOP end
     front_girt_gooseneck_joint_left = cut_lapped_gooseneck_joint(
-        gooseneck_timber=front_girt_middle,
-        receiving_timber=front_girt_left,
-        receiving_timber_end=TimberReferenceEnd.TOP,
-        gooseneck_timber_face=TimberLongFace.FRONT,
+        arrangement=SpliceJointTimberArrangement(
+            timber1=front_girt_middle,
+            timber2=front_girt_left,
+            timber1_end=TimberReferenceEnd.BOTTOM,
+            timber2_end=TimberReferenceEnd.TOP,
+            front_face_on_timber1=TimberLongFace.FRONT,
+        ),
         gooseneck_length=gooseneck_length,
         gooseneck_small_width=gooseneck_narrow_width,
         gooseneck_large_width=gooseneck_wide_width,
@@ -578,10 +589,13 @@ def create_oscarshed(center: Optional[V3] = None):
     
     # Right gooseneck joint: middle section TOP end meets right section BOTTOM end
     front_girt_gooseneck_joint_right = cut_lapped_gooseneck_joint(
-        gooseneck_timber=front_girt_middle,
-        receiving_timber=front_girt_right,
-        receiving_timber_end=TimberReferenceEnd.BOTTOM,
-        gooseneck_timber_face=TimberLongFace.FRONT,
+        arrangement=SpliceJointTimberArrangement(
+            timber1=front_girt_middle,
+            timber2=front_girt_right,
+            timber1_end=TimberReferenceEnd.TOP,
+            timber2_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_timber1=TimberLongFace.FRONT,
+        ),
         gooseneck_length=gooseneck_length,
         gooseneck_small_width=gooseneck_narrow_width,
         gooseneck_large_width=gooseneck_wide_width,
@@ -906,10 +920,12 @@ def create_oscarshed(center: Optional[V3] = None):
         # Joist runs from front (BOTTOM) to back (TOP)
         # The dovetail should be visible on the RIGHT face of the joist (facing right/positive X)
         joint_front = cut_housed_dovetail_butt_joint(
-            dovetail_timber=joist,
-            receiving_timber=mudsill_front,
-            dovetail_timber_end=TimberReferenceEnd.BOTTOM,
-            dovetail_timber_face=TimberLongFace.RIGHT,  # Perpendicular to receiving timber
+            arrangement=ButtJointTimberArrangement(
+                butt_timber=joist,
+                receiving_timber=mudsill_front,
+                butt_timber_end=TimberReferenceEnd.BOTTOM,
+                front_face_on_butt_timber=TimberLongFace.RIGHT,
+            ),
             receiving_timber_shoulder_inset=dovetail_shoulder_inset,
             dovetail_length=dovetail_length,
             dovetail_small_width=dovetail_small_width,
@@ -920,10 +936,12 @@ def create_oscarshed(center: Optional[V3] = None):
         
         # Create dovetail joint with back mudsill
         joint_back = cut_housed_dovetail_butt_joint(
-            dovetail_timber=joist,
-            receiving_timber=mudsill_back,
-            dovetail_timber_end=TimberReferenceEnd.TOP,
-            dovetail_timber_face=TimberLongFace.RIGHT,  # Perpendicular to receiving timber
+            arrangement=ButtJointTimberArrangement(
+                butt_timber=joist,
+                receiving_timber=mudsill_back,
+                butt_timber_end=TimberReferenceEnd.TOP,
+                front_face_on_butt_timber=TimberLongFace.RIGHT,
+            ),
             receiving_timber_shoulder_inset=dovetail_shoulder_inset,
             dovetail_length=dovetail_length,
             dovetail_small_width=dovetail_small_width,

@@ -71,13 +71,16 @@ def create_simple_gooseneck_example(position: Optional[V3] = None):
     from dataclasses import replace
     gooseneck_timber = replace(arrangement.timber1, ticket=Ticket("gooseneck_timber"))
     receiving_timber = replace(arrangement.timber2, ticket=Ticket("receiving_timber"))
+    arrangement = replace(
+        arrangement,
+        timber1=gooseneck_timber,
+        timber2=receiving_timber,
+        front_face_on_timber1=TimberLongFace.RIGHT,
+    )
 
     # Create the gooseneck joint using parameters appropriate for canonical timber size
     joint = cut_lapped_gooseneck_joint(
-        gooseneck_timber=gooseneck_timber,
-        receiving_timber=receiving_timber,
-        receiving_timber_end=arrangement.timber2_end,
-        gooseneck_timber_face=TimberLongFace.RIGHT,
+        arrangement=arrangement,
         gooseneck_length=inches(6),        # 6" gooseneck length
         gooseneck_small_width=inches(1),   # 1" narrow end
         gooseneck_large_width=inches(3),   # 3" wide end
@@ -112,15 +115,14 @@ def create_dovetail_butt_joint_example(position: Optional[V3] = None):
 
     arrangement = create_canonical_example_butt_joint_timbers(position=position)
     dovetail_timber = replace(arrangement.butt_timber, ticket=Ticket("dovetail_timber"))
-    receiving_timber = arrangement.receiving_timber
-    # Face perpendicular to receiving length (X): use RIGHT (normal +Z) on butt timber
-    dovetail_timber_face = TimberLongFace.RIGHT
+    arrangement = replace(
+        arrangement,
+        butt_timber=dovetail_timber,
+        front_face_on_butt_timber=TimberLongFace.RIGHT,
+    )
 
     joint = cut_housed_dovetail_butt_joint(
-        dovetail_timber=dovetail_timber,
-        receiving_timber=receiving_timber,
-        dovetail_timber_end=arrangement.butt_timber_end,
-        dovetail_timber_face=dovetail_timber_face,
+        arrangement=arrangement,
         receiving_timber_shoulder_inset=inches(Rational(1, 2)),  # 0.5" shoulder inset
         dovetail_length=inches(4),                                # 4" long dovetail tenon
         dovetail_small_width=inches(Rational(3, 2)),             # 1.5" narrow end
@@ -162,16 +164,18 @@ def create_mitered_and_keyed_lap_joint_example(position: Optional[V3] = None):
     from dataclasses import replace
     timberA = replace(arrangement.timber1, ticket=Ticket("timber_A"))
     timberB = replace(arrangement.timber2, ticket=Ticket("timber_B"))
+    arrangement = replace(
+        arrangement,
+        timber1=timberA,
+        timber2=timberB,
+        front_face_on_timber1=TimberLongFace.RIGHT,
+    )
     
     # Create the mitered and keyed lap joint
     # The reference miter face is the face that defines the miter plane (the face that will be visible after cutting)
     # For a 90-degree corner, both timbers have their RIGHT face pointing in the +Z direction
     joint = cut_mitered_and_keyed_lap_joint(
-        timberA=timberA,
-        timberA_end=TimberReferenceEnd.BOTTOM,
-        timberA_reference_miter_face=TimberLongFace.RIGHT,  # The face defining the miter plane
-        timberB=timberB,
-        timberB_end=TimberReferenceEnd.BOTTOM,
+        arrangement=arrangement,
         num_laps=3,                                          # 3 interlocking fingers
         lap_thickness=inches(Rational(3, 4)),               # 0.75" thick fingers
         lap_start_distance_from_reference_miter_face=inches(Rational(1, 2)),  # Start 0.5" from miter face
@@ -211,16 +215,18 @@ def create_mitered_and_keyed_lap_joint_130deg_example(position: Optional[V3] = N
     from dataclasses import replace
     timberA = replace(arrangement.timber1, ticket=Ticket("timber_A"))
     timberB = replace(arrangement.timber2, ticket=Ticket("timber_B"))
+    arrangement = replace(
+        arrangement,
+        timber1=timberA,
+        timber2=timberB,
+        front_face_on_timber1=TimberLongFace.RIGHT,
+    )
     
     # Create the mitered and keyed lap joint
     # The reference miter face is the face that defines the miter plane
     # For a 130-degree corner, both timbers still have their RIGHT face pointing in the +Z direction
     joint = cut_mitered_and_keyed_lap_joint(
-        timberA=timberA,
-        timberA_end=TimberReferenceEnd.BOTTOM,
-        timberA_reference_miter_face=TimberLongFace.RIGHT,  # The face defining the miter plane
-        timberB=timberB,
-        timberB_end=TimberReferenceEnd.BOTTOM,
+        arrangement=arrangement,
         num_laps=3,                                          # 3 interlocking fingers
         lap_thickness=inches(Rational(3, 4)),               # 0.75" thick fingers
         lap_start_distance_from_reference_miter_face=inches(Rational(1, 2)),  # Start 0.5" from miter face

@@ -117,10 +117,7 @@ _______________|__________
                end of receiving timber
 '''
 def cut_lapped_gooseneck_joint(
-    gooseneck_timber: TimberLike,
-    receiving_timber: TimberLike,
-    receiving_timber_end: TimberReferenceEnd,
-    gooseneck_timber_face: TimberLongFace,
+    arrangement: SpliceJointTimberArrangement,
     gooseneck_length: Numeric,
     gooseneck_small_width: Numeric,
     gooseneck_large_width: Numeric,
@@ -137,17 +134,17 @@ def cut_lapped_gooseneck_joint(
     bearing surface.
     
     Args:
-        gooseneck_timber: The timber that will have the gooseneck feature cut into it
-        receiving_timber: The timber that receives the gooseneck. The top/bot of this timber also determines the position of the gooseneck joint
-        receiving_timber_end: The end to cut on the receiving timber, which will also determine the end of the gooseneck timber (or you could add a optional parameter for this)
-        gooseneck_timber_face: The face on the gooseneck timber where the gooseneck profile is visible
+        arrangement: Splice arrangement where timber1 is the gooseneck timber,
+            timber2 is the receiving timber, timber1_end/timber2_end are the joined
+            ends, and front_face_on_timber1 is the face on timber1 where the
+            gooseneck profile is visible.
         gooseneck_length: Length of the gooseneck shape (does not include lap length)
         gooseneck_small_width: Width of the narrow end of the gooseneck taper
         gooseneck_large_width: Width of the wide end of the gooseneck taper
         gooseneck_head_length: Length of the head portion of the gooseneck
         lap_length: Length of the lap portion of the joint
         gooseneck_depth: Optional depth of the gooseneck cut. If None, defaults to half the timber dimension
-                        perpendicular to the gooseneck_timber_face
+                        perpendicular to arrangement.front_face_on_timber1
     
     Returns:
         Joint object containing the two CutTimbers with the gooseneck cuts applied
@@ -160,8 +157,16 @@ def cut_lapped_gooseneck_joint(
         - The lap provides additional bearing surface for compression loads
         - This joint is traditionally used for connecting beams end-to-end
     """
-    assert isinstance(receiving_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(receiving_timber_end).__name__}"
-    assert isinstance(gooseneck_timber_face, TimberLongFace), f"expected TimberLongFace, got {type(gooseneck_timber_face).__name__}"
+    require_check(arrangement.check_face_aligned_and_parallel_axis())
+    assert arrangement.front_face_on_timber1 is not None, (
+        "arrangement.front_face_on_timber1 must be set to determine the gooseneck face"
+    )
+    gooseneck_timber = arrangement.timber1
+    receiving_timber = arrangement.timber2
+    gooseneck_timber_end = arrangement.timber1_end
+    receiving_timber_end = arrangement.timber2_end
+    gooseneck_timber_face = arrangement.front_face_on_timber1
+
     # ========================================================================
     # Parameter validation
     # ========================================================================
@@ -186,32 +191,6 @@ def cut_lapped_gooseneck_joint(
     # Validate gooseneck_depth if provided
     if gooseneck_depth is not None and gooseneck_depth <= 0:
         raise ValueError(f"gooseneck_depth must be positive if provided, got {gooseneck_depth}")
-
-    # Validate timbers are parallel
-    if not are_timbers_parallel(gooseneck_timber, receiving_timber):
-        raise ValueError(
-            "Timbers must be parallel for gooseneck joint construction (face-parallel required). "
-            f"Got gooseneck_timber axes: {gooseneck_timber.get_length_direction_global()}, receiving_timber axes: {receiving_timber.get_length_direction_global()}"
-        )
-
-    # Find the opposing end on the gooseneck timber (the end that faces the receiving timber end)
-    # We can use find_opposing_face_on_another_timber even though it's typed for long faces -
-    # the logic works for end faces too
-    opposing_face = gooseneck_timber.get_closest_oriented_face_from_global_direction(
-        -receiving_timber.get_face_direction_global(receiving_timber_end)
-    )
-    
-    # Convert TimberFace to TimberReferenceEnd (TOP or BOTTOM)
-    if opposing_face == TimberFace.TOP:
-        gooseneck_timber_end = TimberReferenceEnd.TOP
-    elif opposing_face == TimberFace.BOTTOM:
-        gooseneck_timber_end = TimberReferenceEnd.BOTTOM
-    else:
-        raise ValueError(
-            f"Expected opposing face to be an end face (TOP or BOTTOM), but got {opposing_face}. "
-            f"This suggests the timbers are not properly oriented for a splice joint. "
-            f"Should not be possible because of parallel check earlier."
-        )
 
     # TODO why is this going off in our example
     # Check that the timbers overlap in a sensible way for a splice joint:
@@ -433,10 +412,7 @@ def cut_lapped_gooseneck_joint(
     )
 
 def cut_housed_dovetail_butt_joint(
-    dovetail_timber: TimberLike,
-    receiving_timber: TimberLike,
-    dovetail_timber_end: TimberReferenceEnd,
-    dovetail_timber_face: TimberLongFace,
+    arrangement: ButtJointTimberArrangement,
     receiving_timber_shoulder_inset: Numeric,
     dovetail_length: Numeric,
     dovetail_small_width: Numeric,
@@ -452,10 +428,9 @@ def cut_housed_dovetail_butt_joint(
     mechanical resistance to pulling apart.
     
     Args:
-        dovetail_timber: The timber that will have the dovetail tenon
-        receiving_timber: The timber that receives the dovetail socket (must be orthogonal)
-        dovetail_timber_end: The end of the dovetail timber where the dovetail is cut
-        dovetail_timber_face: The face on the dovetail timber where the dovetail profile is visible
+        arrangement: Butt joint arrangement where butt_timber is the dovetail timber,
+            receiving_timber receives the dovetail socket, butt_timber_end is the cut end,
+            and front_face_on_butt_timber is the face where the dovetail profile is visible.
         receiving_timber_shoulder_inset: Distance to inset the shoulder notch on the receiving timber
         dovetail_length: Length of the dovetail tenon
         dovetail_small_width: Width of the narrow end of the dovetail (at the tip)
@@ -475,6 +450,15 @@ def cut_housed_dovetail_butt_joint(
         - No lap is used in this joint (unlike the lapped gooseneck joint)
     """
     
+    require_check(arrangement.check_face_aligned_and_orthogonal())
+    assert arrangement.front_face_on_butt_timber is not None, (
+        "arrangement.front_face_on_butt_timber must be set to determine the dovetail face"
+    )
+    dovetail_timber = arrangement.butt_timber
+    receiving_timber = arrangement.receiving_timber
+    dovetail_timber_end = arrangement.butt_timber_end
+    dovetail_timber_face = arrangement.front_face_on_butt_timber
+
     # ========================================================================
     # Parameter validation
     # ========================================================================
@@ -500,21 +484,6 @@ def cut_housed_dovetail_butt_joint(
     if dovetail_depth is not None and dovetail_depth <= 0:
         raise ValueError(f"dovetail_depth must be positive if provided, got {dovetail_depth}")
     
-    # Assert timbers are orthogonal (not parallel)
-    if not are_timbers_orthogonal(dovetail_timber, receiving_timber):
-        raise ValueError(
-            "Timbers must be orthogonal (perpendicular) for dovetail butt joint. "
-            f"Got dovetail_timber length_direction: {dovetail_timber.get_length_direction_global().T}, "
-            f"receiving_timber length_direction: {receiving_timber.get_length_direction_global().T}"
-        )
-
-    # Assert timbers are face aligned
-    if not are_timbers_face_aligned(dovetail_timber, receiving_timber):
-        raise ValueError(
-            "Timbers must be face-aligned for dovetail butt joint. "
-        )
-
-
     # assert that dovetail_timber_face is perpendicular to receiving_timber.get_length_direction_global()
     if are_vectors_parallel(dovetail_timber.get_face_direction_global(dovetail_timber_face), receiving_timber.get_length_direction_global()):
         raise ValueError(
@@ -679,15 +648,15 @@ def cut_housed_dovetail_butt_joint(
     
     return Joint(
         cut_timbers={
-            "dovetail_timber": dovetail_timber_cut,
-            "receiving_timber": receiving_timber_cut
+            dovetail_timber.ticket.name: dovetail_timber_cut,
+            receiving_timber.ticket.name: receiving_timber_cut
         },
         jointAccessories={}
     )
 
 
 # rename lap_start_distance_from_reference_miter_face -> first_lap_distance_from_reference_miter_face
-def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberA_reference_miter_face: TimberLongFace, timberB: TimberLike, timberB_end: TimberReferenceEnd, lap_thickness: Optional[Numeric] = None, lap_start_distance_from_reference_miter_face: Optional[Numeric] = None, distance_between_lap_and_outside: Optional[Numeric] = None, num_laps: int = 2, key_width: Optional[Numeric] = None, key_thickness: Optional[Numeric] = None) -> Joint:
+def cut_mitered_and_keyed_lap_joint(arrangement: CornerJointTimberArrangement, lap_thickness: Optional[Numeric] = None, lap_start_distance_from_reference_miter_face: Optional[Numeric] = None, distance_between_lap_and_outside: Optional[Numeric] = None, num_laps: int = 2, key_width: Optional[Numeric] = None, key_thickness: Optional[Numeric] = None) -> Joint:
     """
     Creates a mitered and keyed lap joint (箱相欠き車知栓仕口 / Hako Aikaki Shachi Sen Shikuchi)
     between two timbers.
@@ -696,11 +665,9 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     finger laps on the inside of the miter for additional mechanical strength.
     
     Args:
-        timberA: First timber to join
-        timberA_end: Which end of timberA to cut
-        timberA_reference_miter_face: The long face on timberA that defines the miter plane
-        timberB: Second timber to join
-        timberB_end: Which end of timberB to cut
+        arrangement: Corner joint arrangement where timber1 and timber2 are the joined
+            timbers, timber1_end and timber2_end are the joined ends, and
+            front_face_on_timber1 defines the reference miter face on timber1.
         lap_thickness: Thickness of each lap/finger (optional, auto-calculated if None)
         lap_start_distance_from_reference_miter_face: Distance from miter face to first lap (optional)
         distance_between_lap_and_outside: Inset distance from outer face (optional)
@@ -716,9 +683,15 @@ def cut_mitered_and_keyed_lap_joint(timberA: TimberLike, timberA_end: TimberRefe
     Raises:
         ValueError: If parameters are invalid or timbers are not properly positioned
     """
-    assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
-    assert isinstance(timberA_reference_miter_face, TimberLongFace), f"expected TimberLongFace, got {type(timberA_reference_miter_face).__name__}"
-    assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
+    require_check(arrangement.check_plane_aligned())
+    assert arrangement.front_face_on_timber1 is not None, (
+        "arrangement.front_face_on_timber1 must be set to determine the reference miter face"
+    )
+    timberA = arrangement.timber1
+    timberA_end = arrangement.timber1_end
+    timberA_reference_miter_face = arrangement.front_face_on_timber1
+    timberB = arrangement.timber2
+    timberB_end = arrangement.timber2_end
     from sympy import acos, pi
     
     # ========================================================================

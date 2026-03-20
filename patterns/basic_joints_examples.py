@@ -224,11 +224,7 @@ def example_basic_mitered_and_keyed_lap_joint(position=None):
     
     arrangement = create_canonical_example_right_angle_corner_joint_timbers(position)
     joint = cut_basic_mitered_and_keyed_lap_joint(
-        timberA=arrangement.timber1,
-        timberA_end=arrangement.timber1_end,
-        timberA_reference_miter_face=TimberLongFace.RIGHT,
-        timberB=arrangement.timber2,
-        timberB_end=arrangement.timber2_end
+        arrangement=arrangement
     )
     
     return joint
