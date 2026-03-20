@@ -280,7 +280,7 @@ def cut_plain_butt_joint_on_face_aligned_timbers(arrangement: ButtJointTimberArr
     return joint
 
 
-def cut_plain_tongue_and_fork_joint(
+def cut_tongue_and_fork_corner_joint(
     arrangement: CornerJointTimberArrangement,
     tongue_thickness: Optional[Numeric] = None,
     tongue_position: Numeric = Rational(0),
@@ -355,10 +355,18 @@ def cut_plain_tongue_and_fork_joint(
 
     # Shoulders are determined by the entry face on the opposite timber.
     fork_entry_face = fork_timber.get_closest_oriented_face_from_global_direction(-tongue_end_direction)
-    fork_entry_face_center = _get_face_center_position(fork_timber, fork_entry_face)
+    tongue_shoulder_plane = measure_pat_shoulder_plane_from_centerline_to_reference_face(
+        shoulder_timber=tongue_timber,
+        reference_timber=fork_timber,
+        reference_face=fork_entry_face,
+    )
 
     tongue_entry_face = tongue_timber.get_closest_oriented_face_from_global_direction(-fork_end_direction)
-    tongue_entry_face_center = _get_face_center_position(tongue_timber, tongue_entry_face)
+    fork_slot_stop_plane = measure_pat_shoulder_plane_from_centerline_to_reference_face(
+        shoulder_timber=fork_timber,
+        reference_timber=tongue_timber,
+        reference_face=tongue_entry_face,
+    )
 
     tongue_length_direction = tongue_timber.get_length_direction_global()
     fork_length_direction = fork_timber.get_length_direction_global()
@@ -366,17 +374,7 @@ def cut_plain_tongue_and_fork_joint(
     tongue_bottom = tongue_timber.get_bottom_position_global()
     fork_bottom = fork_timber.get_bottom_position_global()
 
-    tongue_shoulder_distance_from_bottom = safe_dot_product(
-        fork_entry_face_center - tongue_bottom,
-        tongue_length_direction,
-    )
-    tongue_shoulder_point = tongue_bottom + tongue_length_direction * tongue_shoulder_distance_from_bottom
-
-    fork_slot_stop_distance_from_bottom = safe_dot_product(
-        tongue_entry_face_center - fork_bottom,
-        fork_length_direction,
-    )
-    fork_slot_stop_point = fork_bottom + fork_length_direction * fork_slot_stop_distance_from_bottom
+    tongue_shoulder_point = tongue_shoulder_plane.point
 
     tongue_marking_origin_global = tongue_shoulder_point + tongue_normal_direction * tongue_position
 
@@ -413,7 +411,7 @@ def cut_plain_tongue_and_fork_joint(
 
     fork_slot_length_direction = -fork_end_direction
     fork_slot_depth = safe_dot_product(
-        fork_slot_stop_point - fork_end_center,
+        fork_slot_stop_plane.point - fork_end_center,
         fork_slot_length_direction,
     )
     assert safe_compare(fork_slot_depth, Comparison.GT), \
@@ -436,9 +434,13 @@ def cut_plain_tongue_and_fork_joint(
 
     # End cut on tongue timber aligns with fork face opposite where tongue enters.
     fork_opposite_face = fork_entry_face.get_opposite_face()
-    fork_opposite_face_center = _get_face_center_position(fork_timber, fork_opposite_face)
+    tongue_end_cut_plane = measure_pat_shoulder_plane_from_centerline_to_reference_face(
+        shoulder_timber=tongue_timber,
+        reference_timber=fork_timber,
+        reference_face=fork_opposite_face,
+    )
     tongue_cut_distance_from_bottom = safe_dot_product(
-        fork_opposite_face_center - tongue_bottom,
+        tongue_end_cut_plane.point - tongue_bottom,
         tongue_length_direction,
     )
     tongue_distance_from_end = (
@@ -450,9 +452,13 @@ def cut_plain_tongue_and_fork_joint(
 
     # End cut on fork timber aligns with tongue face opposite where fork enters.
     tongue_opposite_face = tongue_entry_face.get_opposite_face()
-    tongue_opposite_face_center = _get_face_center_position(tongue_timber, tongue_opposite_face)
+    fork_end_cut_plane = measure_pat_shoulder_plane_from_centerline_to_reference_face(
+        shoulder_timber=fork_timber,
+        reference_timber=tongue_timber,
+        reference_face=tongue_opposite_face,
+    )
     fork_cut_distance_from_bottom = safe_dot_product(
-        tongue_opposite_face_center - fork_bottom,
+        fork_end_cut_plane.point - fork_bottom,
         fork_length_direction,
     )
     fork_distance_from_end = (
@@ -482,6 +488,19 @@ def cut_plain_tongue_and_fork_joint(
             "fork_timber": CutTimber(fork_timber, cuts=[fork_cut]),
         },
         jointAccessories={},
+    )
+
+
+def cut_plain_tongue_and_fork_joint(
+    arrangement: CornerJointTimberArrangement,
+    tongue_thickness: Optional[Numeric] = None,
+    tongue_position: Numeric = Rational(0),
+) -> Joint:
+    """Compatibility alias for `cut_tongue_and_fork_corner_joint`."""
+    return cut_tongue_and_fork_corner_joint(
+        arrangement=arrangement,
+        tongue_thickness=tongue_thickness,
+        tongue_position=tongue_position,
     )
 
 def cut_plain_butt_splice_joint_on_aligned_timbers(arrangement: SpliceJointTimberArrangement, splice_point: Optional[V3] = None) -> Joint:

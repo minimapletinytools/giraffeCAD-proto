@@ -14,7 +14,7 @@ from code_goes_here.ticket import Ticket
 from code_goes_here.joints.basic_joints import (
     cut_basic_miter_joint,
     cut_basic_miter_joint_on_face_aligned_timbers,
-    cut_basic_tongue_and_fork_joint,
+    cut_basic_tongue_and_fork_corner_joint,
     cut_basic_butt_joint_on_face_aligned_timbers,
     cut_basic_butt_splice_joint_on_aligned_timbers,
     cut_basic_cross_lap_joint,
@@ -70,7 +70,7 @@ def example_basic_tongue_and_fork_joint(position=None):
         position = create_v3(0, 0, 0)
 
     arrangement = create_canonical_example_right_angle_corner_joint_timbers(position)
-    joint = cut_basic_tongue_and_fork_joint(arrangement)
+    joint = cut_basic_tongue_and_fork_corner_joint(arrangement)
 
     return joint
 

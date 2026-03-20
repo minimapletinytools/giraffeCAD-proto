@@ -12,6 +12,12 @@ from dataclasses import replace
 
 from code_goes_here.rule import inches, degrees, create_v2, create_v3, V3
 from code_goes_here.ticket import Ticket
+from code_goes_here.construction import (
+    CornerJointTimberArrangement,
+    ButtJointTimberArrangement,
+    SpliceJointTimberArrangement,
+    CrossJointTimberArrangement,
+)
 from code_goes_here.timber import (
     TimberReferenceEnd,
     TimberFace,
@@ -24,6 +30,7 @@ from code_goes_here.joints.plain_joints import (
     cut_plain_miter_joint,
     cut_plain_miter_joint_on_face_aligned_timbers,
     cut_plain_butt_joint_on_face_aligned_timbers,
+    cut_tongue_and_fork_corner_joint,
     cut_plain_butt_splice_joint_on_aligned_timbers,
     cut_plain_cross_lap_joint,
     cut_plain_house_joint,
@@ -99,6 +106,41 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
     )
     joint = cut_plain_miter_joint_on_face_aligned_timbers(miter_arrangement)
 
+    return list(joint.cut_timbers.values())
+
+
+def make_tongue_and_fork_corner_joint_90_example(position: V3) -> list[CutTimber]:
+    """
+    Create a tongue-and-fork corner joint at 90 degrees using canonical right-angle timbers.
+    """
+    arrangement = create_canonical_example_right_angle_corner_joint_timbers(position=position)
+    joint = cut_tongue_and_fork_corner_joint(
+        CornerJointTimberArrangement(
+            timber1=arrangement.timber1,
+            timber2=arrangement.timber2,
+            timber1_end=TimberReferenceEnd.BOTTOM,
+            timber2_end=TimberReferenceEnd.TOP,
+        )
+    )
+    return list(joint.cut_timbers.values())
+
+
+def make_tongue_and_fork_corner_joint_135_example(position: V3) -> list[CutTimber]:
+    """
+    Create a tongue-and-fork corner joint at 135 degrees for shoulder-plane validation.
+    """
+    arrangement = create_canonical_example_corner_joint_timbers(
+        corner_angle=degrees(135),
+        position=position,
+    )
+    joint = cut_tongue_and_fork_corner_joint(
+        CornerJointTimberArrangement(
+            timber1=arrangement.timber1,
+            timber2=arrangement.timber2,
+            timber1_end=arrangement.timber1_end,
+            timber2_end=arrangement.timber2_end,
+        )
+    )
     return list(joint.cut_timbers.values())
 
 
@@ -335,6 +377,12 @@ def create_plain_joints_patternbook() -> PatternBook:
 
         (PatternMetadata("butt_joint", ["plain_joints", "butt"], "frame"),
          lambda center: Frame(cut_timbers=make_butt_joint_example(center), name="Butt Joint")),
+
+        (PatternMetadata("tongue_and_fork_corner_joint_90", ["plain_joints", "tongue_and_fork"], "frame"),
+         lambda center: Frame(cut_timbers=make_tongue_and_fork_corner_joint_90_example(center), name="Tongue and Fork Corner (90°)")),
+
+        (PatternMetadata("tongue_and_fork_corner_joint_135", ["plain_joints", "tongue_and_fork"], "frame"),
+         lambda center: Frame(cut_timbers=make_tongue_and_fork_corner_joint_135_example(center), name="Tongue and Fork Corner (135°)")),
 
         (PatternMetadata("splice_joint", ["plain_joints", "splice"], "frame"),
          lambda center: Frame(cut_timbers=make_splice_joint_example(center), name="Splice Joint")),

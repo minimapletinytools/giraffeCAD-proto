@@ -66,6 +66,42 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: TimberLike)
     return measure_into_face(0, face, face_timber)
 
 
+def measure_pat_shoulder_plane_from_centerline_to_reference_face(
+    shoulder_timber: TimberLike,
+    reference_timber: TimberLike,
+    reference_face: TimberFace,
+) -> Plane:
+    """
+    Compute a shoulder plane on `shoulder_timber` using a face plane on `reference_timber`.
+
+    This helper assumes a plane-aligned arrangement (PAT-style usage). It scribes the
+    reference face plane onto the shoulder timber centerline, then returns the timber
+    cross-section plane at that mark (normal = shoulder timber length direction).
+
+    Args:
+        shoulder_timber: Timber receiving the shoulder plane.
+        reference_timber: Timber that owns the reference face.
+        reference_face: Face on `reference_timber` that defines where the shoulder lands.
+
+    Returns:
+        Plane perpendicular to `shoulder_timber` length axis at the marked shoulder.
+    """
+    reference_plane = scribe_face_plane_onto_centerline(reference_face, reference_timber)
+    shoulder_distance_from_bottom = mark_distance_from_end_along_centerline(
+        reference_plane,
+        shoulder_timber,
+        TimberReferenceEnd.BOTTOM,
+    ).distance
+
+    shoulder_length_direction = shoulder_timber.get_length_direction_global()
+    shoulder_point = (
+        shoulder_timber.get_bottom_position_global()
+        + shoulder_length_direction * shoulder_distance_from_bottom
+    )
+
+    return Plane(normal=shoulder_length_direction, point=shoulder_point)
+
+
 # TODO DELETE THIS just 
 def scribe_centerline_onto_centerline(timber: TimberLike) -> Line:
     """

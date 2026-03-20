@@ -779,7 +779,7 @@ class TestTongueAndForkJoint:
             timber1_end=TimberReferenceEnd.BOTTOM,
             timber2_end=TimberReferenceEnd.BOTTOM,
         )
-        joint = cut_plain_tongue_and_fork_joint(arrangement)
+        joint = cut_tongue_and_fork_corner_joint(arrangement)
 
         assert len(joint.cut_timbers) == 2
         assert "tongue_timber" in joint.cut_timbers
@@ -838,7 +838,7 @@ class TestTongueAndForkJoint:
             timber2_end=TimberReferenceEnd.BOTTOM,
         )
 
-        joint_centered = cut_plain_tongue_and_fork_joint(arrangement_a)
+        joint_centered = cut_tongue_and_fork_corner_joint(arrangement_a)
 
         tongue_timber_b = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
         fork_timber_b = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
@@ -848,7 +848,7 @@ class TestTongueAndForkJoint:
             timber1_end=TimberReferenceEnd.BOTTOM,
             timber2_end=TimberReferenceEnd.BOTTOM,
         )
-        joint_shifted = cut_plain_tongue_and_fork_joint(
+        joint_shifted = cut_tongue_and_fork_corner_joint(
             arrangement_b,
             tongue_thickness=Rational(2),
             tongue_position=Rational(2),
@@ -875,7 +875,7 @@ class TestTongueAndForkJoint:
         fork_parallel = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
 
         with pytest.raises(AssertionError, match="parallel"):
-            cut_plain_tongue_and_fork_joint(
+            cut_tongue_and_fork_corner_joint(
                 CornerJointTimberArrangement(
                     timber1=tongue_parallel,
                     timber2=fork_parallel,
@@ -894,7 +894,7 @@ class TestTongueAndForkJoint:
         )
 
         with pytest.raises(AssertionError, match="plane-aligned"):
-            cut_plain_tongue_and_fork_joint(
+            cut_tongue_and_fork_corner_joint(
                 CornerJointTimberArrangement(
                     timber1=tongue_non_plane,
                     timber2=fork_non_plane,
