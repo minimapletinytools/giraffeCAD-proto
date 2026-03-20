@@ -19,7 +19,12 @@ from .plain_joints import (
     cut_plain_house_joint,
     cut_plain_splice_lap_joint_on_aligned_timbers,
 )
-from code_goes_here.construction import ButtJointTimberArrangement
+from code_goes_here.construction import (
+    ButtJointTimberArrangement,
+    SpliceJointTimberArrangement,
+    CornerJointTimberArrangement,
+    CrossJointTimberArrangement,
+)
 from .mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_FAT,
     SimplePegParameters,
@@ -85,6 +90,8 @@ def cut_basic_miter_joint_on_face_aligned_timbers(timberA: TimberLike, timberA_e
         timber1_end=timberA_end,
         timber2_end=timberB_end
     )
+    error = arrangement.check_face_aligned_and_orthogonal()
+    assert error is None, error
     return cut_plain_miter_joint_on_face_aligned_timbers(arrangement)
 
 
@@ -109,6 +116,8 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: TimberLike, b
         butt_timber=butt_timber,
         butt_timber_end=butt_end
     )
+    error = arrangement.check_face_aligned_and_orthogonal()
+    assert error is None, error
     return cut_plain_butt_joint_on_face_aligned_timbers(arrangement)
 
 
@@ -136,6 +145,8 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: TimberLike, timberA_
         timber1_end=timberA_end,
         timber2_end=timberB_end
     )
+    error = arrangement.check_face_aligned_and_parallel_axis()
+    assert error is None, error
     return cut_plain_butt_splice_joint_on_aligned_timbers(arrangement)
 
 
@@ -157,6 +168,8 @@ def cut_basic_cross_lap_joint(timberA: TimberLike, timberB: TimberLike) -> Joint
         timber1=timberA,
         timber2=timberB
     )
+    error = arrangement.check_face_aligned_and_orthogonal()
+    assert error is None, error
     return cut_plain_cross_lap_joint(arrangement)
 
 
@@ -178,6 +191,8 @@ def cut_basic_house_joint(housing_timber: TimberLike, housed_timber: TimberLike)
         timber1=housing_timber,
         timber2=housed_timber
     )
+    error = arrangement.check_face_aligned_and_orthogonal()
+    assert error is None, error
     return cut_plain_house_joint(arrangement)
 
 
@@ -186,7 +201,7 @@ def cut_basic_splice_lap_joint_on_aligned_timbers(
     top_lap_timber_end: TimberReferenceEnd,
     bottom_lap_timber: TimberLike,
     bottom_lap_timber_end: TimberReferenceEnd,
-    top_lap_timber_face: TimberFace
+    top_lap_timber_face: TimberLongFace
 ) -> Joint:
     """
     Creates a splice lap joint between two parallel timbers with default half-lap sizing.
@@ -199,22 +214,28 @@ def cut_basic_splice_lap_joint_on_aligned_timbers(
         top_lap_timber_end: Which end of the top lap timber is joined (TOP or BOTTOM).
         bottom_lap_timber: The timber with material removed from the opposite face.
         bottom_lap_timber_end: Which end of the bottom lap timber is joined (TOP or BOTTOM).
-        top_lap_timber_face: Face of the top lap timber to remove material from.
+        top_lap_timber_face: Long face of the top lap timber to remove material from.
 
     Returns:
         Joint object containing the two CutTimbers with lap cuts.
     """
     assert isinstance(top_lap_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(top_lap_timber_end).__name__}"
     assert isinstance(bottom_lap_timber_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(bottom_lap_timber_end).__name__}"
+    assert isinstance(top_lap_timber_face, TimberLongFace), f"expected TimberLongFace, got {type(top_lap_timber_face).__name__}"
+    arrangement = SpliceJointTimberArrangement(
+        timber1=top_lap_timber,
+        timber2=bottom_lap_timber,
+        timber1_end=top_lap_timber_end,
+        timber2_end=bottom_lap_timber_end,
+        front_face_on_timber1=top_lap_timber_face
+    )
+    error = arrangement.check_face_aligned_and_parallel_axis()
+    assert error is None, error
     lap_length = top_lap_timber.get_size_in_face_normal_axis(top_lap_timber_face)
     return cut_plain_splice_lap_joint_on_aligned_timbers(
-        top_lap_timber,
-        top_lap_timber_end,
-        bottom_lap_timber,
-        bottom_lap_timber_end,
-        top_lap_timber_face.to.long_face(),
+        arrangement,
         lap_length,
-        top_lap_shoulder_position_from_top_lap_shoulder_timber_end = lap_length
+        top_lap_shoulder_position_from_top_lap_shoulder_timber_end=lap_length
     )
 
 
