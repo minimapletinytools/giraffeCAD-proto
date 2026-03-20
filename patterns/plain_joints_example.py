@@ -114,14 +114,7 @@ def make_tongue_and_fork_corner_joint_90_example(position: V3) -> list[CutTimber
     Create a tongue-and-fork corner joint at 90 degrees using canonical right-angle timbers.
     """
     arrangement = create_canonical_example_right_angle_corner_joint_timbers(position=position)
-    joint = cut_tongue_and_fork_corner_joint(
-        CornerJointTimberArrangement(
-            timber1=arrangement.timber1,
-            timber2=arrangement.timber2,
-            timber1_end=TimberReferenceEnd.BOTTOM,
-            timber2_end=TimberReferenceEnd.TOP,
-        )
-    )
+    joint = cut_tongue_and_fork_corner_joint(arrangement)
     return list(joint.cut_timbers.values())
 
 
@@ -130,17 +123,11 @@ def make_tongue_and_fork_corner_joint_135_example(position: V3) -> list[CutTimbe
     Create a tongue-and-fork corner joint at 135 degrees for shoulder-plane validation.
     """
     arrangement = create_canonical_example_corner_joint_timbers(
-        corner_angle=degrees(135),
+        # TODO change to 135...
+        corner_angle=degrees(134),
         position=position,
     )
-    joint = cut_tongue_and_fork_corner_joint(
-        CornerJointTimberArrangement(
-            timber1=arrangement.timber1,
-            timber2=arrangement.timber2,
-            timber1_end=arrangement.timber1_end,
-            timber2_end=arrangement.timber2_end,
-        )
-    )
+    joint = cut_tongue_and_fork_corner_joint(arrangement)
     return list(joint.cut_timbers.values())
 
 
@@ -295,13 +282,13 @@ def make_cross_lap_joint_example(position: V3) -> list[CutTimber]:
     )
 
     # Create cross lap joint with cut_ratio=0.5 (each timber cut halfway)
-    # The function will auto-select FRONT face of timberA (+Z) and BACK face of timberB (-Z)
-    # which oppose each other (dot product = -1 < 0)
     joint = cut_plain_cross_lap_joint(
-        timberA, timberB,
+        CrossJointTimberArrangement(
+            timber1=timberA,
+            timber2=timberB,
+            front_face_on_timber1=TimberLongFace.FRONT,
+        ),
         cut_ratio=Rational(1, 2),
-        timberA_cut_face=TimberFace.FRONT,
-        timberB_cut_face=TimberFace.BACK
     )
 
     return list(joint.cut_timbers.values())
@@ -318,38 +305,25 @@ def make_splice_lap_joint_example(position: V3) -> list[CutTimber]:
     Returns:
         List of CutTimber objects representing the joint
     """
-    half_length = TIMBER_LENGTH / 2
     lap_length = TIMBER_WIDTH * 3  # Lap extends 3x the timber width
 
-    # TimberA extends in +X direction from the center
-    timberA = timber_from_directions(
-        length=TIMBER_LENGTH,
-        size=TIMBER_SIZE_2D,
-        bottom_position=position - create_v3(half_length, 0, 0),
-        length_direction=create_v3(1, 0, 0),
-        width_direction=create_v3(0, 1, 0),
-        ticket="splice_lap_timberA"
+    # Use canonical splice joint arrangement
+    # This creates two aligned timbers meeting at 'position'
+    arrangement = create_canonical_example_splice_joint_timbers(position=position)
+
+    # Rename timbers for clarity
+    timberA = replace(arrangement.timber1, ticket=Ticket("SpliceLap_TimberA"))
+    timberB = replace(arrangement.timber2, ticket=Ticket("SpliceLap_TimberB"))
+
+    # Update arrangement
+    splice_arrangement = replace(
+        arrangement,
+        timber1=timberA,
+        timber2=timberB
     )
 
-    # TimberB extends in +X direction, positioned to meet timberA end-to-end
-    timberB = timber_from_directions(
-        length=TIMBER_LENGTH,
-        size=TIMBER_SIZE_2D,
-        bottom_position=position + create_v3(half_length, 0, 0),
-        length_direction=create_v3(1, 0, 0),
-        width_direction=create_v3(0, 1, 0),
-        ticket="splice_lap_timberB"
-    )
-
-    # Create the splice lap joint
-    # TimberA has material removed from BOTTOM face
-    # TimberB has material removed from TOP face (opposite)
     joint = cut_plain_splice_lap_joint_on_aligned_timbers(
-        top_lap_timber=timberA,
-        top_lap_timber_end=TimberReferenceEnd.TOP,
-        bottom_lap_timber=timberB,
-        bottom_lap_timber_end=TimberReferenceEnd.BOTTOM,
-        top_lap_timber_face=TimberLongFace.RIGHT,
+        arrangement=splice_arrangement,
         lap_length=lap_length,
         top_lap_shoulder_position_from_top_lap_shoulder_timber_end=lap_length/2,
         lap_depth=None  # Use default (half thickness)
