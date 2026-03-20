@@ -77,13 +77,14 @@ def _make_dynamic_module_name(root_folder: Path, file_path: Path) -> str:
 
 def _load_module_from_path(root_folder: Path, file_path: Path) -> Tuple[Optional[Any], Optional[str], str]:
     module_name = _make_dynamic_module_name(root_folder, file_path)
+    attempted_file = str(file_path)
 
     if module_name in sys.modules:
         del sys.modules[module_name]
 
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None or spec.loader is None:
-        return None, f"Could not create import spec for {file_path}", module_name
+        return None, f"{attempted_file}: Could not create import spec", module_name
 
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
@@ -94,7 +95,7 @@ def _load_module_from_path(root_folder: Path, file_path: Path) -> Tuple[Optional
     except Exception as exc:
         if module_name in sys.modules:
             del sys.modules[module_name]
-        return None, f"{type(exc).__name__}: {exc}", module_name
+        return None, f"{attempted_file}: {type(exc).__name__}: {exc}", module_name
 
 
 def _resolve_patternbook(module: Any, warnings: List[str]) -> Optional[PatternBook]:
