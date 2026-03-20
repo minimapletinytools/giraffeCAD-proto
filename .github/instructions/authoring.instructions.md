@@ -8,6 +8,7 @@ applyTo: "code_goes_here/**,tests/**"
 
 Always run all tests after making changes:
 ```bash
+source .venv/bin/activate
 python3 -m pytest tests/ -v
 ```
 
