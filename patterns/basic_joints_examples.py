@@ -43,12 +43,7 @@ def example_basic_miter_joint(position=None):
         position = create_v3(0, 0, 0)
     
     arrangement = create_canonical_example_right_angle_corner_joint_timbers(position)
-    joint = cut_basic_miter_joint(
-        timberA=arrangement.timber1,
-        timberA_end=arrangement.timber1_end,
-        timberB=arrangement.timber2,
-        timberB_end=arrangement.timber2_end
-    )
+    joint = cut_basic_miter_joint(arrangement)
     
     return joint
 
@@ -61,12 +56,7 @@ def example_basic_miter_joint_face_aligned(position=None):
         position = create_v3(0, 0, 0)
     
     arrangement = create_canonical_example_right_angle_corner_joint_timbers(position)
-    joint = cut_basic_miter_joint_on_face_aligned_timbers(
-        timberA=arrangement.timber1,
-        timberA_end=arrangement.timber1_end,
-        timberB=arrangement.timber2,
-        timberB_end=arrangement.timber2_end
-    )
+    joint = cut_basic_miter_joint_on_face_aligned_timbers(arrangement)
     
     return joint
 
@@ -79,11 +69,7 @@ def example_basic_butt_joint(position=None):
         position = create_v3(0, 0, 0)
     
     arrangement = create_canonical_example_butt_joint_timbers(position)
-    joint = cut_basic_butt_joint_on_face_aligned_timbers(
-        receiving_timber=arrangement.receiving_timber,
-        butt_timber=arrangement.butt_timber,
-        butt_end=arrangement.butt_timber_end
-    )
+    joint = cut_basic_butt_joint_on_face_aligned_timbers(arrangement)
     
     return joint
 
@@ -96,12 +82,7 @@ def example_basic_butt_splice_joint(position=None):
         position = create_v3(0, 0, 0)
     
     arrangement = create_canonical_example_splice_joint_timbers(position)
-    joint = cut_basic_butt_splice_joint_on_aligned_timbers(
-        timberA=arrangement.timber1,
-        timberA_end=arrangement.timber1_end,
-        timberB=arrangement.timber2,
-        timberB_end=arrangement.timber2_end
-    )
+    joint = cut_basic_butt_splice_joint_on_aligned_timbers(arrangement)
     
     return joint
 
@@ -114,10 +95,7 @@ def example_basic_cross_lap_joint(position=None):
         position = create_v3(0, 0, 0)
     
     arrangement = create_canonical_example_cross_joint_timbers(position=position)
-    joint = cut_basic_cross_lap_joint(
-        timberA=arrangement.timber1,
-        timberB=arrangement.timber2
-    )
+    joint = cut_basic_cross_lap_joint(arrangement)
     
     return joint
 
@@ -131,10 +109,7 @@ def example_basic_house_joint(position=None):
     
     # TODO offset
     arrangement = create_canonical_example_cross_joint_timbers(position=position, lateral_offset=inches(2))
-    joint = cut_basic_house_joint(
-        housing_timber=arrangement.timber1,
-        housed_timber=arrangement.timber2
-    )
+    joint = cut_basic_house_joint(arrangement)
     
     return joint
 
@@ -146,13 +121,16 @@ def example_basic_splice_lap_joint(position=None):
     if position is None:
         position = create_v3(0, 0, 0)
 
+    from code_goes_here.construction import SpliceJointTimberArrangement
     arrangement = create_canonical_example_splice_joint_timbers(position)
     joint = cut_basic_splice_lap_joint_on_aligned_timbers(
-        top_lap_timber=arrangement.timber1,
-        top_lap_timber_end=arrangement.timber1_end,
-        bottom_lap_timber=arrangement.timber2,
-        bottom_lap_timber_end=arrangement.timber2_end,
-        top_lap_timber_face=TimberLongFace.FRONT,
+        SpliceJointTimberArrangement(
+            timber1=arrangement.timber1,
+            timber2=arrangement.timber2,
+            timber1_end=arrangement.timber1_end,
+            timber2_end=arrangement.timber2_end,
+            front_face_on_timber1=TimberLongFace.FRONT,
+        )
     )
     return joint
 

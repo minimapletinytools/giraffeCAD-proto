@@ -20,6 +20,7 @@ from code_goes_here.example_shavings import (
     create_canonical_example_butt_joint_timbers,
 )
 from code_goes_here.joints.basic_joints import cut_basic_miter_joint
+from code_goes_here.construction import CornerJointTimberArrangement
 from code_goes_here.patternbook import PatternBook, PatternMetadata, make_pattern_from_joint, make_pattern_from_frame
 
 
@@ -150,10 +151,12 @@ def example_brace_joint(position=None):
     
     # Plain miter joint between the two corner timbers
     miter_joint = cut_basic_miter_joint(
-        timber1,
-        brace_arrangement.timber1_end,
-        timber2,
-        brace_arrangement.timber2_end,
+        CornerJointTimberArrangement(
+            timber1=timber1,
+            timber2=timber2,
+            timber1_end=brace_arrangement.timber1_end,
+            timber2_end=brace_arrangement.timber2_end,
+        )
     )
     
     # Define tenon dimensions (smaller than full timber size)

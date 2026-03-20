@@ -1015,6 +1015,256 @@ class ButtJointTimberArrangement:
 
 
 @dataclass(frozen=True)
+class DoubleButtJointTimberArrangement:
+    """Two butt timbers meeting a single receiving timber.
+
+    Arrangements:
+    - Opposing: butt_timber_1 and butt_timber_2 point in opposite cardinal directions
+      (antiparallel, like spokes from either side of the receiving timber).
+    - Orthogonal: butt_timber_1 and butt_timber_2 point in perpendicular cardinal directions
+      (90° apart, like an L at the receiving timber).
+    """
+    butt_timber_1: Timber
+    butt_timber_2: Timber
+    receiving_timber: Timber
+    butt_timber_1_end: TimberReferenceEnd
+    butt_timber_2_end: TimberReferenceEnd
+
+    def check_types_valid(self) -> Optional[str]:
+        """Return None if all types are valid, otherwise an error message for use in assert."""
+        if not isinstance(self.butt_timber_1, Timber):
+            return f"butt_timber_1 must be Timber, got {type(self.butt_timber_1).__name__}"
+        if not isinstance(self.butt_timber_2, Timber):
+            return f"butt_timber_2 must be Timber, got {type(self.butt_timber_2).__name__}"
+        if not isinstance(self.receiving_timber, Timber):
+            return f"receiving_timber must be Timber, got {type(self.receiving_timber).__name__}"
+        if not isinstance(self.butt_timber_1_end, TimberReferenceEnd):
+            return f"butt_timber_1_end must be TimberReferenceEnd, got {type(self.butt_timber_1_end).__name__}"
+        if not isinstance(self.butt_timber_2_end, TimberReferenceEnd):
+            return f"butt_timber_2_end must be TimberReferenceEnd, got {type(self.butt_timber_2_end).__name__}"
+        return None
+
+    def __post_init__(self):
+        require_check(self.check_types_valid())
+
+    def check_face_aligned(self) -> Optional[str]:
+        """Return None if all timbers are face-aligned with the receiving timber, else an error message."""
+        if not are_timbers_face_aligned(self.butt_timber_1, self.receiving_timber):
+            return "butt_timber_1 must be face-aligned with receiving_timber"
+        if not are_timbers_face_aligned(self.butt_timber_2, self.receiving_timber):
+            return "butt_timber_2 must be face-aligned with receiving_timber"
+        return None
+
+    def check_face_aligned_cardinal_and_opposing_butts(self) -> Optional[str]:
+        """Return None if:
+        - all timbers are face-aligned,
+        - each butt timber's length direction is orthogonal to the receiving timber (cardinal),
+        - butt_timber_1 and butt_timber_2 are in different cardinal directions, and
+        - the pair is antiparallel (pointing towards each other).
+        """
+        err = self.check_face_aligned()
+        if err is not None:
+            return err
+        recv_len = self.receiving_timber.get_length_direction_global()
+        dir1 = self.butt_timber_1.get_length_direction_global()
+        dir2 = self.butt_timber_2.get_length_direction_global()
+        if not _are_directions_perpendicular(dir1, recv_len):
+            return "butt_timber_1 length direction must be orthogonal to receiving_timber length direction"
+        if not _are_directions_perpendicular(dir2, recv_len):
+            return "butt_timber_2 length direction must be orthogonal to receiving_timber length direction"
+        # Different cardinals: no two butt timbers may share the same direction
+        if equality_test(dir1.dot(dir2), 1):
+            return "butt_timber_1 and butt_timber_2 must point in different cardinal directions"
+        # Pair must be antiparallel (pointing towards each other)
+        if not equality_test(dir1.dot(dir2), -1):
+            return "butt_timber_1 and butt_timber_2 must be antiparallel (pointing towards each other)"
+        return None
+
+    def check_face_aligned_and_orthogonal_butts(self) -> Optional[str]:
+        """Return None if all timbers are face-aligned and the two butt timbers are orthogonal
+        to each other (length directions perpendicular), else an error message."""
+        err = self.check_face_aligned()
+        if err is not None:
+            return err
+        if not are_timbers_orthogonal(self.butt_timber_1, self.butt_timber_2):
+            return "butt_timber_1 and butt_timber_2 must be orthogonal to each other"
+        return None
+
+
+@dataclass(frozen=True)
+class TripleButtJointTimberArrangement:
+    """Three butt timbers meeting a single receiving timber.
+
+    main_butt_timber_1 and main_butt_timber_2 form an opposing pair (antiparallel).
+    awk_timber is the third butt timber pointing in a third cardinal direction.
+    """
+    main_butt_timber_1: Timber
+    main_butt_timber_2: Timber
+    awk_timber: Timber
+    receiving_timber: Timber
+    main_butt_timber_1_end: TimberReferenceEnd
+    main_butt_timber_2_end: TimberReferenceEnd
+    awk_timber_end: TimberReferenceEnd
+
+    def check_types_valid(self) -> Optional[str]:
+        """Return None if all types are valid, otherwise an error message for use in assert."""
+        if not isinstance(self.main_butt_timber_1, Timber):
+            return f"main_butt_timber_1 must be Timber, got {type(self.main_butt_timber_1).__name__}"
+        if not isinstance(self.main_butt_timber_2, Timber):
+            return f"main_butt_timber_2 must be Timber, got {type(self.main_butt_timber_2).__name__}"
+        if not isinstance(self.awk_timber, Timber):
+            return f"awk_timber must be Timber, got {type(self.awk_timber).__name__}"
+        if not isinstance(self.receiving_timber, Timber):
+            return f"receiving_timber must be Timber, got {type(self.receiving_timber).__name__}"
+        if not isinstance(self.main_butt_timber_1_end, TimberReferenceEnd):
+            return f"main_butt_timber_1_end must be TimberReferenceEnd, got {type(self.main_butt_timber_1_end).__name__}"
+        if not isinstance(self.main_butt_timber_2_end, TimberReferenceEnd):
+            return f"main_butt_timber_2_end must be TimberReferenceEnd, got {type(self.main_butt_timber_2_end).__name__}"
+        if not isinstance(self.awk_timber_end, TimberReferenceEnd):
+            return f"awk_timber_end must be TimberReferenceEnd, got {type(self.awk_timber_end).__name__}"
+        return None
+
+    def __post_init__(self):
+        require_check(self.check_types_valid())
+
+    def check_face_aligned(self) -> Optional[str]:
+        """Return None if all butt timbers are face-aligned with the receiving timber, else an error message."""
+        if not are_timbers_face_aligned(self.main_butt_timber_1, self.receiving_timber):
+            return "main_butt_timber_1 must be face-aligned with receiving_timber"
+        if not are_timbers_face_aligned(self.main_butt_timber_2, self.receiving_timber):
+            return "main_butt_timber_2 must be face-aligned with receiving_timber"
+        if not are_timbers_face_aligned(self.awk_timber, self.receiving_timber):
+            return "awk_timber must be face-aligned with receiving_timber"
+        return None
+
+    def check_face_aligned_cardinal_and_opposing_butts(self) -> Optional[str]:
+        """Return None if:
+        - all timbers are face-aligned,
+        - each butt timber's length direction is orthogonal to the receiving timber (cardinal),
+        - all three butt timbers are in different cardinal directions, and
+        - main_butt_timber_1 and main_butt_timber_2 are antiparallel (pointing towards each other).
+        """
+        err = self.check_face_aligned()
+        if err is not None:
+            return err
+        recv_len = self.receiving_timber.get_length_direction_global()
+        dir_main1 = self.main_butt_timber_1.get_length_direction_global()
+        dir_main2 = self.main_butt_timber_2.get_length_direction_global()
+        dir_awk = self.awk_timber.get_length_direction_global()
+        butt_dirs = [
+            ("main_butt_timber_1", dir_main1),
+            ("main_butt_timber_2", dir_main2),
+            ("awk_timber", dir_awk),
+        ]
+        for name, d in butt_dirs:
+            if not _are_directions_perpendicular(d, recv_len):
+                return f"{name} length direction must be orthogonal to receiving_timber length direction"
+        # All three must be in different cardinal directions (no two share the same direction)
+        pairs = [(butt_dirs[i][0], butt_dirs[i][1], butt_dirs[j][0], butt_dirs[j][1])
+                 for i in range(len(butt_dirs)) for j in range(i + 1, len(butt_dirs))]
+        for name_i, dir_i, name_j, dir_j in pairs:
+            if equality_test(dir_i.dot(dir_j), 1):
+                return f"{name_i} and {name_j} must point in different cardinal directions"
+        # Main pair must be antiparallel (pointing towards each other)
+        if not equality_test(dir_main1.dot(dir_main2), -1):
+            return "main_butt_timber_1 and main_butt_timber_2 must be antiparallel (pointing towards each other)"
+        return None
+
+
+@dataclass(frozen=True)
+class QuadrupleButtJointTimberArrangement:
+    """Four butt timbers meeting a single receiving timber, covering all four cardinal directions.
+
+    main_butt_timber_1 and main_butt_timber_2 form one opposing pair (antiparallel).
+    awk_1 and awk_2 form the second opposing pair (antiparallel, on the perpendicular axis).
+    """
+    main_butt_timber_1: Timber
+    main_butt_timber_2: Timber
+    awk_1: Timber
+    awk_2: Timber
+    receiving_timber: Timber
+    main_butt_timber_1_end: TimberReferenceEnd
+    main_butt_timber_2_end: TimberReferenceEnd
+    awk_1_end: TimberReferenceEnd
+    awk_2_end: TimberReferenceEnd
+
+    def check_types_valid(self) -> Optional[str]:
+        """Return None if all types are valid, otherwise an error message for use in assert."""
+        if not isinstance(self.main_butt_timber_1, Timber):
+            return f"main_butt_timber_1 must be Timber, got {type(self.main_butt_timber_1).__name__}"
+        if not isinstance(self.main_butt_timber_2, Timber):
+            return f"main_butt_timber_2 must be Timber, got {type(self.main_butt_timber_2).__name__}"
+        if not isinstance(self.awk_1, Timber):
+            return f"awk_1 must be Timber, got {type(self.awk_1).__name__}"
+        if not isinstance(self.awk_2, Timber):
+            return f"awk_2 must be Timber, got {type(self.awk_2).__name__}"
+        if not isinstance(self.receiving_timber, Timber):
+            return f"receiving_timber must be Timber, got {type(self.receiving_timber).__name__}"
+        if not isinstance(self.main_butt_timber_1_end, TimberReferenceEnd):
+            return f"main_butt_timber_1_end must be TimberReferenceEnd, got {type(self.main_butt_timber_1_end).__name__}"
+        if not isinstance(self.main_butt_timber_2_end, TimberReferenceEnd):
+            return f"main_butt_timber_2_end must be TimberReferenceEnd, got {type(self.main_butt_timber_2_end).__name__}"
+        if not isinstance(self.awk_1_end, TimberReferenceEnd):
+            return f"awk_1_end must be TimberReferenceEnd, got {type(self.awk_1_end).__name__}"
+        if not isinstance(self.awk_2_end, TimberReferenceEnd):
+            return f"awk_2_end must be TimberReferenceEnd, got {type(self.awk_2_end).__name__}"
+        return None
+
+    def __post_init__(self):
+        require_check(self.check_types_valid())
+
+    def check_face_aligned(self) -> Optional[str]:
+        """Return None if all butt timbers are face-aligned with the receiving timber, else an error message."""
+        if not are_timbers_face_aligned(self.main_butt_timber_1, self.receiving_timber):
+            return "main_butt_timber_1 must be face-aligned with receiving_timber"
+        if not are_timbers_face_aligned(self.main_butt_timber_2, self.receiving_timber):
+            return "main_butt_timber_2 must be face-aligned with receiving_timber"
+        if not are_timbers_face_aligned(self.awk_1, self.receiving_timber):
+            return "awk_1 must be face-aligned with receiving_timber"
+        if not are_timbers_face_aligned(self.awk_2, self.receiving_timber):
+            return "awk_2 must be face-aligned with receiving_timber"
+        return None
+
+    def check_face_aligned_cardinal_and_opposing_butts(self) -> Optional[str]:
+        """Return None if:
+        - all timbers are face-aligned,
+        - each butt timber's length direction is orthogonal to the receiving timber (cardinal),
+        - all four butt timbers are in different cardinal directions, and
+        - main_butt_timber_1/main_butt_timber_2 are antiparallel and awk_1/awk_2 are antiparallel.
+        """
+        err = self.check_face_aligned()
+        if err is not None:
+            return err
+        recv_len = self.receiving_timber.get_length_direction_global()
+        dir_main1 = self.main_butt_timber_1.get_length_direction_global()
+        dir_main2 = self.main_butt_timber_2.get_length_direction_global()
+        dir_awk1 = self.awk_1.get_length_direction_global()
+        dir_awk2 = self.awk_2.get_length_direction_global()
+        butt_dirs = [
+            ("main_butt_timber_1", dir_main1),
+            ("main_butt_timber_2", dir_main2),
+            ("awk_1", dir_awk1),
+            ("awk_2", dir_awk2),
+        ]
+        for name, d in butt_dirs:
+            if not _are_directions_perpendicular(d, recv_len):
+                return f"{name} length direction must be orthogonal to receiving_timber length direction"
+        # All four must be in different cardinal directions (no two share the same direction)
+        pairs = [(butt_dirs[i][0], butt_dirs[i][1], butt_dirs[j][0], butt_dirs[j][1])
+                 for i in range(len(butt_dirs)) for j in range(i + 1, len(butt_dirs))]
+        for name_i, dir_i, name_j, dir_j in pairs:
+            if equality_test(dir_i.dot(dir_j), 1):
+                return f"{name_i} and {name_j} must point in different cardinal directions"
+        # Main pair must be antiparallel
+        if not equality_test(dir_main1.dot(dir_main2), -1):
+            return "main_butt_timber_1 and main_butt_timber_2 must be antiparallel (pointing towards each other)"
+        # Awk pair must be antiparallel
+        if not equality_test(dir_awk1.dot(dir_awk2), -1):
+            return "awk_1 and awk_2 must be antiparallel (pointing towards each other)"
+        return None
+
+
+@dataclass(frozen=True)
 class SpliceJointTimberArrangement:
     timber1: Timber
     timber2: Timber
