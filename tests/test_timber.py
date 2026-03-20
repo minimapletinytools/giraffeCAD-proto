@@ -1266,9 +1266,11 @@ class TestFrameBoundingBox:
         
         # Create a butt joint where timberB's TOP end is cut to butt against timberA
         joint = cut_plain_butt_joint_on_face_aligned_timbers(
-            receiving_timber=timberA,
-            butt_timber=timberB,
-            butt_end=TimberReferenceEnd.TOP
+            ButtJointTimberArrangement(
+                receiving_timber=timberA,
+                butt_timber=timberB,
+                butt_timber_end=TimberReferenceEnd.TOP
+            )
         )
         
         # Create frame from the joint

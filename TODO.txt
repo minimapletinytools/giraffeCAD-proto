@@ -290,6 +290,40 @@ DONE-3d view
   DONE-add focus button
 DONE-move out CSS html and frontend scripts into their own thing
 
+
+-add sensibility checks to arrangement (so basically they intersect at least a little bit)
+  -maybe add a generic check intersection function so we can get more precise about it within the joit fuctions.
+
+-double/triple/quadruple butt arrangement
+  -assert for butt timbers pointing in cardinal directions
+  -check_face_aligned_and_cardinal checks that each butt timber is pointing in one of the 4 cardinal direction orthogonal to the receiving timber, and they should all be different
+  
+-add assertion that timbers are overlapping the right amount
+-add tongue and fork joint
+-create experiments folder 
+  -do image to frame experiments (some with chain of reason promptitng, some without)
+
+-feature selection
+  -add feature selection support to viewer
+  -add some selection/feature selection info panel
+  -if 2 feature sselected, do measurement rendering between them :O
+  -byd efault, noly features are the 6 sides of a timber
+    -you can usually not select the end face so how can we tell which is the top/bottom?
+      -maybe add an arrow gizmo pointing to the top in the center of teh timber?
+      -or for features that coincide with local cardinal dircetions of timber you can flag it
+  -figure out how to do feature metadata and allow feature selection?
+    -review yoru notes
+    -you also wanted key named features for auto generation of drawings???
+
+-do assembly metadata
+  -create assemblydirection class 
+  -for accessories, have assemblydriection but also have locking accessory
+  -can you rename accessory btw??
+
+-saw/chisel metadata 
+  -allow features to be labeled as saw or chisel so we can do cutting instructions
+  -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
+
 -how dose selection change after refresh?
 -highlight timebrs in timber list with selection, or just get rid of timber list?
 -seemst o freak out after a python cash, need to add error handling

@@ -84,7 +84,11 @@ class TestMiterJoint:
         timberB = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
         
         # Create miter joint
-        joint = cut_plain_miter_joint_on_face_aligned_timbers(timberA, TimberReferenceEnd.BOTTOM, timberB, TimberReferenceEnd.BOTTOM)
+        arrangement = CornerJointTimberArrangement(
+            timber1=timberA, timber2=timberB,
+            timber1_end=TimberReferenceEnd.BOTTOM, timber2_end=TimberReferenceEnd.BOTTOM
+        )
+        joint = cut_plain_miter_joint_on_face_aligned_timbers(arrangement)
 
         # check very basic stuff
         assert joint is not None
@@ -143,7 +147,11 @@ class TestMiterJoint:
             timberB = create_standard_horizontal_timber(direction=dirB, length=100, size=(6, 6), position=(0, 0, 0))
             
             # Create miter joint
-            joint = cut_plain_miter_joint_on_face_aligned_timbers(timberA, TimberReferenceEnd.BOTTOM, timberB, TimberReferenceEnd.BOTTOM)
+            arrangement = CornerJointTimberArrangement(
+                timber1=timberA, timber2=timberB,
+                timber1_end=TimberReferenceEnd.BOTTOM, timber2_end=TimberReferenceEnd.BOTTOM
+            )
+            joint = cut_plain_miter_joint_on_face_aligned_timbers(arrangement)
             
             # Verify the joint was created
             assert joint is not None, f"Failed to create joint for {description}"
@@ -170,11 +178,19 @@ class TestMiterJoint:
         # Attempting to create a miter joint between parallel timbers should raise an AssertionError
         # because the function requires perpendicular timbers
         with pytest.raises(AssertionError, match="perpendicular"):
-            cut_plain_miter_joint_on_face_aligned_timbers(timberA, TimberReferenceEnd.BOTTOM, timberB, TimberReferenceEnd.BOTTOM)
+            arrangement = CornerJointTimberArrangement(
+                timber1=timberA, timber2=timberB,
+                timber1_end=TimberReferenceEnd.BOTTOM, timber2_end=TimberReferenceEnd.BOTTOM
+            )
+            cut_plain_miter_joint_on_face_aligned_timbers(arrangement)
         
         # Test with anti-parallel timbers as well
         with pytest.raises(AssertionError, match="perpendicular"):
-            cut_plain_miter_joint_on_face_aligned_timbers(timberA, TimberReferenceEnd.BOTTOM, timberC, TimberReferenceEnd.BOTTOM)
+            arrangement = CornerJointTimberArrangement(
+                timber1=timberA, timber2=timberC,
+                timber1_end=TimberReferenceEnd.BOTTOM, timber2_end=TimberReferenceEnd.BOTTOM
+            )
+            cut_plain_miter_joint_on_face_aligned_timbers(arrangement)
 
 
         
@@ -192,7 +208,12 @@ class TestButtJoint:
         timberB = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
 
         # Create butt joint - timberB butts into timberA at timberB's BOTTOM end
-        joint = cut_plain_butt_joint_on_face_aligned_timbers(timberA, timberB, TimberReferenceEnd.BOTTOM)
+        arrangement = ButtJointTimberArrangement(
+            butt_timber=timberB,
+            receiving_timber=timberA,
+            butt_timber_end=TimberReferenceEnd.BOTTOM
+        )
+        joint = cut_plain_butt_joint_on_face_aligned_timbers(arrangement)
 
         # Verify joint structure
         assert joint is not None
@@ -256,11 +277,21 @@ class TestButtJoint:
         # Attempting to create a butt joint between parallel timbers should raise an AssertionError
         # because the function requires perpendicular timbers
         with pytest.raises(AssertionError, match="parallel"):
-            cut_plain_butt_joint_on_face_aligned_timbers(timberA, timberB, TimberReferenceEnd.BOTTOM)
+            arrangement = ButtJointTimberArrangement(
+                butt_timber=timberB,
+                receiving_timber=timberA,
+                butt_timber_end=TimberReferenceEnd.BOTTOM
+            )
+            cut_plain_butt_joint_on_face_aligned_timbers(arrangement)
         
         # Test with anti-parallel timbers as well
         with pytest.raises(AssertionError, match="parallel"):
-            cut_plain_butt_joint_on_face_aligned_timbers(timberA, timberC, TimberReferenceEnd.BOTTOM)
+            arrangement = ButtJointTimberArrangement(
+                butt_timber=timberC,
+                receiving_timber=timberA,
+                butt_timber_end=TimberReferenceEnd.BOTTOM
+            )
+            cut_plain_butt_joint_on_face_aligned_timbers(arrangement)
 
 
 class TestSpliceJoint:
@@ -278,8 +309,10 @@ class TestSpliceJoint:
         # Create splice joint at x=50 (where they meet)
         # TimberA TOP meets TimberB BOTTOM
         joint = cut_plain_butt_splice_joint_on_aligned_timbers(
-            timberA, TimberReferenceEnd.TOP, 
-            timberB, TimberReferenceEnd.BOTTOM
+            SpliceJointTimberArrangement(
+                timber1=timberA, timber2=timberB,
+                timber1_end=TimberReferenceEnd.TOP, timber2_end=TimberReferenceEnd.BOTTOM
+            )
         )
         
         # Verify joint structure
@@ -322,8 +355,10 @@ class TestSpliceJoint:
         splice_point = Matrix([Rational(0), Rational(0), Rational(120)])
         
         joint = cut_plain_butt_splice_joint_on_aligned_timbers(
-            timberA, TimberReferenceEnd.TOP,
-            timberB, TimberReferenceEnd.BOTTOM,
+            SpliceJointTimberArrangement(
+                timber1=timberA, timber2=timberB,
+                timber1_end=TimberReferenceEnd.TOP, timber2_end=TimberReferenceEnd.BOTTOM
+            ),
             splice_point
         )
         
@@ -358,8 +393,10 @@ class TestSpliceJoint:
         
         # Create splice joint (should meet in the middle at x=50)
         joint = cut_plain_butt_splice_joint_on_aligned_timbers(
-            timberA, TimberReferenceEnd.TOP,
-            timberB, TimberReferenceEnd.TOP
+            SpliceJointTimberArrangement(
+                timber1=timberA, timber2=timberB,
+                timber1_end=TimberReferenceEnd.TOP, timber2_end=TimberReferenceEnd.TOP
+            )
         )
         
         assert joint is not None
@@ -394,8 +431,10 @@ class TestSpliceJoint:
         # Should raise ValueError
         with pytest.raises(ValueError, match="must have parallel length axes"):
             cut_plain_butt_splice_joint_on_aligned_timbers(
-                timberA, TimberReferenceEnd.TOP,
-                timberB, TimberReferenceEnd.BOTTOM
+                SpliceJointTimberArrangement(
+                    timber1=timberA, timber2=timberB,
+                    timber1_end=TimberReferenceEnd.TOP, timber2_end=TimberReferenceEnd.BOTTOM
+                )
             )
 
 
@@ -411,7 +450,8 @@ class TestHouseJoint:
         housing_timber = create_centered_horizontal_timber(direction='x', length=100, size=(10, 10), zoffset=1)
         housed_timber = create_centered_horizontal_timber(direction='y', length=100, size=(10, 10), zoffset=-1)
 
-        joint = cut_plain_house_joint(housing_timber, housed_timber)
+        arrangement = CrossJointTimberArrangement(timber1=housing_timber, timber2=housed_timber)
+        joint = cut_plain_house_joint(arrangement)
         assert joint is not None
         assert len(joint.cut_timbers) == 2
         assert joint.cut_timbers["timberA"].timber == housing_timber
@@ -449,12 +489,14 @@ class TestHouseJoint:
         )
         
         # Create the housed joint
-        # Explicitly specify opposing faces: housing.FRONT (+Y) vs housed.LEFT (-Y)
-        joint = cut_plain_house_joint(
-            housing_timber, housed_timber,
-            housing_timber_cut_face=TimberFace.FRONT,
-            housed_timber_cut_face=TimberFace.LEFT
+        # Explicitly specify the housing timber cut face: FRONT (+Y)
+        # The housed timber cut face is automatically computed as the opposite
+        arrangement = CrossJointTimberArrangement(
+            timber1=housing_timber,
+            timber2=housed_timber,
+            front_face_on_timber1=TimberLongFace.FRONT
         )
+        joint = cut_plain_house_joint(arrangement)
         
         # Get the housing timber with its cut
         housing_cut_timber = joint.cut_timbers["timberA"]
@@ -520,7 +562,8 @@ class TestCrossLapJoint:
         timberA = create_centered_horizontal_timber(direction='x', length=100, size=(10, 10), zoffset=1)
         timberB = create_centered_horizontal_timber(direction='y', length=100, size=(10, 10), zoffset=-1)
 
-        joint = cut_plain_cross_lap_joint(timberA, timberB)
+        arrangement = CrossJointTimberArrangement(timber1=timberA, timber2=timberB)
+        joint = cut_plain_cross_lap_joint(arrangement)
 
         assert joint is not None
         assert len(joint.cut_timbers) == 2
@@ -594,11 +637,13 @@ class TestSpliceLapJoint:
         shoulder_distance = 2
         
         joint = cut_plain_splice_lap_joint_on_aligned_timbers(
-            top_lap_timber=timberA,
-            top_lap_timber_end=TimberReferenceEnd.TOP,
-            bottom_lap_timber=timberB,
-            bottom_lap_timber_end=TimberReferenceEnd.BOTTOM,
-            top_lap_timber_face=TimberLongFace.BACK,  # Use BACK (side face), not BOTTOM (end face)
+            arrangement=SpliceJointTimberArrangement(
+                timber1=timberA,
+                timber2=timberB,
+                timber1_end=TimberReferenceEnd.TOP,
+                timber2_end=TimberReferenceEnd.BOTTOM,
+                front_face_on_timber1=TimberLongFace.BACK
+            ),
             lap_length=lap_length,
             top_lap_shoulder_position_from_top_lap_shoulder_timber_end=shoulder_distance,
             lap_depth=None  # Use default
@@ -712,10 +757,10 @@ class TestCutTimberDeepHash:
         timberA_1 = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
         timberB_1 = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
         joint_1 = cut_plain_miter_joint(
-            timberA_1,
-            TimberReferenceEnd.BOTTOM,
-            timberB_1,
-            TimberReferenceEnd.BOTTOM,
+            CornerJointTimberArrangement(
+                timber1=timberA_1, timber2=timberB_1,
+                timber1_end=TimberReferenceEnd.BOTTOM, timber2_end=TimberReferenceEnd.BOTTOM,
+            )
         )
         hash_1 = joint_1.cut_timbers["timberA"].deep_hash()
 
@@ -727,10 +772,10 @@ class TestCutTimberDeepHash:
             position=(Rational(1, 10), 0, 0),
         )
         joint_2 = cut_plain_miter_joint(
-            timberA_2,
-            TimberReferenceEnd.BOTTOM,
-            timberB_2,
-            TimberReferenceEnd.BOTTOM,
+            CornerJointTimberArrangement(
+                timber1=timberA_2, timber2=timberB_2,
+                timber1_end=TimberReferenceEnd.BOTTOM, timber2_end=TimberReferenceEnd.BOTTOM,
+            )
         )
         hash_2 = joint_2.cut_timbers["timberA"].deep_hash()
 

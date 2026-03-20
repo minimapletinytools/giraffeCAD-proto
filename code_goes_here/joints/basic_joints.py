@@ -52,7 +52,13 @@ def cut_basic_miter_joint(timberA: TimberLike, timberA_end: TimberReferenceEnd, 
     """
     assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
     assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
-    return cut_plain_miter_joint(timberA, timberA_end, timberB, timberB_end)
+    arrangement = CornerJointTimberArrangement(
+        timber1=timberA,
+        timber2=timberB,
+        timber1_end=timberA_end,
+        timber2_end=timberB_end
+    )
+    return cut_plain_miter_joint(arrangement)
 
 
 def cut_basic_miter_joint_on_face_aligned_timbers(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd) -> Joint:
@@ -73,7 +79,13 @@ def cut_basic_miter_joint_on_face_aligned_timbers(timberA: TimberLike, timberA_e
     """
     assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
     assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
-    return cut_plain_miter_joint_on_face_aligned_timbers(timberA, timberA_end, timberB, timberB_end)
+    arrangement = CornerJointTimberArrangement(
+        timber1=timberA,
+        timber2=timberB,
+        timber1_end=timberA_end,
+        timber2_end=timberB_end
+    )
+    return cut_plain_miter_joint_on_face_aligned_timbers(arrangement)
 
 
 def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: TimberLike, butt_timber: TimberLike, butt_end: TimberReferenceEnd) -> Joint:
@@ -92,7 +104,12 @@ def cut_basic_butt_joint_on_face_aligned_timbers(receiving_timber: TimberLike, b
         Joint object containing the cut butt timber and uncut receiving timber.
     """
     assert isinstance(butt_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(butt_end).__name__}"
-    return cut_plain_butt_joint_on_face_aligned_timbers(receiving_timber, butt_timber, butt_end)
+    arrangement = ButtJointTimberArrangement(
+        receiving_timber=receiving_timber,
+        butt_timber=butt_timber,
+        butt_timber_end=butt_end
+    )
+    return cut_plain_butt_joint_on_face_aligned_timbers(arrangement)
 
 
 def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: TimberLike, timberA_end: TimberReferenceEnd, timberB: TimberLike, timberB_end: TimberReferenceEnd) -> Joint:
@@ -113,7 +130,13 @@ def cut_basic_butt_splice_joint_on_aligned_timbers(timberA: TimberLike, timberA_
     """
     assert isinstance(timberA_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberA_end).__name__}"
     assert isinstance(timberB_end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(timberB_end).__name__}"
-    return cut_plain_butt_splice_joint_on_aligned_timbers(timberA, timberA_end, timberB, timberB_end)
+    arrangement = SpliceJointTimberArrangement(
+        timber1=timberA,
+        timber2=timberB,
+        timber1_end=timberA_end,
+        timber2_end=timberB_end
+    )
+    return cut_plain_butt_splice_joint_on_aligned_timbers(arrangement)
 
 
 def cut_basic_cross_lap_joint(timberA: TimberLike, timberB: TimberLike) -> Joint:
@@ -130,7 +153,11 @@ def cut_basic_cross_lap_joint(timberA: TimberLike, timberB: TimberLike) -> Joint
     Returns:
         Joint object containing the two CutTimbers.
     """
-    return cut_plain_cross_lap_joint(timberA, timberB)
+    arrangement = CrossJointTimberArrangement(
+        timber1=timberA,
+        timber2=timberB
+    )
+    return cut_plain_cross_lap_joint(arrangement)
 
 
 def cut_basic_house_joint(housing_timber: TimberLike, housed_timber: TimberLike) -> Joint:
@@ -147,7 +174,11 @@ def cut_basic_house_joint(housing_timber: TimberLike, housed_timber: TimberLike)
     Returns:
         Joint object containing both timbers.
     """
-    return cut_plain_house_joint(housing_timber, housed_timber)
+    arrangement = CrossJointTimberArrangement(
+        timber1=housing_timber,
+        timber2=housed_timber
+    )
+    return cut_plain_house_joint(arrangement)
 
 
 def cut_basic_splice_lap_joint_on_aligned_timbers(

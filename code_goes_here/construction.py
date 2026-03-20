@@ -1039,6 +1039,14 @@ class SpliceJointTimberArrangement:
     def __post_init__(self):
         require_check(self.check_types_valid())
 
+    def check_face_aligned_and_parallel_axis(self) -> Optional[str]:
+        """Return None if timbers are face-aligned and have parallel length axes, else an error message."""
+        if not are_timbers_face_aligned(self.timber1, self.timber2):
+            return "Timbers must be face-aligned"
+        if not are_timbers_parallel(self.timber1, self.timber2):
+            return "Timbers must have parallel length axes"
+        return None
+
 
 @dataclass(frozen=True)
 class CornerJointTimberArrangement:
@@ -1065,11 +1073,35 @@ class CornerJointTimberArrangement:
     def __post_init__(self):
         require_check(self.check_types_valid())
 
+    def compute_normalized_timber_cross_product(self) -> Direction3D:
+        """Compute the normalized cross product of timber1 and timber2 length directions."""
+        return normalize_vector(cross_product(self.timber1.get_length_direction_global(), self.timber2.get_length_direction_global()))
+
+    def check_plane_aligned(self) -> Optional[str]:
+        """Return None if timbers are plane-aligned and front face is in plane, else an error message."""
+        if not are_timbers_plane_aligned(self.timber1, self.timber2):
+            return "Timbers must be plane-aligned"
+        if self.front_face_on_timber1 is not None and not are_vectors_parallel(
+            self.timber1.get_face_direction_global(self.front_face_on_timber1),
+            self.compute_normalized_timber_cross_product(),
+        ):
+            return "front_face_on_timber1 must point in the aligned plane normal"
+        return None
+
+    def check_face_aligned_and_orthogonal(self) -> Optional[str]:
+        """Return None if timbers are face-aligned and orthogonal, else an error message."""
+        if not are_timbers_face_aligned(self.timber1, self.timber2):
+            return "Timbers must be face-aligned"
+        if not are_timbers_orthogonal(self.timber1, self.timber2):
+            return "Timbers must be orthogonal"
+        return None
+
 
 @dataclass(frozen=True)
 class CrossJointTimberArrangement:
     timber1: Timber
     timber2: Timber
+    front_face_on_timber1: Optional[TimberLongFace] = None
 
     def check_types_valid(self) -> Optional[str]:
         """Return None if all types are valid, otherwise an error message for use in assert."""
@@ -1077,10 +1109,35 @@ class CrossJointTimberArrangement:
             return f"timber1 must be Timber, got {type(self.timber1).__name__}"
         if not isinstance(self.timber2, Timber):
             return f"timber2 must be Timber, got {type(self.timber2).__name__}"
+        if self.front_face_on_timber1 is not None and not isinstance(self.front_face_on_timber1, TimberLongFace):
+            return f"front_face_on_timber1 must be TimberLongFace or None, got {type(self.front_face_on_timber1).__name__}"
         return None
 
     def __post_init__(self):
         require_check(self.check_types_valid())
+
+    def compute_normalized_timber_cross_product(self) -> Direction3D:
+        """Compute the normalized cross product of timber1 and timber2 length directions."""
+        return normalize_vector(cross_product(self.timber1.get_length_direction_global(), self.timber2.get_length_direction_global()))
+
+    def check_plane_aligned(self) -> Optional[str]:
+        """Return None if timbers are plane-aligned and front face is in plane, else an error message."""
+        if not are_timbers_plane_aligned(self.timber1, self.timber2):
+            return "Timbers must be plane-aligned"
+        if self.front_face_on_timber1 is not None and not are_vectors_parallel(
+            self.timber1.get_face_direction_global(self.front_face_on_timber1),
+            self.compute_normalized_timber_cross_product(),
+        ):
+            return "front_face_on_timber1 must point in the aligned plane normal"
+        return None
+
+    def check_face_aligned_and_orthogonal(self) -> Optional[str]:
+        """Return None if timbers are face-aligned and orthogonal, else an error message."""
+        if not are_timbers_face_aligned(self.timber1, self.timber2):
+            return "Timbers must be face-aligned"
+        if not are_timbers_orthogonal(self.timber1, self.timber2):
+            return "Timbers must be orthogonal"
+        return None
 
 
 @dataclass(frozen=True)

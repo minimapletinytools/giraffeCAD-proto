@@ -62,10 +62,13 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
     )
     timberA = replace(arrangement.timber1, ticket=Ticket("MiterJoint_TimberA"))
     timberB = replace(arrangement.timber2, ticket=Ticket("MiterJoint_TimberB"))
-    joint = cut_plain_miter_joint(
-        timberA, arrangement.timber1_end,
-        timberB, arrangement.timber2_end,
+    miter_arrangement = CornerJointTimberArrangement(
+        timber1=timberA,
+        timber2=timberB,
+        timber1_end=arrangement.timber1_end,
+        timber2_end=arrangement.timber2_end
     )
+    joint = cut_plain_miter_joint(miter_arrangement)
     return list(joint.cut_timbers.values())
 
 
@@ -88,10 +91,13 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
     timberA = replace(arrangement.timber2, ticket=Ticket("MiterFaceAligned_TimberA"))  # +X direction
     timberB = replace(arrangement.timber1, ticket=Ticket("MiterFaceAligned_TimberB"))  # +Y direction
 
-    joint = cut_plain_miter_joint_on_face_aligned_timbers(
-        timberA, TimberReferenceEnd.BOTTOM,
-        timberB, TimberReferenceEnd.BOTTOM
+    miter_arrangement = CornerJointTimberArrangement(
+        timber1=timberA,
+        timber2=timberB,
+        timber1_end=TimberReferenceEnd.BOTTOM,
+        timber2_end=TimberReferenceEnd.BOTTOM
     )
+    joint = cut_plain_miter_joint_on_face_aligned_timbers(miter_arrangement)
 
     return list(joint.cut_timbers.values())
 
@@ -115,11 +121,12 @@ def make_butt_joint_example(position: V3) -> list[CutTimber]:
     receiving_timber = replace(arrangement.receiving_timber, ticket=Ticket("ButtJoint_Receiving"))
     butt_timber = replace(arrangement.butt_timber, ticket=Ticket("ButtJoint_Butt"))
 
-    joint = cut_plain_butt_joint_on_face_aligned_timbers(
-        receiving_timber,
-        butt_timber,
-        arrangement.butt_timber_end
+    butt_arrangement = ButtJointTimberArrangement(
+        receiving_timber=receiving_timber,
+        butt_timber=butt_timber,
+        butt_timber_end=arrangement.butt_timber_end
     )
+    joint = cut_plain_butt_joint_on_face_aligned_timbers(butt_arrangement)
 
     return list(joint.cut_timbers.values())
 
@@ -143,9 +150,14 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
     timberA = replace(arrangement.timber1, ticket=Ticket("SpliceJoint_TimberA"))
     timberB = replace(arrangement.timber2, ticket=Ticket("SpliceJoint_TimberB"))
 
+    splice_arrangement = SpliceJointTimberArrangement(
+        timber1=timberA,
+        timber2=timberB,
+        timber1_end=arrangement.timber1_end,
+        timber2_end=arrangement.timber2_end
+    )
     joint = cut_plain_butt_splice_joint_on_aligned_timbers(
-        timberA, arrangement.timber1_end,
-        timberB, arrangement.timber2_end,
+        splice_arrangement,
         splice_point=position  # Meet at the specified position
     )
 
@@ -193,7 +205,11 @@ def make_house_joint_example(position: V3) -> list[CutTimber]:
     )
 
     # Create house joint
-    joint = cut_plain_house_joint(housing_timber, housed_timber)
+    house_arrangement = CrossJointTimberArrangement(
+        timber1=housing_timber,
+        timber2=housed_timber
+    )
+    joint = cut_plain_house_joint(house_arrangement)
 
     return list(joint.cut_timbers.values())
 
