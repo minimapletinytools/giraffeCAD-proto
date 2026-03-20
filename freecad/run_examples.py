@@ -101,8 +101,12 @@ def create_anthology_pattern_book():
 
     if scan_result.errors:
         print(f"Encountered {len(scan_result.errors)} module import errors:")
-        for error in scan_result.errors:
-            print(f"  ⚠ {error}")
+        for module in scan_result.modules:
+            if module.load_error is not None:
+                print(f"  ⚠ {module.relative_path}: {module.load_error}")
+                if module.load_error_traceback:
+                    for line in module.load_error_traceback.splitlines():
+                        print(f"    {line}")
     
     print(f"Anthology PatternBook created with {len(anthology_book.list_patterns())} patterns")
     print(f"Available groups: {', '.join(anthology_book.list_groups())}")

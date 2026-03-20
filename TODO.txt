@@ -293,6 +293,10 @@ DONE-double/triple/quadruple butt arrangement
   -assert for butt timbers pointing in cardinal directions
   -check_face_aligned_and_cardinal checks that each butt timber is pointing in one of the 4 cardinal direction orthogonal to the receiving timber, and they should all be different
 
+-bugs
+  -fix the error you have in one of your examples
+  -fix csg test error
+
 -lincoln log joints?
 
 -splined opposing double butt joint :D (could have drawbore or key)

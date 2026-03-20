@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import importlib.util
 import sys
+import traceback
 from typing import Any, Dict, List, Optional, Tuple
 
 from .patternbook import PatternBook
@@ -26,6 +27,7 @@ class LibrarianModuleRecord:
     example: Optional[Any] = None
     warnings: List[str] = field(default_factory=list)
     load_error: Optional[str] = None
+    load_error_traceback: Optional[str] = None
 
 
 @dataclass
@@ -75,7 +77,7 @@ def _make_dynamic_module_name(root_folder: Path, file_path: Path) -> str:
     return f"{_DYNAMIC_MODULE_PREFIX}_{flattened}"
 
 
-def _load_module_from_path(root_folder: Path, file_path: Path) -> Tuple[Optional[Any], Optional[str], str]:
+def _load_module_from_path(root_folder: Path, file_path: Path) -> Tuple[Optional[Any], Optional[str], Optional[str], str]:
     module_name = _make_dynamic_module_name(root_folder, file_path)
     attempted_file = str(file_path)
 
@@ -84,18 +86,19 @@ def _load_module_from_path(root_folder: Path, file_path: Path) -> Tuple[Optional
 
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None or spec.loader is None:
-        return None, f"{attempted_file}: Could not create import spec", module_name
+        return None, f"{attempted_file}: Could not create import spec", None, module_name
 
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
 
     try:
         spec.loader.exec_module(module)
-        return module, None, module_name
+        return module, None, None, module_name
     except Exception as exc:
         if module_name in sys.modules:
             del sys.modules[module_name]
-        return None, f"{attempted_file}: {type(exc).__name__}: {exc}", module_name
+        tb = traceback.format_exc()
+        return None, f"{attempted_file}: {type(exc).__name__}: {exc}", tb, module_name
 
 
 def _resolve_patternbook(module: Any, warnings: List[str]) -> Optional[PatternBook]:
@@ -154,12 +157,13 @@ def scan_library_folder(folder_path: str) -> LibrarianScanResult:
 
     for file_path in python_files:
         relative_path = str(file_path.relative_to(root_folder))
-        module, load_error, module_name = _load_module_from_path(root_folder, file_path)
+        module, load_error, load_error_traceback, module_name = _load_module_from_path(root_folder, file_path)
 
         record = LibrarianModuleRecord(
             relative_path=relative_path,
             module_name=module_name,
             load_error=load_error,
+            load_error_traceback=load_error_traceback,
         )
 
         if module is not None:
