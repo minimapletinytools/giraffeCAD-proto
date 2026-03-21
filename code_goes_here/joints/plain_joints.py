@@ -7,7 +7,8 @@ from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.rule import *
 from .joint_shavings import *
-from code_goes_here.measuring import measure_top_center_position, measure_bottom_center_position
+from code_goes_here.measuring import measure_top_center_position, measure_bottom_center_position, mark_distance_from_end_along_centerline, get_point_on_face_global, Space
+from code_goes_here.joints.mortise_and_tenon_joint import measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber
 
 
 # ============================================================================
@@ -329,6 +330,9 @@ def cut_tongue_and_fork_corner_joint(
         fork_timber.get_length_direction_global(),
     ), "Timbers cannot be parallel for a tongue-and-fork corner joint"
 
+    # -------------------------------------------------------------------------
+    # Tongue geometry: shared plane normal, thickness, width
+    # -------------------------------------------------------------------------
     shared_plane_normal_hint = arrangement.compute_normalized_timber_cross_product()
     tongue_normal_face = tongue_timber.get_closest_oriented_long_face_from_global_direction(shared_plane_normal_hint)
     tongue_normal_direction = tongue_timber.get_face_direction_global(tongue_normal_face)
@@ -353,121 +357,141 @@ def cut_tongue_and_fork_corner_joint(
     tongue_end_direction = tongue_timber.get_face_direction_global(tongue_end)
     fork_end_direction = fork_timber.get_face_direction_global(fork_end)
 
-    # Shoulders are determined by the entry face on the opposite timber.
-    fork_entry_face = fork_timber.get_closest_oriented_face_from_global_direction(-tongue_end_direction)
-    tongue_shoulder_plane = measure_pat_shoulder_plane_from_centerline_to_reference_face(
-        shoulder_timber=tongue_timber,
-        reference_timber=fork_timber,
-        reference_face=fork_entry_face,
+    # -------------------------------------------------------------------------
+    # Shoulder plane (M&T pattern): compute on fork timber, mark onto tongue
+    # -------------------------------------------------------------------------
+    butt_arrangement_for_shoulder = ButtJointTimberArrangement(
+        receiving_timber=fork_timber,
+        butt_timber=tongue_timber,
+        butt_timber_end=tongue_end,
     )
+    # Push the shoulder plane from the fork's centerline to its entry face
+    fork_entry_long_face = fork_timber.get_closest_oriented_long_face_from_global_direction(-tongue_end_direction)
+    fork_shoulder_distance = fork_timber.get_size_in_face_normal_axis(fork_entry_long_face) / Rational(2)
 
-    tongue_entry_face = tongue_timber.get_closest_oriented_face_from_global_direction(-fork_end_direction)
-    fork_slot_stop_plane = measure_pat_shoulder_plane_from_centerline_to_reference_face(
-        shoulder_timber=fork_timber,
-        reference_timber=tongue_timber,
-        reference_face=tongue_entry_face,
+    shoulder_plane = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+        butt_arrangement_for_shoulder, fork_shoulder_distance
     )
+    shoulder_from_tongue_end_mark = mark_distance_from_end_along_centerline(
+        shoulder_plane, tongue_timber, tongue_end
+    )
+    shoulder_point_global = shoulder_from_tongue_end_mark.measure().position
 
-    tongue_length_direction = tongue_timber.get_length_direction_global()
-    fork_length_direction = fork_timber.get_length_direction_global()
-
-    tongue_bottom = tongue_timber.get_bottom_position_global()
-    fork_bottom = fork_timber.get_bottom_position_global()
-
-    tongue_shoulder_point = tongue_shoulder_plane.point
-
-    tongue_marking_origin_global = tongue_shoulder_point + tongue_normal_direction * tongue_position
+    # -------------------------------------------------------------------------
+    # Marking space at shoulder (M&T pattern)
+    # -------------------------------------------------------------------------
+    marking_origin_global = shoulder_point_global + tongue_normal_direction * tongue_position
 
     tongue_orientation_global = Orientation.from_z_and_y(
         z_direction=normalize_vector(tongue_end_direction),
         y_direction=normalize_vector(tongue_normal_direction),
     )
+    marking_space_transform = Transform(position=marking_origin_global, orientation=tongue_orientation_global)
+    marking_space = Space(transform=marking_space_transform)
 
+    # -------------------------------------------------------------------------
+    # Tongue prism and shoulder half-space (M&T pattern)
+    # -------------------------------------------------------------------------
     tongue_back_extension = max(tongue_timber.size[0], tongue_timber.size[1])
     tongue_prism_global = RectangularPrism(
         size=create_v2(tongue_width, tongue_thickness),
-        transform=Transform(position=tongue_marking_origin_global, orientation=tongue_orientation_global),
+        transform=marking_space.transform,
         start_distance=-tongue_back_extension,
         end_distance=tongue_timber.length,
     )
 
-    tongue_shoulder_half_space_global = HalfSpace(
-        normal=tongue_end_direction,
-        offset=safe_dot_product(tongue_end_direction, tongue_shoulder_point),
+    # Shoulder half-space: normal = -shoulder_plane.normal (points from fork toward tongue end)
+    shoulder_half_space_global = HalfSpace(
+        normal=-shoulder_plane.normal,
+        offset=safe_dot_product(-shoulder_plane.normal, marking_space.transform.position),
     )
 
     tongue_prism_local = adopt_csg(None, tongue_timber.transform, tongue_prism_global)
-    tongue_shoulder_half_space_local = adopt_csg(None, tongue_timber.transform, tongue_shoulder_half_space_global)
+    shoulder_half_space_local = adopt_csg(None, tongue_timber.transform, shoulder_half_space_global)
 
     tongue_negative_csg = Difference(
-        base=tongue_shoulder_half_space_local,
+        base=shoulder_half_space_local,
         subtract=[tongue_prism_local],
     )
 
-    if fork_end == TimberReferenceEnd.TOP:
-        fork_end_center = measure_top_center_position(fork_timber).position
-    else:
-        fork_end_center = measure_bottom_center_position(fork_timber).position
+    # -------------------------------------------------------------------------
+    # Fork slot: depth extends to the fork's far face so the slot matches
+    # the tongue after its end-cut extension (same orientation as tongue)
+    # -------------------------------------------------------------------------
+    fork_entry_long_face_for_end_cut = fork_timber.get_closest_oriented_long_face_from_global_direction(-tongue_end_direction)
+    fork_far_face = fork_entry_long_face_for_end_cut.to.face().get_opposite_face()
+    fork_far_face_normal_global = fork_timber.get_face_direction_global(fork_far_face)
+    fork_far_face_point_global = get_point_on_face_global(fork_far_face, fork_timber)
 
-    fork_slot_length_direction = -fork_end_direction
+    # Slot depth = distance from shoulder to fork far face along tongue direction
     fork_slot_depth = safe_dot_product(
-        fork_slot_stop_plane.point - fork_end_center,
-        fork_slot_length_direction,
+        fork_far_face_point_global - shoulder_point_global,
+        normalize_vector(tongue_end_direction),
     )
     assert safe_compare(fork_slot_depth, Comparison.GT), \
         "Fork slot depth must be > 0; check timber arrangement and end selections"
 
-    fork_marking_origin_global = fork_end_center + tongue_normal_direction * tongue_position
-    fork_orientation_global = Orientation.from_z_and_y(
-        z_direction=normalize_vector(fork_slot_length_direction),
-        y_direction=normalize_vector(tongue_normal_direction),
-    )
-
-    fork_slot_back_extension = max(fork_timber.size[0], fork_timber.size[1])
+    # Fork slot uses the same orientation as the tongue prism so the slot
+    # receives the tongue correctly at any joint angle
+    fork_slot_back_extension = max(fork_timber.size[0], fork_timber.size[1]) * Rational(2)
     fork_slot_prism_global = RectangularPrism(
         size=create_v2(tongue_width, tongue_thickness),
-        transform=Transform(position=fork_marking_origin_global, orientation=fork_orientation_global),
+        transform=marking_space.transform,
         start_distance=-fork_slot_back_extension,
         end_distance=fork_slot_depth,
     )
     fork_negative_csg = adopt_csg(None, fork_timber.transform, fork_slot_prism_global)
 
-    # End cut on tongue timber aligns with fork face opposite where tongue enters.
-    fork_opposite_face = fork_entry_face.get_opposite_face()
-    tongue_end_cut_plane = measure_pat_shoulder_plane_from_centerline_to_reference_face(
-        shoulder_timber=tongue_timber,
-        reference_timber=fork_timber,
-        reference_face=fork_opposite_face,
-    )
-    tongue_cut_distance_from_bottom = safe_dot_product(
-        tongue_end_cut_plane.point - tongue_bottom,
-        tongue_length_direction,
-    )
-    tongue_distance_from_end = (
-        tongue_timber.length - tongue_cut_distance_from_bottom
-        if tongue_end == TimberReferenceEnd.TOP
-        else tongue_cut_distance_from_bottom
-    )
-    tongue_end_cut = Cutting.make_end_cut(tongue_timber, tongue_end, tongue_distance_from_end)
+    # -------------------------------------------------------------------------
+    # End cuts: each timber is cut to align with the far face of the
+    # opposing timber (the face opposite the entry face).  The cut planes
+    # use the actual face orientation of the opposing timber so they are
+    # correct at any joint angle.
+    # -------------------------------------------------------------------------
 
-    # End cut on fork timber aligns with tongue face opposite where fork enters.
-    tongue_opposite_face = tongue_entry_face.get_opposite_face()
-    fork_end_cut_plane = measure_pat_shoulder_plane_from_centerline_to_reference_face(
-        shoulder_timber=fork_timber,
-        reference_timber=tongue_timber,
-        reference_face=tongue_opposite_face,
-    )
-    fork_cut_distance_from_bottom = safe_dot_product(
-        fork_end_cut_plane.point - fork_bottom,
-        fork_length_direction,
-    )
-    fork_distance_from_end = (
-        fork_timber.length - fork_cut_distance_from_bottom
-        if fork_end == TimberReferenceEnd.TOP
-        else fork_cut_distance_from_bottom
-    )
-    fork_end_cut = Cutting.make_end_cut(fork_timber, fork_end, fork_distance_from_end)
+    # Tongue end cut — aligns with the fork face opposite the entry face
+    # (fork_far_face already computed above for slot depth)
 
+    # HalfSpace normal points in the tongue end direction (away from the tongue body)
+    tongue_end_hs_normal_global = (
+        fork_far_face_normal_global
+        if safe_dot_product(fork_far_face_normal_global, tongue_end_direction) > 0
+        else -fork_far_face_normal_global
+    )
+    # Convert to tongue timber local coordinates
+    from code_goes_here.rule import safe_transform_vector
+    tongue_end_cut_local_normal = safe_transform_vector(
+        tongue_timber.orientation.matrix.T, tongue_end_hs_normal_global
+    )
+    tongue_end_cut_local_offset = (
+        safe_dot_product(tongue_end_hs_normal_global, fork_far_face_point_global)
+        - safe_dot_product(tongue_end_hs_normal_global, tongue_timber.get_bottom_position_global())
+    )
+    tongue_end_cut = HalfSpace(normal=tongue_end_cut_local_normal, offset=tongue_end_cut_local_offset)
+
+    # Fork end cut — aligns with the tongue face opposite the entry face
+    tongue_entry_long_face = tongue_timber.get_closest_oriented_long_face_from_global_direction(-fork_end_direction)
+    tongue_far_face = tongue_entry_long_face.to.face().get_opposite_face()
+    tongue_far_face_normal_global = tongue_timber.get_face_direction_global(tongue_far_face)
+    tongue_far_face_point_global = get_point_on_face_global(tongue_far_face, tongue_timber)
+
+    fork_end_hs_normal_global = (
+        tongue_far_face_normal_global
+        if safe_dot_product(tongue_far_face_normal_global, fork_end_direction) > 0
+        else -tongue_far_face_normal_global
+    )
+    fork_end_cut_local_normal = safe_transform_vector(
+        fork_timber.orientation.matrix.T, fork_end_hs_normal_global
+    )
+    fork_end_cut_local_offset = (
+        safe_dot_product(fork_end_hs_normal_global, tongue_far_face_point_global)
+        - safe_dot_product(fork_end_hs_normal_global, fork_timber.get_bottom_position_global())
+    )
+    fork_end_cut = HalfSpace(normal=fork_end_cut_local_normal, offset=fork_end_cut_local_offset)
+
+    # -------------------------------------------------------------------------
+    # Assemble cuts and joint
+    # -------------------------------------------------------------------------
     tongue_cut = Cutting(
         timber=tongue_timber,
         maybe_top_end_cut=tongue_end_cut if tongue_end == TimberReferenceEnd.TOP else None,

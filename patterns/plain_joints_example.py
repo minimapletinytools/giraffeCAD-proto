@@ -124,7 +124,7 @@ def make_tongue_and_fork_corner_joint_135_example(position: V3) -> list[CutTimbe
     """
     arrangement = create_canonical_example_corner_joint_timbers(
         # TODO change to 135...
-        corner_angle=degrees(134),
+        corner_angle=degrees(138),
         position=position,
     )
     joint = cut_tongue_and_fork_corner_joint(arrangement)
