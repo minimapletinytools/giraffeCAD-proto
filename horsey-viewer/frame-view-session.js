@@ -63,7 +63,14 @@ class FrameViewSession {
             void this.dispose();
         });
         this.panel.webview.onDidReceiveMessage((message) => {
-            if (!message || message.type !== 'viewerLog') {
+            if (!message) {
+                return;
+            }
+            if (message.type === 'exportFiles') {
+                void this.handleExportRequest();
+                return;
+            }
+            if (message.type !== 'viewerLog') {
                 return;
             }
             const eventName = typeof message.event === 'string' ? message.event : 'unknown';
@@ -175,6 +182,34 @@ class FrameViewSession {
             width: result.width,
             height: result.height,
         };
+    }
+
+    async handleExportRequest() {
+        if (this.isDisposed || !this.panel) {
+            return;
+        }
+
+        this.log('[export] Starting STL + STEP export...');
+        try {
+            await this.ensureRunnerSession();
+            const result = await this.runnerSession.request('export_files', {
+                filePath: this.filePath,
+            });
+            this.panel.webview.postMessage({
+                type: 'exportResult',
+                ok: true,
+                paths: result.paths || [],
+            });
+            this.log(`[export] Done — wrote ${(result.paths || []).length} file(s)`);
+        } catch (error) {
+            const details = this.extractRunnerErrorDetails(error);
+            this.panel.webview.postMessage({
+                type: 'exportResult',
+                ok: false,
+                error: details.message || 'Export failed',
+            });
+            this.log(`[export] Failed: ${details.message}`);
+        }
     }
 
     async onFileChanged(source) {

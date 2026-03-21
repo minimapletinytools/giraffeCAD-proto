@@ -175,3 +175,5 @@ horsey-viewer/.vscode-test-web/
 # Node.js / npm
 node_modules/
 package-lock.json
+patterns/structures/oscarshed_export
+patterns/structures/horsey_example_export

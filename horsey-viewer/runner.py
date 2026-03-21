@@ -56,6 +56,7 @@ if _project_root is not None:
         os.execv(str(_venv_python), [str(_venv_python)] + sys.argv)
         # os.execv replaces the current process; code below never runs if it succeeds
 
+
 TARGET_MODULE_NAME = "_horsey_viewer_target"
 
 
@@ -443,7 +444,7 @@ def make_ready_event(state: RunnerState) -> Dict[str, Any]:
     return {
         "type": "ready",
         "examplePath": str(state.file_path),
-        "commands": ["ping", "reload_example", "get_frame", "get_geometry", "get_member", "shutdown"],
+        "commands": ["ping", "reload_example", "get_frame", "get_geometry", "get_member", "export_files", "shutdown"],
         "frame": {
             "name": frame_summary["name"],
             "timber_count": frame_summary["timber_count"],
@@ -487,6 +488,41 @@ def get_member_result(frame: Any, member_name: str) -> Dict[str, Any]:
     raise KeyError(f"No timber named '{member_name}' in frame")
 
 
+def export_frame_files(state: RunnerState) -> Dict[str, Any]:
+    """Export the current frame to STL and (if cadquery is available) STEP files."""
+    from code_goes_here.blueprint import (
+        export_frame_stl,
+        _TRIMESH_AVAILABLE,
+    )
+
+    # Export directory lives next to the example file
+    export_dir = state.file_path.parent / f"{state.file_path.stem}_export"
+    paths: list[str] = []
+
+    # --- STL ---
+    if _TRIMESH_AVAILABLE:
+        stl_dir = export_dir / "stl"
+        written = export_frame_stl(state.frame, stl_dir, combined=True)
+        for p in written:
+            paths.append(str(p))
+        log_stderr(f"[export] Wrote {len(written)} STL file(s) to {stl_dir}")
+    else:
+        log_stderr("[export] Skipping STL export — trimesh is not installed")
+
+    # --- STEP ---
+    try:
+        from code_goes_here.blueprint import export_frame_step
+        step_dir = export_dir / "step"
+        written = export_frame_step(state.frame, step_dir, combined=True)
+        for p in written:
+            paths.append(str(p))
+        log_stderr(f"[export] Wrote {len(written)} STEP file(s) to {step_dir}")
+    except ImportError:
+        log_stderr("[export] Skipping STEP export — cadquery is not installed")
+
+    return {"paths": paths}
+
+
 def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerState, Dict[str, Any], bool]:
     request_id = request.get("id")
     command = request.get("command")
@@ -525,6 +561,10 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
 
     if command == "shutdown":
         return state, make_success_response(request_id, command, {"shutting_down": True}), True
+
+    if command == "export_files":
+        result = export_frame_files(state)
+        return state, make_success_response(request_id, command, result), False
 
     raise ValueError(f"Unknown command: {command}")
 
