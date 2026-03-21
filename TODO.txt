@@ -38,15 +38,7 @@ IGNORE-doc tab support?
 
 IGNORE-debug console lol
 
--cute backgrounds
-  -creamy gradient background
-  DONE-simple drop shadows? (you can fake this one)
-  DONE-simple reflections? 
-  -fun horse walking trhough background or osmething
-    -still walking trhough structure
-    -slow down speed and spawn rate a lot. jumps should eb more subtle
-
--select support
+DONE-select support
   -select timber highlights it in 3d
 
 DONE-navigation support
@@ -59,6 +51,14 @@ DONE-navigation support
   -ortho perspective toggle?
   DONE-must lerp between all transitions!!!
 
+-cute backgrounds
+  -creamy gradient background
+  DONE-simple drop shadows? (you can fake this one)
+  DONE-simple reflections? 
+  -fun horse walking trhough background or osmething
+    -still walking trhough structure
+    -slow down speed and spawn rate a lot. jumps should eb more subtle
+    
 -simple list view
   -needs parent list hirearchy support
   -for now just show a list of timbers
@@ -292,23 +292,25 @@ DONE-move out CSS html and frontend scripts into their own thing
 DONE-double/triple/quadruple butt arrangement
   -assert for butt timbers pointing in cardinal directions
   -check_face_aligned_and_cardinal checks that each butt timber is pointing in one of the 4 cardinal direction orthogonal to the receiving timber, and they should all be different
-
--bugs
+DONE-add tongue and fork joint
+DONE-bugs
   -fix the error you have in one of your examples
   -fix csg test error
+DONE-move all jonits over to arrangements
 
+
+-rewrite accessories as timbers probably, so you can leverage any drawing capabilites that are added to timbers in the future
+-implement tongue and fork butt joint 
 -lincoln log joints?
-
+-consider adding in some config object that gets passed through all functions (well ilke one dumpall objcet for joints, etc, so you can easily add carp to it)
 -splined opposing double butt joint :D (could have drawbore or key)
 
--move all jonits over to arrangements
+
 
 -add sensibility checks to arrangement (so basically they intersect at least a little bit)
   -maybe add a generic check intersection function so we can get more precise about it within the joit fuctions.
 
--add tongue and fork joint
--create experiments folder 
-  -do image to frame experiments (some with chain of reason promptitng, some without)
+-do image to frame experiments (some with chain of reason promptitng, some without)
 
 -feature selection
   -add feature selection support to viewer
