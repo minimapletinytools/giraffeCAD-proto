@@ -65,7 +65,7 @@ RENDER_TYPE = 'group'
 #PATTERN_NAME = 'brace_joint'
 #PATTERN_NAME = 'sawhorse'
 #PATTERN_NAME = 'irrational_angles'
-PATTERN_NAME = 'tongue_and_fork_corner_joint_135'
+PATTERN_NAME = 'tongue_and_fork_butt_joint_138'
 
 # GROUP_NAME: Name of a pattern group to render (when RENDER_TYPE = 'group')
 GROUP_NAME = 'plain_joints'

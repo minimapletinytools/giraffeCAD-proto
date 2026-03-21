@@ -31,6 +31,7 @@ from code_goes_here.joints.plain_joints import (
     cut_plain_miter_joint_on_face_aligned_timbers,
     cut_plain_butt_joint_on_face_aligned_timbers,
     cut_tongue_and_fork_corner_joint,
+    cut_tongue_and_fork_butt_joint,
     cut_plain_butt_splice_joint_on_aligned_timbers,
     cut_plain_cross_lap_joint,
     cut_plain_house_joint,
@@ -128,6 +129,54 @@ def make_tongue_and_fork_corner_joint_135_example(position: V3) -> list[CutTimbe
         position=position,
     )
     joint = cut_tongue_and_fork_corner_joint(arrangement)
+    return list(joint.cut_timbers.values())
+
+
+def make_tongue_and_fork_butt_joint_90_example(position: V3) -> list[CutTimber]:
+    """
+    Create a tongue-and-fork butt joint at 90 degrees using canonical butt joint timbers.
+    """
+    arrangement = create_canonical_example_butt_joint_timbers(position=position)
+    joint = cut_tongue_and_fork_butt_joint(arrangement)
+    return list(joint.cut_timbers.values())
+
+
+def make_tongue_and_fork_butt_joint_angled_example(position: V3) -> list[CutTimber]:
+    """
+    Create a tongue-and-fork butt joint at 138 degrees.
+    The butt (tongue) timber approaches the receiving (fork) timber at an angle.
+    """
+    from sympy import sin, cos, Integer
+    angle = degrees(138)
+    if position is None:
+        position = create_v3(Integer(0), Integer(0), Integer(0))
+
+    receiving_bottom = position + create_v3(-TIMBER_LENGTH / Rational(2), Integer(0), Integer(0))
+    receiving_timber = timber_from_directions(
+        length=TIMBER_LENGTH,
+        size=TIMBER_SIZE_2D,
+        bottom_position=receiving_bottom,
+        length_direction=create_v3(Integer(1), Integer(0), Integer(0)),
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="receiving_timber",
+    )
+
+    butt_length_direction = create_v3(sin(angle), cos(angle), Integer(0))
+    butt_timber = timber_from_directions(
+        length=TIMBER_LENGTH,
+        size=TIMBER_SIZE_2D,
+        bottom_position=position,
+        length_direction=butt_length_direction,
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="butt_timber",
+    )
+
+    arrangement = ButtJointTimberArrangement(
+        butt_timber=butt_timber,
+        receiving_timber=receiving_timber,
+        butt_timber_end=TimberReferenceEnd.BOTTOM,
+    )
+    joint = cut_tongue_and_fork_butt_joint(arrangement)
     return list(joint.cut_timbers.values())
 
 
@@ -357,6 +406,12 @@ def create_plain_joints_patternbook() -> PatternBook:
 
         (PatternMetadata("tongue_and_fork_corner_joint_135", ["plain_joints", "tongue_and_fork"], "frame"),
          lambda center: Frame(cut_timbers=make_tongue_and_fork_corner_joint_135_example(center), name="Tongue and Fork Corner (135°)")),
+
+        (PatternMetadata("tongue_and_fork_butt_joint_90", ["plain_joints", "tongue_and_fork"], "frame"),
+         lambda center: Frame(cut_timbers=make_tongue_and_fork_butt_joint_90_example(center), name="Tongue and Fork Butt (90°)")),
+
+        (PatternMetadata("tongue_and_fork_butt_joint_138", ["plain_joints", "tongue_and_fork"], "frame"),
+         lambda center: Frame(cut_timbers=make_tongue_and_fork_butt_joint_angled_example(center), name="Tongue and Fork Butt (138°)")),
 
         (PatternMetadata("splice_joint", ["plain_joints", "splice"], "frame"),
          lambda center: Frame(cut_timbers=make_splice_joint_example(center), name="Splice Joint")),

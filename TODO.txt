@@ -58,7 +58,7 @@ DONE-navigation support
   -fun horse walking trhough background or osmething
     -still walking trhough structure
     -slow down speed and spawn rate a lot. jumps should eb more subtle
-    
+
 -simple list view
   -needs parent list hirearchy support
   -for now just show a list of timbers
@@ -297,10 +297,11 @@ DONE-bugs
   -fix the error you have in one of your examples
   -fix csg test error
 DONE-move all jonits over to arrangements
+DONE-implement tongue and fork butt joint 
 
 
 -rewrite accessories as timbers probably, so you can leverage any drawing capabilites that are added to timbers in the future
--implement tongue and fork butt joint 
+
 -lincoln log joints?
 -consider adding in some config object that gets passed through all functions (well ilke one dumpall objcet for joints, etc, so you can easily add carp to it)
 -splined opposing double butt joint :D (could have drawbore or key)
