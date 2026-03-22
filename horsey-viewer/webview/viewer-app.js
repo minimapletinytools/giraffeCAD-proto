@@ -131,7 +131,6 @@ class HorseyViewerApp extends LitElement {
                     <input id="reflections-toggle" type="checkbox" ?checked=${this.reflectionsEnabled}>
                     reflection
                 </label>
-                <button id="export-btn" type="button" title="Export frame as STL and STEP files">export STL &amp; STEP</button>
             </section>
             <div id="panels">
                 <div class="panel-box">
@@ -293,11 +292,6 @@ class HorseyViewerApp extends LitElement {
 
         reflectionsToggle.addEventListener('change', (event) => {
             this.setReflectionsEnabled(event.target.checked);
-        });
-
-        const exportBtn = this.renderRoot.querySelector('#export-btn');
-        exportBtn.addEventListener('click', () => {
-            this.requestExport();
         });
 
         window.addEventListener('scroll', this.onWindowScroll);
@@ -713,37 +707,6 @@ class HorseyViewerApp extends LitElement {
 
         if (message.type === 'captureScreenshotRequest') {
             this.handleCaptureScreenshotRequest(message);
-            return;
-        }
-
-        if (message.type === 'exportResult') {
-            this.handleExportResult(message);
-        }
-    }
-
-    requestExport() {
-        if (!vscode) { return; }
-        const btn = this.renderRoot.querySelector('#export-btn');
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = 'exporting\u2026';
-        }
-        vscode.postMessage({ type: 'exportFiles' });
-    }
-
-    handleExportResult(message) {
-        const btn = this.renderRoot.querySelector('#export-btn');
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'export STL & STEP';
-        }
-        if (message.ok) {
-            const paths = (message.paths || []).map(p => p.split('/').pop()).join(', ');
-            this.emitViewerLog('export-success', { files: message.paths });
-            window.alert(`Exported ${message.paths.length} file(s):\n${paths}`);
-        } else {
-            this.emitViewerLog('export-error', { error: message.error }, 'error');
-            window.alert(`Export failed: ${message.error}`);
         }
     }
 
