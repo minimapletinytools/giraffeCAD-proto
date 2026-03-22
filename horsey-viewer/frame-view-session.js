@@ -45,6 +45,7 @@ class FrameViewSession {
         this.fileWatcher = null;
         this.isDisposed = false;
         this.isRefreshing = false;
+        this.pendingRefreshReason = null;
     }
 
     async initialize() {
@@ -61,7 +62,15 @@ class FrameViewSession {
             void this.dispose();
         });
         this.panel.webview.onDidReceiveMessage((message) => {
-            if (!message || message.type !== 'viewerLog') {
+            if (!message) {
+                return;
+            }
+            if (message.type === 'requestRefresh') {
+                this.log('[webview] Manual refresh requested from viewer');
+                this.onFileChanged('manual refresh button');
+                return;
+            }
+            if (message.type !== 'viewerLog') {
                 return;
             }
             const eventName = typeof message.event === 'string' ? message.event : 'unknown';
@@ -125,12 +134,15 @@ class FrameViewSession {
             return;
         }
         if (this.isRefreshing) {
-            this.log(`[refresh] Skipping overlapping refresh for ${this.filePath}`);
+            this.pendingRefreshReason = reason;
+            this.log(`[refresh] Queuing pending refresh for ${this.filePath} (${reason})`);
             return;
         }
 
         this.isRefreshing = true;
+        this.pendingRefreshReason = null;
         this.log(`[refresh] Reloading ${path.basename(this.filePath)} (${reason})`);
+        let refreshError = null;
         try {
             await this.ensureRunnerSession();
             const reloadResult = await this.runnerSession.request('reload_example', { filePath: this.filePath });
@@ -143,10 +155,25 @@ class FrameViewSession {
             renderFrameViewer(this.panel, this.filePath, frameData, geometryData, profiling);
             this.log(`[refresh] Reload complete for ${path.basename(this.filePath)}`);
         } catch (error) {
-            await this.reportRunnerError(error, `[refresh] ${path.basename(this.filePath)} (${reason})`);
-            throw error;
+            refreshError = error;
         } finally {
             this.isRefreshing = false;
+        }
+
+        // Drain pending refresh before blocking on error reporting
+        if (this.pendingRefreshReason) {
+            const pendingReason = this.pendingRefreshReason;
+            this.pendingRefreshReason = null;
+            this.log(`[refresh] Draining pending refresh (${pendingReason})`);
+            // Fire-and-forget so it doesn't block error reporting
+            this.refresh(pendingReason).catch((err) => {
+                this.log(`[refresh] Pending refresh failed: ${err.message || err}`);
+            });
+        }
+
+        if (refreshError) {
+            await this.reportRunnerError(refreshError, `[refresh] ${path.basename(this.filePath)} (${reason})`);
+            throw refreshError;
         }
     }
 

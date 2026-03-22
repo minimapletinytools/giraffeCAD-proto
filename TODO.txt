@@ -204,6 +204,8 @@ DONE-change nominal size to nominal half size in direction (this is kind acute a
 DONE-rename measure to locate
 DONE-build-a-butt_joint.py
 
+-do tinyhouse shed
+
 -tag reference faces on timber metadata?
   -assert they are coincident
   -for now require nominaland ptw dimensions to match
@@ -220,7 +222,6 @@ DONE-build-a-butt_joint.py
     -allow features to be labeled as saw or chisel so we can do cutting instructions
     -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
 
--do tinyhouse shed
 -update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
 -rewrite accessories as timbers probably, so you can leverage any drawing capabilites that are added to timbers in the future
 -add accessories to STEP STL and viewer

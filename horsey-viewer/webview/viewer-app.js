@@ -119,6 +119,7 @@ class HorseyViewerApp extends LitElement {
                     <input id="reflections-toggle" type="checkbox" ?checked=${this.reflectionsEnabled}>
                     reflection
                 </label>
+                <button id="refresh-btn" type="button" title="Reload pattern">↻ refresh</button>
             </section>
             <div id="panels">
                 <div class="panel-box">
@@ -216,6 +217,7 @@ class HorseyViewerApp extends LitElement {
         const centerGizmoToggle = this.renderRoot.querySelector('#center-gizmo-toggle');
         const shadowsToggle = this.renderRoot.querySelector('#shadows-toggle');
         const reflectionsToggle = this.renderRoot.querySelector('#reflections-toggle');
+        const refreshButton = this.renderRoot.querySelector('#refresh-btn');
 
         toV3d.addEventListener('click', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -274,6 +276,12 @@ class HorseyViewerApp extends LitElement {
 
         reflectionsToggle.addEventListener('change', (event) => {
             this.setReflectionsEnabled(event.target.checked);
+        });
+
+        refreshButton.addEventListener('click', () => {
+            if (vscode) {
+                vscode.postMessage({ type: 'requestRefresh' });
+            }
         });
 
         window.addEventListener('scroll', this.onWindowScroll);
