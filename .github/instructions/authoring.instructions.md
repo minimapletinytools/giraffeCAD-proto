@@ -17,6 +17,11 @@ Always run the type checker after making changes:
 uv run ty check
 ```
 
+If making changes to the viewer, run viewer tests:
+```bash
+cd horsey-viewer && npx jest && node ./test/run-extension-tests.js
+```
+
 ## Key Files
 
 ### code_goes_here/timber.py

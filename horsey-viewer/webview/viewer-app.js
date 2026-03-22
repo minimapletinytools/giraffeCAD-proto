@@ -65,17 +65,6 @@ class HorseyViewerApp extends LitElement {
         this.shadowCatcher = null;
         this.orbitCenterGizmo = null;
 
-        this.idleTimeoutMs = 5000;
-        this.lastUserInteractionMs = Date.now();
-        this.idleCritterMode = false;
-        this.idleCritters = [];
-        this.nextCritterSpawnAt = 0;
-        this.lastAnimationFrameMs = 0;
-        this.structureScreenBounds = null;
-        this.critterSpecies = ['🐴', '🐑', '🐐', '🐄', '🦌', '🐖'];
-        this.critterGroup = null;
-        this.critterTextureCache = new Map();
-
         this.selectionManager = new SelectionStore();
         this.meshNameMap = new Map(); // mesh object -> timber name
 
@@ -90,7 +79,6 @@ class HorseyViewerApp extends LitElement {
         this.onLightDialPointerMove = this.onLightDialPointerMove.bind(this);
         this.onLightDialPointerUp = this.onLightDialPointerUp.bind(this);
         this.onWindowKeyDown = this.onWindowKeyDown.bind(this);
-        this.onAnyUserActivity = this.onAnyUserActivity.bind(this);
     }
 
     createRenderRoot() {
@@ -166,9 +154,7 @@ class HorseyViewerApp extends LitElement {
             this.applySelectionOpacity();
         });
         
-        this.emitViewerLog('viewer-ready', {
-            idleTimeoutMs: this.idleTimeoutMs,
-        });
+        this.emitViewerLog('viewer-ready', {});
     }
 
     disconnectedCallback() {
@@ -179,14 +165,10 @@ class HorseyViewerApp extends LitElement {
         window.removeEventListener('mousemove', this.onWindowMouseMove);
         window.removeEventListener('resize', this.onWindowResize);
         window.removeEventListener('keydown', this.onWindowKeyDown);
-        window.removeEventListener('pointerdown', this.onAnyUserActivity, true);
-        window.removeEventListener('wheel', this.onAnyUserActivity, true);
-        window.removeEventListener('keydown', this.onAnyUserActivity, true);
         window.removeEventListener('pointermove', this.onGizmoPointerMove);
         window.removeEventListener('pointerup', this.onGizmoPointerUp);
         window.removeEventListener('pointermove', this.onLightDialPointerMove);
         window.removeEventListener('pointerup', this.onLightDialPointerUp);
-        this.clearIdleCritters();
         if (this.animationHandle) {
             cancelAnimationFrame(this.animationHandle);
             this.animationHandle = null;
@@ -303,9 +285,6 @@ class HorseyViewerApp extends LitElement {
         window.addEventListener('pointerup', this.onLightDialPointerUp);
         window.addEventListener('resize', this.onWindowResize);
         window.addEventListener('keydown', this.onWindowKeyDown);
-        window.addEventListener('pointerdown', this.onAnyUserActivity, true);
-        window.addEventListener('wheel', this.onAnyUserActivity, true);
-        window.addEventListener('keydown', this.onAnyUserActivity, true);
     }
 
     setupThreeScene() {
@@ -377,32 +356,21 @@ class HorseyViewerApp extends LitElement {
         this.setShadowsEnabled(this.shadowsEnabled);
         this.setReflectionsEnabled(this.reflectionsEnabled);
 
-        this.critterGroup = new THREE.Group();
-        this.scene.add(this.critterGroup);
-
         this.updateCamera();
         const animate = () => {
             this.animationHandle = requestAnimationFrame(animate);
-            const nowMs = performance.now();
-            const deltaSeconds = this.lastAnimationFrameMs > 0 ? (nowMs - this.lastAnimationFrameMs) / 1000 : 0;
-            this.lastAnimationFrameMs = nowMs;
             this.stepCameraAnimation();
             this.renderCameraGizmo();
-            this.updateIdleCritters(nowMs, deltaSeconds);
             this.renderer.render(this.scene, this.camera);
         };
         animate();
-    }
-
-    onAnyUserActivity() {
-        this.markUserInteraction();
     }
 
     emitViewerLog(eventName, details = {}) {
         const payload = {
             type: 'viewerLog',
             event: eventName,
-            source: 'idle-critter',
+            source: 'viewer',
             level: 'info',
             version: VIEWER_APP_VERSION,
             details,
@@ -413,227 +381,6 @@ class HorseyViewerApp extends LitElement {
             return;
         }
         console.info('[HorseyViewer]', payload);
-    }
-
-    markUserInteraction() {
-        this.lastUserInteractionMs = Date.now();
-        if (this.idleCritterMode) {
-            this.stopIdleCritterMode('activity');
-        }
-    }
-
-    startIdleCritterMode(nowMs) {
-        this.idleCritterMode = true;
-        this.nextCritterSpawnAt = nowMs + 250;
-        this.emitViewerLog('idle-start', {
-            timeoutMs: this.idleTimeoutMs,
-        });
-    }
-
-    stopIdleCritterMode(reason = 'activity') {
-        const activeCount = this.idleCritters.length;
-        this.idleCritterMode = false;
-        this.nextCritterSpawnAt = 0;
-        this.emitViewerLog('idle-end', {
-            reason,
-            activeCritters: activeCount,
-        });
-    }
-
-    clearIdleCritters() {
-        if (this.critterGroup) {
-            while (this.critterGroup.children.length > 0) {
-                const child = this.critterGroup.children[0];
-                this.critterGroup.remove(child);
-                if (child.material && child.material.map) {
-                    child.material.map.dispose();
-                }
-                if (child.material) {
-                    child.material.dispose();
-                }
-                if (child.geometry) {
-                    child.geometry.dispose();
-                }
-            }
-        }
-        this.idleCritters = [];
-    }
-
-    updateIdleCritters(nowMs, deltaSeconds) {
-        const idleForMs = Date.now() - this.lastUserInteractionMs;
-        if (idleForMs >= this.idleTimeoutMs) {
-            if (!this.idleCritterMode) {
-                this.startIdleCritterMode(nowMs);
-            }
-        } else if (this.idleCritterMode) {
-            this.stopIdleCritterMode('activity-check');
-            // Continue animating existing critters even after idle stops
-        }
-
-        // Spawn new critters only during active idle mode
-        if (this.idleCritterMode && nowMs >= this.nextCritterSpawnAt) {
-            this.spawnIdleCritter3D(nowMs);
-            this.nextCritterSpawnAt = nowMs + 700 + Math.random() * 1400;
-        }
-
-        // Always animate existing critters, even after idle mode stops
-        if (!deltaSeconds || this.idleCritters.length === 0 || !this.critterGroup) {
-            return;
-        }
-
-        const nextCritters = [];
-        const cullingDistance = 20; // Remove critters beyond this distance
-
-        for (const critter of this.idleCritters) {
-            // Move in 3D world space
-            critter.x += critter.speedUnitsPerSec * critter.direction * deltaSeconds;
-            critter.gaitPhase += deltaSeconds * critter.gaitRate;
-
-            // Gait animation (bounce and lean)
-            const bounce = Math.sin(critter.gaitPhase) * critter.bounceUnits;
-            const bob = Math.sin(critter.gaitPhase * 2) * critter.leanDeg;
-
-            // Update position
-            const baseZ = this.groundZ + 0.3; // Just above ground
-            critter.object.position.set(critter.x, critter.y, baseZ + bounce);
-            critter.object.rotation.z = (bob * Math.PI) / 180;
-
-            // Check if critter is still in view frustum bounds
-            const distFromOrigin = Math.hypot(critter.x, critter.y);
-            if (distFromOrigin <= cullingDistance) {
-                nextCritters.push(critter);
-                continue;
-            }
-
-            // Remove from scene and dispose
-            this.critterGroup.remove(critter.object);
-            if (critter.object.material && critter.object.material.map) {
-                critter.object.material.map.dispose();
-            }
-            if (critter.object.material) {
-                critter.object.material.dispose();
-            }
-            if (critter.object.geometry) {
-                critter.object.geometry.dispose();
-            }
-        }
-
-        this.idleCritters = nextCritters;
-    }
-
-    createCritterTexture(species, size) {
-        const cacheKey = `${species}-${size}`;
-        if (this.critterTextureCache.has(cacheKey)) {
-            return this.critterTextureCache.get(cacheKey);
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        ctx.font = `${size * 0.8}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(species, size / 2, size / 2);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.magFilter = THREE.LinearFilter;
-        texture.minFilter = THREE.LinearFilter;
-        this.critterTextureCache.set(cacheKey, texture);
-        return texture;
-    }
-
-    pickCritter3DSpawnLocation() {
-        const bounds = this.lastBounds;
-        if (!bounds) {
-            return { x: 3, y: 0, direction: 1 };
-        }
-
-        const minX = bounds.minX;
-        const maxX = bounds.maxX;
-        const minY = bounds.minY;
-        const maxY = bounds.maxY;
-        const margin = 3; // Increased margin for safer spawning
-
-        // Pick random edge (0=left, 1=right, 2=bottom, 3=top)
-        const edge = Math.floor(Math.random() * 4);
-        let x, y, direction;
-
-        switch (edge) {
-            case 0: // Left edge
-                x = minX - margin;
-                y = minY + Math.random() * (maxY - minY);
-                direction = 1; // Moving right
-                break;
-            case 1: // Right edge
-                x = maxX + margin;
-                y = minY + Math.random() * (maxY - minY);
-                direction = -1; // Moving left
-                break;
-            case 2: // Bottom edge
-                x = minX + Math.random() * (maxX - minX);
-                y = minY - margin;
-                direction = Math.random() < 0.5 ? 1 : -1;
-                break;
-            case 3: // Top edge
-                x = minX + Math.random() * (maxX - minX);
-                y = maxY + margin;
-                direction = Math.random() < 0.5 ? 1 : -1;
-                break;
-        }
-
-        return { x, y, direction };
-    }
-
-    spawnIdleCritter3D(nowMs) {
-        if (!this.critterGroup || !this.scene) {
-            return;
-        }
-
-        const direction = Math.random() < 0.5 ? 1 : -1;
-        const species = this.critterSpecies[Math.floor(Math.random() * this.critterSpecies.length)] || '🐴';
-        const critterSize = 0.8 + Math.random() * 0.4; // Units in 3D space
-        const textureSize = 128;
-
-        // Pick spawn location outside structure footprint
-        const spawnLoc = this.pickCritter3DSpawnLocation();
-
-        // Create sprite plane
-        const geometry = new THREE.PlaneGeometry(critterSize, critterSize);
-        const texture = this.createCritterTexture(species, textureSize);
-        const material = new THREE.MeshBasicMaterial({
-            map: texture,
-            transparent: true,
-            alphaTest: 0.1, // Only render pixels with alpha > 0.1
-            side: THREE.DoubleSide,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(spawnLoc.x, spawnLoc.y, this.groundZ + 0.3);
-
-        // Orient vertically (standing upright, perpendicular to ground)
-        mesh.rotation.x = Math.PI / 2;
-
-        this.critterGroup.add(mesh);
-
-        this.idleCritters.push({
-            x: spawnLoc.x,
-            y: spawnLoc.y,
-            direction: spawnLoc.direction,
-            speedUnitsPerSec: 2 + Math.random() * 3, // Units per second in world space
-            bounceUnits: 0.15 + Math.random() * 0.3,
-            leanDeg: 3 + Math.random() * 6,
-            gaitRate: 7 + Math.random() * 5,
-            gaitPhase: (nowMs / 400) + Math.random() * Math.PI * 2,
-            object: mesh,
-        });
-
-        this.emitViewerLog('critter-created', {
-            species,
-            direction: spawnLoc.direction > 0 ? 'right' : 'left',
-            position: [Math.round(spawnLoc.x * 10) / 10, Math.round(spawnLoc.y * 10) / 10],
-            size: Math.round(critterSize * 100) / 100,
-            activeCritters: this.idleCritters.length,
-        });
     }
 
     updateStructureScreenBounds() {

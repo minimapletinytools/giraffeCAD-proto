@@ -13,9 +13,7 @@ const VIEWER_LOG_LEVEL_ORDER = {
 };
 
 // Minimum level to allow per log source. Lower levels are suppressed.
-// Example: source "idle-critter" at "warn" means info/debug critter logs are dropped.
 const VIEWER_LOG_SOURCE_MIN_LEVEL = {
-    'idle-critter': 'warn',
 };
 
 function normalizeViewerLogLevel(level) {

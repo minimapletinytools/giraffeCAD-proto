@@ -31,3 +31,13 @@ Keep frontend implementation migration-safe so Lit can be swapped to React later
 - Implement only requested UX changes.
 - Avoid introducing broad frontend dependencies unless explicitly requested.
 - Keep the current Three.js scene behavior intact unless task requirements ask for a rendering behavior change.
+
+## Running Tests
+
+Always run viewer tests after making changes:
+```bash
+cd horsey-viewer && npx jest && node ./test/run-extension-tests.js
+```
+
+- `npx jest` — unit tests (file-watcher, runner-protocol, selection-store)
+- `node ./test/run-extension-tests.js` — VS Code extension host smoke tests (downloads a test VS Code instance, activates the extension, verifies commands register and execute)
