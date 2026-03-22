@@ -577,6 +577,47 @@ class PerfectTimberWithin(ABC):
         else:  # FRONT or BACK
             return nominal_size[1]
 
+    def get_size_in_direction_2d(self, direction: V2) -> Numeric:
+        """
+        Get the size of the timber's cross-section measured along an arbitrary 2D direction.
+        
+        The direction is in the timber's local cross-section plane where x is the width
+        axis and y is the height axis. Returns the total extent (support width) of the
+        rectangular cross-section projected onto that direction.
+        
+        For axis-aligned directions this matches get_size_in_face_normal_axis.
+        
+        Args:
+            direction: A 2D direction vector (x=width, y=height) in local cross-section space.
+                       Does not need to be normalized.
+        
+        Returns:
+            The size of the cross-section measured along the given direction.
+        """
+        d = normalize_vector(direction)
+        return self.size[0] * Abs(d[0]) + self.size[1] * Abs(d[1])
+
+    def get_size_in_direction_3d(self, direction: Direction3D) -> Numeric:
+        """
+        Get the size of the timber measured along an arbitrary 3D direction in global space.
+        
+        Transforms the direction into the timber's local frame and computes the total
+        extent (support width) of the rectangular prism projected onto that direction.
+        
+        For axis-aligned directions this matches get_size_in_face_normal_axis.
+        
+        Args:
+            direction: A 3D direction vector in global coordinates.
+                       Does not need to be normalized.
+        
+        Returns:
+            The size of the timber measured along the given direction.
+        """
+        d_global = normalize_vector(direction)
+        # Rotate to local frame (transpose of rotation matrix, no translation for directions)
+        d_local = safe_transform_vector(self.orientation.matrix.T, d_global)
+        return self.size[0] * Abs(d_local[0]) + self.size[1] * Abs(d_local[1]) + self.length * Abs(d_local[2])
+
     def _get_closest_oriented_face_from_faces(self, faces: List[TimberFace], target_direction: Direction3D) -> TimberFace:
         """Return the face in `faces` whose outward normal best aligns with `target_direction` (max dot product)."""
         best_face = faces[0]

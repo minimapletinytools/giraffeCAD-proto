@@ -572,6 +572,9 @@ dependencies = [
 
 [package.optional-dependencies]
 step = [
+    { name = "cadquery-ocp" },
+]
+step-cadquery = [
     { name = "cadquery" },
 ]
 
@@ -583,12 +586,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cadquery", marker = "extra == 'step'", specifier = ">=2.0.0" },
+    { name = "cadquery", marker = "extra == 'step-cadquery'", specifier = ">=2.0.0" },
+    { name = "cadquery-ocp", marker = "extra == 'step'", specifier = ">=7.7.0" },
     { name = "manifold3d" },
     { name = "sympy" },
     { name = "trimesh" },
 ]
-provides-extras = ["step"]
+provides-extras = ["step", "step-cadquery"]
 
 [package.metadata.requires-dev]
 dev = [

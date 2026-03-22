@@ -298,14 +298,43 @@ DONE-bugs
   -fix csg test error
 DONE-move all jonits over to arrangements
 DONE-implement tongue and fork butt joint 
+DONE-fix step output
+DONE-add profiing stats
 
--add profiing stats
--fix step output
+
+-change nominal size to nominal half size in direction (this is kind acute actually cuz it can do diagonal size which is something you need, except you probably want get_perfect_size_in_direction)
+  -maybe rename to something else
+-add get_perfect_size_in_direction
+
+-tag reference faces on timber 
+  -assert they are coincident
+  -for now require nominaland ptw dimensions to match
+
+-DO META DATA
+  -feature metadata
+    -tag CSG with features
+  -do assembly metadata
+    -create assemblydirection class 
+    -for accessories, have assemblydriection but also have locking accessory
+    -can you rename accessory btw??
+
+  -saw/chisel metadata 
+    -allow features to be labeled as saw or chisel so we can do cutting instructions
+    -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
+
+
+
+-do better profiling (probably just need to eval after timber creation)
 -rewrite accessories as timbers probably, so you can leverage any drawing capabilites that are added to timbers in the future
-
+-add accessories to STEP STL and viewer
+-and export STEP/STL button back into viewer (comibne/single, step/stl options, defaultable)
 -lincoln log joints?
 -consider adding in some config object that gets passed through all functions (well ilke one dumpall objcet for joints, etc, so you can easily add carp to it)
+
 -splined opposing double butt joint :D (could have drawbore or key)
+  -you need to create shoulder_shavings for making shoulder cuts
+    -shoulder cuts should be infinite in one direction so can generate the positive and negative for both sides easily
+      -I guess you need a full space cut?
 
 
 
@@ -325,15 +354,6 @@ DONE-implement tongue and fork butt joint
   -figure out how to do feature metadata and allow feature selection?
     -review yoru notes
     -you also wanted key named features for auto generation of drawings???
-
--do assembly metadata
-  -create assemblydirection class 
-  -for accessories, have assemblydriection but also have locking accessory
-  -can you rename accessory btw??
-
--saw/chisel metadata 
-  -allow features to be labeled as saw or chisel so we can do cutting instructions
-  -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
 
 -how dose selection change after refresh?
 -highlight timebrs in timber list with selection, or just get rid of timber list?
