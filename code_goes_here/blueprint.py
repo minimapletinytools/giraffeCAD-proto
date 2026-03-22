@@ -326,7 +326,12 @@ def _extrusion_to_ocp(ext: ConvexPolygonExtrusion) -> "TopoDS_Shape":
 
 
 def _halfspace_to_ocp(hs: HalfSpace) -> "TopoDS_Shape":
-    """Approximate a HalfSpace as a very large box on the 'kept' side."""
+    """Approximate a HalfSpace as a very large box on the 'kept' side.
+
+    HalfSpace keeps {P : P·normal >= offset}. In the normal-aligned frame
+    (Z = normal direction), this is Z >= offset/|normal|. The box extends
+    from offset/|n| to offset/|n| + extent along Z and ±extent in X/Y.
+    """
     import math
 
     nx = sympy_to_float(hs.normal[0])
@@ -339,8 +344,9 @@ def _halfspace_to_ocp(hs: HalfSpace) -> "TopoDS_Shape":
     nx, ny, nz = nx / norm, ny / norm, nz / norm
 
     extent = _STEP_HALF_SPACE_EXTENT
+    # Box covers the kept half: Z from offset/norm to offset/norm + extent
     box = BRepPrimAPI_MakeBox(
-        gp_Pnt(-extent, -extent, offset / norm - extent),
+        gp_Pnt(-extent, -extent, offset / norm),
         gp_Pnt(extent, extent, offset / norm + extent),
     ).Shape()
 

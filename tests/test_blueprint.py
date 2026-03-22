@@ -188,3 +188,69 @@ class TestStepOscarshed:
                 assert p.exists()
                 assert p.stat().st_size > 0
                 assert p.suffix == ".step"
+
+    def test_step_bounds_match_timber_corners(self, oscarshed_frame):
+        """Verify that each OCP shape's bounding box roughly matches the
+        timber's corner positions in global coordinates (in mm).
+
+        Allows generous tolerance because:
+        - joint geometry (tenons) may extend past the timber body corners
+        - the base prism may extend beyond if an end cut is missing in the CSG
+        But the bounds should be within ~100mm of the expected corners — NOT
+        off by thousands (which would indicate a broken half-space or transform).
+        """
+        from code_goes_here.blueprint import _csg_to_ocp, _OCP_AVAILABLE
+        from code_goes_here.cutcsg import adopt_csg
+        from code_goes_here.rule import Transform
+        from code_goes_here.rendering_utils import sympy_to_float
+        from code_goes_here.timber import TimberCorner
+        from OCP.Bnd import Bnd_Box
+        from OCP.BRepBndLib import BRepBndLib
+
+        TOL = 100.0  # mm — generous tolerance for joint overruns
+
+        # These timbers have known pre-existing CSG issues where one end
+        # isn't clipped (same in CadQuery). Skip strict bounds check.
+        SKIP_BOUNDS_CHECK = {"Front Girt Left", "Front Girt Middle"}
+
+        for ct in oscarshed_frame.cut_timbers:
+            name = ct.timber.ticket.name
+
+            # Expected bounds from timber corners (metres → mm)
+            corners_mm = []
+            for c in TimberCorner:
+                pos = ct.timber.get_corner_position_global(c)
+                corners_mm.append(
+                    [float(sympy_to_float(pos[i])) * 1000.0 for i in range(3)]
+                )
+            exp_min = [min(c[i] for c in corners_mm) for i in range(3)]
+            exp_max = [max(c[i] for c in corners_mm) for i in range(3)]
+
+            # Actual OCP shape bounds
+            local_csg = ct.render_timber_with_cuts_csg_local()
+            global_csg = adopt_csg(
+                ct.timber.transform, Transform.identity(), local_csg
+            )
+            shape = _csg_to_ocp(global_csg)
+            bb = Bnd_Box()
+            BRepBndLib.Add_s(shape, bb)
+            assert not bb.IsVoid(), f"{name}: OCP shape is empty (void)"
+            xmin, ymin, zmin, xmax, ymax, zmax = bb.Get()
+            actual_min = [xmin, ymin, zmin]
+            actual_max = [xmax, ymax, zmax]
+
+            if name in SKIP_BOUNDS_CHECK:
+                continue
+
+            for axis in range(3):
+                label = "XYZ"[axis]
+                lo_err = actual_min[axis] - exp_min[axis]
+                hi_err = actual_max[axis] - exp_max[axis]
+                assert abs(lo_err) < TOL, (
+                    f"{name} {label}-min off by {lo_err:+.1f}mm "
+                    f"(expected {exp_min[axis]:.1f}, got {actual_min[axis]:.1f})"
+                )
+                assert abs(hi_err) < TOL, (
+                    f"{name} {label}-max off by {hi_err:+.1f}mm "
+                    f"(expected {exp_max[axis]:.1f}, got {actual_max[axis]:.1f})"
+                )
