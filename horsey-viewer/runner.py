@@ -16,6 +16,7 @@ import importlib.util
 import json
 import os
 import sys
+import time
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -57,6 +58,13 @@ if _project_root is not None:
         # os.execv replaces the current process; code below never runs if it succeeds
 
 TARGET_MODULE_NAME = "_horsey_viewer_target"
+
+
+@dataclass
+class ProfilingStats:
+    """Timing data collected during runner operations (seconds)."""
+    reload_s: Optional[float] = None
+    geometry_s: Optional[float] = None
 
 
 @dataclass
@@ -500,7 +508,9 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
 
     if command == "reload_example":
         next_path = payload.get("filePath", str(state.file_path))
+        t0 = time.monotonic()
         next_state = load_runner_state(next_path, state.mesh_cache)
+        reload_s = time.monotonic() - t0
         result = {
             "examplePath": str(next_state.file_path),
             "frame": {
@@ -508,6 +518,7 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
                 "timber_count": len(next_state.frame.cut_timbers),
                 "accessories_count": len(next_state.frame.accessories),
             },
+            "profiling": {"reload_s": reload_s},
         }
         return next_state, make_success_response(request_id, command, result), False
 
@@ -515,7 +526,11 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
         return state, make_success_response(request_id, command, serialize_frame(state.frame)), False
 
     if command == "get_geometry":
-        return state, make_success_response(request_id, command, build_real_geometry(state)), False
+        t0 = time.monotonic()
+        geometry = build_real_geometry(state)
+        geometry_s = time.monotonic() - t0
+        geometry["profiling"] = {"geometry_s": geometry_s}
+        return state, make_success_response(request_id, command, geometry), False
 
     if command == "get_member":
         member_name = payload.get("name")

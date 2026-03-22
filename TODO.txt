@@ -299,7 +299,8 @@ DONE-bugs
 DONE-move all jonits over to arrangements
 DONE-implement tongue and fork butt joint 
 
-
+-add profiing stats
+-fix step output
 -rewrite accessories as timbers probably, so you can leverage any drawing capabilites that are added to timbers in the future
 
 -lincoln log joints?

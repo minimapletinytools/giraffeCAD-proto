@@ -41,16 +41,17 @@ function createFrameViewer(filePath) {
     );
 }
 
-function renderFrameViewer(panel, filePath, frameData, geometryData) {
+function renderFrameViewer(panel, filePath, frameData, geometryData, profiling) {
     panel.title = getViewerTitle(filePath, frameData.name);
     if (!initializedPanels.has(panel)) {
-        panel.webview.html = getWebviewContent(panel.webview, frameData, geometryData);
+        panel.webview.html = getWebviewContent(panel.webview, frameData, geometryData, profiling);
         initializedPanels.add(panel);
     } else {
         panel.webview.postMessage({
             type: 'refresh',
             frame: frameData,
             geometry: geometryData,
+            profiling: profiling || null,
         });
     }
     panel.reveal(vscode.ViewColumn.Two);
@@ -64,7 +65,7 @@ function getViewerTitle(filePath, frameName = null) {
     return `Horsey: ${fileName} · v${VIEWER_APP_VERSION}`;
 }
 
-function getWebviewContent(webview, frameData, geometryData) {
+function getWebviewContent(webview, frameData, geometryData, profiling) {
     const templatePath = path.join(webviewDir, 'viewer.html');
     const template = fs.readFileSync(templatePath, 'utf8');
 
@@ -76,6 +77,7 @@ function getWebviewContent(webview, frameData, geometryData) {
     const payloadJson = escapeScriptJson(JSON.stringify({
         frame: frameData,
         geometry: geometryData,
+        profiling: profiling || null,
     }));
 
     return template

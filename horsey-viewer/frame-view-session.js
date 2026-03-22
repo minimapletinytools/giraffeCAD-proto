@@ -135,10 +135,14 @@ class FrameViewSession {
         this.log(`[refresh] Reloading ${path.basename(this.filePath)} (${reason})`);
         try {
             await this.ensureRunnerSession();
-            await this.runnerSession.request('reload_example', { filePath: this.filePath });
+            const reloadResult = await this.runnerSession.request('reload_example', { filePath: this.filePath });
             const frameData = await this.runnerSession.request('get_frame');
             const geometryData = await this.runnerSession.request('get_geometry');
-            renderFrameViewer(this.panel, this.filePath, frameData, geometryData);
+            const profiling = {
+                reload_s: reloadResult && reloadResult.profiling ? reloadResult.profiling.reload_s : null,
+                geometry_s: geometryData && geometryData.profiling ? geometryData.profiling.geometry_s : null,
+            };
+            renderFrameViewer(this.panel, this.filePath, frameData, geometryData, profiling);
             this.log(`[refresh] Reload complete for ${path.basename(this.filePath)}`);
         } catch (error) {
             await this.reportRunnerError(error, `[refresh] ${path.basename(this.filePath)} (${reason})`);

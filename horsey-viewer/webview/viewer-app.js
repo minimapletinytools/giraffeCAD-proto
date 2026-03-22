@@ -701,7 +701,11 @@ class HorseyViewerApp extends LitElement {
     onWindowMessage(event) {
         const message = event.data || {};
         if (message.type === 'refresh') {
-            this.applyPayload({ frame: message.frame || {}, geometry: message.geometry || { meshes: [] } });
+            this.applyPayload({
+                frame: message.frame || {},
+                geometry: message.geometry || { meshes: [] },
+                profiling: message.profiling || null,
+            });
             return;
         }
 
@@ -1524,7 +1528,7 @@ class HorseyViewerApp extends LitElement {
             timberCount + ' timbers • ' + accessoriesCount + ' accessories';
     }
 
-    updateDebug(geometryData) {
+    updateDebug(geometryData, profiling) {
         const meshes = (geometryData && geometryData.meshes) ? geometryData.meshes : [];
         const changedKeys = (geometryData && geometryData.changedKeys) ? geometryData.changedKeys : [];
         const removedKeys = (geometryData && geometryData.removedKeys) ? geometryData.removedKeys : [];
@@ -1533,12 +1537,27 @@ class HorseyViewerApp extends LitElement {
         const total = meshes.length;
         const reused = Math.max(0, total - rebuilt);
 
+        let profilingHtml = '';
+        if (profiling) {
+            const parts = [];
+            if (typeof profiling.reload_s === 'number') {
+                parts.push('reload: ' + (profiling.reload_s * 1000).toFixed(0) + ' ms');
+            }
+            if (typeof profiling.geometry_s === 'number') {
+                parts.push('mesh: ' + (profiling.geometry_s * 1000).toFixed(0) + ' ms');
+            }
+            if (parts.length > 0) {
+                profilingHtml = '<br><strong>Profiling</strong><br>' + parts.join('<br>');
+            }
+        }
+
         this.renderRoot.querySelector('#debug').innerHTML =
             '<strong>Refresh Debug</strong><br>' +
             'total: ' + total + '<br>' +
             'rebuilt: ' + rebuilt + '<br>' +
             'reused: ' + reused + '<br>' +
-            'removed: ' + removed;
+            'removed: ' + removed +
+            profilingHtml;
     }
 
     updateMeshScene(geometryData) {
@@ -1643,9 +1662,10 @@ class HorseyViewerApp extends LitElement {
     applyPayload(payload) {
         const frameData = payload.frame || {};
         const geometryData = payload.geometry || { meshes: [] };
+        const profiling = payload.profiling || null;
 
         this.updateInfo(frameData);
-        this.updateDebug(geometryData);
+        this.updateDebug(geometryData, profiling);
         this.updateMeshScene(geometryData);
 
         this.renderRoot.querySelector('#raw-output').textContent = JSON.stringify({
