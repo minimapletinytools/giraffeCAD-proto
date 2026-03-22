@@ -3,8 +3,8 @@ GiraffeCAD - Blueprint export module (STL and STEP)
 
 Exports CutTimber and Frame objects to standard CAD interchange formats.
 
-STL export uses trimesh (triangle mesh). STEP export uses OCP
-(OpenCascade Python bindings from cadquery-ocp) to produce exact B-rep geometry.
+STL export uses trimesh (triangle mesh). STEP export uses cadquery/OCP
+(OpenCascade) to produce exact B-rep geometry.
 """
 
 from __future__ import annotations
@@ -38,28 +38,12 @@ except ImportError:
     _TRIMESH_AVAILABLE = False
 
 try:
-    from OCP.BRepPrimAPI import (  # type: ignore[import-untyped]
-        BRepPrimAPI_MakeBox,
-        BRepPrimAPI_MakeCylinder,
-    )
-    from OCP.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut  # type: ignore[import-untyped]
-    from OCP.BRepBuilderAPI import (  # type: ignore[import-untyped]
-        BRepBuilderAPI_MakeEdge,
-        BRepBuilderAPI_MakeWire,
-        BRepBuilderAPI_MakeFace,
-        BRepBuilderAPI_Transform,
-    )
-    from OCP.BRepPrimAPI import BRepPrimAPI_MakePrism  # type: ignore[import-untyped]
-    from OCP.gp import gp_Pnt, gp_Vec, gp_Dir, gp_Ax2, gp_Trsf, gp_Mat, gp_XYZ  # type: ignore[import-untyped]
-    from OCP.TopoDS import TopoDS_Shape, TopoDS_Compound  # type: ignore[import-untyped]
-    from OCP.BRep import BRep_Builder  # type: ignore[import-untyped]
-    from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs  # type: ignore[import-untyped]
-    from OCP.Interface import Interface_Static  # type: ignore[import-untyped]
-    from OCP.TopLoc import TopLoc_Location  # type: ignore[import-untyped]
+    import cadquery as cq  # type: ignore[import-untyped]
 
-    _OCP_AVAILABLE = True
+    _CADQUERY_AVAILABLE = True
 except ImportError:
-    _OCP_AVAILABLE = False
+    cq = None  # type: ignore[assignment]
+    _CADQUERY_AVAILABLE = False
 
 
 # ---------------------------------------------------------------------------
@@ -139,10 +123,10 @@ def export_frame_stl(
 
 
 # ---------------------------------------------------------------------------
-# STEP export helpers (OCP / OpenCascade direct)
+# STEP export helpers
 # ---------------------------------------------------------------------------
 
-# GiraffeCAD uses metres; OCP/STEP uses millimetres
+# GiraffeCAD uses metres; cadquery/OCP/STEP uses millimetres
 _M_TO_MM = 1000.0
 _STEP_HALF_SPACE_EXTENT = 10_000.0  # mm — large box stand-in for HalfSpace
 
@@ -152,22 +136,22 @@ def _to_mm(val) -> float:
     return sympy_to_float(val) * _M_TO_MM
 
 
-def _csg_to_ocp(csg: CutCSG) -> "TopoDS_Shape":
-    """Recursively convert a CutCSG tree (in global coords) to an OCP shape."""
+def _csg_to_cadquery(csg: CutCSG) -> "cq.Workplane":
+    """Recursively convert a CutCSG tree (in global coords) to a cadquery solid."""
     import sys
     try:
         if isinstance(csg, RectangularPrism):
-            return _prism_to_ocp(csg)
+            return _prism_to_cq(csg)
         if isinstance(csg, Cylinder):
-            return _cylinder_to_ocp(csg)
+            return _cylinder_to_cq(csg)
         if isinstance(csg, ConvexPolygonExtrusion):
-            return _extrusion_to_ocp(csg)
+            return _extrusion_to_cq(csg)
         if isinstance(csg, HalfSpace):
-            return _halfspace_to_ocp(csg)
+            return _halfspace_to_cq(csg)
         if isinstance(csg, SolidUnion):
-            return _union_to_ocp(csg)
+            return _union_to_cq(csg)
         if isinstance(csg, Difference):
-            return _difference_to_ocp(csg)
+            return _difference_to_cq(csg)
         raise TypeError(f"Unsupported CutCSG type for STEP export: {type(csg).__name__}")
     except Exception as exc:
         print(
@@ -200,17 +184,6 @@ def _csg_to_ocp(csg: CutCSG) -> "TopoDS_Shape":
         raise
 
 
-def _make_trsf(rot: list[list[float]], tx: float, ty: float, tz: float) -> "gp_Trsf":
-    """Build a gp_Trsf from a 3x3 rotation matrix and translation."""
-    trsf = gp_Trsf()
-    trsf.SetValues(
-        rot[0][0], rot[0][1], rot[0][2], tx,
-        rot[1][0], rot[1][1], rot[1][2], ty,
-        rot[2][0], rot[2][1], rot[2][2], tz,
-    )
-    return trsf
-
-
 def _rotation_matrix_from_z_to_dir(dx: float, dy: float, dz: float) -> list[list[float]]:
     """Build an orthogonal 3x3 rotation matrix that maps +Z to (dx, dy, dz)."""
     import math
@@ -219,7 +192,9 @@ def _rotation_matrix_from_z_to_dir(dx: float, dy: float, dz: float) -> list[list
     if norm < 1e-12:
         return [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
     dx, dy, dz = dx / norm, dy / norm, dz / norm
+    # new_z = target direction
     new_z = _np.array([dx, dy, dz])
+    # pick an arbitrary vector not parallel to new_z for cross product
     if abs(dx) < 0.9:
         ref = _np.array([1.0, 0.0, 0.0])
     else:
@@ -231,24 +206,38 @@ def _rotation_matrix_from_z_to_dir(dx: float, dy: float, dz: float) -> list[list
     return _orthogonalize_rotation(rot.tolist())
 
 
+def _apply_rotation_and_translation(wp: "cq.Workplane", rot: list[list[float]], tx: float, ty: float, tz: float) -> "cq.Workplane":
+    """Apply an orthogonalized rotation + translation to a workplane solid via gp_Trsf."""
+    from OCP.gp import gp_Trsf, gp_Mat, gp_XYZ  # type: ignore[import-untyped]
+    trsf = gp_Trsf()
+    mat = gp_Mat(
+        rot[0][0], rot[0][1], rot[0][2],
+        rot[1][0], rot[1][1], rot[1][2],
+        rot[2][0], rot[2][1], rot[2][2],
+    )
+    trsf.SetValues(
+        mat.Value(1, 1), mat.Value(1, 2), mat.Value(1, 3), tx,
+        mat.Value(2, 1), mat.Value(2, 2), mat.Value(2, 3), ty,
+        mat.Value(3, 1), mat.Value(3, 2), mat.Value(3, 3), tz,
+    )
+    moved_shape = wp.val().moved(cq.Location(trsf))
+    return cq.Workplane("XY").newObject([moved_shape])
+
+
 def _orthogonalize_rotation(rot: list[list[float]]) -> list[list[float]]:
     """Re-orthogonalize a 3x3 rotation matrix via SVD to satisfy OpenCascade."""
     import numpy as _np
     u, _, vt = _np.linalg.svd(_np.array(rot, dtype=float))
     r = u @ vt
+    # Ensure proper rotation (det = +1), not reflection
     if _np.linalg.det(r) < 0:
         u[:, -1] *= -1
         r = u @ vt
     return r.tolist()
 
 
-def _apply_transform(shape: "TopoDS_Shape", trsf: "gp_Trsf") -> "TopoDS_Shape":
-    """Apply a gp_Trsf to a shape, returning a new shape."""
-    return BRepBuilderAPI_Transform(shape, trsf, True).Shape()
-
-
-def _transform_shape(shape: "TopoDS_Shape", transform: Transform) -> "TopoDS_Shape":
-    """Apply a GiraffeCAD Transform to an OCP shape."""
+def _transform_workplane(wp: "cq.Workplane", transform: Transform) -> "cq.Workplane":
+    """Apply a GiraffeCAD Transform to a cadquery Workplane via gp_Trsf."""
     m = transform.orientation.matrix
     p = transform.position
     rot = [
@@ -258,74 +247,50 @@ def _transform_shape(shape: "TopoDS_Shape", transform: Transform) -> "TopoDS_Sha
     ]
     rot = _orthogonalize_rotation(rot)
     px, py, pz = _to_mm(p[0]), _to_mm(p[1]), _to_mm(p[2])
-    trsf = _make_trsf(rot, px, py, pz)
-    return _apply_transform(shape, trsf)
+    return _apply_rotation_and_translation(wp, rot, px, py, pz)
 
 
-def _prism_to_ocp(prism: RectangularPrism) -> "TopoDS_Shape":
+def _prism_to_cq(prism: RectangularPrism) -> "cq.Workplane":
     w = _to_mm(prism.size[0])
     h = _to_mm(prism.size[1])
     start = _to_mm(prism.start_distance) if prism.start_distance is not None else -_STEP_HALF_SPACE_EXTENT
     end = _to_mm(prism.end_distance) if prism.end_distance is not None else _STEP_HALF_SPACE_EXTENT
     length = end - start
 
-    # BRepPrimAPI_MakeBox takes two corner points
-    box = BRepPrimAPI_MakeBox(
-        gp_Pnt(-w / 2, -h / 2, start),
-        gp_Pnt(w / 2, h / 2, start + length),
-    ).Shape()
-    return _transform_shape(box, prism.transform)
+    box = cq.Workplane("XY").box(w, h, length, centered=(True, True, False)).translate((0, 0, start))
+    return _transform_workplane(box, prism.transform)
 
 
-def _cylinder_to_ocp(cyl: Cylinder) -> "TopoDS_Shape":
+def _cylinder_to_cq(cyl: Cylinder) -> "cq.Workplane":
     r = _to_mm(cyl.radius)
     start = _to_mm(cyl.start_distance) if cyl.start_distance is not None else -_STEP_HALF_SPACE_EXTENT
     end = _to_mm(cyl.end_distance) if cyl.end_distance is not None else _STEP_HALF_SPACE_EXTENT
     length = end - start
 
-    # Create cylinder along Z, then rotate/translate to match axis
-    ax = gp_Ax2(gp_Pnt(0, 0, start), gp_Dir(0, 0, 1))
-    shape = BRepPrimAPI_MakeCylinder(ax, r, length).Shape()
+    wp = cq.Workplane("XY").circle(r).extrude(length).translate((0, 0, start))
 
-    # Rotate to align with actual axis direction
-    adx = sympy_to_float(cyl.axis_direction[0])
-    ady = sympy_to_float(cyl.axis_direction[1])
-    adz = sympy_to_float(cyl.axis_direction[2])
+    ax = sympy_to_float(cyl.axis_direction[0])
+    ay = sympy_to_float(cyl.axis_direction[1])
+    az = sympy_to_float(cyl.axis_direction[2])
     px = _to_mm(cyl.position[0])
     py = _to_mm(cyl.position[1])
     pz = _to_mm(cyl.position[2])
 
-    rot = _rotation_matrix_from_z_to_dir(adx, ady, adz)
-    trsf = _make_trsf(rot, px, py, pz)
-    return _apply_transform(shape, trsf)
+    rot = _rotation_matrix_from_z_to_dir(ax, ay, az)
+    return _apply_rotation_and_translation(wp, rot, px, py, pz)
 
 
-def _extrusion_to_ocp(ext: ConvexPolygonExtrusion) -> "TopoDS_Shape":
+def _extrusion_to_cq(ext: ConvexPolygonExtrusion) -> "cq.Workplane":
     pts = [(_to_mm(p[0]), _to_mm(p[1])) for p in ext.points]
     start = _to_mm(ext.start_distance) if ext.start_distance is not None else -_STEP_HALF_SPACE_EXTENT
     end = _to_mm(ext.end_distance) if ext.end_distance is not None else _STEP_HALF_SPACE_EXTENT
     length = end - start
 
-    # Build a wire from the polygon points
-    wire_builder = BRepBuilderAPI_MakeWire()
-    for i in range(len(pts)):
-        p1 = pts[i]
-        p2 = pts[(i + 1) % len(pts)]
-        edge = BRepBuilderAPI_MakeEdge(
-            gp_Pnt(p1[0], p1[1], start),
-            gp_Pnt(p2[0], p2[1], start),
-        ).Edge()
-        wire_builder.Add(edge)
-    wire = wire_builder.Wire()
-
-    # Make face from wire, then extrude along Z
-    face = BRepBuilderAPI_MakeFace(wire).Face()
-    shape = BRepPrimAPI_MakePrism(face, gp_Vec(0, 0, length)).Shape()
-
-    return _transform_shape(shape, ext.transform)
+    wp = cq.Workplane("XY").workplane(offset=start).polyline(pts).close().extrude(length)
+    return _transform_workplane(wp, ext.transform)
 
 
-def _halfspace_to_ocp(hs: HalfSpace) -> "TopoDS_Shape":
+def _halfspace_to_cq(hs: HalfSpace) -> "cq.Workplane":
     """Approximate a HalfSpace as a very large box on the 'kept' side."""
     import math
 
@@ -339,42 +304,35 @@ def _halfspace_to_ocp(hs: HalfSpace) -> "TopoDS_Shape":
     nx, ny, nz = nx / norm, ny / norm, nz / norm
 
     extent = _STEP_HALF_SPACE_EXTENT
-    box = BRepPrimAPI_MakeBox(
-        gp_Pnt(-extent, -extent, offset / norm - extent),
-        gp_Pnt(extent, extent, offset / norm + extent),
-    ).Shape()
+    # Box starts at (offset - extent) in the normal direction and extends 2*extent
+    box = cq.Workplane("XY").box(extent * 2, extent * 2, extent * 2, centered=(True, True, False))
+    box = box.translate((0, 0, offset / norm - extent))
 
     rot = _rotation_matrix_from_z_to_dir(nx, ny, nz)
-    trsf = _make_trsf(rot, 0.0, 0.0, 0.0)
-    return _apply_transform(box, trsf)
+    return _apply_rotation_and_translation(box, rot, 0.0, 0.0, 0.0)
 
 
-def _union_to_ocp(union: SolidUnion) -> "TopoDS_Shape":
-    children = [_csg_to_ocp(c) for c in union.children]
+def _union_to_cq(union: SolidUnion) -> "cq.Workplane":
+    children = [_csg_to_cadquery(c) for c in union.children]
     if not children:
         raise ValueError("SolidUnion has no children")
-    result = children[0]
-    for child in children[1:]:
-        result = BRepAlgoAPI_Fuse(result, child).Shape()
+    # Filter out empty results (e.g. from boolean ops that fully subtracted a solid)
+    non_empty = [c for c in children if c.solids().size() > 0]
+    if not non_empty:
+        raise ValueError("SolidUnion: all children produced empty solids")
+    result = non_empty[0]
+    for child in non_empty[1:]:
+        result = result.union(child)
     return result
 
 
-def _difference_to_ocp(diff: Difference) -> "TopoDS_Shape":
-    result = _csg_to_ocp(diff.base)
+def _difference_to_cq(diff: Difference) -> "cq.Workplane":
+    result = _csg_to_cadquery(diff.base)
     for sub in diff.subtract:
-        sub_shape = _csg_to_ocp(sub)
-        result = BRepAlgoAPI_Cut(result, sub_shape).Shape()
+        sub_wp = _csg_to_cadquery(sub)
+        if sub_wp.solids().size() > 0:
+            result = result.cut(sub_wp)
     return result
-
-
-def _write_step(shape: "TopoDS_Shape", filepath: str) -> None:
-    """Write a TopoDS_Shape to a STEP file."""
-    writer = STEPControl_Writer()
-    Interface_Static.SetIVal_s("write.surfacecurve.mode", 1)
-    writer.Transfer(shape, STEPControl_AsIs)
-    status = writer.Write(filepath)
-    if status != 1:  # IFSelect_RetDone = 1
-        raise RuntimeError(f"STEP write failed with status {status}")
 
 
 # ---------------------------------------------------------------------------
@@ -385,24 +343,24 @@ def _write_step(shape: "TopoDS_Shape", filepath: str) -> None:
 def export_cut_timber_step(cut_timber: CutTimber, filepath: Union[str, Path]) -> None:
     """Export a single CutTimber to a STEP file (global coordinates, millimetres).
 
-    Requires OCP (cadquery-ocp). Install with: ``pip install cadquery-ocp``
+    Requires cadquery. Install with: ``pip install cadquery``
 
     Args:
         cut_timber: The timber (with cuts applied) to export.
         filepath: Destination path. Parent directories are created if needed.
     """
-    if not _OCP_AVAILABLE:
+    if not _CADQUERY_AVAILABLE:
         raise ImportError(
-            "OCP (cadquery-ocp) is required for STEP export. "
-            "Install it with: pip install cadquery-ocp"
+            "cadquery is required for STEP export. "
+            "Install it with: pip install cadquery"
         )
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     local_csg = cut_timber.render_timber_with_cuts_csg_local()
     global_csg = adopt_csg(cut_timber.timber.transform, Transform.identity(), local_csg)
-    shape = _csg_to_ocp(global_csg)
-    _write_step(shape, str(filepath))
+    wp = _csg_to_cadquery(global_csg)
+    cq.exporters.export(wp, str(filepath), cq.exporters.ExportTypes.STEP)
 
 
 def export_frame_step(
@@ -413,7 +371,7 @@ def export_frame_step(
 ) -> List[Path]:
     """Export every timber in a Frame to individual STEP files.
 
-    Requires OCP (cadquery-ocp). Install with: ``pip install cadquery-ocp``
+    Requires cadquery. Install with: ``pip install cadquery``
 
     Geometry is in millimetres (standard STEP/CAD convention).
 
@@ -426,34 +384,33 @@ def export_frame_step(
     Returns:
         List of paths written.
     """
-    if not _OCP_AVAILABLE:
+    if not _CADQUERY_AVAILABLE:
         raise ImportError(
-            "OCP (cadquery-ocp) is required for STEP export. "
-            "Install it with: pip install cadquery-ocp"
+            "cadquery is required for STEP export. "
+            "Install it with: pip install cadquery"
         )
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     written: List[Path] = []
 
-    shapes: list[TopoDS_Shape] = []
+    workplanes: list[cq.Workplane] = []
     for i, ct in enumerate(frame.cut_timbers):
         name = ct.timber.ticket.name or f"timber_{i}"
         local_csg = ct.render_timber_with_cuts_csg_local()
         global_csg = adopt_csg(ct.timber.transform, Transform.identity(), local_csg)
-        shape = _csg_to_ocp(global_csg)
-        shapes.append(shape)
+        wp = _csg_to_cadquery(global_csg)
+        workplanes.append(wp)
         dest = output_dir / f"{name}.step"
-        _write_step(shape, str(dest))
+        cq.exporters.export(wp, str(dest), cq.exporters.ExportTypes.STEP)
         written.append(dest)
 
-    if combined and shapes:
-        builder = BRep_Builder()
-        compound = TopoDS_Compound()
-        builder.MakeCompound(compound)
-        for shape in shapes:
-            builder.Add(compound, shape)
+    if combined and workplanes:
+        assembly = cq.Assembly()
+        for i, wp in enumerate(workplanes):
+            name = frame.cut_timbers[i].timber.ticket.name or f"timber_{i}"
+            assembly.add(wp, name=name)
         dest = output_dir / "_combined.step"
-        _write_step(compound, str(dest))
+        assembly.save(str(dest))
         written.append(dest)
 
     return written

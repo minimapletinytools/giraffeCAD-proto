@@ -12,7 +12,7 @@ from code_goes_here.blueprint import (
     export_cut_timber_stl,
     export_frame_stl,
     _TRIMESH_AVAILABLE,
-    _CADQUERY_AVAILABLE,
+    _OCP_AVAILABLE,
 )
 from code_goes_here.timber import CutTimber, Frame, Timber, timber_from_directions
 from code_goes_here.rule import create_v3, create_v2
@@ -134,22 +134,22 @@ class TestExportFrameStl:
 
 
 class TestStepImportGuard:
-    """Ensure STEP functions raise ImportError when cadquery is unavailable."""
+    """Ensure STEP functions raise ImportError when OCP is unavailable."""
 
-    @pytest.mark.skipif(_CADQUERY_AVAILABLE, reason="cadquery IS installed")
+    @pytest.mark.skipif(_OCP_AVAILABLE, reason="OCP IS installed")
     def test_export_cut_timber_step_raises(self):
         from code_goes_here.blueprint import export_cut_timber_step
 
         ct = _simple_cut_timber()
-        with pytest.raises(ImportError, match="cadquery"):
+        with pytest.raises(ImportError, match="OCP"):
             export_cut_timber_step(ct, "/tmp/nope.step")
 
-    @pytest.mark.skipif(_CADQUERY_AVAILABLE, reason="cadquery IS installed")
+    @pytest.mark.skipif(_OCP_AVAILABLE, reason="OCP IS installed")
     def test_export_frame_step_raises(self):
         from code_goes_here.blueprint import export_frame_step
 
         frame = _simple_frame()
-        with pytest.raises(ImportError, match="cadquery"):
+        with pytest.raises(ImportError, match="OCP"):
             export_frame_step(frame, "/tmp/nope_dir")
 
 
@@ -158,7 +158,7 @@ class TestStepImportGuard:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(not _CADQUERY_AVAILABLE, reason="cadquery not installed")
+@pytest.mark.skipif(not _OCP_AVAILABLE, reason="OCP (cadquery-ocp) not installed")
 class TestStepOscarshed:
     """Run STEP export on the full oscarshed frame to catch OCP/cadquery issues."""
 
