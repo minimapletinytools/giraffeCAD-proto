@@ -56,10 +56,10 @@ class TestMiterJoint:
             timberB: Second timber in the joint
         """
         # Get the end position of the cut on timberA (in global coordinates)
-        end_position_A_global = measure_position_on_centerline_from_bottom(timberA, -3).position
+        end_position_A_global = locate_position_on_centerline_from_bottom(timberA, -3).position
         
         # Get the end position of the cut on timberB (in global coordinates)
-        end_position_B_global = measure_position_on_centerline_from_bottom(timberB, -3).position
+        end_position_B_global = locate_position_on_centerline_from_bottom(timberB, -3).position
         
         # see that end_position_A_global is NOT in cut timberA but is in cut timberB
         assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.transform.global_to_local(end_position_A_global))
@@ -756,9 +756,9 @@ class TestTongueAndForkJoint:
     @staticmethod
     def _face_center(timber: Timber, face: TimberFace) -> V3:
         if face == TimberFace.TOP:
-            return measure_top_center_position(timber).position
+            return locate_top_center_position(timber).position
         if face == TimberFace.BOTTOM:
-            return measure_bottom_center_position(timber).position
+            return locate_bottom_center_position(timber).position
 
         center = timber.get_bottom_position_global() + timber.get_length_direction_global() * (timber.length / Rational(2))
         if face == TimberFace.RIGHT:

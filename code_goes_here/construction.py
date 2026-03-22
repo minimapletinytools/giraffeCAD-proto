@@ -590,11 +590,11 @@ def join_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
         New timber connecting timber1 and timber2 along their centerlines
     """
     # Calculate position on timber1
-    pos1 = measure_position_on_centerline_from_bottom(timber1, location_on_timber1).position
+    pos1 = locate_position_on_centerline_from_bottom(timber1, location_on_timber1).position
     
     # Calculate position on timber2
     if location_on_timber2 is not None:
-        pos2 = measure_position_on_centerline_from_bottom(timber2, location_on_timber2).position
+        pos2 = locate_position_on_centerline_from_bottom(timber2, location_on_timber2).position
     else:
         # Project location_on_timber1 to timber2's Z axis
         pos2 = Matrix([pos1[0], pos1[1], timber2.get_bottom_position_global()[2] + location_on_timber1])
@@ -668,7 +668,7 @@ def join_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction, ticket=ticket)
 
 # TODO rename to create/raise_joining_timber_perpendicular_on_face_parallel_timbers
-# TODO this function kinda sucks... awkward to measure to use, yo uneed to measure_face(timber1).mark_distance_from_end_along_centerline().distance or osmething crap like that to set lateral_offset_from_centerline_timber1 :(
+# TODO this function kinda sucks... awkward to measure to use, yo uneed to locate_face(timber1).mark_distance_from_end_along_centerline().distance or osmething crap like that to set lateral_offset_from_centerline_timber1 :(
 def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
                                                 location_on_timber1: Numeric,
                                                 stickout: Stickout,
@@ -687,8 +687,8 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
         stickout: How much the joining timber extends beyond each connection point
         lateral_offset_from_centerline_timber1: the lateral position of the joining timber will be aligned to this
         feature_to_mark_on_joining_timber: Optional feature on the create timber to use as the reference for the lateral offset.
-                                           It is intended for you to use the measure_face or measure_long_edge functions to create a plane or line on a timber.
-                                           If not provided, uses the centerline. If a plane is provided, the "origin" of the plane is used for longitudinal positioning (i.e. location_on_timber1). In the case of measure_face, the origin aligns with the center of the created timber.
+                                           It is intended for you to use the locate_face or locate_long_edge functions to create a plane or line on a timber.
+                                           If not provided, uses the centerline. If a plane is provided, the "origin" of the plane is used for longitudinal positioning (i.e. location_on_timber1). In the case of locate_face, the origin aligns with the center of the created timber.
                                            
         size: Cross-sectional size (width, height) of the joining timber
         orientation_face_on_timber1: Optional face of timber1 to orient against. If provided,
@@ -710,7 +710,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
         size = timber1.size
     
     # Calculate position on timber1
-    pos1 = measure_position_on_centerline_from_bottom(timber1, location_on_timber1).position
+    pos1 = locate_position_on_centerline_from_bottom(timber1, location_on_timber1).position
     
     # Project pos1 onto timber2's centerline to find location_on_timber2
     # Vector from timber2's bottom to pos1
@@ -723,7 +723,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
     location_on_timber2 = max(Integer(0), min(timber2.length, location_on_timber2))
     
     # Calculate position on timber2 to determine joining direction
-    pos2 = measure_position_on_centerline_from_bottom(timber2, location_on_timber2).position
+    pos2 = locate_position_on_centerline_from_bottom(timber2, location_on_timber2).position
     joining_direction = normalize_vector(pos2 - pos1)
     
     # Convert TimberFace to a direction vector for orientation (if provided)
@@ -772,25 +772,25 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
             # No offset needed for centerline
             feature_geometry = None
         elif feature_to_mark_on_joining_timber == TimberFeature.TOP_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.TOP)
+            feature_geometry = locate_face(temp_timber, TimberFace.TOP)
         elif feature_to_mark_on_joining_timber == TimberFeature.BOTTOM_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.BOTTOM)
+            feature_geometry = locate_face(temp_timber, TimberFace.BOTTOM)
         elif feature_to_mark_on_joining_timber == TimberFeature.RIGHT_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.RIGHT)
+            feature_geometry = locate_face(temp_timber, TimberFace.RIGHT)
         elif feature_to_mark_on_joining_timber == TimberFeature.LEFT_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.LEFT)
+            feature_geometry = locate_face(temp_timber, TimberFace.LEFT)
         elif feature_to_mark_on_joining_timber == TimberFeature.FRONT_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.FRONT)
+            feature_geometry = locate_face(temp_timber, TimberFace.FRONT)
         elif feature_to_mark_on_joining_timber == TimberFeature.BACK_FACE:
-            feature_geometry = measure_face(temp_timber, TimberFace.BACK)
+            feature_geometry = locate_face(temp_timber, TimberFace.BACK)
         elif feature_to_mark_on_joining_timber == TimberFeature.RIGHT_FRONT_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.RIGHT_FRONT)
+            feature_geometry = locate_long_edge(temp_timber, TimberLongEdge.RIGHT_FRONT)
         elif feature_to_mark_on_joining_timber == TimberFeature.FRONT_LEFT_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.FRONT_LEFT)
+            feature_geometry = locate_long_edge(temp_timber, TimberLongEdge.FRONT_LEFT)
         elif feature_to_mark_on_joining_timber == TimberFeature.LEFT_BACK_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.LEFT_BACK)
+            feature_geometry = locate_long_edge(temp_timber, TimberLongEdge.LEFT_BACK)
         elif feature_to_mark_on_joining_timber == TimberFeature.BACK_RIGHT_EDGE:
-            feature_geometry = measure_long_edge(temp_timber, TimberLongEdge.BACK_RIGHT)
+            feature_geometry = locate_long_edge(temp_timber, TimberLongEdge.BACK_RIGHT)
         else:
             raise ValueError(f"Unsupported TimberFeature: {feature_to_mark_on_joining_timber}")
     
@@ -864,13 +864,13 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
     adjusted_lateral_offset = lateral_offset_from_centerline_timber1 + lateral_offset_adjustment
     
     # Recalculate pos1 with the adjusted location
-    pos1 = measure_position_on_centerline_from_bottom(timber1, adjusted_location_on_timber1).position
+    pos1 = locate_position_on_centerline_from_bottom(timber1, adjusted_location_on_timber1).position
     
     # Recalculate location_on_timber2 and pos2 based on adjusted pos1
     to_pos1 = pos1 - timber2.get_bottom_position_global()
     location_on_timber2 = to_pos1.dot(timber2.get_length_direction_global()) / timber2.get_length_direction_global().dot(timber2.get_length_direction_global())
     location_on_timber2 = max(Integer(0), min(timber2.length, location_on_timber2))
-    pos2 = measure_position_on_centerline_from_bottom(timber2, location_on_timber2).position
+    pos2 = locate_position_on_centerline_from_bottom(timber2, location_on_timber2).position
     joining_direction = normalize_vector(pos2 - pos1)
     
     # Determine which dimension of the created timber is perpendicular to the joining direction

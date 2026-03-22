@@ -114,6 +114,25 @@ Ok, so we only need to do the following:
 -so we need CSG feature and we need to be able to send it through the CSG tree to diff away stuff from it.
 -and CSG features can be primitive CSG features or derived ones. For derived features... maybe the noly derived feature we support is differences between some primitive CSG feature and the uncut timber prism :O, that seems reasoabel to me?
 
+3/22 actual plan:
+
+interface looks like:
+`check_feature(csg, feature) -> bool`
+
+feature are defined when constructing the CSG tree. We can limit it to the following 2 cases:
+- as as an edge or face feature of a primitive
+- as an edge feature in a difference/union of 2 face features
+
+features are stored in a tree
+- ecah csg has a feature field (should I just derive from the Ticket class so you can use the name field? probably not??)
+- derive_fetaure(csg, feature_field) -> CSGFeature
+- feature_field is CSG class specific, it can refer to child features in union/difference, in primitives it refers to the primitive geometry
+
+the final returned csg has a ticket that points to a feature in the top level Difference(ptw, [negative_cuts]) 
+- you will need to store this object now in cut timber instead of building it on the fly
+
+
+
 
 :: 2/5/2026 JS<->Python interaction DREAM
 viewer js calls frame manager python script that holds hores code and hot reloads the target script and runs it and stores the resulting frame. The frame manager has a websocket or whatever that communicates with js. The socket has teh following things:
@@ -300,12 +319,11 @@ DONE-move all jonits over to arrangements
 DONE-implement tongue and fork butt joint 
 DONE-fix step output
 DONE-add profiing stats
-
-
--change nominal size to nominal half size in direction (this is kind acute actually cuz it can do diagonal size which is something you need, except you probably want get_perfect_size_in_direction)
-  -maybe rename to something else
 DONE-add get_perfect_size_in_direction
+DONE-change nominal size to nominal half size in direction (this is kind acute actually cuz it can do diagonal size which is something you need, except you probably want get_perfect_size_in_direction)
+  -maybe rename to something else
 
+-rename measure to locate
 -tag reference faces on timber 
   -assert they are coincident
   -for now require nominaland ptw dimensions to match

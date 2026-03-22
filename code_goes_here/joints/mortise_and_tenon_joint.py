@@ -10,15 +10,15 @@ from functools import wraps
 
 from code_goes_here.timber import *
 from code_goes_here.measuring import (
-    measure_top_center_position,
-    measure_bottom_center_position,
-    measure_position_on_centerline_from_bottom,
-    measure_position_on_centerline_from_top,
-    measure_into_face,
-    measure_face,
-    measure_centerline,
-    measure_edge,
-    measure_plane_from_edge_in_direction,
+    locate_top_center_position,
+    locate_bottom_center_position,
+    locate_position_on_centerline_from_bottom,
+    locate_position_on_centerline_from_top,
+    locate_into_face,
+    locate_face,
+    locate_centerline,
+    locate_edge,
+    locate_plane_from_edge_in_direction,
     mark_distance_from_end_along_centerline,
     mark_plane_from_edge_in_direction,
     get_point_on_face_global,
@@ -38,7 +38,7 @@ from .joint_shavings import chop_shoulder_notch_aligned_with_timber
 # Helepers
 # ============================================================================
 
-def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(arrangement: ButtJointTimberArrangement, distance_from_centerline: Numeric) -> Plane:
+def locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(arrangement: ButtJointTimberArrangement, distance_from_centerline: Numeric) -> Plane:
     """
     Computes the shoulder plane of the mortise timber, offset from its centerline toward the tenon.
 
@@ -58,7 +58,7 @@ def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(a
     tenon_timber = arrangement.butt_timber
     tenon_end = arrangement.butt_timber_end
 
-    mortise_centerline = measure_centerline(mortise_timber)
+    mortise_centerline = locate_centerline(mortise_timber)
     tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
     if tenon_end == TimberReferenceEnd.TOP:
         tenon_end_position = tenon_timber.get_bottom_position_global() + tenon_timber.get_length_direction_global() * tenon_timber.length
@@ -114,7 +114,7 @@ def measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(a
     else:
         direction_in_plane = normalize_vector(MP)
 
-    return measure_plane_from_edge_in_direction(
+    return locate_plane_from_edge_in_direction(
         mortise_timber, TimberCenterline.CENTERLINE, direction_in_plane, distance_from_centerline
     )
 
@@ -167,7 +167,7 @@ def compute_peg_positions(
         arrangement: Butt joint arrangement (butt_timber = tenon, receiving_timber = mortise).
                      Must have front_face_on_butt_timber set.
         shoulder_plane: The shoulder plane in global space (from
-                        measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber).
+                        locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber).
         peg_parameters: Peg configuration (shape, positions, size, depth, offset).
         tenon_position: Offset of tenon center from timber centerline in tenon local cross-section (X, Y).
 
@@ -200,12 +200,12 @@ def compute_peg_positions(
     tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
 
     # Measure/mark: tenon face plane (gives surface point + normal)
-    tenon_face_plane = measure_face(tenon_timber, peg_face)
+    tenon_face_plane = locate_face(tenon_timber, peg_face)
     peg_face_normal_global = tenon_face_plane.normal
 
     # Measure/mark: tenon and mortise centerlines for axis directions
-    tenon_centerline = measure_centerline(tenon_timber)
-    mortise_centerline = measure_centerline(mortise_timber)
+    tenon_centerline = locate_centerline(tenon_timber)
+    mortise_centerline = locate_centerline(mortise_timber)
 
     # Peg orientation: Z axis = drilling direction (inward from face).
     # The peg drills INTO the timber, so Z points opposite to the face normal.
@@ -273,7 +273,7 @@ def compute_peg_positions(
             + lateral_axis * distance_from_centerline
         )
 
-        # --- Snap to tenon face surface using measure_face plane ---
+        # --- Snap to tenon face surface using locate_face plane ---
         dist_to_face = safe_dot_product(
             tenon_face_plane.normal,
             tenon_face_plane.point - peg_center_global,
@@ -501,7 +501,7 @@ def cut_mortise_and_tenon_joint(
     # -------------------------------------------------------------------------
     # Step 3: Shoulder plane from centerline toward tenon
     # -------------------------------------------------------------------------
-    shoulder_plane = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+    shoulder_plane = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
         arrangement, mortise_shoulder_distance_from_centerline
     )
     shoulder_from_tenon_end_mark = mark_distance_from_end_along_centerline(shoulder_plane, tenon_timber, tenon_end)
@@ -836,7 +836,7 @@ def cut_mortise_and_tenon_joint_on_PAT(
     # from centerline (measured toward the tenon). The face surface sits at
     # face_half_size from the centerline in the toward-tenon direction.
     face_half_size = arrangement.receiving_timber.get_size_in_face_normal_axis(mortise_face) / Integer(2)
-    inset_plane = measure_into_face(mortise_shoulder_inset, mortise_face, arrangement.receiving_timber)
+    inset_plane = locate_into_face(mortise_shoulder_inset, mortise_face, arrangement.receiving_timber)
     inset_marking = mark_plane_from_edge_in_direction(inset_plane, arrangement.receiving_timber, TimberCenterline.CENTERLINE)
     mortise_shoulder_distance_from_centerline = inset_marking.distance
 

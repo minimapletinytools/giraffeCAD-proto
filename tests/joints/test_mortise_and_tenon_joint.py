@@ -20,7 +20,7 @@ from code_goes_here.joints.mortise_and_tenon_joint import (
     _does_shoulder_plane_need_notching,
     cut_mortise_and_tenon_joint_on_FAT,
     cut_mortise_and_tenon_joint_on_PAT,
-    measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber,
+    locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber,
 )
 from tests.testing_shavings import (
     create_standard_vertical_timber,
@@ -515,7 +515,7 @@ class TestPegStuff:
 
 
 class TestMeasureMortiseShoulderPlane:
-    """Tests for measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber"""
+    """Tests for locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber"""
 
     def test_perpendicular_intersecting_centerlines(self):
         """90-degree butt joint where centerlines intersect at origin.
@@ -530,7 +530,7 @@ class TestMeasureMortiseShoulderPlane:
         from code_goes_here.example_shavings import create_canonical_example_butt_joint_timbers
         arrangement = create_canonical_example_butt_joint_timbers()
 
-        plane_at_center = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+        plane_at_center = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
             arrangement, Rational(0)
         )
         # The plane normal points AWAY from the tenon (into the mortise interior).
@@ -546,7 +546,7 @@ class TestMeasureMortiseShoulderPlane:
         # but the direction_in_plane is -Y, so the point moves in -Y.
         # The shoulder conceptually moves toward the tenon, so positive distance
         # means the plane point goes away from centerline toward tenon face.
-        plane_offset = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+        plane_offset = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
             arrangement, Rational(1)
         )
         expected_offset_point = mortise_center + create_v3(0, -1, 0)
@@ -583,7 +583,7 @@ class TestMeasureMortiseShoulderPlane:
             butt_timber_end=TimberReferenceEnd.TOP,
         )
 
-        plane = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+        plane = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
             arrangement, Rational(0)
         )
         # The plane normal should be in the mortise cross-section, pointing
@@ -594,10 +594,10 @@ class TestMeasureMortiseShoulderPlane:
         assert safe_dot_product(plane.normal, create_v3(Integer(0), Integer(0), Integer(1))) > 0, \
             "Plane normal should have a +Z component (toward the tenon which is at +Z=3)"
 
-        plane_positive = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+        plane_positive = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
             arrangement, inches(1)
         )
-        plane_negative = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+        plane_negative = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
             arrangement, -inches(1)
         )
         direction_to_tenon = plane_positive.point - plane.point

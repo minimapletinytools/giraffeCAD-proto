@@ -7,8 +7,8 @@ from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.rule import *
 from .joint_shavings import *
-from code_goes_here.measuring import measure_top_center_position, measure_bottom_center_position, mark_distance_from_end_along_centerline, get_point_on_face_global, Space
-from code_goes_here.joints.mortise_and_tenon_joint import measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber
+from code_goes_here.measuring import locate_top_center_position, locate_bottom_center_position, mark_distance_from_end_along_centerline, get_point_on_face_global, Space
+from code_goes_here.joints.mortise_and_tenon_joint import locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber
 
 
 # ============================================================================
@@ -42,17 +42,17 @@ def cut_plain_miter_joint(arrangement: CornerJointTimberArrangement) -> Joint:
     # Get the end directions for each timber (pointing outward from the timber)
     if timberA_end == TimberReferenceEnd.TOP:
         directionA = timberA.get_length_direction_global()
-        endA_position = measure_top_center_position(timberA).position
+        endA_position = locate_top_center_position(timberA).position
     else:  # BOTTOM
         directionA = -timberA.get_length_direction_global() 
-        endA_position = measure_bottom_center_position(timberA).position
+        endA_position = locate_bottom_center_position(timberA).position
     
     if timberB_end == TimberReferenceEnd.TOP:
         directionB = timberB.get_length_direction_global()
-        endB_position = measure_top_center_position(timberB).position
+        endB_position = locate_top_center_position(timberB).position
     else:  # BOTTOM
         directionB = -timberB.get_length_direction_global()
-        endB_position = measure_bottom_center_position(timberB).position
+        endB_position = locate_bottom_center_position(timberB).position
     
     # Check that the timbers are not parallel
     if are_vectors_parallel(directionA, directionB):
@@ -237,10 +237,10 @@ def cut_plain_butt_joint_on_face_aligned_timbers(arrangement: ButtJointTimberArr
     # Get the direction of the butt end (pointing outward from the timber)
     if butt_end == TimberReferenceEnd.TOP:
         butt_direction = butt_timber.get_length_direction_global()
-        butt_end_position = measure_top_center_position(butt_timber).position
+        butt_end_position = locate_top_center_position(butt_timber).position
     else:  # BOTTOM
         butt_direction = -butt_timber.get_length_direction_global()
-        butt_end_position = measure_bottom_center_position(butt_timber).position
+        butt_end_position = locate_bottom_center_position(butt_timber).position
     
     # Find which face of the receiving timber the butt is approaching
     # The butt approaches opposite to its end direction
@@ -369,7 +369,7 @@ def cut_tongue_and_fork_corner_joint(
     fork_entry_long_face = fork_timber.get_closest_oriented_long_face_from_global_direction(-tongue_end_direction)
     fork_shoulder_distance = fork_timber.get_size_in_face_normal_axis(fork_entry_long_face) / Rational(2)
 
-    shoulder_plane = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+    shoulder_plane = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
         butt_arrangement_for_shoulder, fork_shoulder_distance
     )
     shoulder_from_tongue_end_mark = mark_distance_from_end_along_centerline(
@@ -608,7 +608,7 @@ def cut_tongue_and_fork_butt_joint(
     fork_entry_long_face = fork_timber.get_closest_oriented_long_face_from_global_direction(-tongue_end_direction)
     fork_shoulder_distance = fork_timber.get_size_in_face_normal_axis(fork_entry_long_face) / Rational(2)
 
-    shoulder_plane = measure_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+    shoulder_plane = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
         butt_arrangement_for_shoulder, fork_shoulder_distance
     )
     shoulder_from_tongue_end_mark = mark_distance_from_end_along_centerline(
@@ -763,17 +763,17 @@ def cut_plain_butt_splice_joint_on_aligned_timbers(arrangement: SpliceJointTimbe
     
     # Get the end positions for each timber
     if timberA_end == TimberReferenceEnd.TOP:
-        endA_position = measure_top_center_position(timberA).position
+        endA_position = locate_top_center_position(timberA).position
         directionA = timberA.get_length_direction_global()
     else:  # BOTTOM
-        endA_position = measure_bottom_center_position(timberA).position
+        endA_position = locate_bottom_center_position(timberA).position
         directionA = -timberA.get_length_direction_global()
     
     if timberB_end == TimberReferenceEnd.TOP:
-        endB_position = measure_top_center_position(timberB).position
+        endB_position = locate_top_center_position(timberB).position
         directionB = timberB.get_length_direction_global()
     else:  # BOTTOM
-        endB_position = measure_bottom_center_position(timberB).position
+        endB_position = locate_bottom_center_position(timberB).position
         directionB = -timberB.get_length_direction_global()
     
     # Normalize length direction for later use
@@ -1182,9 +1182,9 @@ def _get_face_center_position(timber: PerfectTimberWithin, face: SomeTimberFace)
     face = face.to.face()
 
     if face == TimberFace.TOP:
-        return measure_top_center_position(timber).position
+        return locate_top_center_position(timber).position
     elif face == TimberFace.BOTTOM:
-        return measure_bottom_center_position(timber).position
+        return locate_bottom_center_position(timber).position
     else:
         # For long faces (LEFT, RIGHT, FRONT, BACK), center is at mid-length
         from sympy import Rational
