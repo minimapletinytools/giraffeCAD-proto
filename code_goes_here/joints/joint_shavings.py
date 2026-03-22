@@ -1078,7 +1078,7 @@ def chop_shoulder_notch_on_timber_face(
         corner_point_2 = create_v3(-timber.size[0] / Rational(2) + notch_depth, Integer(0), 
                                    distance_along_timber - notch_width / Rational(2))
     
-    notch_additional_depth = timber.get_nominal_size_in_face_normal_axis(notch_face) / Rational(2)
+    notch_additional_depth = timber.get_half_nominal_size_in_face_normal_axis(notch_face)
 
     # Create the notch prism
     notch_prism = RectangularPrism(

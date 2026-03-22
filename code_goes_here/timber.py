@@ -561,21 +561,49 @@ class PerfectTimberWithin(ABC):
     
     def get_nominal_size_in_face_normal_axis(self, face: SomeTimberFace) -> Numeric:
         """
-        Get the nominal size of the timber in the direction normal to the specified face.
+        Get the full nominal size of the timber in the direction normal to the specified face.
+        
+        For long faces this returns the sum of the two half-sizes (e.g. right + left for
+        RIGHT or LEFT). For end faces (TOP/BOTTOM) this returns the length.
         
         Args:
             face: The face to get the size for (can be TimberFace, TimberEnd, or TimberLongFace)
         """
-
-        nominal_size = self.get_nominal_size()
         face = face.to.face()
         
         if face == TimberFace.TOP or face == TimberFace.BOTTOM:
             return self.length
-        elif face == TimberFace.RIGHT or face == TimberFace.LEFT:
-            return nominal_size[0]
+        
+        width_halves, height_halves = self.get_nominal_half_sizes()
+        if face == TimberFace.RIGHT or face == TimberFace.LEFT:
+            return width_halves[0] + width_halves[1]
         else:  # FRONT or BACK
-            return nominal_size[1]
+            return height_halves[0] + height_halves[1]
+
+    def get_half_nominal_size_in_face_normal_axis(self, face: SomeTimberFace) -> Numeric:
+        """
+        Get the nominal half-size of the timber from the centerline to the specified face.
+        
+        Args:
+            face: A long face (RIGHT, LEFT, FRONT, or BACK). TOP/BOTTOM will raise ValueError
+                  since length has no asymmetry concept.
+        
+        Returns:
+            The half-size from centerline to the specified face.
+        """
+        face = face.to.face()
+        width_halves, height_halves = self.get_nominal_half_sizes()
+        
+        if face == TimberFace.RIGHT:
+            return width_halves[0]
+        elif face == TimberFace.LEFT:
+            return width_halves[1]
+        elif face == TimberFace.FRONT:
+            return height_halves[0]
+        elif face == TimberFace.BACK:
+            return height_halves[1]
+        else:
+            raise ValueError(f"get_half_nominal_size_in_face_normal_axis does not support end faces (got {face})")
 
     def get_size_in_direction_2d(self, direction: V2) -> Numeric:
         """
@@ -794,17 +822,18 @@ class PerfectTimberWithin(ABC):
     
     
     @abstractmethod
-    def get_nominal_size(self) -> V2:
+    def get_nominal_half_sizes(self) -> Tuple[V2, V2]:
         """
-        Returns the nominal cross sectional size of the timber.
+        Returns the nominal half-sizes of the timber measured from the centerline.
         
-        The nominal size as understood by this program is the smallest cross sectional size of the timber (always centered on the centerline) such that all of the timber's actual geometry fits within it. For perfect timbers, this equals the actual geometry.
-         
-        TODO should we allow it not be centered on the centerline?
+        The nominal bounding box is defined by four half-sizes measured from the
+        centerline in each direction. This allows the nominal timber to be non-coaxial
+        with the perfect timber within (useful for square rule layout).
         
         Returns:
-            V2 representing the nominal cross sectional size of the timber
-            
+            Tuple of two V2s:
+              - width_halves: V2(right_half, left_half) — half-sizes in the width dimension
+              - height_halves: V2(front_half, back_half) — half-sizes in the height dimension
         """
         pass
     
@@ -862,10 +891,19 @@ class PerfectTimberWithin(ABC):
         """
         Check if this timber's actual geometry matches its nominal bounding box.
         
+        Returns True when the nominal half-sizes are symmetric and equal to half
+        the perfect timber within size.
+        
         Returns:
             True if the timber is a perfect timber, False otherwise
         """
-        return equality_test(self.get_nominal_size(), self.size)
+        width_halves, height_halves = self.get_nominal_half_sizes()
+        w_half = self.size[0] / Integer(2)
+        h_half = self.size[1] / Integer(2)
+        return (equality_test(width_halves[0], w_half) and
+                equality_test(width_halves[1], w_half) and
+                equality_test(height_halves[0], h_half) and
+                equality_test(height_halves[1], h_half))
 
 
 # TODO HomeDepotTimber or like BoxTimber or NominalTimber, sticktimber and dressedtimber are also cute names?
@@ -883,34 +921,50 @@ class Timber(PerfectTimberWithin):
         - transform: Position and orientation
         - name: Optional name
     """
-    nominal_size: Optional[V2] = None  # Optional nominal size different from PTW size
+    nominal_half_sizes: Optional[Tuple[V2, V2]] = None  # Optional asymmetric half-sizes from centerline
     
-    def get_nominal_size(self) -> V2:
+    def get_nominal_half_sizes(self) -> Tuple[V2, V2]:
         """
-        Returns the nominal cross sectional size of the timber.
+        Returns the nominal half-sizes of the timber.
         
-        If nominal_size_override is set, returns that. Otherwise returns the perfect timber within size.
+        If nominal_half_sizes is set, returns that. Otherwise returns symmetric
+        half-sizes derived from the perfect timber within size.
         
         Returns:
-            V2 with (width, height)
+            Tuple of (V2(right_half, left_half), V2(front_half, back_half))
         """
-        if self.nominal_size is not None:
-            return self.nominal_size
-        return self.size
+        if self.nominal_half_sizes is not None:
+            return self.nominal_half_sizes
+        w_half = self.size[0] / Integer(2)
+        h_half = self.size[1] / Integer(2)
+        return (create_v2(w_half, w_half), create_v2(h_half, h_half))
+    
+    def _nominal_csg_size_and_offset(self) -> Tuple[V2, V3]:
+        """Compute the total nominal cross-section size and the local offset from the centerline."""
+        width_halves, height_halves = self.get_nominal_half_sizes()
+        total_w = width_halves[0] + width_halves[1]
+        total_h = height_halves[0] + height_halves[1]
+        # Offset: positive means shift toward RIGHT / FRONT
+        offset_x = (width_halves[0] - width_halves[1]) / Integer(2)
+        offset_y = (height_halves[0] - height_halves[1]) / Integer(2)
+        return (create_v2(total_w, total_h),
+                create_v3(offset_x, offset_y, Integer(0)))
     
     def get_actual_csg_local(self) -> CutCSG:
         """
         Returns the actual CSG geometry for this timber.
         
-        For Timber, this returns a rectangular prism using the nominal size.
+        For Timber, this returns a rectangular prism using the nominal half-sizes,
+        offset from the centerline when the half-sizes are asymmetric.
         
         Returns:
             RectangularPrism representing the actual geometry in local coordinates
         """
         from .cutcsg import RectangularPrism
+        nominal_size, offset = self._nominal_csg_size_and_offset()
         return RectangularPrism(
-            size=self.get_nominal_size(),
-            transform=Transform.identity(),
+            size=nominal_size,
+            transform=Transform(position=offset, orientation=Orientation.identity()),
             start_distance=Integer(0),
             end_distance=self.length
         )
@@ -919,8 +973,8 @@ class Timber(PerfectTimberWithin):
         """
         Returns the actual CSG geometry extended to infinity at specified ends.
         
-        For Timber, this returns a rectangular prism using the nominal size
-        (which equals the perfect timber within size for perfect timbers).
+        For Timber, this returns a rectangular prism using the nominal half-sizes,
+        offset from the centerline when the half-sizes are asymmetric.
         
         Args:
             extend_bot: If True, extend to -infinity at bottom (z=0)
@@ -929,18 +983,20 @@ class Timber(PerfectTimberWithin):
         Returns:
             CutCSG representing the extended geometry in local coordinates
         """
-        return _create_extended_rectangular_prism(
-            size=self.get_nominal_size(),
-            length=self.length,
-            extend_bot=extend_bot,
-            extend_top=extend_top
+        from .cutcsg import RectangularPrism
+        nominal_size, offset = self._nominal_csg_size_and_offset()
+        return RectangularPrism(
+            size=nominal_size,
+            transform=Transform(position=offset, orientation=Orientation.identity()),
+            start_distance=None if extend_bot else Integer(0),
+            end_distance=None if extend_top else self.length
         )
     
     def deep_hash(self) -> str:
         """
         Compute a deterministic deep hash of this timber's data state.
         
-        Traverses all instance fields (length, size, transform, ticket, nominal_size)
+        Traverses all instance fields (length, size, transform, ticket, nominal_half_sizes)
         and produces a stable hexadecimal hash string. The hash is deterministic
         across process runs and independent of method definitions or Python object identities.
         
@@ -966,16 +1022,18 @@ class Board(PerfectTimberWithin):
     They tend to be big in size and stubby in lengeth.
     """
 
-    def get_nominal_size(self) -> V2:
+    def get_nominal_half_sizes(self) -> Tuple[V2, V2]:
         """
-        Returns the nominal cross sectional size of the board.
+        Returns the nominal half-sizes of the board.
         
-        For Board, this is the same as the perfect timber within size (the bounding box).
+        For Board, these are symmetric halves of the perfect timber within size.
         
         Returns:
-            V2 with (width, height)
+            Tuple of (V2(right_half, left_half), V2(front_half, back_half))
         """
-        return self.size
+        w_half = self.size[0] / Integer(2)
+        h_half = self.size[1] / Integer(2)
+        return (create_v2(w_half, w_half), create_v2(h_half, h_half))
     
     def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
         """
@@ -1013,10 +1071,9 @@ class FauxTimber(PerfectTimberWithin):
         #TODO create a PerfectTimberWithin from the reoriented board
         raise NotImplementedError("TODO")
 
-    def get_nominal_size(self) -> V2:
-        #TODO return the nominal size of the faux timber which should be the same as the original board
-        return self.board.get_nominal_size()
-        pass
+    def get_nominal_half_sizes(self) -> Tuple[V2, V2]:
+        #TODO return the nominal half-sizes of the faux timber which should be the same as the original board
+        return self.board.get_nominal_half_sizes()
 
     def reorient_csg(self, csg: CutCSG) -> CutCSG:
         #TODO reorient the csg from the faux timber's orientation to the board's orientation
@@ -1038,16 +1095,17 @@ class RoundTimber(PerfectTimberWithin):
     """
     diameter: Numeric = field(kw_only=True)  # Diameter of the circular cross-section
     
-    def get_nominal_size(self) -> V2:
+    def get_nominal_half_sizes(self) -> Tuple[V2, V2]:
         """
-        Returns the nominal cross sectional size of the timber.
+        Returns the nominal half-sizes of the round timber.
         
-        For round timbers, this is a square bounding box that contains the circular cross-section.
+        For round timbers, this is a symmetric square bounding box using the diameter.
         
         Returns:
-            V2 with (diameter, diameter)
+            Tuple of (V2(d/2, d/2), V2(d/2, d/2))
         """
-        return create_v2(self.diameter, self.diameter)
+        half_d = self.diameter / Integer(2)
+        return (create_v2(half_d, half_d), create_v2(half_d, half_d))
     
     def get_actual_csg_local(self) -> CutCSG:
         """
@@ -1101,6 +1159,11 @@ class MeshTimber(PerfectTimberWithin):
     
     TODO: Add mesh_csg field and override get_actual_csg_local()
     """
+    def get_nominal_half_sizes(self) -> Tuple[V2, V2]:
+        w_half = self.size[0] / Integer(2)
+        h_half = self.size[1] / Integer(2)
+        return (create_v2(w_half, w_half), create_v2(h_half, h_half))
+
     def can_be_extended_for_joints(self) -> bool:
         return False
     
@@ -1163,16 +1226,18 @@ class RegularPolygonTimber(PerfectTimberWithin):
             vertices.append(Matrix([x, y]))
         return vertices
     
-    def get_nominal_size(self) -> V2:
+    def get_nominal_half_sizes(self) -> Tuple[V2, V2]:
         """
-        Returns the nominal cross sectional size of the timber.
+        Returns the nominal half-sizes of the polygon timber.
         
-        For polygon extrusion timbers, this is the rectangular bounding box.
+        For polygon extrusion timbers, these are symmetric halves of the rectangular bounding box.
         
         Returns:
-            V2 with (width, height)
+            Tuple of (V2(w/2, w/2), V2(h/2, h/2))
         """
-        return self.size
+        w_half = self.size[0] / Integer(2)
+        h_half = self.size[1] / Integer(2)
+        return (create_v2(w_half, w_half), create_v2(h_half, h_half))
     
     def get_actual_csg_local(self) -> CutCSG:
         """
