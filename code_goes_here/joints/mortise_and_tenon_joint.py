@@ -608,7 +608,7 @@ def cut_mortise_and_tenon_joint(
         if tenon_end == TimberReferenceEnd.TOP
         else HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(-1)), offset=-tip_z_local)
     )
-    print(f"Redundant end cut at z={tip_z_local} in tenon local space to ensure clean tip")
+    
     tenon_cut = Cutting(
         timber=tenon_timber,
         maybe_top_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.TOP else None,

@@ -870,9 +870,6 @@ def cut_mitered_and_keyed_lap_joint(arrangement: CornerJointTimberArrangement, l
             f"TimberB size: {float(timberB_inner_face_size):.3f}"
         )
     
-    print(f"timberA_inner_face_enum: {timberA_inner_face_enum}")
-    print(f"timberB_inner_face_enum: {timberB_inner_face_enum}")
-    
     # ========================================================================
     # Step 6: Create marking transform on timberA
     # ========================================================================
