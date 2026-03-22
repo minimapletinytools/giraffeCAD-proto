@@ -8,7 +8,7 @@ from code_goes_here.construction import *
 from code_goes_here.rule import *
 from .joint_shavings import *
 from code_goes_here.measuring import locate_top_center_position, locate_bottom_center_position, mark_distance_from_end_along_centerline, get_point_on_face_global, Space
-from code_goes_here.joints.mortise_and_tenon_joint import locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber
+from code_goes_here.joints.build_a_butt_joint_shavings import locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber
 
 
 # ============================================================================

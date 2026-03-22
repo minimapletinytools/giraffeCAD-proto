@@ -45,8 +45,8 @@ if script_dir not in sys.path:
 # RENDER_TYPE: 'pattern' or 'group'
 # - 'pattern': Render a single pattern by name
 # - 'group': Render all patterns in a group with spacing
-RENDER_TYPE = 'group'
-#RENDER_TYPE = 'pattern'
+#RENDER_TYPE = 'group'
+RENDER_TYPE = 'pattern'
 
 # PATTERN_NAME: Name of a specific pattern to render (when RENDER_TYPE = 'pattern')
 # Examples of available patterns:
@@ -56,7 +56,7 @@ RENDER_TYPE = 'group'
 #PATTERN_NAME = 'mortise_and_tenon_simple'
 #PATTERN_NAME = 'brace_joint'  # Brace joint with mortise and tenon connections
 #PATTERN_NAME = 'dovetail_half_lap'
-#PATTERN_NAME = 'oscar_shed'
+PATTERN_NAME = 'oscar_shed'
 #PATTERN_NAME = 'gooseneck_simple'
 #PATTERN_NAME = 'shoulder_notch'
 #PATTERN_NAME = 'short_post'
@@ -65,7 +65,7 @@ RENDER_TYPE = 'group'
 #PATTERN_NAME = 'brace_joint'
 #PATTERN_NAME = 'sawhorse'
 #PATTERN_NAME = 'irrational_angles'
-PATTERN_NAME = 'tongue_and_fork_butt_joint_138'
+#PATTERN_NAME = 'tongue_and_fork_butt_joint_138'
 
 # GROUP_NAME: Name of a pattern group to render (when RENDER_TYPE = 'group')
 GROUP_NAME = 'plain_joints'

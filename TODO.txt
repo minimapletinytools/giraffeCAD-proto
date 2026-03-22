@@ -322,8 +322,10 @@ DONE-add profiing stats
 DONE-add get_perfect_size_in_direction
 DONE-change nominal size to nominal half size in direction (this is kind acute actually cuz it can do diagonal size which is something you need, except you probably want get_perfect_size_in_direction)
   -maybe rename to something else
+DONE-rename measure to locate
 
--rename measure to locate
+DONE-build-a-butt_joint.py
+
 -tag reference faces on timber 
   -assert they are coincident
   -for now require nominaland ptw dimensions to match
