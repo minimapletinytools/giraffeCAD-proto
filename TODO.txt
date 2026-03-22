@@ -17,8 +17,6 @@ escape deselects
 pressing F focuses on the selection
 
 
-
-
 :: 3/8/2025 viewer next steps
 DONE-update vscode plugin to use python IPC or something
   -probably wrap in an interface s you can use websocket or stdio or whatever
@@ -68,7 +66,6 @@ DONE-navigation support
 
 -save as STL or STEP or whatever button
 
-
 -patternbook integration 
   -patterns are loaded in a hierarchy (horesCoAd < imported libraries < user space)
   -"try me" button creates a copy of teh pattern script in user space with comments indicating that this is temporar yand ovewriting
@@ -78,27 +75,15 @@ DONE-navigation support
   -clicking on a timber that is in focus highlight sthe featuer on the timber
     -umm, but yo udon't want to do this when too much is selecetd, maybe only do this if a joint or single timber is selected
 
--bonus, simple drawing support??
+-bonus, simple measurement support??
   -identify 2 features and draw a distance line between them, lines always show up above everything
   -distance lines can be clicked on which highlight the fetaures they measure from, hence features need to be selectively rendered
 
+-bonus ortho view drawing support
+  -take simple measurement support and then render a single timber in ortho view
+  -you need a method to check if 2 timbers are the same or rotatinos/reflections of each other
+  -maybe there is a likea. "drawing page" that lets you group timbers into pages, and then select how to orient timbers
 
-
-
-:: 2/24/2025 measure/mark rules
-
-we have the following measurements
-MeasuredTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane', 'Space']
-
-And a bunch of different markings which are local to timber features. 
-
-But markings follow the general pattern
-
-mark(measured_feature, timber, feature)
-
-and then their measure function returns another measured_feature, they type of which should be determined from mesaured_feature and feature 
-
-we want a set of rules to determine what feature type gets returned
 
 
 :: 2/5/2026 CSG feature notes
@@ -130,111 +115,6 @@ features are stored in a tree
 
 the final returned csg has a ticket that points to a feature in the top level Difference(ptw, [negative_cuts]) 
 - you will need to store this object now in cut timber instead of building it on the fly
-
-
-
-
-:: 2/5/2026 JS<->Python interaction DREAM
-viewer js calls frame manager python script that holds hores code and hot reloads the target script and runs it and stores the resulting frame. The frame manager has a websocket or whatever that communicates with js. The socket has teh following things:
-
-- on_frame_updated(): fires when target script changes and script was rerun, if success, gives a list of CHANGED timbers names in the frame
-- get_frame(): gets the entire frame CSG and metadata for rendering
-- get_member(name): gets CSG and metadata for a specific timber
-- raycast_feature(member/feature filter, raycast_point_location): returns feature that got clicked on
-
-:: 1/23/2026 viewer planning notes
-
-use three.js to implement viewer as a VScode plugin
-
-base features:
--vscode integration (must be easy to use and integrate with some main script)
--render all timbers
--3d space navigation
--click on timber to focus and see more details
-  -render gimbal to show local coordinates
-
-additional features:
--incremental rerendering upon refresh
--timber/folder hierarchy (show/hide/collapse)
--hover over focused timber individual fetaures 
--feature rendering (e.g. render a face in a different color, render joint cuts in different color, etc)
-
-future features:
--2d/3d drawing generation and view (add mesaurements to )
-  -a good step 1 would be to show some basic measurements when focused on 1 timber
--assembly explosion
-
-
-major decision points and things you'll probably need
--triangulation in python or js  (probably in js)
--CSG to mesh function
--add metadata to timbers
--add metadata to CSG/joints for features
-  -this includes naming cuts and sub cuts like faces of a prism
-  -TODO you probably need some feature CSG classes and then learn to intersect them for new features...
-  -TODO this needs to be its own spec
-
-for the naive version of feature highlighting:
-  -CSG metadata maps to feature filter functions so that we can do the following
-    -you probbaly need some kinda BVH to do this efficiently, but linear search is fine too LOL
-  -hover -> raycast triangle -> find feature on timber
-
-
-
-
-:: 1/23/2026 viewer and drawing notes [messy]
-
-We want to be able to generate 2d/3d drawings and be able to highlight features in the viewer.
-
-so the key thing we need is to be able to identify features on timbers. Thihhs comes in 2 flavors
-1. when generating diagrams, it needs a list of features to create drawings from
-2. when in the viewer, it needs to raycast to see which featuer your hovering over.
-
-2. is more or less covered by 1, perhaps we need some additional data to deal with priorities or something but it should nto be a big deal.
-
-For features when generating drawings, lets worok through some broad examples:
-
--round draw bore holes need their centers and diameters marked
--mortise holes need their dimensions and depth marked
--angled things can have lengths projected onto axis and/OR show actual angle
--only 1 side of parallel lines of rectangles need to be marked
--view from multiple isometric angles, each measurement need only be drawn once (do this automatically or allow user to specify which measurement goes to which view)
--measurements are specified to some reference point
-  -you could auto pick reference point and ensure all referenced points can be referenced to face/edge on the timber I guess?
-  -or allow user to specify which feature to reference to in the drawing
--automatic marking generation will probbaly make too many marking so maybe remove some?
--I think in general we need to make suer all features are solveable, have priority on some fetaures, 
-  -but prehaps we just name some featuers and do due diligence in coding to ensure everything else is solveable
-
-examples of features we want to mark:
-
--distance between 2 parallel faces
-  -choose side perpendicular to these 2 faces to draw on (or with smallest dot product)
-
-
--special rules for face aligned features:
-TODO
-
-
-specific examples:
-
--mortise example:
-  -mortise width and height (distance between opposing parallel faces of the mortise)
-    -pick a view to draw it, either top or side, but not from the ends (could use priority system to determine which face of the timber to mark on?)
-  -morties depth
-    -distance between morties shoulder face and mortise bottom
-  -mortise shoulder
-    -side view only, distance between mortise shoulder face and timber face that the morties is on 
-  -mortise position
-    -distance from one side of the mortise to timber face
-    -distance from one side of the mortise to the timber end (need rule to pick side, I guess just pick the closest?)
-    -(HARD) if multiple mrotises in a row on a timber we may want to do interval spacing (from center) or side to side on the mortises
-    -if rotated on face normal axis, mortise, then do a corner of the mortise + angles I guess?
-    -if rotated on another axis then mortise depth is measured from 1 side of the 
-  
-
-So we need to design a way to 
-1. mark features with names 
 
 
 
@@ -293,7 +173,6 @@ class Ticket
 
 
 :: TODO
-
 DONE-decide what "vanilla" project looks like
   DONE-can we just run the cdoe and take what it returns
   DONE-or do we scan for certain patterns
@@ -323,7 +202,6 @@ DONE-add get_perfect_size_in_direction
 DONE-change nominal size to nominal half size in direction (this is kind acute actually cuz it can do diagonal size which is something you need, except you probably want get_perfect_size_in_direction)
   -maybe rename to something else
 DONE-rename measure to locate
-
 DONE-build-a-butt_joint.py
 
 -tag reference faces on timber 
@@ -342,8 +220,6 @@ DONE-build-a-butt_joint.py
     -allow features to be labeled as saw or chisel so we can do cutting instructions
     -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
 
-
-
 -do better profiling (probably just need to eval after timber creation)
 -rewrite accessories as timbers probably, so you can leverage any drawing capabilites that are added to timbers in the future
 -add accessories to STEP STL and viewer
@@ -355,8 +231,6 @@ DONE-build-a-butt_joint.py
   -you need to create shoulder_shavings for making shoulder cuts
     -shoulder cuts should be infinite in one direction so can generate the positive and negative for both sides easily
       -I guess you need a full space cut?
-
-
 
 -add sensibility checks to arrangement (so basically they intersect at least a little bit)
   -maybe add a generic check intersection function so we can get more precise about it within the joit fuctions.
@@ -490,7 +364,82 @@ TESTIFY
   -add test for finger miter joint thingy
 
 
--M1 (reward is reimburse H2D LOL)
+
+-M2 (reward: reimburse camera)
+  -improve ticket class
+  -features
+  -VIEWER :D
+
+-M2.5
+  -add panel/board support 
+  -update shed example to include panels
+  -add screw joint
+  -add stl support for joint accessories so you can use framing hardware
+
+
+-M3 (reward: HNT gordon plane :D)
+  -decorative cuts
+    -basically joints with 1 timber
+    -you'll need to add curve CSG D:
+  -add more features to mortise and tenon joint
+    -extract out peg creation stuff, it will be useful in other places
+      -basically, just figure out the start point and direction of the peg... it will return to you a tuple of prisms to substract from the mortise and tenon timber, and a peg accessory
+    -support non face aligned cases
+      -clean up the mortise shoulder calculation shit wtf or maybe yo uneed it for non face aligned cases?
+    -end wedged mortise and tenon
+    -fox wedge mortise and tenon
+    -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
+      -same as draw bore but with komisen peg,
+    -tusked mortise and tenon
+    -support tenon_rotation
+    -support mortise_shoulder
+    IGNORE-add additinoal mortise timbers to mortise tenon joint.. so you can do the thing like the stacked joint on the back post of oscarshed
+      -actually better to do this as a house joint and 2 separate mortise and tenon joints. the second mortise and tenon joint will be awkard but it works so why not
+    -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
+      -otherwise calls into mortise_and_tenon above
+      -also needs to convert the mortise into an "end cut"
+  -basic joints, or maybe move these to "lap joints" file?
+    -half_lap (use same code as cross lap joint?)
+    -bridle joint (special case of mortise and tenon? nah)
+  -sidewedged dovetail mortise and tenon joint (this method is its own method)
+  -a few more fancy ones from here https://architizer.com/blog/inspiration/industry/japanese-art-of-wood-joinery/
+
+M3.5
+  -drawing support
+  
+-M4
+  -IFC rendering?
+  -more joints
+    -splice joints
+      -TODO 
+    -coner joints
+      -mortise and tenon end joint (calls mortise and tenon but positions the tenon in away from the end)
+      -half lap
+    -cross joints
+      -double notch
+    -fancy joints
+      -the one where 2 beams butt up against 1 post and have the thing that passes through them
+  -chamfer render support?
+  -define assembly directions for each joint (does this go in meta data?)
+  -assembly solver thing :D (lol no) 
+
+
+
+
+
+
+:: FUTURE shit
+
+-should I make a "block" class that parents "Timber" and then make a "board" class?
+-should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
+- add nominal_size sup port for square and line rule desgins
+- make really awesome examples that showcase each parameter of each function
+
+
+
+:: TODONE
+
+DONE-M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers
   DONE-create a split timber method that takes a timebr and returns 2 timbers (you splice joint themy ourself later)
   DONE-consider making a better way to store TimberWithJoints and joints class etc...
@@ -536,74 +485,6 @@ TESTIFY
       - so I guess joints will resize the timber, even tusk tenon joints take a tusk length parameter, tenon joints have a tenon depth parameter etc.. 
       - i think this is how it already is, update the README to explain this
     - move joint section from morenotes into concepts.md and then delete morenotes
-
--M2 (reward: reimburse camera)
-  -decorative cuts
-    -basically joints with 1 timber
-    -you'll need to add curve CSG D:
-  -improve ticket class
-  -VIEWER :D
-
-
--M3 (reward: HNT gordon plane :D)
-  -add more features to mortise and tenon joint
-    -extract out peg creation stuff, it will be useful in other places
-      -basically, just figure out the start point and direction of the peg... it will return to you a tuple of prisms to substract from the mortise and tenon timber, and a peg accessory
-    -support non face aligned cases
-      -clean up the mortise shoulder calculation shit wtf or maybe yo uneed it for non face aligned cases?
-    -end wedged mortise and tenon
-    -fox wedge mortise and tenon
-    -Hōzo-zashi Komisen-dome (ほぞ差し込み栓止め)
-      -same as draw bore but with komisen peg,
-    -tusked mortise and tenon
-    -support tenon_rotation
-    -support mortise_shoulder
-    IGNORE-add additinoal mortise timbers to mortise tenon joint.. so you can do the thing like the stacked joint on the back post of oscarshed
-      -actually better to do this as a house joint and 2 separate mortise and tenon joints. the second mortise and tenon joint will be awkard but it works so why not
-    -end_mortise_and_tenon (opitonally extends the mortising timber and offsets the tenon)
-      -otherwise calls into mortise_and_tenon above
-      -also needs to convert the mortise into an "end cut"
-  -basic joints, or maybe move these to "lap joints" file?
-    -half_lap (use same code as cross lap joint?)
-    -bridle joint (special case of mortise and tenon? nah)
-  -sidewedged dovetail mortise and tenon joint (this method is its own method)
-  -a few more fancy ones from here https://architizer.com/blog/inspiration/industry/japanese-art-of-wood-joinery/
-
--M4
-  -IFC rendering?
-  -add panel/board support 
-  -update shed example to include panels
-  -more joints
-    -splice joints
-      -TODO 
-    -coner joints
-      -mortise and tenon end joint (calls mortise and tenon but positions the tenon in away from the end)
-      -half lap
-    -cross joints
-      -double notch
-    -fancy joints
-      -the one where 2 beams butt up against 1 post and have the thing that passes through them
-  -add screw joint
-  -chamfer render support?
-  -add stl support for joint accessories so you can use framing hardware
-  -define assembly directions for each joint (does this go in meta data?)
-  -assembly solver thing :D (lol no) 
-
-
-
-
-
-
-:: FUTURE shit
-
--should I make a "block" class that parents "Timber" and then make a "board" class?
--should we attach meta info to Timbers, it would be nice if timbers were aware of their location on the footprint to assist in finding reference faces for joint operations
-- add nominal_size sup port for square and line rule desgins
-- make really awesome examples that showcase each parameter of each function
-
-
-
-:: TODONE
 
 DONE-finish mortise and tenon joint non angle stuff and peg depth
 DONE/IGNORE-clean up docs on one joint function
@@ -904,6 +785,127 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 
 :: END TODONE
+
+
+
+:: 2/24/2025 measure/mark rules
+
+we have the following measurements
+MeasuredTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane', 'Space']
+
+And a bunch of different markings which are local to timber features. 
+
+But markings follow the general pattern
+
+mark(measured_feature, timber, feature)
+
+and then their measure function returns another measured_feature, they type of which should be determined from mesaured_feature and feature 
+
+we want a set of rules to determine what feature type gets returned
+
+:: 2/5/2026 JS<->Python interaction DREAM
+viewer js calls frame manager python script that holds hores code and hot reloads the target script and runs it and stores the resulting frame. The frame manager has a websocket or whatever that communicates with js. The socket has teh following things:
+
+- on_frame_updated(): fires when target script changes and script was rerun, if success, gives a list of CHANGED timbers names in the frame
+- get_frame(): gets the entire frame CSG and metadata for rendering
+- get_member(name): gets CSG and metadata for a specific timber
+- raycast_feature(member/feature filter, raycast_point_location): returns feature that got clicked on
+
+:: 1/23/2026 viewer planning notes
+
+use three.js to implement viewer as a VScode plugin
+
+base features:
+-vscode integration (must be easy to use and integrate with some main script)
+-render all timbers
+-3d space navigation
+-click on timber to focus and see more details
+  -render gimbal to show local coordinates
+
+additional features:
+-incremental rerendering upon refresh
+-timber/folder hierarchy (show/hide/collapse)
+-hover over focused timber individual fetaures 
+-feature rendering (e.g. render a face in a different color, render joint cuts in different color, etc)
+
+future features:
+-2d/3d drawing generation and view (add mesaurements to )
+  -a good step 1 would be to show some basic measurements when focused on 1 timber
+-assembly explosion
+
+
+major decision points and things you'll probably need
+-triangulation in python or js  (probably in js)
+-CSG to mesh function
+-add metadata to timbers
+-add metadata to CSG/joints for features
+  -this includes naming cuts and sub cuts like faces of a prism
+  -TODO you probably need some feature CSG classes and then learn to intersect them for new features...
+  -TODO this needs to be its own spec
+
+for the naive version of feature highlighting:
+  -CSG metadata maps to feature filter functions so that we can do the following
+    -you probbaly need some kinda BVH to do this efficiently, but linear search is fine too LOL
+  -hover -> raycast triangle -> find feature on timber
+
+
+
+
+:: 1/23/2026 viewer and drawing notes [messy]
+
+We want to be able to generate 2d/3d drawings and be able to highlight features in the viewer.
+
+so the key thing we need is to be able to identify features on timbers. Thihhs comes in 2 flavors
+1. when generating diagrams, it needs a list of features to create drawings from
+2. when in the viewer, it needs to raycast to see which featuer your hovering over.
+
+2. is more or less covered by 1, perhaps we need some additional data to deal with priorities or something but it should nto be a big deal.
+
+For features when generating drawings, lets worok through some broad examples:
+
+-round draw bore holes need their centers and diameters marked
+-mortise holes need their dimensions and depth marked
+-angled things can have lengths projected onto axis and/OR show actual angle
+-only 1 side of parallel lines of rectangles need to be marked
+-view from multiple isometric angles, each measurement need only be drawn once (do this automatically or allow user to specify which measurement goes to which view)
+-measurements are specified to some reference point
+  -you could auto pick reference point and ensure all referenced points can be referenced to face/edge on the timber I guess?
+  -or allow user to specify which feature to reference to in the drawing
+-automatic marking generation will probbaly make too many marking so maybe remove some?
+-I think in general we need to make suer all features are solveable, have priority on some fetaures, 
+  -but prehaps we just name some featuers and do due diligence in coding to ensure everything else is solveable
+
+examples of features we want to mark:
+
+-distance between 2 parallel faces
+  -choose side perpendicular to these 2 faces to draw on (or with smallest dot product)
+
+
+-special rules for face aligned features:
+TODO
+
+
+specific examples:
+
+-mortise example:
+  -mortise width and height (distance between opposing parallel faces of the mortise)
+    -pick a view to draw it, either top or side, but not from the ends (could use priority system to determine which face of the timber to mark on?)
+  -morties depth
+    -distance between morties shoulder face and mortise bottom
+  -mortise shoulder
+    -side view only, distance between mortise shoulder face and timber face that the morties is on 
+  -mortise position
+    -distance from one side of the mortise to timber face
+    -distance from one side of the mortise to the timber end (need rule to pick side, I guess just pick the closest?)
+    -(HARD) if multiple mrotises in a row on a timber we may want to do interval spacing (from center) or side to side on the mortises
+    -if rotated on face normal axis, mortise, then do a corner of the mortise + angles I guess?
+    -if rotated on another axis then mortise depth is measured from 1 side of the 
+  
+
+So we need to design a way to 
+1. mark features with names 
+
+
 
 :: 1/11/2026 advancedtimber class
 

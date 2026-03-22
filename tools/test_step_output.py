@@ -14,8 +14,9 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent / "patterns" / "structures"))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(PROJECT_ROOT / "patterns" / "structures"))
 
 from code_goes_here.blueprint import export_frame_step, export_cut_timber_step, _OCP_AVAILABLE
 
@@ -27,7 +28,7 @@ def main():
         sys.exit(1)
 
     pattern = sys.argv[1] if len(sys.argv) > 1 else "oscarshed"
-    output_dir = Path("step_test_output") / pattern
+    output_dir = PROJECT_ROOT / "step_test_output" / pattern
 
     print(f"Building frame: {pattern}")
     t0 = time.time()
