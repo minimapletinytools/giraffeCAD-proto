@@ -41,10 +41,51 @@ function createFrameViewer(filePath) {
     );
 }
 
-function renderFrameViewer(panel, filePath, frameData, geometryData, profiling) {
+function initializeFrameViewer(panel, filePath, options = {}) {
+    if (initializedPanels.has(panel)) {
+        return;
+    }
+
+    const loadingText = typeof options.loadingText === 'string' && options.loadingText
+        ? options.loadingText
+        : 'initial creation';
+
+    panel.title = getViewerTitle(filePath);
+    panel.webview.html = getWebviewContent(
+        panel.webview,
+        {
+            name: null,
+            timber_count: 0,
+            accessories_count: 0,
+            timbers: [],
+            accessories: [],
+        },
+        {
+            meshes: [],
+            changedKeys: [],
+            removedKeys: [],
+            remeshMetrics: [],
+            counts: {
+                totalTimbers: 0,
+                changedTimbers: 0,
+                removedTimbers: 0,
+            },
+        },
+        null,
+        {
+            keepLoading: true,
+            loadingText,
+            emptyState: true,
+        }
+    );
+    initializedPanels.add(panel);
+    panel.reveal(vscode.ViewColumn.Two);
+}
+
+function renderFrameViewer(panel, filePath, frameData, geometryData, profiling, uiState = null) {
     panel.title = getViewerTitle(filePath, frameData.name);
     if (!initializedPanels.has(panel)) {
-        panel.webview.html = getWebviewContent(panel.webview, frameData, geometryData, profiling);
+        panel.webview.html = getWebviewContent(panel.webview, frameData, geometryData, profiling, uiState);
         initializedPanels.add(panel);
     } else {
         panel.webview.postMessage({
@@ -52,6 +93,7 @@ function renderFrameViewer(panel, filePath, frameData, geometryData, profiling) 
             frame: frameData,
             geometry: geometryData,
             profiling: profiling || null,
+            uiState: uiState || null,
         });
     }
     panel.reveal(vscode.ViewColumn.Two);
@@ -65,7 +107,7 @@ function getViewerTitle(filePath, frameName = null) {
     return `Horsey: ${fileName} · v${VIEWER_APP_VERSION}`;
 }
 
-function getWebviewContent(webview, frameData, geometryData, profiling) {
+function getWebviewContent(webview, frameData, geometryData, profiling, uiState = null) {
     const templatePath = path.join(webviewDir, 'viewer.html');
     const template = fs.readFileSync(templatePath, 'utf8');
 
@@ -78,6 +120,7 @@ function getWebviewContent(webview, frameData, geometryData, profiling) {
         frame: frameData,
         geometry: geometryData,
         profiling: profiling || null,
+        uiState: uiState || null,
     }));
 
     return template
@@ -157,4 +200,4 @@ function requestViewerScreenshot(panel, options = {}) {
     });
 }
 
-module.exports = { createFrameViewer, renderFrameViewer, requestViewerScreenshot };
+module.exports = { createFrameViewer, initializeFrameViewer, renderFrameViewer, requestViewerScreenshot };

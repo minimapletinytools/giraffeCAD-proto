@@ -69,6 +69,8 @@ class HorseyViewerApp extends LitElement {
         this.meshNameMap = new Map(); // mesh object -> timber name
 
         this.animationHandle = null;
+        this.loadingVisible = true;
+        this.loadingText = 'initial creation';
         this.onWindowMessage = this.onWindowMessage.bind(this);
         this.onWindowScroll = this.onWindowScroll.bind(this);
         this.onWindowMouseUp = this.onWindowMouseUp.bind(this);
@@ -90,6 +92,7 @@ class HorseyViewerApp extends LitElement {
             <button id="to-v3d" title="Jump back to 3D view">to v3d view</button>
             <div id="viewport">
                 <canvas id="c"></canvas>
+                <div id="loading-overlay" class=${this.loadingVisible ? 'visible' : ''}>${this.loadingText}</div>
                 <div id="info"></div>
                 <div id="gizmo-panel" aria-label="Camera and light gizmos">
                     <div class="gizmo-block">
@@ -148,7 +151,8 @@ class HorseyViewerApp extends LitElement {
         this.setupUiEvents();
         this.setupThreeScene();
         window.addEventListener('message', this.onWindowMessage);
-        this.applyPayload(INITIAL_PAYLOAD);
+        this.setLoadingState(true, 'initial creation');
+        void this.applyPayload(INITIAL_PAYLOAD);
         
         // Setup selection listener
         this.selectionManager.onSelectionChanged(() => {
@@ -455,11 +459,18 @@ class HorseyViewerApp extends LitElement {
 
     onWindowMessage(event) {
         const message = event.data || {};
+        if (message.type === 'loadingStatus') {
+            const stage = typeof message.stage === 'string' && message.stage ? message.stage : 'initial creation';
+            this.setLoadingState(true, stage);
+            return;
+        }
+
         if (message.type === 'refresh') {
-            this.applyPayload({
+            void this.applyPayload({
                 frame: message.frame || {},
                 geometry: message.geometry || { meshes: [] },
                 profiling: message.profiling || null,
+                uiState: message.uiState || null,
             });
             return;
         }
@@ -1287,6 +1298,7 @@ class HorseyViewerApp extends LitElement {
         const meshes = (geometryData && geometryData.meshes) ? geometryData.meshes : [];
         const changedKeys = (geometryData && geometryData.changedKeys) ? geometryData.changedKeys : [];
         const removedKeys = (geometryData && geometryData.removedKeys) ? geometryData.removedKeys : [];
+        const remeshMetrics = (geometryData && geometryData.remeshMetrics) ? geometryData.remeshMetrics : [];
         const rebuilt = changedKeys.length;
         const removed = removedKeys.length;
         const total = meshes.length;
@@ -1301,9 +1313,35 @@ class HorseyViewerApp extends LitElement {
             if (typeof profiling.geometry_s === 'number') {
                 parts.push('mesh: ' + (profiling.geometry_s * 1000).toFixed(0) + ' ms');
             }
+            if (typeof profiling.refresh_total_s === 'number') {
+                parts.push('refresh total: ' + (profiling.refresh_total_s * 1000).toFixed(0) + ' ms');
+            }
+            if (typeof profiling.changed_timbers === 'number') {
+                parts.push('changed timbers: ' + profiling.changed_timbers);
+            }
             if (parts.length > 0) {
                 profilingHtml = '<br><strong>Profiling</strong><br>' + parts.join('<br>');
             }
+        }
+
+        let remeshHtml = '';
+        if (remeshMetrics.length > 0) {
+            const totalRemeshMs = remeshMetrics.reduce((sum, metric) => {
+                if (typeof metric.remesh_s === 'number') {
+                    return sum + metric.remesh_s * 1000;
+                }
+                return sum;
+            }, 0);
+            const maxCsgDepth = remeshMetrics.reduce((maxDepth, metric) => {
+                if (typeof metric.csg_depth === 'number') {
+                    return Math.max(maxDepth, metric.csg_depth);
+                }
+                return maxDepth;
+            }, 0);
+            remeshHtml = '<br><strong>Changed Timber Remesh</strong><br>' +
+                'entries: ' + remeshMetrics.length + '<br>' +
+                'remesh total: ' + totalRemeshMs.toFixed(0) + ' ms<br>' +
+                'max CSG depth: ' + maxCsgDepth;
         }
 
         this.renderRoot.querySelector('#debug').innerHTML =
@@ -1312,12 +1350,23 @@ class HorseyViewerApp extends LitElement {
             'rebuilt: ' + rebuilt + '<br>' +
             'reused: ' + reused + '<br>' +
             'removed: ' + removed +
+            remeshHtml +
             profilingHtml;
     }
 
-    updateMeshScene(geometryData) {
+    async updateMeshScene(geometryData, onProgress) {
         const meshes = (geometryData && geometryData.meshes) ? geometryData.meshes : [];
+        const total = meshes.length;
+        let processed = 0;
         const nextKeys = new Set();
+
+        const reportProgress = () => {
+            if (typeof onProgress === 'function') {
+                onProgress(processed, total);
+            }
+        };
+
+        reportProgress();
 
         for (let index = 0; index < meshes.length; index += 1) {
             const mesh = meshes[index];
@@ -1329,6 +1378,11 @@ class HorseyViewerApp extends LitElement {
             const existing = this.meshObjectsByKey.get(key);
             if (existing && existing.hash === hash) {
                 this.meshNameMap.set(existing.mesh, timberName);
+                processed += 1;
+                reportProgress();
+                if (index === 0 || index === meshes.length - 1 || index % 8 === 0) {
+                    await this.waitForNextPaint();
+                }
                 continue;
             }
 
@@ -1366,6 +1420,11 @@ class HorseyViewerApp extends LitElement {
             this.scene.add(reflectionMesh);
             this.meshNameMap.set(solidMesh, timberName);
             this.meshObjectsByKey.set(key, { hash: hash, mesh: solidMesh, edges: edgeMesh, reflection: reflectionMesh });
+            processed += 1;
+            reportProgress();
+            if (index === 0 || index === meshes.length - 1 || index % 8 === 0) {
+                await this.waitForNextPaint();
+            }
         }
 
         for (const existingKey of Array.from(this.meshObjectsByKey.keys())) {
@@ -1380,6 +1439,29 @@ class HorseyViewerApp extends LitElement {
         this.rebuildTimberTable(meshes);
         this.updateReflectionTransforms();
         this.applySelectionOpacity();
+    }
+
+    setLoadingState(visible, text) {
+        this.loadingVisible = Boolean(visible);
+        if (typeof text === 'string' && text) {
+            this.loadingText = text;
+        }
+
+        const overlay = this.renderRoot && this.renderRoot.querySelector
+            ? this.renderRoot.querySelector('#loading-overlay')
+            : null;
+        if (overlay) {
+            overlay.textContent = this.loadingText;
+            overlay.classList.toggle('visible', this.loadingVisible);
+        }
+    }
+
+    waitForNextPaint() {
+        return new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => resolve());
+            });
+        });
     }
 
     getSceneBounds() {
@@ -1414,14 +1496,34 @@ class HorseyViewerApp extends LitElement {
         return { minX, minY, minZ, maxX, maxY, maxZ };
     }
 
-    applyPayload(payload) {
+    async applyPayload(payload) {
         const frameData = payload.frame || {};
         const geometryData = payload.geometry || { meshes: [] };
         const profiling = payload.profiling || null;
+        const uiState = payload.uiState || null;
+
+        if (uiState && uiState.keepLoading) {
+            const loadingText = typeof uiState.loadingText === 'string' && uiState.loadingText
+                ? uiState.loadingText
+                : 'initial creation';
+            this.setLoadingState(true, loadingText);
+            this.updateInfo(frameData);
+            this.updateDebug(geometryData, profiling);
+            this.renderRoot.querySelector('#raw-output').textContent = JSON.stringify({
+                frame: frameData,
+                geometry: geometryData,
+            }, null, 2);
+            return;
+        }
+
+        this.setLoadingState(true, 'initial creation');
+        await this.waitForNextPaint();
 
         this.updateInfo(frameData);
         this.updateDebug(geometryData, profiling);
-        this.updateMeshScene(geometryData);
+        await this.updateMeshScene(geometryData, (processed, total) => {
+            this.setLoadingState(true, `meshing ${processed}/${total}`);
+        });
 
         this.renderRoot.querySelector('#raw-output').textContent = JSON.stringify({
             frame: frameData,
@@ -1451,6 +1553,7 @@ class HorseyViewerApp extends LitElement {
         this.updateLightFromAngles();
         this.drawLightDial();
         this.updateStructureScreenBounds();
+        this.setLoadingState(false);
     }
 
     updateCamera() {

@@ -20,7 +20,7 @@ import time
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 
 def _find_project_root_from_argv() -> "Path | None":
@@ -109,6 +109,22 @@ def get_timber_display_name(timber: Any) -> str:
     if hasattr(timber, "name"):
         return timber.name
     return type(timber).__name__
+
+
+def _compute_csg_depth(csg: Any) -> int:
+    from code_goes_here.cutcsg import SolidUnion, Difference
+
+    if isinstance(csg, SolidUnion):
+        if not csg.children:
+            return 1
+        return 1 + max(_compute_csg_depth(child) for child in csg.children)
+
+    if isinstance(csg, Difference):
+        depths: List[int] = [_compute_csg_depth(csg.base)]
+        depths.extend(_compute_csg_depth(child) for child in csg.subtract)
+        return 1 + max(depths)
+
+    return 1
 
 
 def serialize_cut_timber(cut_timber: Any) -> Dict[str, Any]:
@@ -216,6 +232,7 @@ def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
     frame = state.frame
     meshes = []
     changed_keys = []
+    remesh_metrics = []
     seen_keys = set()
     key_counts: Dict[str, int] = {}
 
@@ -241,17 +258,27 @@ def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
             if cached is not None and cached.get("hash") == geometry_hash:
                 mesh_payload = cached["mesh"]
             else:
+                remesh_t0 = time.monotonic()
+                csg_depth = _compute_csg_depth(local_csg)
                 mesh_payload = _cut_timber_to_triangle_mesh_payload(
                     cut_timber,
                     local_csg,
                     timber_key,
                     geometry_hash,
                 )
+                remesh_s = time.monotonic() - remesh_t0
+                triangle_count = len(mesh_payload.get("indices", [])) // 3
                 state.mesh_cache[timber_key] = {
                     "hash": geometry_hash,
                     "mesh": mesh_payload,
                 }
                 changed_keys.append(timber_key)
+                remesh_metrics.append({
+                    "timberKey": timber_key,
+                    "remesh_s": remesh_s,
+                    "csg_depth": csg_depth,
+                    "triangle_count": triangle_count,
+                })
 
             meshes.append(mesh_payload)
             seen_keys.add(timber_key)
@@ -269,6 +296,12 @@ def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
         "meshes": meshes,
         "changedKeys": changed_keys,
         "removedKeys": removed_keys,
+        "remeshMetrics": remesh_metrics,
+        "counts": {
+            "totalTimbers": len(meshes),
+            "changedTimbers": len(changed_keys),
+            "removedTimbers": len(removed_keys),
+        },
     }
 
 

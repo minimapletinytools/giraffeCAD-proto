@@ -23,6 +23,25 @@
     min-height: 420px;
     border-bottom: 1px solid var(--hv-panel-border);
 }
+#loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.46);
+    color: var(--hv-title);
+    font: 600 14px/1.4 'Segoe UI', sans-serif;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    user-select: none;
+    pointer-events: none;
+    z-index: 6;
+    backdrop-filter: blur(2px);
+}
+#loading-overlay.visible {
+    display: flex;
+}
 canvas { display: block; width: 100%; height: 100%; }
 #info {
     position: absolute; top: 12px; left: 12px;

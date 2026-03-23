@@ -902,6 +902,7 @@ def create_oscarshed(center: Optional[V3] = None):
         )
         joists.append(joist)
 
+
     # ============================================================================
     # Create dovetail butt joints for joists with mudsills
     # ============================================================================

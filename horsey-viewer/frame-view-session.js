@@ -3,7 +3,7 @@ const fs = require('fs');
 const vscode = require('vscode');
 const { PythonRunnerSession } = require('./runner-session');
 const { FileWatcher } = require('./file-watcher');
-const { createFrameViewer, renderFrameViewer, requestViewerScreenshot } = require('./viewer');
+const { createFrameViewer, initializeFrameViewer, renderFrameViewer, requestViewerScreenshot } = require('./viewer');
 
 const VIEWER_LOG_LEVEL_ORDER = {
     debug: 10,
@@ -48,6 +48,38 @@ class FrameViewSession {
         this.pendingRefreshReason = null;
     }
 
+    getRefreshStatsPath() {
+        const projectRoot = this.runnerSession && this.runnerSession.projectRoot
+            ? this.runnerSession.projectRoot
+            : path.dirname(this.filePath);
+        return path.join(projectRoot, '.horsey', 'refresh-stats.json');
+    }
+
+    postLoadingStatus(stage, details = {}) {
+        if (!this.panel) {
+            return;
+        }
+        this.panel.webview.postMessage({
+            type: 'loadingStatus',
+            stage,
+            details,
+        }).catch((error) => {
+            this.log(`[webview] Failed to post loading status '${stage}': ${error.message || error}`);
+        });
+    }
+
+    writeRefreshStats(statsPayload) {
+        try {
+            const outputPath = this.getRefreshStatsPath();
+            fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+            fs.writeFileSync(outputPath, `${JSON.stringify(statsPayload, null, 2)}\n`, 'utf8');
+            return outputPath;
+        } catch (error) {
+            this.log(`[refresh] Failed to write stats JSON: ${error.message || error}`);
+            return null;
+        }
+    }
+
     async initialize() {
         if (this.isDisposed) {
             throw new Error(`Cannot initialize disposed frame view session for ${this.filePath}`);
@@ -57,6 +89,7 @@ class FrameViewSession {
         }
 
         this.panel = createFrameViewer(this.filePath);
+        initializeFrameViewer(this.panel, this.filePath, { loadingText: 'initial creation' });
         this.panel.onDidDispose(() => {
             this.panel = null;
             void this.dispose();
@@ -86,6 +119,7 @@ class FrameViewSession {
             this.log(`[webview:${source}:${level}] ${eventName} v${version} ${details}`);
         });
         this.log('[webview] viewer log bridge active');
+        this.postLoadingStatus('initial creation', { reason: 'session initialize' });
 
         this.runnerSession = new PythonRunnerSession(this.filePath, this.context, this.channel);
         await this.runnerSession.start();
@@ -142,15 +176,60 @@ class FrameViewSession {
         this.isRefreshing = true;
         this.pendingRefreshReason = null;
         this.log(`[refresh] Reloading ${path.basename(this.filePath)} (${reason})`);
+        this.postLoadingStatus('initial creation', { reason });
         let refreshError = null;
         try {
+            const refreshStartNs = process.hrtime.bigint();
             await this.ensureRunnerSession();
             const reloadResult = await this.runnerSession.request('reload_example', { filePath: this.filePath });
             const frameData = await this.runnerSession.request('get_frame');
             const geometryData = await this.runnerSession.request('get_geometry');
+            const refresh_total_s = Number(process.hrtime.bigint() - refreshStartNs) / 1e9;
+
+            const changedKeys = Array.isArray(geometryData && geometryData.changedKeys) ? geometryData.changedKeys : [];
+            const removedKeys = Array.isArray(geometryData && geometryData.removedKeys) ? geometryData.removedKeys : [];
+            const meshes = Array.isArray(geometryData && geometryData.meshes) ? geometryData.meshes : [];
+            const remeshMetrics = Array.isArray(geometryData && geometryData.remeshMetrics) ? geometryData.remeshMetrics : [];
+            const totalTimbers = geometryData && geometryData.counts && Number.isFinite(geometryData.counts.totalTimbers)
+                ? geometryData.counts.totalTimbers
+                : meshes.length;
+
+            const refreshStatsPayload = {
+                timestamp: new Date().toISOString(),
+                sourceFile: this.filePath,
+                reason,
+                refresh: {
+                    scriptReloadDuration_ms: reloadResult && reloadResult.profiling && typeof reloadResult.profiling.reload_s === 'number'
+                        ? Math.round(reloadResult.profiling.reload_s * 1000)
+                        : null,
+                    meshBuildDuration_ms: geometryData && geometryData.profiling && typeof geometryData.profiling.geometry_s === 'number'
+                        ? Math.round(geometryData.profiling.geometry_s * 1000)
+                        : null,
+                    totalRefreshDuration_ms: Math.round(refresh_total_s * 1000),
+                    changedTimberCount: changedKeys.length,
+                    removedTimberCount: removedKeys.length,
+                    totalTimberCount: totalTimbers,
+                    changedTimberKeys: changedKeys,
+                    removedTimberKeys: removedKeys,
+                    perTimberMetrics: remeshMetrics.map((entry) => ({
+                        timberKey: entry.timberKey,
+                        remeshDuration_ms: typeof entry.remesh_s === 'number' ? Math.round(entry.remesh_s * 1000) : null,
+                        csgDepth: typeof entry.csg_depth === 'number' ? entry.csg_depth : null,
+                        triangleCount: typeof entry.triangle_count === 'number' ? entry.triangle_count : null,
+                    })),
+                },
+            };
+
+            const statsPath = this.writeRefreshStats(refreshStatsPayload);
             const profiling = {
                 reload_s: reloadResult && reloadResult.profiling ? reloadResult.profiling.reload_s : null,
                 geometry_s: geometryData && geometryData.profiling ? geometryData.profiling.geometry_s : null,
+                refresh_total_s,
+                changed_timbers: changedKeys.length,
+                removed_timbers: removedKeys.length,
+                total_timbers: totalTimbers,
+                remesh_metrics: remeshMetrics,
+                stats_path: statsPath,
             };
             renderFrameViewer(this.panel, this.filePath, frameData, geometryData, profiling);
             this.log(`[refresh] Reload complete for ${path.basename(this.filePath)}`);
