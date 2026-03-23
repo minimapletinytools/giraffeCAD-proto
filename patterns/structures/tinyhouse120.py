@@ -27,6 +27,7 @@ size_4x6 = create_v2(inches(Rational(7, 2)), inches(Rational(11, 2)))
 post_size = size_4x4
 corner_post_height = feet(11)
 
+
 # Beam parameters — all horizontal members are 4x6 with 6" (5.5") in Z
 # With orientation_width_vector=(0,0,1), size[0] maps to Z axis
 beam_size = create_v2(inches(Rational(11, 2)), inches(Rational(7, 2)))  # 5.5" in Z, 3.5" across
