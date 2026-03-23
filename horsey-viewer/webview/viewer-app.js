@@ -1,6 +1,31 @@
 import { LitElement, html } from 'https://unpkg.com/lit@3.2.0/index.js?module';
 
-const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || { frame: {}, geometry: { meshes: [] } };
+const ViewerPhase = Object.freeze({
+    BOOTING: 'booting',
+    WAITING_FOR_RUNNER: 'waiting_for_runner',
+    APPLYING_GEOMETRY: 'applying_geometry',
+    READY: 'ready',
+    ERROR: 'error',
+});
+
+function createInitialViewState() {
+    return {
+        phase: ViewerPhase.BOOTING,
+        loadingText: 'initial creation',
+        refreshToken: 0,
+        error: null,
+    };
+}
+
+const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || {
+    frame: {},
+    geometry: { meshes: [] },
+    uiState: {
+        phase: ViewerPhase.WAITING_FOR_RUNNER,
+        loadingText: 'initial creation',
+        refreshToken: 0,
+    },
+};
 const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
 const VIEWER_APP_VERSION = '2026.03.17.4';
 const SelectionStore = window.SelectionStore;
@@ -69,8 +94,8 @@ class HorseyViewerApp extends LitElement {
         this.meshNameMap = new Map(); // mesh object -> timber name
 
         this.animationHandle = null;
-        this.loadingVisible = true;
-        this.loadingText = 'initial creation';
+        this.viewState = createInitialViewState();
+        this.activeRefreshToken = 0;
         this.onWindowMessage = this.onWindowMessage.bind(this);
         this.onWindowScroll = this.onWindowScroll.bind(this);
         this.onWindowMouseUp = this.onWindowMouseUp.bind(this);
@@ -92,7 +117,7 @@ class HorseyViewerApp extends LitElement {
             <button id="to-v3d" title="Jump back to 3D view">to v3d view</button>
             <div id="viewport">
                 <canvas id="c"></canvas>
-                <div id="loading-overlay" class=${this.loadingVisible ? 'visible' : ''}>${this.loadingText}</div>
+                <div id="loading-overlay" class=${this.isOverlayVisible() ? 'visible' : ''}>${this.viewState.loadingText}</div>
                 <div id="info"></div>
                 <div id="gizmo-panel" aria-label="Camera and light gizmos">
                     <div class="gizmo-block">
@@ -151,8 +176,8 @@ class HorseyViewerApp extends LitElement {
         this.setupUiEvents();
         this.setupThreeScene();
         window.addEventListener('message', this.onWindowMessage);
-        this.setLoadingState(true, 'initial creation');
-        void this.applyPayload(INITIAL_PAYLOAD);
+        this.setViewPhase(ViewerPhase.WAITING_FOR_RUNNER, 'initial creation', { refreshToken: 0 });
+        void this.beginPayloadApplication(INITIAL_PAYLOAD);
         
         // Setup selection listener
         this.selectionManager.onSelectionChanged(() => {
@@ -459,18 +484,25 @@ class HorseyViewerApp extends LitElement {
 
     onWindowMessage(event) {
         const message = event.data || {};
-        if (message.type === 'loadingStatus') {
-            const stage = typeof message.stage === 'string' && message.stage ? message.stage : 'initial creation';
-            this.setLoadingState(true, stage);
-            return;
-        }
+        if (message.type === 'viewerState') {
+            const uiState = this.normalizeUiState(message.uiState || null);
+            const hasPayload = Object.prototype.hasOwnProperty.call(message, 'frame') ||
+                Object.prototype.hasOwnProperty.call(message, 'geometry') ||
+                Object.prototype.hasOwnProperty.call(message, 'profiling');
 
-        if (message.type === 'refresh') {
-            void this.applyPayload({
+            if (!hasPayload) {
+                this.setViewPhase(uiState.phase, uiState.loadingText, {
+                    refreshToken: uiState.refreshToken,
+                    error: uiState.error,
+                });
+                return;
+            }
+
+            void this.beginPayloadApplication({
                 frame: message.frame || {},
                 geometry: message.geometry || { meshes: [] },
                 profiling: message.profiling || null,
-                uiState: message.uiState || null,
+                uiState,
             });
             return;
         }
@@ -1354,7 +1386,7 @@ class HorseyViewerApp extends LitElement {
             profilingHtml;
     }
 
-    async updateMeshScene(geometryData, onProgress) {
+    async updateMeshScene(geometryData, refreshToken, onProgress) {
         const meshes = (geometryData && geometryData.meshes) ? geometryData.meshes : [];
         const total = meshes.length;
         let processed = 0;
@@ -1369,6 +1401,9 @@ class HorseyViewerApp extends LitElement {
         reportProgress();
 
         for (let index = 0; index < meshes.length; index += 1) {
+            if (this.isRefreshStale(refreshToken)) {
+                return false;
+            }
             const mesh = meshes[index];
             const key = mesh.timberKey || ('index-' + index);
             const timberName = mesh.timberKey || ('index-' + index);
@@ -1382,6 +1417,9 @@ class HorseyViewerApp extends LitElement {
                 reportProgress();
                 if (index === 0 || index === meshes.length - 1 || index % 8 === 0) {
                     await this.waitForNextPaint();
+                    if (this.isRefreshStale(refreshToken)) {
+                        return false;
+                    }
                 }
                 continue;
             }
@@ -1424,6 +1462,9 @@ class HorseyViewerApp extends LitElement {
             reportProgress();
             if (index === 0 || index === meshes.length - 1 || index % 8 === 0) {
                 await this.waitForNextPaint();
+                if (this.isRefreshStale(refreshToken)) {
+                    return false;
+                }
             }
         }
 
@@ -1439,21 +1480,85 @@ class HorseyViewerApp extends LitElement {
         this.rebuildTimberTable(meshes);
         this.updateReflectionTransforms();
         this.applySelectionOpacity();
+        return true;
     }
 
-    setLoadingState(visible, text) {
-        this.loadingVisible = Boolean(visible);
-        if (typeof text === 'string' && text) {
-            this.loadingText = text;
+    normalizeUiState(uiState) {
+        const next = uiState && typeof uiState === 'object' ? uiState : {};
+        const phase = typeof next.phase === 'string' && next.phase
+            ? next.phase
+            : ViewerPhase.WAITING_FOR_RUNNER;
+        const loadingText = typeof next.loadingText === 'string' && next.loadingText
+            ? next.loadingText
+            : this.defaultLoadingTextForPhase(phase);
+        const refreshToken = Number.isFinite(next.refreshToken)
+            ? next.refreshToken
+            : this.activeRefreshToken;
+        const error = typeof next.error === 'string' && next.error ? next.error : null;
+
+        return {
+            phase,
+            loadingText,
+            refreshToken,
+            error,
+            keepLoading: Boolean(next.keepLoading),
+        };
+    }
+
+    defaultLoadingTextForPhase(phase) {
+        if (phase === ViewerPhase.BOOTING) {
+            return 'starting viewer';
         }
+        if (phase === ViewerPhase.WAITING_FOR_RUNNER) {
+            return 'initial creation';
+        }
+        if (phase === ViewerPhase.APPLYING_GEOMETRY) {
+            return 'meshing 0/0';
+        }
+        if (phase === ViewerPhase.ERROR) {
+            return 'viewer error';
+        }
+        return '';
+    }
+
+    isOverlayVisible() {
+        return this.viewState.phase !== ViewerPhase.READY;
+    }
+
+    setViewState(nextPartial) {
+        this.viewState = {
+            ...this.viewState,
+            ...nextPartial,
+        };
 
         const overlay = this.renderRoot && this.renderRoot.querySelector
             ? this.renderRoot.querySelector('#loading-overlay')
             : null;
         if (overlay) {
-            overlay.textContent = this.loadingText;
-            overlay.classList.toggle('visible', this.loadingVisible);
+            overlay.textContent = this.viewState.loadingText;
+            overlay.classList.toggle('visible', this.isOverlayVisible());
         }
+    }
+
+    setViewPhase(phase, loadingText = null, extra = {}) {
+        this.setViewState({
+            phase,
+            loadingText: loadingText || this.defaultLoadingTextForPhase(phase),
+            ...extra,
+        });
+    }
+
+    beginPayloadApplication(payload) {
+        const uiState = this.normalizeUiState(payload && payload.uiState ? payload.uiState : null);
+        const refreshToken = Number.isFinite(uiState.refreshToken)
+            ? uiState.refreshToken
+            : this.activeRefreshToken + 1;
+        this.activeRefreshToken = Math.max(this.activeRefreshToken, refreshToken);
+        return this.applyPayload(payload, refreshToken);
+    }
+
+    isRefreshStale(refreshToken) {
+        return refreshToken !== this.activeRefreshToken;
     }
 
     waitForNextPaint() {
@@ -1496,17 +1601,14 @@ class HorseyViewerApp extends LitElement {
         return { minX, minY, minZ, maxX, maxY, maxZ };
     }
 
-    async applyPayload(payload) {
+    async applyPayload(payload, refreshToken) {
         const frameData = payload.frame || {};
         const geometryData = payload.geometry || { meshes: [] };
         const profiling = payload.profiling || null;
-        const uiState = payload.uiState || null;
+        const uiState = this.normalizeUiState(payload.uiState || null);
 
-        if (uiState && uiState.keepLoading) {
-            const loadingText = typeof uiState.loadingText === 'string' && uiState.loadingText
-                ? uiState.loadingText
-                : 'initial creation';
-            this.setLoadingState(true, loadingText);
+        if (uiState.keepLoading) {
+            this.setViewPhase(uiState.phase, uiState.loadingText, { refreshToken, error: uiState.error });
             this.updateInfo(frameData);
             this.updateDebug(geometryData, profiling);
             this.renderRoot.querySelector('#raw-output').textContent = JSON.stringify({
@@ -1516,14 +1618,26 @@ class HorseyViewerApp extends LitElement {
             return;
         }
 
-        this.setLoadingState(true, 'initial creation');
+        this.setViewPhase(ViewerPhase.APPLYING_GEOMETRY, uiState.loadingText || 'initial creation', {
+            refreshToken,
+            error: null,
+        });
         await this.waitForNextPaint();
+        if (this.isRefreshStale(refreshToken)) {
+            return;
+        }
 
         this.updateInfo(frameData);
         this.updateDebug(geometryData, profiling);
-        await this.updateMeshScene(geometryData, (processed, total) => {
-            this.setLoadingState(true, `meshing ${processed}/${total}`);
+        const completed = await this.updateMeshScene(geometryData, refreshToken, (processed, total) => {
+            this.setViewPhase(ViewerPhase.APPLYING_GEOMETRY, `meshing ${processed}/${total}`, {
+                refreshToken,
+                error: null,
+            });
         });
+        if (!completed || this.isRefreshStale(refreshToken)) {
+            return;
+        }
 
         this.renderRoot.querySelector('#raw-output').textContent = JSON.stringify({
             frame: frameData,
@@ -1553,7 +1667,10 @@ class HorseyViewerApp extends LitElement {
         this.updateLightFromAngles();
         this.drawLightDial();
         this.updateStructureScreenBounds();
-        this.setLoadingState(false);
+        if (this.isRefreshStale(refreshToken)) {
+            return;
+        }
+        this.setViewPhase(ViewerPhase.READY, '', { refreshToken, error: null });
     }
 
     updateCamera() {

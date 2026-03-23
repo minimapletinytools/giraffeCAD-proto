@@ -10,6 +10,10 @@ const initializedPanels = new WeakSet();
 const webviewDir = path.join(__dirname, 'webview');
 let screenshotRequestCounter = 1;
 const VIEWER_APP_VERSION = '2026.03.17.4';
+const ViewerPhase = Object.freeze({
+    WAITING_FOR_RUNNER: 'waiting_for_runner',
+    READY: 'ready',
+});
 
 function getNonce() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -73,6 +77,8 @@ function initializeFrameViewer(panel, filePath, options = {}) {
         },
         null,
         {
+            phase: ViewerPhase.WAITING_FOR_RUNNER,
+            refreshToken: 0,
             keepLoading: true,
             loadingText,
             emptyState: true,
@@ -84,16 +90,22 @@ function initializeFrameViewer(panel, filePath, options = {}) {
 
 function renderFrameViewer(panel, filePath, frameData, geometryData, profiling, uiState = null) {
     panel.title = getViewerTitle(filePath, frameData.name);
+    const nextUiState = uiState || {
+        phase: ViewerPhase.READY,
+        refreshToken: 0,
+        loadingText: '',
+        keepLoading: false,
+    };
     if (!initializedPanels.has(panel)) {
-        panel.webview.html = getWebviewContent(panel.webview, frameData, geometryData, profiling, uiState);
+        panel.webview.html = getWebviewContent(panel.webview, frameData, geometryData, profiling, nextUiState);
         initializedPanels.add(panel);
     } else {
         panel.webview.postMessage({
-            type: 'refresh',
+            type: 'viewerState',
             frame: frameData,
             geometry: geometryData,
             profiling: profiling || null,
-            uiState: uiState || null,
+            uiState: nextUiState,
         });
     }
     panel.reveal(vscode.ViewColumn.Two);

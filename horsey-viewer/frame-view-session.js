@@ -46,6 +46,7 @@ class FrameViewSession {
         this.isDisposed = false;
         this.isRefreshing = false;
         this.pendingRefreshReason = null;
+        this.refreshSequence = 0;
     }
 
     getRefreshStatsPath() {
@@ -60,9 +61,14 @@ class FrameViewSession {
             return;
         }
         this.panel.webview.postMessage({
-            type: 'loadingStatus',
-            stage,
-            details,
+            type: 'viewerState',
+            uiState: {
+                phase: 'waiting_for_runner',
+                loadingText: stage,
+                keepLoading: true,
+                refreshToken: Number.isFinite(details.refreshToken) ? details.refreshToken : this.refreshSequence,
+                error: null,
+            },
         }).catch((error) => {
             this.log(`[webview] Failed to post loading status '${stage}': ${error.message || error}`);
         });
@@ -119,7 +125,7 @@ class FrameViewSession {
             this.log(`[webview:${source}:${level}] ${eventName} v${version} ${details}`);
         });
         this.log('[webview] viewer log bridge active');
-        this.postLoadingStatus('initial creation', { reason: 'session initialize' });
+        this.postLoadingStatus('initial creation', { reason: 'session initialize', refreshToken: this.refreshSequence });
 
         this.runnerSession = new PythonRunnerSession(this.filePath, this.context, this.channel);
         await this.runnerSession.start();
@@ -175,8 +181,10 @@ class FrameViewSession {
 
         this.isRefreshing = true;
         this.pendingRefreshReason = null;
+    this.refreshSequence += 1;
+    const refreshToken = this.refreshSequence;
         this.log(`[refresh] Reloading ${path.basename(this.filePath)} (${reason})`);
-        this.postLoadingStatus('initial creation', { reason });
+    this.postLoadingStatus('initial creation', { reason, refreshToken });
         let refreshError = null;
         try {
             const refreshStartNs = process.hrtime.bigint();
@@ -231,7 +239,12 @@ class FrameViewSession {
                 remesh_metrics: remeshMetrics,
                 stats_path: statsPath,
             };
-            renderFrameViewer(this.panel, this.filePath, frameData, geometryData, profiling);
+            renderFrameViewer(this.panel, this.filePath, frameData, geometryData, profiling, {
+                phase: 'ready',
+                refreshToken,
+                loadingText: '',
+                keepLoading: false,
+            });
             this.log(`[refresh] Reload complete for ${path.basename(this.filePath)}`);
         } catch (error) {
             refreshError = error;

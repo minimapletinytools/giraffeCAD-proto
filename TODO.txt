@@ -206,6 +206,9 @@ DONE-build-a-butt_joint.py
 
 -do tinyhouse shed
 
+-I think your hashing the sympy crap so it's taking forever LOL
+  -add a toggle to disable the hash check thingy
+
 -need to do perf and figure out why it takes so long....
   -add loading bar on initial load
   -add individual stats for meshing (python -> js round trip. Iguess?)
