@@ -140,4 +140,12 @@ also no need to validate the number of timbers; I'll do that manually.
 next create 2 loft beams that connect the two mid beams together. They should be
 positioned right where FM1/2 and BM1/2 intersect the mid beams.
 """,
+
+    # ---- Prompt 16: Window in FM1-FM2 bay ----
+    """
+remove lower_stud_front_2.
+
+instead create a window in that area with 2 horizontal members connecting FM1/FM2,
+at 1/5 from the top and 3/5 from the top.
+""",
 ]

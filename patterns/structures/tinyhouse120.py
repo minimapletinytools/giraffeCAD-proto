@@ -452,19 +452,30 @@ def create_tinyhouse120(center: Optional[V3] = None):
         size=post_size,
         ticket="Front Lower Stud 1"
     )
-    lower_stud_front_2 = join_timbers(
-        timber1=beam_front_2, timber2=mid_beam_front,
-        location_on_timber1=beam_front_2.length / Integer(2),
-        location_on_timber2=beam_front_1.length + beam_front_2.length / Integer(2),
-        size=post_size,
-        ticket="Front Lower Stud 2"
-    )
     lower_stud_front_3 = join_timbers(
         timber1=beam_front_3, timber2=mid_beam_front,
         location_on_timber1=beam_front_3.length / Integer(2),
         location_on_timber2=beam_front_1.length + beam_front_2.length + beam_front_3.length / Integer(2),
         size=post_size,
         ticket="Front Lower Stud 3"
+    )
+
+    # Window members in FM1-FM2 bay (replace middle lower stud)
+    window_member_upper = join_timbers(
+        timber1=post_FM1, timber2=post_FM2,
+        location_on_timber1=non_corner_post_height * Rational(4, 5),
+        location_on_timber2=non_corner_post_height * Rational(4, 5),
+        size=beam_size,
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="Front Window Member Upper"
+    )
+    window_member_lower = join_timbers(
+        timber1=post_FM1, timber2=post_FM2,
+        location_on_timber1=non_corner_post_height * Rational(2, 5),
+        location_on_timber2=non_corner_post_height * Rational(2, 5),
+        size=beam_size,
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="Front Window Member Lower"
     )
 
     lower_stud_right_1 = join_timbers(
@@ -727,6 +738,8 @@ def create_tinyhouse120(center: Optional[V3] = None):
         mid_beam_front, mid_beam_right, mid_beam_back, mid_beam_left,
         # Loft beams
         loft_beam_1, loft_beam_2,
+        # Window members
+        window_member_upper, window_member_lower,
         # Top plates
         top_plate_left, top_plate_right,
         top_plate_front, top_plate_back,
@@ -738,7 +751,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
 
     all_studs = [
         # Lower wall studs
-        lower_stud_front_1, lower_stud_front_2, lower_stud_front_3,
+        lower_stud_front_1, lower_stud_front_3,
         lower_stud_right_1, lower_stud_right_2,
         lower_stud_back_1, lower_stud_back_2, lower_stud_back_3,
         lower_stud_left_1, lower_stud_left_2,
