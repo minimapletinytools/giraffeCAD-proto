@@ -69,6 +69,21 @@ def profile_pattern(name, func, args):
     return result, wall_time, pstats_text
 
 
+def profile_timber_hashing(result):
+    """Hash all timbers in a Frame result. Returns (hash_time, timber_count) or (None, 0)."""
+    from code_goes_here.timber import Frame
+
+    if not isinstance(result, Frame):
+        return None, 0
+
+    timbers = result.cut_timbers
+    t0 = time.perf_counter()
+    for timber in timbers:
+        timber.deep_hash()
+    hash_time = time.perf_counter() - t0
+    return hash_time, len(timbers)
+
+
 def describe_result(result):
     """Return a short description of the build result."""
     from code_goes_here.timber import Frame
@@ -111,13 +126,17 @@ def main():
             func, args = PATTERN_REGISTRY[name]()
             result, wall_time, pstats_text = profile_pattern(name, func, args)
             description = describe_result(result)
-            print(f"{wall_time:.2f}s ({description})")
+            hash_time, timber_count = profile_timber_hashing(result)
+            hash_info = f", hash {timber_count} timbers: {hash_time:.3f}s" if hash_time is not None else ""
+            print(f"{wall_time:.2f}s ({description}{hash_info})")
 
-            summary_rows.append((name, wall_time, description, None))
+            summary_rows.append((name, wall_time, hash_time, timber_count, description, None))
 
             lines.append("")
             lines.append(f"Pattern: {name}")
             lines.append(f"  Wall time: {wall_time:.3f}s")
+            if hash_time is not None:
+                lines.append(f"  Timber hash time: {hash_time:.3f}s ({timber_count} timbers)")
             lines.append(f"  Result: {description}")
             lines.append(f"  Top 30 calls by cumulative time:")
             lines.append(pstats_text)
@@ -127,7 +146,7 @@ def main():
             import traceback
             tb = traceback.format_exc()
             print(f"FAILED: {e}")
-            summary_rows.append((name, None, None, str(e)))
+            summary_rows.append((name, None, None, 0, None, str(e)))
             lines.append("")
             lines.append(f"Pattern: {name}")
             lines.append(f"  FAILED: {e}")
@@ -139,17 +158,21 @@ def main():
     lines.append("=" * 80)
     lines.append("SUMMARY")
     lines.append("=" * 80)
-    lines.append(f"{'Pattern':<25} {'Time (s)':>10}  {'Result'}")
+    lines.append(f"{'Pattern':<25} {'Build (s)':>10} {'Hash (s)':>10}  {'Result'}")
     lines.append("-" * 80)
     total_time = 0.0
-    for name, wall_time, description, error in summary_rows:
+    total_hash_time = 0.0
+    for name, wall_time, hash_time, timber_count, description, error in summary_rows:
         if error:
-            lines.append(f"{name:<25} {'FAILED':>10}  {error}")
+            lines.append(f"{name:<25} {'FAILED':>10} {'':>10}  {error}")
         else:
-            lines.append(f"{name:<25} {wall_time:>10.3f}  {description}")
+            hash_col = f"{hash_time:.3f}" if hash_time is not None else "n/a"
+            lines.append(f"{name:<25} {wall_time:>10.3f} {hash_col:>10}  {description}")
             total_time += wall_time
+            if hash_time is not None:
+                total_hash_time += hash_time
     lines.append("-" * 80)
-    lines.append(f"{'TOTAL':<25} {total_time:>10.3f}")
+    lines.append(f"{'TOTAL':<25} {total_time:>10.3f} {total_hash_time:>10.3f}")
 
     report = "\n".join(lines) + "\n"
     output_file.write_text(report)
