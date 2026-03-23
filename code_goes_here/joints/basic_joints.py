@@ -15,6 +15,7 @@ from .plain_joints import (
     cut_plain_miter_joint_on_face_aligned_timbers,
     cut_plain_butt_joint_on_face_aligned_timbers,
     cut_tongue_and_fork_corner_joint,
+    cut_tongue_and_fork_butt_joint,
     cut_plain_butt_splice_joint_on_aligned_timbers,
     cut_plain_cross_lap_joint,
     cut_plain_house_joint,
@@ -110,6 +111,35 @@ def cut_basic_tongue_and_fork_joint(
 ) -> Joint:
     """Compatibility alias for `cut_basic_tongue_and_fork_corner_joint`."""
     return cut_basic_tongue_and_fork_corner_joint(
+        arrangement=arrangement,
+        tongue_thickness=tongue_thickness,
+        tongue_position=tongue_position,
+    )
+
+
+def cut_basic_tongue_and_fork_butt_joint(
+    arrangement: ButtJointTimberArrangement,
+    tongue_thickness: Optional[Numeric] = None,
+    tongue_position: Numeric = Rational(0),
+) -> Joint:
+    """
+    Creates a tongue-and-fork butt joint.
+
+    Convenience wrapper around `cut_tongue_and_fork_butt_joint`. Timbers must be
+    plane-aligned and non-parallel. The receiving (fork) timber is not end-cut.
+
+    Args:
+        arrangement: Butt arrangement where butt_timber is tongue and receiving_timber is fork.
+        tongue_thickness: Tongue thickness along shared plane normal. None defaults to 1/3
+            of tongue timber dimension in that axis.
+        tongue_position: Offset of tongue center from centerline in shared plane normal axis.
+
+    Returns:
+        Joint object containing both cut timbers.
+    """
+    error = arrangement.check_plane_aligned()
+    assert error is None, error
+    return cut_tongue_and_fork_butt_joint(
         arrangement=arrangement,
         tongue_thickness=tongue_thickness,
         tongue_position=tongue_position,

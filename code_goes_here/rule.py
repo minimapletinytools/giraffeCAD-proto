@@ -66,6 +66,7 @@ def is_complex_expr(expr, max_nodes: int = 50) -> bool:
         True if expression is complex, False otherwise
     """
     from sympy import sin, cos, exp, log, sqrt, Number
+    from sympy import preorder_traversal as _pot
     
     # Fast check: SymPy Number types (One, Zero, NegativeOne, Integer, Rational, Float, etc.)
     # are always simple and don't have preorder_traversal()
@@ -84,9 +85,10 @@ def is_complex_expr(expr, max_nodes: int = 50) -> bool:
     has_sqrt = expr.has(sqrt)
     threshold = 30 if has_sqrt else max_nodes
     
-    # Count nodes with early bailout (uses lazy generator)
+    # Count nodes with early bailout (uses module-level preorder_traversal
+    # because not all expression types expose the method)
     try:
-        for i, _ in enumerate(expr.preorder_traversal()):
+        for i, _ in enumerate(_pot(expr)):
             if i >= threshold:
                 return True  # Hit threshold, expression is complex
         return False  # Finished traversal, expression is simple

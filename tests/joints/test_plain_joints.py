@@ -56,10 +56,10 @@ class TestMiterJoint:
             timberB: Second timber in the joint
         """
         # Get the end position of the cut on timberA (in global coordinates)
-        end_position_A_global = measure_position_on_centerline_from_bottom(timberA, -3).position
+        end_position_A_global = locate_position_on_centerline_from_bottom(timberA, -3).position
         
         # Get the end position of the cut on timberB (in global coordinates)
-        end_position_B_global = measure_position_on_centerline_from_bottom(timberB, -3).position
+        end_position_B_global = locate_position_on_centerline_from_bottom(timberB, -3).position
         
         # see that end_position_A_global is NOT in cut timberA but is in cut timberB
         assert not joint.cut_timbers["timberA"].render_timber_with_cuts_csg_local().contains_point(timberA.transform.global_to_local(end_position_A_global))
@@ -756,9 +756,9 @@ class TestTongueAndForkJoint:
     @staticmethod
     def _face_center(timber: Timber, face: TimberFace) -> V3:
         if face == TimberFace.TOP:
-            return measure_top_center_position(timber).position
+            return locate_top_center_position(timber).position
         if face == TimberFace.BOTTOM:
-            return measure_bottom_center_position(timber).position
+            return locate_bottom_center_position(timber).position
 
         center = timber.get_bottom_position_global() + timber.get_length_direction_global() * (timber.length / Rational(2))
         if face == TimberFace.RIGHT:
@@ -902,6 +902,45 @@ class TestTongueAndForkJoint:
                     timber2_end=TimberReferenceEnd.BOTTOM,
                 )
             )
+
+
+class TestTongueAndForkButtJoint:
+    def test_tongue_and_fork_butt_joint_structure_and_no_fork_end_cut(self):
+        """
+        Verify the butt variant produces the right structure: tongue timber
+        gets an end cut and cheek removal, fork timber gets a slot but NO end cut.
+        """
+        tongue_timber = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
+        fork_timber = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
+
+        arrangement = ButtJointTimberArrangement(
+            butt_timber=tongue_timber,
+            receiving_timber=fork_timber,
+            butt_timber_end=TimberReferenceEnd.TOP,
+        )
+        joint = cut_tongue_and_fork_butt_joint(arrangement)
+
+        assert len(joint.cut_timbers) == 2
+        assert "tongue_timber" in joint.cut_timbers
+        assert "fork_timber" in joint.cut_timbers
+
+        tongue_cut = joint.cut_timbers["tongue_timber"].cuts[0]
+        fork_cut = joint.cut_timbers["fork_timber"].cuts[0]
+
+        # Tongue timber has cheek removal and an end cut
+        assert tongue_cut.negative_csg is not None
+        assert tongue_cut.maybe_top_end_cut is not None
+
+        # Fork timber has a slot but NO end cut
+        assert fork_cut.negative_csg is not None
+        assert fork_cut.maybe_top_end_cut is None
+        assert fork_cut.maybe_bottom_end_cut is None
+
+        # Verify cuts produce valid CSG
+        tongue_csg = joint.cut_timbers["tongue_timber"].render_timber_with_cuts_csg_local()
+        fork_csg = joint.cut_timbers["fork_timber"].render_timber_with_cuts_csg_local()
+        assert tongue_csg is not None
+        assert fork_csg is not None
 
 
 class TestCutTimberDeepHash:

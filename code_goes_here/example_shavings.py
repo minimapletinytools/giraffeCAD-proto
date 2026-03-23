@@ -18,6 +18,7 @@ from code_goes_here.rule import (
 )
 from code_goes_here.construction import (
     ButtJointTimberArrangement,
+    DoubleButtJointTimberArrangement,
     SpliceJointTimberArrangement,
     CornerJointTimberArrangement,
     CrossJointTimberArrangement,
@@ -312,4 +313,61 @@ def create_canonical_example_brace_joint_timbers(position: Optional[V3] = None) 
         timber1_end=corner_arrangement.timber1_end,
         timber2_end=corner_arrangement.timber2_end,
         front_face_on_timber1=corner_arrangement.front_face_on_timber1
+    )
+
+
+def create_canonical_example_opposing_double_butt_joint_timbers(position: Optional[V3] = None) -> DoubleButtJointTimberArrangement:
+    """
+    Create a canonical opposing double butt joint timber arrangement.
+    All canonical example joints are 4"x5"x4' timbers.
+    The receiving timber (post) runs along the X axis with its center at the position.
+    butt_timber_1 runs along +Y with its TOP end meeting the post center.
+    butt_timber_2 runs along -Y with its TOP end meeting the post center (antiparallel).
+    All timbers have their RIGHT face pointing in the +Z direction.
+
+    Args:
+        position: Center position of the joint. Defaults to origin.
+    """
+    if position is None:
+        position = create_v3(Integer(0), Integer(0), Integer(0))
+
+    # Receiving timber (post): runs along X axis, center at position
+    receiving_bottom = position + create_v3(-_CANONICAL_EXAMPLE_TIMBER_LENGTH / Integer(2), Integer(0), Integer(0))
+    receiving_timber = timber_from_directions(
+        length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
+        size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
+        bottom_position=receiving_bottom,
+        length_direction=create_v3(Integer(1), Integer(0), Integer(0)),
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="receiving_timber"
+    )
+
+    # butt_timber_1: runs along +Y, TOP end meets post center
+    butt1_bottom = position + create_v3(Integer(0), -_CANONICAL_EXAMPLE_TIMBER_LENGTH / Integer(2), Integer(0))
+    butt_timber_1 = timber_from_directions(
+        length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
+        size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
+        bottom_position=butt1_bottom,
+        length_direction=create_v3(Integer(0), Integer(1), Integer(0)),
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="butt_timber_1"
+    )
+
+    # butt_timber_2: runs along -Y, TOP end meets post center (antiparallel to butt_timber_1)
+    butt2_bottom = position + create_v3(Integer(0), _CANONICAL_EXAMPLE_TIMBER_LENGTH / Integer(2), Integer(0))
+    butt_timber_2 = timber_from_directions(
+        length=_CANONICAL_EXAMPLE_TIMBER_LENGTH,
+        size=_CANONICAL_EXAMPLE_TIMBER_SIZE,
+        bottom_position=butt2_bottom,
+        length_direction=create_v3(Integer(0), Integer(-1), Integer(0)),
+        width_direction=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="butt_timber_2"
+    )
+
+    return DoubleButtJointTimberArrangement(
+        butt_timber_1=butt_timber_1,
+        butt_timber_2=butt_timber_2,
+        receiving_timber=receiving_timber,
+        butt_timber_1_end=TimberReferenceEnd.TOP,
+        butt_timber_2_end=TimberReferenceEnd.TOP,
     )

@@ -1,4 +1,4 @@
-.PHONY: help setup test test-verbose test-cov typecheck typecheck-watch clean
+.PHONY: help setup test test-verbose test-cov typecheck typecheck-watch clean profile stepout
 
 help:
 	@echo "🦒 GiraffeCAD Development Commands"
@@ -11,6 +11,8 @@ help:
 	@echo "  make typecheck       - Run type checking with ty"
 	@echo "  make typecheck-watch - Run type checking in watch mode"
 	@echo "  make clean           - Remove build artifacts and cache files"
+	@echo "  make profile         - Profile all patterns (or PATTERNS='oscarshed horsey')"
+	@echo "  make stepout         - Export STEP files (or PATTERN=horsey)"
 	@echo ""
 
 setup:
@@ -63,6 +65,14 @@ typecheck-watch:
 		echo "  uv add --dev ty"; \
 		exit 1; \
 	fi
+
+profile:
+	@echo "Profiling patterns..."
+	@uv run python tools/test_profiling.py $(PATTERNS)
+
+stepout:
+	@echo "Exporting STEP files..."
+	@uv run python tools/test_step_output.py $(PATTERN)
 
 clean:
 	@echo "Cleaning up..."

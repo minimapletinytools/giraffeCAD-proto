@@ -311,9 +311,9 @@ class TestGetPointOnFeature:
 
 
 class TestMeasureFromFace:
-    """Tests for measure_into_face function"""
+    """Tests for locate_into_face function"""
     
-    def test_measure_zero_distance_from_face(self):
+    def test_locate_zero_distance_from_face(self):
         """Test measuring zero distance creates plane at face surface"""
         timber = timber_from_directions(
             length=Rational(100),
@@ -323,7 +323,7 @@ class TestMeasureFromFace:
             width_direction=create_v3(1, 0, 0)
         )
         
-        plane = measure_into_face(Rational(0), TimberFace.RIGHT, timber)
+        plane = locate_into_face(Rational(0), TimberFace.RIGHT, timber)
         
         # Should be an UnsignedPlane
         assert isinstance(plane, UnsignedPlane)
@@ -332,7 +332,7 @@ class TestMeasureFromFace:
         # Point should be at the face surface (x=5)
         assert plane.point[0] == Rational(5)
     
-    def test_measure_positive_distance_from_face(self):
+    def test_locate_positive_distance_from_face(self):
         """Test measuring positive distance INTO the face"""
         timber = timber_from_directions(
             length=Rational(100),
@@ -342,7 +342,7 @@ class TestMeasureFromFace:
             width_direction=create_v3(1, 0, 0)
         )
         
-        plane = measure_into_face(Rational(3), TimberFace.RIGHT, timber)
+        plane = locate_into_face(Rational(3), TimberFace.RIGHT, timber)
         
         # Point should be 3 units inside from face (x=5-3=2)
         assert plane.point[0] == Rational(2)
@@ -353,7 +353,7 @@ class TestMarkFromFace:
     """Tests for mark_distance_from_face_in_normal_direction function"""
     
     def test_mark_onto_face_round_trip(self):
-        """Test that mark_distance_from_face_in_normal_direction is inverse of measure_into_face"""
+        """Test that mark_distance_from_face_in_normal_direction is inverse of locate_into_face"""
         timber = timber_from_directions(
             length=Rational(100),
             size=create_v2(10, 10),
@@ -364,7 +364,7 @@ class TestMarkFromFace:
         
         # Test round trip for various distances
         for distance in [Rational(0), Rational(5), Rational(10), Rational(-2)]:
-            plane = measure_into_face(distance, TimberFace.RIGHT, timber)
+            plane = locate_into_face(distance, TimberFace.RIGHT, timber)
             marking = mark_distance_from_face_in_normal_direction(plane, timber, TimberFace.RIGHT)
             assert marking.distance == distance
     
@@ -386,9 +386,9 @@ class TestMarkFromFace:
 
 
 class TestMeasureFace:
-    """Tests for measure_face function"""
+    """Tests for locate_face function"""
     
-    def test_measure_face_right(self):
+    def test_locate_face_right(self):
         """Test measuring the RIGHT face of a vertical timber"""
         timber = timber_from_directions(
             length=Rational(100),
@@ -399,7 +399,7 @@ class TestMeasureFace:
             ticket="test_timber"
         )
         
-        plane = measure_face(timber, TimberFace.RIGHT)
+        plane = locate_face(timber, TimberFace.RIGHT)
         
         # Should be a Plane
         assert isinstance(plane, Plane)
@@ -410,7 +410,7 @@ class TestMeasureFace:
         assert plane.point[1] == Rational(0)
         assert plane.point[2] == Rational(50)
     
-    def test_measure_face_front(self):
+    def test_locate_face_front(self):
         """Test measuring the FRONT face of a vertical timber"""
         timber = timber_from_directions(
             length=Rational(100),
@@ -421,7 +421,7 @@ class TestMeasureFace:
             ticket="test_timber"
         )
         
-        plane = measure_face(timber, TimberFace.FRONT)
+        plane = locate_face(timber, TimberFace.FRONT)
         
         # Normal should point outward (+Y for FRONT face)
         assert plane.normal.equals(create_v3(0, 1, 0))
@@ -432,9 +432,9 @@ class TestMeasureFace:
 
 
 class TestMeasureLongEdge:
-    """Tests for measure_long_edge function"""
+    """Tests for locate_long_edge function"""
     
-    def test_measure_long_edge_right_front(self):
+    def test_locate_long_edge_right_front(self):
         """Test measuring the RIGHT_FRONT edge of a vertical timber"""
         timber = timber_from_directions(
             length=Rational(100),
@@ -445,7 +445,7 @@ class TestMeasureLongEdge:
             ticket="test_timber"
         )
         
-        line = measure_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
+        line = locate_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
         
         # Should be a Line
         assert isinstance(line, Line)
@@ -456,7 +456,7 @@ class TestMeasureLongEdge:
         assert line.point[1] == Rational(10)  # Front face at y=10
         assert line.point[2] == Rational(0)   # At bottom
     
-    def test_measure_long_edge_left_back(self):
+    def test_locate_long_edge_left_back(self):
         """Test measuring the LEFT_BACK edge of a vertical timber"""
         timber = timber_from_directions(
             length=Rational(100),
@@ -467,7 +467,7 @@ class TestMeasureLongEdge:
             ticket="test_timber"
         )
         
-        line = measure_long_edge(timber, TimberLongEdge.LEFT_BACK)
+        line = locate_long_edge(timber, TimberLongEdge.LEFT_BACK)
         
         # Direction should be along timber length (+Z)
         assert line.direction.equals(create_v3(0, 0, 1))
@@ -476,7 +476,7 @@ class TestMeasureLongEdge:
         assert line.point[1] == Rational(-10)  # Back face at y=-10
         assert line.point[2] == Rational(0)    # At bottom
     
-    def test_measure_long_edge_horizontal_timber(self):
+    def test_locate_long_edge_horizontal_timber(self):
         """Test measuring edge on a horizontal timber"""
         # Horizontal timber pointing in +X direction
         timber = timber_from_directions(
@@ -488,7 +488,7 @@ class TestMeasureLongEdge:
             ticket="test_timber"
         )
         
-        line = measure_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
+        line = locate_long_edge(timber, TimberLongEdge.RIGHT_FRONT)
         
         # Direction should be along timber length (+X in this case)
         assert line.direction.equals(create_v3(1, 0, 0))
@@ -499,7 +499,7 @@ class TestMeasureLongEdge:
 
 
 class TestMeasureShortEdge:
-    """Tests for measure_edge with short edges"""
+    """Tests for locate_edge with short edges"""
 
     def test_bottom_right_edge_vertical_timber(self):
         """BOTTOM_RIGHT edge on a vertical 10x20 timber at origin.
@@ -516,7 +516,7 @@ class TestMeasureShortEdge:
             width_direction=create_v3(1, 0, 0),
             ticket="test_timber"
         )
-        line = measure_edge(timber, TimberEdge.BOTTOM_RIGHT)
+        line = locate_edge(timber, TimberEdge.BOTTOM_RIGHT)
         assert isinstance(line, Line)
         assert line.direction.equals(create_v3(0, 1, 0))
         assert line.point[0] == Rational(5)
@@ -538,7 +538,7 @@ class TestMeasureShortEdge:
             width_direction=create_v3(1, 0, 0),
             ticket="test_timber"
         )
-        line = measure_edge(timber, TimberEdge.TOP_FRONT)
+        line = locate_edge(timber, TimberEdge.TOP_FRONT)
         assert isinstance(line, Line)
         assert line.direction.equals(create_v3(1, 0, 0))
         assert line.point[0] == Rational(-5)
@@ -547,7 +547,7 @@ class TestMeasureShortEdge:
 
 
 class TestMeasurePlaneFromEdgeInDirection:
-    """Tests for measure_plane_from_edge_in_direction function"""
+    """Tests for locate_plane_from_edge_in_direction function"""
 
     def test_plane_from_centerline_offset_in_x(self):
         """Plane through centerline offset 3 in +X should have normal +X and point at (3, 0, 50)."""
@@ -559,7 +559,7 @@ class TestMeasurePlaneFromEdgeInDirection:
             width_direction=create_v3(1, 0, 0),
             ticket="test_timber"
         )
-        plane = measure_plane_from_edge_in_direction(
+        plane = locate_plane_from_edge_in_direction(
             timber, TimberCenterline.CENTERLINE, create_v3(1, 0, 0), Rational(3)
         )
         assert isinstance(plane, Plane)
@@ -570,9 +570,9 @@ class TestMeasurePlaneFromEdgeInDirection:
 
 
 class TestMeasureCenterLine:
-    """Tests for measure_centerline function"""
+    """Tests for locate_centerline function"""
     
-    def test_measure_centerline_vertical(self):
+    def test_locate_centerline_vertical(self):
         """Test measuring the center line of a vertical timber"""
         timber = timber_from_directions(
             length=Rational(100),
@@ -583,7 +583,7 @@ class TestMeasureCenterLine:
             ticket="test_timber"
         )
         
-        line = measure_centerline(timber)
+        line = locate_centerline(timber)
         
         # Should be a Line
         assert isinstance(line, Line)
@@ -594,7 +594,7 @@ class TestMeasureCenterLine:
         assert line.point[1] == Rational(0)
         assert line.point[2] == Rational(50)  # Mid-length
     
-    def test_measure_centerline_horizontal(self):
+    def test_locate_centerline_horizontal(self):
         """Test measuring the center line of a horizontal timber"""
         timber = timber_from_directions(
             length=Rational(48),
@@ -605,7 +605,7 @@ class TestMeasureCenterLine:
             ticket="test_timber"
         )
         
-        line = measure_centerline(timber)
+        line = locate_centerline(timber)
         
         # Direction should be along timber length (+X)
         assert line.direction.equals(create_v3(1, 0, 0))
@@ -614,7 +614,7 @@ class TestMeasureCenterLine:
         assert line.point[1] == Rational(20)  # Centered in Y
         assert line.point[2] == Rational(5)   # Centered in Z
     
-    def test_measure_centerline_diagonal(self):
+    def test_locate_centerline_diagonal(self):
         """Test measuring the center line of a diagonally oriented timber"""
         # Timber pointing in diagonal direction
         from code_goes_here.rule import normalize_vector
@@ -629,7 +629,7 @@ class TestMeasureCenterLine:
             ticket="test_timber"
         )
         
-        line = measure_centerline(timber)
+        line = locate_centerline(timber)
         
         # Direction should be along timber length (diagonal)
         assert line.direction.equals(direction)
@@ -747,7 +747,7 @@ class TestDistanceFromLongEdgeOnFaceMark:
 class TestMeasureOntoCenterline:
     """Test mark_distance_from_end_along_centerline function"""
     
-    def test_measure_plane_onto_centerline(self):
+    def test_locate_plane_onto_centerline(self):
         """Test measuring a plane intersection onto centerline"""
         timber = timber_from_directions(
             length=Rational(100),
@@ -778,7 +778,7 @@ class TestMeasureOntoCenterline:
         point = marking.measure()
         assert point.position.equals(create_v3(0, 0, 30))  # At the plane location
     
-    def test_measure_line_onto_centerline(self):
+    def test_locate_line_onto_centerline(self):
         """Test measuring closest point between a line and centerline"""
         timber = timber_from_directions(
             length=Rational(100),
@@ -825,7 +825,7 @@ class TestMarkPlaneFromEdgeInDirection:
         )
         direction = create_v3(1, 0, 0)
         distance = Rational(7)
-        plane = measure_plane_from_edge_in_direction(timber, TimberCenterline.CENTERLINE, direction, distance)
+        plane = locate_plane_from_edge_in_direction(timber, TimberCenterline.CENTERLINE, direction, distance)
         result = mark_plane_from_edge_in_direction(plane, timber, TimberCenterline.CENTERLINE)
         assert result.direction.equals(direction)
         assert result.distance == distance
@@ -846,7 +846,7 @@ class TestMarkPlaneFromEdgeInDirection:
         )
         direction = normalize_vector(create_v3(2, -1, 3))
         distance = Rational(11, 3)
-        plane = measure_plane_from_edge_in_direction(
+        plane = locate_plane_from_edge_in_direction(
             timber, TimberEdge.RIGHT_FRONT, direction, distance
         )
         result = mark_plane_from_edge_in_direction(plane, timber, TimberEdge.RIGHT_FRONT)

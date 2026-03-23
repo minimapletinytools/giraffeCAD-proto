@@ -62,11 +62,11 @@ def scribe_face_plane_onto_centerline(face: TimberFace, face_timber: TimberLike)
         >>> marking = mark_distance_from_end_along_centerline(face_plane, timber_a)
         >>> shoulder_distance = measurement.distance
     """
-    # Get the face plane (any point on the face works - we use measure_into_face for simplicity)
-    return measure_into_face(0, face, face_timber)
+    # Get the face plane (any point on the face works - we use locate_into_face for simplicity)
+    return locate_into_face(0, face, face_timber)
 
 
-def measure_pat_shoulder_plane_from_centerline_to_reference_face(
+def locate_pat_shoulder_plane_from_centerline_to_reference_face(
     shoulder_timber: TimberLike,
     reference_timber: TimberLike,
     reference_face: TimberFace,
@@ -128,7 +128,7 @@ def scribe_centerline_onto_centerline(timber: TimberLike) -> Line:
         >>> dist_a = measurement_a.distance
     """
     # Mark the centerline of the timber as a Line feature
-    return measure_centerline(timber)
+    return locate_centerline(timber)
 
 def check_timber_overlap_for_splice_joint_is_sensible(
     timberA: TimberLike,
@@ -185,22 +185,22 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     # Get the end positions and directions in world coordinates
     # Note: end_direction points AWAY from the timber (outward from the end)
     if timberA_end == TimberReferenceEnd.TOP:
-        timberA_end_pos = measure_top_center_position(timberA).position
+        timberA_end_pos = locate_top_center_position(timberA).position
         timberA_end_direction = timberA.get_length_direction_global()  # Points away from timber
         timberA_opposite_end_pos = timberA.get_bottom_position_global()
     else:  # BOTTOM
         timberA_end_pos = timberA.get_bottom_position_global()
         timberA_end_direction = -timberA.get_length_direction_global()  # Points away from timber
-        timberA_opposite_end_pos = measure_top_center_position(timberA).position
+        timberA_opposite_end_pos = locate_top_center_position(timberA).position
     
     if timberB_end == TimberReferenceEnd.TOP:
-        timberB_end_pos = measure_top_center_position(timberB).position
+        timberB_end_pos = locate_top_center_position(timberB).position
         timberB_end_direction = timberB.get_length_direction_global()  # Points away from timber
         timberB_opposite_end_pos = timberB.get_bottom_position_global()
     else:  # BOTTOM
         timberB_end_pos = timberB.get_bottom_position_global()
         timberB_end_direction = -timberB.get_length_direction_global()  # Points away from timber
-        timberB_opposite_end_pos = measure_top_center_position(timberB).position
+        timberB_opposite_end_pos = locate_top_center_position(timberB).position
     
     # Check 1: The joint ends must be pointing in opposite directions (anti-parallel)
     # For a proper splice joint, the specified ends should point towards each other
@@ -433,10 +433,10 @@ def chop_lap_on_timber_end(
     
     # Step 1: Determine the end positions and shoulder position of the top lap timber
     if lap_timber_end == TimberReferenceEnd.TOP:
-        lap_end_pos = measure_top_center_position(lap_timber).position
+        lap_end_pos = locate_top_center_position(lap_timber).position
         lap_direction = lap_timber.get_length_direction_global() 
     else:  # BOTTOM
-        lap_end_pos = measure_bottom_center_position(lap_timber).position
+        lap_end_pos = locate_bottom_center_position(lap_timber).position
         lap_direction = -lap_timber.get_length_direction_global()
     
     # Calculate the shoulder position (where the lap starts)
@@ -616,7 +616,7 @@ def chop_lap_on_timber_ends(
     # The bottom lap depth is measured from the bottom timber's face to the top timber's cutting plane
     # This accounts for any rotation or offset between the timbers
     # Create a plane at lap_depth from the top timber's face
-    top_cutting_plane = measure_into_face(lap_depth, top_lap_timber_face, top_lap_timber)
+    top_cutting_plane = locate_into_face(lap_depth, top_lap_timber_face, top_lap_timber)
     # Find the opposing face on the bottom timber
     top_face_direction = top_lap_timber.get_face_direction_global(top_lap_timber_face)
     bottom_face_direction = -top_face_direction
@@ -634,10 +634,10 @@ def chop_lap_on_timber_ends(
     
     # Calculate top timber's shoulder and lap end positions in global space
     if top_lap_timber_end == TimberReferenceEnd.TOP:
-        top_timber_end_pos = measure_top_center_position(top_lap_timber).position
+        top_timber_end_pos = locate_top_center_position(top_lap_timber).position
         top_lap_direction = top_lap_timber.get_length_direction_global() 
     else:  # BOTTOM
-        top_timber_end_pos = measure_bottom_center_position(top_lap_timber).position
+        top_timber_end_pos = locate_bottom_center_position(top_lap_timber).position
         top_lap_direction = -top_lap_timber.get_length_direction_global() 
     
     # Top timber shoulder: move inward from timber end by shoulder distance
@@ -865,10 +865,10 @@ def chop_shoulder_notch_aligned_with_timber(notch_timber: TimberLike, butting_ti
     # Find where the butting timber's centerline intersects the shoulder plane.
     # The shoulder plane is at distance_from_centerline from the notch timber's
     # centerline in the approach direction.
-    shoulder_plane = measure_plane_from_edge_in_direction(
+    shoulder_plane = locate_plane_from_edge_in_direction(
         notch_timber, TimberCenterline.CENTERLINE, approach_direction_global, distance_from_centerline
     )
-    butting_centerline = measure_centerline(butting_timber)
+    butting_centerline = locate_centerline(butting_timber)
     # Intersect butting centerline with shoulder plane
     denom = safe_dot_product(shoulder_plane.normal, butting_centerline.direction)
     assert not zero_test(denom), "Butting timber centerline is parallel to the shoulder plane"
@@ -1078,7 +1078,7 @@ def chop_shoulder_notch_on_timber_face(
         corner_point_2 = create_v3(-timber.size[0] / Rational(2) + notch_depth, Integer(0), 
                                    distance_along_timber - notch_width / Rational(2))
     
-    notch_additional_depth = timber.get_nominal_size_in_face_normal_axis(notch_face) / Rational(2)
+    notch_additional_depth = timber.get_half_nominal_size_in_face_normal_axis(notch_face)
 
     # Create the notch prism
     notch_prism = RectangularPrism(

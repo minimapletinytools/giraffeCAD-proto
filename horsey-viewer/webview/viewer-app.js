@@ -1,6 +1,31 @@
 import { LitElement, html } from 'https://unpkg.com/lit@3.2.0/index.js?module';
 
-const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || { frame: {}, geometry: { meshes: [] } };
+const ViewerPhase = Object.freeze({
+    BOOTING: 'booting',
+    WAITING_FOR_RUNNER: 'waiting_for_runner',
+    APPLYING_GEOMETRY: 'applying_geometry',
+    READY: 'ready',
+    ERROR: 'error',
+});
+
+function createInitialViewState() {
+    return {
+        phase: ViewerPhase.BOOTING,
+        loadingText: 'initial creation',
+        refreshToken: 0,
+        error: null,
+    };
+}
+
+const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || {
+    frame: {},
+    geometry: { meshes: [] },
+    uiState: {
+        phase: ViewerPhase.WAITING_FOR_RUNNER,
+        loadingText: 'initial creation',
+        refreshToken: 0,
+    },
+};
 const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
 const VIEWER_APP_VERSION = '2026.03.17.4';
 const SelectionStore = window.SelectionStore;
@@ -65,21 +90,12 @@ class HorseyViewerApp extends LitElement {
         this.shadowCatcher = null;
         this.orbitCenterGizmo = null;
 
-        this.idleTimeoutMs = 5000;
-        this.lastUserInteractionMs = Date.now();
-        this.idleCritterMode = false;
-        this.idleCritters = [];
-        this.nextCritterSpawnAt = 0;
-        this.lastAnimationFrameMs = 0;
-        this.structureScreenBounds = null;
-        this.critterSpecies = ['🐴', '🐑', '🐐', '🐄', '🦌', '🐖'];
-        this.critterGroup = null;
-        this.critterTextureCache = new Map();
-
         this.selectionManager = new SelectionStore();
         this.meshNameMap = new Map(); // mesh object -> timber name
 
         this.animationHandle = null;
+        this.viewState = createInitialViewState();
+        this.activeRefreshToken = 0;
         this.onWindowMessage = this.onWindowMessage.bind(this);
         this.onWindowScroll = this.onWindowScroll.bind(this);
         this.onWindowMouseUp = this.onWindowMouseUp.bind(this);
@@ -90,7 +106,6 @@ class HorseyViewerApp extends LitElement {
         this.onLightDialPointerMove = this.onLightDialPointerMove.bind(this);
         this.onLightDialPointerUp = this.onLightDialPointerUp.bind(this);
         this.onWindowKeyDown = this.onWindowKeyDown.bind(this);
-        this.onAnyUserActivity = this.onAnyUserActivity.bind(this);
     }
 
     createRenderRoot() {
@@ -102,6 +117,7 @@ class HorseyViewerApp extends LitElement {
             <button id="to-v3d" title="Jump back to 3D view">to v3d view</button>
             <div id="viewport">
                 <canvas id="c"></canvas>
+                <div id="loading-overlay" class=${this.isOverlayVisible() ? 'visible' : ''}>${this.viewState.loadingText}</div>
                 <div id="info"></div>
                 <div id="gizmo-panel" aria-label="Camera and light gizmos">
                     <div class="gizmo-block">
@@ -131,6 +147,7 @@ class HorseyViewerApp extends LitElement {
                     <input id="reflections-toggle" type="checkbox" ?checked=${this.reflectionsEnabled}>
                     reflection
                 </label>
+                <button id="refresh-btn" type="button" title="Reload pattern">↻ refresh</button>
             </section>
             <div id="panels">
                 <div class="panel-box">
@@ -159,16 +176,15 @@ class HorseyViewerApp extends LitElement {
         this.setupUiEvents();
         this.setupThreeScene();
         window.addEventListener('message', this.onWindowMessage);
-        this.applyPayload(INITIAL_PAYLOAD);
+        this.setViewPhase(ViewerPhase.WAITING_FOR_RUNNER, 'initial creation', { refreshToken: 0 });
+        void this.beginPayloadApplication(INITIAL_PAYLOAD);
         
         // Setup selection listener
         this.selectionManager.onSelectionChanged(() => {
             this.applySelectionOpacity();
         });
         
-        this.emitViewerLog('viewer-ready', {
-            idleTimeoutMs: this.idleTimeoutMs,
-        });
+        this.emitViewerLog('viewer-ready', {});
     }
 
     disconnectedCallback() {
@@ -179,14 +195,10 @@ class HorseyViewerApp extends LitElement {
         window.removeEventListener('mousemove', this.onWindowMouseMove);
         window.removeEventListener('resize', this.onWindowResize);
         window.removeEventListener('keydown', this.onWindowKeyDown);
-        window.removeEventListener('pointerdown', this.onAnyUserActivity, true);
-        window.removeEventListener('wheel', this.onAnyUserActivity, true);
-        window.removeEventListener('keydown', this.onAnyUserActivity, true);
         window.removeEventListener('pointermove', this.onGizmoPointerMove);
         window.removeEventListener('pointerup', this.onGizmoPointerUp);
         window.removeEventListener('pointermove', this.onLightDialPointerMove);
         window.removeEventListener('pointerup', this.onLightDialPointerUp);
-        this.clearIdleCritters();
         if (this.animationHandle) {
             cancelAnimationFrame(this.animationHandle);
             this.animationHandle = null;
@@ -234,6 +246,7 @@ class HorseyViewerApp extends LitElement {
         const centerGizmoToggle = this.renderRoot.querySelector('#center-gizmo-toggle');
         const shadowsToggle = this.renderRoot.querySelector('#shadows-toggle');
         const reflectionsToggle = this.renderRoot.querySelector('#reflections-toggle');
+        const refreshButton = this.renderRoot.querySelector('#refresh-btn');
 
         toV3d.addEventListener('click', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -294,6 +307,12 @@ class HorseyViewerApp extends LitElement {
             this.setReflectionsEnabled(event.target.checked);
         });
 
+        refreshButton.addEventListener('click', () => {
+            if (vscode) {
+                vscode.postMessage({ type: 'requestRefresh' });
+            }
+        });
+
         window.addEventListener('scroll', this.onWindowScroll);
         window.addEventListener('mouseup', this.onWindowMouseUp);
         window.addEventListener('mousemove', this.onWindowMouseMove);
@@ -303,9 +322,6 @@ class HorseyViewerApp extends LitElement {
         window.addEventListener('pointerup', this.onLightDialPointerUp);
         window.addEventListener('resize', this.onWindowResize);
         window.addEventListener('keydown', this.onWindowKeyDown);
-        window.addEventListener('pointerdown', this.onAnyUserActivity, true);
-        window.addEventListener('wheel', this.onAnyUserActivity, true);
-        window.addEventListener('keydown', this.onAnyUserActivity, true);
     }
 
     setupThreeScene() {
@@ -377,32 +393,21 @@ class HorseyViewerApp extends LitElement {
         this.setShadowsEnabled(this.shadowsEnabled);
         this.setReflectionsEnabled(this.reflectionsEnabled);
 
-        this.critterGroup = new THREE.Group();
-        this.scene.add(this.critterGroup);
-
         this.updateCamera();
         const animate = () => {
             this.animationHandle = requestAnimationFrame(animate);
-            const nowMs = performance.now();
-            const deltaSeconds = this.lastAnimationFrameMs > 0 ? (nowMs - this.lastAnimationFrameMs) / 1000 : 0;
-            this.lastAnimationFrameMs = nowMs;
             this.stepCameraAnimation();
             this.renderCameraGizmo();
-            this.updateIdleCritters(nowMs, deltaSeconds);
             this.renderer.render(this.scene, this.camera);
         };
         animate();
-    }
-
-    onAnyUserActivity() {
-        this.markUserInteraction();
     }
 
     emitViewerLog(eventName, details = {}) {
         const payload = {
             type: 'viewerLog',
             event: eventName,
-            source: 'idle-critter',
+            source: 'viewer',
             level: 'info',
             version: VIEWER_APP_VERSION,
             details,
@@ -413,227 +418,6 @@ class HorseyViewerApp extends LitElement {
             return;
         }
         console.info('[HorseyViewer]', payload);
-    }
-
-    markUserInteraction() {
-        this.lastUserInteractionMs = Date.now();
-        if (this.idleCritterMode) {
-            this.stopIdleCritterMode('activity');
-        }
-    }
-
-    startIdleCritterMode(nowMs) {
-        this.idleCritterMode = true;
-        this.nextCritterSpawnAt = nowMs + 250;
-        this.emitViewerLog('idle-start', {
-            timeoutMs: this.idleTimeoutMs,
-        });
-    }
-
-    stopIdleCritterMode(reason = 'activity') {
-        const activeCount = this.idleCritters.length;
-        this.idleCritterMode = false;
-        this.nextCritterSpawnAt = 0;
-        this.emitViewerLog('idle-end', {
-            reason,
-            activeCritters: activeCount,
-        });
-    }
-
-    clearIdleCritters() {
-        if (this.critterGroup) {
-            while (this.critterGroup.children.length > 0) {
-                const child = this.critterGroup.children[0];
-                this.critterGroup.remove(child);
-                if (child.material && child.material.map) {
-                    child.material.map.dispose();
-                }
-                if (child.material) {
-                    child.material.dispose();
-                }
-                if (child.geometry) {
-                    child.geometry.dispose();
-                }
-            }
-        }
-        this.idleCritters = [];
-    }
-
-    updateIdleCritters(nowMs, deltaSeconds) {
-        const idleForMs = Date.now() - this.lastUserInteractionMs;
-        if (idleForMs >= this.idleTimeoutMs) {
-            if (!this.idleCritterMode) {
-                this.startIdleCritterMode(nowMs);
-            }
-        } else if (this.idleCritterMode) {
-            this.stopIdleCritterMode('activity-check');
-            // Continue animating existing critters even after idle stops
-        }
-
-        // Spawn new critters only during active idle mode
-        if (this.idleCritterMode && nowMs >= this.nextCritterSpawnAt) {
-            this.spawnIdleCritter3D(nowMs);
-            this.nextCritterSpawnAt = nowMs + 700 + Math.random() * 1400;
-        }
-
-        // Always animate existing critters, even after idle mode stops
-        if (!deltaSeconds || this.idleCritters.length === 0 || !this.critterGroup) {
-            return;
-        }
-
-        const nextCritters = [];
-        const cullingDistance = 20; // Remove critters beyond this distance
-
-        for (const critter of this.idleCritters) {
-            // Move in 3D world space
-            critter.x += critter.speedUnitsPerSec * critter.direction * deltaSeconds;
-            critter.gaitPhase += deltaSeconds * critter.gaitRate;
-
-            // Gait animation (bounce and lean)
-            const bounce = Math.sin(critter.gaitPhase) * critter.bounceUnits;
-            const bob = Math.sin(critter.gaitPhase * 2) * critter.leanDeg;
-
-            // Update position
-            const baseZ = this.groundZ + 0.3; // Just above ground
-            critter.object.position.set(critter.x, critter.y, baseZ + bounce);
-            critter.object.rotation.z = (bob * Math.PI) / 180;
-
-            // Check if critter is still in view frustum bounds
-            const distFromOrigin = Math.hypot(critter.x, critter.y);
-            if (distFromOrigin <= cullingDistance) {
-                nextCritters.push(critter);
-                continue;
-            }
-
-            // Remove from scene and dispose
-            this.critterGroup.remove(critter.object);
-            if (critter.object.material && critter.object.material.map) {
-                critter.object.material.map.dispose();
-            }
-            if (critter.object.material) {
-                critter.object.material.dispose();
-            }
-            if (critter.object.geometry) {
-                critter.object.geometry.dispose();
-            }
-        }
-
-        this.idleCritters = nextCritters;
-    }
-
-    createCritterTexture(species, size) {
-        const cacheKey = `${species}-${size}`;
-        if (this.critterTextureCache.has(cacheKey)) {
-            return this.critterTextureCache.get(cacheKey);
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        ctx.font = `${size * 0.8}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(species, size / 2, size / 2);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.magFilter = THREE.LinearFilter;
-        texture.minFilter = THREE.LinearFilter;
-        this.critterTextureCache.set(cacheKey, texture);
-        return texture;
-    }
-
-    pickCritter3DSpawnLocation() {
-        const bounds = this.lastBounds;
-        if (!bounds) {
-            return { x: 3, y: 0, direction: 1 };
-        }
-
-        const minX = bounds.minX;
-        const maxX = bounds.maxX;
-        const minY = bounds.minY;
-        const maxY = bounds.maxY;
-        const margin = 3; // Increased margin for safer spawning
-
-        // Pick random edge (0=left, 1=right, 2=bottom, 3=top)
-        const edge = Math.floor(Math.random() * 4);
-        let x, y, direction;
-
-        switch (edge) {
-            case 0: // Left edge
-                x = minX - margin;
-                y = minY + Math.random() * (maxY - minY);
-                direction = 1; // Moving right
-                break;
-            case 1: // Right edge
-                x = maxX + margin;
-                y = minY + Math.random() * (maxY - minY);
-                direction = -1; // Moving left
-                break;
-            case 2: // Bottom edge
-                x = minX + Math.random() * (maxX - minX);
-                y = minY - margin;
-                direction = Math.random() < 0.5 ? 1 : -1;
-                break;
-            case 3: // Top edge
-                x = minX + Math.random() * (maxX - minX);
-                y = maxY + margin;
-                direction = Math.random() < 0.5 ? 1 : -1;
-                break;
-        }
-
-        return { x, y, direction };
-    }
-
-    spawnIdleCritter3D(nowMs) {
-        if (!this.critterGroup || !this.scene) {
-            return;
-        }
-
-        const direction = Math.random() < 0.5 ? 1 : -1;
-        const species = this.critterSpecies[Math.floor(Math.random() * this.critterSpecies.length)] || '🐴';
-        const critterSize = 0.8 + Math.random() * 0.4; // Units in 3D space
-        const textureSize = 128;
-
-        // Pick spawn location outside structure footprint
-        const spawnLoc = this.pickCritter3DSpawnLocation();
-
-        // Create sprite plane
-        const geometry = new THREE.PlaneGeometry(critterSize, critterSize);
-        const texture = this.createCritterTexture(species, textureSize);
-        const material = new THREE.MeshBasicMaterial({
-            map: texture,
-            transparent: true,
-            alphaTest: 0.1, // Only render pixels with alpha > 0.1
-            side: THREE.DoubleSide,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(spawnLoc.x, spawnLoc.y, this.groundZ + 0.3);
-
-        // Orient vertically (standing upright, perpendicular to ground)
-        mesh.rotation.x = Math.PI / 2;
-
-        this.critterGroup.add(mesh);
-
-        this.idleCritters.push({
-            x: spawnLoc.x,
-            y: spawnLoc.y,
-            direction: spawnLoc.direction,
-            speedUnitsPerSec: 2 + Math.random() * 3, // Units per second in world space
-            bounceUnits: 0.15 + Math.random() * 0.3,
-            leanDeg: 3 + Math.random() * 6,
-            gaitRate: 7 + Math.random() * 5,
-            gaitPhase: (nowMs / 400) + Math.random() * Math.PI * 2,
-            object: mesh,
-        });
-
-        this.emitViewerLog('critter-created', {
-            species,
-            direction: spawnLoc.direction > 0 ? 'right' : 'left',
-            position: [Math.round(spawnLoc.x * 10) / 10, Math.round(spawnLoc.y * 10) / 10],
-            size: Math.round(critterSize * 100) / 100,
-            activeCritters: this.idleCritters.length,
-        });
     }
 
     updateStructureScreenBounds() {
@@ -700,8 +484,26 @@ class HorseyViewerApp extends LitElement {
 
     onWindowMessage(event) {
         const message = event.data || {};
-        if (message.type === 'refresh') {
-            this.applyPayload({ frame: message.frame || {}, geometry: message.geometry || { meshes: [] } });
+        if (message.type === 'viewerState') {
+            const uiState = this.normalizeUiState(message.uiState || null);
+            const hasPayload = Object.prototype.hasOwnProperty.call(message, 'frame') ||
+                Object.prototype.hasOwnProperty.call(message, 'geometry') ||
+                Object.prototype.hasOwnProperty.call(message, 'profiling');
+
+            if (!hasPayload) {
+                this.setViewPhase(uiState.phase, uiState.loadingText, {
+                    refreshToken: uiState.refreshToken,
+                    error: uiState.error,
+                });
+                return;
+            }
+
+            void this.beginPayloadApplication({
+                frame: message.frame || {},
+                geometry: message.geometry || { meshes: [] },
+                profiling: message.profiling || null,
+                uiState,
+            });
             return;
         }
 
@@ -1524,28 +1326,84 @@ class HorseyViewerApp extends LitElement {
             timberCount + ' timbers • ' + accessoriesCount + ' accessories';
     }
 
-    updateDebug(geometryData) {
+    updateDebug(geometryData, profiling) {
         const meshes = (geometryData && geometryData.meshes) ? geometryData.meshes : [];
         const changedKeys = (geometryData && geometryData.changedKeys) ? geometryData.changedKeys : [];
         const removedKeys = (geometryData && geometryData.removedKeys) ? geometryData.removedKeys : [];
+        const remeshMetrics = (geometryData && geometryData.remeshMetrics) ? geometryData.remeshMetrics : [];
         const rebuilt = changedKeys.length;
         const removed = removedKeys.length;
         const total = meshes.length;
         const reused = Math.max(0, total - rebuilt);
+
+        let profilingHtml = '';
+        if (profiling) {
+            const parts = [];
+            if (typeof profiling.reload_s === 'number') {
+                parts.push('reload: ' + (profiling.reload_s * 1000).toFixed(0) + ' ms');
+            }
+            if (typeof profiling.geometry_s === 'number') {
+                parts.push('mesh: ' + (profiling.geometry_s * 1000).toFixed(0) + ' ms');
+            }
+            if (typeof profiling.refresh_total_s === 'number') {
+                parts.push('refresh total: ' + (profiling.refresh_total_s * 1000).toFixed(0) + ' ms');
+            }
+            if (typeof profiling.changed_timbers === 'number') {
+                parts.push('changed timbers: ' + profiling.changed_timbers);
+            }
+            if (parts.length > 0) {
+                profilingHtml = '<br><strong>Profiling</strong><br>' + parts.join('<br>');
+            }
+        }
+
+        let remeshHtml = '';
+        if (remeshMetrics.length > 0) {
+            const totalRemeshMs = remeshMetrics.reduce((sum, metric) => {
+                if (typeof metric.remesh_s === 'number') {
+                    return sum + metric.remesh_s * 1000;
+                }
+                return sum;
+            }, 0);
+            const maxCsgDepth = remeshMetrics.reduce((maxDepth, metric) => {
+                if (typeof metric.csg_depth === 'number') {
+                    return Math.max(maxDepth, metric.csg_depth);
+                }
+                return maxDepth;
+            }, 0);
+            remeshHtml = '<br><strong>Changed Timber Remesh</strong><br>' +
+                'entries: ' + remeshMetrics.length + '<br>' +
+                'remesh total: ' + totalRemeshMs.toFixed(0) + ' ms<br>' +
+                'max CSG depth: ' + maxCsgDepth;
+        }
 
         this.renderRoot.querySelector('#debug').innerHTML =
             '<strong>Refresh Debug</strong><br>' +
             'total: ' + total + '<br>' +
             'rebuilt: ' + rebuilt + '<br>' +
             'reused: ' + reused + '<br>' +
-            'removed: ' + removed;
+            'removed: ' + removed +
+            remeshHtml +
+            profilingHtml;
     }
 
-    updateMeshScene(geometryData) {
+    async updateMeshScene(geometryData, refreshToken, onProgress) {
         const meshes = (geometryData && geometryData.meshes) ? geometryData.meshes : [];
+        const total = meshes.length;
+        let processed = 0;
         const nextKeys = new Set();
 
+        const reportProgress = () => {
+            if (typeof onProgress === 'function') {
+                onProgress(processed, total);
+            }
+        };
+
+        reportProgress();
+
         for (let index = 0; index < meshes.length; index += 1) {
+            if (this.isRefreshStale(refreshToken)) {
+                return false;
+            }
             const mesh = meshes[index];
             const key = mesh.timberKey || ('index-' + index);
             const timberName = mesh.timberKey || ('index-' + index);
@@ -1555,6 +1413,14 @@ class HorseyViewerApp extends LitElement {
             const existing = this.meshObjectsByKey.get(key);
             if (existing && existing.hash === hash) {
                 this.meshNameMap.set(existing.mesh, timberName);
+                processed += 1;
+                reportProgress();
+                if (index === 0 || index === meshes.length - 1 || index % 8 === 0) {
+                    await this.waitForNextPaint();
+                    if (this.isRefreshStale(refreshToken)) {
+                        return false;
+                    }
+                }
                 continue;
             }
 
@@ -1592,6 +1458,14 @@ class HorseyViewerApp extends LitElement {
             this.scene.add(reflectionMesh);
             this.meshNameMap.set(solidMesh, timberName);
             this.meshObjectsByKey.set(key, { hash: hash, mesh: solidMesh, edges: edgeMesh, reflection: reflectionMesh });
+            processed += 1;
+            reportProgress();
+            if (index === 0 || index === meshes.length - 1 || index % 8 === 0) {
+                await this.waitForNextPaint();
+                if (this.isRefreshStale(refreshToken)) {
+                    return false;
+                }
+            }
         }
 
         for (const existingKey of Array.from(this.meshObjectsByKey.keys())) {
@@ -1606,6 +1480,93 @@ class HorseyViewerApp extends LitElement {
         this.rebuildTimberTable(meshes);
         this.updateReflectionTransforms();
         this.applySelectionOpacity();
+        return true;
+    }
+
+    normalizeUiState(uiState) {
+        const next = uiState && typeof uiState === 'object' ? uiState : {};
+        const phase = typeof next.phase === 'string' && next.phase
+            ? next.phase
+            : ViewerPhase.WAITING_FOR_RUNNER;
+        const loadingText = typeof next.loadingText === 'string' && next.loadingText
+            ? next.loadingText
+            : this.defaultLoadingTextForPhase(phase);
+        const refreshToken = Number.isFinite(next.refreshToken)
+            ? next.refreshToken
+            : this.activeRefreshToken;
+        const error = typeof next.error === 'string' && next.error ? next.error : null;
+
+        return {
+            phase,
+            loadingText,
+            refreshToken,
+            error,
+            keepLoading: Boolean(next.keepLoading),
+        };
+    }
+
+    defaultLoadingTextForPhase(phase) {
+        if (phase === ViewerPhase.BOOTING) {
+            return 'starting viewer';
+        }
+        if (phase === ViewerPhase.WAITING_FOR_RUNNER) {
+            return 'initial creation';
+        }
+        if (phase === ViewerPhase.APPLYING_GEOMETRY) {
+            return 'meshing 0/0';
+        }
+        if (phase === ViewerPhase.ERROR) {
+            return 'viewer error';
+        }
+        return '';
+    }
+
+    isOverlayVisible() {
+        return this.viewState.phase !== ViewerPhase.READY;
+    }
+
+    setViewState(nextPartial) {
+        this.viewState = {
+            ...this.viewState,
+            ...nextPartial,
+        };
+
+        const overlay = this.renderRoot && this.renderRoot.querySelector
+            ? this.renderRoot.querySelector('#loading-overlay')
+            : null;
+        if (overlay) {
+            overlay.textContent = this.viewState.loadingText;
+            overlay.classList.toggle('visible', this.isOverlayVisible());
+        }
+    }
+
+    setViewPhase(phase, loadingText = null, extra = {}) {
+        this.setViewState({
+            phase,
+            loadingText: loadingText || this.defaultLoadingTextForPhase(phase),
+            ...extra,
+        });
+    }
+
+    beginPayloadApplication(payload) {
+        const uiState = this.normalizeUiState(payload && payload.uiState ? payload.uiState : null);
+        const refreshToken = Number.isFinite(uiState.refreshToken)
+            ? uiState.refreshToken
+            : this.activeRefreshToken + 1;
+        this.activeRefreshToken = Math.max(this.activeRefreshToken, refreshToken);
+        return this.applyPayload(payload, refreshToken);
+    }
+
+    isRefreshStale(refreshToken) {
+        return refreshToken !== this.activeRefreshToken;
+    }
+
+    waitForNextPaint() {
+        return new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => resolve());
+            });
+        });
     }
 
     getSceneBounds() {
@@ -1640,13 +1601,43 @@ class HorseyViewerApp extends LitElement {
         return { minX, minY, minZ, maxX, maxY, maxZ };
     }
 
-    applyPayload(payload) {
+    async applyPayload(payload, refreshToken) {
         const frameData = payload.frame || {};
         const geometryData = payload.geometry || { meshes: [] };
+        const profiling = payload.profiling || null;
+        const uiState = this.normalizeUiState(payload.uiState || null);
+
+        if (uiState.keepLoading) {
+            this.setViewPhase(uiState.phase, uiState.loadingText, { refreshToken, error: uiState.error });
+            this.updateInfo(frameData);
+            this.updateDebug(geometryData, profiling);
+            this.renderRoot.querySelector('#raw-output').textContent = JSON.stringify({
+                frame: frameData,
+                geometry: geometryData,
+            }, null, 2);
+            return;
+        }
+
+        this.setViewPhase(ViewerPhase.APPLYING_GEOMETRY, uiState.loadingText || 'initial creation', {
+            refreshToken,
+            error: null,
+        });
+        await this.waitForNextPaint();
+        if (this.isRefreshStale(refreshToken)) {
+            return;
+        }
 
         this.updateInfo(frameData);
-        this.updateDebug(geometryData);
-        this.updateMeshScene(geometryData);
+        this.updateDebug(geometryData, profiling);
+        const completed = await this.updateMeshScene(geometryData, refreshToken, (processed, total) => {
+            this.setViewPhase(ViewerPhase.APPLYING_GEOMETRY, `meshing ${processed}/${total}`, {
+                refreshToken,
+                error: null,
+            });
+        });
+        if (!completed || this.isRefreshStale(refreshToken)) {
+            return;
+        }
 
         this.renderRoot.querySelector('#raw-output').textContent = JSON.stringify({
             frame: frameData,
@@ -1676,6 +1667,10 @@ class HorseyViewerApp extends LitElement {
         this.updateLightFromAngles();
         this.drawLightDial();
         this.updateStructureScreenBounds();
+        if (this.isRefreshStale(refreshToken)) {
+            return;
+        }
+        this.setViewPhase(ViewerPhase.READY, '', { refreshToken, error: null });
     }
 
     updateCamera() {

@@ -9,7 +9,7 @@ When measuring on timbers, we want to do things like mark from a reference edge,
 
 All measuring functions should follow the following naming convention:
 
-- `measure_*` : functions that take measurements relative to a (LOCAL) feature of a timber and outputs a feature in GLOBAL space
+- `locate_*` : functions that take measurements relative to a (LOCAL) feature of a timber and outputs a feature in GLOBAL space
 
 - `???_*` : functions that take feature(s) in GLOBAL space and outputs features in GLOBAL space
 
@@ -20,7 +20,7 @@ All measuring functions should follow the following naming convention:
 - `???_*` : functions that take feature(s) in GLOBAL space and outputs features in GLOBAL space
 
 OR put more simply:
-- `measure_*` means LOCAL to GLOBAL
+- `locate_*` means LOCAL to GLOBAL
 - `mark_*` means GLOBAL to LOCAL
 - `scribe_*` means LOCAL to LOCAL
 - `???_*` means GLOBAL to GLOBAL
@@ -29,7 +29,7 @@ In addition we have `mark_*_by_*` methods which take specific features where as 
 
 Using these functions, we can take measurements relative to features on one timber and measure them onto another timber. Measurements always exist in some context, and together with their context, they become colloqial ways to refer to features as it is easier to understand and work with measurements than it is to work with features directly. So measuring and marking functions are precisely used to convert between these expressions!
 
-For example, if we `my_feature = measure_into_face(mm(10), TimberFace.RIGHT, timberA)` we mean the feature that is a plane 10mm into and parallel with the right face of the timber.
+For example, if we `my_feature = locate_into_face(mm(10), TimberFace.RIGHT, timberA)` we mean the feature that is a plane 10mm into and parallel with the right face of the timber.
 And then if we `mark_distance_from_face_in_normal_direction(my_feature, timberB, TimberFace.RIGHT)` we mean find the distance from the feature above to the right face of timberB
 
 Measuring features assumes the features are "comparable". In most cases this means the features are parallel such that measurements can be taken in the orthognal axis. If the features are not "comparable" the functions will assert!
@@ -198,7 +198,7 @@ class DistanceFromFace(Marking):
         """
         Convert the distance from a face to an unsigned plane.
         """
-        return measure_into_face(self.distance, self.face, self.timber)
+        return locate_into_face(self.distance, self.face, self.timber)
 
 @dataclass(frozen=True)
 class DistanceFromPointIntoFace(Marking):
@@ -261,7 +261,7 @@ class DistanceFromLongEdgeOnFace(Marking):
             Line parallel to the edge at the specified distance on the face
         """
         # Get the edge line
-        edge_line = measure_long_edge(self.timber, self.edge)
+        edge_line = locate_long_edge(self.timber, self.edge)
         
         # Check that the face is adjacent to the edge
         # Long faces are RIGHT, FRONT, LEFT, BACK (not TOP or BOTTOM)
@@ -342,7 +342,7 @@ class DistanceFromCornerAlongEdge(Marking):
     end: TimberReferenceEnd
 
     def measure(self) -> Point:
-        edge_line = measure_edge(self.timber, self.edge)
+        edge_line = locate_edge(self.timber, self.edge)
         if self.end == TimberReferenceEnd.TOP:
             end_position = edge_line.point + edge_line.direction * (self.timber.length / Integer(2))
             into_direction = -self.timber.get_length_direction_global()
@@ -362,7 +362,7 @@ class PlaneFromEdgeInDirection(Marking):
     distance: Numeric
     
     def measure(self) -> Plane:
-        return measure_plane_from_edge_in_direction(self.timber, self.edge, self.direction, self.distance)
+        return locate_plane_from_edge_in_direction(self.timber, self.edge, self.direction, self.distance)
 
 class MarkingSpace(Marking):
     """
@@ -431,7 +431,7 @@ def get_point_on_feature(feature: Union[UnsignedPlane, Plane, Line, Point, HalfP
 # ============================================================================
 
 
-def measure_face(timber: PerfectTimberWithin, face: SomeTimberFace) -> Plane:
+def locate_face(timber: PerfectTimberWithin, face: SomeTimberFace) -> Plane:
     """
     Measure a face on a timber, returning a Plane centered on the face pointing outward.
 
@@ -446,7 +446,7 @@ def measure_face(timber: PerfectTimberWithin, face: SomeTimberFace) -> Plane:
         Plane with normal pointing outward from the face and point at the face center
 
     Example:
-        >>> plane = measure_face(timber, TimberFace.RIGHT)
+        >>> plane = locate_face(timber, TimberFace.RIGHT)
         >>> # plane.normal points in +X direction (outward from RIGHT face)
         >>> # plane.point is at the center of the RIGHT face surface
     """
@@ -459,7 +459,7 @@ def measure_face(timber: PerfectTimberWithin, face: SomeTimberFace) -> Plane:
     return Plane(face_normal, face_point)
 
 
-def measure_edge(timber: PerfectTimberWithin, edge: EdgeOrCenterline) -> Line:
+def locate_edge(timber: PerfectTimberWithin, edge: EdgeOrCenterline) -> Line:
     """
     Measure any edge or centerline on a timber, returning a Line along it.
 
@@ -485,20 +485,20 @@ def measure_edge(timber: PerfectTimberWithin, edge: EdgeOrCenterline) -> Line:
     return Line(direction, corner_position)
 
 
-def measure_long_edge(timber: PerfectTimberWithin, edge: TimberLongEdge) -> Line:
-    """Measure a long edge on a timber. Thin wrapper around measure_edge."""
-    return measure_edge(timber, TimberEdge(edge.value))
+def locate_long_edge(timber: PerfectTimberWithin, edge: TimberLongEdge) -> Line:
+    """Measure a long edge on a timber. Thin wrapper around locate_edge."""
+    return locate_edge(timber, TimberEdge(edge.value))
 
 
-def measure_centerline(timber: PerfectTimberWithin) -> Line:
-    """Measure the centerline of a timber. Thin wrapper around measure_edge."""
-    return measure_edge(timber, TimberCenterline.CENTERLINE)
+def locate_centerline(timber: PerfectTimberWithin) -> Line:
+    """Measure the centerline of a timber. Thin wrapper around locate_edge."""
+    return locate_edge(timber, TimberCenterline.CENTERLINE)
 
-def measure_edge_on_face(timber: PerfectTimberWithin, edge: TimberLongEdge, face: TimberFace) -> HalfPlane:
+def locate_edge_on_face(timber: PerfectTimberWithin, edge: TimberLongEdge, face: TimberFace) -> HalfPlane:
     # TODO: Implement this function
-    raise NotImplementedError("measure_edge_on_face is not yet implemented")
+    raise NotImplementedError("locate_edge_on_face is not yet implemented")
 
-def measure_position_on_centerline_from_bottom(timber: PerfectTimberWithin, distance: Numeric) -> Point:
+def locate_position_on_centerline_from_bottom(timber: PerfectTimberWithin, distance: Numeric) -> Point:
     """
     Measure a position at a specific point along the timber's centerline, measured from the bottom.
 
@@ -513,7 +513,7 @@ def measure_position_on_centerline_from_bottom(timber: PerfectTimberWithin, dist
     return Point(position)
 
 
-def measure_position_on_centerline_from_top(timber: PerfectTimberWithin, distance: Numeric) -> Point:
+def locate_position_on_centerline_from_top(timber: PerfectTimberWithin, distance: Numeric) -> Point:
     """
     Measure a position at a specific point along the timber's centerline, measured from the top.
 
@@ -528,7 +528,7 @@ def measure_position_on_centerline_from_top(timber: PerfectTimberWithin, distanc
     return Point(position)
 
 
-def measure_bottom_center_position(timber: PerfectTimberWithin) -> Point:
+def locate_bottom_center_position(timber: PerfectTimberWithin) -> Point:
     """
     Measure the position of the center of the bottom cross-section of the timber.
 
@@ -541,7 +541,7 @@ def measure_bottom_center_position(timber: PerfectTimberWithin) -> Point:
     return Point(timber.get_bottom_position_global())
 
 
-def measure_top_center_position(timber: PerfectTimberWithin) -> Point:
+def locate_top_center_position(timber: PerfectTimberWithin) -> Point:
     """
     Measure the position of the center of the top cross-section of the timber.
 
@@ -554,7 +554,7 @@ def measure_top_center_position(timber: PerfectTimberWithin) -> Point:
     position = timber.get_bottom_position_global() + timber.get_length_direction_global() * timber.length
     return Point(position)
 
-def measure_into_face(distance: Numeric, face: SomeTimberFace, timber: PerfectTimberWithin) -> UnsignedPlane:
+def locate_into_face(distance: Numeric, face: SomeTimberFace, timber: PerfectTimberWithin) -> UnsignedPlane:
     """
     Measure a distance from a face on a timber.
     """
@@ -567,7 +567,7 @@ def measure_into_face(distance: Numeric, face: SomeTimberFace, timber: PerfectTi
 
     return UnsignedPlane(timber.get_face_direction_global(face), point_on_plane)
 
-def measure_plane_from_edge_in_direction(timber: PerfectTimberWithin, edge: EdgeOrCenterline, direction: Direction3D, distance: Numeric = Integer(0)) -> Plane:
+def locate_plane_from_edge_in_direction(timber: PerfectTimberWithin, edge: EdgeOrCenterline, direction: Direction3D, distance: Numeric = Integer(0)) -> Plane:
     """
     Return a Plane that is parallel to the given edge, has `direction` as its
     normal, and sits `distance` away from the edge in that direction.
@@ -578,11 +578,11 @@ def measure_plane_from_edge_in_direction(timber: PerfectTimberWithin, edge: Edge
         direction: Normal direction of the resulting plane
         distance: How far from the edge to place the plane (default 0 = through the edge)
     """
-    edge_line = measure_edge(timber, edge)
+    edge_line = locate_edge(timber, edge)
     return Plane(normal=direction, point=edge_line.point + direction * distance)
 
-def measure_plane_from_centerline_in_direction(timber: PerfectTimberWithin, direction: Direction3D) -> Plane:
-    return measure_plane_from_edge_in_direction(timber, TimberCenterline.CENTERLINE, direction)
+def locate_plane_from_centerline_in_direction(timber: PerfectTimberWithin, direction: Direction3D) -> Plane:
+    return locate_plane_from_edge_in_direction(timber, TimberCenterline.CENTERLINE, direction)
 
 # ============================================================================
 # Marking functions
@@ -596,8 +596,8 @@ def mark_distance_from_face_in_normal_direction(feature: Union[UnsignedPlane, Pl
     Positive means the feature is inside the timber (deeper than the face surface).
     Negative means the feature is outside the timber (shallower than the face surface).
 
-    This is the inverse of measure_into_face:
-    If feature = measure_into_face(d, face, timber), then mark_distance_from_face_in_normal_direction(feature, timber, face).distance = d
+    This is the inverse of locate_into_face:
+    If feature = locate_into_face(d, face, timber), then mark_distance_from_face_in_normal_direction(feature, timber, face).distance = d
     """
 
     if isinstance(feature, UnsignedPlane) or isinstance(feature, Plane) or isinstance(feature, HalfPlane):
@@ -642,9 +642,9 @@ def mark_distance_from_corner_along_edge_by_intersecting_plane(plane: Union[Unsi
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     if isinstance(edge, TimberLongEdge):
-        edge_line = measure_edge(timber, TimberEdge(edge.value))
+        edge_line = locate_edge(timber, TimberEdge(edge.value))
     else:
-        edge_line = measure_edge(timber, edge)
+        edge_line = locate_edge(timber, edge)
 
     if end == TimberReferenceEnd.TOP:
         end_position = edge_line.point + edge_line.direction * (timber.length / Integer(2))
@@ -683,9 +683,9 @@ def mark_distance_from_corner_along_edge_by_finding_closest_point_on_line(line: 
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     if isinstance(edge, TimberLongEdge):
-        edge_line = measure_edge(timber, TimberEdge(edge.value))
+        edge_line = locate_edge(timber, TimberEdge(edge.value))
     else:
-        edge_line = measure_edge(timber, edge)
+        edge_line = locate_edge(timber, edge)
 
     if are_vectors_parallel(line.direction, edge_line.direction):
         raise ValueError(f"Lines are parallel - no intersection exists")
@@ -750,7 +750,7 @@ def mark_distance_from_end_along_centerline(feature: Union[UnsignedPlane, Plane,
         assert False, f"Not implemented for feature type {type(feature)}"
 
     # Get the reference end's centerline position as the reference point
-    centerline = measure_centerline(timber)
+    centerline = locate_centerline(timber)
     if end == TimberReferenceEnd.BOTTOM:
         end_centerline_position = timber.get_bottom_position_global()
         reference_face = TimberFace.BOTTOM
@@ -771,8 +771,8 @@ def mark_plane_from_edge_in_direction(plane: Union[UnsignedPlane, Plane, HalfPla
     Mark a plane onto a timber edge, returning the direction and signed distance
     from the edge to the plane.
 
-    This is the inverse of measure_plane_from_edge_in_direction:
-    if p = measure_plane_from_edge_in_direction(timber, edge, dir, dist),
+    This is the inverse of locate_plane_from_edge_in_direction:
+    if p = locate_plane_from_edge_in_direction(timber, edge, dir, dist),
     then mark_plane_from_edge_in_direction(p, timber, edge) returns (dir, dist).
 
     Args:
@@ -780,7 +780,7 @@ def mark_plane_from_edge_in_direction(plane: Union[UnsignedPlane, Plane, HalfPla
         timber: The timber whose edge we're measuring from
         edge: Which edge to measure from
     """
-    edge_line = measure_edge(timber, edge)
+    edge_line = locate_edge(timber, edge)
     direction = plane.normal
     plane_point = plane.point_on_line if isinstance(plane, HalfPlane) else plane.point
     distance = safe_dot_product(direction, plane_point - edge_line.point)

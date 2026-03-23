@@ -12,6 +12,10 @@ dependencies = [
     "trimesh",
 ]
 
+[project.optional-dependencies]
+step = ["cadquery-ocp>=7.7.0"]
+step-cadquery = ["cadquery>=2.0.0"]  # legacy: full CadQuery wrapper (see blueprint_cadquery.py)
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

@@ -15,9 +15,11 @@ from code_goes_here.joints.joint_shavings import *
 from code_goes_here.joints.plain_joints import *
 from code_goes_here.joints.mortise_and_tenon_joint import *
 from code_goes_here.joints.japanese_joints import *
+from code_goes_here.joints.double_butt_joints import *
 from code_goes_here.measuring import *
 from code_goes_here.patternbook import *
 from code_goes_here.triangles import *
+from code_goes_here.blueprint import *
 
 # Explicitly import private helper functions that are used by tests
 # These start with _ so they won't be included in "import *" by default

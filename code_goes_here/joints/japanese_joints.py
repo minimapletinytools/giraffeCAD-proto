@@ -7,7 +7,7 @@ import warnings
 from code_goes_here.timber import *
 from code_goes_here.construction import *
 from .joint_shavings import *
-from code_goes_here.measuring import measure_top_center_position, measure_centerline, mark_distance_from_end_along_centerline
+from code_goes_here.measuring import locate_top_center_position, locate_centerline, mark_distance_from_end_along_centerline
 from code_goes_here.rule import *
 from code_goes_here.cutcsg import *
 
@@ -208,7 +208,7 @@ def cut_lapped_gooseneck_joint(
 
     # Get the receiving timber end position
     if receiving_timber_end == TimberReferenceEnd.TOP:
-        receiving_timber_end_position_global = measure_top_center_position(receiving_timber).position
+        receiving_timber_end_position_global = locate_top_center_position(receiving_timber).position
     else:  # BOTTOM
         receiving_timber_end_position_global = receiving_timber.get_bottom_position_global()
     
@@ -251,7 +251,7 @@ def cut_lapped_gooseneck_joint(
     # Compute gooseneck depth relative to the opposing face on the receiving timber
     # This accounts for any offset or rotation between the timbers
     # Create a plane at gooseneck_depth from the gooseneck timber's face
-    gooseneck_cutting_plane = measure_into_face(gooseneck_depth, gooseneck_timber_face, gooseneck_timber)
+    gooseneck_cutting_plane = locate_into_face(gooseneck_depth, gooseneck_timber_face, gooseneck_timber)
     # Find the opposing face on the receiving timber
     gooseneck_face_direction = gooseneck_timber.get_face_direction_global(gooseneck_timber_face)
     receiving_face_direction = -gooseneck_face_direction
@@ -870,16 +870,13 @@ def cut_mitered_and_keyed_lap_joint(arrangement: CornerJointTimberArrangement, l
             f"TimberB size: {float(timberB_inner_face_size):.3f}"
         )
     
-    print(f"timberA_inner_face_enum: {timberA_inner_face_enum}")
-    print(f"timberB_inner_face_enum: {timberB_inner_face_enum}")
-    
     # ========================================================================
     # Step 6: Create marking transform on timberA
     # ========================================================================
     
 
     # Find where timberB's centerline intersects timberA's centerline
-    timberB_centerline = measure_centerline(timberB)
+    timberB_centerline = locate_centerline(timberB)
     centerline_marking = mark_distance_from_end_along_centerline(timberB_centerline, timberA, end=TimberReferenceEnd.BOTTOM)
 
     marking_position = timberA.get_bottom_position_global()
@@ -1009,12 +1006,12 @@ def cut_mitered_and_keyed_lap_joint(arrangement: CornerJointTimberArrangement, l
         finger_local = replace(finger_global, transform=finger_transform_local)
         
         # Apply crop using the opposing timber's inner face
-        from code_goes_here.measuring import measure_into_face
+        from code_goes_here.measuring import locate_into_face
         from code_goes_here.rule import safe_transform_vector
         
         # Measure into opposing timber's inner face to create a cutting plane (in global space)
         crop_distance = miter_face_width - distance_between_lap_and_outside
-        crop_plane = measure_into_face(crop_distance, opposing_inner_face_enum, opposing_timber)
+        crop_plane = locate_into_face(crop_distance, opposing_inner_face_enum, opposing_timber)
         
         # Convert crop plane to local space of target timber
         # Convert UnsignedPlane point and normal to local coordinates

@@ -136,12 +136,30 @@ describe('runner protocol', () => {
       expect(Array.isArray(geometry1.result.meshes)).toBe(true);
       expect(geometry1.result.meshes.length).toBeGreaterThan(0);
       expect(geometry1.result.changedKeys.length).toBe(geometry1.result.meshes.length);
+      expect(Array.isArray(geometry1.result.remeshMetrics)).toBe(true);
+      expect(geometry1.result.remeshMetrics.length).toBe(geometry1.result.changedKeys.length);
+      expect(geometry1.result.counts.totalTimbers).toBe(geometry1.result.meshes.length);
+      expect(geometry1.result.counts.changedTimbers).toBe(geometry1.result.changedKeys.length);
+      expect(geometry1.result.counts.removedTimbers).toBe(geometry1.result.removedKeys.length);
+      if (geometry1.result.remeshMetrics.length > 0) {
+        const metric = geometry1.result.remeshMetrics[0];
+        expect(typeof metric.timberKey).toBe('string');
+        expect(typeof metric.remesh_s).toBe('number');
+        expect(metric.remesh_s).toBeGreaterThanOrEqual(0);
+        expect(typeof metric.csg_depth).toBe('number');
+        expect(metric.csg_depth).toBeGreaterThanOrEqual(1);
+        expect(typeof metric.triangle_count).toBe('number');
+        expect(metric.triangle_count).toBeGreaterThanOrEqual(0);
+      }
 
       const geometry2 = await client.request('get_geometry');
       expect(geometry2.ok).toBe(true);
       expect(geometry2.result.kind).toBe('triangle-geometry');
       expect(Array.isArray(geometry2.result.changedKeys)).toBe(true);
       expect(geometry2.result.changedKeys).toHaveLength(0);
+      expect(Array.isArray(geometry2.result.remeshMetrics)).toBe(true);
+      expect(geometry2.result.remeshMetrics).toHaveLength(0);
+      expect(geometry2.result.counts.totalTimbers).toBe(geometry2.result.meshes.length);
     } finally {
       await client.shutdown();
     }
