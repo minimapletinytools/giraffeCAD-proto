@@ -259,6 +259,60 @@ def create_tinyhouse120(center: Optional[V3] = None):
     )
 
     # ========================================================================
+    # FLOOR JOISTS — join_timbers front-to-back, using beam segment midpoints.
+    # - FM1<->FM2 zone uses beam_front_2 midpoint
+    # - Also connect midpoints of beam_front_1/2/3 to corresponding back beams
+    #   (back segments are reversed in X: 1<->3, 2<->2, 3<->1).
+    # ========================================================================
+    floor_joist_1 = join_timbers(
+        timber1=beam_front_1,
+        timber2=beam_back_3,
+        location_on_timber1=beam_front_1.length / Integer(2),
+        location_on_timber2=beam_back_3.length / Integer(2),
+        size=beam_size,
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="Floor Joist 1",
+    )
+    floor_joist_2 = join_timbers(
+        timber1=beam_front_2,
+        timber2=beam_back_2,
+        location_on_timber1=beam_front_2.length / Integer(2),
+        location_on_timber2=beam_back_2.length / Integer(2),
+        size=beam_size,
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="Floor Joist 2",
+    )
+    floor_joist_3 = join_timbers(
+        timber1=beam_front_3,
+        timber2=beam_back_1,
+        location_on_timber1=beam_front_3.length / Integer(2),
+        location_on_timber2=beam_back_1.length / Integer(2),
+        size=beam_size,
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="Floor Joist 3",
+    )
+    floor_joist_4 = join_timbers(
+        timber1=beam_front_2,
+        timber2=beam_back_2,
+        location_on_timber1=Integer(0),
+        location_on_timber2=beam_back_2.length,
+        size=beam_size,
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="Floor Joist FM1-BM",
+    )
+    floor_joist_5 = join_timbers(
+        timber1=beam_front_2,
+        timber2=beam_back_2,
+        location_on_timber1=beam_front_2.length,
+        location_on_timber2=Integer(0),
+        size=beam_size,
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="Floor Joist FM2-BM",
+    )
+
+    floor_joists = [floor_joist_1, floor_joist_2, floor_joist_3, floor_joist_4, floor_joist_5]
+
+    # ========================================================================
     # MID-HEIGHT PERIMETER BEAM at 7' — connects corner posts only
     # ========================================================================
     mid_beam_centerline = mid_beam_height + beam_size[0] / Integer(2)
@@ -294,6 +348,36 @@ def create_tinyhouse120(center: Optional[V3] = None):
         size=beam_size,
         orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
         ticket="Mid-Height Left Beam"
+    )
+
+    # ========================================================================
+    # LOFT BEAMS — 2 beams connecting front/back mid-height beams, aligned with
+    # FM1/FM2 (and corresponding BM intersections).
+    # ========================================================================
+    loft_beam_front_pos_1 = beam_front_1.length
+    loft_beam_front_pos_2 = beam_front_1.length + beam_front_2.length
+
+    # mid_beam_back runs in opposite X direction (BR -> BL), so mirror positions
+    loft_beam_back_pos_1 = mid_beam_back.length - loft_beam_front_pos_1
+    loft_beam_back_pos_2 = mid_beam_back.length - loft_beam_front_pos_2
+
+    loft_beam_1 = join_timbers(
+        timber1=mid_beam_front,
+        timber2=mid_beam_back,
+        location_on_timber1=loft_beam_front_pos_1,
+        location_on_timber2=loft_beam_back_pos_1,
+        size=beam_size,
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="Loft Beam FM1-BM"
+    )
+    loft_beam_2 = join_timbers(
+        timber1=mid_beam_front,
+        timber2=mid_beam_back,
+        location_on_timber1=loft_beam_front_pos_2,
+        location_on_timber2=loft_beam_back_pos_2,
+        size=beam_size,
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="Loft Beam FM2-BM"
     )
 
     # ========================================================================
@@ -358,69 +442,81 @@ def create_tinyhouse120(center: Optional[V3] = None):
     )
 
     # ========================================================================
-    # LOWER WALL STUDS — vertical 4x4 posts at the midpoint of each
-    # bottom beam span, from top of floor beam to bottom of mid beam.
+    # LOWER WALL STUDS — vertical 4x4 posts via join_timbers
+    # from bottom beam spans up to the mid-height perimeter beams.
     # ========================================================================
-    stud_bottom_z = bottom_beam_height + beam_size[0]  # top of floor beam
-    stud_top_z = mid_beam_height                        # bottom of mid beam
-    lower_stud_height = stud_top_z - stud_bottom_z
-
-    def _midpoint_xy(t1, t2):
-        """Average XY of two posts' bottom positions, at a given Z."""
-        p1 = t1.get_bottom_position_global()
-        p2 = t2.get_bottom_position_global()
-        return create_v3(
-            (p1[0] + p2[0]) / Integer(2),
-            (p1[1] + p2[1]) / Integer(2),
-            stud_bottom_z,
-        )
-
-    # Front wall studs (3): midpoints of FL-FM1, FM1-FM2, FM2-FR
-    lower_stud_front_1 = create_axis_aligned_timber(
-        _midpoint_xy(post_FL, post_FM1), lower_stud_height, post_size,
-        TimberFace.TOP, ticket="Front Lower Stud 1"
+    lower_stud_front_1 = join_timbers(
+        timber1=beam_front_1, timber2=mid_beam_front,
+        location_on_timber1=beam_front_1.length / Integer(2),
+        location_on_timber2=beam_front_1.length / Integer(2),
+        size=post_size,
+        ticket="Front Lower Stud 1"
     )
-    lower_stud_front_2 = create_axis_aligned_timber(
-        _midpoint_xy(post_FM1, post_FM2), lower_stud_height, post_size,
-        TimberFace.TOP, ticket="Front Lower Stud 2"
+    lower_stud_front_2 = join_timbers(
+        timber1=beam_front_2, timber2=mid_beam_front,
+        location_on_timber1=beam_front_2.length / Integer(2),
+        location_on_timber2=beam_front_1.length + beam_front_2.length / Integer(2),
+        size=post_size,
+        ticket="Front Lower Stud 2"
     )
-    lower_stud_front_3 = create_axis_aligned_timber(
-        _midpoint_xy(post_FM2, post_FR), lower_stud_height, post_size,
-        TimberFace.TOP, ticket="Front Lower Stud 3"
+    lower_stud_front_3 = join_timbers(
+        timber1=beam_front_3, timber2=mid_beam_front,
+        location_on_timber1=beam_front_3.length / Integer(2),
+        location_on_timber2=beam_front_1.length + beam_front_2.length + beam_front_3.length / Integer(2),
+        size=post_size,
+        ticket="Front Lower Stud 3"
     )
 
-    # Right wall studs (2): midpoints of FR-MR, MR-BR
-    lower_stud_right_1 = create_axis_aligned_timber(
-        _midpoint_xy(post_FR, post_MR), lower_stud_height, post_size,
-        TimberFace.TOP, ticket="Right Lower Stud 1"
+    lower_stud_right_1 = join_timbers(
+        timber1=beam_right_1, timber2=mid_beam_right,
+        location_on_timber1=beam_right_1.length / Integer(2),
+        location_on_timber2=beam_right_1.length / Integer(2),
+        size=post_size,
+        ticket="Right Lower Stud 1"
     )
-    lower_stud_right_2 = create_axis_aligned_timber(
-        _midpoint_xy(post_MR, post_BR), lower_stud_height, post_size,
-        TimberFace.TOP, ticket="Right Lower Stud 2"
-    )
-
-    # Back wall studs (3): midpoints of BR-BM1, BM1-BM2, BM2-BL
-    lower_stud_back_1 = create_axis_aligned_timber(
-        _midpoint_xy(post_BR, post_BM1), lower_stud_height, post_size,
-        TimberFace.TOP, ticket="Back Lower Stud 1"
-    )
-    lower_stud_back_2 = create_axis_aligned_timber(
-        _midpoint_xy(post_BM1, post_BM2), lower_stud_height, post_size,
-        TimberFace.TOP, ticket="Back Lower Stud 2"
-    )
-    lower_stud_back_3 = create_axis_aligned_timber(
-        _midpoint_xy(post_BM2, post_BL), lower_stud_height, post_size,
-        TimberFace.TOP, ticket="Back Lower Stud 3"
+    lower_stud_right_2 = join_timbers(
+        timber1=beam_right_2, timber2=mid_beam_right,
+        location_on_timber1=beam_right_2.length / Integer(2),
+        location_on_timber2=beam_right_1.length + beam_right_2.length / Integer(2),
+        size=post_size,
+        ticket="Right Lower Stud 2"
     )
 
-    # Left wall studs (2): midpoints of BL-ML, ML-FL
-    lower_stud_left_1 = create_axis_aligned_timber(
-        _midpoint_xy(post_BL, post_ML), lower_stud_height, post_size,
-        TimberFace.TOP, ticket="Left Lower Stud 1"
+    lower_stud_back_1 = join_timbers(
+        timber1=beam_back_1, timber2=mid_beam_back,
+        location_on_timber1=beam_back_1.length / Integer(2),
+        location_on_timber2=beam_back_1.length / Integer(2),
+        size=post_size,
+        ticket="Back Lower Stud 1"
     )
-    lower_stud_left_2 = create_axis_aligned_timber(
-        _midpoint_xy(post_ML, post_FL), lower_stud_height, post_size,
-        TimberFace.TOP, ticket="Left Lower Stud 2"
+    lower_stud_back_2 = join_timbers(
+        timber1=beam_back_2, timber2=mid_beam_back,
+        location_on_timber1=beam_back_2.length / Integer(2),
+        location_on_timber2=beam_back_1.length + beam_back_2.length / Integer(2),
+        size=post_size,
+        ticket="Back Lower Stud 2"
+    )
+    lower_stud_back_3 = join_timbers(
+        timber1=beam_back_3, timber2=mid_beam_back,
+        location_on_timber1=beam_back_3.length / Integer(2),
+        location_on_timber2=beam_back_1.length + beam_back_2.length + beam_back_3.length / Integer(2),
+        size=post_size,
+        ticket="Back Lower Stud 3"
+    )
+
+    lower_stud_left_1 = join_timbers(
+        timber1=beam_left_1, timber2=mid_beam_left,
+        location_on_timber1=beam_left_1.length / Integer(2),
+        location_on_timber2=beam_left_1.length / Integer(2),
+        size=post_size,
+        ticket="Left Lower Stud 1"
+    )
+    lower_stud_left_2 = join_timbers(
+        timber1=beam_left_2, timber2=mid_beam_left,
+        location_on_timber1=beam_left_2.length / Integer(2),
+        location_on_timber2=beam_left_1.length + beam_left_2.length / Integer(2),
+        size=post_size,
+        ticket="Left Lower Stud 2"
     )
 
     # ========================================================================
@@ -429,9 +525,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
     #
     # Front/back top plate (second layer) centerline = second_plate_centerline
     # Left/right top plate (first layer) centerline = top_plate_height
-    # Mid beam top = mid_beam_height + beam_size[0]
     # ========================================================================
-    upper_stud_bottom_z = mid_beam_height + beam_size[0]  # top of mid beam
 
     def _lerp_xy(t1, t2, frac, z):
         """Linearly interpolate XY between two posts at fraction frac, at given Z."""
@@ -443,57 +537,62 @@ def create_tinyhouse120(center: Optional[V3] = None):
             z,
         )
 
-    # Front upper studs (4, evenly spaced between FL and FR)
-    # Top plate is second layer (top_plate_front), bottom at second_plate_centerline - beam_size[0]/2
-    front_upper_top_z = second_plate_centerline - beam_size[0] / Integer(2)
-    front_upper_height = front_upper_top_z - upper_stud_bottom_z
+    # Upper studs via join_timbers. Top plates have 6" symmetric stickout.
+    top_plate_stickout_amount = inches(6)
+
     upper_studs_front = []
     for i in range(1, 5):
-        pos = _lerp_xy(post_FL, post_FR, Rational(i, 5), upper_stud_bottom_z)
-        upper_studs_front.append(create_axis_aligned_timber(
-            pos, front_upper_height, post_size,
-            TimberFace.TOP, ticket=f"Front Upper Stud {i}"
+        frac = Rational(i, 5)
+        upper_studs_front.append(join_timbers(
+            timber1=mid_beam_front,
+            timber2=top_plate_front,
+            location_on_timber1=mid_beam_front.length * frac,
+            location_on_timber2=top_plate_stickout_amount + mid_beam_front.length * frac,
+            size=post_size,
+            ticket=f"Front Upper Stud {i}"
         ))
 
-    # Back upper studs (4, evenly spaced between BL and BR)
-    back_upper_top_z = second_plate_centerline - beam_size[0] / Integer(2)
-    back_upper_height = back_upper_top_z - upper_stud_bottom_z
     upper_studs_back = []
     for i in range(1, 5):
-        pos = _lerp_xy(post_BL, post_BR, Rational(i, 5), upper_stud_bottom_z)
-        upper_studs_back.append(create_axis_aligned_timber(
-            pos, back_upper_height, post_size,
-            TimberFace.TOP, ticket=f"Back Upper Stud {i}"
+        frac = Rational(i, 5)
+        upper_studs_back.append(join_timbers(
+            timber1=mid_beam_back,
+            timber2=top_plate_back,
+            location_on_timber1=mid_beam_back.length * frac,
+            location_on_timber2=top_plate_stickout_amount + mid_beam_back.length * (Integer(1) - frac),
+            size=post_size,
+            ticket=f"Back Upper Stud {i}"
         ))
 
-    # Right upper studs (2, evenly spaced between FR and BR)
-    # Top plate is first layer (top_plate_right), bottom at top_plate_height - beam_size[0]/2
-    right_upper_top_z = top_plate_height - beam_size[0] / Integer(2)
-    right_upper_height = right_upper_top_z - upper_stud_bottom_z
     upper_studs_right = []
     for i in range(1, 3):
-        pos = _lerp_xy(post_FR, post_BR, Rational(i, 3), upper_stud_bottom_z)
-        upper_studs_right.append(create_axis_aligned_timber(
-            pos, right_upper_height, post_size,
-            TimberFace.TOP, ticket=f"Right Upper Stud {i}"
+        frac = Rational(i, 3)
+        upper_studs_right.append(join_timbers(
+            timber1=mid_beam_right,
+            timber2=top_plate_right,
+            location_on_timber1=mid_beam_right.length * frac,
+            location_on_timber2=top_plate_stickout_amount + mid_beam_right.length * frac,
+            size=post_size,
+            ticket=f"Right Upper Stud {i}"
         ))
 
-    # Left upper studs (2, evenly spaced between FL and BL)
-    left_upper_top_z = top_plate_height - beam_size[0] / Integer(2)
-    left_upper_height = left_upper_top_z - upper_stud_bottom_z
     upper_studs_left = []
     for i in range(1, 3):
-        pos = _lerp_xy(post_FL, post_BL, Rational(i, 3), upper_stud_bottom_z)
-        upper_studs_left.append(create_axis_aligned_timber(
-            pos, left_upper_height, post_size,
-            TimberFace.TOP, ticket=f"Left Upper Stud {i}"
+        frac = Rational(i, 3)
+        upper_studs_left.append(join_timbers(
+            timber1=mid_beam_left,
+            timber2=top_plate_left,
+            location_on_timber1=mid_beam_left.length * frac,
+            location_on_timber2=top_plate_stickout_amount + mid_beam_left.length * (Integer(1) - frac),
+            size=post_size,
+            ticket=f"Left Upper Stud {i}"
         ))
 
     # ========================================================================
     # KING POSTS — on the side (L/R) top plates at their midpoints,
     # supporting the ridge beam at the gable ends.
     # ========================================================================
-    king_post_height = feet(3)
+    king_post_height = feet(Rational(5, 2))
     king_post_bottom_z = top_plate_height + beam_size[0] / Integer(2)  # top of side plates
 
     king_post_left = create_axis_aligned_timber(
@@ -525,6 +624,31 @@ def create_tinyhouse120(center: Optional[V3] = None):
     )
 
     # ========================================================================
+    # CENTER RIDGE SUPPORT
+    # - One beam between the midpoints of front/back top plates
+    # - One vertical king post from that beam up to the ridge beam
+    # ========================================================================
+    top_plate_mid_x = top_plate_front.get_bottom_position_global()[0] + top_plate_front.length / Integer(2)
+    center_support_beam = join_timbers(
+        timber1=top_plate_front,
+        timber2=top_plate_back,
+        location_on_timber1=top_plate_front.length / Integer(2),
+        location_on_timber2=top_plate_back.length / Integer(2),
+        size=beam_size,
+        orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
+        ticket="Center Ridge Support Beam"
+    )
+
+    center_king_post = join_timbers(
+        timber1=center_support_beam,
+        timber2=ridge_beam,
+        location_on_timber1=center_support_beam.length / Integer(2),
+        location_on_timber2=ridge_beam.length / Integer(2),
+        size=post_size,
+        ticket="Center King Post"
+    )
+
+    # ========================================================================
     # RAFTERS — 6 sets (12 rafters), evenly spaced along the ridge beam,
     # starting from the very edge. Each set has a front rafter and a back
     # rafter sloping from the ridge down to the F/B top plates.
@@ -536,27 +660,39 @@ def create_tinyhouse120(center: Optional[V3] = None):
     ridge_top_z = ridge_bottom_z + beam_size[0]          # top of ridge beam
     plate_top_z = second_plate_centerline + beam_size[0] / Integer(2)  # top of F/B plates
 
-    # Rafter anchor Z: 1" below each top surface (intersection depth)
-    rafter_ridge_z = ridge_top_z - inches(1)
-    rafter_plate_z = plate_top_z - inches(1)
+    # Rafter anchor Z: mostly above each member, with ~1" overlap into it.
+    # Since rafter depth is 3.5", centerline should be at top + (3.5"/2 - 1")
+    embed_depth = inches(1)
+    rafter_vertical_half = rafter_size[0] / Integer(2)
+    rafter_ridge_z = ridge_top_z + rafter_vertical_half - embed_depth
+    rafter_plate_z = plate_top_z + rafter_vertical_half - embed_depth
+
+    # Extend each rafter by 1' toward the eave side (past the plate),
+    # not past the ridge side.
+    extra_rafter_length = feet(1)
 
     # Y positions of front/back plates (from corner post centers)
     front_plate_y = post_FL.get_bottom_position_global()[1]
     back_plate_y = post_BL.get_bottom_position_global()[1]
 
+    rafter_edge_inset = rafter_size[0] / Integer(2)
+    usable_rafter_span_x = ridge_length - Integer(2) * rafter_edge_inset
+
     rafters = []
     for i in range(6):
-        x = ridge_start_x + i * ridge_length / Integer(5)
+        x = ridge_start_x + rafter_edge_inset + i * usable_rafter_span_x / Integer(5)
 
         # Front rafter: from front plate up to ridge
         front_bottom = create_v3(x, front_plate_y, rafter_plate_z)
         front_top = create_v3(x, ridge_y, rafter_ridge_z)
         front_delta = front_top - front_bottom
-        front_len = sqrt(front_delta[0]**2 + front_delta[1]**2 + front_delta[2]**2)
+        front_len = sqrt(front_delta[0]**2 + front_delta[1]**2 + front_delta[2]**2) + extra_rafter_length
+        front_dir = normalize_vector(front_delta)
+        front_eave_bottom = front_bottom - front_dir * extra_rafter_length
         rafters.append(timber_from_directions(
             length=front_len, size=rafter_size,
-            bottom_position=front_bottom,
-            length_direction=normalize_vector(front_delta),
+            bottom_position=front_eave_bottom,
+            length_direction=front_dir,
             width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
             ticket=f"Front Rafter {i + 1}"
         ))
@@ -565,11 +701,13 @@ def create_tinyhouse120(center: Optional[V3] = None):
         back_bottom = create_v3(x, back_plate_y, rafter_plate_z)
         back_top = create_v3(x, ridge_y, rafter_ridge_z)
         back_delta = back_top - back_bottom
-        back_len = sqrt(back_delta[0]**2 + back_delta[1]**2 + back_delta[2]**2)
+        back_len = sqrt(back_delta[0]**2 + back_delta[1]**2 + back_delta[2]**2) + extra_rafter_length
+        back_dir = normalize_vector(back_delta)
+        back_eave_bottom = back_bottom - back_dir * extra_rafter_length
         rafters.append(timber_from_directions(
             length=back_len, size=rafter_size,
-            bottom_position=back_bottom,
-            length_direction=normalize_vector(back_delta),
+            bottom_position=back_eave_bottom,
+            length_direction=back_dir,
             width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
             ticket=f"Back Rafter {i + 1}"
         ))
@@ -583,11 +721,17 @@ def create_tinyhouse120(center: Optional[V3] = None):
         beam_right_1, beam_right_2,
         beam_back_1, beam_back_2, beam_back_3,
         beam_left_1, beam_left_2,
+        # Floor joists
+        *floor_joists,
         # Mid-height perimeter
         mid_beam_front, mid_beam_right, mid_beam_back, mid_beam_left,
+        # Loft beams
+        loft_beam_1, loft_beam_2,
         # Top plates
         top_plate_left, top_plate_right,
         top_plate_front, top_plate_back,
+        # Center support
+        center_support_beam,
         # Ridge
         ridge_beam,
     ]
@@ -603,6 +747,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
         *upper_studs_right, *upper_studs_left,
         # King posts
         king_post_left, king_post_right,
+        center_king_post,
     ]
 
     all_timbers = all_posts + all_beams + all_studs + rafters

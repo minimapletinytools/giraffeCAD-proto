@@ -66,4 +66,78 @@ add 6 sets of rafters on the ridge beam onto the front/back top plates. They sho
 intersect the beams/plate by about 1 inch, they should start from the very edge of the
 beam and be evenly spaced.
 """,
+
+    # ---- Prompt 5: Shorten king posts ----
+    """
+shorten the king post by 6 inches
+""",
+
+    # ---- Prompt 6: Extend/raise rafters ----
+    """
+extend the rafters by 1 foot. they should be higher up on the top plates as well.
+right now they intersect entirely, they should be sitting above intersecting by
+about just 1 inch
+""",
+
+    # ---- Prompt 7: Put extension on eave side ----
+    """
+good but you extended them on the wrong side, they should extend on the other side
+to form eaves
+""",
+
+    # ---- Prompt 8: Add ridge support beam/post ----
+    """
+ok, so yeah I guess the 4x6 ridge beam is'nt strong enough... we will add support
+fo it.. create one beam that spans from the middle of the 2 F/B top plats then
+create a "king post" from that beam to the ridge beam to support it.
+""",
+
+    # ---- Prompt 9: Inset outer rafters and re-space ----
+    """
+the rafters right now overhang the ends of the ridge beam and top plates. The outer
+ones need to be inset inwards by half the dimension of the rafter. Please adjust the
+spacing of the rest of the rafters accordingly.
+""",
+
+    # ---- Prompt 10: Use join_timbers for center king post ----
+    """
+instead of creating the center king post axis-aligned directly, use join_timbers
+joining the ridge beam and the center support beam.
+""",
+
+    # ---- Prompt 11: Add more floor joists ----
+    """
+now lets create some more floor joists. they run from front to back add 5 of them,
+they should line up with the main posts and the inbetween posts. the floor joists
+should also be 4x6
+""",
+
+    # ---- Prompt 12: Floor joists via join_timbers ----
+    """
+you got the joints kind of wrong... you need to use join_timbers.
+
+between FM1 and FM2,
+
+then join the middle of beam_front_1/2/3 to the back ones.
+""",
+
+    # ---- Prompt 13: Add FM/BM joists ----
+    """
+still need ones connecting FM1/2 to BM1/2
+
+they should be at the same height as the other joists
+""",
+
+    # ---- Prompt 14: Use join_timbers for studs ----
+    """
+for the various studs, instead of creating the posts directly, use join_timbers.
+
+also no need to validate the number of timbers; I'll do that manually.
+""",
+
+    # ---- Prompt 15: Add loft beams at FM/BM intersections ----
+    """
+next create 2 loft beams that connect the two mid beams together. They should be
+positioned right where FM1/2 and BM1/2 intersect the mid beams.
+""",
 ]
