@@ -18,7 +18,7 @@ function normalizeViewerOptions(viewerOptions) {
 function createInitialViewState() {
     return {
         phase: ViewerPhase.BOOTING,
-        loadingText: 'initial creation',
+        loadingText: 'raising frame',
         refreshToken: 0,
         error: null,
     };
@@ -29,7 +29,7 @@ const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || {
     geometry: { meshes: [] },
     uiState: {
         phase: ViewerPhase.WAITING_FOR_RUNNER,
-        loadingText: 'initial creation',
+        loadingText: 'raising frame',
         refreshToken: 0,
     },
     viewerOptions: {
@@ -192,7 +192,7 @@ class HorseyViewerApp extends LitElement {
         this.setupThreeScene();
         window.addEventListener('message', this.onWindowMessage);
         this.setViewerOptions(INITIAL_PAYLOAD.viewerOptions);
-        this.setViewPhase(ViewerPhase.WAITING_FOR_RUNNER, 'initial creation', { refreshToken: 0 });
+        this.setViewPhase(ViewerPhase.WAITING_FOR_RUNNER, 'raising frame', { refreshToken: 0 });
         void this.beginPayloadApplication(INITIAL_PAYLOAD);
         
         // Setup selection listener
@@ -1384,18 +1384,22 @@ class HorseyViewerApp extends LitElement {
         let profilingHtml = '';
         if (profiling) {
             const parts = [];
+            const timingBreakdown = profiling.timing && profiling.timing.breakdown_ms
+                ? profiling.timing.breakdown_ms
+                : null;
             if (typeof profiling.reload_s === 'number') {
-                parts.push('reload: ' + (profiling.reload_s * 1000).toFixed(0) + ' ms');
+                parts.push('refresh: ' + (profiling.reload_s * 1000).toFixed(0) + ' ms');
+            }
+            if (timingBreakdown && typeof timingBreakdown.frame_request === 'number') {
+                parts.push('frame: ' + timingBreakdown.frame_request.toFixed(0) + ' ms');
             }
             if (typeof profiling.geometry_s === 'number') {
                 parts.push('mesh: ' + (profiling.geometry_s * 1000).toFixed(0) + ' ms');
             }
             if (typeof profiling.refresh_total_s === 'number') {
-                parts.push('refresh total: ' + (profiling.refresh_total_s * 1000).toFixed(0) + ' ms');
+                parts.push('total: ' + (profiling.refresh_total_s * 1000).toFixed(0) + ' ms');
             }
-            if (typeof profiling.changed_timbers === 'number') {
-                parts.push('changed timbers: ' + profiling.changed_timbers);
-            }
+
             if (parts.length > 0) {
                 profilingHtml = '<br><strong>Profiling</strong><br>' + parts.join('<br>');
             }
@@ -1555,10 +1559,10 @@ class HorseyViewerApp extends LitElement {
             return 'starting viewer';
         }
         if (phase === ViewerPhase.WAITING_FOR_RUNNER) {
-            return 'initial creation';
+            return 'raising frame';
         }
         if (phase === ViewerPhase.APPLYING_GEOMETRY) {
-            return 'meshing 0/0';
+            return 'cutting joints 0/0';
         }
         if (phase === ViewerPhase.ERROR) {
             return 'viewer error';
@@ -1666,7 +1670,7 @@ class HorseyViewerApp extends LitElement {
             return;
         }
 
-        this.setViewPhase(ViewerPhase.APPLYING_GEOMETRY, uiState.loadingText || 'initial creation', {
+        this.setViewPhase(ViewerPhase.APPLYING_GEOMETRY, uiState.loadingText || 'raising frame', {
             refreshToken,
             error: null,
         });
@@ -1678,7 +1682,7 @@ class HorseyViewerApp extends LitElement {
         this.updateInfo(frameData);
         this.updateDebug(geometryData, profiling);
         const completed = await this.updateMeshScene(geometryData, refreshToken, (processed, total) => {
-            this.setViewPhase(ViewerPhase.APPLYING_GEOMETRY, `meshing ${processed}/${total}`, {
+            this.setViewPhase(ViewerPhase.APPLYING_GEOMETRY, `cutting joints ${processed}/${total}`, {
                 refreshToken,
                 error: null,
             });
