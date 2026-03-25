@@ -13,6 +13,7 @@ from code_goes_here.timber import Frame
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 from code_goes_here.joints.basic_joints import cut_basic_mitered_and_keyed_lap_joint
 
+
 # ============================================================================
 # PARAMETERS - Modify these to adjust the shed design
 # ============================================================================

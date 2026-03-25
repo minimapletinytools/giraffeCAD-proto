@@ -30,6 +30,34 @@ import warnings
 
 
 # ============================================================================
+# Global Numeric Mode
+# ============================================================================
+
+# Controls behavior in hot math paths.
+# - "symbolic": preserve exact symbolic behavior (default)
+# - "float": favor numerical Float coercion before expensive matrix operations
+NUMERIC_MODE = "float"
+
+
+def set_numeric_mode(mode: str) -> None:
+    """Set global numeric mode. Valid values: 'symbolic' or 'float'."""
+    global NUMERIC_MODE
+    if mode not in ("symbolic", "float"):
+        raise ValueError(f"Invalid numeric mode: {mode}. Expected 'symbolic' or 'float'.")
+    NUMERIC_MODE = mode
+
+
+def get_numeric_mode() -> str:
+    """Get current global numeric mode."""
+    return NUMERIC_MODE
+
+
+def is_float_numeric_mode() -> bool:
+    """Return True when float-first numeric mode is enabled."""
+    return NUMERIC_MODE == "float"
+
+
+# ============================================================================
 # Type Aliases
 # ============================================================================
 
@@ -330,18 +358,27 @@ def safe_norm(vec: Matrix):
                     # Has free symbols, can't evaluate numerically
                     raise ValueError(f"Cannot compute norm: vector has free symbols {syms}")
                 else:
-                    # Freeze all constants to Float first - this avoids slow symbolic evaluation
-                    c_frozen = freeze_constants(c, prec=15)
-                    # Use only numpy (not scipy) for lambdify to avoid import issues
-                    f = lambdify((), c_frozen, "numpy")
-                    val = float(f())
+                    if is_float_numeric_mode():
+                        val = float(c.evalf()) if hasattr(c, "evalf") else float(c)
+                    else:
+                        # Freeze all constants to Float first - this avoids slow symbolic evaluation
+                        c_frozen = freeze_constants(c, prec=15)
+                        # Use only numpy (not scipy) for lambdify to avoid import issues
+                        f = lambdify((), c_frozen, "numpy")
+                        val = float(f())
                 norm_squared += val ** 2
             
+            if is_float_numeric_mode():
+                return sqrt(Float(norm_squared))
+
             result = sqrt(Rational(norm_squared).limit_denominator(10**9))
             return result
         except Exception as e:
             # Provide detailed error instead of silently returning 1
             raise RuntimeError(f"safe_norm numerical computation failed: {type(e).__name__}: {e}\nvec={vec}")
+
+    if is_float_numeric_mode():
+        return compute_numerical()
     
     # Quick check: if vector contains complex expressions, go straight to numerical
     is_complex = any(is_complex_expr(component) for component in vec)
@@ -438,6 +475,13 @@ def safe_compare(expr, comparison: Comparison):
             return abs(val) >= EPSILON_FLOAT
         else:
             raise ValueError(f"Unknown comparison: {comp}")
+
+    if is_float_numeric_mode():
+        try:
+            val = float(expr.evalf()) if hasattr(expr, "evalf") else float(expr)
+            return apply_comparison(val, comparison)
+        except Exception:
+            return False
     
     # For complex expressions, freeze constants and evaluate numerically
     if is_complex_expr(expr):
@@ -493,8 +537,10 @@ def safe_dot_product(vec1: Matrix, vec2: Matrix):
     from sympy import Float, Number
     
     # Check if we need to use numerical evaluation
-    has_complex = (any(is_complex_expr(elem) for elem in vec1) or 
-                   any(is_complex_expr(elem) for elem in vec2))
+    has_complex = is_float_numeric_mode() or (
+        any(is_complex_expr(elem) for elem in vec1) or
+        any(is_complex_expr(elem) for elem in vec2)
+    )
     
     if has_complex:
         # Freeze constants in both vectors
@@ -530,8 +576,10 @@ def safe_transform_vector(matrix: Matrix, vector: Matrix) -> Matrix:
     from sympy import Float, Number
     
     # Check if we need to freeze constants
-    has_complex = (any(is_complex_expr(elem) for elem in matrix) or 
-                   any(is_complex_expr(elem) for elem in vector))
+    has_complex = is_float_numeric_mode() or (
+        any(is_complex_expr(elem) for elem in matrix) or
+        any(is_complex_expr(elem) for elem in vector)
+    )
     
     # Prepare data - freeze if complex
     def freeze_elem(e):
@@ -581,6 +629,15 @@ def normalize_vector(vec: Matrix) -> Matrix:
     
     # Use safe norm
     norm = safe_norm(vec)
+
+    if is_float_numeric_mode():
+        try:
+            norm_val = float(norm.evalf()) if hasattr(norm, "evalf") else float(norm)
+            if abs(norm_val) < 1e-15:
+                return vec
+            return Matrix([Float(float(component.evalf()) / norm_val) if hasattr(component, "evalf") else Float(float(component) / norm_val) for component in vec])
+        except Exception:
+            return vec
     
     if zero_test(norm):
         return vec

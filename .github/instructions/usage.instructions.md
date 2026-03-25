@@ -19,7 +19,7 @@ from giraffe import *
 
 ## Numeric Values
 
-- **Always use SymPy `Rational` — never Python floats.**
+- **Always use SymPy types (Rational or Float) — never Python floats.**
 - Use the `inches()` and `feet()` helpers for imperial measurements:
   ```python
   inches(3)               # 3 inches

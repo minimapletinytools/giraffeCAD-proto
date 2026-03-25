@@ -355,8 +355,8 @@ def create_tinyhouse120(center: Optional[V3] = None):
     # LOFT BEAMS — 2 beams connecting front/back mid-height beams, aligned with
     # FM1/FM2 (and corresponding BM intersections).
     # ========================================================================
-    loft_beam_front_pos_1 = beam_front_1.length
-    loft_beam_front_pos_2 = beam_front_1.length + beam_front_2.length
+    loft_beam_front_pos_1 = beam_front_1.length - inches(9)
+    loft_beam_front_pos_2 = beam_front_1.length + beam_front_2.length + inches(9)
 
     # mid_beam_back runs in opposite X direction (BR -> BL), so mirror positions
     loft_beam_back_pos_1 = mid_beam_back.length - loft_beam_front_pos_1
@@ -381,6 +381,8 @@ def create_tinyhouse120(center: Optional[V3] = None):
         ticket="Loft Beam FM2-BM"
     )
 
+    
+
     # ========================================================================
     # TOP PLATES at 11'
     #
@@ -393,6 +395,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
     #   sitting on TOP of the first layer plates
     # ========================================================================
     top_plate_size = beam_size
+
 
     # First layer: front-to-back (along Y axis), 6" stickout on both ends
     top_plate_stickout = Stickout.symmetric(inches(6))

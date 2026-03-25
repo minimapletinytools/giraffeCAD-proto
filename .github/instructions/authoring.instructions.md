@@ -51,7 +51,7 @@ Measure/mark pattern for locating features on timbers and marking things relativ
 
 ## General Coding Conventions
 
-- Always use SymPy types — never Python floats
+- Always use SymPy types (Rational or Float) never Python floats
 - Use math types in `rule.py`
 - ALWAYS run tests after making changes
 - ALWAYS run type checker after making changes
