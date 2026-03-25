@@ -47,6 +47,9 @@ class FrameViewSession {
         this.isRefreshing = false;
         this.pendingRefreshReason = null;
         this.refreshSequence = 0;
+        this.refreshOptions = {
+            enableHashGeometryCheck: false,
+        };
     }
 
     getRefreshStatsPath() {
@@ -95,7 +98,10 @@ class FrameViewSession {
         }
 
         this.panel = createFrameViewer(this.filePath);
-        initializeFrameViewer(this.panel, this.filePath, { loadingText: 'initial creation' });
+        initializeFrameViewer(this.panel, this.filePath, {
+            loadingText: 'initial creation',
+            viewerOptions: this.refreshOptions,
+        });
         this.panel.onDidDispose(() => {
             this.panel = null;
             void this.dispose();
@@ -107,6 +113,22 @@ class FrameViewSession {
             if (message.type === 'requestRefresh') {
                 this.log('[webview] Manual refresh requested from viewer');
                 this.onFileChanged('manual refresh button');
+                return;
+            }
+            if (message.type === 'setRefreshOptions') {
+                const nextOptions = message.options && typeof message.options === 'object'
+                    ? message.options
+                    : {};
+                const enableHashGeometryCheck = Boolean(nextOptions.enableHashGeometryCheck);
+                const changed = enableHashGeometryCheck !== this.refreshOptions.enableHashGeometryCheck;
+                this.refreshOptions = {
+                    ...this.refreshOptions,
+                    enableHashGeometryCheck,
+                };
+                this.log(`[refresh] Hash geometry check ${enableHashGeometryCheck ? 'enabled' : 'disabled'}`);
+                if (changed) {
+                    void this.refresh(`viewer option change: hash geometry check ${enableHashGeometryCheck ? 'enabled' : 'disabled'}`);
+                }
                 return;
             }
             if (message.type !== 'viewerLog') {
@@ -181,17 +203,17 @@ class FrameViewSession {
 
         this.isRefreshing = true;
         this.pendingRefreshReason = null;
-    this.refreshSequence += 1;
-    const refreshToken = this.refreshSequence;
+        this.refreshSequence += 1;
+        const refreshToken = this.refreshSequence;
         this.log(`[refresh] Reloading ${path.basename(this.filePath)} (${reason})`);
-    this.postLoadingStatus('initial creation', { reason, refreshToken });
+        this.postLoadingStatus('initial creation', { reason, refreshToken });
         let refreshError = null;
         try {
             const refreshStartNs = process.hrtime.bigint();
             await this.ensureRunnerSession();
             const reloadResult = await this.runnerSession.request('reload_example', { filePath: this.filePath });
             const frameData = await this.runnerSession.request('get_frame');
-            const geometryData = await this.runnerSession.request('get_geometry');
+            const geometryData = await this.runnerSession.request('get_geometry', this.refreshOptions);
             const refresh_total_s = Number(process.hrtime.bigint() - refreshStartNs) / 1e9;
 
             const changedKeys = Array.isArray(geometryData && geometryData.changedKeys) ? geometryData.changedKeys : [];
@@ -207,6 +229,7 @@ class FrameViewSession {
                 sourceFile: this.filePath,
                 reason,
                 refresh: {
+                    hashGeometryCheckEnabled: this.refreshOptions.enableHashGeometryCheck,
                     scriptReloadDuration_ms: reloadResult && reloadResult.profiling && typeof reloadResult.profiling.reload_s === 'number'
                         ? Math.round(reloadResult.profiling.reload_s * 1000)
                         : null,
@@ -233,6 +256,7 @@ class FrameViewSession {
                 reload_s: reloadResult && reloadResult.profiling ? reloadResult.profiling.reload_s : null,
                 geometry_s: geometryData && geometryData.profiling ? geometryData.profiling.geometry_s : null,
                 refresh_total_s,
+                hash_geometry_check_enabled: this.refreshOptions.enableHashGeometryCheck,
                 changed_timbers: changedKeys.length,
                 removed_timbers: removedKeys.length,
                 total_timbers: totalTimbers,
@@ -244,7 +268,7 @@ class FrameViewSession {
                 refreshToken,
                 loadingText: '',
                 keepLoading: false,
-            });
+            }, this.refreshOptions);
             this.log(`[refresh] Reload complete for ${path.basename(this.filePath)}`);
         } catch (error) {
             refreshError = error;

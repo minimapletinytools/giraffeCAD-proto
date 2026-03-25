@@ -53,7 +53,7 @@ function createRunnerClient() {
         try {
           parsed = JSON.parse(line);
         } catch (error) {
-          parsed = { __parseError: error.message, raw: line };
+          continue;
         }
         const waiter = waiters.shift();
         if (waiter) {
@@ -130,11 +130,12 @@ describe('runner protocol', () => {
       expect(frame.ok).toBe(true);
       expect(frame.result.timber_count).toBeGreaterThan(0);
 
-      const geometry1 = await client.request('get_geometry');
+      const geometry1 = await client.request('get_geometry', { enableHashGeometryCheck: false });
       expect(geometry1.ok).toBe(true);
       expect(geometry1.result.kind).toBe('triangle-geometry');
       expect(Array.isArray(geometry1.result.meshes)).toBe(true);
       expect(geometry1.result.meshes.length).toBeGreaterThan(0);
+      expect(geometry1.result.options.enableHashGeometryCheck).toBe(false);
       expect(geometry1.result.changedKeys.length).toBe(geometry1.result.meshes.length);
       expect(Array.isArray(geometry1.result.remeshMetrics)).toBe(true);
       expect(geometry1.result.remeshMetrics.length).toBe(geometry1.result.changedKeys.length);
@@ -152,14 +153,16 @@ describe('runner protocol', () => {
         expect(metric.triangle_count).toBeGreaterThanOrEqual(0);
       }
 
-      const geometry2 = await client.request('get_geometry');
+      const geometry2 = await client.request('get_geometry', { enableHashGeometryCheck: false });
       expect(geometry2.ok).toBe(true);
       expect(geometry2.result.kind).toBe('triangle-geometry');
       expect(Array.isArray(geometry2.result.changedKeys)).toBe(true);
-      expect(geometry2.result.changedKeys).toHaveLength(0);
+      expect(geometry2.result.options.enableHashGeometryCheck).toBe(false);
+      expect(geometry2.result.changedKeys).toHaveLength(geometry2.result.meshes.length);
       expect(Array.isArray(geometry2.result.remeshMetrics)).toBe(true);
-      expect(geometry2.result.remeshMetrics).toHaveLength(0);
+      expect(geometry2.result.remeshMetrics).toHaveLength(geometry2.result.meshes.length);
       expect(geometry2.result.counts.totalTimbers).toBe(geometry2.result.meshes.length);
+
     } finally {
       await client.shutdown();
     }

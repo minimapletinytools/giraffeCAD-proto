@@ -8,6 +8,13 @@ const ViewerPhase = Object.freeze({
     ERROR: 'error',
 });
 
+function normalizeViewerOptions(viewerOptions) {
+    const next = viewerOptions && typeof viewerOptions === 'object' ? viewerOptions : {};
+    return {
+        enableHashGeometryCheck: Boolean(next.enableHashGeometryCheck),
+    };
+}
+
 function createInitialViewState() {
     return {
         phase: ViewerPhase.BOOTING,
@@ -24,6 +31,9 @@ const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || {
         phase: ViewerPhase.WAITING_FOR_RUNNER,
         loadingText: 'initial creation',
         refreshToken: 0,
+    },
+    viewerOptions: {
+        enableHashGeometryCheck: false,
     },
 };
 const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
@@ -95,6 +105,7 @@ class HorseyViewerApp extends LitElement {
 
         this.animationHandle = null;
         this.viewState = createInitialViewState();
+        this.viewerOptions = normalizeViewerOptions(INITIAL_PAYLOAD.viewerOptions);
         this.activeRefreshToken = 0;
         this.onWindowMessage = this.onWindowMessage.bind(this);
         this.onWindowScroll = this.onWindowScroll.bind(this);
@@ -147,6 +158,10 @@ class HorseyViewerApp extends LitElement {
                     <input id="reflections-toggle" type="checkbox" ?checked=${this.reflectionsEnabled}>
                     reflection
                 </label>
+                <label>
+                    <input id="hash-geometry-check-toggle" type="checkbox" ?checked=${this.viewerOptions.enableHashGeometryCheck}>
+                    hash geometry check
+                </label>
                 <button id="refresh-btn" type="button" title="Reload pattern">↻ refresh</button>
             </section>
             <div id="panels">
@@ -176,6 +191,7 @@ class HorseyViewerApp extends LitElement {
         this.setupUiEvents();
         this.setupThreeScene();
         window.addEventListener('message', this.onWindowMessage);
+        this.setViewerOptions(INITIAL_PAYLOAD.viewerOptions);
         this.setViewPhase(ViewerPhase.WAITING_FOR_RUNNER, 'initial creation', { refreshToken: 0 });
         void this.beginPayloadApplication(INITIAL_PAYLOAD);
         
@@ -246,6 +262,7 @@ class HorseyViewerApp extends LitElement {
         const centerGizmoToggle = this.renderRoot.querySelector('#center-gizmo-toggle');
         const shadowsToggle = this.renderRoot.querySelector('#shadows-toggle');
         const reflectionsToggle = this.renderRoot.querySelector('#reflections-toggle');
+        const hashGeometryCheckToggle = this.renderRoot.querySelector('#hash-geometry-check-toggle');
         const refreshButton = this.renderRoot.querySelector('#refresh-btn');
 
         toV3d.addEventListener('click', () => {
@@ -305,6 +322,10 @@ class HorseyViewerApp extends LitElement {
 
         reflectionsToggle.addEventListener('change', (event) => {
             this.setReflectionsEnabled(event.target.checked);
+        });
+
+        hashGeometryCheckToggle.addEventListener('change', (event) => {
+            this.setViewerOptions({ enableHashGeometryCheck: event.target.checked }, { postMessage: true });
         });
 
         refreshButton.addEventListener('click', () => {
@@ -420,6 +441,28 @@ class HorseyViewerApp extends LitElement {
         console.info('[HorseyViewer]', payload);
     }
 
+    setViewerOptions(nextPartial, options = {}) {
+        const normalized = normalizeViewerOptions(nextPartial);
+        this.viewerOptions = {
+            ...this.viewerOptions,
+            ...normalized,
+        };
+
+        const toggle = this.renderRoot && this.renderRoot.querySelector
+            ? this.renderRoot.querySelector('#hash-geometry-check-toggle')
+            : null;
+        if (toggle) {
+            toggle.checked = this.viewerOptions.enableHashGeometryCheck;
+        }
+
+        if (options.postMessage && vscode) {
+            vscode.postMessage({
+                type: 'setRefreshOptions',
+                options: this.viewerOptions,
+            });
+        }
+    }
+
     updateStructureScreenBounds() {
         if (!this.camera || !this.lastBounds) {
             this.structureScreenBounds = null;
@@ -486,6 +529,7 @@ class HorseyViewerApp extends LitElement {
         const message = event.data || {};
         if (message.type === 'viewerState') {
             const uiState = this.normalizeUiState(message.uiState || null);
+            this.setViewerOptions(message.viewerOptions || null);
             const hasPayload = Object.prototype.hasOwnProperty.call(message, 'frame') ||
                 Object.prototype.hasOwnProperty.call(message, 'geometry') ||
                 Object.prototype.hasOwnProperty.call(message, 'profiling');
@@ -503,6 +547,7 @@ class HorseyViewerApp extends LitElement {
                 geometry: message.geometry || { meshes: [] },
                 profiling: message.profiling || null,
                 uiState,
+                viewerOptions: message.viewerOptions || null,
             });
             return;
         }
@@ -1549,6 +1594,9 @@ class HorseyViewerApp extends LitElement {
     }
 
     beginPayloadApplication(payload) {
+        if (payload && Object.prototype.hasOwnProperty.call(payload, 'viewerOptions')) {
+            this.setViewerOptions(payload.viewerOptions || null);
+        }
         const uiState = this.normalizeUiState(payload && payload.uiState ? payload.uiState : null);
         const refreshToken = Number.isFinite(uiState.refreshToken)
             ? uiState.refreshToken

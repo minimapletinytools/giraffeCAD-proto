@@ -1010,6 +1010,7 @@ class Timber(PerfectTimberWithin):
         Returns:
             str: Hexadecimal SHA-256 hash of the timber's data
         """
+        print("doing expensive deep hash of timber with ticket:", self.ticket)
         visited: Dict[int, str] = {}
         return _compute_deep_hash(self, visited)
 

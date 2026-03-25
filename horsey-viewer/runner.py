@@ -227,7 +227,7 @@ def _cut_timber_to_triangle_mesh_payload(
     }
 
 
-def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
+def build_real_geometry(state: RunnerState, enable_hash_geometry_check: bool = True) -> Dict[str, Any]:
     """Build triangle mesh geometry for every cut timber, reusing unchanged cached meshes."""
     frame = state.frame
     meshes = []
@@ -239,7 +239,7 @@ def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
     for cut_timber in frame.cut_timbers:
         try:
             timber = cut_timber.timber
-            if hasattr(cut_timber, "get_viewer_cache_key_base") and callable(cut_timber.get_viewer_cache_key_base):
+            if enable_hash_geometry_check and hasattr(cut_timber, "get_viewer_cache_key_base") and callable(cut_timber.get_viewer_cache_key_base):
                 key_base = str(cut_timber.get_viewer_cache_key_base())
             else:
                 key_base = get_timber_display_name(timber)
@@ -249,12 +249,13 @@ def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
             timber_key = f"{key_base}#{occurrence}"
 
             local_csg = cut_timber.render_timber_with_cuts_csg_local()
-            if hasattr(cut_timber, "deep_hash") and callable(cut_timber.deep_hash):
+            geometry_hash = None
+            if enable_hash_geometry_check and hasattr(cut_timber, "deep_hash") and callable(cut_timber.deep_hash):
                 geometry_hash = str(cut_timber.deep_hash())
-            else:
+            elif enable_hash_geometry_check:
                 geometry_hash = repr(local_csg)
 
-            cached = state.mesh_cache.get(timber_key)
+            cached = state.mesh_cache.get(timber_key) if enable_hash_geometry_check else None
             if cached is not None and cached.get("hash") == geometry_hash:
                 mesh_payload = cached["mesh"]
             else:
@@ -301,6 +302,9 @@ def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
             "totalTimbers": len(meshes),
             "changedTimbers": len(changed_keys),
             "removedTimbers": len(removed_keys),
+        },
+        "options": {
+            "enableHashGeometryCheck": enable_hash_geometry_check,
         },
     }
 
@@ -559,8 +563,9 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
         return state, make_success_response(request_id, command, serialize_frame(state.frame)), False
 
     if command == "get_geometry":
+        enable_hash_geometry_check = bool(payload.get("enableHashGeometryCheck", True))
         t0 = time.monotonic()
-        geometry = build_real_geometry(state)
+        geometry = build_real_geometry(state, enable_hash_geometry_check=enable_hash_geometry_check)
         geometry_s = time.monotonic() - t0
         geometry["profiling"] = {"geometry_s": geometry_s}
         return state, make_success_response(request_id, command, geometry), False
