@@ -347,23 +347,48 @@ def _is_venv_path(path: Path) -> bool:
     return ".venv" in path_parts or "venv" in path_parts
 
 
-def _purge_project_modules(project_root: Path, keep_paths: set[Path]) -> None:
+def _purge_project_modules(project_root: Path, keep_paths: set[Path], verbose: bool = False) -> None:
+    """Aggressively purge all project modules from sys.modules to force clean reloads.
+    
+    This ensures that modified code is actually reflected when reloading, preventing
+    stale cached implementations from being used due to import chain caching.
+    """
     removable: list[str] = []
+    removed_count = 0
 
     for module_name, module in list(sys.modules.items()):
+        # Skip built-in and standard library modules
+        if not hasattr(module, "__file__") or module.__file__ is None:
+            continue
+        
         module_path = _module_file_path(module)
         if module_path is None:
             continue
+        
+        # Don't remove explicitly kept modules (runner itself, target file)
         if module_path in keep_paths:
             continue
+        
+        # Don't remove venv packages
         if _is_venv_path(module_path):
             continue
-        if project_root not in module_path.parents and module_path != project_root:
+        
+        # Only remove if it's actually from the project
+        try:
+            if project_root not in module_path.parents and module_path != project_root:
+                continue
+        except (ValueError, OSError):
             continue
+        
         removable.append(module_name)
 
+    # Remove all project modules
     for module_name in removable:
         sys.modules.pop(module_name, None)
+        removed_count += 1
+    
+    if verbose and removed_count > 0:
+        log_stderr(f"[reload] Purged {removed_count} cached project modules")
 
 
 def _looks_like_frame(value: Any) -> bool:
@@ -402,20 +427,30 @@ def _module_name_for_path(file_path: Path) -> str:
     return ".".join(parts)
 
 
-def load_module_from_path(file_path: Path) -> Any:
+def load_module_from_path(file_path: Path, verbose: bool = False) -> Any:
+    """Load a Python module from file path with aggressive cache invalidation.
+    
+    This function ensures that:
+    1. Python's import cache is invalidated
+    2. All project modules are purged from sys.modules
+    3. The target module and its dependencies are loaded fresh
+    """
+    # Step 1: Invalidate Python's built-in import caches
     importlib.invalidate_caches()
-
+    
+    # Step 2: Aggressively purge project modules
     if _project_root is not None:
         keep_paths = {Path(__file__).resolve(), file_path.resolve()}
-        _purge_project_modules(_project_root, keep_paths)
+        _purge_project_modules(_project_root, keep_paths, verbose=verbose)
 
+    # Step 3: Ensure target module doesn't exist in sys.modules
     module_name = _module_name_for_path(file_path)
-
     if TARGET_MODULE_NAME in sys.modules:
         del sys.modules[TARGET_MODULE_NAME]
     if module_name in sys.modules:
         del sys.modules[module_name]
 
+    # Step 4: Load the module fresh
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Could not load module from {file_path}")
@@ -427,6 +462,10 @@ def load_module_from_path(file_path: Path) -> Any:
 
     with contextlib.redirect_stdout(sys.stderr):
         spec.loader.exec_module(module)
+    
+    if verbose:
+        log_stderr(f"[reload] Loaded module: {module_name} from {file_path}")
+    
     return module
 
 
@@ -473,7 +512,7 @@ def load_runner_state(file_path: str, previous_mesh_cache: Optional[Dict[str, Di
     if not resolved_path.exists():
         raise FileNotFoundError(f"File not found: {resolved_path}")
 
-    module = load_module_from_path(resolved_path)
+    module = load_module_from_path(resolved_path, verbose=True)
     frame = resolve_frame_from_module(module)
     return RunnerState(
         file_path=resolved_path,

@@ -289,7 +289,10 @@ class HorseyViewerApp extends LitElement {
 
         viewport.addEventListener('wheel', (event) => {
             event.preventDefault();
-            this.zoomTowardPointer(event.clientX, event.clientY, event.deltaY > 0 ? 1.1 : 0.9);
+            // Calculate adaptive zoom factor based on current distance
+            // This makes zoom speed feel consistent across all scales
+            const adaptiveZoomFactor = this.getAdaptiveZoomFactor(event.deltaY > 0);
+            this.zoomTowardPointer(event.clientX, event.clientY, adaptiveZoomFactor);
         }, { passive: false });
 
         gizmoCanvas.addEventListener('pointerdown', (event) => {
@@ -952,6 +955,27 @@ class HorseyViewerApp extends LitElement {
         this.cx += delta.x;
         this.cy += delta.y;
         this.cz += delta.z;
+    }
+
+    getAdaptiveZoomFactor(isZoomingOut) {
+        // Calculate zoom speed that scales with current camera distance.
+        // This provides consistent zoom feel whether zoomed in close or far on large structures.
+        // 
+        // The formula uses a logarithmic scale: at small distances zoom is slow,
+        // at large distances zoom is proportionally faster to cover the scaled geometry.
+        const baseZoomFactor = isZoomingOut ? 0.9 : 1.1;
+        
+        if (this.orbitDist <= 0) {
+            return baseZoomFactor;
+        }
+        
+        // Calculate scale multiplier based on distance
+        // Log scale ensures zoom speed is proportional to visible size
+        const distanceScale = Math.max(0.5, Math.log(this.orbitDist + 1) / 4);
+        
+        // Apply adaptive scaling: use the scaled exponent
+        // This makes zoom exponentially faster at larger distances
+        return Math.pow(baseZoomFactor, distanceScale);
     }
 
     zoomTowardPointer(clientX, clientY, zoomFactor) {
