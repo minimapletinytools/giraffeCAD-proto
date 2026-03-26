@@ -692,7 +692,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
                                            
         size: Cross-sectional size (width, height) of the joining timber
         orientation_face_on_timber1: Optional face of timber1 to orient against. If provided,
-                                     the width direction of the created timber will align with this face.
+                                     the width direction of the created timber will align with this face on timber1.
                                      If not provided, uses timber1's length direction projected onto
                                      the perpendicular plane.
         ticket: Optional ticket for this timber (can be Ticket object or string name, used for rendering/debugging)
