@@ -34,7 +34,7 @@ class TestTimberCreation:
         assert timber.get_bottom_position_global()[1] == Rational(1)
         assert timber.get_bottom_position_global()[2] == Rational(0)
     
-    def test_create_axis_aligned_timber(self):
+    def test_create_axis_aligned_timber(self, symbolic_mode):
         """Test axis-aligned timber creation with explicit width_direction."""
         position = create_v3(0, 0, 0)  # Use exact integers
         size = create_v2(Rational(1, 10), Rational(1, 10))  # 0.1 as exact rational
@@ -50,7 +50,7 @@ class TestTimberCreation:
         assert timber.get_length_direction_global()[2] == 1  # Up (exact integer)
         assert timber.get_width_direction_global()[0] == 1    # East (exact integer)
     
-    def test_create_axis_aligned_timber_default_width(self):
+    def test_create_axis_aligned_timber_default_width(self, symbolic_mode):
         """Test axis-aligned timber creation with default width_direction."""
         position = create_v3(0, 0, 0)
         size = create_v2(Rational(1, 10), Rational(1, 10))
@@ -85,7 +85,7 @@ class TestTimberCreation:
         assert timber3.get_length_direction_global()[0] == 1  # Length in +X
         assert timber3.get_width_direction_global()[2] == 1    # Width in +Z (special case)
     
-    def test_create_axis_aligned_timber_explicit_overrides_default(self):
+    def test_create_axis_aligned_timber_explicit_overrides_default(self, symbolic_mode):
         """Test that explicit width_direction overrides the default."""
         position = create_v3(0, 0, 0)
         size = create_v2(Rational(1, 10), Rational(1, 10))
@@ -100,7 +100,7 @@ class TestTimberCreation:
         assert timber.get_length_direction_global()[0] == 1  # Length in +X
         assert timber.get_width_direction_global()[1] == 1    # Width in +Y (explicit)
     
-    def test_create_vertical_timber_on_footprint_corner(self):
+    def test_create_vertical_timber_on_footprint_corner(self, symbolic_mode):
         """Test vertical timber creation on footprint corner with INSIDE, OUTSIDE, and CENTER."""
         # Create a square footprint with exact integer corners
         corners = [
@@ -170,7 +170,7 @@ class TestTimberCreation:
         assert timber_outside.get_width_direction_global()[0] == 1
         assert timber_outside.get_width_direction_global()[1] == 0
     
-    def test_create_vertical_timber_on_footprint_side(self):
+    def test_create_vertical_timber_on_footprint_side(self, symbolic_mode):
         """Test vertical timber creation on footprint side with INSIDE, OUTSIDE, and CENTER."""
         # Create a square footprint with exact integer corners
         corners = [
@@ -239,7 +239,7 @@ class TestTimberCreation:
         assert timber_outside.get_width_direction_global()[0] == 1
         assert timber_outside.get_width_direction_global()[1] == 0
     
-    def test_create_horizontal_timber_on_footprint(self):
+    def test_create_horizontal_timber_on_footprint(self, symbolic_mode):
         """Test horizontal timber creation on footprint."""
         corners = [
             create_v2(Rational(0), Rational(0)),
@@ -261,7 +261,7 @@ class TestTimberCreation:
         assert timber.get_length_direction_global()[0] == 1
         assert timber.get_length_direction_global()[2] == 0
     
-    def test_create_horizontal_timber_on_footprint_location_types(self):
+    def test_create_horizontal_timber_on_footprint_location_types(self, symbolic_mode):
         """Test horizontal timber positioning with INSIDE, OUTSIDE, and CENTER location types."""
         # Create a square footprint with exact integer coordinates
         corners = [
@@ -350,7 +350,7 @@ class TestTimberCreation:
         assert timber_center_right.get_bottom_position_global()[0] == Rational(2)  # X on boundary
         assert timber_center_right.get_bottom_position_global()[1] == Rational(0)  # Y unchanged
     
-    def test_stretch_timber(self):
+    def test_stretch_timber(self, symbolic_mode):
         """Test timber extension creation with correct length calculation."""
         # Create a vertical timber from Z=0 to Z=10
         original_timber = create_standard_vertical_timber(height=10, size=(0.2, 0.2), position=(0, 0, 0))
@@ -581,7 +581,7 @@ class TestJoinTimbers:
                 orientation_face_on_timber1=TimberFace.TOP
             )
     
-    def test_join_perpendicular_on_face_parallel_timbers_auto_size(self):
+    def test_join_perpendicular_on_face_parallel_timbers_auto_size(self, symbolic_mode):
         """Test automatic size determination in join_perpendicular_on_face_parallel_timbers."""
         # Create two vertical posts with 1" x 2" cross-section
         post1 = create_standard_vertical_timber(height=3, size=(inches(1), inches(2)), position=(0, 0, 0))
@@ -625,7 +625,7 @@ class TestJoinTimbers:
         assert beam.get_bottom_position_global()[2] == expected_bottom_z, \
             f"Beam should be at Z={expected_bottom_z}, got Z={beam.get_bottom_position_global()[2]}"
 
-    def test_join_timbers_creates_orthogonal_rotation_matrix(self):
+    def test_join_timbers_creates_orthogonal_rotation_matrix(self, symbolic_mode):
         """Test that join_timbers creates valid orthogonal orientation matrices."""
         # Create two non-parallel timbers to ensure non-trivial orientation
         # Use exact integer/rational inputs for exact SymPy results
@@ -675,7 +675,7 @@ class TestJoinTimbers:
         assert_vectors_perpendicular(length_dir, height_dir)
         assert_vectors_perpendicular(width_dir, height_dir)
 
-    def test_create_timber_creates_orthogonal_matrix(self):
+    def test_create_timber_creates_orthogonal_matrix(self, symbolic_mode):
         """Test that create_timber creates valid orthogonal orientation matrices."""
         # Test with arbitrary (but orthogonal) input directions using exact inputs
         length_dir = create_v3(1, 1, 0)  # Will be normalized (integers)
@@ -703,7 +703,7 @@ class TestJoinTimbers:
         det = orientation_matrix.det()
         assert simplify(det - 1) == 0, "Determinant should be exactly 1"
 
-    def test_orthogonal_matrix_with_non_orthogonal_input(self):
+    def test_orthogonal_matrix_with_non_orthogonal_input(self, symbolic_mode):
         """Test that orthogonal matrix is created even with non-orthogonal input directions."""
         # Use non-orthogonal input directions to test the orthogonalization process
         # Using exact rational numbers for exact results
@@ -1531,7 +1531,7 @@ class TestTimberFootprintOrientation:
 class TestSplitTimber:
     """Test the split_timber method"""
     
-    def test_split_timber_basic(self):
+    def test_split_timber_basic(self, symbolic_mode):
         """Test basic timber splitting at midpoint"""
         # Create a simple vertical timber
         timber = create_standard_vertical_timber(height=10, size=(4, 4), position=(0, 0, 0), ticket="Test Timber")
@@ -1557,7 +1557,7 @@ class TestSplitTimber:
         assert top_timber.get_width_direction_global() == create_v3(Rational(1), Rational(0), Rational(0))
         assert top_timber.ticket.name == "Test Timber_top"
     
-    def test_split_timber_horizontal(self):
+    def test_split_timber_horizontal(self, symbolic_mode):
         """Test splitting a horizontal timber"""
         # Create a horizontal timber along X axis
         timber = timber_from_directions(
@@ -1579,7 +1579,7 @@ class TestSplitTimber:
         assert top_timber.length == Rational(12)
         assert top_timber.get_bottom_position_global() == create_v3(Rational(13), Rational(10), Rational(2))  # 5 + 8
     
-    def test_split_timber_diagonal(self):
+    def test_split_timber_diagonal(self, symbolic_mode):
         """Test splitting a diagonal timber"""
         # Create a diagonal timber at 45 degrees
         length_dir = normalize_vector(create_v3(Rational(1), Rational(1), Rational(0)))
@@ -1610,7 +1610,7 @@ class TestSplitTimber:
         assert bottom_timber.get_length_direction_global() == length_dir
         assert top_timber.get_length_direction_global() == length_dir
     
-    def test_split_timber_with_rational(self):
+    def test_split_timber_with_rational(self, symbolic_mode):
         """Test splitting with exact rational arithmetic"""
         # Create a timber with rational values
         timber = timber_from_directions(

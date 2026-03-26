@@ -1183,7 +1183,7 @@ class TestAreVectorsPerpendicular:
 
 
 class TestTransformMul:
-    def test_identity_times_identity(self):
+    def test_identity_times_identity(self, symbolic_mode):
         T = Transform(position=create_v3(0, 0, 0), orientation=Orientation.identity())
         result = T * T
         assert result.position == create_v3(0, 0, 0)
@@ -1199,7 +1199,7 @@ class TestTransformInvert:
 
 
 class TestTransformToGlobalTransform:
-    def test_to_global_with_identity_parent(self):
+    def test_to_global_with_identity_parent(self, symbolic_mode):
         T = Transform(position=create_v3(1, 2, 3), orientation=Orientation.identity())
         parent = Transform(position=create_v3(0, 0, 0), orientation=Orientation.identity())
         global_t = T.to_global_transform(parent)
@@ -1208,7 +1208,7 @@ class TestTransformToGlobalTransform:
 
 
 class TestTransformToLocalTransform:
-    def test_to_local_with_identity_parent(self):
+    def test_to_local_with_identity_parent(self, symbolic_mode):
         T = Transform(position=create_v3(1, 2, 3), orientation=Orientation.identity())
         parent = Transform(position=create_v3(0, 0, 0), orientation=Orientation.identity())
         local_t = T.to_local_transform(parent)

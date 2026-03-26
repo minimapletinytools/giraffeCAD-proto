@@ -39,7 +39,7 @@ class TestVectorHelpers:
         assert v[1] == 2
         assert v[2] == 3
     
-    def test_normalize_vector(self):
+    def test_normalize_vector(self, symbolic_mode):
         """Test vector normalization."""
         v = create_v3(3, 4, 0)  # Use integers for exact computation
         normalized = normalize_vector(v)
@@ -70,7 +70,7 @@ class TestVectorHelpers:
         assert cross[1] == 0
         assert cross[2] == 1
     
-    def test_vector_magnitude(self):
+    def test_vector_magnitude(self, symbolic_mode):
         """Test vector magnitude calculation."""
         v = create_v3(3, 4, 0)  # Use integers for exact computation
         magnitude = vector_magnitude(v)
@@ -252,7 +252,7 @@ class TestTimber:
         assert transform[2, 3] == 3
         assert transform[3, 3] == 1
     
-    def test_orientation_computed_from_directions(self):
+    def test_orientation_computed_from_directions(self, symbolic_mode):
         """Test that orientation is correctly computed from input face and length directions."""
         # Test with standard vertical timber facing east
         input_length_dir = create_v3(Integer(0), Integer(0), Integer(1))  # Up - exact integers
@@ -285,7 +285,7 @@ class TestTimber:
         assert height_dir[1] == 1  # Exact integer from calculation
         assert height_dir[2] == 0
     
-    def test_orientation_with_horizontal_timber(self):
+    def test_orientation_with_horizontal_timber(self, symbolic_mode):
         """Test orientation computation with a horizontal timber."""
         # Horizontal timber running north, facing up
         input_length_dir = create_v3(Integer(0), Integer(1), Integer(0))  # North - exact integers
@@ -342,7 +342,7 @@ class TestTimber:
         assert_vectors_perpendicular(length_dir, height_dir)
         assert_vectors_perpendicular(width_dir, height_dir)
     
-    def test_orientation_handles_non_normalized_inputs(self):
+    def test_orientation_handles_non_normalized_inputs(self, symbolic_mode):
         """Test that orientation computation works with non-normalized input vectors."""
         # Use vectors that aren't unit length
         input_length_dir = create_v3(Rational(0), Rational(0), Rational(5))  # Up, but length 5
@@ -369,7 +369,7 @@ class TestTimber:
         assert width_dir[1] == 0
         assert width_dir[2] == 0
     
-    def test_get_position_on_centerline_from_bottom_global(self):
+    def test_get_position_on_centerline_from_bottom_global(self, symbolic_mode):
         """Test the get_centerline_position_from_bottom method."""
         timber = timber_from_directions(
             length=Rational(5),
@@ -403,7 +403,7 @@ class TestTimber:
         assert pos_neg[1] == 1  # 2.0 + (-1.0) * 1.0
         assert pos_neg[2] == 3
     
-    def test_get_position_on_centerline_from_bottom_global(self):
+    def test_get_position_on_centerline_from_bottom_global(self, symbolic_mode):
         """Test get_centerline_position_from_bottom method."""
         timber = timber_from_directions(
             length=Rational(10),
@@ -431,7 +431,7 @@ class TestTimber:
         assert pos_top[1] == 2
         assert pos_top[2] == 13  # 3.0 + 10.0
     
-    def test_get_position_on_centerline_from_top_global(self):
+    def test_get_position_on_centerline_from_top_global(self, symbolic_mode):
         """Test get_centerline_position_from_top method."""
         timber = timber_from_directions(
             length=Rational(10),
@@ -661,7 +661,7 @@ class TestEnumsAndDataStructures:
 class TestGetCornerPositionGlobal:
     """Test PerfectTimberWithin.get_corner_position_global."""
 
-    def test_bot_right_front_vertical_timber(self):
+    def test_bot_right_front_vertical_timber(self, symbolic_mode):
         """BOT_RIGHT_FRONT corner of a 10x20x100 vertical timber at origin = (5, 10, 0)."""
         timber = timber_from_directions(
             length=Rational(100),
@@ -1197,7 +1197,7 @@ class TestFrameFromJoints:
 class TestFrameBoundingBox:
     """Test Frame bounding box calculations."""
     
-    def test_single_timber_bounding_box_matches_timber_prism(self):
+    def test_single_timber_bounding_box_matches_timber_prism(self, symbolic_mode):
         """Test that a frame with a single timber has a bounding box matching the timber's prism."""
         # Create a simple vertical timber
         timber = create_axis_aligned_timber(
@@ -1556,23 +1556,23 @@ class TestDeepHash:
 class TestGetSizeInDirection:
     """Tests for get_size_in_direction_2d and get_size_in_direction_3d."""
 
-    def test_2d_matches_face_normal_width(self):
+    def test_2d_matches_face_normal_width(self, symbolic_mode):
         """2D +x direction should match get_size_in_face_normal_axis for RIGHT."""
         t = create_standard_vertical_timber(size=(Rational(4), Rational(6)))
         assert t.get_size_in_direction_2d(create_v2(1, 0)) == t.get_size_in_face_normal_axis(TimberFace.RIGHT)
 
-    def test_2d_matches_face_normal_height(self):
+    def test_2d_matches_face_normal_height(self, symbolic_mode):
         """2D +y direction should match get_size_in_face_normal_axis for FRONT."""
         t = create_standard_vertical_timber(size=(Rational(4), Rational(6)))
         assert t.get_size_in_direction_2d(create_v2(0, 1)) == t.get_size_in_face_normal_axis(TimberFace.FRONT)
 
-    def test_2d_negative_axes(self):
+    def test_2d_negative_axes(self, symbolic_mode):
         """Negative axis directions should give the same result as positive."""
         t = create_standard_vertical_timber(size=(Rational(4), Rational(6)))
         assert t.get_size_in_direction_2d(create_v2(-1, 0)) == t.get_size_in_face_normal_axis(TimberFace.LEFT)
         assert t.get_size_in_direction_2d(create_v2(0, -1)) == t.get_size_in_face_normal_axis(TimberFace.BACK)
 
-    def test_2d_diagonal_of_cross_section(self):
+    def test_2d_diagonal_of_cross_section(self, symbolic_mode):
         """Direction along the cross-section diagonal of a 4x6 timber."""
         t = create_standard_vertical_timber(size=(Rational(4), Rational(6)))
         # Diagonal direction is (4, 6), normalized = (4, 6) / sqrt(52)
@@ -1581,7 +1581,7 @@ class TestGetSizeInDirection:
         expected = sqrt(52)
         assert simplify(result - expected) == 0
 
-    def test_2d_arbitrary_direction(self):
+    def test_2d_arbitrary_direction(self, symbolic_mode):
         """Non-orthogonal direction at 45 degrees for a square cross-section."""
         t = create_standard_vertical_timber(size=(Rational(3), Rational(3)))
         # Direction (1, 1), normalized = (1/sqrt(2), 1/sqrt(2))
@@ -1590,35 +1590,35 @@ class TestGetSizeInDirection:
         expected = 3 * sqrt(2)
         assert simplify(result - expected) == 0
 
-    def test_2d_unnormalized_input(self):
+    def test_2d_unnormalized_input(self, symbolic_mode):
         """Should handle unnormalized direction vectors correctly."""
         t = create_standard_vertical_timber(size=(Rational(4), Rational(6)))
         # (10, 0) should give same result as (1, 0)
         assert t.get_size_in_direction_2d(create_v2(10, 0)) == Rational(4)
 
-    def test_3d_matches_face_normal_width(self):
+    def test_3d_matches_face_normal_width(self, symbolic_mode):
         """3D global +x direction should match get_size_in_face_normal_axis for RIGHT on a vertical timber."""
         t = create_standard_vertical_timber(size=(Rational(4), Rational(6)))
         assert t.get_size_in_direction_3d(create_v3(1, 0, 0)) == t.get_size_in_face_normal_axis(TimberFace.RIGHT)
 
-    def test_3d_matches_face_normal_height(self):
+    def test_3d_matches_face_normal_height(self, symbolic_mode):
         """3D global +y direction should match get_size_in_face_normal_axis for FRONT on a vertical timber."""
         t = create_standard_vertical_timber(size=(Rational(4), Rational(6)))
         assert t.get_size_in_direction_3d(create_v3(0, 1, 0)) == t.get_size_in_face_normal_axis(TimberFace.FRONT)
 
-    def test_3d_matches_face_normal_length(self):
+    def test_3d_matches_face_normal_length(self, symbolic_mode):
         """3D global +z direction should match get_size_in_face_normal_axis for TOP on a vertical timber."""
         t = create_standard_vertical_timber(height=100, size=(Rational(4), Rational(6)))
         assert t.get_size_in_direction_3d(create_v3(0, 0, 1)) == t.get_size_in_face_normal_axis(TimberFace.TOP)
 
-    def test_3d_negative_axes(self):
+    def test_3d_negative_axes(self, symbolic_mode):
         """Negative axis directions should give same result as positive."""
         t = create_standard_vertical_timber(height=100, size=(Rational(4), Rational(6)))
         assert t.get_size_in_direction_3d(create_v3(-1, 0, 0)) == t.get_size_in_face_normal_axis(TimberFace.LEFT)
         assert t.get_size_in_direction_3d(create_v3(0, -1, 0)) == t.get_size_in_face_normal_axis(TimberFace.BACK)
         assert t.get_size_in_direction_3d(create_v3(0, 0, -1)) == t.get_size_in_face_normal_axis(TimberFace.BOTTOM)
 
-    def test_3d_diagonal_of_two_long_faces(self):
+    def test_3d_diagonal_of_two_long_faces(self, symbolic_mode):
         """Direction along the diagonal of the two long faces (width and height, no length component)."""
         t = create_standard_vertical_timber(size=(Rational(4), Rational(6)))
         # Global (1, 1, 0) on a vertical timber maps to local (1, 1, 0) (width and height directions)
@@ -1628,7 +1628,7 @@ class TestGetSizeInDirection:
         expected = 5 * sqrt(2)
         assert simplify(result - expected) == 0
 
-    def test_3d_arbitrary_direction(self):
+    def test_3d_arbitrary_direction(self, symbolic_mode):
         """Arbitrary non-orthogonal 3D direction."""
         t = create_standard_vertical_timber(height=100, size=(Rational(4), Rational(6)))
         # Direction (1, 0, 1) on a vertical timber maps to local (1, 0, 1) (width and length)
@@ -1638,7 +1638,7 @@ class TestGetSizeInDirection:
         expected = 52 * sqrt(2)
         assert simplify(result - expected) == 0
 
-    def test_3d_horizontal_timber_axes(self):
+    def test_3d_horizontal_timber_axes(self, symbolic_mode):
         """3D method should respect timber orientation for a horizontal timber."""
         t = create_standard_horizontal_timber(direction='x', length=100, size=(Rational(4), Rational(6)))
         # Horizontal timber in +x direction: length along x, width along y(?), let's check via face normals
@@ -1647,7 +1647,7 @@ class TestGetSizeInDirection:
         # Global +x = length direction → should give length = 100
         assert t.get_size_in_direction_3d(create_v3(1, 0, 0)) == t.get_size_in_face_normal_axis(TimberFace.TOP)
 
-    def test_3d_unnormalized_input(self):
+    def test_3d_unnormalized_input(self, symbolic_mode):
         """Should handle unnormalized direction vectors correctly."""
         t = create_standard_vertical_timber(height=100, size=(Rational(4), Rational(6)))
         assert t.get_size_in_direction_3d(create_v3(5, 0, 0)) == Rational(4)

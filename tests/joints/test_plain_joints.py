@@ -199,7 +199,7 @@ class TestButtJoint:
     """Test cut_plain_butt_joint_on_face_aligned_timbers function."""
 
     # 🐪
-    def test_basic_butt_joint_on_face_aligned_timbers(self):
+    def test_basic_butt_joint_on_face_aligned_timbers(self, symbolic_mode):
         """Test butt joint between two perpendicular timbers."""
         # Create two perpendicular timbers meeting at the origin
         # timberA extends along +X (bottom at origin, top at x=100)
@@ -469,7 +469,7 @@ class TestHouseJoint:
         assert joint.cut_timbers["timberB"].render_timber_with_cuts_csg_local().contains_point(housed_timber.transform.global_to_local(origin))
         
 
-    def test_house_joint_prism_matches_housed_timber_global_space(self):
+    def test_house_joint_prism_matches_housed_timber_global_space(self, symbolic_mode):
         """
         Test that the prism being cut from the housing timber matches the housed timber
         when both are compared in global coordinates.
@@ -598,7 +598,7 @@ class TestCrossLapJoint:
 class TestSpliceLapJoint:
     """Test cut_plain_splice_lap_joint_on_aligned_timbers function."""
     
-    def test_splice_lap_joint_geometry(self):
+    def test_splice_lap_joint_geometry(self, symbolic_mode):
         """
         Test splice lap joint creates correct geometry with proper containment.
         

@@ -52,7 +52,7 @@ class TestMeasureMortiseShoulderPlane:
         assert plane_offset.point.equals(expected_offset_point), \
             f"At distance 1, plane point should be offset 1 in -Y (normal dir), got {plane_offset.point} vs {expected_offset_point}"
 
-    def test_angled_non_intersecting_centerlines(self):
+    def test_angled_non_intersecting_centerlines(self, symbolic_mode):
         """40-degree butt joint where centerlines do NOT intersect.
 
         Mortise timber along +X at origin, tenon timber at 40 degrees in the

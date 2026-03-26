@@ -469,7 +469,7 @@ class TestCreatePegGoingIntoFace:
 class TestProjectGlobalPointOntoTimberFace:
     """Test Timber.project_global_point_onto_timber_face_global() method."""
     
-    def test_project_onto_top_face_axis_aligned(self):
+    def test_project_onto_top_face_axis_aligned(self, symbolic_mode):
         """Test projecting a point onto the top face of an axis-aligned timber."""
         # Create a simple vertical timber
         timber = timber_from_directions(
@@ -490,7 +490,7 @@ class TestProjectGlobalPointOntoTimberFace:
         expected_global = create_v3(0, 0, 1)
         assert projected_global == expected_global
     
-    def test_project_onto_bottom_face_axis_aligned(self):
+    def test_project_onto_bottom_face_axis_aligned(self, symbolic_mode):
         """Test projecting a point onto the bottom face."""
         timber = timber_from_directions(
             length=Rational(2),
@@ -510,7 +510,7 @@ class TestProjectGlobalPointOntoTimberFace:
         expected_global = create_v3(Rational("0.05"), Rational("0.1"), -1)
         assert projected_global == expected_global
     
-    def test_project_onto_right_face_axis_aligned(self):
+    def test_project_onto_right_face_axis_aligned(self, symbolic_mode):
         """Test projecting a point onto the right face."""
         timber = timber_from_directions(
             length=Rational(2),
@@ -529,7 +529,7 @@ class TestProjectGlobalPointOntoTimberFace:
         expected_global = create_v3(Rational("0.1"), 0, 0)
         assert projected_global == expected_global
     
-    def test_project_onto_left_face_axis_aligned(self):
+    def test_project_onto_left_face_axis_aligned(self, symbolic_mode):
         """Test projecting a point onto the left face."""
         timber = timber_from_directions(
             length=Rational(2),
@@ -547,7 +547,7 @@ class TestProjectGlobalPointOntoTimberFace:
         expected_global = create_v3(Rational("-0.1"), Rational("0.1"), Rational("0.5"))
         assert projected_global == expected_global
     
-    def test_project_onto_front_face_axis_aligned(self):
+    def test_project_onto_front_face_axis_aligned(self, symbolic_mode):
         """Test projecting a point onto the front face."""
         timber = timber_from_directions(
             length=Rational(2),
@@ -565,7 +565,7 @@ class TestProjectGlobalPointOntoTimberFace:
         expected_global = create_v3(0, Rational("0.15"), 0)
         assert projected_global == expected_global
     
-    def test_project_onto_back_face_axis_aligned(self):
+    def test_project_onto_back_face_axis_aligned(self, symbolic_mode):
         """Test projecting a point onto the back face."""
         timber = timber_from_directions(
             length=Rational(2),
@@ -583,7 +583,7 @@ class TestProjectGlobalPointOntoTimberFace:
         expected_global = create_v3(Rational("0.05"), Rational("-0.15"), Rational("0.5"))
         assert projected_global == expected_global
     
-    def test_project_point_already_on_face(self):
+    def test_project_point_already_on_face(self, symbolic_mode):
         """Test that projecting a point already on the face returns the same point."""
         timber = timber_from_directions(
             length=Rational(2),
@@ -601,7 +601,7 @@ class TestProjectGlobalPointOntoTimberFace:
         expected_global = create_v3(Rational("0.05"), Rational("0.1"), 1)
         assert projected_global == expected_global
     
-    def test_project_onto_rotated_timber(self):
+    def test_project_onto_rotated_timber(self, symbolic_mode):
         """Test projecting onto a face of a rotated timber."""
         # Create a timber pointing east (along X-axis)
         timber = timber_from_directions(
@@ -622,7 +622,7 @@ class TestProjectGlobalPointOntoTimberFace:
         expected_global = create_v3(1, 0, 0)
         assert projected_global == expected_global
     
-    def test_project_with_offset_bottom_position(self):
+    def test_project_with_offset_bottom_position(self, symbolic_mode):
         """Test projection on a timber with non-zero bottom position."""
         timber = timber_from_directions(
             length=Rational(2),
@@ -640,7 +640,7 @@ class TestProjectGlobalPointOntoTimberFace:
         expected_global = create_v3(5, 10, 21)
         assert projected_global == expected_global
     
-    def test_project_accepts_timber_reference_end(self):
+    def test_project_accepts_timber_reference_end(self, symbolic_mode):
         """Test that the method accepts TimberReferenceEnd as well as TimberFace."""
         timber = timber_from_directions(
             length=Rational(2),

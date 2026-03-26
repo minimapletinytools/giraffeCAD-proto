@@ -101,7 +101,7 @@ def sample_points_in_box(center: V3, size: V3, num_samples: int = 5) -> List[V3]
 
 class TestMortiseAndTenonGeometry:
     
-    def test_mortise_tenon_centerline_containment(self, simple_T_configuration):
+    def test_mortise_tenon_centerline_containment(self, simple_T_configuration, symbolic_mode):
         """
         Test points along the tenon centerline to verify correct joint geometry.
         
@@ -173,7 +173,7 @@ class TestMortiseAndTenonGeometry:
 
 class TestPegStuff:
     # 🐪
-    def test_simple_peg_basic_stuff(self, simple_T_configuration):
+    def test_simple_peg_basic_stuff(self, simple_T_configuration, symbolic_mode):
         """Test that peg is perpendicular to the face it goes through."""
         tenon_timber, mortise_timber = simple_T_configuration
         
@@ -236,7 +236,7 @@ class TestPegStuff:
             "SolidUnion should contain base cut plus peg holes"
 
     # 🐪
-    def test_peg_geometry(self, simple_T_configuration):
+    def test_peg_geometry(self, simple_T_configuration, symbolic_mode):
         """Test points on peg hole boundary using is_point_on_boundary()."""
         tenon_timber, mortise_timber = simple_T_configuration
         
@@ -361,7 +361,7 @@ class TestPegStuff:
                 f"Each peg should have depth 5, got {peg.forward_length}"
     
     # 🐪
-    def test_peg_depth_from_mortise_surface_projection(self):
+    def test_peg_depth_from_mortise_surface_projection(self, symbolic_mode):
         """Peg depth (auto) is the full chord through the mortise timber in the peg direction.
 
         Uses a non-square mortise (width=4 in peg direction, height=10) so the test

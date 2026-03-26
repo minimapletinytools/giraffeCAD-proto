@@ -568,7 +568,7 @@ class TestPrismContainsPoint:
         point = Matrix([Integer(0), Integer(0), Integer(11)])
         assert prism.contains_point(point) == False
     
-    def test_prism_is_point_on_boundary_face(self):
+    def test_prism_is_point_on_boundary_face(self, symbolic_mode):
         """Test boundary detection on prism faces."""
         size = Matrix([Integer(4), Integer(6)])
         orientation = Orientation()  # Identity orientation
@@ -651,7 +651,7 @@ class TestCylinderContainsPoint:
         point = Matrix([Integer(0), Integer(0), Integer(11)])
         assert cylinder.contains_point(point) == False
     
-    def test_cylinder_is_point_on_boundary_surface(self):
+    def test_cylinder_is_point_on_boundary_surface(self, symbolic_mode):
         """Test boundary detection on cylindrical surface."""
         axis = Matrix([Integer(0), Integer(0), Integer(1)])
         radius = Rational(3)
@@ -661,7 +661,7 @@ class TestCylinderContainsPoint:
         assert cylinder.is_point_on_boundary(Matrix([Integer(3), Integer(0), Integer(5)])) == True
         assert cylinder.is_point_on_boundary(Matrix([Integer(0), Integer(3), Integer(5)])) == True
     
-    def test_cylinder_is_point_on_boundary_end_caps(self):
+    def test_cylinder_is_point_on_boundary_end_caps(self, symbolic_mode):
         """Test boundary detection on cylinder end caps."""
         axis = Matrix([Integer(0), Integer(0), Integer(1)])
         radius = Rational(3)
@@ -737,7 +737,7 @@ class TestUnionContainsPoint:
         # Point between the two prisms
         assert union.contains_point(Matrix([Integer(0), Integer(0), Integer(7)])) == False
     
-    def test_union_is_point_on_boundary(self):
+    def test_union_is_point_on_boundary(self, symbolic_mode):
         """Test boundary detection for union."""
         size = Matrix([Integer(2), Integer(2)])
         orientation = Orientation()  # Identity orientation
@@ -769,7 +769,7 @@ class TestUnionContainsPoint:
         # Point strictly inside second prism (not on boundary)
         assert union.is_point_on_boundary(Matrix([Integer(0), Integer(0), Integer(12)])) == False
     
-    def test_union_is_point_on_boundary_overlapping(self):
+    def test_union_is_point_on_boundary_overlapping(self, symbolic_mode):
         """Test boundary detection when prisms overlap."""
         size = Matrix([Integer(4), Integer(4)])
         orientation = Orientation()
@@ -855,7 +855,7 @@ class TestDifferenceContainsPoint:
         # Point outside base
         assert diff.contains_point(Matrix([Integer(10), Integer(10), Integer(5)])) == False
     
-    def test_difference_is_point_on_boundary_base(self):
+    def test_difference_is_point_on_boundary_base(self, symbolic_mode):
         """Test boundary detection on base boundary."""
         size_base = Matrix([Integer(10), Integer(10)])
         size_subtract = Matrix([Integer(2), Integer(2)])
@@ -869,7 +869,7 @@ class TestDifferenceContainsPoint:
         # Point on base boundary (not in subtract region)
         assert diff.is_point_on_boundary(Matrix([Integer(5), Integer(4), Integer(5)])) == True
     
-    def test_difference_is_point_on_boundary_subtract(self):
+    def test_difference_is_point_on_boundary_subtract(self, symbolic_mode):
         """Test boundary detection on subtract boundary."""
         size_base = Matrix([Integer(10), Integer(10)])
         size_subtract = Matrix([Integer(2), Integer(2)])
@@ -914,7 +914,7 @@ class TestDifferenceContainsPoint:
         assert diff.contains_point(point) == False
         assert diff.is_point_on_boundary(point) == False
     
-    def test_difference_contains_point_on_subtract_boundary(self):
+    def test_difference_contains_point_on_subtract_boundary(self, symbolic_mode):
         """Test that points on subtract boundary are contained in the difference."""
         size_base = Matrix([Integer(10), Integer(10)])
         size_subtract = Matrix([Integer(4), Integer(4)])
@@ -951,7 +951,7 @@ class TestDifferenceContainsPoint:
         # Point strictly above plane (removed by difference) should not be contained
         assert diff.contains_point(Matrix([Integer(0), Integer(0), Integer(7)])) == False
     
-    def test_difference_multiple_subtracts(self):
+    def test_difference_multiple_subtracts(self, symbolic_mode):
         """Test boundary detection with multiple subtract objects."""
         size_base = Matrix([Integer(10), Integer(10)])
         orientation = Orientation()
@@ -974,7 +974,7 @@ class TestDifferenceContainsPoint:
         # Point on base boundary (not near subtracts)
         assert diff.is_point_on_boundary(Matrix([Integer(5), Integer(0), Integer(0)])) == True
     
-    def test_difference_nested_differences(self):
+    def test_difference_nested_differences(self, symbolic_mode):
         """Test boundary detection with nested difference operations."""
         orientation = Orientation()
         
@@ -1060,7 +1060,7 @@ class TestDifferenceContainsPoint:
             assert empty_diff.contains_point(point) == False, \
                 f"Exterior point {point.T} should NOT be in empty difference"
     
-    def test_difference_two_prisms_sharing_one_plane_no_overlap(self):
+    def test_difference_two_prisms_sharing_one_plane_no_overlap(self, symbolic_mode):
         """Test difference with two prisms that share one plane but don't overlap.
         
         When two prisms just touch at a shared face (no volume overlap),
@@ -1447,7 +1447,7 @@ class TestBoundaryDetectionComprehensive:
     # RectangularPrism Boundary Tests
     # ========================================================================
     
-    def test_prism_all_corners_on_boundary(self):
+    def test_prism_all_corners_on_boundary(self, symbolic_mode):
         """Test that all 8 corners of a finite prism are on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
@@ -1466,7 +1466,7 @@ class TestBoundaryDetectionComprehensive:
             assert prism.is_point_on_boundary(corner) == True, \
                 f"Corner {corner.T} should be on boundary"
     
-    def test_prism_edge_points_on_boundary(self):
+    def test_prism_edge_points_on_boundary(self, symbolic_mode):
         """Test that points along prism edges are on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
@@ -1493,7 +1493,7 @@ class TestBoundaryDetectionComprehensive:
         assert prism.is_point_on_boundary(Matrix([-hw, hh, 5])) == True
         assert prism.is_point_on_boundary(Matrix([-hw, -hh, 5])) == True
     
-    def test_prism_face_centers_on_boundary(self):
+    def test_prism_face_centers_on_boundary(self, symbolic_mode):
         """Test that face centers are on the boundary."""
         size = Matrix([Rational(4), Rational(6)])
         orientation = Orientation()
@@ -1539,7 +1539,7 @@ class TestBoundaryDetectionComprehensive:
     # Cylinder Boundary Tests
     # ========================================================================
     
-    def test_cylinder_cap_centers_on_boundary(self):
+    def test_cylinder_cap_centers_on_boundary(self, symbolic_mode):
         """Test that cylinder cap centers are on the boundary."""
         axis = Matrix([Integer(0), Integer(0), Integer(1)])
         radius = Rational(3)
@@ -1552,7 +1552,7 @@ class TestBoundaryDetectionComprehensive:
         # Top cap center
         assert cylinder.is_point_on_boundary(Matrix([Integer(0), Integer(0), Integer(10)])) == True
     
-    def test_cylinder_cap_circumference_on_boundary(self):
+    def test_cylinder_cap_circumference_on_boundary(self, symbolic_mode):
         """Test that points on cap circumferences are on the boundary."""
         axis = Matrix([Integer(0), Integer(0), Integer(1)])
         radius = Rational(3)
@@ -1571,7 +1571,7 @@ class TestBoundaryDetectionComprehensive:
         assert cylinder.is_point_on_boundary(Matrix([-3, 0, 10])) == True
         assert cylinder.is_point_on_boundary(Matrix([0, -3, 10])) == True
     
-    def test_cylinder_surface_points_on_boundary(self):
+    def test_cylinder_surface_points_on_boundary(self, symbolic_mode):
         """Test that points on the cylindrical surface are on the boundary."""
         axis = Matrix([Integer(0), Integer(0), Integer(1)])
         radius = Rational(3)
@@ -1584,7 +1584,7 @@ class TestBoundaryDetectionComprehensive:
         assert cylinder.is_point_on_boundary(Matrix([-3, 0, 5])) == True
         assert cylinder.is_point_on_boundary(Matrix([0, -3, 5])) == True
     
-    def test_cylinder_round_edges_on_boundary(self):
+    def test_cylinder_round_edges_on_boundary(self, symbolic_mode):
         """Test that points on round edges (cap circumferences) are on boundary."""
         axis = Matrix([Integer(0), Integer(0), Integer(1)])
         radius = Rational(3)
@@ -1791,7 +1791,7 @@ class TestBoundaryDetectionComprehensive:
     # ========================================================================
     
     
-    def test_random_prisms_boundary_points(self):
+    def test_random_prisms_boundary_points(self, symbolic_mode):
         """Test boundary detection on 25 random prisms."""
         random.seed(42)  # For reproducibility
         
@@ -1814,7 +1814,7 @@ class TestBoundaryDetectionComprehensive:
                 assert prism.is_point_on_boundary(point) == False, \
                     f"RectangularPrism {i}: Point {point.T} should NOT be on boundary"
     
-    def test_random_cylinders_boundary_points(self):
+    def test_random_cylinders_boundary_points(self, symbolic_mode):
         """Test boundary detection on 25 random cylinders."""
         random.seed(43)  # For reproducibility
         
@@ -1837,7 +1837,7 @@ class TestBoundaryDetectionComprehensive:
                 assert cylinder.is_point_on_boundary(point) == False, \
                     f"Cylinder {i}: Point {point.T} should NOT be on boundary"
     
-    def test_random_halfspaces_boundary_points(self):
+    def test_random_halfspaces_boundary_points(self, symbolic_mode):
         """Test boundary detection on 25 random half-planes."""
         random.seed(44)  # For reproducibility
         
@@ -1860,7 +1860,7 @@ class TestBoundaryDetectionComprehensive:
                 assert halfspace.is_point_on_boundary(point) == False, \
                     f"HalfSpace {i}: Point {point.T} should NOT be on boundary"
     
-    def test_random_convex_polygons_boundary_points(self):
+    def test_random_convex_polygons_boundary_points(self, symbolic_mode):
         """Test boundary detection on 25 random convex polygon extrusions."""
         random.seed(45)  # For reproducibility
         
@@ -1940,7 +1940,7 @@ class TestGetAABB:
     # Primitives
     # ------------------------------------------------------------------
 
-    def test_bbox_axis_aligned_prism(self):
+    def test_bbox_axis_aligned_prism(self, symbolic_mode):
         """Identity-oriented prism at origin — AABB equals the exact local extents."""
         prism = RectangularPrism(
             size=Matrix([Rational(6), Rational(4)]),
@@ -1956,7 +1956,7 @@ class TestGetAABB:
         assert bbox.min_z == Rational(0)
         assert bbox.max_z == Rational(10)
 
-    def test_bbox_rotated_prism(self):
+    def test_bbox_rotated_prism(self, symbolic_mode):
         """Prism rotated 90° around Z — local X and Y axes swap in global space."""
         # rotate_left: local +X → global +Y, local +Y → global -X
         orientation = Orientation.rotate_left()
@@ -1976,7 +1976,7 @@ class TestGetAABB:
         assert bbox.min_z == Rational(0)
         assert bbox.max_z == Rational(10)
 
-    def test_bbox_axis_aligned_cylinder(self):
+    def test_bbox_axis_aligned_cylinder(self, symbolic_mode):
         """Z-axis cylinder at origin — AABB is [-r,r]×[-r,r]×[start,end]."""
         cyl = Cylinder(
             axis_direction=Matrix([Integer(0), Integer(0), Integer(1)]),
@@ -1993,7 +1993,7 @@ class TestGetAABB:
         assert bbox.min_z == Rational(2)
         assert bbox.max_z == Rational(8)
 
-    def test_bbox_convex_polygon_extrusion(self):
+    def test_bbox_convex_polygon_extrusion(self, symbolic_mode):
         """Square polygon extrusion at origin — matches equivalent prism bounds."""
         # Square with corners at (±3, ±3) in CCW order
         points = [
@@ -2020,7 +2020,7 @@ class TestGetAABB:
     # Infinite-extent warnings
     # ------------------------------------------------------------------
 
-    def test_bbox_halfspace_warns(self):
+    def test_bbox_halfspace_warns(self, symbolic_mode):
         """HalfSpace.get_aabb() should emit a UserWarning and return all-None."""
         hs = HalfSpace(
             normal=Matrix([Integer(1), Integer(0), Integer(0)]),
@@ -2035,7 +2035,7 @@ class TestGetAABB:
         assert bbox.min_z is None
         assert bbox.max_z is None
 
-    def test_bbox_infinite_prism_warns(self):
+    def test_bbox_infinite_prism_warns(self, symbolic_mode):
         """RectangularPrism with end_distance=None should emit a UserWarning."""
         prism = RectangularPrism(
             size=Matrix([Rational(4), Rational(4)]),
@@ -2052,7 +2052,7 @@ class TestGetAABB:
     # Composites
     # ------------------------------------------------------------------
 
-    def test_bbox_union(self):
+    def test_bbox_union(self, symbolic_mode):
         """Union of two offset prisms — merged bbox spans both."""
         # Prism A at origin: [-2,2]×[-2,2]×[0,5]
         prism_a = RectangularPrism(
@@ -2080,7 +2080,7 @@ class TestGetAABB:
         assert bbox.min_z == Rational(0)
         assert bbox.max_z == Rational(15)
 
-    def test_bbox_difference_halfspace_crop_non_orthogonal(self):
+    def test_bbox_difference_halfspace_crop_non_orthogonal(self, symbolic_mode):
         """Box [0,10]³ minus diagonal halfspace — bbox is tightened on X and Y."""
         # Prism centred at (5,5,5): spans [0,10]×[0,10]×[0,10]
         prism = RectangularPrism(
