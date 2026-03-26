@@ -27,8 +27,9 @@ def locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(ar
     """
     Computes the shoulder plane of the mortise timber, offset from its centerline toward the tenon.
 
-    The shoulder plane is perpendicular to the mortise timber's length axis. Its reference
-    point is at the intersection of the tenon centerline with the offset plane.
+    The shoulder plane is parallel to the mortise timber's length axis and offset from
+    the mortise centerline in the mortise cross-section toward the tenon. Its reference
+    point is chosen using the tenon centerline relation.
 
     Args:
         arrangement: Butt joint arrangement (receiving_timber = mortise, butt_timber = tenon).
@@ -36,8 +37,8 @@ def locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(ar
             0 = plane through the mortise centerline. Positive = toward tenon.
 
     Returns:
-        Plane perpendicular to the mortise length axis, offset by distance_from_centerline
-        from the mortise centerline toward the tenon, with its center at the reference point.
+        Plane parallel to the mortise length axis, offset by distance_from_centerline
+        from the mortise centerline toward the tenon.
     """
     mortise_timber = arrangement.receiving_timber
     tenon_timber = arrangement.butt_timber
@@ -81,23 +82,18 @@ def locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(ar
         s = safe_dot_product(mortise_length_dir, M - tenon_centerline.point) / plane_dot_dir
         P = tenon_centerline.point + tenon_centerline.direction * s
 
-    # Direction from M toward P in the cross-section
-    MP = P - M
-    mp_len_sq = safe_dot_product(MP, MP)
-    mp_len_sq_is_zero = fast_zero_test(mp_len_sq)
-    if mp_len_sq_is_zero:
-        # Centerlines intersect (or are parallel). Use the tenon direction
-        # projected into the mortise cross-section as fallback.
-        tenon_dir = tenon_centerline.direction
-        proj = tenon_dir - mortise_length_dir * safe_dot_product(tenon_dir, mortise_length_dir)
-        proj_len_sq = safe_dot_product(proj, proj)
-        proj_len_sq_is_zero = fast_zero_test(proj_len_sq)
-        if proj_len_sq_is_zero:
-            direction_in_plane = mortise_timber.get_width_direction_global()
-        else:
-            direction_in_plane = normalize_vector(proj)
+    tenon_dir = tenon_centerline.direction
+    proj = tenon_dir - mortise_length_dir * safe_dot_product(tenon_dir, mortise_length_dir)
+    proj_len_sq = safe_dot_product(proj, proj)
+    if not fast_zero_test(proj_len_sq):
+        direction_in_plane = normalize_vector(proj)
     else:
-        direction_in_plane = normalize_vector(MP)
+        MP = P - M
+        mp_len_sq = safe_dot_product(MP, MP)
+        if not fast_zero_test(mp_len_sq):
+            direction_in_plane = normalize_vector(MP)
+        else:
+            direction_in_plane = mortise_timber.get_width_direction_global()
 
     return locate_plane_from_edge_in_direction(
         mortise_timber, TimberCenterline.CENTERLINE, direction_in_plane, distance_from_centerline
