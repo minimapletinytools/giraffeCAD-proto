@@ -472,7 +472,8 @@ def frame_from_patternbook(patternbook: Any) -> Any:
     if not pattern_names:
         raise ValueError("PatternBook is empty")
     first_pattern = pattern_names[0]
-    result = patternbook.raise_pattern(first_pattern)
+    with contextlib.redirect_stdout(sys.stderr):
+        result = patternbook.raise_pattern(first_pattern)
     if not _looks_like_frame(result):
         raise TypeError(
             f"First pattern '{first_pattern}' returned {type(result).__name__}, expected frame-like object"

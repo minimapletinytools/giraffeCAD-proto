@@ -971,7 +971,7 @@ class HorseyViewerApp extends LitElement {
         
         // Calculate scale multiplier based on distance
         // Log scale ensures zoom speed is proportional to visible size
-        const distanceScale = Math.max(0.5, Math.log(this.orbitDist + 1) / 4);
+        const distanceScale = Math.max(0.8, Math.log(this.orbitDist + 1) / 3);
         
         // Apply adaptive scaling: use the scaled exponent
         // This makes zoom exponentially faster at larger distances
