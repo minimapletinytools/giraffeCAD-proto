@@ -973,9 +973,9 @@ class HorseyViewerApp extends LitElement {
         // Log scale ensures zoom speed is proportional to visible size
         const distanceScale = Math.max(0.8, Math.log(this.orbitDist + 1) / 3);
         
-        // Apply adaptive scaling: use the scaled exponent
-        // This makes zoom exponentially faster at larger distances
-        return Math.pow(baseZoomFactor, distanceScale);
+        // Apply adaptive scaling with 2x responsiveness by doubling the exponent.
+        // This preserves the same curve shape while making each wheel step stronger.
+        return Math.pow(baseZoomFactor, distanceScale * 2);
     }
 
     zoomTowardPointer(clientX, clientY, zoomFactor) {
@@ -1682,6 +1682,7 @@ class HorseyViewerApp extends LitElement {
         const geometryData = payload.geometry || { meshes: [] };
         const profiling = payload.profiling || null;
         const uiState = this.normalizeUiState(payload.uiState || null);
+        const hadExistingScene = this.meshObjectsByKey.size > 0;
 
         if (uiState.keepLoading) {
             this.setViewPhase(uiState.phase, uiState.loadingText, { refreshToken, error: uiState.error });
@@ -1726,15 +1727,17 @@ class HorseyViewerApp extends LitElement {
         this.focusedCx = (bounds.minX + bounds.maxX) / 2;
         this.focusedCy = (bounds.minY + bounds.maxY) / 2;
         this.focusedCz = (bounds.minZ + bounds.maxZ) / 2;
-        this.cx = this.focusedCx;
-        this.cy = this.focusedCy;
-        this.cz = this.focusedCz;
         const dx = bounds.maxX - bounds.minX;
         const dy = bounds.maxY - bounds.minY;
         const dz = bounds.maxZ - bounds.minZ;
         const radius = Math.sqrt(dx * dx + dy * dy + dz * dz) / 2 || 5;
         const fovRad = this.camera.fov * Math.PI / 180;
-        this.orbitDist = radius / Math.sin(fovRad / 2) * 1.3;
+        if (!hadExistingScene) {
+            this.cx = this.focusedCx;
+            this.cy = this.focusedCy;
+            this.cz = this.focusedCz;
+            this.orbitDist = radius / Math.sin(fovRad / 2) * 1.3;
+        }
         this.lightDistance = Math.max(12, radius * 4);
         this.camera.near = Math.max(0.1, radius * 0.03);
         this.camera.far = Math.max(200, radius * 20);
