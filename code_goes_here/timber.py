@@ -7,7 +7,7 @@ from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify, Min, Max
 from .rule import *
 from .footprint import *
 from .cutcsg import *
-from .ticket import Ticket, TimberTicket
+from .ticket import Ticket, TimberTicket, AccessoryTicket
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict, Literal, final, cast, Callable
 from dataclasses import dataclass, field
@@ -1938,6 +1938,8 @@ class CutTimber:
 @dataclass(frozen=True)
 class JointAccessory(ABC):
     """Base class for joint accessories like wedges, drawbores, etc."""
+
+    ticket: AccessoryTicket = field(default_factory=AccessoryTicket, kw_only=True)
     
     @abstractmethod
     def render_csg_local(self) -> CutCSG:

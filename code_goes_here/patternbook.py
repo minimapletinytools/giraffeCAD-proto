@@ -45,6 +45,7 @@ def make_pattern_from_joint(joint_func: Callable[[], Joint]) -> PatternLambda:
                         orientation=accessory.transform.orientation
                     )
                     translated_accessories.append(Peg(
+                        ticket=accessory.ticket,
                         transform=translated_transform,
                         size=accessory.size,
                         shape=accessory.shape,
@@ -57,6 +58,7 @@ def make_pattern_from_joint(joint_func: Callable[[], Joint]) -> PatternLambda:
                         orientation=accessory.transform.orientation
                     )
                     translated_accessories.append(Wedge(
+                        ticket=accessory.ticket,
                         transform=translated_transform,
                         base_width=accessory.base_width,
                         tip_width=accessory.tip_width,
@@ -99,6 +101,7 @@ def make_pattern_from_frame(frame_func: Callable[[], Frame]) -> PatternLambda:
                         orientation=accessory.transform.orientation
                     )
                     translated_accessories.append(Peg(
+                        ticket=accessory.ticket,
                         transform=translated_transform,
                         size=accessory.size,
                         shape=accessory.shape,
@@ -111,6 +114,7 @@ def make_pattern_from_frame(frame_func: Callable[[], Frame]) -> PatternLambda:
                         orientation=accessory.transform.orientation
                     )
                     translated_accessories.append(Wedge(
+                        ticket=accessory.ticket,
                         transform=translated_transform,
                         base_width=accessory.base_width,
                         tip_width=accessory.tip_width,

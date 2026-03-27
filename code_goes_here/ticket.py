@@ -32,7 +32,6 @@ class Ticket(ABC):
         """Construction tickets represent physical entities or organization."""
         raise NotImplementedError
 
-
 @dataclass(frozen=True)
 class ConstructionTicket(Ticket):
     """Base class for physical/object-hierarchy tickets."""
