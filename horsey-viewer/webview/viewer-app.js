@@ -68,6 +68,7 @@ class HorseyViewerApp extends LitElement {
         this.lastY = 0;
 
         this.showCenterGizmo = true;
+        this.edgesEnabled = true;
         this.shadowsEnabled = true;
         this.reflectionsEnabled = true;
 
@@ -105,6 +106,7 @@ class HorseyViewerApp extends LitElement {
 
         this.animationHandle = null;
         this.viewState = createInitialViewState();
+        this.currentFrameData = {};
         this.viewerOptions = normalizeViewerOptions(INITIAL_PAYLOAD.viewerOptions);
         this.activeRefreshToken = 0;
         this.onWindowMessage = this.onWindowMessage.bind(this);
@@ -149,6 +151,10 @@ class HorseyViewerApp extends LitElement {
                 <label>
                     <input id="center-gizmo-toggle" type="checkbox" ?checked=${this.showCenterGizmo}>
                     center gizmo
+                </label>
+                <label>
+                    <input id="edges-toggle" type="checkbox" ?checked=${this.edgesEnabled}>
+                    edges
                 </label>
                 <label>
                     <input id="shadows-toggle" type="checkbox" ?checked=${this.shadowsEnabled}>
@@ -198,6 +204,7 @@ class HorseyViewerApp extends LitElement {
         // Setup selection listener
         this.selectionManager.onSelectionChanged(() => {
             this.applySelectionOpacity();
+            this.updateInfo(this.currentFrameData);
         });
         
         this.emitViewerLog('viewer-ready', {});
@@ -260,6 +267,7 @@ class HorseyViewerApp extends LitElement {
         const focusButton = this.renderRoot.querySelector('#focus-btn');
         const lightDialCanvas = this.renderRoot.querySelector('#light-dial-c');
         const centerGizmoToggle = this.renderRoot.querySelector('#center-gizmo-toggle');
+        const edgesToggle = this.renderRoot.querySelector('#edges-toggle');
         const shadowsToggle = this.renderRoot.querySelector('#shadows-toggle');
         const reflectionsToggle = this.renderRoot.querySelector('#reflections-toggle');
         const hashGeometryCheckToggle = this.renderRoot.querySelector('#hash-geometry-check-toggle');
@@ -317,6 +325,10 @@ class HorseyViewerApp extends LitElement {
 
         centerGizmoToggle.addEventListener('change', (event) => {
             this.setCenterGizmoEnabled(event.target.checked);
+        });
+
+        edgesToggle.addEventListener('change', (event) => {
+            this.setEdgesEnabled(event.target.checked);
         });
 
         shadowsToggle.addEventListener('change', (event) => {
@@ -414,6 +426,7 @@ class HorseyViewerApp extends LitElement {
         this.syncLightAnglesFromSun();
         this.drawLightDial();
         this.setCenterGizmoEnabled(this.showCenterGizmo);
+        this.setEdgesEnabled(this.edgesEnabled);
         this.setShadowsEnabled(this.shadowsEnabled);
         this.setReflectionsEnabled(this.reflectionsEnabled);
 
@@ -1060,6 +1073,15 @@ class HorseyViewerApp extends LitElement {
         this.updateOrbitCenterGizmo();
     }
 
+    setEdgesEnabled(enabled) {
+        this.edgesEnabled = enabled;
+        for (const bundle of this.meshObjectsByKey.values()) {
+            if (bundle.edges) {
+                bundle.edges.visible = enabled;
+            }
+        }
+    }
+
     setShadowsEnabled(enabled) {
         this.shadowsEnabled = enabled;
         if (this.renderer) {
@@ -1387,12 +1409,23 @@ class HorseyViewerApp extends LitElement {
     }
 
     updateInfo(frameData) {
+        this.currentFrameData = frameData || {};
         const frameName = frameData && frameData.name ? frameData.name : 'Unnamed';
         const timberCount = frameData && frameData.timber_count ? frameData.timber_count : 0;
         const accessoriesCount = frameData && frameData.accessories_count ? frameData.accessories_count : 0;
+        const selectedTimbers = this.selectionManager.getSelectedTimbers();
+        const selectedCount = selectedTimbers.length;
+        const selectedLabel = selectedCount === 1 ? '1 timber' : selectedCount + ' timbers';
+        let selectionHtml = '<br>select: ' + selectedLabel;
+
+        if (selectedCount === 1) {
+            selectionHtml += '<br>selected: ' + selectedTimbers[0];
+        }
+
         this.renderRoot.querySelector('#info').innerHTML =
             '<strong>' + frameName + '</strong><br>' +
-            timberCount + ' timbers • ' + accessoriesCount + ' accessories';
+            timberCount + ' timbers • ' + accessoriesCount + ' accessories' +
+            selectionHtml;
     }
 
     updateDebug(geometryData, profiling) {
@@ -1522,6 +1555,7 @@ class HorseyViewerApp extends LitElement {
             reflectionMesh.renderOrder = 0;
             solidMesh.castShadow = true;
             solidMesh.receiveShadow = true;
+            edgeMesh.visible = this.edgesEnabled;
             reflectionMesh.castShadow = false;
             reflectionMesh.receiveShadow = false;
             reflectionMesh.visible = this.reflectionsEnabled;
