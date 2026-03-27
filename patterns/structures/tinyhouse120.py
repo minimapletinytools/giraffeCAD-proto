@@ -43,6 +43,7 @@ non_corner_post_height = mid_beam_height + beam_size[0]
 # Stud mortise-and-tenon parameters
 stud_tenon_size = create_v2(inches(1), inches(Rational(5, 2)))
 stud_tenon_depth = inches(Rational(5, 2))
+stud_tenon_outside_offset = inches(1)
 
 
 
@@ -917,6 +918,34 @@ def create_tinyhouse120(center: Optional[V3] = None):
         label: str,
     ) -> Joint:
         try:
+            actual_tenon_size = stud_tenon_size if tenon_size is None else tenon_size
+            if tenon_position is None:
+                butt_candidate_face = butt_timber.get_outside_face_from_footprint(footprint)
+                outward_dir = butt_timber.get_face_direction_global(butt_candidate_face)
+                
+                receiving_outside_face = receiving_timber.get_closest_oriented_face_from_global_direction(outward_dir)
+                target_plane = locate_into_face(stud_tenon_outside_offset, receiving_outside_face, receiving_timber)
+                
+                receiving_outward_dir = receiving_timber.get_face_direction_global(receiving_outside_face)
+                butt_outside_face = butt_timber.get_closest_oriented_face_from_global_direction(receiving_outward_dir)
+                
+                mark = mark_distance_from_face_in_normal_direction(target_plane, butt_timber, butt_outside_face)
+                dist_into_butt = mark.distance
+                
+                idx = butt_timber.get_size_index_in_long_face_normal_axis(butt_outside_face.to.long_face())
+                timber_half_size = butt_timber.get_size_in_face_normal_axis(butt_outside_face) / Integer(2)
+                thickness = actual_tenon_size[idx]
+                
+                offset_toward_outside = timber_half_size - (dist_into_butt + thickness / Integer(2))
+                
+                butt_offset = [Integer(0), Integer(0)]
+                if butt_outside_face.to.long_face() in [TimberLongFace.RIGHT, TimberLongFace.FRONT]:
+                    butt_offset[idx] = offset_toward_outside
+                else:
+                    butt_offset[idx] = -offset_toward_outside
+                    
+                tenon_position = create_v2(butt_offset[0], butt_offset[1])
+
             peg_parameters = (
                 horizontal_member_peg_params
                 if _is_horizontal_timber(butt_timber)
@@ -933,7 +962,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
                         else None
                     ),
                 ),
-                tenon_size=stud_tenon_size if tenon_size is None else tenon_size,
+                tenon_size=actual_tenon_size,
                 tenon_length=stud_tenon_depth,
                 mortise_depth=stud_tenon_depth,
                 mortise_shoulder_inset=inches(Rational(1, 64)),

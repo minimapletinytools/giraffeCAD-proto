@@ -119,45 +119,6 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 
 
-:: 1/6/2026 metadata
-
--timber metadata 
-  -material
-  -reference face(s) 
-    -used for generating drawings
-
--joint metadata
-  -assembly order
-  -assembly DOF
-    -by combining order and DOF you can validate if it's possible to assemble
-  -feature information (maybe just create a dict of named features for now and fill out the info later)
-  -CSG metadata
-    -named features
-
-
-we want to generaize name/parent so we can build ahirerachy, 
-there is one special distiction which is that there are Construction and Concept names, Construction maps to actual objects or are used to organize actual objects. Concepts map to things like joints and features
-
-I guess for now just mash them all together but flag them as such. when rendering in something that doesn't support concepts, just omit them, or we can extract concepts into a sepaarte tree but use the same hierarchy (if they were parented to a construction, then just create ap roxy for the construction in the concept tree)
-
-
-class TicketType(Enum):
-  Folder
-  Timber
-  Accessory
-  Board
-  Joint
-  etc
-
-class Ticket
-  name
-  parent
-  type: TicketType
-  def is_type()
-  def is_concept()
-  def is_construction()
-
-
 :: documentation
 
 -installation
@@ -177,24 +138,12 @@ class Ticket
 -do tinyhouse shed
   DONE-fix joists between intermediate posts, they should mortise and tenon into the posts
   DONE-make floor joist dovetails smaller so they don't intersect with the post tenons
+  DONE-add pegs to all horizontal mortise and tenons
   -adjust tenons so the are measured from the outside reference faces
   -make rafter logic not suck lol...
-  -add pegs to all horizontal mortise and tenons
   -do yo uneed/want more rafters?
   -add new joints for floor beams
 
--UI changes
-  -selected info should just be one line
-  -move focus button, make it more cute
-  -add toggle for  debug info in lower right
-  -add layers view to left I guess
-  -add # joints on  table view at bottom
-  -add some background color choices (colors, gradient,s whatever fun stuff)
-
--fix all the crud you have in your safe math functions
--do another profiling pass
--decide if hashing is ever worth it and or just remove it entirely
-  -or maybe come up with a faster hashing method?
 
 -tag reference faces on timber metadata?
   -assert they are coincident
@@ -211,6 +160,25 @@ class Ticket
   -saw/chisel metadata 
     -allow features to be labeled as saw or chisel so we can do cutting instructions
     -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
+
+
+
+-UI layer view 
+  -decide on layer view organization
+  -finish ticket system
+  -add layers view to left I guess
+
+-UI hatever
+  -selected info should just be one line
+  -move focus button, make it more cute
+  -add toggle for  debug info in lower right
+  -add # joints on  table view at bottom
+  -add some background color choices (colors, gradient,s whatever fun stuff)
+
+-fix all the crud you have in your safe math functions
+-do another profiling pass
+-decide if hashing is ever worth it and or just remove it entirely
+  -or maybe come up with a faster hashing method?
 
 -update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
 -rewrite accessories as timbers probably, so you can leverage any drawing capabilites that are added to timbers in the future
@@ -816,6 +784,45 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 
 :: END TODONE
+
+
+:: 1/6/2026 metadata
+
+-timber metadata 
+  -material
+  -reference face(s) 
+    -used for generating drawings
+
+-joint metadata
+  -assembly order
+  -assembly DOF
+    -by combining order and DOF you can validate if it's possible to assemble
+  -feature information (maybe just create a dict of named features for now and fill out the info later)
+  -CSG metadata
+    -named features
+
+
+we want to generaize name/parent so we can build ahirerachy, 
+there is one special distiction which is that there are Construction and Concept names, Construction maps to actual objects or are used to organize actual objects. Concepts map to things like joints and features
+
+I guess for now just mash them all together but flag them as such. when rendering in something that doesn't support concepts, just omit them, or we can extract concepts into a sepaarte tree but use the same hierarchy (if they were parented to a construction, then just create ap roxy for the construction in the concept tree)
+
+
+class TicketType(Enum):
+  Folder
+  Timber
+  Accessory
+  Board
+  Joint
+  etc
+
+class Ticket
+  name
+  parent
+  type: TicketType
+  def is_type()
+  def is_concept()
+  def is_construction()
 
 
 
