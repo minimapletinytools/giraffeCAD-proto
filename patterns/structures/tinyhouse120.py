@@ -883,6 +883,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
         butt_timber_end: TimberReferenceEnd,
         *,
         tenon_size: Optional[V2] = None,
+        tenon_position: Optional[V2] = None,
         label: str,
     ) -> Joint:
         try:
@@ -896,6 +897,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
                 tenon_length=stud_tenon_depth,
                 mortise_depth=stud_tenon_depth,
                 mortise_shoulder_inset=inches(Rational(1, 64)),
+                tenon_position=tenon_position,
                 peg_parameters=None,
             )
         except Exception as err:
@@ -975,6 +977,39 @@ def create_tinyhouse120(center: Optional[V3] = None):
             label=label,
         )
 
+    def _beam_corner_post_tenon_position(beam: PerfectTimberWithin) -> V2:
+        tenon_size = _tenon_size_with_long_axis(
+            beam,
+            create_v3(Integer(0), Integer(0), Integer(1)),
+        )
+        centered_in_top_band = beam.size[0] / Integer(2) - tenon_size[0] / Integer(2)
+
+        beam_length_direction = beam.get_length_direction_global()
+        front_back_alignment = abs(safe_dot_product(beam_length_direction, create_v3(Integer(0), Integer(1), Integer(0))))
+        left_right_alignment = abs(safe_dot_product(beam_length_direction, create_v3(Integer(1), Integer(0), Integer(0))))
+
+        if front_back_alignment > left_right_alignment:
+            return create_v2(centered_in_top_band, Integer(0))
+
+        return create_v2(centered_in_top_band - tenon_size[0], Integer(0))
+
+    def _beam_to_corner_post_joint(
+        beam: PerfectTimberWithin,
+        post: PerfectTimberWithin,
+        beam_end: TimberReferenceEnd,
+    ) -> Joint:
+        return _fat_joint(
+            beam,
+            post,
+            beam_end,
+            tenon_size=_tenon_size_with_long_axis(
+                beam,
+                post.get_length_direction_global(),
+            ),
+            tenon_position=_beam_corner_post_tenon_position(beam),
+            label="mid_beam_to_corner_post",
+        )
+
     intermediate_post_joints: List[Joint] = []
     for post, beam in [
         (post_FM1, mid_beam_front),
@@ -994,10 +1029,10 @@ def create_tinyhouse120(center: Optional[V3] = None):
         (mid_beam_left, post_BL, post_FL),
     ]:
         mid_beam_corner_post_joints.append(
-            _fat_joint_aligned_to_receiver(beam, start_post, TimberReferenceEnd.BOTTOM, label="mid_beam_to_corner_post")
+            _beam_to_corner_post_joint(beam, start_post, TimberReferenceEnd.BOTTOM)
         )
         mid_beam_corner_post_joints.append(
-            _fat_joint_aligned_to_receiver(beam, end_post, TimberReferenceEnd.TOP, label="mid_beam_to_corner_post")
+            _beam_to_corner_post_joint(beam, end_post, TimberReferenceEnd.TOP)
         )
 
     window_member_joints: List[Joint] = []
@@ -1168,6 +1203,46 @@ def create_tinyhouse120(center: Optional[V3] = None):
             )
         )
 
+    loft_beam_receivers = [
+        (loft_beam_1, mid_beam_front, mid_beam_back),
+        (loft_beam_2, mid_beam_front, mid_beam_back),
+    ]
+    loft_beam_dovetail_joints: List[Joint] = []
+
+    for loft_beam, front_receiver, back_receiver in loft_beam_receivers:
+        loft_beam_dovetail_joints.append(
+            cut_housed_dovetail_butt_joint(
+                arrangement=ButtJointTimberArrangement(
+                    butt_timber=loft_beam,
+                    receiving_timber=front_receiver,
+                    butt_timber_end=TimberReferenceEnd.BOTTOM,
+                    front_face_on_butt_timber=TimberLongFace.RIGHT,
+                ),
+                receiving_timber_shoulder_inset=floor_joist_dovetail_shoulder_inset,
+                dovetail_length=floor_joist_dovetail_length,
+                dovetail_small_width=floor_joist_dovetail_small_width,
+                dovetail_large_width=floor_joist_dovetail_large_width,
+                dovetail_lateral_offset=Rational(0),
+                dovetail_depth=floor_joist_dovetail_depth,
+            )
+        )
+        loft_beam_dovetail_joints.append(
+            cut_housed_dovetail_butt_joint(
+                arrangement=ButtJointTimberArrangement(
+                    butt_timber=loft_beam,
+                    receiving_timber=back_receiver,
+                    butt_timber_end=TimberReferenceEnd.TOP,
+                    front_face_on_butt_timber=TimberLongFace.RIGHT,
+                ),
+                receiving_timber_shoulder_inset=floor_joist_dovetail_shoulder_inset,
+                dovetail_length=floor_joist_dovetail_length,
+                dovetail_small_width=floor_joist_dovetail_small_width,
+                dovetail_large_width=floor_joist_dovetail_large_width,
+                dovetail_lateral_offset=Rational(0),
+                dovetail_depth=floor_joist_dovetail_depth,
+            )
+        )
+
     rafter_house_joints: List[Joint] = []
     for housing_timber, housed_timber in rafter_housing_pairs:
         rafter_house_joints.append(
@@ -1204,6 +1279,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
             + corner_top_plate_compound_joints
             + king_post_joints
             + floor_joist_dovetail_joints
+            + loft_beam_dovetail_joints
             + rafter_house_joints
             + rafter_pair_joints
         )
@@ -1224,6 +1300,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
             + corner_top_plate_compound_joints
             + king_post_joints
             + floor_joist_dovetail_joints
+            + loft_beam_dovetail_joints
             + rafter_house_joints
             + rafter_pair_joints
         ),
