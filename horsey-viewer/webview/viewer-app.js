@@ -1569,29 +1569,37 @@ class HorseyViewerApp extends LitElement {
 
     updateInfo(frameData) {
         this.currentFrameData = frameData || {};
-        const frameName = frameData && frameData.name ? frameData.name : 'Unnamed';
         const timberCount = frameData && frameData.timber_count ? frameData.timber_count : 0;
         const accessoriesCount = frameData && frameData.accessories_count ? frameData.accessories_count : 0;
         const selectedMembers = this.selectionManager.getSelectedTimbers();
-        const selectedCount = selectedMembers.length;
-        const selectedLabel = selectedCount === 1 ? '1 member' : selectedCount + ' members';
-        let selectionHtml = '<br>select: ' + selectedLabel;
+        let selectedTimberCount = 0;
+        let selectedAccessoryCount = 0;
+        let selectedSingleName = '';
+        let selectedKnownCount = 0;
 
-        if (selectedCount === 1) {
-            const selectedKey = selectedMembers[0];
+        for (const selectedKey of selectedMembers) {
             const metadata = this.memberMetadataByKey.get(selectedKey);
-            if (metadata) {
-                const typeLabel = metadata.type === 'accessory' ? 'Accessory' : 'Timber';
-                selectionHtml += '<br>selected: ' + metadata.name + ' (' + typeLabel + ')';
+            if (!metadata) {
+                continue;
+            }
+            selectedKnownCount += 1;
+            if (metadata.type === 'accessory') {
+                selectedAccessoryCount += 1;
             } else {
-                selectionHtml += '<br>selected: ' + selectedKey;
+                selectedTimberCount += 1;
+            }
+            if (selectedKnownCount === 1) {
+                selectedSingleName = metadata.name || '';
             }
         }
 
+        if (selectedKnownCount !== 1) {
+            selectedSingleName = '';
+        }
+
         this.renderRoot.querySelector('#info').innerHTML =
-            '<strong>' + frameName + '</strong><br>' +
-            timberCount + ' timbers • ' + accessoriesCount + ' accessories' +
-            selectionHtml;
+            'timbers (' + selectedTimberCount + '/' + timberCount + ') accesories (' + selectedAccessoryCount + '/' + accessoriesCount + ')' +
+            '<br>' + selectedSingleName;
     }
 
     updateDebug(geometryData, profiling) {
