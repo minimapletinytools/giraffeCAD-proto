@@ -49,7 +49,7 @@ DONE-navigation support
   -ortho perspective toggle?
   DONE-must lerp between all transitions!!!
 
--cute backgrounds
+DONE-cute backgrounds
   -creamy gradient background
   DONE-simple drop shadows? (you can fake this one)
   DONE-simple reflections? 
@@ -173,47 +173,27 @@ class Ticket
 
 
 :: TODO
-DONE-decide what "vanilla" project looks like
-  DONE-can we just run the cdoe and take what it returns
-  DONE-or do we scan for certain patterns
-DONE-new shed and irrational angles are failing
-DONE-start viewer I guess?
-  DONE-setup stdio
-  DONE-load example
-  ODNE-do basic frame rendering (as boxes) get_bounding_box_prism
-  DONE-do camera centering and navigation using 3js package I guess
-DONE-add wireframe rendering
-DONE-3d view
-  DONE-add gizmo in upper right corner
-  DONE-add focus button
-DONE-move out CSS html and frontend scripts into their own thing
-DONE-double/triple/quadruple butt arrangement
-  -assert for butt timbers pointing in cardinal directions
-  -check_face_aligned_and_cardinal checks that each butt timber is pointing in one of the 4 cardinal direction orthogonal to the receiving timber, and they should all be different
-DONE-add tongue and fork joint
-DONE-bugs
-  -fix the error you have in one of your examples
-  -fix csg test error
-DONE-move all jonits over to arrangements
-DONE-implement tongue and fork butt joint 
-DONE-fix step output
-DONE-add profiing stats
-DONE-add get_perfect_size_in_direction
-DONE-change nominal size to nominal half size in direction (this is kind acute actually cuz it can do diagonal size which is something you need, except you probably want get_perfect_size_in_direction)
-  -maybe rename to something else
-DONE-rename measure to locate
-DONE-build-a-butt_joint.py
 
 -do tinyhouse shed
+  -fix joists between intermediate posts, they should mortise and tenon into the posts
+  -make floor joist dovetails smaller so they don't intersect with the post tenons
+  -make rafter logic not suck lol...
+  -add pegs to all horizontal mortise and tenons
+  -do yo uneed/want more rafters?
+  -add new joints for floor beams
 
--I think your hashing the sympy crap so it's taking forever LOL
-  -add a toggle to disable the hash check thingy
+-UI changes
+  -selected info should just be one line
+  -move focus button, make it more cute
+  -add toggle for  debug info in lower right
+  -add layers view to left I guess
+  -add # joints on  table view at bottom
+  -add some background color choices (colors, gradient,s whatever fun stuff)
 
--need to do perf and figure out why it takes so long....
-  -add loading bar on initial load
-  -add individual stats for meshing (python -> js round trip. Iguess?)
-    -not ecomplexiyt of teh timber
-    -write stats to a file?
+-fix all the crud you have in your safe math functions
+-do another profiling pass
+-decide if hashing is ever worth it and or just remove it entirely
+  -or maybe come up with a faster hashing method?
 
 -tag reference faces on timber metadata?
   -assert they are coincident
@@ -449,6 +429,45 @@ M3.5
 
 
 :: TODONE
+DONE-decide what "vanilla" project looks like
+  DONE-can we just run the cdoe and take what it returns
+  DONE-or do we scan for certain patterns
+DONE-new shed and irrational angles are failing
+DONE-start viewer I guess?
+  DONE-setup stdio
+  DONE-load example
+  ODNE-do basic frame rendering (as boxes) get_bounding_box_prism
+  DONE-do camera centering and navigation using 3js package I guess
+DONE-add wireframe rendering
+DONE-3d view
+  DONE-add gizmo in upper right corner
+  DONE-add focus button
+DONE-move out CSS html and frontend scripts into their own thing
+DONE-double/triple/quadruple butt arrangement
+  -assert for butt timbers pointing in cardinal directions
+  -check_face_aligned_and_cardinal checks that each butt timber is pointing in one of the 4 cardinal direction orthogonal to the receiving timber, and they should all be different
+DONE-add tongue and fork joint
+DONE-bugs
+  -fix the error you have in one of your examples
+  -fix csg test error
+DONE-move all jonits over to arrangements
+DONE-implement tongue and fork butt joint 
+DONE-fix step output
+DONE-add profiing stats
+DONE-add get_perfect_size_in_direction
+DONE-change nominal size to nominal half size in direction (this is kind acute actually cuz it can do diagonal size which is something you need, except you probably want get_perfect_size_in_direction)
+  -maybe rename to something else
+DONE-rename measure to locate
+DONE-build-a-butt_joint.py
+DONE-I think your hashing the sympy crap so it's taking forever LOL
+  DONE-add a toggle to disable the hash check thingy
+DONE-need to do perf and figure out why it takes so long....
+  -add loading bar on initial load
+  -add individual stats for meshing (python -> js round trip. Iguess?)
+    -not ecomplexiyt of teh timber
+    -write stats to a file?
+DONE-be able to tell which timber you clicked on if you clicked on a single timber
+
 
 DONE-M1 (reward is reimburse H2D LOL)
   DONE-address TODOS in join_timbers

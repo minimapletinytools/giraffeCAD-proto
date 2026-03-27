@@ -1177,12 +1177,16 @@ def create_tinyhouse120(center: Optional[V3] = None):
     floor_joist_dovetail_length = inches(2)
     floor_joist_dovetail_depth = inches(2)
 
+    floor_joist_intermediate_post_tenon_size = create_v2(inches(2.75), inches(1))
+    floor_joist_intermediate_post_tenon_position = create_v2(
+        floor_joist_4.size[0] / Integer(2) - floor_joist_intermediate_post_tenon_size[0] / Integer(2),
+        Integer(0),
+    )
+
     floor_joist_receivers = [
         (floor_joist_1, beam_front_1, beam_back_3),
         (floor_joist_2, beam_front_2, beam_back_2),
         (floor_joist_3, beam_front_3, beam_back_1),
-        (floor_joist_4, beam_front_2, beam_back_2),
-        (floor_joist_5, beam_front_2, beam_back_2),
     ]
     floor_joist_dovetail_joints: List[Joint] = []
 
@@ -1217,6 +1221,32 @@ def create_tinyhouse120(center: Optional[V3] = None):
                 dovetail_large_width=floor_joist_dovetail_large_width,
                 dovetail_lateral_offset=Rational(0),
                 dovetail_depth=floor_joist_dovetail_depth,
+            )
+        )
+
+    floor_joist_intermediate_post_joints: List[Joint] = []
+    for joist, front_post, back_post in [
+        (floor_joist_4, post_FM1, post_BM2),
+        (floor_joist_5, post_FM2, post_BM1),
+    ]:
+        floor_joist_intermediate_post_joints.append(
+            _fat_joint(
+                joist,
+                front_post,
+                TimberReferenceEnd.BOTTOM,
+                tenon_size=floor_joist_intermediate_post_tenon_size,
+                tenon_position=floor_joist_intermediate_post_tenon_position,
+                label="floor_joist_to_intermediate_post",
+            )
+        )
+        floor_joist_intermediate_post_joints.append(
+            _fat_joint(
+                joist,
+                back_post,
+                TimberReferenceEnd.TOP,
+                tenon_size=floor_joist_intermediate_post_tenon_size,
+                tenon_position=floor_joist_intermediate_post_tenon_position,
+                label="floor_joist_to_intermediate_post",
             )
         )
 
@@ -1328,6 +1358,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
             + corner_top_plate_compound_joints
             + king_post_joints
             + floor_joist_dovetail_joints
+            + floor_joist_intermediate_post_joints
             + loft_beam_dovetail_joints
             + center_support_beam_dovetail_joints
             + rafter_house_joints
@@ -1351,6 +1382,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
             + corner_top_plate_compound_joints
             + king_post_joints
             + floor_joist_dovetail_joints
+            + floor_joist_intermediate_post_joints
             + loft_beam_dovetail_joints
             + center_support_beam_dovetail_joints
             + rafter_house_joints
