@@ -217,6 +217,9 @@ def _cut_timber_to_triangle_mesh_payload(
     timber = cut_timber.timber
     return {
         "name": get_timber_display_name(timber),
+        "memberName": get_timber_display_name(timber),
+        "memberType": "timber",
+        "memberKey": timber_key,
         "timberKey": timber_key,
         "hash": geometry_hash,
         "vertices": vertices,
@@ -224,6 +227,41 @@ def _cut_timber_to_triangle_mesh_payload(
         "prism_length": round(float(getattr(timber, "length", dims[2])), 6),
         "prism_width": round(float(getattr(timber, "size", [dims[0], dims[1]])[0]), 6),
         "prism_height": round(float(getattr(timber, "size", [dims[0], dims[1]])[1]), 6),
+    }
+
+
+def _accessory_to_triangle_mesh_payload(
+    accessory: Any,
+    local_csg: Any,
+    accessory_key: str,
+    accessory_name: str,
+    geometry_hash: str,
+) -> Dict[str, Any]:
+    from code_goes_here.cutcsg import adopt_csg
+    from code_goes_here.rule import Transform
+    from code_goes_here.triangles import triangulate_cutcsg
+
+    global_csg = adopt_csg(accessory.transform, Transform.identity(), local_csg)
+    triangle_mesh = triangulate_cutcsg(global_csg).mesh
+
+    vertices = triangle_mesh.vertices.reshape(-1).tolist()
+    indices = triangle_mesh.faces.reshape(-1).tolist()
+
+    bounds = triangle_mesh.bounds
+    dims = bounds[1] - bounds[0]
+
+    return {
+        "name": accessory_name,
+        "memberName": accessory_name,
+        "memberType": "accessory",
+        "memberKey": accessory_key,
+        "timberKey": accessory_key,
+        "hash": geometry_hash,
+        "vertices": vertices,
+        "indices": indices,
+        "prism_length": round(float(dims[2]), 6),
+        "prism_width": round(float(dims[0]), 6),
+        "prism_height": round(float(dims[1]), 6),
     }
 
 
@@ -286,6 +324,57 @@ def build_real_geometry(state: RunnerState, enable_hash_geometry_check: bool = T
         except Exception as exc:
             log_stderr(f"Warning: skipping geometry for {get_timber_display_name(cut_timber.timber)}: {exc}")
 
+    accessories = list(frame.accessories) if hasattr(frame, "accessories") and frame.accessories else []
+    for accessory in accessories:
+        try:
+            accessory_type = type(accessory).__name__
+            key_base = f"accessory:{accessory_type}"
+
+            occurrence = key_counts.get(key_base, 0)
+            key_counts[key_base] = occurrence + 1
+            accessory_key = f"{key_base}#{occurrence}"
+            accessory_name = f"{accessory_type} {occurrence + 1}"
+
+            local_csg = accessory.render_csg_local()
+            geometry_hash = None
+            if enable_hash_geometry_check and hasattr(accessory, "deep_hash") and callable(accessory.deep_hash):
+                geometry_hash = str(accessory.deep_hash())
+            elif enable_hash_geometry_check:
+                geometry_hash = repr(local_csg)
+
+            cached = state.mesh_cache.get(accessory_key) if enable_hash_geometry_check else None
+            if cached is not None and cached.get("hash") == geometry_hash:
+                mesh_payload = cached["mesh"]
+            else:
+                remesh_t0 = time.monotonic()
+                csg_depth = _compute_csg_depth(local_csg)
+                mesh_payload = _accessory_to_triangle_mesh_payload(
+                    accessory,
+                    local_csg,
+                    accessory_key,
+                    accessory_name,
+                    geometry_hash,
+                )
+                remesh_s = time.monotonic() - remesh_t0
+                triangle_count = len(mesh_payload.get("indices", [])) // 3
+                state.mesh_cache[accessory_key] = {
+                    "hash": geometry_hash,
+                    "mesh": mesh_payload,
+                }
+                changed_keys.append(accessory_key)
+                remesh_metrics.append({
+                    "timberKey": accessory_key,
+                    "memberType": "accessory",
+                    "remesh_s": remesh_s,
+                    "csg_depth": csg_depth,
+                    "triangle_count": triangle_count,
+                })
+
+            meshes.append(mesh_payload)
+            seen_keys.add(accessory_key)
+        except Exception as exc:
+            log_stderr(f"Warning: skipping geometry for accessory {type(accessory).__name__}: {exc}")
+
     removed_keys = []
     for cached_key in list(state.mesh_cache.keys()):
         if cached_key not in seen_keys:
@@ -302,6 +391,8 @@ def build_real_geometry(state: RunnerState, enable_hash_geometry_check: bool = T
             "totalTimbers": len(meshes),
             "changedTimbers": len(changed_keys),
             "removedTimbers": len(removed_keys),
+            "totalAccessories": len(accessories),
+            "totalMembers": len(meshes),
         },
         "options": {
             "enableHashGeometryCheck": enable_hash_geometry_check,

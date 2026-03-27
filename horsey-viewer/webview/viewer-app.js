@@ -40,6 +40,57 @@ const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : nul
 const VIEWER_APP_VERSION = '2026.03.17.4';
 const SelectionStore = window.SelectionStore;
 
+const RENDER_PROFILES = Object.freeze({
+    'timber-default': Object.freeze({
+        label: 'Timber Default',
+        solidColor: 0xafbccf,
+        edgeColor: 0x5d6882,
+        reflectionColor: 0xe7edf8,
+        roughness: 0.68,
+        metalness: 0.02,
+        reflectionRoughness: 0.28,
+        reflectionMetalness: 0.04,
+        edgeOpacity: 0.42,
+        reflectionOpacity: 0.14,
+    }),
+    'timber-warm': Object.freeze({
+        label: 'Timber Warm',
+        solidColor: 0xc3b08f,
+        edgeColor: 0x6b5c49,
+        reflectionColor: 0xe7d8c2,
+        roughness: 0.73,
+        metalness: 0.01,
+        reflectionRoughness: 0.31,
+        reflectionMetalness: 0.02,
+        edgeOpacity: 0.45,
+        reflectionOpacity: 0.12,
+    }),
+    'accessory-cute': Object.freeze({
+        label: 'Accessory Cute Tint',
+        solidColor: 0xffb3c7,
+        edgeColor: 0x994f68,
+        reflectionColor: 0xffd9e6,
+        roughness: 0.54,
+        metalness: 0.03,
+        reflectionRoughness: 0.24,
+        reflectionMetalness: 0.05,
+        edgeOpacity: 0.5,
+        reflectionOpacity: 0.17,
+    }),
+    'accessory-brass': Object.freeze({
+        label: 'Accessory Brass',
+        solidColor: 0xc8a64d,
+        edgeColor: 0x5f4c1f,
+        reflectionColor: 0xe8cd80,
+        roughness: 0.42,
+        metalness: 0.2,
+        reflectionRoughness: 0.2,
+        reflectionMetalness: 0.24,
+        edgeOpacity: 0.48,
+        reflectionOpacity: 0.18,
+    }),
+});
+
 if (!SelectionStore) {
     throw new Error('SelectionStore is not loaded. Ensure selection-store.js is included before viewer-app.js.');
 }
@@ -102,7 +153,13 @@ class HorseyViewerApp extends LitElement {
         this.orbitCenterGizmo = null;
 
         this.selectionManager = new SelectionStore();
-        this.meshNameMap = new Map(); // mesh object -> timber name
+        this.meshKeyMap = new Map(); // mesh object -> member key
+        this.memberMetadataByKey = new Map(); // member key -> { name, type }
+        this.renderProfiles = RENDER_PROFILES;
+        this.memberRenderProfileByType = {
+            timber: 'timber-default',
+            accessory: 'accessory-cute',
+        };
 
         this.animationHandle = null;
         this.viewState = createInitialViewState();
@@ -168,16 +225,28 @@ class HorseyViewerApp extends LitElement {
                     <input id="hash-geometry-check-toggle" type="checkbox" ?checked=${this.viewerOptions.enableHashGeometryCheck}>
                     hash geometry check
                 </label>
+                <label>
+                    timber profile
+                    <select id="timber-profile-select" .value=${this.memberRenderProfileByType.timber}>
+                        ${Object.entries(this.renderProfiles).map(([profileId, profile]) => html`<option value=${profileId}>${profile.label}</option>`)}
+                    </select>
+                </label>
+                <label>
+                    accessory profile
+                    <select id="accessory-profile-select" .value=${this.memberRenderProfileByType.accessory}>
+                        ${Object.entries(this.renderProfiles).map(([profileId, profile]) => html`<option value=${profileId}>${profile.label}</option>`)}
+                    </select>
+                </label>
                 <button id="refresh-btn" type="button" title="Reload pattern">↻ refresh</button>
             </section>
             <div id="panels">
                 <div class="panel-box">
-                    <div class="panel-title">Timber List</div>
+                    <div class="panel-title">Member List</div>
                     <div id="timber-panel">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>#</th><th>Name</th>
+                                    <th>#</th><th>Type</th><th>Name</th>
                                     <th>Length</th><th>Width</th><th>Height</th>
                                 </tr>
                             </thead>
@@ -248,15 +317,12 @@ class HorseyViewerApp extends LitElement {
             });
             this.orbitCenterGizmo = null;
         }
-        if (this.reflectionMat) {
-            this.reflectionMat.dispose();
-            this.reflectionMat = null;
-        }
         for (const bundle of this.meshObjectsByKey.values()) {
             this.disposeMeshBundle(bundle);
         }
         this.meshObjectsByKey.clear();
-        this.meshNameMap.clear();
+        this.meshKeyMap.clear();
+        this.memberMetadataByKey.clear();
     }
 
     setupUiEvents() {
@@ -271,6 +337,8 @@ class HorseyViewerApp extends LitElement {
         const shadowsToggle = this.renderRoot.querySelector('#shadows-toggle');
         const reflectionsToggle = this.renderRoot.querySelector('#reflections-toggle');
         const hashGeometryCheckToggle = this.renderRoot.querySelector('#hash-geometry-check-toggle');
+        const timberProfileSelect = this.renderRoot.querySelector('#timber-profile-select');
+        const accessoryProfileSelect = this.renderRoot.querySelector('#accessory-profile-select');
         const refreshButton = this.renderRoot.querySelector('#refresh-btn');
 
         toV3d.addEventListener('click', () => {
@@ -343,6 +411,14 @@ class HorseyViewerApp extends LitElement {
             this.setViewerOptions({ enableHashGeometryCheck: event.target.checked }, { postMessage: true });
         });
 
+        timberProfileSelect.addEventListener('change', (event) => {
+            this.setMemberRenderProfile('timber', event.target.value);
+        });
+
+        accessoryProfileSelect.addEventListener('change', (event) => {
+            this.setMemberRenderProfile('accessory', event.target.value);
+        });
+
         refreshButton.addEventListener('click', () => {
             if (vscode) {
                 vscode.postMessage({ type: 'requestRefresh' });
@@ -391,34 +467,6 @@ class HorseyViewerApp extends LitElement {
         const fill = new THREE.DirectionalLight(0xecf2ff, 0.45);
         fill.position.set(-4, 3, -6);
         this.scene.add(fill);
-
-        this.solidMat = new THREE.MeshStandardMaterial({
-            color: 0xafbccf,
-            metalness: 0.02,
-            roughness: 0.68,
-            flatShading: true,
-            polygonOffset: true,
-            polygonOffsetFactor: 2,
-            polygonOffsetUnits: 2,
-            side: THREE.FrontSide,
-        });
-        this.edgeMat = new THREE.LineBasicMaterial({
-            color: 0x5d6882,
-            transparent: true,
-            opacity: 0.42,
-            depthTest: false,
-            depthWrite: false,
-        });
-        this.reflectionMat = new THREE.MeshStandardMaterial({
-            color: 0xe7edf8,
-            metalness: 0.04,
-            roughness: 0.28,
-            transparent: true,
-            opacity: 0.14,
-            flatShading: true,
-            depthWrite: false,
-            side: THREE.DoubleSide,
-        });
 
         this.createOrUpdateShadowCatcher(this.lastBounds);
         this.createOrbitCenterGizmo();
@@ -705,15 +753,15 @@ class HorseyViewerApp extends LitElement {
         }
 
         const hit = intersects[0];
-        const timberName = this.meshNameMap.get(hit.object);
-        if (!timberName) {
+        const memberKey = this.meshKeyMap.get(hit.object);
+        if (!memberKey) {
             return;
         }
 
         if (event.shiftKey) {
-            this.selectionManager.toggleTimber(timberName);
+            this.selectionManager.toggleTimber(memberKey);
         } else {
-            this.selectionManager.selectTimber(timberName, false);
+            this.selectionManager.selectTimber(memberKey, false);
         }
 
         this.emitViewerLog('selection-changed', {
@@ -1100,6 +1148,114 @@ class HorseyViewerApp extends LitElement {
         this.updateReflectionTransforms();
     }
 
+    resolveRenderProfile(profileId) {
+        if (profileId && this.renderProfiles[profileId]) {
+            return this.renderProfiles[profileId];
+        }
+        return this.renderProfiles['timber-default'];
+    }
+
+    resolveRenderProfileIdForMemberType(memberType) {
+        if (memberType === 'accessory') {
+            return this.memberRenderProfileByType.accessory;
+        }
+        return this.memberRenderProfileByType.timber;
+    }
+
+    createMaterialSetForMemberType(memberType) {
+        const profileId = this.resolveRenderProfileIdForMemberType(memberType);
+        const profile = this.resolveRenderProfile(profileId);
+        return {
+            profileId,
+            solid: new THREE.MeshStandardMaterial({
+                color: profile.solidColor,
+                metalness: profile.metalness,
+                roughness: profile.roughness,
+                flatShading: true,
+                polygonOffset: true,
+                polygonOffsetFactor: 2,
+                polygonOffsetUnits: 2,
+                side: THREE.FrontSide,
+            }),
+            edge: new THREE.LineBasicMaterial({
+                color: profile.edgeColor,
+                transparent: true,
+                opacity: profile.edgeOpacity,
+                depthTest: false,
+                depthWrite: false,
+            }),
+            reflection: new THREE.MeshStandardMaterial({
+                color: profile.reflectionColor,
+                metalness: profile.reflectionMetalness,
+                roughness: profile.reflectionRoughness,
+                transparent: true,
+                opacity: profile.reflectionOpacity,
+                flatShading: true,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+            }),
+        };
+    }
+
+    applyRenderProfileToBundle(bundle, profileId) {
+        if (!bundle || !bundle.mesh || !bundle.mesh.material || !bundle.edges || !bundle.edges.material || !bundle.reflection || !bundle.reflection.material) {
+            return;
+        }
+        const profile = this.resolveRenderProfile(profileId);
+        bundle.profileId = profileId;
+
+        bundle.mesh.material.color.setHex(profile.solidColor);
+        bundle.mesh.material.metalness = profile.metalness;
+        bundle.mesh.material.roughness = profile.roughness;
+        bundle.mesh.material.flatShading = true;
+        bundle.mesh.material.polygonOffset = true;
+        bundle.mesh.material.polygonOffsetFactor = 2;
+        bundle.mesh.material.polygonOffsetUnits = 2;
+        bundle.mesh.material.side = THREE.FrontSide;
+        bundle.mesh.material.needsUpdate = true;
+
+        bundle.edges.material.color.setHex(profile.edgeColor);
+        bundle.edges.material.opacity = profile.edgeOpacity;
+        bundle.edges.material.transparent = true;
+        bundle.edges.material.depthTest = false;
+        bundle.edges.material.depthWrite = false;
+        bundle.edges.material.needsUpdate = true;
+
+        bundle.reflection.material.color.setHex(profile.reflectionColor);
+        bundle.reflection.material.metalness = profile.reflectionMetalness;
+        bundle.reflection.material.roughness = profile.reflectionRoughness;
+        bundle.reflection.material.opacity = profile.reflectionOpacity;
+        bundle.reflection.material.transparent = true;
+        bundle.reflection.material.flatShading = true;
+        bundle.reflection.material.depthWrite = false;
+        bundle.reflection.material.side = THREE.DoubleSide;
+        bundle.reflection.material.needsUpdate = true;
+    }
+
+    applyRenderProfilesToScene() {
+        for (const [memberKey, bundle] of this.meshObjectsByKey.entries()) {
+            const metadata = this.memberMetadataByKey.get(memberKey) || { type: 'timber' };
+            const profileId = this.resolveRenderProfileIdForMemberType(metadata.type);
+            this.applyRenderProfileToBundle(bundle, profileId);
+        }
+        this.applySelectionOpacity();
+    }
+
+    setMemberRenderProfile(memberType, profileId) {
+        if (!this.renderProfiles[profileId]) {
+            return;
+        }
+        if (memberType !== 'timber' && memberType !== 'accessory') {
+            return;
+        }
+        this.memberRenderProfileByType = {
+            ...this.memberRenderProfileByType,
+            [memberType]: profileId,
+        };
+        this.applyRenderProfilesToScene();
+        this.requestUpdate();
+    }
+
     createGizmoFaceMaterial(label, backgroundColor) {
         const canvas = document.createElement('canvas');
         canvas.width = 256;
@@ -1398,9 +1554,12 @@ class HorseyViewerApp extends LitElement {
         tbody.textContent = '';
         for (let index = 0; index < meshes.length; index += 1) {
             const mesh = meshes[index];
+            const typeLabel = mesh.memberType === 'accessory' ? 'Accessory' : 'Timber';
+            const memberName = mesh.memberName || mesh.name || '?';
             const row = document.createElement('tr');
             row.innerHTML = '<td>' + (index + 1) + '</td>' +
-                '<td>' + (mesh.name || '?') + '</td>' +
+                '<td>' + typeLabel + '</td>' +
+                '<td>' + memberName + '</td>' +
                 '<td class="dim">' + (mesh.prism_length !== undefined ? this.fmt(mesh.prism_length) : '—') + '</td>' +
                 '<td class="dim">' + (mesh.prism_width  !== undefined ? this.fmt(mesh.prism_width)  : '—') + '</td>' +
                 '<td class="dim">' + (mesh.prism_height !== undefined ? this.fmt(mesh.prism_height) : '—') + '</td>';
@@ -1413,13 +1572,20 @@ class HorseyViewerApp extends LitElement {
         const frameName = frameData && frameData.name ? frameData.name : 'Unnamed';
         const timberCount = frameData && frameData.timber_count ? frameData.timber_count : 0;
         const accessoriesCount = frameData && frameData.accessories_count ? frameData.accessories_count : 0;
-        const selectedTimbers = this.selectionManager.getSelectedTimbers();
-        const selectedCount = selectedTimbers.length;
-        const selectedLabel = selectedCount === 1 ? '1 timber' : selectedCount + ' timbers';
+        const selectedMembers = this.selectionManager.getSelectedTimbers();
+        const selectedCount = selectedMembers.length;
+        const selectedLabel = selectedCount === 1 ? '1 member' : selectedCount + ' members';
         let selectionHtml = '<br>select: ' + selectedLabel;
 
         if (selectedCount === 1) {
-            selectionHtml += '<br>selected: ' + selectedTimbers[0];
+            const selectedKey = selectedMembers[0];
+            const metadata = this.memberMetadataByKey.get(selectedKey);
+            if (metadata) {
+                const typeLabel = metadata.type === 'accessory' ? 'Accessory' : 'Timber';
+                selectionHtml += '<br>selected: ' + metadata.name + ' (' + typeLabel + ')';
+            } else {
+                selectionHtml += '<br>selected: ' + selectedKey;
+            }
         }
 
         this.renderRoot.querySelector('#info').innerHTML =
@@ -1511,14 +1677,18 @@ class HorseyViewerApp extends LitElement {
                 return false;
             }
             const mesh = meshes[index];
-            const key = mesh.timberKey || ('index-' + index);
-            const timberName = mesh.timberKey || ('index-' + index);
+            const key = mesh.memberKey || mesh.timberKey || ('index-' + index);
+            const memberType = mesh.memberType === 'accessory' ? 'accessory' : 'timber';
+            const memberName = mesh.memberName || mesh.name || key;
             const hash = mesh.hash || null;
             nextKeys.add(key);
 
             const existing = this.meshObjectsByKey.get(key);
             if (existing && hash !== null && existing.hash !== null && existing.hash === hash) {
-                this.meshNameMap.set(existing.mesh, timberName);
+                this.meshKeyMap.set(existing.mesh, key);
+                this.memberMetadataByKey.set(key, { name: memberName, type: memberType });
+                existing.memberType = memberType;
+                this.applyRenderProfileToBundle(existing, this.resolveRenderProfileIdForMemberType(memberType));
                 processed += 1;
                 reportProgress();
                 if (index === 0 || index === meshes.length - 1 || index % 8 === 0) {
@@ -1531,7 +1701,8 @@ class HorseyViewerApp extends LitElement {
             }
 
             if (existing) {
-                this.meshNameMap.delete(existing.mesh);
+                this.meshKeyMap.delete(existing.mesh);
+                this.memberMetadataByKey.delete(key);
                 this.disposeMeshBundle(existing);
                 this.meshObjectsByKey.delete(key);
             }
@@ -1546,10 +1717,12 @@ class HorseyViewerApp extends LitElement {
             geometry.computeBoundingSphere();
             indexedGeometry.dispose();
 
-            const solidMesh = new THREE.Mesh(geometry, this.solidMat.clone());
+            const materialSet = this.createMaterialSetForMemberType(memberType);
+
+            const solidMesh = new THREE.Mesh(geometry, materialSet.solid);
             const edgeGeometry = new THREE.EdgesGeometry(geometry, 25);
-            const edgeMesh = new THREE.LineSegments(edgeGeometry, this.edgeMat.clone());
-            const reflectionMesh = new THREE.Mesh(geometry, this.reflectionMat.clone());
+            const edgeMesh = new THREE.LineSegments(edgeGeometry, materialSet.edge);
+            const reflectionMesh = new THREE.Mesh(geometry, materialSet.reflection);
             solidMesh.renderOrder = 1;
             edgeMesh.renderOrder = 2;
             reflectionMesh.renderOrder = 0;
@@ -1563,8 +1736,16 @@ class HorseyViewerApp extends LitElement {
             this.scene.add(solidMesh);
             this.scene.add(edgeMesh);
             this.scene.add(reflectionMesh);
-            this.meshNameMap.set(solidMesh, timberName);
-            this.meshObjectsByKey.set(key, { hash: hash, mesh: solidMesh, edges: edgeMesh, reflection: reflectionMesh });
+            this.meshKeyMap.set(solidMesh, key);
+            this.memberMetadataByKey.set(key, { name: memberName, type: memberType });
+            this.meshObjectsByKey.set(key, {
+                hash: hash,
+                memberType,
+                profileId: materialSet.profileId,
+                mesh: solidMesh,
+                edges: edgeMesh,
+                reflection: reflectionMesh,
+            });
             processed += 1;
             reportProgress();
             if (index === 0 || index === meshes.length - 1 || index % 8 === 0) {
@@ -1578,7 +1759,8 @@ class HorseyViewerApp extends LitElement {
         for (const existingKey of Array.from(this.meshObjectsByKey.keys())) {
             if (!nextKeys.has(existingKey)) {
                 const bundle = this.meshObjectsByKey.get(existingKey);
-                this.meshNameMap.delete(bundle.mesh);
+                this.meshKeyMap.delete(bundle.mesh);
+                this.memberMetadataByKey.delete(existingKey);
                 this.disposeMeshBundle(bundle);
                 this.meshObjectsByKey.delete(existingKey);
             }

@@ -24,11 +24,11 @@ function resolvePython(projectRoot) {
   return 'python3';
 }
 
-function createRunnerClient() {
+function createRunnerClient(fixtureName = 'minimal_frame.py') {
   const extensionRoot = path.resolve(__dirname, '..');
   const projectRoot = path.resolve(extensionRoot, '..');
   const runnerPath = path.join(extensionRoot, 'runner.py');
-  const examplePath = path.join(extensionRoot, 'test-fixtures', 'minimal_frame.py');
+  const examplePath = path.join(extensionRoot, 'test-fixtures', fixtureName);
   const pythonCmd = resolvePython(projectRoot);
 
   const child = spawn(pythonCmd, [runnerPath, examplePath], {
@@ -135,6 +135,10 @@ describe('runner protocol', () => {
       expect(geometry1.result.kind).toBe('triangle-geometry');
       expect(Array.isArray(geometry1.result.meshes)).toBe(true);
       expect(geometry1.result.meshes.length).toBeGreaterThan(0);
+      const firstMesh = geometry1.result.meshes[0];
+      expect(typeof firstMesh.memberKey).toBe('string');
+      expect(typeof firstMesh.memberType).toBe('string');
+      expect(firstMesh.memberType).toBe('timber');
       expect(geometry1.result.options.enableHashGeometryCheck).toBe(false);
       expect(geometry1.result.changedKeys.length).toBe(geometry1.result.meshes.length);
       expect(Array.isArray(geometry1.result.remeshMetrics)).toBe(true);
@@ -163,6 +167,33 @@ describe('runner protocol', () => {
       expect(geometry2.result.remeshMetrics).toHaveLength(geometry2.result.meshes.length);
       expect(geometry2.result.counts.totalTimbers).toBe(geometry2.result.meshes.length);
 
+    } finally {
+      await client.shutdown();
+    }
+  });
+
+  test('geometry payload includes accessories as selectable members', async () => {
+    const client = createRunnerClient('accessory_frame.py');
+
+    try {
+      const ready = await client.readMessage();
+      expect(ready.type).toBe('ready');
+
+      const frame = await client.request('get_frame');
+      expect(frame.ok).toBe(true);
+      expect(frame.result.accessories_count).toBeGreaterThan(0);
+
+      const geometry = await client.request('get_geometry', { enableHashGeometryCheck: false });
+      expect(geometry.ok).toBe(true);
+      expect(Array.isArray(geometry.result.meshes)).toBe(true);
+      expect(geometry.result.meshes.length).toBeGreaterThanOrEqual(frame.result.timber_count + frame.result.accessories_count);
+
+      const accessoryMeshes = geometry.result.meshes.filter((mesh) => mesh.memberType === 'accessory');
+      expect(accessoryMeshes.length).toBeGreaterThan(0);
+      for (const mesh of accessoryMeshes) {
+        expect(typeof mesh.memberKey).toBe('string');
+        expect(mesh.memberKey.startsWith('accessory:')).toBe(true);
+      }
     } finally {
       await client.shutdown();
     }
