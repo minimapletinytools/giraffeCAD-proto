@@ -771,39 +771,71 @@ def create_tinyhouse120(center: Optional[V3] = None):
     rafter_edge_inset = rafter_size[0] / Integer(2)
     usable_rafter_span_x = ridge_length - Integer(2) * rafter_edge_inset
 
+    rafter_stickout = Stickout(extra_rafter_length, Integer(0))
+
+    def _rafter_from_join(
+        plate: PerfectTimberWithin,
+        ridge: PerfectTimberWithin,
+        x: Numeric,
+        plate_y: Numeric,
+        ticket: str,
+    ) -> PerfectTimberWithin:
+        plate_location = x - plate.get_bottom_position_global()[0]
+        ridge_location = x - ridge.get_bottom_position_global()[0]
+
+        target_plate_point = create_v3(x, plate_y, rafter_plate_z)
+        target_ridge_point = create_v3(x, ridge_y, rafter_ridge_z)
+        target_direction = normalize_vector(target_ridge_point - target_plate_point)
+        target_bottom = target_plate_point - target_direction * extra_rafter_length
+
+        plate_centerline_point = locate_position_on_centerline_from_bottom(plate, plate_location).position
+        ridge_centerline_point = locate_position_on_centerline_from_bottom(ridge, ridge_location).position
+        join_direction = normalize_vector(ridge_centerline_point - plate_centerline_point)
+        offset_direction = normalize_vector(cross_product(plate.get_length_direction_global(), join_direction))
+        base_bottom = plate_centerline_point - join_direction * extra_rafter_length
+        lateral_offset = safe_dot_product(target_bottom - base_bottom, offset_direction)*1.5
+
+        return join_timbers(
+            timber1=plate,
+            timber2=ridge,
+            location_on_timber1=plate_location,
+            location_on_timber2=ridge_location,
+            lateral_offset=lateral_offset,
+            stickout=rafter_stickout,
+            size=rafter_size,
+            orientation_width_vector=create_v3(Integer(1), Integer(0), Integer(0)),
+            ticket=ticket,
+        )
+
     rafters = []
+    rafter_pairs: List[Tuple[PerfectTimberWithin, PerfectTimberWithin]] = []
+    rafter_housing_pairs: List[Tuple[PerfectTimberWithin, PerfectTimberWithin]] = []
     for i in range(6):
         x = ridge_start_x + rafter_edge_inset + i * usable_rafter_span_x / Integer(5)
 
-        # Front rafter: from front plate up to ridge
-        front_bottom = create_v3(x, front_plate_y, rafter_plate_z)
-        front_top = create_v3(x, ridge_y, rafter_ridge_z)
-        front_delta = front_top - front_bottom
-        front_len = sqrt(front_delta[0]**2 + front_delta[1]**2 + front_delta[2]**2) + extra_rafter_length
-        front_dir = normalize_vector(front_delta)
-        front_eave_bottom = front_bottom - front_dir * extra_rafter_length
-        rafters.append(timber_from_directions(
-            length=front_len, size=rafter_size,
-            bottom_position=front_eave_bottom,
-            length_direction=front_dir,
-            width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
-            ticket=f"Front Rafter {i + 1}"
-        ))
+        front_rafter = _rafter_from_join(
+            top_plate_front,
+            ridge_beam,
+            x,
+            front_plate_y,
+            f"Front Rafter {i + 1}",
+        )
+        rafters.append(front_rafter)
+        rafter_housing_pairs.append((ridge_beam, front_rafter))
+        rafter_housing_pairs.append((top_plate_front, front_rafter))
 
-        # Back rafter: from back plate up to ridge
-        back_bottom = create_v3(x, back_plate_y, rafter_plate_z)
-        back_top = create_v3(x, ridge_y, rafter_ridge_z)
-        back_delta = back_top - back_bottom
-        back_len = sqrt(back_delta[0]**2 + back_delta[1]**2 + back_delta[2]**2) + extra_rafter_length
-        back_dir = normalize_vector(back_delta)
-        back_eave_bottom = back_bottom - back_dir * extra_rafter_length
-        rafters.append(timber_from_directions(
-            length=back_len, size=rafter_size,
-            bottom_position=back_eave_bottom,
-            length_direction=back_dir,
-            width_direction=create_v3(Integer(1), Integer(0), Integer(0)),
-            ticket=f"Back Rafter {i + 1}"
-        ))
+        back_rafter = _rafter_from_join(
+            top_plate_back,
+            ridge_beam,
+            x,
+            back_plate_y,
+            f"Back Rafter {i + 1}",
+        )
+        rafters.append(back_rafter)
+        rafter_housing_pairs.append((ridge_beam, back_rafter))
+        rafter_housing_pairs.append((top_plate_back, back_rafter))
+
+        rafter_pairs.append((front_rafter, back_rafter))
 
     # ========================================================================
     # COLLECT ALL TIMBERS (no joints yet)
@@ -845,15 +877,22 @@ def create_tinyhouse120(center: Optional[V3] = None):
         center_king_post,
     ]
 
-    def _wall_stud_joint(stud: PerfectTimberWithin, beam: PerfectTimberWithin, stud_end: TimberReferenceEnd) -> Joint:
+    def _fat_joint(
+        butt_timber: PerfectTimberWithin,
+        receiving_timber: PerfectTimberWithin,
+        butt_timber_end: TimberReferenceEnd,
+        *,
+        tenon_size: Optional[V2] = None,
+        label: str,
+    ) -> Joint:
         try:
             return cut_mortise_and_tenon_joint_on_FAT(
                 arrangement=ButtJointTimberArrangement(
-                    butt_timber=stud,
-                    receiving_timber=beam,
-                    butt_timber_end=stud_end,
+                    butt_timber=butt_timber,
+                    receiving_timber=receiving_timber,
+                    butt_timber_end=butt_timber_end,
                 ),
-                tenon_size=stud_tenon_size,
+                tenon_size=stud_tenon_size if tenon_size is None else tenon_size,
                 tenon_length=stud_tenon_depth,
                 mortise_depth=stud_tenon_depth,
                 mortise_shoulder_inset=inches(Rational(1, 64)),
@@ -861,15 +900,18 @@ def create_tinyhouse120(center: Optional[V3] = None):
             )
         except Exception as err:
             print(
-                f"Error creating FAT joint stud_end={stud_end} face_aligned={are_timbers_face_aligned(stud, beam)} plane_aligned={are_timbers_plane_aligned(stud, beam)}",
+                f"Error creating FAT joint label={label} butt_end={butt_timber_end} face_aligned={are_timbers_face_aligned(butt_timber, receiving_timber)} plane_aligned={are_timbers_plane_aligned(butt_timber, receiving_timber)}",
                 file=sys.stderr,
                 flush=True,
             )
-            print(_describe_timber("stud", stud), file=sys.stderr, flush=True)
-            print(_describe_timber("beam", beam), file=sys.stderr, flush=True)
+            print(_describe_timber("butt_timber", butt_timber), file=sys.stderr, flush=True)
+            print(_describe_timber("receiving_timber", receiving_timber), file=sys.stderr, flush=True)
             raise AssertionError(
-                f"FAT stud joint failed for stud='{stud.ticket.name}' beam='{beam.ticket.name}' end='{stud_end}': {err}"
+                f"FAT joint failed for label='{label}' butt='{butt_timber.ticket.name}' receiving='{receiving_timber.ticket.name}' end='{butt_timber_end}': {err}"
             ) from err
+
+    def _wall_stud_joint(stud: PerfectTimberWithin, beam: PerfectTimberWithin, stud_end: TimberReferenceEnd) -> Joint:
+        return _fat_joint(stud, beam, stud_end, label="wall_stud")
 
     wall_stud_joints: List[Joint] = []
 
@@ -914,6 +956,123 @@ def create_tinyhouse120(center: Optional[V3] = None):
         if right_alignment > front_alignment:
             return create_v2(stud_tenon_size[1], stud_tenon_size[0])
         return create_v2(stud_tenon_size[0], stud_tenon_size[1])
+
+    def _fat_joint_aligned_to_receiver(
+        butt_timber: PerfectTimberWithin,
+        receiving_timber: PerfectTimberWithin,
+        butt_timber_end: TimberReferenceEnd,
+        *,
+        label: str,
+    ) -> Joint:
+        return _fat_joint(
+            butt_timber,
+            receiving_timber,
+            butt_timber_end,
+            tenon_size=_tenon_size_with_long_axis(
+                butt_timber,
+                receiving_timber.get_length_direction_global(),
+            ),
+            label=label,
+        )
+
+    intermediate_post_joints: List[Joint] = []
+    for post, beam in [
+        (post_FM1, mid_beam_front),
+        (post_FM2, mid_beam_front),
+        (post_BM1, mid_beam_back),
+        (post_BM2, mid_beam_back),
+    ]:
+        intermediate_post_joints.append(
+            _fat_joint_aligned_to_receiver(post, beam, TimberReferenceEnd.TOP, label="intermediate_post_to_mid_beam")
+        )
+
+    mid_beam_corner_post_joints: List[Joint] = []
+    for beam, start_post, end_post in [
+        (mid_beam_front, post_FL, post_FR),
+        (mid_beam_right, post_FR, post_BR),
+        (mid_beam_back, post_BR, post_BL),
+        (mid_beam_left, post_BL, post_FL),
+    ]:
+        mid_beam_corner_post_joints.append(
+            _fat_joint_aligned_to_receiver(beam, start_post, TimberReferenceEnd.BOTTOM, label="mid_beam_to_corner_post")
+        )
+        mid_beam_corner_post_joints.append(
+            _fat_joint_aligned_to_receiver(beam, end_post, TimberReferenceEnd.TOP, label="mid_beam_to_corner_post")
+        )
+
+    window_member_joints: List[Joint] = []
+    for window_member in [window_member_upper, window_member_lower]:
+        window_member_joints.append(
+            _fat_joint_aligned_to_receiver(window_member, post_FM1, TimberReferenceEnd.BOTTOM, label="window_member_to_post")
+        )
+        window_member_joints.append(
+            _fat_joint_aligned_to_receiver(window_member, post_FM2, TimberReferenceEnd.TOP, label="window_member_to_post")
+        )
+
+    corner_post_to_side_plate_tenon_size = create_v2(inches(Rational(3, 2)), inches(3))
+    corner_post_to_side_plate_tenon_length = inches(Rational(9, 2))
+    corner_post_to_side_plate_mortise_depth = inches(Rational(9, 2))
+
+    corner_post_to_cross_plate_tenon_size = create_v2(inches(Rational(3, 2)), inches(1))
+    corner_post_to_cross_plate_tenon_length = inches(Rational(5, 2))
+    corner_post_to_cross_plate_mortise_depth = inches(Rational(5, 2))
+
+    corner_top_plate_compound_joints: List[Joint] = []
+
+    for post, side_plate in [
+        (post_FL, top_plate_left),
+        (post_FR, top_plate_right),
+        (post_BL, top_plate_left),
+        (post_BR, top_plate_right),
+    ]:
+        corner_top_plate_compound_joints.append(
+            cut_mortise_and_tenon_joint_on_FAT(
+                arrangement=ButtJointTimberArrangement(
+                    receiving_timber=side_plate,
+                    butt_timber=post,
+                    butt_timber_end=TimberReferenceEnd.TOP,
+                    front_face_on_butt_timber=None,
+                ),
+                tenon_size=corner_post_to_side_plate_tenon_size,
+                tenon_length=corner_post_to_side_plate_tenon_length,
+                mortise_depth=corner_post_to_side_plate_mortise_depth,
+            )
+        )
+
+    for post, cross_plate in [
+        (post_FL, top_plate_front),
+        (post_FR, top_plate_front),
+        (post_BL, top_plate_back),
+        (post_BR, top_plate_back),
+    ]:
+        corner_top_plate_compound_joints.append(
+            cut_mortise_and_tenon_joint_on_FAT(
+                arrangement=ButtJointTimberArrangement(
+                    receiving_timber=cross_plate,
+                    butt_timber=post,
+                    butt_timber_end=TimberReferenceEnd.TOP,
+                    front_face_on_butt_timber=None,
+                ),
+                tenon_size=corner_post_to_cross_plate_tenon_size,
+                tenon_length=corner_post_to_cross_plate_tenon_length,
+                mortise_depth=corner_post_to_cross_plate_mortise_depth,
+            )
+        )
+
+    for side_plate, cross_plate in [
+        (top_plate_left, top_plate_front),
+        (top_plate_right, top_plate_front),
+        (top_plate_left, top_plate_back),
+        (top_plate_right, top_plate_back),
+    ]:
+        corner_top_plate_compound_joints.append(
+            cut_plain_house_joint(
+                CrossJointTimberArrangement(
+                    timber1=side_plate,
+                    timber2=cross_plate,
+                )
+            )
+        )
 
     def _king_post_joint(
         stud: PerfectTimberWithin,
@@ -960,11 +1119,94 @@ def create_tinyhouse120(center: Optional[V3] = None):
         _king_post_joint(center_king_post, ridge_beam, TimberReferenceEnd.TOP, left_right_axis),
     ]
 
+    floor_joist_dovetail_shoulder_inset = inches(Rational(1, 2))
+    floor_joist_dovetail_small_width = inches(Rational(3, 2))
+    floor_joist_dovetail_large_width = inches(2)
+    floor_joist_dovetail_length = inches(2)
+    floor_joist_dovetail_depth = inches(2)
+
+    floor_joist_receivers = [
+        (floor_joist_1, beam_front_1, beam_back_3),
+        (floor_joist_2, beam_front_2, beam_back_2),
+        (floor_joist_3, beam_front_3, beam_back_1),
+        (floor_joist_4, beam_front_2, beam_back_2),
+        (floor_joist_5, beam_front_2, beam_back_2),
+    ]
+    floor_joist_dovetail_joints: List[Joint] = []
+
+    for joist, front_receiver, back_receiver in floor_joist_receivers:
+        floor_joist_dovetail_joints.append(
+            cut_housed_dovetail_butt_joint(
+                arrangement=ButtJointTimberArrangement(
+                    butt_timber=joist,
+                    receiving_timber=front_receiver,
+                    butt_timber_end=TimberReferenceEnd.BOTTOM,
+                    front_face_on_butt_timber=TimberLongFace.RIGHT,
+                ),
+                receiving_timber_shoulder_inset=floor_joist_dovetail_shoulder_inset,
+                dovetail_length=floor_joist_dovetail_length,
+                dovetail_small_width=floor_joist_dovetail_small_width,
+                dovetail_large_width=floor_joist_dovetail_large_width,
+                dovetail_lateral_offset=Rational(0),
+                dovetail_depth=floor_joist_dovetail_depth,
+            )
+        )
+        floor_joist_dovetail_joints.append(
+            cut_housed_dovetail_butt_joint(
+                arrangement=ButtJointTimberArrangement(
+                    butt_timber=joist,
+                    receiving_timber=back_receiver,
+                    butt_timber_end=TimberReferenceEnd.TOP,
+                    front_face_on_butt_timber=TimberLongFace.RIGHT,
+                ),
+                receiving_timber_shoulder_inset=floor_joist_dovetail_shoulder_inset,
+                dovetail_length=floor_joist_dovetail_length,
+                dovetail_small_width=floor_joist_dovetail_small_width,
+                dovetail_large_width=floor_joist_dovetail_large_width,
+                dovetail_lateral_offset=Rational(0),
+                dovetail_depth=floor_joist_dovetail_depth,
+            )
+        )
+
+    rafter_house_joints: List[Joint] = []
+    for housing_timber, housed_timber in rafter_housing_pairs:
+        rafter_house_joints.append(
+            cut_plain_house_joint(
+                CrossJointTimberArrangement(
+                    timber1=housing_timber,
+                    timber2=housed_timber,
+                )
+            )
+        )
+
+    rafter_pair_joints: List[Joint] = []
+    for front_rafter, back_rafter in rafter_pairs:
+        rafter_pair_joints.append(
+            cut_tongue_and_fork_corner_joint(
+                CornerJointTimberArrangement(
+                    timber1=front_rafter,
+                    timber2=back_rafter,
+                    timber1_end=TimberReferenceEnd.TOP,
+                    timber2_end=TimberReferenceEnd.TOP,
+                )
+            )
+        )
+
     all_timbers = all_posts + all_beams + all_studs + rafters
 
     jointed_timber_ids = {
         id(cut_timber.timber)
-        for joint in (wall_stud_joints + king_post_joints)
+        for joint in (
+            wall_stud_joints
+            + intermediate_post_joints
+            + mid_beam_corner_post_joints
+            + window_member_joints
+            + corner_top_plate_compound_joints
+            + king_post_joints
+            + floor_joist_dovetail_joints
+            + rafter_house_joints
+            + rafter_pair_joints
+        )
         for cut_timber in joint.cut_timbers.values()
     }
 
@@ -974,7 +1216,17 @@ def create_tinyhouse120(center: Optional[V3] = None):
     ]
 
     return Frame.from_joints(
-        joints=wall_stud_joints + king_post_joints,
+        joints=(
+            wall_stud_joints
+            + intermediate_post_joints
+            + mid_beam_corner_post_joints
+            + window_member_joints
+            + corner_top_plate_compound_joints
+            + king_post_joints
+            + floor_joist_dovetail_joints
+            + rafter_house_joints
+            + rafter_pair_joints
+        ),
         additional_unjointed_timbers=unjointed_timbers,
         name="Tiny House 120"
     )
