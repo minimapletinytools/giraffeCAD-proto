@@ -3,6 +3,8 @@ Tiny House 120 sqft - A 15' x 8' timber frame tiny house
 Posts are on the INSIDE of the footprint. Front is the 15' side.
 """
 
+import sys
+
 from sympy import Rational, Integer, sqrt
 from typing import Optional
 
@@ -55,30 +57,6 @@ def create_tinyhouse120_patternbook() -> PatternBook:
 patternbook = create_tinyhouse120_patternbook()
 
 
-def join_parallel_fat(
-    timber1: PerfectTimberWithin,
-    timber2: PerfectTimberWithin,
-    location_on_timber1: Numeric,
-    location_on_timber2: Optional[Numeric] = None,
-    lateral_offset: Numeric = Integer(0),
-    stickout: Stickout = Stickout.nostickout(),
-    size: Optional[V2] = None,
-    orientation_face: Optional[TimberFace] = None,
-    ticket: Optional[Union[Ticket, str]] = None,
-) -> Timber:
-    _ = location_on_timber2
-    return join_perpendicular_on_face_parallel_timbers(
-        timber1=timber1,
-        timber2=timber2,
-        location_on_timber1=location_on_timber1,
-        stickout=stickout,
-        lateral_offset_from_centerline_timber1=lateral_offset,
-        size=size if size is not None else timber1.size,
-        orientation_face_on_timber1=orientation_face,
-        ticket=ticket,
-    )
-
-
 def create_tinyhouse120(center: Optional[V3] = None):
     """
     Create a 120 sqft tiny house frame (15' x 8').
@@ -87,33 +65,20 @@ def create_tinyhouse120(center: Optional[V3] = None):
     if center is None:
         center = create_v3(Rational(0), Rational(0), Rational(0))
 
-    def _snap_vertical_stud_for_fat(stud: PerfectTimberWithin) -> Timber:
-        return create_axis_aligned_timber(
-            bottom_position=stud.get_bottom_position_global(),
-            length=stud.length,
-            size=stud.size,
-            length_direction=TimberFace.TOP,
-            width_direction=TimberFace.RIGHT,
-            ticket=stud.ticket.name,
-        )
+    no_stickout = Stickout.nostickout()
 
-    def _snap_horizontal_beam_for_fat(beam: PerfectTimberWithin) -> Timber:
-        direction = beam.get_length_direction_global()
-        x_abs = Abs(direction[0])
-        y_abs = Abs(direction[1])
+    def _format_debug_value(value: object) -> str:
+        return str(value).replace("\n", " ")
 
-        if x_abs >= y_abs:
-            length_face = TimberFace.RIGHT if safe_compare(direction[0], Comparison.GE) else TimberFace.LEFT
-        else:
-            length_face = TimberFace.FRONT if safe_compare(direction[1], Comparison.GE) else TimberFace.BACK
-
-        return create_axis_aligned_timber(
-            bottom_position=beam.get_bottom_position_global(),
-            length=beam.length,
-            size=beam.size,
-            length_direction=length_face,
-            width_direction=TimberFace.TOP,
-            ticket=beam.ticket.name,
+    def _describe_timber(label: str, timber: PerfectTimberWithin) -> str:
+        return (
+            f"{label}: ticket={timber.ticket.name}, "
+            f"bottom={_format_debug_value(timber.get_bottom_position_global())}, "
+            f"length={_format_debug_value(timber.length)}, "
+            f"length_dir={_format_debug_value(timber.get_length_direction_global())}, "
+            f"width_dir={_format_debug_value(timber.get_width_direction_global())}, "
+            f"height_dir={_format_debug_value(timber.get_height_direction_global())}, "
+            f"transform={_format_debug_value(timber.transform)}"
         )
 
     # ========================================================================
@@ -229,103 +194,102 @@ def create_tinyhouse120(center: Optional[V3] = None):
     beam_centerline_height = bottom_beam_height + beam_size[0] / Integer(2)
 
     # Front perimeter: FL -> FM1 -> FM2 -> FR
-    beam_front_1 = join_parallel_fat(
+    beam_front_1 = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FL, timber2=post_FM1,
         location_on_timber1=beam_centerline_height,
-        location_on_timber2=beam_centerline_height,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Front Bottom Beam 1"
     )
-    beam_front_2 = join_parallel_fat(
+    beam_front_2 = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FM1, timber2=post_FM2,
         location_on_timber1=beam_centerline_height,
-        location_on_timber2=beam_centerline_height,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Front Bottom Beam 2"
     )
-    beam_front_3 = join_parallel_fat(
+    beam_front_3 = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FM2, timber2=post_FR,
         location_on_timber1=beam_centerline_height,
-        location_on_timber2=beam_centerline_height,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Front Bottom Beam 3"
     )
 
     # Right perimeter: FR -> MR -> BR
-    beam_right_1 = join_parallel_fat(
+    beam_right_1 = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FR, timber2=post_MR,
         location_on_timber1=beam_centerline_height,
-        location_on_timber2=beam_centerline_height,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Right Bottom Beam 1"
     )
-    beam_right_2 = join_parallel_fat(
+    beam_right_2 = join_perpendicular_on_face_parallel_timbers(
         timber1=post_MR, timber2=post_BR,
         location_on_timber1=beam_centerline_height,
-        location_on_timber2=beam_centerline_height,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Right Bottom Beam 2"
     )
 
     # Back perimeter: BR -> BM1 -> BM2 -> BL
-    beam_back_1 = join_parallel_fat(
+    beam_back_1 = join_perpendicular_on_face_parallel_timbers(
         timber1=post_BR, timber2=post_BM1,
         location_on_timber1=beam_centerline_height,
-        location_on_timber2=beam_centerline_height,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Back Bottom Beam 1"
     )
-    beam_back_2 = join_parallel_fat(
+    beam_back_2 = join_perpendicular_on_face_parallel_timbers(
         timber1=post_BM1, timber2=post_BM2,
         location_on_timber1=beam_centerline_height,
-        location_on_timber2=beam_centerline_height,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Back Bottom Beam 2"
     )
-    beam_back_3 = join_parallel_fat(
+    beam_back_3 = join_perpendicular_on_face_parallel_timbers(
         timber1=post_BM2, timber2=post_BL,
         location_on_timber1=beam_centerline_height,
-        location_on_timber2=beam_centerline_height,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Back Bottom Beam 3"
     )
 
     # Left perimeter: BL -> ML -> FL
-    beam_left_1 = join_parallel_fat(
+    beam_left_1 = join_perpendicular_on_face_parallel_timbers(
         timber1=post_BL, timber2=post_ML,
         location_on_timber1=beam_centerline_height,
-        location_on_timber2=beam_centerline_height,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Left Bottom Beam 1"
     )
-    beam_left_2 = join_parallel_fat(
+    beam_left_2 = join_perpendicular_on_face_parallel_timbers(
         timber1=post_ML, timber2=post_FL,
         location_on_timber1=beam_centerline_height,
-        location_on_timber2=beam_centerline_height,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Left Bottom Beam 2"
     )
-
-    beam_front_1 = _snap_horizontal_beam_for_fat(beam_front_1)
-    beam_front_2 = _snap_horizontal_beam_for_fat(beam_front_2)
-    beam_front_3 = _snap_horizontal_beam_for_fat(beam_front_3)
-    beam_right_1 = _snap_horizontal_beam_for_fat(beam_right_1)
-    beam_right_2 = _snap_horizontal_beam_for_fat(beam_right_2)
-    beam_back_1 = _snap_horizontal_beam_for_fat(beam_back_1)
-    beam_back_2 = _snap_horizontal_beam_for_fat(beam_back_2)
-    beam_back_3 = _snap_horizontal_beam_for_fat(beam_back_3)
-    beam_left_1 = _snap_horizontal_beam_for_fat(beam_left_1)
-    beam_left_2 = _snap_horizontal_beam_for_fat(beam_left_2)
 
     # ========================================================================
     # FLOOR JOISTS — join_timbers front-to-back, using beam segment midpoints.
@@ -333,49 +297,54 @@ def create_tinyhouse120(center: Optional[V3] = None):
     # - Also connect midpoints of beam_front_1/2/3 to corresponding back beams
     #   (back segments are reversed in X: 1<->3, 2<->2, 3<->1).
     # ========================================================================
-    floor_joist_1 = join_parallel_fat(
+    floor_joist_1 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_front_1,
         timber2=beam_back_3,
         location_on_timber1=beam_front_1.length / Integer(2),
-        location_on_timber2=beam_back_3.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Floor Joist 1",
     )
-    floor_joist_2 = join_parallel_fat(
+    floor_joist_2 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_front_2,
         timber2=beam_back_2,
         location_on_timber1=beam_front_2.length / Integer(2),
-        location_on_timber2=beam_back_2.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Floor Joist 2",
     )
-    floor_joist_3 = join_parallel_fat(
+    floor_joist_3 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_front_3,
         timber2=beam_back_1,
         location_on_timber1=beam_front_3.length / Integer(2),
-        location_on_timber2=beam_back_1.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Floor Joist 3",
     )
-    floor_joist_4 = join_parallel_fat(
+    floor_joist_4 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_front_2,
         timber2=beam_back_2,
         location_on_timber1=Integer(0),
-        location_on_timber2=beam_back_2.length,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Floor Joist FM1-BM",
     )
-    floor_joist_5 = join_parallel_fat(
+    floor_joist_5 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_front_2,
         timber2=beam_back_2,
         location_on_timber1=beam_front_2.length,
-        location_on_timber2=Integer(0),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Floor Joist FM2-BM",
     )
 
@@ -386,43 +355,42 @@ def create_tinyhouse120(center: Optional[V3] = None):
     # ========================================================================
     mid_beam_centerline = mid_beam_height + beam_size[0] / Integer(2)
 
-    mid_beam_front = join_parallel_fat(
+    mid_beam_front = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FL, timber2=post_FR,
         location_on_timber1=mid_beam_centerline,
-        location_on_timber2=mid_beam_centerline,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Mid-Height Front Beam"
     )
-    mid_beam_right = join_parallel_fat(
+    mid_beam_right = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FR, timber2=post_BR,
         location_on_timber1=mid_beam_centerline,
-        location_on_timber2=mid_beam_centerline,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Mid-Height Right Beam"
     )
-    mid_beam_back = join_parallel_fat(
+    mid_beam_back = join_perpendicular_on_face_parallel_timbers(
         timber1=post_BR, timber2=post_BL,
         location_on_timber1=mid_beam_centerline,
-        location_on_timber2=mid_beam_centerline,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Mid-Height Back Beam"
     )
-    mid_beam_left = join_parallel_fat(
+    mid_beam_left = join_perpendicular_on_face_parallel_timbers(
         timber1=post_BL, timber2=post_FL,
         location_on_timber1=mid_beam_centerline,
-        location_on_timber2=mid_beam_centerline,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Mid-Height Left Beam"
     )
-
-    mid_beam_front = _snap_horizontal_beam_for_fat(mid_beam_front)
-    mid_beam_right = _snap_horizontal_beam_for_fat(mid_beam_right)
-    mid_beam_back = _snap_horizontal_beam_for_fat(mid_beam_back)
-    mid_beam_left = _snap_horizontal_beam_for_fat(mid_beam_left)
 
     # ========================================================================
     # LOFT BEAMS — 2 beams connecting front/back mid-height beams, aligned with
@@ -435,22 +403,24 @@ def create_tinyhouse120(center: Optional[V3] = None):
     loft_beam_back_pos_1 = mid_beam_back.length - loft_beam_front_pos_1
     loft_beam_back_pos_2 = mid_beam_back.length - loft_beam_front_pos_2
 
-    loft_beam_1 = join_parallel_fat(
+    loft_beam_1 = join_perpendicular_on_face_parallel_timbers(
         timber1=mid_beam_front,
         timber2=mid_beam_back,
         location_on_timber1=loft_beam_front_pos_1,
-        location_on_timber2=loft_beam_back_pos_1,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Loft Beam FM1-BM"
     )
-    loft_beam_2 = join_parallel_fat(
+    loft_beam_2 = join_perpendicular_on_face_parallel_timbers(
         timber1=mid_beam_front,
         timber2=mid_beam_back,
         location_on_timber1=loft_beam_front_pos_2,
-        location_on_timber2=loft_beam_back_pos_2,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Loft Beam FM2-BM"
     )
 
@@ -473,22 +443,22 @@ def create_tinyhouse120(center: Optional[V3] = None):
     # First layer: front-to-back (along Y axis), 6" stickout on both ends
     top_plate_stickout = Stickout.symmetric(inches(6))
 
-    top_plate_left = join_parallel_fat(
+    top_plate_left = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FL, timber2=post_BL,
         location_on_timber1=top_plate_height,
-        location_on_timber2=top_plate_height,
         stickout=top_plate_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=top_plate_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Top Plate Left (Front-to-Back)"
     )
-    top_plate_right = join_parallel_fat(
+    top_plate_right = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FR, timber2=post_BR,
         location_on_timber1=top_plate_height,
-        location_on_timber2=top_plate_height,
         stickout=top_plate_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=top_plate_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Top Plate Right (Front-to-Back)"
     )
 
@@ -499,137 +469,134 @@ def create_tinyhouse120(center: Optional[V3] = None):
     # L/R plate centerline = L/R plate bottom + 5.5"/2
     second_plate_centerline = (top_plate_height + top_plate_size[0] / Integer(2)) - inches(3) + top_plate_size[0] / Integer(2)
 
-    top_plate_front = join_parallel_fat(
+    top_plate_front = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FL, timber2=post_FR,
         location_on_timber1=second_plate_centerline,
-        location_on_timber2=second_plate_centerline,
         stickout=top_plate_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=top_plate_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Top Plate Front (Left-to-Right)"
     )
-    top_plate_back = join_parallel_fat(
+    top_plate_back = join_perpendicular_on_face_parallel_timbers(
         timber1=post_BL, timber2=post_BR,
         location_on_timber1=second_plate_centerline,
-        location_on_timber2=second_plate_centerline,
         stickout=top_plate_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=top_plate_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Top Plate Back (Left-to-Right)"
     )
 
-    top_plate_left = _snap_horizontal_beam_for_fat(top_plate_left)
-    top_plate_right = _snap_horizontal_beam_for_fat(top_plate_right)
-    top_plate_front = _snap_horizontal_beam_for_fat(top_plate_front)
-    top_plate_back = _snap_horizontal_beam_for_fat(top_plate_back)
-
+    # ========================================================================
     # ========================================================================
     # LOWER WALL STUDS — vertical 4x4 posts via join_timbers
     # from bottom beam spans up to the mid-height perimeter beams.
     # ========================================================================
-    lower_stud_front_1 = join_parallel_fat(
+    lower_stud_front_1 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_front_1, timber2=mid_beam_front,
         location_on_timber1=beam_front_1.length / Integer(2),
-        location_on_timber2=beam_front_1.length / Integer(2),
-        size=create_v2(inches(5), inches(10)),  # 4x4 with 3.5" in Z, 2.5" across
-        orientation_face=TimberFace.FRONT,
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
+        size=post_size,
+        orientation_face_on_timber1=TimberFace.FRONT,
         ticket="Front Lower Stud 1"
     )
-    lower_stud_front_3 = join_parallel_fat(
+    lower_stud_front_3 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_front_3, timber2=mid_beam_front,
         location_on_timber1=beam_front_3.length / Integer(2),
-        location_on_timber2=beam_front_1.length + beam_front_2.length + beam_front_3.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=post_size,
-        orientation_face=TimberFace.FRONT,
+        orientation_face_on_timber1=TimberFace.FRONT,
         ticket="Front Lower Stud 3"
     )
 
     # Window members in FM1-FM2 bay (replace middle lower stud)
-    window_member_upper = join_parallel_fat(
+    window_member_upper = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FM1, timber2=post_FM2,
         location_on_timber1=non_corner_post_height * Rational(4, 5),
-        location_on_timber2=non_corner_post_height * Rational(4, 5),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Front Window Member Upper"
     )
-    window_member_lower = join_parallel_fat(
+    window_member_lower = join_perpendicular_on_face_parallel_timbers(
         timber1=post_FM1, timber2=post_FM2,
         location_on_timber1=non_corner_post_height * Rational(2, 5),
-        location_on_timber2=non_corner_post_height * Rational(2, 5),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Front Window Member Lower"
     )
 
-    lower_stud_right_1 = join_parallel_fat(
+    lower_stud_right_1 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_right_1, timber2=mid_beam_right,
         location_on_timber1=beam_right_1.length / Integer(2),
-        location_on_timber2=beam_right_1.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=post_size,
-        orientation_face=TimberFace.RIGHT,
+        orientation_face_on_timber1=TimberFace.RIGHT,
         ticket="Right Lower Stud 1"
     )
-    lower_stud_right_2 = join_parallel_fat(
+    lower_stud_right_2 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_right_2, timber2=mid_beam_right,
         location_on_timber1=beam_right_2.length / Integer(2),
-        location_on_timber2=beam_right_1.length + beam_right_2.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=post_size,
-        orientation_face=TimberFace.RIGHT,
+        orientation_face_on_timber1=TimberFace.RIGHT,
         ticket="Right Lower Stud 2"
     )
 
-    lower_stud_back_1 = join_parallel_fat(
+    lower_stud_back_1 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_back_1, timber2=mid_beam_back,
         location_on_timber1=beam_back_1.length / Integer(2),
-        location_on_timber2=beam_back_1.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=post_size,
-        orientation_face=TimberFace.FRONT,
+        orientation_face_on_timber1=TimberFace.FRONT,
         ticket="Back Lower Stud 1"
     )
-    lower_stud_back_2 = join_parallel_fat(
+    lower_stud_back_2 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_back_2, timber2=mid_beam_back,
         location_on_timber1=beam_back_2.length / Integer(2),
-        location_on_timber2=beam_back_1.length + beam_back_2.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=post_size,
-        orientation_face=TimberFace.FRONT,
+        orientation_face_on_timber1=TimberFace.FRONT,
         ticket="Back Lower Stud 2"
     )
-    lower_stud_back_3 = join_parallel_fat(
+    lower_stud_back_3 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_back_3, timber2=mid_beam_back,
         location_on_timber1=beam_back_3.length / Integer(2),
-        location_on_timber2=beam_back_1.length + beam_back_2.length + beam_back_3.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=post_size,
-        orientation_face=TimberFace.FRONT,
+        orientation_face_on_timber1=TimberFace.FRONT,
         ticket="Back Lower Stud 3"
     )
 
-    lower_stud_left_1 = join_parallel_fat(
+    lower_stud_left_1 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_left_1, timber2=mid_beam_left,
         location_on_timber1=beam_left_1.length / Integer(2),
-        location_on_timber2=beam_left_1.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=post_size,
-        orientation_face=TimberFace.RIGHT,
+        orientation_face_on_timber1=TimberFace.RIGHT,
         ticket="Left Lower Stud 1"
     )
-    lower_stud_left_2 = join_parallel_fat(
+    lower_stud_left_2 = join_perpendicular_on_face_parallel_timbers(
         timber1=beam_left_2, timber2=mid_beam_left,
         location_on_timber1=beam_left_2.length / Integer(2),
-        location_on_timber2=beam_left_1.length + beam_left_2.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=post_size,
-        orientation_face=TimberFace.RIGHT,
+        orientation_face_on_timber1=TimberFace.RIGHT,
         ticket="Left Lower Stud 2"
     )
-
-    lower_stud_front_1 = _snap_vertical_stud_for_fat(lower_stud_front_1)
-    lower_stud_front_3 = _snap_vertical_stud_for_fat(lower_stud_front_3)
-    lower_stud_right_1 = _snap_vertical_stud_for_fat(lower_stud_right_1)
-    lower_stud_right_2 = _snap_vertical_stud_for_fat(lower_stud_right_2)
-    lower_stud_back_1 = _snap_vertical_stud_for_fat(lower_stud_back_1)
-    lower_stud_back_2 = _snap_vertical_stud_for_fat(lower_stud_back_2)
-    lower_stud_back_3 = _snap_vertical_stud_for_fat(lower_stud_back_3)
-    lower_stud_left_1 = _snap_vertical_stud_for_fat(lower_stud_left_1)
-    lower_stud_left_2 = _snap_vertical_stud_for_fat(lower_stud_left_2)
 
     # ========================================================================
     # UPPER WALL STUDS — vertical 4x4 posts between mid-height beams
@@ -655,58 +622,62 @@ def create_tinyhouse120(center: Optional[V3] = None):
     upper_studs_front = []
     for i in range(1, 5):
         frac = Rational(i, 5)
-        stud = join_parallel_fat(
+        stud = join_perpendicular_on_face_parallel_timbers(
             timber1=mid_beam_front,
             timber2=top_plate_front,
             location_on_timber1=mid_beam_front.length * frac,
-            location_on_timber2=top_plate_stickout_amount + mid_beam_front.length * frac,
+            stickout=no_stickout,
+            lateral_offset_from_centerline_timber1=Integer(0),
             size=post_size,
-            orientation_face=TimberFace.FRONT,
+            orientation_face_on_timber1=TimberFace.FRONT,
             ticket=f"Front Upper Stud {i}"
         )
-        upper_studs_front.append(_snap_vertical_stud_for_fat(stud))
+        upper_studs_front.append(stud)
 
     upper_studs_back = []
     for i in range(1, 5):
         frac = Rational(i, 5)
-        stud = join_parallel_fat(
+        stud = join_perpendicular_on_face_parallel_timbers(
             timber1=mid_beam_back,
             timber2=top_plate_back,
             location_on_timber1=mid_beam_back.length * frac,
-            location_on_timber2=top_plate_stickout_amount + mid_beam_back.length * (Integer(1) - frac),
+            stickout=no_stickout,
+            lateral_offset_from_centerline_timber1=Integer(0),
             size=post_size,
-            orientation_face=TimberFace.FRONT,
+            orientation_face_on_timber1=TimberFace.FRONT,
             ticket=f"Back Upper Stud {i}"
         )
-        upper_studs_back.append(_snap_vertical_stud_for_fat(stud))
+        upper_studs_back.append(stud)
 
     upper_studs_right = []
     for i in range(1, 3):
         frac = Rational(i, 3)
-        stud = join_parallel_fat(
+        stud = join_perpendicular_on_face_parallel_timbers(
             timber1=mid_beam_right,
             timber2=top_plate_right,
             location_on_timber1=mid_beam_right.length * frac,
-            location_on_timber2=top_plate_stickout_amount + mid_beam_right.length * frac,
+            stickout=no_stickout,
+            lateral_offset_from_centerline_timber1=Integer(0),
             size=post_size,
-            orientation_face=TimberFace.RIGHT,
+            orientation_face_on_timber1=TimberFace.RIGHT,
             ticket=f"Right Upper Stud {i}"
         )
-        upper_studs_right.append(_snap_vertical_stud_for_fat(stud))
+        upper_studs_right.append(stud)
 
     upper_studs_left = []
     for i in range(1, 3):
         frac = Rational(i, 3)
-        stud = join_parallel_fat(
+        stud = join_perpendicular_on_face_parallel_timbers(
             timber1=mid_beam_left,
             timber2=top_plate_left,
             location_on_timber1=mid_beam_left.length * frac,
-            location_on_timber2=top_plate_stickout_amount + mid_beam_left.length * (Integer(1) - frac),
+            stickout=no_stickout,
+            lateral_offset_from_centerline_timber1=Integer(0),
             size=post_size,
-            orientation_face=TimberFace.RIGHT,
+            orientation_face_on_timber1=TimberFace.RIGHT,
             ticket=f"Left Upper Stud {i}"
         )
-        upper_studs_left.append(_snap_vertical_stud_for_fat(stud))
+        upper_studs_left.append(stud)
 
     # ========================================================================
     # KING POSTS — on the side (L/R) top plates at their midpoints,
@@ -749,21 +720,23 @@ def create_tinyhouse120(center: Optional[V3] = None):
     # - One vertical king post from that beam up to the ridge beam
     # ========================================================================
     top_plate_mid_x = top_plate_front.get_bottom_position_global()[0] + top_plate_front.length / Integer(2)
-    center_support_beam = join_parallel_fat(
+    center_support_beam = join_perpendicular_on_face_parallel_timbers(
         timber1=top_plate_front,
         timber2=top_plate_back,
         location_on_timber1=top_plate_front.length / Integer(2),
-        location_on_timber2=top_plate_back.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=beam_size,
-        orientation_face=TimberFace.TOP,
+        orientation_face_on_timber1=TimberFace.TOP,
         ticket="Center Ridge Support Beam"
     )
 
-    center_king_post = join_parallel_fat(
+    center_king_post = join_perpendicular_on_face_parallel_timbers(
         timber1=center_support_beam,
         timber2=ridge_beam,
         location_on_timber1=center_support_beam.length / Integer(2),
-        location_on_timber2=ridge_beam.length / Integer(2),
+        stickout=no_stickout,
+        lateral_offset_from_centerline_timber1=Integer(0),
         size=post_size,
         ticket="Center King Post"
     )
@@ -887,6 +860,13 @@ def create_tinyhouse120(center: Optional[V3] = None):
                 peg_parameters=None,
             )
         except Exception as err:
+            print(
+                f"Error creating FAT joint stud_end={stud_end} face_aligned={are_timbers_face_aligned(stud, beam)} plane_aligned={are_timbers_plane_aligned(stud, beam)}",
+                file=sys.stderr,
+                flush=True,
+            )
+            print(_describe_timber("stud", stud), file=sys.stderr, flush=True)
+            print(_describe_timber("beam", beam), file=sys.stderr, flush=True)
             raise AssertionError(
                 f"FAT stud joint failed for stud='{stud.ticket.name}' beam='{beam.ticket.name}' end='{stud_end}': {err}"
             ) from err
