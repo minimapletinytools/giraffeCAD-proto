@@ -905,11 +905,66 @@ def create_tinyhouse120(center: Optional[V3] = None):
         wall_stud_joints.append(_wall_stud_joint(stud, mid_beam_left, TimberReferenceEnd.BOTTOM))
         wall_stud_joints.append(_wall_stud_joint(stud, top_plate_left, TimberReferenceEnd.TOP))
 
+    def _tenon_size_with_long_axis(stud: PerfectTimberWithin, long_axis_global: V3) -> V2:
+        stud_right = stud.get_face_direction_global(TimberFace.RIGHT)
+        stud_front = stud.get_face_direction_global(TimberFace.FRONT)
+        right_alignment = abs(safe_dot_product(stud_right, long_axis_global))
+        front_alignment = abs(safe_dot_product(stud_front, long_axis_global))
+
+        if right_alignment > front_alignment:
+            return create_v2(stud_tenon_size[1], stud_tenon_size[0])
+        return create_v2(stud_tenon_size[0], stud_tenon_size[1])
+
+    def _king_post_joint(
+        stud: PerfectTimberWithin,
+        beam: PerfectTimberWithin,
+        stud_end: TimberReferenceEnd,
+        long_axis_global: V3,
+    ) -> Joint:
+        try:
+            return cut_mortise_and_tenon_joint_on_FAT(
+                arrangement=ButtJointTimberArrangement(
+                    butt_timber=stud,
+                    receiving_timber=beam,
+                    butt_timber_end=stud_end,
+                ),
+                tenon_size=_tenon_size_with_long_axis(stud, long_axis_global),
+                tenon_length=stud_tenon_depth,
+                mortise_depth=stud_tenon_depth,
+                mortise_shoulder_inset=inches(Rational(1, 64)),
+                peg_parameters=None,
+            )
+        except Exception as err:
+            print(
+                f"Error creating king-post FAT joint stud_end={stud_end} face_aligned={are_timbers_face_aligned(stud, beam)} plane_aligned={are_timbers_plane_aligned(stud, beam)}",
+                file=sys.stderr,
+                flush=True,
+            )
+            print(_describe_timber("stud", stud), file=sys.stderr, flush=True)
+            print(_describe_timber("beam", beam), file=sys.stderr, flush=True)
+            raise AssertionError(
+                f"FAT king-post joint failed for stud='{stud.ticket.name}' beam='{beam.ticket.name}' end='{stud_end}': {err}"
+            ) from err
+
+    front_back_axis = create_v3(Integer(0), Integer(1), Integer(0))
+    left_right_axis = create_v3(Integer(1), Integer(0), Integer(0))
+
+    king_post_joints: List[Joint] = [
+        # Bottom tenons: long side front-to-back.
+        _king_post_joint(king_post_left, top_plate_left, TimberReferenceEnd.BOTTOM, front_back_axis),
+        _king_post_joint(king_post_right, top_plate_right, TimberReferenceEnd.BOTTOM, front_back_axis),
+        _king_post_joint(center_king_post, center_support_beam, TimberReferenceEnd.BOTTOM, front_back_axis),
+        # Top tenons: long side left-to-right.
+        _king_post_joint(king_post_left, ridge_beam, TimberReferenceEnd.TOP, left_right_axis),
+        _king_post_joint(king_post_right, ridge_beam, TimberReferenceEnd.TOP, left_right_axis),
+        _king_post_joint(center_king_post, ridge_beam, TimberReferenceEnd.TOP, left_right_axis),
+    ]
+
     all_timbers = all_posts + all_beams + all_studs + rafters
 
     jointed_timber_ids = {
         id(cut_timber.timber)
-        for joint in wall_stud_joints
+        for joint in (wall_stud_joints + king_post_joints)
         for cut_timber in joint.cut_timbers.values()
     }
 
@@ -919,7 +974,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
     ]
 
     return Frame.from_joints(
-        joints=wall_stud_joints,
+        joints=wall_stud_joints + king_post_joints,
         additional_unjointed_timbers=unjointed_timbers,
         name="Tiny House 120"
     )
