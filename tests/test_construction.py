@@ -122,9 +122,9 @@ class TestTimberCreation:
         )
         
         assert timber_inside.length == Rational(5, 2)
-        # For INSIDE, vertex is at corner (0, 0) - exact!
-        assert timber_inside.get_bottom_position_global()[0] == 0
-        assert timber_inside.get_bottom_position_global()[1] == 0
+        # For INSIDE, center is shifted inward by half dimensions.
+        assert timber_inside.get_bottom_position_global()[0] == Rational(9, 200)
+        assert timber_inside.get_bottom_position_global()[1] == Rational(9, 200)
         assert timber_inside.get_bottom_position_global()[2] == 0
         # Should be vertical
         assert timber_inside.get_length_direction_global()[2] == 1
@@ -141,9 +141,9 @@ class TestTimberCreation:
         )
         
         assert timber_center.length == Rational(5, 2)
-        # For CENTER, offset by half dimensions: -9/200 in both X and Y - exact!
-        assert timber_center.get_bottom_position_global()[0] == Rational(-9, 200)
-        assert timber_center.get_bottom_position_global()[1] == Rational(-9, 200)
+        # For CENTER, center lies on corner.
+        assert timber_center.get_bottom_position_global()[0] == 0
+        assert timber_center.get_bottom_position_global()[1] == 0
         assert timber_center.get_bottom_position_global()[2] == 0
         # Should be vertical
         assert timber_center.get_length_direction_global()[2] == 1
@@ -159,9 +159,9 @@ class TestTimberCreation:
         )
         
         assert timber_outside.length == Rational(5, 2)
-        # For OUTSIDE, offset by full dimensions: -9/100 in both X and Y - exact!
-        assert timber_outside.get_bottom_position_global()[0] == Rational(-9, 100)
-        assert timber_outside.get_bottom_position_global()[1] == Rational(-9, 100)
+        # For OUTSIDE, center is shifted outward by half dimensions.
+        assert timber_outside.get_bottom_position_global()[0] == Rational(-9, 200)
+        assert timber_outside.get_bottom_position_global()[1] == Rational(-9, 200)
         assert timber_outside.get_bottom_position_global()[2] == 0
         # Should be vertical
         assert timber_outside.get_length_direction_global()[2] == 1
@@ -238,6 +238,61 @@ class TestTimberCreation:
         # Face direction parallel to side
         assert timber_outside.get_width_direction_global()[0] == 1
         assert timber_outside.get_width_direction_global()[1] == 0
+
+    def test_inside_corner_lines_up_with_inside_side(self, symbolic_mode):
+        """INSIDE corner and INSIDE side placement should lie on the same inside boundary line."""
+        corners = [
+            create_v2(0, 0),
+            create_v2(4, 0),
+            create_v2(4, 3),
+            create_v2(0, 3),
+        ]
+        footprint = Footprint(tuple(corners))
+        size = create_v2(Rational(1, 10), Rational(1, 10))
+        post_height = Rational(3, 1)
+
+        corner_post_inside = create_vertical_timber_on_footprint_corner(
+            footprint, 0, post_height, FootprintLocation.INSIDE, size
+        )
+        side_post_inside = create_vertical_timber_on_footprint_side(
+            footprint, 0, Rational(1, 1), post_height, FootprintLocation.INSIDE, size
+        )
+
+        # Side-0 inside line is y = +depth/2 for this rectangular footprint.
+        assert side_post_inside.get_bottom_position_global()[1] == size[1] / 2
+        assert corner_post_inside.get_bottom_position_global()[1] == side_post_inside.get_bottom_position_global()[1]
+
+    def test_corner_side_location_alignment_pairs(self, symbolic_mode):
+        """CENTER/CENTER and OUTSIDE/OUTSIDE align, while INSIDE/CENTER do not."""
+        corners = [
+            create_v2(0, 0),
+            create_v2(4, 0),
+            create_v2(4, 3),
+            create_v2(0, 3),
+        ]
+        footprint = Footprint(tuple(corners))
+        size = create_v2(Rational(1, 10), Rational(1, 10))
+        post_height = Rational(3, 1)
+
+        corner_center = create_vertical_timber_on_footprint_corner(
+            footprint, 0, post_height, FootprintLocation.CENTER, size
+        )
+        side_center = create_vertical_timber_on_footprint_side(
+            footprint, 0, Rational(1, 1), post_height, FootprintLocation.CENTER, size
+        )
+        corner_outside = create_vertical_timber_on_footprint_corner(
+            footprint, 0, post_height, FootprintLocation.OUTSIDE, size
+        )
+        side_outside = create_vertical_timber_on_footprint_side(
+            footprint, 0, Rational(1, 1), post_height, FootprintLocation.OUTSIDE, size
+        )
+        corner_inside = create_vertical_timber_on_footprint_corner(
+            footprint, 0, post_height, FootprintLocation.INSIDE, size
+        )
+
+        assert corner_center.get_bottom_position_global()[1] == side_center.get_bottom_position_global()[1]
+        assert corner_outside.get_bottom_position_global()[1] == side_outside.get_bottom_position_global()[1]
+        assert corner_inside.get_bottom_position_global()[1] != side_center.get_bottom_position_global()[1]
     
     def test_create_horizontal_timber_on_footprint(self, symbolic_mode):
         """Test horizontal timber creation on footprint."""
@@ -878,9 +933,11 @@ class TestJoinTimbers:
         
         # Use deterministic pairs and rational parameters for cross-connections
         cross_connection_configs = [
-            (0, 2, Rational(1, 3), Rational(1, 20)),   # Left to Right, loc=0.333, stickout=0.05
-            (1, 3, Rational(1, 2), Rational(3, 40)),   # Center to Back, loc=0.5, stickout=0.075
-            (2, 4, Rational(2, 3), Rational(1, 10)),   # Right to Front, loc=0.667, stickout=0.1
+            # Use non-colinear pairs so projected points are distinct under
+            # unclamped join_perpendicular_on_face_parallel_timbers behavior.
+            (0, 3, Rational(1, 3), Rational(1, 20)),   # Left to Back, loc=0.333, stickout=0.05
+            (1, 4, Rational(1, 2), Rational(3, 40)),   # Center to Front, loc=0.5, stickout=0.075
+            (2, 3, Rational(2, 3), Rational(1, 10)),   # Right to Back, loc=0.667, stickout=0.1
         ]
         
         # Connect some base timbers to each other horizontally

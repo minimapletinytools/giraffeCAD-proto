@@ -252,28 +252,30 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
     corner_x = corner[0]
     corner_y = corner[1]
     
+    # For orthogonal corners, the two in-boundary axes are:
+    # 1) outgoing side direction (corner -> next_corner)
+    # 2) previous side direction from corner (corner -> prev_corner)
+    prev_dir = Matrix([prev_corner[0] - corner[0], prev_corner[1] - corner[1]])
+    prev_len_sq = prev_dir[0]**2 + prev_dir[1]**2
+    prev_len = sqrt(prev_len_sq)
+    prev_dir_normalized = prev_dir / prev_len
+
+    from sympy import Rational
     if location_type == FootprintLocation.INSIDE:
-        # Position so one vertex of bottom face is on the boundary corner
-        # Post extends inside the boundary
-        # The corner vertex is at the origin of the timber's local coords
-        bottom_position = create_v3(corner_x, corner_y, Integer(0))
-        
+        # Center-origin timber: move center inward by half size in both axes.
+        offset_x = timber_width / Rational(2) * outgoing_dir_normalized[0] + timber_depth / Rational(2) * prev_dir_normalized[0]
+        offset_y = timber_width / Rational(2) * outgoing_dir_normalized[1] + timber_depth / Rational(2) * prev_dir_normalized[1]
+        bottom_position = create_v3(corner_x + offset_x, corner_y + offset_y, Integer(0))
+
     elif location_type == FootprintLocation.OUTSIDE:
-        # Position so the opposite vertex is on the boundary corner
-        # Need to offset by the full diagonal of the timber base
-        # Offset = -timber_width in face direction, -timber_depth in perpendicular direction
-        # Use exact arithmetic: outgoing_dir_normalized components are rationals for axis-aligned
-        offset_x = -timber_width * outgoing_dir_normalized[0] - timber_depth * (-outgoing_dir_normalized[1])
-        offset_y = -timber_width * outgoing_dir_normalized[1] - timber_depth * outgoing_dir_normalized[0]
+        # Center-origin timber: move center outward by half size in both axes.
+        offset_x = -timber_width / Rational(2) * outgoing_dir_normalized[0] - timber_depth / Rational(2) * prev_dir_normalized[0]
+        offset_y = -timber_width / Rational(2) * outgoing_dir_normalized[1] - timber_depth / Rational(2) * prev_dir_normalized[1]
         bottom_position = create_v3(corner_x + offset_x, corner_y + offset_y, Integer(0))
-        
+
     else:  # CENTER
-        # Position so center of bottom face is on the boundary corner
-        # Offset by half dimensions in both directions
-        from sympy import Rational
-        offset_x = -timber_width/Rational(2) * outgoing_dir_normalized[0] - timber_depth/Rational(2) * (-outgoing_dir_normalized[1])
-        offset_y = -timber_width/Rational(2) * outgoing_dir_normalized[1] - timber_depth/Rational(2) * outgoing_dir_normalized[0]
-        bottom_position = create_v3(corner_x + offset_x, corner_y + offset_y, Integer(0))
+        # Center of bottom face lies on the boundary corner.
+        bottom_position = create_v3(corner_x, corner_y, Integer(0))
     
     return create_timber(bottom_position, length, size, length_direction, width_direction, ticket=ticket)
 
@@ -719,8 +721,9 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
     # Project this onto timber2's length direction to find the parameter t
     location_on_timber2 = to_pos1.dot(timber2.get_length_direction_global()) / timber2.get_length_direction_global().dot(timber2.get_length_direction_global())
     
-    # Clamp location_on_timber2 to be within the timber's length
-    location_on_timber2 = max(Integer(0), min(timber2.length, location_on_timber2))
+    # Intentionally do not clamp the projected location. Callers may rely on
+    # measurements beyond timber2's nominal extents.
+    #location_on_timber2 = max(Integer(0), min(timber2.length, location_on_timber2))
     
     # Calculate position on timber2 to determine joining direction
     pos2 = locate_position_on_centerline_from_bottom(timber2, location_on_timber2).position
@@ -869,7 +872,8 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
     # Recalculate location_on_timber2 and pos2 based on adjusted pos1
     to_pos1 = pos1 - timber2.get_bottom_position_global()
     location_on_timber2 = to_pos1.dot(timber2.get_length_direction_global()) / timber2.get_length_direction_global().dot(timber2.get_length_direction_global())
-    location_on_timber2 = max(Integer(0), min(timber2.length, location_on_timber2))
+    # Intentionally do not clamp the projected location. Keep this consistent
+    # with the initial projection above.
     pos2 = locate_position_on_centerline_from_bottom(timber2, location_on_timber2).position
     joining_direction = normalize_vector(pos2 - pos1)
     

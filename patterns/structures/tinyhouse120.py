@@ -616,8 +616,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
             z,
         )
 
-    # Upper studs via join_timbers. Top plates have 6" symmetric stickout.
-    top_plate_stickout_amount = inches(6)
+    # Upper studs via join_timbers.
 
     upper_studs_front = []
     for i in range(1, 5):
@@ -748,6 +747,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
     # Rafters are 4x4, intersecting ridge and plate by ~1".
     # ========================================================================
     rafter_size = post_size
+
 
     # Reference surfaces
     ridge_top_z = ridge_bottom_z + beam_size[0]          # top of ridge beam
