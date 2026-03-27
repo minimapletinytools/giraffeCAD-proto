@@ -175,7 +175,7 @@ class Ticket
 :: TODO
 
 -do tinyhouse shed
-  -fix joists between intermediate posts, they should mortise and tenon into the posts
+  DONE-fix joists between intermediate posts, they should mortise and tenon into the posts
   -make floor joist dovetails smaller so they don't intersect with the post tenons
   -make rafter logic not suck lol...
   -add pegs to all horizontal mortise and tenons

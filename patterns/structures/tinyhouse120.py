@@ -877,6 +877,36 @@ def create_tinyhouse120(center: Optional[V3] = None):
         center_king_post,
     ]
 
+    horizontal_member_peg_params = SimplePegParameters(
+        shape=PegShape.SQUARE,
+        peg_positions=[(mm(25), Rational(0))],
+        size=mm(15),
+    )
+
+    def _is_horizontal_timber(timber: PerfectTimberWithin) -> bool:
+        return zero_test(
+            safe_dot_product(
+                timber.get_length_direction_global(),
+                create_v3(Integer(0), Integer(0), Integer(1)),
+            )
+        )
+
+    def _peg_front_face_for_joint(
+        butt_timber: PerfectTimberWithin,
+        receiving_timber: PerfectTimberWithin,
+    ) -> TimberLongFace:
+        receiving_length_direction = receiving_timber.get_length_direction_global()
+        candidates = [
+            (TimberLongFace.RIGHT, butt_timber.get_face_direction_global(TimberFace.RIGHT)),
+            (TimberLongFace.LEFT, butt_timber.get_face_direction_global(TimberFace.LEFT)),
+            (TimberLongFace.FRONT, butt_timber.get_face_direction_global(TimberFace.FRONT)),
+            (TimberLongFace.BACK, butt_timber.get_face_direction_global(TimberFace.BACK)),
+        ]
+        return min(
+            candidates,
+            key=lambda candidate: abs(safe_dot_product(candidate[1], receiving_length_direction)),
+        )[0]
+
     def _fat_joint(
         butt_timber: PerfectTimberWithin,
         receiving_timber: PerfectTimberWithin,
@@ -887,18 +917,28 @@ def create_tinyhouse120(center: Optional[V3] = None):
         label: str,
     ) -> Joint:
         try:
+            peg_parameters = (
+                horizontal_member_peg_params
+                if _is_horizontal_timber(butt_timber)
+                else None
+            )
             return cut_mortise_and_tenon_joint_on_FAT(
                 arrangement=ButtJointTimberArrangement(
                     butt_timber=butt_timber,
                     receiving_timber=receiving_timber,
                     butt_timber_end=butt_timber_end,
+                    front_face_on_butt_timber=(
+                        _peg_front_face_for_joint(butt_timber, receiving_timber)
+                        if peg_parameters is not None
+                        else None
+                    ),
                 ),
                 tenon_size=stud_tenon_size if tenon_size is None else tenon_size,
                 tenon_length=stud_tenon_depth,
                 mortise_depth=stud_tenon_depth,
                 mortise_shoulder_inset=inches(Rational(1, 64)),
                 tenon_position=tenon_position,
-                peg_parameters=None,
+                peg_parameters=peg_parameters,
             )
         except Exception as err:
             print(
@@ -1171,13 +1211,14 @@ def create_tinyhouse120(center: Optional[V3] = None):
         _king_post_joint(center_king_post, ridge_beam, TimberReferenceEnd.TOP, left_right_axis),
     ]
 
-    floor_joist_dovetail_shoulder_inset = inches(Rational(1, 2))
-    floor_joist_dovetail_small_width = inches(Rational(3, 2))
-    floor_joist_dovetail_large_width = inches(2)
-    floor_joist_dovetail_length = inches(2)
+    floor_joist_dovetail_shoulder_inset = inches(0)
+    floor_joist_dovetail_small_width = inches(2)
+    floor_joist_dovetail_large_width = inches(Rational(5, 2))
+    floor_joist_dovetail_length = inches(Rational(3, 2))
     floor_joist_dovetail_depth = inches(2)
+    
 
-    floor_joist_intermediate_post_tenon_size = create_v2(inches(2.75), inches(1))
+    floor_joist_intermediate_post_tenon_size = create_v2(inches(Rational(11, 4)), inches(1))
     floor_joist_intermediate_post_tenon_position = create_v2(
         floor_joist_4.size[0] / Integer(2) - floor_joist_intermediate_post_tenon_size[0] / Integer(2),
         Integer(0),
