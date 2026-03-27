@@ -8,7 +8,7 @@ from code_goes_here.timber import *
 from code_goes_here.rule import *
 from code_goes_here.measuring import *
 from code_goes_here.timber_shavings import *
-from code_goes_here.ticket import Ticket
+from code_goes_here.ticket import TimberTicket
 from typing import Dict, Any
 
 
@@ -135,7 +135,7 @@ class Stickout:
 # ============================================================================
 
 def create_timber(bottom_position: V3, length: Numeric, size: V2, 
-                  length_direction: Direction3D, width_direction: Direction3D, ticket: Optional[Union[Ticket, str]] = None) -> Timber:
+                  length_direction: Direction3D, width_direction: Direction3D, ticket: Optional[Union[TimberTicket, str]] = None) -> Timber:
     """
     Creates a timber at bottom_position with given dimensions and rotates it 
     to the length_direction and width_direction
@@ -152,7 +152,7 @@ def create_timber(bottom_position: V3, length: Numeric, size: V2,
 
 def create_axis_aligned_timber(bottom_position: V3, length: Numeric, size: V2,
                               length_direction: TimberFace, width_direction: Optional[TimberFace] = None, 
-                              ticket: Optional[Union[Ticket, str]] = None) -> Timber:
+                              ticket: Optional[Union[TimberTicket, str]] = None) -> Timber:
     """
     Creates an axis-aligned timber using TimberFace to reference directions
     in the world coordinate system.
@@ -191,7 +191,7 @@ def create_axis_aligned_timber(bottom_position: V3, length: Numeric, size: V2,
 
 def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_index: int, 
                                                length: Numeric, location_type: FootprintLocation,
-                                               size: V2, ticket: Optional[Union[Ticket, str]] = None) -> Timber:
+                                               size: V2, ticket: Optional[Union[TimberTicket, str]] = None) -> Timber:
     """
     Creates a vertical timber (post) on a footprint boundary corner.
     
@@ -282,7 +282,7 @@ def create_vertical_timber_on_footprint_corner(footprint: Footprint, corner_inde
 def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: int, 
                                             distance_along_side: Numeric,
                                             length: Numeric, location_type: FootprintLocation, 
-                                            size: V2, ticket: Optional[Union[Ticket, str]] = None) -> Timber:
+                                            size: V2, ticket: Optional[Union[TimberTicket, str]] = None) -> Timber:
     """
     Creates a vertical timber (post) positioned at a point along a footprint boundary side.
     
@@ -383,7 +383,7 @@ def create_vertical_timber_on_footprint_side(footprint: Footprint, side_index: i
 def create_horizontal_timber_on_footprint(footprint: Footprint, corner_index: int,
                                         location_type: FootprintLocation, 
                                         size: V2,
-                                        length: Optional[Numeric] = None, ticket: Optional[Union[Ticket, str]] = None) -> Timber:
+                                        length: Optional[Numeric] = None, ticket: Optional[Union[TimberTicket, str]] = None) -> Timber:
     """
     Creates a horizontal timber (mudsill) on the footprint boundary side.
     
@@ -484,8 +484,8 @@ def stretch_timber(timber: Timber, end: TimberReferenceEnd, overlap_length: Nume
 def split_timber(
     timber: Timber, 
     distance_from_bottom: Numeric,
-    ticket1: Optional[Union[Ticket, str]] = None,
-    ticket2: Optional[Union[Ticket, str]] = None
+    ticket1: Optional[Union[TimberTicket, str]] = None,
+    ticket2: Optional[Union[TimberTicket, str]] = None
 ) -> Tuple[Timber, Timber]:
     """
     Split a timber into two timbers at the specified distance from the bottom.
@@ -555,7 +555,7 @@ def join_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
                 stickout: Stickout = Stickout.nostickout(),
                 size: Optional[V2] = None,
                 orientation_width_vector: Optional[Direction3D] = None, 
-                ticket: Optional[Union[Ticket, str]] = None) -> Timber:
+                ticket: Optional[Union[TimberTicket, str]] = None) -> Timber:
     """
     Joins two timbers by creating a connecting timber from centerline to centerline.
     
@@ -678,7 +678,7 @@ def join_perpendicular_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
                                                 size: V2,
                                                 feature_to_mark_on_joining_timber: Optional[TimberFeature] = None,
                                                 orientation_face_on_timber1: Optional[TimberFace] = None, 
-                                                ticket: Optional[Union[Ticket, str]] = None) -> Timber:
+                                                ticket: Optional[Union[TimberTicket, str]] = None) -> Timber:
     """
     Joins two face-aligned timbers with a perpendicular timber.
     

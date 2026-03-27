@@ -1459,7 +1459,7 @@ class TestDeepHash:
                     create_v3(Integer(1), Integer(0), Integer(0))
                 )
             ),
-            ticket=Ticket(name="test"),
+            ticket=TimberTicket(name="test"),
             nominal_half_sizes=None
         )
         
@@ -1474,7 +1474,7 @@ class TestDeepHash:
                     create_v3(Integer(1), Integer(0), Integer(0))
                 )
             ),
-            ticket=Ticket(name="test"),
+            ticket=TimberTicket(name="test"),
             nominal_half_sizes=(
                 create_v2(Rational(3, 40), Rational(3, 40)),
                 create_v2(Rational(3, 40), Rational(3, 40))

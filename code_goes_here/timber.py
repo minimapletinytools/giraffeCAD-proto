@@ -7,7 +7,7 @@ from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify, Min, Max
 from .rule import *
 from .footprint import *
 from .cutcsg import *
-from .ticket import Ticket
+from .ticket import Ticket, TimberTicket
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict, Literal, final, cast, Callable
 from dataclasses import dataclass, field
@@ -324,19 +324,19 @@ SomeTimberFace = Union[TimberFace, TimberReferenceEnd, TimberLongFace]
 #============================================================================
 
 
-def _ensure_ticket(ticket: Optional[Union[Ticket, str]]) -> Ticket:
+def _ensure_ticket(ticket: Optional[Union[TimberTicket, str]]) -> TimberTicket:
     """Convert a ticket parameter to a Ticket object.
     
     Args:
-        ticket: Either a Ticket object, a string name, or None
+        ticket: Either a TimberTicket object, a string name, or None
         
     Returns:
-        Ticket object (creates one with default name if None provided)
+        TimberTicket object (creates one with default name if None provided)
     """
     if ticket is None:
-        return Ticket()
+        return TimberTicket()
     elif isinstance(ticket, str):
-        return Ticket(name=ticket)
+        return TimberTicket(name=ticket)
     else:
         return ticket
 
@@ -395,7 +395,7 @@ def compute_timber_orientation(length_direction: Direction3D, width_direction: D
 # TODO rename to create_timber (or maybe hew lolololol) + add defaults
 def timber_from_directions(length: Numeric, size: V2, bottom_position: V3,
                           length_direction: Direction3D, width_direction: Direction3D,
-                          ticket: Optional[Union[Ticket, str]] = None) -> 'Timber':
+                          ticket: Optional[Union[TimberTicket, str]] = None) -> 'Timber':
     """Factory function to create a Timber with computed orientation from direction vectors
     
     This is the main way to construct Timber instances. It takes direction vectors
@@ -407,7 +407,7 @@ def timber_from_directions(length: Numeric, size: V2, bottom_position: V3,
         bottom_position: Position of the bottom point (center of cross-section) as 3D vector
         length_direction: Direction vector for the length axis as 3D vector, the +length direction is the +Z direction
         width_direction: Direction vector for the width axis as 3D vector, the +width direction is the +X direction
-        ticket: Optional ticket for this timber (can be Ticket object or string name, used for rendering/debugging)
+        ticket: Optional ticket for this timber (can be TimberTicket object or string name, used for rendering/debugging)
         
     Returns:
         Timber instance with computed orientation
@@ -440,7 +440,7 @@ class PerfectTimberWithin(ABC):
     length: Numeric
     size: V2
     transform: Transform
-    ticket: Ticket = field(default_factory=Ticket)
+    ticket: TimberTicket = field(default_factory=TimberTicket)
     
     @property
     def orientation(self) -> Orientation:
