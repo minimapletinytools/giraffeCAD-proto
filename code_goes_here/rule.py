@@ -536,27 +536,25 @@ def safe_dot_product(vec1: Matrix, vec2: Matrix):
     """
     from sympy import Float, Number
     
-    # Check if we need to use numerical evaluation
-    has_complex = is_float_numeric_mode() or (
-        any(is_complex_expr(elem) for elem in vec1) or
-        any(is_complex_expr(elem) for elem in vec2)
-    )
+    # Only freeze constants in float mode — in symbolic mode, freezing converts
+    # Rational numbers inside trig functions (e.g. 2/9 in cos(2*pi/9)) to floats,
+    # corrupting symbolic expressions.
+    if is_float_numeric_mode():
+        has_complex = any(is_complex_expr(elem) for elem in vec1) or any(is_complex_expr(elem) for elem in vec2)
+        if has_complex:
+            def freeze_elem(e):
+                if not hasattr(e, 'atoms'):
+                    return e
+                return e.xreplace({n: Float(n, 15) for n in e.atoms(Number)})
+            
+            vec1_frozen = [freeze_elem(e) for e in vec1]
+            vec2_frozen = [freeze_elem(e) for e in vec2]
+            
+            # Compute dot product manually to bypass SymPy's matrix multiplication
+            result = sum(v1 * v2 for v1, v2 in zip(vec1_frozen, vec2_frozen))
+            return result
     
-    if has_complex:
-        # Freeze constants in both vectors
-        def freeze_elem(e):
-            if not hasattr(e, 'atoms'):
-                return e
-            return e.xreplace({n: Float(n, 15) for n in e.atoms(Number)})
-        
-        vec1_frozen = [freeze_elem(e) for e in vec1]
-        vec2_frozen = [freeze_elem(e) for e in vec2]
-        
-        # Compute dot product manually to bypass SymPy's matrix multiplication
-        result = sum(v1 * v2 for v1, v2 in zip(vec1_frozen, vec2_frozen))
-        return result
-    
-    # For simple expressions, use standard approach but still compute manually
+    # For simple expressions (or symbolic mode), compute manually without freezing
     result = sum(v1 * v2 for v1, v2 in zip(vec1, vec2))  # type: ignore[arg-type]  # SymPy matrices are iterable
     return result
 
@@ -575,19 +573,19 @@ def safe_transform_vector(matrix: Matrix, vector: Matrix) -> Matrix:
     """
     from sympy import Float, Number
     
-    # Check if we need to freeze constants
-    has_complex = is_float_numeric_mode() or (
-        any(is_complex_expr(elem) for elem in matrix) or
-        any(is_complex_expr(elem) for elem in vector)
-    )
-    
-    # Prepare data - freeze if complex
+    # Only freeze constants in float mode — in symbolic mode, freezing converts
+    # Rational numbers inside trig functions to floats, corrupting symbolic expressions.
     def freeze_elem(e):
         if not hasattr(e, 'atoms'):
             return e
         return e.xreplace({n: Float(n, 15) for n in e.atoms(Number)})
     
-    if has_complex:
+    should_freeze = is_float_numeric_mode() and (
+        any(is_complex_expr(elem) for elem in matrix) or
+        any(is_complex_expr(elem) for elem in vector)
+    )
+    
+    if should_freeze:
         mat_data = [[freeze_elem(matrix[i, j]) for j in range(matrix.cols)] for i in range(matrix.rows)]
         vec_data = [[freeze_elem(vector[i, j]) for j in range(vector.cols)] for i in range(vector.rows)]
     else:

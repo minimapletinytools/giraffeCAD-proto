@@ -4,7 +4,7 @@ Tests for build-a-butt-joint shoulder helpers
 
 import pytest
 from sympy import Rational, cos, sin, pi
-from code_goes_here.rule import create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product, normalize_vector
+from code_goes_here.rule import create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product, normalize_vector, safe_compare, Comparison
 from code_goes_here.timber import (
     TimberReferenceEnd,
     timber_from_directions, create_v3
@@ -90,8 +90,9 @@ class TestMeasureMortiseShoulderPlane:
         mortise_length_dir = mortise_timber.get_length_direction_global()
         assert zero_test(safe_dot_product(plane.normal, mortise_length_dir)), \
             "Plane normal should be perpendicular to the mortise length direction"
-        assert safe_dot_product(plane.normal, create_v3(Integer(0), Integer(0), Integer(1))) > 0, \
-            "Plane normal should have a +Z component (toward the tenon which is at +Z=3)"
+        dot_z = safe_dot_product(plane.normal, create_v3(Integer(0), Integer(0), Integer(1)))
+        assert safe_compare(dot_z, Comparison.GE), \
+            "Plane normal should have a non-negative Z component (toward the tenon which is at +Z=3)"
 
         plane_positive = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
             arrangement, inches(1)
@@ -100,8 +101,10 @@ class TestMeasureMortiseShoulderPlane:
             arrangement, -inches(1)
         )
         direction_to_tenon = plane_positive.point - plane.point
-        assert safe_dot_product(direction_to_tenon, create_v3(Integer(0), Integer(0), Integer(1))) > 0, \
+        dot_to_tenon = safe_dot_product(direction_to_tenon, create_v3(Integer(0), Integer(0), Integer(1)))
+        assert safe_compare(dot_to_tenon, Comparison.GE), \
             "Positive distance should offset toward the tenon (which is at +Z)"
         direction_away = plane_negative.point - plane.point
-        assert safe_dot_product(direction_away, create_v3(Integer(0), Integer(0), Integer(1))) < 0, \
+        dot_away = safe_dot_product(direction_away, create_v3(Integer(0), Integer(0), Integer(1)))
+        assert safe_compare(dot_away, Comparison.LE), \
             "Negative distance should offset away from the tenon"
