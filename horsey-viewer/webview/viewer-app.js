@@ -963,7 +963,7 @@ class HorseyViewerApp extends LitElement {
         // 
         // The formula uses a logarithmic scale: at small distances zoom is slow,
         // at large distances zoom is proportionally faster to cover the scaled geometry.
-        const baseZoomFactor = isZoomingOut ? 0.9 : 1.1;
+        const baseZoomFactor = isZoomingOut ? 0.8 : 1.2;
         
         if (this.orbitDist <= 0) {
             return baseZoomFactor;
@@ -1480,11 +1480,11 @@ class HorseyViewerApp extends LitElement {
             const mesh = meshes[index];
             const key = mesh.timberKey || ('index-' + index);
             const timberName = mesh.timberKey || ('index-' + index);
-            const hash = mesh.hash || '';
+            const hash = mesh.hash || null;
             nextKeys.add(key);
 
             const existing = this.meshObjectsByKey.get(key);
-            if (existing && existing.hash === hash) {
+            if (existing && hash !== null && existing.hash !== null && existing.hash === hash) {
                 this.meshNameMap.set(existing.mesh, timberName);
                 processed += 1;
                 reportProgress();

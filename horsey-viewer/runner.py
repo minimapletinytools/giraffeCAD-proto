@@ -357,38 +357,31 @@ def _purge_project_modules(project_root: Path, keep_paths: set[Path], verbose: b
     removed_count = 0
 
     for module_name, module in list(sys.modules.items()):
-        # Skip built-in and standard library modules
-        if not hasattr(module, "__file__") or module.__file__ is None:
-            continue
-        
         module_path = _module_file_path(module)
         if module_path is None:
             continue
-        
-        # Don't remove explicitly kept modules (runner itself, target file)
+
         if module_path in keep_paths:
             continue
-        
-        # Don't remove venv packages
+
         if _is_venv_path(module_path):
             continue
-        
-        # Only remove if it's actually from the project
-        try:
-            if project_root not in module_path.parents and module_path != project_root:
-                continue
-        except (ValueError, OSError):
+
+        if project_root not in module_path.parents and module_path != project_root:
             continue
-        
+
         removable.append(module_name)
 
     # Remove all project modules
     for module_name in removable:
         sys.modules.pop(module_name, None)
         removed_count += 1
-    
-    if verbose and removed_count > 0:
-        log_stderr(f"[reload] Purged {removed_count} cached project modules")
+
+    if verbose:
+        if removed_count > 0:
+            log_stderr(f"[reload] Purged {removed_count} project module(s): {', '.join(sorted(removable))}")
+        else:
+            log_stderr("[reload] No project modules to purge (first load or all already clean)")
 
 
 def _looks_like_frame(value: Any) -> bool:
@@ -442,6 +435,11 @@ def load_module_from_path(file_path: Path, verbose: bool = False) -> Any:
     if _project_root is not None:
         keep_paths = {Path(__file__).resolve(), file_path.resolve()}
         _purge_project_modules(_project_root, keep_paths, verbose=verbose)
+    else:
+        if verbose:
+            log_stderr("[reload] WARNING: _project_root is None — project module purge skipped!")
+            log_stderr(f"[reload]   sys.argv = {sys.argv}")
+            log_stderr("[reload]   Module changes to code_goes_here/ will NOT be picked up until runner restarts.")
 
     # Step 3: Ensure target module doesn't exist in sys.modules
     module_name = _module_name_for_path(file_path)
@@ -587,6 +585,8 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
         t0 = time.monotonic()
         next_state = load_runner_state(next_path, state.mesh_cache)
         reload_s = time.monotonic() - t0
+        frame_name = next_state.frame.name if hasattr(next_state.frame, "name") else "?"
+        log_stderr(f"[reload] Frame loaded: '{frame_name}', {len(next_state.frame.cut_timbers)} timbers")
         result = {
             "examplePath": str(next_state.file_path),
             "frame": {
@@ -630,6 +630,10 @@ def main() -> None:
         sys.exit(1)
 
     target_path = sys.argv[1]
+
+    log_stderr(f"[startup] runner.py ready. executable={sys.executable}")
+    log_stderr(f"[startup] _project_root={_project_root}")
+    log_stderr(f"[startup] target={target_path}")
 
     try:
         state = load_runner_state(target_path)
