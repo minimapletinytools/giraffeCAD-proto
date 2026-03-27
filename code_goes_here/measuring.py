@@ -1,22 +1,22 @@
 """
-Measuring and geometric primitives for GiraffeCAD.
+Locations and geometric primitives for GiraffeCAD.
 
 Geometric features are things like points, lines, planes, etc.
 
 Timber features are named geometric features on a timber, e.g. the centerline, the top face, etc. See `TimberFeature` enum in `timber.py` for a list of all timber features.
 
-When measuring on timbers, we want to do things like mark from a reference edge, or mark into a face. The types defined in `MeasuredTimberFeature` are exactly the features that we care about when measuring on timbers.
+When locating on timbers, we want to do things like mark from a reference edge, or mark into a face. The types defined in `MeasuredTimberFeature` are exactly the features that we care about when measuring on timbers.
 
-All measuring functions should follow the following naming convention:
+- Locations are GLOBAL features
+- Markings are LOCAL features
+
+Functions follow the following naming convention:
 
 - `locate_*` : functions that take measurements relative to a (LOCAL) feature of a timber and outputs a feature in GLOBAL space
 
 - `???_*` : functions that take feature(s) in GLOBAL space and outputs features in GLOBAL space
-
 - `mark_*` : functions that take a feature in GLOBAL space and outputs a measurement relative to a (LOCAL) feature of a timber
 - `scribe_*` : functions that take multiple measurements relative to (LOCAL) features of timbers and outputs a measurement relative to a (LOCAL) feature of a timber
-
-
 - `???_*` : functions that take feature(s) in GLOBAL space and outputs features in GLOBAL space
 
 OR put more simply:
@@ -25,33 +25,33 @@ OR put more simply:
 - `scribe_*` means LOCAL to LOCAL
 - `???_*` means GLOBAL to GLOBAL
 
-In addition we have `mark_*_by_*` methods which take specific features where as `mark_*` methods are generic and work with any feature and call mark_*_by_* methods internally.
+In addition we have `mark_*_by_*` methods which take specific features where as `mark_*` methods are generic and work with any feature and call mark_*_by_* methods internally. 
 
-Using these functions, we can take measurements relative to features on one timber and measure them onto another timber. Measurements always exist in some context, and together with their context, they become colloqial ways to refer to features as it is easier to understand and work with measurements than it is to work with features directly. So measuring and marking functions are precisely used to convert between these expressions!
+TODO DEPRECATE all mark_* methods.
+
+Using these functions, we can locate relative to features on one timber and mark them onto another timber. 
 
 For example, if we `my_feature = locate_into_face(mm(10), TimberFace.RIGHT, timberA)` we mean the feature that is a plane 10mm into and parallel with the right face of the timber.
-And then if we `mark_distance_from_face_in_normal_direction(my_feature, timberB, TimberFace.RIGHT)` we mean find the distance from the feature above to the right face of timberB
+And then if we `mark_distance_from_face_in_normal_direction(my_feature, timberB, TimberFace.RIGHT)` we mean find the distance from `my_feature` to the right face of timberB
 
-Measuring features assumes the features are "comparable". In most cases this means the features are parallel such that measurements can be taken in the orthognal axis. If the features are not "comparable" the functions will assert!
+Some located features are signed and oriented. These features follow the following sign conventions:
 
-Some features are signed and oriented. These features follow the following sign conventions:
-
-- measurements from timber faces are along the normal pointing INTO the timber i.e. positive is into the face
-- measurements from timber halfplanes aligning with a timber edge
+- locations from timber faces are along the normal pointing INTO the timber i.e. positive is into the face
+- locations from timber halfplanes aligning with a timber edge
     - positive X is towards the face
     - for long faces postivie Y is (usually) in the direction of the timber, sometimes it's the opposite so watch out!
     - for end faces, use RHS rule with +Z ponting in the direction of the end
-- measurements from timber corners
+- locations from timber corners
     - TODO but also we never do this so who cares
 
-Features are also located (i.e. lines and planes have an "origin" point). This information is currently not used in any of these functions. Timber Features follow the following location conventions:
+Some locations also have an "origin" point. This information is currently not used in any of these functions. Timber Features follow the following location conventions:
 
 - timber faces are located at the center of the face surface
 - timber edges are located on the bottom face of the timber
 
-A `Point` is just a `V3` and sometimes you might find yourself marking a `Point` and simply using its contained `V3` directly! This is OK. We still wrap it in a `Point` to help ensure encapsulation of measuring and marking functions. In particular, some of these functions can take many different types of features and we want to be intentional about passing `Points` into these functions!
+A `Point` is just a `V3` and sometimes you might find yourself marking a `Point` and simply using its contained `V3` directly! This is OK. We still wrap it in a `Point` to help ensure encapsulation of locating and marking functions. In particular, some of these functions can take many different types of features and we want to be intentional about passing `Points` into these functions!
 
-Finally, note that the feature classes in this module should NOT be used for anything besides measuring and marking!!
+Finally, note that the feature classes in this module should NOT be used for anything besides locating and marking!!
 """
 
 from dataclasses import dataclass
@@ -69,6 +69,7 @@ EdgeOrCenterline = Union[TimberEdge, TimberCenterline]
 # Geometric Feature Types
 # ============================================================================
 
+# TODO rename to LocatedTimberFeature
 # TODO use measuring ABC maybe? 
 # Type alias for all measurable geometric features on timbers
 MeasuredTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane', 'Space']
