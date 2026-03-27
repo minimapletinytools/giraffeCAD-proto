@@ -1014,8 +1014,10 @@ def create_tinyhouse120(center: Optional[V3] = None):
     for post, beam in [
         (post_FM1, mid_beam_front),
         (post_FM2, mid_beam_front),
+        (post_MR, mid_beam_right),
         (post_BM1, mid_beam_back),
         (post_BM2, mid_beam_back),
+        (post_ML, mid_beam_left),
     ]:
         intermediate_post_joints.append(
             _fat_joint_aligned_to_receiver(post, beam, TimberReferenceEnd.TOP, label="intermediate_post_to_mid_beam")
@@ -1258,6 +1260,37 @@ def create_tinyhouse120(center: Optional[V3] = None):
             )
         )
 
+    center_support_beam_dovetail_joints: List[Joint] = [
+        cut_housed_dovetail_butt_joint(
+            arrangement=ButtJointTimberArrangement(
+                butt_timber=center_support_beam,
+                receiving_timber=top_plate_front,
+                butt_timber_end=TimberReferenceEnd.BOTTOM,
+                front_face_on_butt_timber=TimberLongFace.RIGHT,
+            ),
+            receiving_timber_shoulder_inset=floor_joist_dovetail_shoulder_inset,
+            dovetail_length=floor_joist_dovetail_length,
+            dovetail_small_width=floor_joist_dovetail_small_width,
+            dovetail_large_width=floor_joist_dovetail_large_width,
+            dovetail_lateral_offset=Rational(0),
+            dovetail_depth=floor_joist_dovetail_depth,
+        ),
+        cut_housed_dovetail_butt_joint(
+            arrangement=ButtJointTimberArrangement(
+                butt_timber=center_support_beam,
+                receiving_timber=top_plate_back,
+                butt_timber_end=TimberReferenceEnd.TOP,
+                front_face_on_butt_timber=TimberLongFace.RIGHT,
+            ),
+            receiving_timber_shoulder_inset=floor_joist_dovetail_shoulder_inset,
+            dovetail_length=floor_joist_dovetail_length,
+            dovetail_small_width=floor_joist_dovetail_small_width,
+            dovetail_large_width=floor_joist_dovetail_large_width,
+            dovetail_lateral_offset=Rational(0),
+            dovetail_depth=floor_joist_dovetail_depth,
+        ),
+    ]
+
     rafter_house_joints: List[Joint] = []
     for housing_timber, housed_timber in rafter_housing_pairs:
         rafter_house_joints.append(
@@ -1296,6 +1329,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
             + king_post_joints
             + floor_joist_dovetail_joints
             + loft_beam_dovetail_joints
+            + center_support_beam_dovetail_joints
             + rafter_house_joints
             + rafter_pair_joints
         )
@@ -1318,6 +1352,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
             + king_post_joints
             + floor_joist_dovetail_joints
             + loft_beam_dovetail_joints
+            + center_support_beam_dovetail_joints
             + rafter_house_joints
             + rafter_pair_joints
         ),
