@@ -1035,6 +1035,21 @@ def create_tinyhouse120(center: Optional[V3] = None):
             _beam_to_corner_post_joint(beam, end_post, TimberReferenceEnd.TOP)
         )
 
+    bottom_beam_corner_post_joints: List[Joint] = []
+    for beam, post, beam_end in [
+        (beam_front_1, post_FL, TimberReferenceEnd.BOTTOM),
+        (beam_front_3, post_FR, TimberReferenceEnd.TOP),
+        (beam_right_1, post_FR, TimberReferenceEnd.BOTTOM),
+        (beam_right_2, post_BR, TimberReferenceEnd.TOP),
+        (beam_back_1, post_BR, TimberReferenceEnd.BOTTOM),
+        (beam_back_3, post_BL, TimberReferenceEnd.TOP),
+        (beam_left_1, post_BL, TimberReferenceEnd.BOTTOM),
+        (beam_left_2, post_FL, TimberReferenceEnd.TOP),
+    ]:
+        bottom_beam_corner_post_joints.append(
+            _beam_to_corner_post_joint(beam, post, beam_end)
+        )
+
     window_member_joints: List[Joint] = []
     for window_member in [window_member_upper, window_member_lower]:
         window_member_joints.append(
@@ -1275,6 +1290,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
             wall_stud_joints
             + intermediate_post_joints
             + mid_beam_corner_post_joints
+            + bottom_beam_corner_post_joints
             + window_member_joints
             + corner_top_plate_compound_joints
             + king_post_joints
@@ -1296,6 +1312,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
             wall_stud_joints
             + intermediate_post_joints
             + mid_beam_corner_post_joints
+            + bottom_beam_corner_post_joints
             + window_member_joints
             + corner_top_plate_compound_joints
             + king_post_joints
