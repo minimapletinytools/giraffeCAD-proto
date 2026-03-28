@@ -11,6 +11,7 @@ from typing import Optional
 from giraffe import *
 from code_goes_here.timber import Frame
 from code_goes_here.patternbook import PatternBook, PatternMetadata
+from code_goes_here.joints.plain_joints import cut_plain_splined_opposing_double_butt_joint
 
 # ============================================================================
 # PARAMETERS
@@ -1107,6 +1108,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
         )
 
     bottom_beam_corner_post_joints: List[Joint] = []
+    # FAT joints for corner posts
     for beam, post, beam_end in [
         (beam_front_1, post_FL, TimberReferenceEnd.BOTTOM),
         (beam_front_3, post_FR, TimberReferenceEnd.TOP),
@@ -1119,6 +1121,28 @@ def create_tinyhouse120(center: Optional[V3] = None):
     ]:
         bottom_beam_corner_post_joints.append(
             _beam_to_corner_post_joint(beam, post, beam_end)
+        )
+    
+    # Splined double butt joints for intermediate posts (antiparallel beams)
+    for beam1, beam1_end, beam2, beam2_end, post in [
+        (beam_front_1, TimberReferenceEnd.TOP, beam_front_2, TimberReferenceEnd.BOTTOM, post_FM1),
+        (beam_front_2, TimberReferenceEnd.TOP, beam_front_3, TimberReferenceEnd.BOTTOM, post_FM2),
+        (beam_back_1, TimberReferenceEnd.TOP, beam_back_2, TimberReferenceEnd.BOTTOM, post_BM1),
+        (beam_back_2, TimberReferenceEnd.TOP, beam_back_3, TimberReferenceEnd.BOTTOM, post_BM2),
+        (beam_right_1, TimberReferenceEnd.TOP, beam_right_2, TimberReferenceEnd.BOTTOM, post_MR),
+        (beam_left_1, TimberReferenceEnd.TOP, beam_left_2, TimberReferenceEnd.BOTTOM, post_ML),
+    ]:
+        bottom_beam_corner_post_joints.append(
+            cut_plain_splined_opposing_double_butt_joint(
+                arrangement=DoubleButtJointTimberArrangement(
+                    butt_timber_1=beam1,
+                    butt_timber_2=beam2,
+                    receiving_timber=post,
+                    butt_timber_1_end=beam1_end,
+                    butt_timber_2_end=beam2_end,
+                ),
+                slot_facing_end_on_receiving_timber=TimberReferenceEnd.BOTTOM,
+            )
         )
 
     window_member_joints: List[Joint] = []

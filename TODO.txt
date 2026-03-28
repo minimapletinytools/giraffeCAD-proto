@@ -134,15 +134,23 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 
 :: TODO
+DONE-splined opposing double butt joint :D (could have drawbore or key)
+  -you need to create shoulder_shavings for making shoulder cuts
+    -shoulder cuts should be infinite in one direction so can generate the positive and negative for both sides easily
+      -I guess you need a full space cut?
 
+-ui widgets need to capture mouse inputs so they don't reset selection
+-need plain_double_butt joint examlpe
 -do tinyhouse shed
   DONE-fix joists between intermediate posts, they should mortise and tenon into the posts
   DONE-make floor joist dovetails smaller so they don't intersect with the post tenons
   DONE-add pegs to all horizontal mortise and tenons
   DONE-adjust tenons so the are measured from the outside reference faces
+  DONE-add new joints for floor beams
+  -add double buttj oint to floor beams
   -make rafter logic not suck lol...
   -do yo uneed/want more rafters?
-  -add new joints for floor beams
+  
 
 
 -tag reference faces on timber metadata?
@@ -186,11 +194,6 @@ the final returned csg has a ticket that points to a feature in the top level Di
 -and export STEP/STL button back into viewer (comibne/single, step/stl options, defaultable)
 -lincoln log joints?
 -consider adding in some config object that gets passed through all functions (well ilke one dumpall objcet for joints, etc, so you can easily add carp to it)
-
--splined opposing double butt joint :D (could have drawbore or key)
-  -you need to create shoulder_shavings for making shoulder cuts
-    -shoulder cuts should be infinite in one direction so can generate the positive and negative for both sides easily
-      -I guess you need a full space cut?
 
 -add sensibility checks to arrangement (so basically they intersect at least a little bit)
   -maybe add a generic check intersection function so we can get more precise about it within the joit fuctions.

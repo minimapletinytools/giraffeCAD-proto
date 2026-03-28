@@ -1064,7 +1064,7 @@ class DoubleButtJointTimberArrangement:
         - all timbers are face-aligned,
         - each butt timber's length direction is orthogonal to the receiving timber (cardinal),
         - butt_timber_1 and butt_timber_2 are in different cardinal directions, and
-        - the pair is antiparallel (pointing towards each other).
+        - the pair approaches from opposite directions (antiparallel), accounting for which end of each timber is used.
         """
         err = self.check_face_aligned()
         if err is not None:
@@ -1076,12 +1076,17 @@ class DoubleButtJointTimberArrangement:
             return "butt_timber_1 length direction must be orthogonal to receiving_timber length direction"
         if not _are_directions_perpendicular(dir2, recv_len):
             return "butt_timber_2 length direction must be orthogonal to receiving_timber length direction"
-        # Different cardinals: no two butt timbers may share the same direction
-        if equality_test(dir1.dot(dir2), 1):
-            return "butt_timber_1 and butt_timber_2 must point in different cardinal directions"
-        # Pair must be antiparallel (pointing towards each other)
-        if not equality_test(dir1.dot(dir2), -1):
-            return "butt_timber_1 and butt_timber_2 must be antiparallel (pointing towards each other)"
+        
+        
+        # Calculate effective approach directions based on which end of each timber is used
+        # If end == TOP, the timber approaches from the -direction
+        # If end == BOTTOM, the timber approaches from the +direction
+        approach_dir1 = -dir1 if self.butt_timber_1_end == TimberReferenceEnd.TOP else dir1
+        approach_dir2 = -dir2 if self.butt_timber_2_end == TimberReferenceEnd.TOP else dir2
+        
+        # Pair must approach from opposite directions (antiparallel)
+        if not equality_test(approach_dir1.dot(approach_dir2), -1):
+            return "butt_timber_1 and butt_timber_2 must approach from opposite directions (antiparallel)"
         return None
 
     def check_face_aligned_and_orthogonal_butts(self) -> Optional[str]:
