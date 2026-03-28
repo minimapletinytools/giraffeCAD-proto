@@ -13,10 +13,12 @@ from code_goes_here.timber import (
 )
 from code_goes_here.construction import ButtJointTimberArrangement
 from code_goes_here.timber_shavings import are_timbers_plane_aligned
-from code_goes_here.joints.mortise_and_tenon_joint import (
+from code_goes_here.joints.build_a_butt_joint_shavings import (
     SimplePegParameters,
-    WedgeParameters,
     PegPositionSpace,
+)
+from code_goes_here.joints.mortise_and_tenon_joint import (
+    WedgeParameters,
     _does_shoulder_plane_need_notching,
     cut_mortise_and_tenon_joint_on_FAT,
     cut_mortise_and_tenon_joint_on_PAT,

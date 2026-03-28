@@ -29,8 +29,8 @@ from code_goes_here.construction import (
 )
 from .mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_FAT,
-    SimplePegParameters,
 )
+from .build_a_butt_joint_shavings import SimplePegParameters
 from .japanese_joints import (
     cut_lapped_gooseneck_joint,
     cut_housed_dovetail_butt_joint,

@@ -20,6 +20,7 @@ from __future__ import annotations
 from code_goes_here.timber import *
 from code_goes_here.measuring import (
     locate_centerline,
+    locate_face,
     locate_plane_from_edge_in_direction,
     mark_distance_from_end_along_centerline,
     Space,
@@ -28,7 +29,7 @@ from code_goes_here.measuring import (
 )
 from code_goes_here.construction import *
 from code_goes_here.rule import *
-from code_goes_here.rule import safe_dot_product
+from code_goes_here.rule import safe_dot_product, safe_transform_vector
 from code_goes_here.cutcsg import CutCSG
 
 # ============================================================================
@@ -110,6 +111,275 @@ def locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(ar
     return locate_plane_from_edge_in_direction(
         mortise_timber, TimberCenterline.CENTERLINE, direction_in_plane, distance_from_centerline
     )
+
+
+# ============================================================================
+# Peg Geometry
+# ============================================================================
+
+class PegPositionSpace(Enum):
+    """Which timber's coordinate space to use when interpreting peg positions and orientations."""
+    TENON = 1
+    MORTISE = 2
+
+
+# TODO add tenon bore offset parameter, it could be none | auto | Numeric
+@dataclass(frozen=True)
+class SimplePegParameters:
+    """
+    Parameters for simple pegs in mortise and tenon joints.
+
+    Attributes:
+        shape: Shape specification for the peg (from PegShape enum)
+        peg_positions: List of (distance_from_shoulder, distance_from_centerline) tuples
+                       - First value: distance along length axis measured from shoulder of tenon
+                       - Second value: distance in perpendicular axis measured from center
+        peg_position_space: Controls which timber's coordinate system is used to interpret each
+                    component of peg_positions. A tuple of (shoulder_axis_space, lateral_axis_space).
+                    - shoulder_axis_space (first element): controls distance_from_shoulder direction.
+                      TENON = along tenon length axis. MORTISE = along mortise length axis.
+                    - lateral_axis_space (second element): controls distance_from_centerline direction.
+                      TENON = perpendicular to peg face normal and tenon length axis.
+                      MORTISE = along mortise length axis.
+        size: Peg diameter (for round pegs) or side length (for square pegs)
+        depth: Depth measured from mortise face where peg goes in (None means all the way through the mortise timber)
+        tenon_hole_offset: Offset distance of the hole in the tenon towards the shoulder so that the peg tightens the joint up. You should usually set this to 1-2mm
+        peg_orientation: Controls which timber's face axes the peg cross-section is aligned to, plus an
+                         optional CCW rotation around the drill axis. A tuple of (space, ccw_rotation_angle).
+                         - space: TENON = align peg Y axis with the tenon length axis.
+                                  MORTISE = align peg Y axis with the mortise length axis.
+                         - ccw_rotation_angle: counter-clockwise rotation (in radians) around the drill
+                           axis applied on top of the face-aligned basis. 0 = no rotation.
+    """
+    shape: PegShape
+    peg_positions: List[Tuple[Numeric, Numeric]]
+    size: Numeric
+    depth: Optional[Numeric] = None
+    tenon_hole_offset: Numeric = Rational(0)
+    peg_position_space: Tuple[PegPositionSpace, PegPositionSpace] = (
+        PegPositionSpace.TENON,
+        PegPositionSpace.TENON,
+    )
+    peg_orientation: Tuple[PegPositionSpace, Numeric] = (
+        PegPositionSpace.TENON,
+        Rational(0),
+    )
+
+
+@dataclass(frozen=True)
+class PegPositionResult:
+    """
+    Computed geometry for a single peg, all positions and orientations in global space.
+
+    Attributes:
+        tenon_face_position_global: Center of the peg hole on the tenon face (no draw-bore offset).
+        tenon_face_position_with_offset_global: Center of the peg hole on the tenon face,
+            shifted toward the shoulder by tenon_hole_offset for draw-bore tightening.
+        mortise_entry_position_global: Center of the peg hole on the mortise entry face.
+        orientation_global: Orientation of the peg (Z-axis = drill direction into the timber).
+        peg_depth: Depth of the peg hole (full chord through the mortise, or explicit depth).
+        stickout_length: Length the peg protrudes beyond the mortise entry face.
+    """
+    tenon_face_position_global: V3
+    tenon_face_position_with_offset_global: V3
+    mortise_entry_position_global: V3
+    orientation_global: Orientation
+    peg_depth: Numeric
+    stickout_length: Numeric
+
+
+def compute_peg_positions(
+    arrangement: ButtJointTimberArrangement,
+    shoulder_plane: Plane,
+    peg_parameters: SimplePegParameters,
+    tenon_position: V2,
+) -> List[PegPositionResult]:
+    """
+    Compute peg positions in global space for a mortise and tenon joint.
+
+    Uses the arrangement's front_face_on_butt_timber as the peg face on the tenon.
+    All computations are done in global space, using the measure/mark pattern where possible.
+
+    Args:
+        arrangement: Butt joint arrangement (butt_timber = tenon, receiving_timber = mortise).
+                     Must have front_face_on_butt_timber set.
+        shoulder_plane: The shoulder plane in global space (from
+                        locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber).
+        peg_parameters: Peg configuration (shape, positions, size, depth, offset).
+        tenon_position: Offset of tenon center from timber centerline in tenon local cross-section (X, Y).
+
+    Returns:
+        List of PegPositionResult, one per peg_position entry.
+    """
+    tenon_timber = arrangement.butt_timber
+    mortise_timber = arrangement.receiving_timber
+    tenon_end = arrangement.butt_timber_end
+
+    assert arrangement.front_face_on_butt_timber is not None, (
+        "arrangement.front_face_on_butt_timber must be set to determine the peg face"
+    )
+    tenon_face: TimberLongFace = arrangement.front_face_on_butt_timber
+    peg_face: TimberFace = tenon_face.to.face()
+
+    shoulder_mark = mark_distance_from_end_along_centerline(
+        shoulder_plane,
+        tenon_timber,
+        tenon_end,
+    )
+    shoulder_point_global = shoulder_mark.measure().position
+
+    tenon_right = tenon_timber.get_face_direction_global(TimberFace.RIGHT)
+    tenon_front = tenon_timber.get_face_direction_global(TimberFace.FRONT)
+    marking_origin_global = (
+        shoulder_point_global
+        + tenon_right * tenon_position[0]
+        + tenon_front * tenon_position[1]
+    )
+
+    tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
+
+    tenon_face_plane = locate_face(tenon_timber, peg_face)
+    peg_face_normal_global = tenon_face_plane.normal
+
+    tenon_centerline = locate_centerline(tenon_timber)
+    mortise_centerline = locate_centerline(mortise_timber)
+
+    peg_drill_direction = -peg_face_normal_global
+    peg_ray_direction = peg_face_normal_global
+
+    orient_space, ccw_rotation_angle = peg_parameters.peg_orientation
+    if orient_space == PegPositionSpace.TENON:
+        peg_y_base = tenon_centerline.direction
+    else:
+        mortise_len_dir = mortise_centerline.direction
+        if safe_dot_product(mortise_len_dir, tenon_end_direction) < 0:
+            mortise_len_dir = -mortise_len_dir
+        peg_y_base = mortise_len_dir
+
+    if zero_test(ccw_rotation_angle):
+        peg_orientation_global = Orientation.from_z_and_y(
+            z_direction=peg_drill_direction,
+            y_direction=peg_y_base,
+        )
+    else:
+        base_orientation = Orientation.from_z_and_y(
+            z_direction=peg_drill_direction,
+            y_direction=peg_y_base,
+        )
+        rotation_around_z = Orientation.from_angle_axis(
+            ccw_rotation_angle,
+            peg_drill_direction,
+        )
+        peg_orientation_global = Orientation(
+            rotation_around_z.matrix * base_orientation.matrix
+        )
+
+    if tenon_face in [TimberLongFace.RIGHT, TimberLongFace.LEFT]:
+        tenon_lateral_direction = tenon_front
+    else:
+        tenon_lateral_direction = tenon_right
+
+    results: List[PegPositionResult] = []
+
+    for distance_from_shoulder, distance_from_centerline in peg_parameters.peg_positions:
+        if peg_parameters.peg_position_space[0] == PegPositionSpace.TENON:
+            shoulder_axis = tenon_end_direction
+        else:
+            mortise_len_dir = mortise_centerline.direction
+            if safe_dot_product(mortise_len_dir, tenon_end_direction) < 0:
+                mortise_len_dir = -mortise_len_dir
+            shoulder_axis = mortise_len_dir
+
+        if peg_parameters.peg_position_space[1] == PegPositionSpace.TENON:
+            lateral_axis = tenon_lateral_direction
+        else:
+            lateral_axis = mortise_centerline.direction
+
+        peg_center_global = (
+            marking_origin_global
+            + shoulder_axis * distance_from_shoulder
+            + lateral_axis * distance_from_centerline
+        )
+
+        dist_to_face = safe_dot_product(
+            tenon_face_plane.normal,
+            tenon_face_plane.point - peg_center_global,
+        )
+        peg_pos_on_tenon_face_global = (
+            peg_center_global + tenon_face_plane.normal * dist_to_face
+        )
+
+        offset_direction = -tenon_end_direction
+        peg_pos_on_tenon_face_with_offset_global = (
+            peg_pos_on_tenon_face_global
+            + offset_direction * peg_parameters.tenon_hole_offset
+        )
+
+        ray_origin_local = mortise_timber.transform.global_to_local(
+            peg_pos_on_tenon_face_global
+        )
+        ray_dir_local = safe_transform_vector(
+            mortise_timber.transform.orientation.matrix.T,
+            peg_ray_direction,
+        )
+
+        box_mins = [
+            -mortise_timber.size[0] / 2,
+            -mortise_timber.size[1] / 2,
+            Integer(0),
+        ]
+        box_maxs = [
+            mortise_timber.size[0] / 2,
+            mortise_timber.size[1] / 2,
+            mortise_timber.length,
+        ]
+
+        t_enter_vals = []
+        t_exit_vals = []
+        for axis in range(3):
+            d = ray_dir_local[axis]
+            if zero_test(d):
+                assert box_mins[axis] <= ray_origin_local[axis] <= box_maxs[axis], (
+                    f"Peg ray is parallel to mortise timber axis {axis} but peg position is "
+                    f"outside the mortise timber bounds on that axis"
+                )
+            else:
+                t1 = (box_mins[axis] - ray_origin_local[axis]) / d
+                t2 = (box_maxs[axis] - ray_origin_local[axis]) / d
+                t_enter_vals.append(min(t1, t2))
+                t_exit_vals.append(max(t1, t2))
+
+        assert t_enter_vals and t_exit_vals, (
+            "Peg ray is parallel to all three mortise timber axes"
+        )
+        t_enter = max(t_enter_vals)
+        t_exit = min(t_exit_vals)
+        assert t_exit > t_enter, (
+            "Peg ray does not intersect the mortise timber; "
+            "check that the peg position and direction are correct"
+        )
+
+        peg_entry_t = t_exit if t_enter < 0 else t_enter
+        peg_pos_on_mortise_face_global = (
+            peg_pos_on_tenon_face_global + peg_ray_direction * peg_entry_t
+        )
+
+        if peg_parameters.depth is not None:
+            peg_depth = peg_parameters.depth
+        else:
+            peg_depth = t_exit - t_enter
+        stickout_length = peg_depth * Rational(1, 2)
+
+        results.append(PegPositionResult(
+            tenon_face_position_global=peg_pos_on_tenon_face_global,
+            tenon_face_position_with_offset_global=peg_pos_on_tenon_face_with_offset_global,
+            mortise_entry_position_global=peg_pos_on_mortise_face_global,
+            orientation_global=peg_orientation_global,
+            peg_depth=peg_depth,
+            stickout_length=stickout_length,
+        ))
+
+    return results
 
 
 # ============================================================================
