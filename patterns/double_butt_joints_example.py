@@ -6,33 +6,44 @@ Each joint is created from 4"x5" timbers that are 4' long.
 """
 
 from sympy import Rational
-from typing import Union, List
+from typing import Union
 
 from code_goes_here.rule import V3, create_v3
-from code_goes_here.timber import CutTimber, Frame
+from code_goes_here.timber import *
 from code_goes_here.joints.double_butt_joints import cut_splined_opposing_double_butt_joint
 from code_goes_here.example_shavings import create_canonical_example_opposing_double_butt_joint_timbers
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 
 
-def make_splined_opposing_double_butt_joint_example(position: V3) -> list[CutTimber]:
+def make_splined_opposing_double_butt_joint_example(position: V3) -> Frame:
     """
     Create a splined opposing double butt joint example.
 
     Two butt timbers approach a receiving timber (post) from opposite directions.
+    Returns a Frame containing all three cut timbers and the spline accessory.
 
     Args:
         position: Center position of the joint (V3)
-
-    Returns:
-        List of CutTimber objects representing the joint (empty while stubbed)
     """
     arrangement = create_canonical_example_opposing_double_butt_joint_timbers(position=position)
-    try:
-        joint = cut_splined_opposing_double_butt_joint(arrangement)
-        return list(joint.cut_timbers.values())
-    except NotImplementedError:
-        return []
+    joint = cut_splined_opposing_double_butt_joint(arrangement = arrangement,
+        slot_facing_end_on_receiving_timber = TimberReferenceEnd.TOP,
+        # thickness is in the axis perpendicular to the joint plane
+        slot_thickness=inches(1),
+        # depth is in the axis of the receiving timber, measured from the face of the butt timber that alines with slot_facing_end_on_receiving_timber
+        slot_depth=inches(2),
+        # length is in the axis parallel to the butt timbers
+        spline_length=inches(12),
+        # the spline has this much extra depth beyond the slot depth
+        spline_extra_depth=inches(1/2),
+        # the slot extends this much beyond the spline on each end so that there is clearance 
+        slot_symmetric_extra_length=inches(1/4),
+        # inset the shoulder plane on both sides by this amount, flush with faces of receiving timber if 0
+        shoulder_symmetric_inset=inches(1),
+        # offset the solt by this much, measured relative to receiving timber centerline and in the axis perpendicular to the joint plane and 
+        slot_lateral_offset=inches(0),
+    )
+    return Frame.from_joints([joint], name="Splined Opposing Double Butt Joint")
 
 
 def create_double_butt_joints_patternbook() -> PatternBook:
@@ -44,7 +55,7 @@ def create_double_butt_joints_patternbook() -> PatternBook:
     """
     patterns = [
         (PatternMetadata("splined_opposing_double_butt_joint", ["double_butt_joints", "splined_opposing"], "frame"),
-         lambda center: Frame(cut_timbers=make_splined_opposing_double_butt_joint_example(center), name="Splined Opposing Double Butt Joint")),
+         lambda center: make_splined_opposing_double_butt_joint_example(center)),
     ]
 
     return PatternBook(patterns=patterns)
@@ -53,12 +64,12 @@ def create_double_butt_joints_patternbook() -> PatternBook:
 patternbook = create_double_butt_joints_patternbook()
 
 
-def create_all_double_butt_joint_examples() -> Union[Frame, List]:
+def create_all_double_butt_joint_examples() -> Union[Frame]:
     """
     Create double butt joint examples with automatic spacing starting from the origin.
 
     Returns:
-        Frame or List: Frame object containing all cut timbers, or list of CSG objects
+        Frame object containing all cut timbers
     """
     book = create_double_butt_joints_patternbook()
     frame = book.raise_pattern_group("double_butt_joints", separation_distance=Rational(2))

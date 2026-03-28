@@ -2136,6 +2136,34 @@ class Wedge(JointAccessory):
         )
 
 
+@dataclass(frozen=True)
+class Spline(JointAccessory):
+    """
+    A flat rectangular spline, used to reinforce a joint by fitting into a keyed slot
+    that spans across multiple timber members.
+
+    Stored in global space. The local frame (defined by transform) is:
+      - +Z axis: length direction, spanning across the timbers
+      - +Y axis: depth direction, pointing into the timber from the slot opening face
+      - +X axis: thickness direction, the thin dimension perpendicular to the joint plane
+
+    For a splined opposing double butt joint, the transform is the same as the
+    slot marking transform (Orientation.from_z_and_y(z=butt_length_dir, y=slot_dir)).
+    """
+    transform: Transform
+    thickness: Numeric  # thin dimension, in the joint-plane-normal axis (+X local)
+    depth: Numeric      # dimension going into the timber along the slot direction (+Y local)
+    length: Numeric     # dimension spanning across timbers along the butt-length axis (+Z local)
+
+    def render_csg_local(self) -> CutCSG:
+        return RectangularPrism(
+            size=create_v2(self.thickness, self.depth),
+            transform=Transform.identity(),
+            start_distance=-(self.length / Integer(2)),
+            end_distance=self.length / Integer(2),
+        )
+
+
 # TODO you should build this out, maybe do any MeasuredTimberFeature
 @dataclass(frozen=True)
 class Sticker(JointAccessory):

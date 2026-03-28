@@ -440,6 +440,7 @@ class Comparison(Enum):
     EQ = "=="     # Equal
     NE = "!="     # Not equal
 
+# TODO make this 2 expr arguments...
 def safe_compare(expr, comparison: Comparison):
     """
     Safely evaluate a comparison by freezing constants first.
