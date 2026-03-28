@@ -1,6 +1,18 @@
 """
 GiraffeCAD - Build-a-Butt-Joint Helpers
 Shared helpers for computing shoulder planes and marking spaces for butt joints.
+
+THe general approach to building-a-butt-joint is:
+
+1. compute the shoulder plane which is always parallel to the length axis of the receiving timber and mark where the butt timber centerline intersects the shoulder plane 
+3. build positive and negative CSG components for the receiving and butt timbers (some are shared, some are separate depending on the joint) typically (but not always) relative to the shoulder plane and intersection marking
+4. compute peg positions and cut peg holes
+5. return the resultant CSG cut for each timber
+
+outside of the purview of build-a-butt-joint, finish the joint:
+
+6. (optional) make additional cuts and accessories like splines or wedges which are not supported by build-a-butt-joint
+7. assembly and return the final joint
 """
 
 from __future__ import annotations
