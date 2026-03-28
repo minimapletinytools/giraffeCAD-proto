@@ -16,7 +16,7 @@ def test_dimension_constructors():
         ("sun(1)", sun(1)),
         ("bu(1)", bu(1)),
         ("degrees(90)", degrees(90)),
-        ("radians(3.14159)", radians(3.14159)),
+        ("radians(3.14159)", radians(Float("3.14159"))),
     ]
     
     print("Testing dimension constructors:")

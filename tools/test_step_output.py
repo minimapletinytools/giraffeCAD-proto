@@ -12,13 +12,26 @@ Output goes to step_test_output/ in the current directory.
 
 import sys
 import time
+import importlib.util
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "patterns" / "structures"))
 
 from code_goes_here.blueprint import export_frame_step, export_cut_timber_step, _OCP_AVAILABLE
+
+
+def _load_structure_factory(module_name: str, factory_name: str):
+    module_path = PROJECT_ROOT / "patterns" / "structures" / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(f"patterns_structures_{module_name}", module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load module from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    factory = getattr(module, factory_name, None)
+    if not callable(factory):
+        raise AttributeError(f"{factory_name} is missing or not callable in {module_path}")
+    return factory
 
 
 def main():
@@ -34,10 +47,10 @@ def main():
     t0 = time.time()
 
     if pattern == "horsey":
-        from horsey_example import create_sawhorse
+        create_sawhorse = _load_structure_factory("horsey_example", "create_sawhorse")
         frame = create_sawhorse()
     elif pattern == "oscarshed":
-        from oscarshed import create_oscarshed
+        create_oscarshed = _load_structure_factory("oscarshed", "create_oscarshed")
         frame = create_oscarshed()
     else:
         print(f"Unknown pattern: {pattern}")

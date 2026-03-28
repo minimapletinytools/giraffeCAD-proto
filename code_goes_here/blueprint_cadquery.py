@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union, cast
 
 from .cutcsg import (
     ConvexPolygonExtrusion,
@@ -38,7 +38,7 @@ except ImportError:
     _TRIMESH_AVAILABLE = False
 
 try:
-    import cadquery as cq  # type: ignore[import-untyped]
+    import cadquery as cq
 
     _CADQUERY_AVAILABLE = True
 except ImportError:
@@ -220,7 +220,7 @@ def _apply_rotation_and_translation(wp: "cq.Workplane", rot: list[list[float]], 
         mat.Value(2, 1), mat.Value(2, 2), mat.Value(2, 3), ty,
         mat.Value(3, 1), mat.Value(3, 2), mat.Value(3, 3), tz,
     )
-    moved_shape = wp.val().moved(cq.Location(trsf))
+    moved_shape = cast(Any, wp.val()).moved(cq.Location(trsf))
     return cq.Workplane("XY").newObject([moved_shape])
 
 

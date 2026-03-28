@@ -16,16 +16,30 @@ import time
 import cProfile
 import pstats
 import io
+import importlib.util
 from pathlib import Path
 from datetime import datetime
 import argparse
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "patterns" / "structures"))
-
-from tinyhouse120 import create_tinyhouse120
 from code_goes_here.rule import set_numeric_mode, get_numeric_mode
+
+
+def _load_structure_factory(module_name: str, factory_name: str):
+    module_path = PROJECT_ROOT / "patterns" / "structures" / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(f"patterns_structures_{module_name}", module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load module from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    factory = getattr(module, factory_name, None)
+    if not callable(factory):
+        raise AttributeError(f"{factory_name} is missing or not callable in {module_path}")
+    return factory
+
+
+create_tinyhouse120 = _load_structure_factory("tinyhouse120", "create_tinyhouse120")
 
 
 def profile_frame_construction(quick=False, hash_timbers=False):

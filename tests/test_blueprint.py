@@ -1,9 +1,11 @@
 """Tests for code_goes_here.blueprint — STL (and STEP guard) export."""
 
+import importlib.util
 import os
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from sympy import Integer
@@ -51,6 +53,21 @@ def _simple_frame() -> Frame:
     return Frame(cut_timbers=[CutTimber(t1), CutTimber(t2)], name="TestFrame")
 
 
+def _load_structure_factory(module_name: str, factory_name: str) -> Any:
+    module_path = (
+        Path(__file__).resolve().parent.parent / "patterns" / "structures" / f"{module_name}.py"
+    )
+    spec = importlib.util.spec_from_file_location(f"patterns_structures_{module_name}", module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load module from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    factory = getattr(module, factory_name, None)
+    if not callable(factory):
+        raise AttributeError(f"{factory_name} is missing or not callable in {module_path}")
+    return factory
+
+
 # ---------------------------------------------------------------------------
 # STL export — single CutTimber
 # ---------------------------------------------------------------------------
@@ -81,7 +98,7 @@ class TestExportCutTimberStl:
         with tempfile.TemporaryDirectory() as td:
             dest = Path(td) / "out.stl"
             export_cut_timber_stl(ct, dest)
-            mesh = trimesh.load(str(dest), file_type="stl")
+            mesh = cast("trimesh.Trimesh", trimesh.load(str(dest), file_type="stl"))
             assert len(mesh.faces) > 0
             assert len(mesh.vertices) > 0
 
@@ -164,8 +181,7 @@ class TestStepOscarshed:
 
     @pytest.fixture(scope="class")
     def oscarshed_frame(self):
-        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "patterns" / "structures"))
-        from oscarshed import create_oscarshed
+        create_oscarshed = _load_structure_factory("oscarshed", "create_oscarshed")
         return create_oscarshed()
 
     def test_export_single_timber_step(self, oscarshed_frame):
@@ -204,8 +220,11 @@ class TestStepOscarshed:
         from code_goes_here.rule import Transform
         from code_goes_here.rendering_utils import sympy_to_float
         from code_goes_here.timber import TimberCorner
-        from OCP.Bnd import Bnd_Box
-        from OCP.BRepBndLib import BRepBndLib
+        import OCP.Bnd as _Bnd
+        import OCP.BRepBndLib as _BRepBndLib
+
+        Bnd_Box = getattr(_Bnd, "Bnd_Box")
+        BRepBndLib = getattr(_BRepBndLib, "BRepBndLib")
 
         TOL = 100.0  # mm — generous tolerance for joint overruns
 

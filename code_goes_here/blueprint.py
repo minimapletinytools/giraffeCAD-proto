@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union, cast
 
 from .cutcsg import (
     ConvexPolygonExtrusion,
@@ -37,25 +37,68 @@ except ImportError:
     trimesh = None  # type: ignore[assignment]
     _TRIMESH_AVAILABLE = False
 
+BRepPrimAPI_MakeBox = cast(Any, None)
+BRepPrimAPI_MakeCylinder = cast(Any, None)
+BRepAlgoAPI_Fuse = cast(Any, None)
+BRepAlgoAPI_Cut = cast(Any, None)
+BRepBuilderAPI_MakeEdge = cast(Any, None)
+BRepBuilderAPI_MakeWire = cast(Any, None)
+BRepBuilderAPI_MakeFace = cast(Any, None)
+BRepBuilderAPI_Transform = cast(Any, None)
+BRepPrimAPI_MakePrism = cast(Any, None)
+gp_Pnt = cast(Any, None)
+gp_Vec = cast(Any, None)
+gp_Dir = cast(Any, None)
+gp_Ax2 = cast(Any, None)
+gp_Trsf = cast(Any, None)
+gp_Mat = cast(Any, None)
+gp_XYZ = cast(Any, None)
+TopoDS_Shape = cast(Any, None)
+TopoDS_Compound = cast(Any, None)
+BRep_Builder = cast(Any, None)
+STEPControl_Writer = cast(Any, None)
+STEPControl_AsIs = cast(Any, None)
+Interface_Static = cast(Any, None)
+TopLoc_Location = cast(Any, None)
+
 try:
-    from OCP.BRepPrimAPI import (  # type: ignore[import-untyped]
-        BRepPrimAPI_MakeBox,
-        BRepPrimAPI_MakeCylinder,
-    )
-    from OCP.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Cut  # type: ignore[import-untyped]
-    from OCP.BRepBuilderAPI import (  # type: ignore[import-untyped]
-        BRepBuilderAPI_MakeEdge,
-        BRepBuilderAPI_MakeWire,
-        BRepBuilderAPI_MakeFace,
-        BRepBuilderAPI_Transform,
-    )
-    from OCP.BRepPrimAPI import BRepPrimAPI_MakePrism  # type: ignore[import-untyped]
-    from OCP.gp import gp_Pnt, gp_Vec, gp_Dir, gp_Ax2, gp_Trsf, gp_Mat, gp_XYZ  # type: ignore[import-untyped]
-    from OCP.TopoDS import TopoDS_Shape, TopoDS_Compound  # type: ignore[import-untyped]
-    from OCP.BRep import BRep_Builder  # type: ignore[import-untyped]
-    from OCP.STEPControl import STEPControl_Writer, STEPControl_AsIs  # type: ignore[import-untyped]
-    from OCP.Interface import Interface_Static  # type: ignore[import-untyped]
-    from OCP.TopLoc import TopLoc_Location  # type: ignore[import-untyped]
+    import OCP.BRepPrimAPI as _BRepPrimAPI
+    import OCP.BRepAlgoAPI as _BRepAlgoAPI
+    import OCP.BRepBuilderAPI as _BRepBuilderAPI
+    import OCP.gp as _gp
+    import OCP.TopoDS as _TopoDS
+    import OCP.BRep as _BRep
+    import OCP.STEPControl as _STEPControl
+    import OCP.Interface as _Interface
+    import OCP.TopLoc as _TopLoc
+
+    BRepPrimAPI_MakeBox = getattr(_BRepPrimAPI, "BRepPrimAPI_MakeBox")
+    BRepPrimAPI_MakeCylinder = getattr(_BRepPrimAPI, "BRepPrimAPI_MakeCylinder")
+    BRepPrimAPI_MakePrism = getattr(_BRepPrimAPI, "BRepPrimAPI_MakePrism")
+
+    BRepAlgoAPI_Fuse = getattr(_BRepAlgoAPI, "BRepAlgoAPI_Fuse")
+    BRepAlgoAPI_Cut = getattr(_BRepAlgoAPI, "BRepAlgoAPI_Cut")
+
+    BRepBuilderAPI_MakeEdge = getattr(_BRepBuilderAPI, "BRepBuilderAPI_MakeEdge")
+    BRepBuilderAPI_MakeWire = getattr(_BRepBuilderAPI, "BRepBuilderAPI_MakeWire")
+    BRepBuilderAPI_MakeFace = getattr(_BRepBuilderAPI, "BRepBuilderAPI_MakeFace")
+    BRepBuilderAPI_Transform = getattr(_BRepBuilderAPI, "BRepBuilderAPI_Transform")
+
+    gp_Pnt = getattr(_gp, "gp_Pnt")
+    gp_Vec = getattr(_gp, "gp_Vec")
+    gp_Dir = getattr(_gp, "gp_Dir")
+    gp_Ax2 = getattr(_gp, "gp_Ax2")
+    gp_Trsf = getattr(_gp, "gp_Trsf")
+    gp_Mat = getattr(_gp, "gp_Mat")
+    gp_XYZ = getattr(_gp, "gp_XYZ")
+
+    TopoDS_Shape = getattr(_TopoDS, "TopoDS_Shape")
+    TopoDS_Compound = getattr(_TopoDS, "TopoDS_Compound")
+    BRep_Builder = getattr(_BRep, "BRep_Builder")
+    STEPControl_Writer = getattr(_STEPControl, "STEPControl_Writer")
+    STEPControl_AsIs = getattr(_STEPControl, "STEPControl_AsIs")
+    Interface_Static = getattr(_Interface, "Interface_Static")
+    TopLoc_Location = getattr(_TopLoc, "TopLoc_Location")
 
     _OCP_AVAILABLE = True
 except ImportError:
