@@ -875,23 +875,39 @@ def chop_shoulder_notch_aligned_with_timber(notch_timber: TimberLike, butting_ti
     t = safe_dot_product(shoulder_plane.normal, shoulder_plane.point - butting_centerline.point) / denom
     intersection_global = butting_centerline.point + butting_centerline.direction * t
 
-    # TODO compute optimal size instead
+    
     # Oversized notch dimensions to guarantee full coverage at any rotation:
     # max cross-section dimension * sqrt(2) covers the worst-case diagonal
     max_size = Max(notch_timber.size[0], notch_timber.size[1])
     notch_span = max_size * sqrt(Integer(2))
 
-    # Notch width along the notch_timber length axis: use the butting timber's
-    # cross-section projected onto the notch_timber length axis. Divide by the
-    # cosine of the angle between the butting timber and the notch_timber length axis
-    # to account for the approach angle. Use max dimension * sqrt(2) as a safe oversize.
-    butting_max_size = Max(butting_timber.size[0], butting_timber.size[1])
-    notch_width = butting_max_size * sqrt(Integer(2))
-
     # Notch depth: from the shoulder plane outward past the timber surface.
     # The shoulder plane is distance_from_centerline from centerline; the timber
     # surface at worst is max_size * sqrt(2) / 2 from centerline.
     notch_depth = max_size * sqrt(Integer(2)) / Integer(2)
+
+    # Notch width along the notch_timber length axis: compute the projection of the butting timber's
+    # cross-section onto the notch_timber length axis. We also account for the shift along the notch
+    # length due to the approach angle over the depth of the notch.
+    w_dir = butting_timber.get_width_direction_global()
+    h_dir = butting_timber.get_height_direction_global()
+    
+    # Cross-section span projected onto notch length
+    cross_section_span_on_notch_length = (
+        Abs(safe_dot_product(w_dir, notch_length_dir_global)) * butting_timber.size[0] +
+        Abs(safe_dot_product(h_dir, notch_length_dir_global)) * butting_timber.size[1]
+    )
+
+    # Calculate shift of the butting timber along the notch length axis over the depth of the notch
+    approach_dot_depth = safe_dot_product(raw_approach, approach_direction_global)
+    approach_dot_length = safe_dot_product(raw_approach, notch_length_dir_global)
+    
+    if not zero_test(approach_dot_depth):
+        shift_along_length = notch_depth * Abs(approach_dot_length / approach_dot_depth)
+    else:
+        shift_along_length = Integer(0)
+        
+    notch_width = cross_section_span_on_notch_length + shift_along_length
 
     # Build the notch prism in notch_timber local coordinates.
     # In local coords: Z = length, X = width (size[0]), Y = height (size[1]).
