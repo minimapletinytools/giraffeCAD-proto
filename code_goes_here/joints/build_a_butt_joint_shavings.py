@@ -17,7 +17,7 @@ from code_goes_here.measuring import (
 from code_goes_here.construction import *
 from code_goes_here.rule import *
 from code_goes_here.rule import safe_dot_product
-
+from code_goes_here.cutcsg import CutCSG
 
 # ============================================================================
 # Shoulder Plane
@@ -173,3 +173,19 @@ def compute_butt_joint_shoulder(
         butt_direction=butt_direction,
         marking_space=marking_space,
     )
+
+
+# ============================================================================
+# Butt Joint Geometry Definitions
+# ============================================================================
+
+@dataclass(frozen=True)
+class ButtJointCSGParts:
+    """
+    Representation of the geometry components that make up a butt joint.
+    They are combined by unioning the positive parts, then differencing the negative parts.
+    """
+    positive_receiving_csg: Optional[CutCSG] = None
+    negative_receiving_csg: Optional[CutCSG] = None
+    positive_butt_csg: Optional[CutCSG] = None
+    negative_butt_csg: Optional[CutCSG] = None
