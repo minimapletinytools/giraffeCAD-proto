@@ -10,21 +10,21 @@ from .joint_shavings import *
 
 
 def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArrangement,
-                                           # the slot facing this end of the receiving timber
-                                           slot_facing_end_on_receiving_timber: TimberReferenceEnd = TimberReferenceEnd.TOP,
                                            # thickness is in the axis perpendicular to the joint plane
-                                           slot_thickness=None,
-                                           # depth is in the axis of the receiving timber, measured from the face of the butt timber that alines with slot_facing_end_on_receiving_timber
-                                           slot_depth=None,
+                                           slot_thickness: Numeric,
+                                           # depth is in the axis of the receiving timber, measured from the face of the butt timber that aligns with slot_facing_end_on_receiving_timber
+                                           slot_depth: Numeric,
                                            # length is in the axis parallel to the butt timbers
-                                           spline_length=None,
-                                           # the spline has this much extra depth beyond the slot depth
+                                           spline_length: Numeric,
+                                           # REQUIRED: the slot faces this end of the receiving timber
+                                           slot_facing_end_on_receiving_timber: TimberReferenceEnd,
+                                           # the spline has this much extra depth beyond the slot depth; defaults to 1/4 of slot_depth
                                            spline_extra_depth=None,
-                                           # the slot extends this much beyond the spline on each end so that there is clearance 
-                                           slot_symmetric_extra_length=None,
+                                           # the slot extends this much beyond the spline on each end for clearance
+                                           slot_symmetric_extra_length=mm(3),
                                            # inset the shoulder plane on both sides by this amount, flush with faces of receiving timber if 0
-                                           shoulder_symmetric_inset=None,
-                                           # offset the solt by this much, measured relative to receiving timber centerline and in the axis perpendicular to the joint plane and 
+                                           shoulder_symmetric_inset=Rational(0),
+                                           # offset the slot by this much, measured relative to receiving timber centerline in the axis perpendicular to the joint plane
                                            slot_lateral_offset=Rational(0),
                                            ) -> Joint:
     """
@@ -79,18 +79,8 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
     slot_depth_axis_dimension = butt_timber_1.get_size_in_face_normal_axis(slot_face_on_butt_1)
     slot_thickness_axis_dimension = butt_timber_1.get_size_in_direction_3d(joint_plane_normal_global)
 
-    if slot_thickness is None:
-        slot_thickness = slot_thickness_axis_dimension / Rational(3)
-    if slot_depth is None:
-        slot_depth = slot_depth_axis_dimension / Rational(2)
     if spline_extra_depth is None:
-        spline_extra_depth = Rational(0)
-    if slot_symmetric_extra_length is None:
-        slot_symmetric_extra_length = Rational(0)
-    if shoulder_symmetric_inset is None:
-        shoulder_symmetric_inset = Rational(0)
-    if spline_length is None:
-        spline_length = receiving_timber.get_size_in_direction_3d(butt_length_direction_global) + slot_depth
+        spline_extra_depth = slot_depth / Rational(4)
 
     assert safe_compare(slot_thickness, Comparison.GT), "slot_thickness must be > 0"
     assert safe_compare(slot_depth, Comparison.GT), "slot_depth must be > 0"
@@ -263,4 +253,57 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
         jointAccessories={
             "spline": spline,
         },
+    )
+
+
+def cut_plain_splined_opposing_double_butt_joint(
+    arrangement: DoubleButtJointTimberArrangement,
+    slot_facing_end_on_receiving_timber: TimberReferenceEnd,
+) -> Joint:
+    """
+    Plain/default recipe for splined opposing double butt joints.
+
+    Defaults applied here:
+    - slot_thickness = 1/3 of receiving timber thickness in the axis perpendicular to the joint plane
+    - slot_depth = 1/2 of butt_timber_1 width in the slot-depth axis
+    - spline_length = 4x the receiving timber width in the axis parallel to butt timbers
+    - spline_extra_depth = 1/4 of slot_depth
+    - slot_symmetric_extra_length = 3 mm
+    - shoulder_symmetric_inset = 0
+    - slot_lateral_offset = 0
+    """
+    butt_timber_1 = arrangement.butt_timber_1
+    receiving_timber = arrangement.receiving_timber
+
+    butt_length_direction_global = butt_timber_1.get_length_direction_global()
+    receiving_length_direction_global = receiving_timber.get_length_direction_global()
+    slot_direction_global = receiving_timber.get_face_direction_global(
+        slot_facing_end_on_receiving_timber
+    )
+    joint_plane_normal_global = normalize_vector(
+        cross_product(butt_length_direction_global, receiving_length_direction_global)
+    )
+
+    slot_face_on_butt_1 = butt_timber_1.get_closest_oriented_long_face_from_global_direction(
+        slot_direction_global
+    )
+
+    slot_thickness = receiving_timber.get_size_in_direction_3d(
+        joint_plane_normal_global
+    ) / Rational(3)
+    slot_depth = butt_timber_1.get_size_in_face_normal_axis(slot_face_on_butt_1) / Rational(2)
+    spline_length = receiving_timber.get_size_in_direction_3d(
+        butt_length_direction_global
+    ) * Integer(4)
+
+    return cut_splined_opposing_double_butt_joint(
+        arrangement=arrangement,
+        slot_facing_end_on_receiving_timber=slot_facing_end_on_receiving_timber,
+        slot_thickness=slot_thickness,
+        slot_depth=slot_depth,
+        spline_length=spline_length,
+        spline_extra_depth=None,
+        slot_symmetric_extra_length=mm(3),
+        shoulder_symmetric_inset=Rational(0),
+        slot_lateral_offset=Rational(0),
     )

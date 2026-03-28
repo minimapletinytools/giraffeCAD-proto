@@ -18,7 +18,10 @@ class TestSplinedOpposingDoubleButtJoint:
     def test_returns_joint_with_three_cut_timbers(self):
         """Implemented function returns all three cut timbers with one cut each."""
         arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
-        joint = cut_splined_opposing_double_butt_joint(arrangement)
+        joint = cut_plain_splined_opposing_double_butt_joint(
+            arrangement,
+            TimberReferenceEnd.TOP,
+        )
 
         assert set(joint.cut_timbers.keys()) == {"receiving_timber", "butt_timber_1", "butt_timber_2"}
         assert len(joint.cut_timbers["receiving_timber"].cuts) == 1
@@ -28,7 +31,10 @@ class TestSplinedOpposingDoubleButtJoint:
     def test_slot_point_removed_on_all_three_members(self):
         """A point known to lie inside the default slot should be removed from all three timbers."""
         arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
-        joint = cut_splined_opposing_double_butt_joint(arrangement)
+        joint = cut_plain_splined_opposing_double_butt_joint(
+            arrangement,
+            TimberReferenceEnd.TOP,
+        )
 
         receiving_center_global = (
             arrangement.receiving_timber.get_bottom_position_global()
@@ -77,10 +83,18 @@ class TestSplinedOpposingDoubleButtJoint:
 
         joint_flush = cut_splined_opposing_double_butt_joint(
             arrangement,
+            slot_thickness=inches(1),
+            slot_depth=inches(2),
+            spline_length=inches(12),
+            slot_facing_end_on_receiving_timber=TimberReferenceEnd.TOP,
             shoulder_symmetric_inset=Rational(0),
         )
         joint_inset = cut_splined_opposing_double_butt_joint(
             arrangement,
+            slot_thickness=inches(1),
+            slot_depth=inches(2),
+            spline_length=inches(12),
+            slot_facing_end_on_receiving_timber=TimberReferenceEnd.TOP,
             shoulder_symmetric_inset=inches(1),
         )
 
@@ -99,10 +113,18 @@ class TestSplinedOpposingDoubleButtJoint:
 
         joint_flush = cut_splined_opposing_double_butt_joint(
             arrangement,
+            slot_thickness=inches(1),
+            slot_depth=inches(2),
+            spline_length=inches(12),
+            slot_facing_end_on_receiving_timber=TimberReferenceEnd.TOP,
             shoulder_symmetric_inset=Rational(0),
         )
         joint_inset = cut_splined_opposing_double_butt_joint(
             arrangement,
+            slot_thickness=inches(1),
+            slot_depth=inches(2),
+            spline_length=inches(12),
+            slot_facing_end_on_receiving_timber=TimberReferenceEnd.TOP,
             shoulder_symmetric_inset=inches(1),
         )
 

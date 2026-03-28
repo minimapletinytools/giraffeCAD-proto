@@ -1489,3 +1489,61 @@ def cut_plain_splice_lap_joint_on_aligned_timbers(
     )
     
     return joint
+
+
+def cut_plain_splined_opposing_double_butt_joint(
+    arrangement: DoubleButtJointTimberArrangement,
+    slot_facing_end_on_receiving_timber: TimberReferenceEnd,
+) -> Joint:
+    """
+    Creates a splined opposing double butt joint using the standard default recipe.
+
+    Args:
+        arrangement: Double butt joint arrangement with butt_timber_1, butt_timber_2,
+            receiving_timber, butt_timber_1_end, butt_timber_2_end.
+        slot_facing_end_on_receiving_timber: Receiving-timber end that the slot faces.
+
+    Returns:
+        Joint containing all three cut timbers and a spline accessory.
+    """
+    from code_goes_here.joints.double_butt_joints import (
+        cut_splined_opposing_double_butt_joint,
+    )
+
+    butt_timber_1 = arrangement.butt_timber_1
+    receiving_timber = arrangement.receiving_timber
+
+    butt_length_direction_global = butt_timber_1.get_length_direction_global()
+    receiving_length_direction_global = receiving_timber.get_length_direction_global()
+    slot_direction_global = receiving_timber.get_face_direction_global(
+        slot_facing_end_on_receiving_timber
+    )
+    joint_plane_normal_global = normalize_vector(
+        cross_product(butt_length_direction_global, receiving_length_direction_global)
+    )
+
+    slot_face_on_butt_1 = butt_timber_1.get_closest_oriented_long_face_from_global_direction(
+        slot_direction_global
+    )
+
+    slot_thickness = (
+        receiving_timber.get_size_in_direction_3d(joint_plane_normal_global)
+        / Rational(3)
+    )
+    slot_depth = butt_timber_1.get_size_in_face_normal_axis(slot_face_on_butt_1) / Rational(2)
+    spline_length = (
+        receiving_timber.get_size_in_direction_3d(butt_length_direction_global)
+        * Integer(4)
+    )
+
+    return cut_splined_opposing_double_butt_joint(
+        arrangement=arrangement,
+        slot_thickness=slot_thickness,
+        slot_depth=slot_depth,
+        spline_length=spline_length,
+        slot_facing_end_on_receiving_timber=slot_facing_end_on_receiving_timber,
+        spline_extra_depth=None,
+        slot_symmetric_extra_length=mm(3),
+        shoulder_symmetric_inset=Rational(0),
+        slot_lateral_offset=Rational(0),
+    )
