@@ -92,3 +92,23 @@ class TestSplinedOpposingDoubleButtJoint:
         assert zero_test((butt_1_inset_end_cut.offset - butt_1_flush_end_cut.offset) - inches(1)), (
             "Top-end shoulder cut offset should increase by the shoulder inset (butt protrudes further)"
         )
+
+    def test_receiving_timber_gets_shoulder_notches_when_inset_positive(self):
+        """Positive shoulder inset should add receiving-side shoulder notch cuts."""
+        arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
+
+        joint_flush = cut_splined_opposing_double_butt_joint(
+            arrangement,
+            shoulder_symmetric_inset=Rational(0),
+        )
+        joint_inset = cut_splined_opposing_double_butt_joint(
+            arrangement,
+            shoulder_symmetric_inset=inches(1),
+        )
+
+        receiving_flush_negative_csg = joint_flush.cut_timbers["receiving_timber"].cuts[0].negative_csg
+        receiving_inset_negative_csg = joint_inset.cut_timbers["receiving_timber"].cuts[0].negative_csg
+
+        assert not isinstance(receiving_flush_negative_csg, CSGUnion)
+        assert isinstance(receiving_inset_negative_csg, CSGUnion)
+        assert len(receiving_inset_negative_csg.children) == 3

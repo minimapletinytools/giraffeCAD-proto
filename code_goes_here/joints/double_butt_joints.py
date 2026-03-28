@@ -147,6 +147,16 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
         end_distance=slot_length / Rational(2),
     )
 
+    extended_slot_negative_csg_global = RectangularPrism(
+        size=create_v2(slot_thickness, effective_slot_depth),
+        transform=Transform(
+            position=slot_marking_transform_global.position + slot_direction_global * (effective_slot_depth - slot_depth) / 2,
+            orientation=slot_marking_transform_global.orientation,
+        ),
+        start_distance=-(slot_length / Rational(2)),
+        end_distance=slot_length / Rational(2),
+    )
+
     def _make_shoulder_end_cut(timber: Timber, timber_end: TimberReferenceEnd) -> HalfSpace:
         butt_end_direction_global = timber.get_face_direction_global(timber_end)
         receiving_face = receiving_timber.get_closest_oriented_face_from_global_direction(-butt_end_direction_global)
@@ -171,15 +181,53 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
     butt_1_shoulder_end_cut = _make_shoulder_end_cut(butt_timber_1, arrangement.butt_timber_1_end)
     butt_2_shoulder_end_cut = _make_shoulder_end_cut(butt_timber_2, arrangement.butt_timber_2_end)
 
-    receiving_slot_negative_csg_local = adopt_csg(None, receiving_timber.transform, slot_negative_csg_global)
+    receiving_slot_negative_csg_local = adopt_csg(None, receiving_timber.transform, extended_slot_negative_csg_global)
     butt_1_slot_negative_csg_local = adopt_csg(None, butt_timber_1.transform, slot_negative_csg_global)
     butt_2_slot_negative_csg_local = adopt_csg(None, butt_timber_2.transform, slot_negative_csg_global)
+
+    receiving_negative_csg_parts = [receiving_slot_negative_csg_local]
+
+    if safe_compare(shoulder_symmetric_inset, Comparison.GT):
+        def _make_receiving_shoulder_notch_local(
+            butting_timber: Timber,
+            butting_timber_end: TimberReferenceEnd,
+        ) -> CutCSG:
+            butt_end_direction_global = butting_timber.get_face_direction_global(butting_timber_end)
+            receiving_face = receiving_timber.get_closest_oriented_long_face_from_global_direction(
+                -butt_end_direction_global
+            )
+            receiving_face_half_size = receiving_timber.get_size_in_face_normal_axis(receiving_face) / Rational(2)
+            shoulder_distance_from_centerline = receiving_face_half_size - shoulder_symmetric_inset
+
+            assert safe_compare(shoulder_distance_from_centerline, Comparison.GE), (
+                "shoulder_symmetric_inset is too large for receiving timber half size"
+            )
+
+            return chop_shoulder_notch_aligned_with_timber(
+                notch_timber=receiving_timber,
+                butting_timber=butting_timber,
+                butting_timber_end=butting_timber_end,
+                distance_from_centerline=shoulder_distance_from_centerline,
+            )
+
+        receiving_negative_csg_parts.append(
+            _make_receiving_shoulder_notch_local(butt_timber_1, arrangement.butt_timber_1_end)
+        )
+        receiving_negative_csg_parts.append(
+            _make_receiving_shoulder_notch_local(butt_timber_2, arrangement.butt_timber_2_end)
+        )
+
+    receiving_negative_csg_local = (
+        receiving_negative_csg_parts[0]
+        if len(receiving_negative_csg_parts) == 1
+        else CSGUnion(children=receiving_negative_csg_parts)
+    )
 
     receiving_cut = Cutting(
         timber=receiving_timber,
         maybe_top_end_cut=None,
         maybe_bottom_end_cut=None,
-        negative_csg=receiving_slot_negative_csg_local,
+        negative_csg=receiving_negative_csg_local,
     )
     butt_1_cut = Cutting(
         timber=butt_timber_1,
