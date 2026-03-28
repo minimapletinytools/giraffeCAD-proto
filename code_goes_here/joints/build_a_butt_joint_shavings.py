@@ -111,14 +111,14 @@ class ButtJointShoulderResult:
 
     Attributes:
         shoulder_plane: The shoulder plane (normal points from mortise centerline toward tenon).
-        shoulder_point_global: Point where the tenon centerline intersects the shoulder plane.
-        marking_space: Oriented space at shoulder_point_global with:
+        butt_direction: Direction the butt timber is pointing into the receiving timber.
+        marking_space: Located where tenon centerline intersects the shoulder plane, oriented with:
             +X = shoulder_plane.normal (from mortise centerline toward tenon)
             +Y = caller-provided up_direction (orthogonalized)
             +Z = derived via right-hand rule
     """
     shoulder_plane: Plane
-    shoulder_point_global: V3
+    butt_direction: Direction3D
     marking_space: Space
 
 
@@ -166,8 +166,10 @@ def compute_butt_joint_shoulder(
         transform=Transform(position=shoulder_point_global, orientation=orientation)
     )
 
+    butt_direction = tenon_timber.get_face_direction_global(tenon_end)
+
     return ButtJointShoulderResult(
         shoulder_plane=shoulder_plane,
-        shoulder_point_global=shoulder_point_global,
+        butt_direction=butt_direction,
         marking_space=marking_space,
     )

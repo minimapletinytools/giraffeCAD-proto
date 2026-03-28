@@ -139,7 +139,7 @@ the final returned csg has a ticket that points to a feature in the top level Di
   DONE-fix joists between intermediate posts, they should mortise and tenon into the posts
   DONE-make floor joist dovetails smaller so they don't intersect with the post tenons
   DONE-add pegs to all horizontal mortise and tenons
-  -adjust tenons so the are measured from the outside reference faces
+  DONE-adjust tenons so the are measured from the outside reference faces
   -make rafter logic not suck lol...
   -do yo uneed/want more rafters?
   -add new joints for floor beams
