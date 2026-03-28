@@ -11,7 +11,7 @@ from typing import Union, List
 from dataclasses import replace
 
 from code_goes_here.rule import inches, degrees, create_v2, create_v3, V3
-from code_goes_here.ticket import Ticket
+from code_goes_here.ticket import TimberTicket
 from code_goes_here.construction import (
     CornerJointTimberArrangement,
     ButtJointTimberArrangement,
@@ -68,8 +68,8 @@ def make_miter_joint_example(position: V3) -> list[CutTimber]:
         corner_angle=degrees(67),
         position=position,
     )
-    timberA = replace(arrangement.timber1, ticket=Ticket("MiterJoint_TimberA"))
-    timberB = replace(arrangement.timber2, ticket=Ticket("MiterJoint_TimberB"))
+    timberA = replace(arrangement.timber1, ticket=TimberTicket("MiterJoint_TimberA"))
+    timberB = replace(arrangement.timber2, ticket=TimberTicket("MiterJoint_TimberB"))
     miter_arrangement = CornerJointTimberArrangement(
         timber1=timberA,
         timber2=timberB,
@@ -96,8 +96,8 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
     arrangement = create_canonical_example_right_angle_corner_joint_timbers(position=position)
 
     # Rename timbers for clarity (timber2 is +X, timber1 is +Y)
-    timberA = replace(arrangement.timber2, ticket=Ticket("MiterFaceAligned_TimberA"))  # +X direction
-    timberB = replace(arrangement.timber1, ticket=Ticket("MiterFaceAligned_TimberB"))  # +Y direction
+    timberA = replace(arrangement.timber2, ticket=TimberTicket("MiterFaceAligned_TimberA"))  # +X direction
+    timberB = replace(arrangement.timber1, ticket=TimberTicket("MiterFaceAligned_TimberB"))  # +Y direction
 
     miter_arrangement = CornerJointTimberArrangement(
         timber1=timberA,
@@ -196,8 +196,8 @@ def make_butt_joint_example(position: V3) -> list[CutTimber]:
     arrangement = create_canonical_example_butt_joint_timbers(position=position)
 
     # Rename timbers for clarity
-    receiving_timber = replace(arrangement.receiving_timber, ticket=Ticket("ButtJoint_Receiving"))
-    butt_timber = replace(arrangement.butt_timber, ticket=Ticket("ButtJoint_Butt"))
+    receiving_timber = replace(arrangement.receiving_timber, ticket=TimberTicket("ButtJoint_Receiving"))
+    butt_timber = replace(arrangement.butt_timber, ticket=TimberTicket("ButtJoint_Butt"))
 
     butt_arrangement = ButtJointTimberArrangement(
         receiving_timber=receiving_timber,
@@ -225,8 +225,8 @@ def make_splice_joint_example(position: V3) -> list[CutTimber]:
     arrangement = create_canonical_example_splice_joint_timbers(position=position)
 
     # Rename timbers for clarity
-    timberA = replace(arrangement.timber1, ticket=Ticket("SpliceJoint_TimberA"))
-    timberB = replace(arrangement.timber2, ticket=Ticket("SpliceJoint_TimberB"))
+    timberA = replace(arrangement.timber1, ticket=TimberTicket("SpliceJoint_TimberA"))
+    timberB = replace(arrangement.timber2, ticket=TimberTicket("SpliceJoint_TimberB"))
 
     splice_arrangement = SpliceJointTimberArrangement(
         timber1=timberA,
@@ -361,8 +361,8 @@ def make_splice_lap_joint_example(position: V3) -> list[CutTimber]:
     arrangement = create_canonical_example_splice_joint_timbers(position=position)
 
     # Rename timbers for clarity
-    timberA = replace(arrangement.timber1, ticket=Ticket("SpliceLap_TimberA"))
-    timberB = replace(arrangement.timber2, ticket=Ticket("SpliceLap_TimberB"))
+    timberA = replace(arrangement.timber1, ticket=TimberTicket("SpliceLap_TimberA"))
+    timberB = replace(arrangement.timber2, ticket=TimberTicket("SpliceLap_TimberB"))
 
     # Update arrangement
     splice_arrangement = replace(

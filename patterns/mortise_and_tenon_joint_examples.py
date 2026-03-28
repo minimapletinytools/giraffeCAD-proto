@@ -22,6 +22,7 @@ from code_goes_here.example_shavings import (
 from code_goes_here.joints.basic_joints import cut_basic_miter_joint
 from code_goes_here.construction import CornerJointTimberArrangement
 from code_goes_here.patternbook import PatternBook, PatternMetadata, make_pattern_from_joint, make_pattern_from_frame
+from code_goes_here.ticket import TimberTicket
 
 
 def example_basic_mortise_and_tenon(position=None):
@@ -245,7 +246,7 @@ def example_double_angled_mortise_and_tenon(position=None):
     rotation = Orientation.from_angle_axis(radians(pi / Integer(6)), local_z)
     rotated_orientation = timber1.orientation * rotation
     rotated_transform = Transform(position=timber1.transform.position, orientation=rotated_orientation)
-    mortise_timber = replace(timber1, transform=rotated_transform, ticket=Ticket("rotated_mortise"))
+    mortise_timber = replace(timber1, transform=rotated_transform, ticket=TimberTicket("rotated_mortise"))
 
     peg_params = SimplePegParameters(
         shape=PegShape.SQUARE,

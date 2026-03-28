@@ -15,7 +15,7 @@ sys.path.append('..')
 
 from sympy import Rational, Integer
 from giraffe import *
-from code_goes_here.ticket import Ticket
+from code_goes_here.ticket import TimberTicket
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 from code_goes_here.example_shavings import (
     create_canonical_example_splice_joint_timbers,
@@ -69,8 +69,8 @@ def create_simple_gooseneck_example(position: Optional[V3] = None):
     
     # Rename timbers for clarity in this joint context
     from dataclasses import replace
-    gooseneck_timber = replace(arrangement.timber1, ticket=Ticket("gooseneck_timber"))
-    receiving_timber = replace(arrangement.timber2, ticket=Ticket("receiving_timber"))
+    gooseneck_timber = replace(arrangement.timber1, ticket=TimberTicket("gooseneck_timber"))
+    receiving_timber = replace(arrangement.timber2, ticket=TimberTicket("receiving_timber"))
     arrangement = replace(
         arrangement,
         timber1=gooseneck_timber,
@@ -114,7 +114,7 @@ def create_dovetail_butt_joint_example(position: Optional[V3] = None):
     from dataclasses import replace
 
     arrangement = create_canonical_example_butt_joint_timbers(position=position)
-    dovetail_timber = replace(arrangement.butt_timber, ticket=Ticket("dovetail_timber"))
+    dovetail_timber = replace(arrangement.butt_timber, ticket=TimberTicket("dovetail_timber"))
     arrangement = replace(
         arrangement,
         butt_timber=dovetail_timber,
@@ -162,8 +162,8 @@ def create_mitered_and_keyed_lap_joint_example(position: Optional[V3] = None):
     
     # Rename timbers for clarity in this joint context
     from dataclasses import replace
-    timberA = replace(arrangement.timber1, ticket=Ticket("timber_A"))
-    timberB = replace(arrangement.timber2, ticket=Ticket("timber_B"))
+    timberA = replace(arrangement.timber1, ticket=TimberTicket("timber_A"))
+    timberB = replace(arrangement.timber2, ticket=TimberTicket("timber_B"))
     arrangement = replace(
         arrangement,
         timber1=timberA,
@@ -213,8 +213,8 @@ def create_mitered_and_keyed_lap_joint_130deg_example(position: Optional[V3] = N
     
     # Rename timbers for clarity in this joint context
     from dataclasses import replace
-    timberA = replace(arrangement.timber1, ticket=Ticket("timber_A"))
-    timberB = replace(arrangement.timber2, ticket=Ticket("timber_B"))
+    timberA = replace(arrangement.timber1, ticket=TimberTicket("timber_A"))
+    timberB = replace(arrangement.timber2, ticket=TimberTicket("timber_B"))
     arrangement = replace(
         arrangement,
         timber1=timberA,
