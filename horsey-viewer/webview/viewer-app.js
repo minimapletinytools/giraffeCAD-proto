@@ -89,6 +89,58 @@ const RENDER_PROFILES = Object.freeze({
         edgeOpacity: 0.48,
         reflectionOpacity: 0.18,
     }),
+    'timber-dark': Object.freeze({
+        label: 'Timber Dark',
+        solidColor: 0x4a5468,
+        edgeColor: 0x1c2232,
+        reflectionColor: 0x6a7a92,
+        roughness: 0.75,
+        metalness: 0.03,
+        reflectionRoughness: 0.32,
+        reflectionMetalness: 0.04,
+        edgeOpacity: 0.65,
+        reflectionOpacity: 0.10,
+    }),
+});
+
+const BACKGROUND_PRESETS = Object.freeze({
+    'cream': Object.freeze({
+        label: 'Cream',
+        gradientTop: '#fff8dc',
+        gradientBottom: '#ffeef4',
+    }),
+    'sky': Object.freeze({
+        label: 'Sky',
+        gradientTop: '#cde4ff',
+        gradientBottom: '#e6f2ff',
+    }),
+    'forest': Object.freeze({
+        label: 'Forest Mist',
+        gradientTop: '#d4ead0',
+        gradientBottom: '#e8f5ea',
+    }),
+    'warm-white': Object.freeze({
+        label: 'Warm White',
+        gradientTop: '#fdfaf5',
+        gradientBottom: '#f8f4ee',
+    }),
+    'linen': Object.freeze({
+        label: 'Linen',
+        gradientTop: '#f5efe0',
+        gradientBottom: '#ece6d5',
+        pattern: 'linen',
+    }),
+    'slate': Object.freeze({
+        label: 'Slate Night',
+        gradientTop: '#1a2030',
+        gradientBottom: '#2a3244',
+    }),
+    'blueprint': Object.freeze({
+        label: 'Blueprint',
+        gradientTop: '#0e1e3c',
+        gradientBottom: '#152a50',
+        pattern: 'grid',
+    }),
 });
 
 if (!SelectionStore) {
@@ -160,6 +212,7 @@ class HorseyViewerApp extends LitElement {
             timber: 'timber-default',
             accessory: 'accessory-cute',
         };
+        this.activeBackground = 'cream';
 
         this.animationHandle = null;
         this.viewState = createInitialViewState();
@@ -204,7 +257,7 @@ class HorseyViewerApp extends LitElement {
                 <div id="hint">right drag orbit • middle drag pan • scroll zoom • F focus</div>
             </div>
             <section id="render-controls" aria-label="Viewer options">
-                <div class="render-controls-title">viewer options</div>
+                <button id="refresh-btn" type="button" title="Reload pattern">↻ refresh</button>
                 <label>
                     <input id="center-gizmo-toggle" type="checkbox" ?checked=${this.showCenterGizmo}>
                     center gizmo
@@ -237,7 +290,12 @@ class HorseyViewerApp extends LitElement {
                         ${Object.entries(this.renderProfiles).map(([profileId, profile]) => html`<option value=${profileId}>${profile.label}</option>`)}
                     </select>
                 </label>
-                <button id="refresh-btn" type="button" title="Reload pattern">↻ refresh</button>
+                <label>
+                    background
+                    <select id="background-select" .value=${this.activeBackground}>
+                        ${Object.entries(BACKGROUND_PRESETS).map(([bgId, bg]) => html`<option value=${bgId}>${bg.label}</option>`)}
+                    </select>
+                </label>
             </section>
             <div id="panels">
                 <div class="panel-box">
@@ -340,6 +398,7 @@ class HorseyViewerApp extends LitElement {
         const timberProfileSelect = this.renderRoot.querySelector('#timber-profile-select');
         const accessoryProfileSelect = this.renderRoot.querySelector('#accessory-profile-select');
         const refreshButton = this.renderRoot.querySelector('#refresh-btn');
+        const backgroundSelect = this.renderRoot.querySelector('#background-select');
 
         toV3d.addEventListener('click', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -425,6 +484,10 @@ class HorseyViewerApp extends LitElement {
             }
         });
 
+        backgroundSelect.addEventListener('change', (event) => {
+            this.setBackground(event.target.value);
+        });
+
         window.addEventListener('scroll', this.onWindowScroll);
         window.addEventListener('mouseup', this.onWindowMouseUp);
         window.addEventListener('mousemove', this.onWindowMouseMove);
@@ -452,7 +515,7 @@ class HorseyViewerApp extends LitElement {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0xfff8dc);
+        this.scene.background = this._buildBackgroundTexture(BACKGROUND_PRESETS['cream']);
 
         this.camera = new THREE.PerspectiveCamera(45, viewport.offsetWidth / viewport.offsetHeight, 0.01, 10000);
         this.camera.up.set(0, 0, 1);
@@ -669,7 +732,8 @@ class HorseyViewerApp extends LitElement {
     onWindowMouseUp(event) {
         const activeMouseAction = this.mouseAction;
         this.mouseAction = null;
-        if (!activeMouseAction) {
+        const canvas = this.renderRoot && this.renderRoot.querySelector ? this.renderRoot.querySelector('#c') : null;
+        if (!activeMouseAction && canvas && event.target === canvas) {
             this.handleCanvasClick(event);
         }
     }
@@ -951,6 +1015,68 @@ class HorseyViewerApp extends LitElement {
         }
 
         return { minX, minY, minZ, maxX, maxY, maxZ };
+    }
+
+    setBackground(id) {
+        const preset = BACKGROUND_PRESETS[id];
+        if (!preset) {
+            return;
+        }
+        this.activeBackground = id;
+        if (this.scene) {
+            const tex = this._buildBackgroundTexture(preset);
+            if (this.scene.background && this.scene.background.isTexture) {
+                this.scene.background.dispose();
+            }
+            this.scene.background = tex;
+        }
+        this.style.background = this._buildCssBg(preset);
+        this.requestUpdate();
+    }
+
+    _buildBackgroundTexture(preset) {
+        const w = preset.pattern ? 256 : 2;
+        const h = 256;
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, h);
+        gradient.addColorStop(0, preset.gradientTop);
+        gradient.addColorStop(1, preset.gradientBottom);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+        if (preset.pattern === 'linen') {
+            ctx.strokeStyle = 'rgba(160,140,100,0.07)';
+            ctx.lineWidth = 1;
+            for (let i = -h; i < w + h; i += 12) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + h, h); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(i + h, 0); ctx.lineTo(i, h); ctx.stroke();
+            }
+        } else if (preset.pattern === 'grid') {
+            ctx.strokeStyle = 'rgba(80,140,220,0.12)';
+            ctx.lineWidth = 1;
+            const sp = 24;
+            for (let x = 0; x < w; x += sp) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+            }
+            for (let y = 0; y < h; y += sp) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+        }
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        return tex;
+    }
+
+    _buildCssBg(preset) {
+        if (preset.pattern === 'linen') {
+            return `repeating-linear-gradient(45deg, rgba(160,140,100,0.07) 0, rgba(160,140,100,0.07) 1px, transparent 1px, transparent 12px), repeating-linear-gradient(-45deg, rgba(160,140,100,0.07) 0, rgba(160,140,100,0.07) 1px, transparent 1px, transparent 12px), linear-gradient(180deg, ${preset.gradientTop} 0%, ${preset.gradientBottom} 100%)`;
+        }
+        if (preset.pattern === 'grid') {
+            return `linear-gradient(rgba(80,140,220,0.12) 0 1px, transparent 1px 24px) 0 0 / 24px 24px repeat, linear-gradient(90deg, rgba(80,140,220,0.12) 0 1px, transparent 1px 24px) 0 0 / 24px 24px repeat, linear-gradient(180deg, ${preset.gradientTop} 0%, ${preset.gradientBottom} 100%)`;
+        }
+        return `linear-gradient(180deg, ${preset.gradientTop} 0%, ${preset.gradientBottom} 100%)`;
     }
 
     focusSelection() {
