@@ -1601,7 +1601,17 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
     for occurrence, accessory, accessory_name in created_accessories:
         try:
             print(f"Transforming {accessory_name}... (method: {'body' if use_body_transform else 'occurrence'})")
-            
+            has_transform = hasattr(accessory, "transform")
+
+            if not has_transform:
+                accessories_transformed += 1
+                print(f"  ✓ {accessory_name} has no transform field; geometry already in global space")
+                if app:
+                    app.log(f"  ✓ {accessory_name} has no transform field; geometry already in global space")
+                time.sleep(0.05)
+                adsk.doEvents()
+                continue
+
             if app:
                 app.log(f"  Transforming {accessory_name}: (method: {'body' if use_body_transform else 'occurrence'})")
                 app.log(f"    Accessory position (global): {[float(x) for x in accessory.transform.position]}")
@@ -1609,7 +1619,7 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                 for i in range(3):
                     row = [float(accessory.transform.orientation.matrix[i, j]) for j in range(3)]
                     app.log(f"      [{row[0]:.3f}, {row[1]:.3f}, {row[2]:.3f}]")
-            
+
             # Accessory position and orientation are already in global space
             # Use them directly without transformation
             success = apply_timber_transform(occurrence, accessory.transform.position, accessory.transform.orientation, accessory_name, use_body_transform)

@@ -237,12 +237,17 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
         orientation=slot_marking_transform_global.orientation,
     )
 
-    spline = Spline(
-                transform=spline_transform,
-                thickness=slot_thickness,
-                depth=effective_slot_depth,
-                length=spline_length,
-            )
+    # Accessory geometry is local-space and centered at origin; transform places it globally.
+    spline_positive_csg = RectangularPrism(
+        size=create_v2(slot_thickness, effective_slot_depth),
+        transform=Transform.identity(),
+        start_distance=-(spline_length / Integer(2)),
+        end_distance=spline_length / Integer(2),
+    )
+    spline = CSGAccessory(
+        transform=spline_transform,
+        positive_csg=spline_positive_csg,
+    )
     
     return Joint(
         cut_timbers={

@@ -956,15 +956,16 @@ def render_multiple_timbers(cut_timbers: List[CutTimber], base_name: str = "Timb
                     # Add to document
                     obj = doc.addObject("Part::Feature", accessory_name)
                     obj.Shape = shape
-                    
-                    # Accessory position and orientation are already in global space
-                    # Simply use them directly to create the global placement
-                    global_placement = create_placement_from_orientation(accessory.transform.position, accessory.transform.orientation)
-                    
-                    # Compose placements: global * local
-                    # The shape already has local centering placement applied (e.g., for prism cross-section centering)
-                    local_placement = shape.Placement
-                    obj.Placement = global_placement.multiply(local_placement)
+
+                    if hasattr(accessory, "transform"):
+                        # Accessory position and orientation are already in global space
+                        # Simply use them directly to create the global placement
+                        global_placement = create_placement_from_orientation(accessory.transform.position, accessory.transform.orientation)
+
+                        # Compose placements: global * local
+                        # The shape already has local centering placement applied (e.g., for prism cross-section centering)
+                        local_placement = shape.Placement
+                        obj.Placement = global_placement.multiply(local_placement)
                     
                     # Recompute to update bounding box
                     doc.recompute()

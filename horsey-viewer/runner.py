@@ -241,7 +241,12 @@ def _accessory_to_triangle_mesh_payload(
     from code_goes_here.rule import Transform
     from code_goes_here.triangles import triangulate_cutcsg
 
-    global_csg = adopt_csg(accessory.transform, Transform.identity(), local_csg)
+    if hasattr(accessory, "transform"):
+        global_csg = adopt_csg(accessory.transform, Transform.identity(), local_csg)
+    else:
+        # Accessories that already carry global-space CSG (e.g. CSGAccessory)
+        # do not need an additional transform adoption.
+        global_csg = local_csg
     triangle_mesh = triangulate_cutcsg(global_csg).mesh
 
     vertices = triangle_mesh.vertices.reshape(-1).tolist()

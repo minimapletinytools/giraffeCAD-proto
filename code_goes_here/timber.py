@@ -2137,31 +2137,14 @@ class Wedge(JointAccessory):
 
 
 @dataclass(frozen=True)
-class Spline(JointAccessory):
-    """
-    A flat rectangular spline, used to reinforce a joint by fitting into a keyed slot
-    that spans across multiple timber members.
+class CSGAccessory(JointAccessory):
+    """Generic accessory represented as local-space positive CSG plus a global transform."""
 
-    Stored in global space. The local frame (defined by transform) is:
-      - +Z axis: length direction, spanning across the timbers
-      - +Y axis: depth direction, pointing into the timber from the slot opening face
-      - +X axis: thickness direction, the thin dimension perpendicular to the joint plane
-
-    For a splined opposing double butt joint, the transform is the same as the
-    slot marking transform (Orientation.from_z_and_y(z=butt_length_dir, y=slot_dir)).
-    """
     transform: Transform
-    thickness: Numeric  # thin dimension, in the joint-plane-normal axis (+X local)
-    depth: Numeric      # dimension going into the timber along the slot direction (+Y local)
-    length: Numeric     # dimension spanning across timbers along the butt-length axis (+Z local)
+    positive_csg: CutCSG
 
     def render_csg_local(self) -> CutCSG:
-        return RectangularPrism(
-            size=create_v2(self.thickness, self.depth),
-            transform=Transform.identity(),
-            start_distance=-(self.length / Integer(2)),
-            end_distance=self.length / Integer(2),
-        )
+        return self.positive_csg
 
 
 # TODO you should build this out, maybe do any MeasuredTimberFeature
@@ -2467,6 +2450,9 @@ class Frame:
             self._check_numeric_value_no_python_floats(accessory.length, f"Wedge length")
             self._check_numeric_value_no_python_floats(accessory.stickout_length, f"Wedge stickout_length")
             self._check_matrix_no_python_floats(accessory.transform.orientation.matrix, f"Wedge transform.orientation")
+        elif isinstance(accessory, CSGAccessory):
+            self._check_vector_no_python_floats(accessory.transform.position, f"CSGAccessory transform.position")
+            self._check_matrix_no_python_floats(accessory.transform.orientation.matrix, f"CSGAccessory transform.orientation")
     
     def _check_cut_no_python_floats(self, cut: Cutting):
         """Check a cut for float values."""

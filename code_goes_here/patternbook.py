@@ -9,7 +9,7 @@ from sympy import Rational
 from typing import List, Tuple, Optional, Callable, Union, Literal
 from dataclasses import dataclass, field
 from .rule import V3, create_v3, Transform
-from .timber import Frame, CutTimber, Timber, Peg, Wedge, Spline, Joint, JointAccessory
+from .timber import Frame, CutTimber, Timber, Peg, Wedge, CSGAccessory, Joint, JointAccessory
 from .cutcsg import CutCSG, translate_csg
 
 
@@ -66,17 +66,15 @@ def make_pattern_from_joint(joint_func: Callable[[], Joint]) -> PatternLambda:
                         length=accessory.length,
                         stickout_length=accessory.stickout_length
                     ))
-                elif isinstance(accessory, Spline):
+                elif isinstance(accessory, CSGAccessory):
                     translated_transform = Transform(
                         position=accessory.transform.position + center,
-                        orientation=accessory.transform.orientation
+                        orientation=accessory.transform.orientation,
                     )
-                    translated_accessories.append(Spline(
+                    translated_accessories.append(CSGAccessory(
                         ticket=accessory.ticket,
                         transform=translated_transform,
-                        thickness=accessory.thickness,
-                        depth=accessory.depth,
-                        length=accessory.length,
+                        positive_csg=accessory.positive_csg,
                     ))
                 else:
                     translated_accessories.append(accessory)
@@ -134,17 +132,15 @@ def make_pattern_from_frame(frame_func: Callable[[], Frame]) -> PatternLambda:
                         length=accessory.length,
                         stickout_length=accessory.stickout_length
                     ))
-                elif isinstance(accessory, Spline):
+                elif isinstance(accessory, CSGAccessory):
                     translated_transform = Transform(
                         position=accessory.transform.position + center,
-                        orientation=accessory.transform.orientation
+                        orientation=accessory.transform.orientation,
                     )
-                    translated_accessories.append(Spline(
+                    translated_accessories.append(CSGAccessory(
                         ticket=accessory.ticket,
                         transform=translated_transform,
-                        thickness=accessory.thickness,
-                        depth=accessory.depth,
-                        length=accessory.length,
+                        positive_csg=accessory.positive_csg,
                     ))
                 else:
                     translated_accessories.append(accessory)

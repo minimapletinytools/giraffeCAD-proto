@@ -152,6 +152,7 @@ DONE-splined opposing double butt joint :D (could have drawbore or key)
   -do yo uneed/want more rafters?
   
 
+-see what you can do about zfighting issues
 
 -tag reference faces on timber metadata?
   -assert they are coincident
