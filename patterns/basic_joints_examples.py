@@ -19,6 +19,7 @@ from code_goes_here.joints.basic_joints import (
     cut_basic_butt_splice_joint_on_aligned_timbers,
     cut_basic_cross_lap_joint,
     cut_basic_house_joint,
+    cut_basic_splined_opposing_double_butt_joint,
     cut_basic_splice_lap_joint_on_aligned_timbers,
     cut_basic_mortise_and_tenon_joint_on_face_aligned_timbers,
     cut_basic_lapped_gooseneck_joint,
@@ -30,6 +31,7 @@ from code_goes_here.example_shavings import (
     create_canonical_example_butt_joint_timbers,
     create_canonical_example_splice_joint_timbers,
     create_canonical_example_cross_joint_timbers,
+    create_canonical_example_opposing_double_butt_joint_timbers,
     _CANONICAL_EXAMPLE_TIMBER_LENGTH,
     _CANONICAL_EXAMPLE_TIMBER_SIZE,
 )
@@ -125,6 +127,22 @@ def example_basic_house_joint(position=None):
     arrangement = create_canonical_example_cross_joint_timbers(position=position, lateral_offset=inches(2))
     joint = cut_basic_house_joint(arrangement)
     
+    return joint
+
+
+def example_basic_splined_opposing_double_butt_joint(position=None):
+    """
+    Create a basic splined opposing double butt joint using canonical timbers.
+    """
+    if position is None:
+        position = create_v3(0, 0, 0)
+
+    arrangement = create_canonical_example_opposing_double_butt_joint_timbers(position)
+    joint = cut_basic_splined_opposing_double_butt_joint(
+        arrangement=arrangement,
+        slot_facing_end_on_receiving_timber=TimberReferenceEnd.TOP,
+    )
+
     return joint
 
 
@@ -275,6 +293,9 @@ def create_basic_joints_patternbook() -> PatternBook:
         
         (PatternMetadata("basic_house", ["basic_joints", "house"], "frame"),
          make_pattern_from_joint(example_basic_house_joint)),
+
+        (PatternMetadata("basic_splined_double_butt", ["basic_joints", "butt"], "frame"),
+         make_pattern_from_joint(example_basic_splined_opposing_double_butt_joint)),
         
         (PatternMetadata("basic_splice_lap", ["basic_joints", "lap"], "frame"),
          make_pattern_from_joint(example_basic_splice_lap_joint)),
