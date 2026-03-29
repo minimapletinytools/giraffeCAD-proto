@@ -95,7 +95,6 @@ function initializeFrameViewer(panel, filePath, options = {}) {
         viewerOptions
     );
     initializedPanels.add(panel);
-    panel.reveal(vscode.ViewColumn.Two);
 }
 
 function renderFrameViewer(panel, filePath, frameData, geometryData, profiling, uiState = null, viewerOptions = null) {
@@ -120,7 +119,6 @@ function renderFrameViewer(panel, filePath, frameData, geometryData, profiling, 
             viewerOptions: nextViewerOptions,
         });
     }
-    panel.reveal(vscode.ViewColumn.Two);
 }
 
 function getViewerTitle(filePath, frameName = null) {
