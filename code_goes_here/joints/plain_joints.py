@@ -8,7 +8,10 @@ from code_goes_here.construction import *
 from code_goes_here.rule import *
 from .joint_shavings import *
 from code_goes_here.measuring import locate_top_center_position, locate_bottom_center_position, mark_distance_from_end_along_centerline, get_point_on_face_global, Space
-from code_goes_here.joints.build_a_butt_joint_shavings import locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber
+from code_goes_here.joints.build_a_butt_joint_shavings import (
+    SimplePegParameters,
+    locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber,
+)
 
 
 # ============================================================================
@@ -1491,9 +1494,11 @@ def cut_plain_splice_lap_joint_on_aligned_timbers(
     return joint
 
 
+# TODO OOPS, rename to cut_basic and move over to basic_joints.py remove peg_parameters as there should always be a peg , use default peg size
 def cut_plain_splined_opposing_double_butt_joint(
     arrangement: DoubleButtJointTimberArrangement,
     slot_facing_end_on_receiving_timber: TimberReferenceEnd,
+    peg_parameters: Optional[SimplePegParameters] = None,
 ) -> Joint:
     """
     Creates a splined opposing double butt joint using the standard default recipe.
@@ -1546,4 +1551,5 @@ def cut_plain_splined_opposing_double_butt_joint(
         slot_symmetric_extra_length=mm(3),
         shoulder_symmetric_inset=Rational(0),
         slot_lateral_offset=Rational(0),
+        peg_parameters=peg_parameters,
     )

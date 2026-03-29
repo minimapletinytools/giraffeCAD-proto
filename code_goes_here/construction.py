@@ -1033,6 +1033,7 @@ class DoubleButtJointTimberArrangement:
     receiving_timber: Timber
     butt_timber_1_end: TimberReferenceEnd
     butt_timber_2_end: TimberReferenceEnd
+    front_face_on_butt_timber_1: Optional[TimberLongFace] = None
 
     def check_types_valid(self) -> Optional[str]:
         """Return None if all types are valid, otherwise an error message for use in assert."""
@@ -1046,6 +1047,11 @@ class DoubleButtJointTimberArrangement:
             return f"butt_timber_1_end must be TimberReferenceEnd, got {type(self.butt_timber_1_end).__name__}"
         if not isinstance(self.butt_timber_2_end, TimberReferenceEnd):
             return f"butt_timber_2_end must be TimberReferenceEnd, got {type(self.butt_timber_2_end).__name__}"
+        if self.front_face_on_butt_timber_1 is not None and not isinstance(self.front_face_on_butt_timber_1, TimberLongFace):
+            return (
+                "front_face_on_butt_timber_1 must be TimberLongFace or None, "
+                f"got {type(self.front_face_on_butt_timber_1).__name__}"
+            )
         return None
 
     def __post_init__(self):
@@ -1076,6 +1082,17 @@ class DoubleButtJointTimberArrangement:
             return "butt_timber_1 length direction must be orthogonal to receiving_timber length direction"
         if not _are_directions_perpendicular(dir2, recv_len):
             return "butt_timber_2 length direction must be orthogonal to receiving_timber length direction"
+
+        if self.front_face_on_butt_timber_1 is not None:
+            joint_plane_normal = normalize_vector(cross_product(dir1, recv_len))
+            butt_1_face_normal = self.butt_timber_1.get_face_direction_global(
+                self.front_face_on_butt_timber_1
+            )
+            if not are_vectors_parallel(butt_1_face_normal, joint_plane_normal):
+                return (
+                    "front_face_on_butt_timber_1 must be parallel to the joint plane "
+                    "(its normal must be parallel to the joint-plane normal)"
+                )
         
         
         # Calculate effective approach directions based on which end of each timber is used

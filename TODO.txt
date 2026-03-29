@@ -138,7 +138,8 @@ DONE-splined opposing double butt joint :D (could have drawbore or key)
   -you need to create shoulder_shavings for making shoulder cuts
     -shoulder cuts should be infinite in one direction so can generate the positive and negative for both sides easily
       -I guess you need a full space cut?
-
+-add dovetail shoulder to build a butt joint
+-add notching to build a butt joint (you can skip this if you want lol...)
 -ui widgets need to capture mouse inputs so they don't reset selection
 -need plain_double_butt joint examlpe
 -do tinyhouse shed
@@ -147,7 +148,9 @@ DONE-splined opposing double butt joint :D (could have drawbore or key)
   DONE-add pegs to all horizontal mortise and tenons
   DONE-adjust tenons so the are measured from the outside reference faces
   DONE-add new joints for floor beams
-  -add double buttj oint to floor beams
+  DONE-add double buttj oint to floor beams
+  -lower rafters to be flush with ridge beam and then use housed dovetail joints on ridge beam
+  -use cross lap point on the other side (you may need ot update cross lap joint to work on non FAT timbers)
   -make rafter logic not suck lol...
   -do yo uneed/want more rafters?
   

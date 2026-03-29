@@ -7,6 +7,10 @@ from code_goes_here.timber import *
 from code_goes_here.construction import *
 from code_goes_here.rule import *
 from .joint_shavings import *
+from .build_a_butt_joint_shavings import (
+    SimplePegParameters,
+    locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber,
+)
 
 
 def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArrangement,
@@ -26,6 +30,8 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
                                            shoulder_symmetric_inset=Rational(0),
                                            # offset the slot by this much, measured relative to receiving timber centerline in the axis perpendicular to the joint plane
                                            slot_lateral_offset=Rational(0),
+                                           # optional peg setup; pegs will be drilled through each butt timber and the spline
+                                           peg_parameters: Optional[SimplePegParameters] = None,
                                            ) -> Joint:
     """
     Creates a splined opposing double butt joint.
@@ -237,6 +243,189 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
         orientation=slot_marking_transform_global.orientation,
     )
 
+    peg_holes_in_spline_local: List[CutCSG] = []
+    joint_accessories: Dict[str, JointAccessory] = {}
+
+    # peg logic slightly different so we don't use compute_peg_positions
+    if peg_parameters is not None:
+        peg_size = peg_parameters.size
+        butt_1_negative_parts = [butt_1_slot_negative_csg_local]
+        butt_2_negative_parts = [butt_2_slot_negative_csg_local]
+
+        assert arrangement.front_face_on_butt_timber_1 is not None, (
+            "front_face_on_butt_timber_1 must be provided when peg_parameters are set"
+        )
+
+        peg_entry_direction_global = butt_timber_1.get_face_direction_global(
+            arrangement.front_face_on_butt_timber_1
+        )
+
+        peg_face_on_butt_1 = arrangement.front_face_on_butt_timber_1
+        peg_face_on_butt_2 = butt_timber_2.get_closest_oriented_long_face_from_global_direction(
+            peg_entry_direction_global
+        )
+
+        def _append_pegs_for_butt(
+            butt_timber: Timber,
+            butt_end: TimberReferenceEnd,
+            peg_face_on_butt: TimberLongFace,
+            butt_negative_parts: List[CutCSG],
+            accessory_prefix: str,
+        ) -> None:
+            # Peg geometry: enters from peg_face, drills perpendicular to the joint plane.
+            peg_face: TimberFace = peg_face_on_butt.to.face()
+            peg_face_normal_global = butt_timber.get_face_direction_global(peg_face_on_butt)
+            peg_drill_direction = -peg_face_normal_global
+            peg_face_plane = locate_face(butt_timber, peg_face)
+
+            # Peg depth = full width of the butt timber in the drill direction.
+            # The peg goes from the entry face, through the timber, to the exit face.
+            peg_depth = butt_timber.get_size_in_face_normal_axis(peg_face_on_butt)
+            actual_depth = peg_parameters.depth if peg_parameters.depth is not None else peg_depth
+            stickout = actual_depth * Rational(1, 2)
+
+            # Away-from-joint axis: from the shoulder toward the main butt body.
+            butt_end_direction = butt_timber.get_face_direction_global(butt_end)
+            away_from_joint_axis = -butt_end_direction
+
+            # Lateral axis in the peg face plane, matching compute_peg_positions convention.
+            if peg_face_on_butt in [TimberLongFace.RIGHT, TimberLongFace.LEFT]:
+                lateral_axis = butt_timber.get_face_direction_global(TimberFace.FRONT)
+            else:
+                lateral_axis = butt_timber.get_face_direction_global(TimberFace.RIGHT)
+
+            # Peg orientation: drill direction is Z, butt length direction is Y.
+            butt_length_dir = butt_timber.get_length_direction_global()
+            peg_orientation_global = Orientation.from_z_and_y(
+                z_direction=peg_drill_direction,
+                y_direction=butt_length_dir,
+            )
+
+            # Shoulder reference: the external face of the receiving timber that the butt enters.
+            # Using the existing shoulder-plane helper with a ButtJointTimberArrangement.
+            butt_arrangement = ButtJointTimberArrangement(
+                butt_timber=butt_timber,
+                receiving_timber=receiving_timber,
+                butt_timber_end=butt_end,
+                front_face_on_butt_timber=peg_face_on_butt,
+            )
+            receiving_face_towards_butt = receiving_timber.get_closest_oriented_long_face_from_global_direction(
+                butt_timber.get_face_direction_global(butt_end)
+            )
+            shoulder_distance_from_centerline = (
+                receiving_timber.get_size_in_face_normal_axis(receiving_face_towards_butt) / Rational(2)
+            ) - shoulder_symmetric_inset
+            assert safe_compare(shoulder_distance_from_centerline, Comparison.GE), (
+                "shoulder_symmetric_inset is too large for peg shoulder reference"
+            )
+            shoulder_plane = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+                butt_arrangement,
+                shoulder_distance_from_centerline,
+            )
+            shoulder_mark = mark_distance_from_end_along_centerline(
+                shoulder_plane, butt_timber, butt_end
+            )
+            shoulder_point_global = shoulder_mark.measure().position
+
+            # Lateral peg positions are referenced from the centerline of the non-extra
+            # spline body, not from the butt timber centerline at the shoulder.
+            non_extra_spline_center_lateral_offset = safe_dot_product(
+                slot_center_global - shoulder_point_global,
+                lateral_axis,
+            )
+            spline_lateral_reference_global = (
+                shoulder_point_global
+                + lateral_axis * non_extra_spline_center_lateral_offset
+            )
+
+            for peg_idx, (dist_from_shoulder, dist_from_center) in enumerate(peg_parameters.peg_positions):
+                # Place peg away from the receiving-timber shoulder, into the butt body.
+                peg_center_global = (
+                    spline_lateral_reference_global
+                    + away_from_joint_axis * dist_from_shoulder
+                    + lateral_axis * dist_from_center
+                )
+
+                # Project peg center onto the peg entry face plane.
+                dist_to_face = safe_dot_product(
+                    peg_face_plane.normal,
+                    peg_face_plane.point - peg_center_global,
+                )
+                peg_face_pos_global = peg_center_global + peg_face_plane.normal * dist_to_face
+
+                # tenon_hole_offset shifts the spline hole in the same away-from-joint direction.
+                peg_face_pos_with_offset_global = (
+                    peg_face_pos_global
+                    + away_from_joint_axis * peg_parameters.tenon_hole_offset
+                )
+
+                peg_hole_in_butt_global = RectangularPrism(
+                    size=create_v2(peg_size, peg_size),
+                    transform=Transform(
+                        position=peg_face_pos_global,
+                        orientation=peg_orientation_global,
+                    ),
+                    start_distance=Rational(0),
+                    end_distance=actual_depth,
+                )
+                butt_negative_parts.append(
+                    adopt_csg(None, butt_timber.transform, peg_hole_in_butt_global)
+                )
+
+                # For splined double butt joints, tenon_hole_offset shifts the spline hole
+                # in the away-from-joint direction (toward the butt body).
+                peg_hole_in_spline_global = RectangularPrism(
+                    size=create_v2(peg_size, peg_size),
+                    transform=Transform(
+                        position=peg_face_pos_with_offset_global,
+                        orientation=peg_orientation_global,
+                    ),
+                    start_distance=Rational(0),
+                    end_distance=actual_depth,
+                )
+                peg_holes_in_spline_local.append(
+                    adopt_csg(None, spline_transform, peg_hole_in_spline_global)
+                )
+
+                joint_accessories[f"{accessory_prefix}_{peg_idx}"] = Peg(
+                    transform=Transform(
+                        position=peg_face_pos_global,
+                        orientation=peg_orientation_global,
+                    ),
+                    size=peg_size,
+                    shape=peg_parameters.shape,
+                    forward_length=actual_depth,
+                    stickout_length=stickout,
+                )
+
+        _append_pegs_for_butt(
+            butt_timber_1,
+            arrangement.butt_timber_1_end,
+            peg_face_on_butt_1,
+            butt_1_negative_parts,
+            "peg_butt_1",
+        )
+        _append_pegs_for_butt(
+            butt_timber_2,
+            arrangement.butt_timber_2_end,
+            peg_face_on_butt_2,
+            butt_2_negative_parts,
+            "peg_butt_2",
+        )
+
+        butt_1_cut = Cutting(
+            timber=butt_timber_1,
+            maybe_top_end_cut=butt_1_shoulder_end_cut if arrangement.butt_timber_1_end == TimberReferenceEnd.TOP else None,
+            maybe_bottom_end_cut=butt_1_shoulder_end_cut if arrangement.butt_timber_1_end == TimberReferenceEnd.BOTTOM else None,
+            negative_csg=butt_1_negative_parts[0] if len(butt_1_negative_parts) == 1 else CSGUnion(children=butt_1_negative_parts),
+        )
+        butt_2_cut = Cutting(
+            timber=butt_timber_2,
+            maybe_top_end_cut=butt_2_shoulder_end_cut if arrangement.butt_timber_2_end == TimberReferenceEnd.TOP else None,
+            maybe_bottom_end_cut=butt_2_shoulder_end_cut if arrangement.butt_timber_2_end == TimberReferenceEnd.BOTTOM else None,
+            negative_csg=butt_2_negative_parts[0] if len(butt_2_negative_parts) == 1 else CSGUnion(children=butt_2_negative_parts),
+        )
+
     # Accessory geometry is local-space and centered at origin; transform places it globally.
     spline_positive_csg = RectangularPrism(
         size=create_v2(slot_thickness, effective_slot_depth),
@@ -244,10 +433,18 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
         start_distance=-(spline_length / Integer(2)),
         end_distance=spline_length / Integer(2),
     )
+
+    if peg_holes_in_spline_local:
+        spline_positive_csg = Difference(
+            base=spline_positive_csg,
+            subtract=peg_holes_in_spline_local,
+        )
+
     spline = CSGAccessory(
         transform=spline_transform,
         positive_csg=spline_positive_csg,
     )
+    joint_accessories["spline"] = spline
     
     return Joint(
         cut_timbers={
@@ -255,15 +452,14 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
             "butt_timber_1": CutTimber(butt_timber_1, cuts=[butt_1_cut]),
             "butt_timber_2": CutTimber(butt_timber_2, cuts=[butt_2_cut]),
         },
-        jointAccessories={
-            "spline": spline,
-        },
+        jointAccessories=joint_accessories,
     )
 
 
 def cut_plain_splined_opposing_double_butt_joint(
     arrangement: DoubleButtJointTimberArrangement,
     slot_facing_end_on_receiving_timber: TimberReferenceEnd,
+    peg_parameters: Optional[SimplePegParameters] = None,
 ) -> Joint:
     """
     Plain/default recipe for splined opposing double butt joints.
@@ -311,4 +507,5 @@ def cut_plain_splined_opposing_double_butt_joint(
         slot_symmetric_extra_length=mm(3),
         shoulder_symmetric_inset=Rational(0),
         slot_lateral_offset=Rational(0),
+        peg_parameters=peg_parameters,
     )

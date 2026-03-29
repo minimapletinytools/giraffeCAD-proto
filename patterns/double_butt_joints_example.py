@@ -11,6 +11,7 @@ from typing import Union
 from code_goes_here.rule import V3, create_v3
 from code_goes_here.timber import *
 from code_goes_here.joints.double_butt_joints import cut_splined_opposing_double_butt_joint
+from code_goes_here.joints.build_a_butt_joint_shavings import SimplePegParameters
 from code_goes_here.example_shavings import create_canonical_example_opposing_double_butt_joint_timbers
 from code_goes_here.patternbook import PatternBook, PatternMetadata
 
@@ -42,6 +43,12 @@ def make_splined_opposing_double_butt_joint_example(position: V3) -> Frame:
         shoulder_symmetric_inset=inches(1),
         # offset the solt by this much, measured relative to receiving timber centerline and in the axis perpendicular to the joint plane and 
         slot_lateral_offset=inches(0),
+        # one 15 mm square peg, 30 mm from shoulder
+        peg_parameters=SimplePegParameters(
+            shape=PegShape.SQUARE,
+            peg_positions=[(mm(30), Rational(0))],
+            size=mm(15),
+        ),
     )
     return Frame.from_joints([joint], name="Splined Opposing Double Butt Joint")
 

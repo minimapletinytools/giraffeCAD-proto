@@ -2,9 +2,11 @@
 Tests for double butt joint construction functions.
 """
 
-from sympy import Rational
+from dataclasses import replace
+from sympy import Rational, Abs
 from giraffe import *
 from code_goes_here.example_shavings import create_canonical_example_opposing_double_butt_joint_timbers
+from code_goes_here.joints.build_a_butt_joint_shavings import SimplePegParameters
 
 
 class TestSplinedOpposingDoubleButtJoint:
@@ -14,6 +16,11 @@ class TestSplinedOpposingDoubleButtJoint:
         """Canonical arrangement passes the cardinal-and-opposing-butts check."""
         arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
         assert arrangement.check_face_aligned_cardinal_and_opposing_butts() is None
+
+    def test_arrangement_rejects_butt_1_front_face_not_parallel_to_joint_plane(self):
+        arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
+        bad_arrangement = replace(arrangement, front_face_on_butt_timber_1=TimberLongFace.FRONT)
+        assert bad_arrangement.check_face_aligned_cardinal_and_opposing_butts() is not None
 
     def test_returns_joint_with_three_cut_timbers(self):
         """Implemented function returns all three cut timbers with one cut each."""
@@ -134,3 +141,165 @@ class TestSplinedOpposingDoubleButtJoint:
         assert not isinstance(receiving_flush_negative_csg, CSGUnion)
         assert isinstance(receiving_inset_negative_csg, CSGUnion)
         assert len(receiving_inset_negative_csg.children) == 3
+
+    def test_pegs_cut_butts_and_spline_and_create_accessories(self):
+        arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
+        peg_parameters = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            peg_positions=[(inches(2), Rational(0))],
+            size=inches(1),
+            tenon_hole_offset=Rational(0),
+        )
+
+        joint = cut_splined_opposing_double_butt_joint(
+            arrangement,
+            slot_thickness=inches(1),
+            slot_depth=inches(2),
+            spline_length=inches(12),
+            slot_facing_end_on_receiving_timber=TimberReferenceEnd.TOP,
+            peg_parameters=peg_parameters,
+        )
+
+        assert "spline" in joint.jointAccessories
+        peg_keys = [key for key in joint.jointAccessories.keys() if key.startswith("peg_butt_")]
+        assert len(peg_keys) == 2
+
+        butt_1_negative_csg = joint.cut_timbers["butt_timber_1"].cuts[0].negative_csg
+        butt_2_negative_csg = joint.cut_timbers["butt_timber_2"].cuts[0].negative_csg
+        assert isinstance(butt_1_negative_csg, CSGUnion)
+        assert isinstance(butt_2_negative_csg, CSGUnion)
+        assert len(butt_1_negative_csg.children) >= 2
+        assert len(butt_2_negative_csg.children) >= 2
+
+        spline_accessory = joint.jointAccessories["spline"]
+        assert isinstance(spline_accessory, CSGAccessory)
+        assert isinstance(spline_accessory.positive_csg, Difference)
+        assert len(spline_accessory.positive_csg.subtract) == 2
+
+    def test_pegs_enter_perpendicular_to_joint_plane(self):
+        arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
+        peg_parameters = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            peg_positions=[(inches(2), Rational(0))],
+            size=inches(1),
+            tenon_hole_offset=Rational(0),
+        )
+
+        joint = cut_splined_opposing_double_butt_joint(
+            arrangement,
+            slot_thickness=inches(1),
+            slot_depth=inches(2),
+            spline_length=inches(12),
+            slot_facing_end_on_receiving_timber=TimberReferenceEnd.TOP,
+            peg_parameters=peg_parameters,
+        )
+
+        receiving_len = arrangement.receiving_timber.get_length_direction_global()
+        butt_1_len = arrangement.butt_timber_1.get_length_direction_global()
+        joint_plane_normal = normalize_vector(cross_product(butt_1_len, receiving_len))
+
+        peg_key = next(key for key in joint.jointAccessories if key.startswith("peg_butt_1_"))
+        peg = joint.jointAccessories[peg_key]
+        assert isinstance(peg, Peg)
+        peg_drill_direction = create_v3(
+            peg.transform.orientation.matrix[0, 2],
+            peg.transform.orientation.matrix[1, 2],
+            peg.transform.orientation.matrix[2, 2],
+        )
+        assert are_vectors_parallel(peg_drill_direction, joint_plane_normal)
+
+    def test_tenon_hole_offset_moves_spline_hole_toward_receiving(self):
+        arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
+        peg_parameters_no_offset = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            peg_positions=[(inches(2), Rational(0))],
+            size=inches(1),
+            tenon_hole_offset=Rational(0),
+        )
+        peg_parameters_offset = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            peg_positions=[(inches(2), Rational(0))],
+            size=inches(1),
+            tenon_hole_offset=inches(1),
+        )
+
+        joint_no_offset = cut_splined_opposing_double_butt_joint(
+            arrangement,
+            slot_thickness=inches(1),
+            slot_depth=inches(2),
+            spline_length=inches(12),
+            slot_facing_end_on_receiving_timber=TimberReferenceEnd.TOP,
+            peg_parameters=peg_parameters_no_offset,
+        )
+        joint_offset = cut_splined_opposing_double_butt_joint(
+            arrangement,
+            slot_thickness=inches(1),
+            slot_depth=inches(2),
+            spline_length=inches(12),
+            slot_facing_end_on_receiving_timber=TimberReferenceEnd.TOP,
+            peg_parameters=peg_parameters_offset,
+        )
+
+        spline_no_offset = joint_no_offset.jointAccessories["spline"]
+        spline_offset = joint_offset.jointAccessories["spline"]
+
+        assert isinstance(spline_no_offset, CSGAccessory)
+        assert isinstance(spline_offset, CSGAccessory)
+        assert isinstance(spline_no_offset.positive_csg, Difference)
+        assert isinstance(spline_offset.positive_csg, Difference)
+        assert isinstance(spline_no_offset.positive_csg.subtract[0], RectangularPrism)
+        assert isinstance(spline_offset.positive_csg.subtract[0], RectangularPrism)
+
+        first_hole_local_no_offset = spline_no_offset.positive_csg.subtract[0].transform.position
+        first_hole_local_offset = spline_offset.positive_csg.subtract[0].transform.position
+
+        z_delta = first_hole_local_offset[2] - first_hole_local_no_offset[2]
+        assert zero_test(Abs(z_delta) - inches(1))
+
+    def test_zero_lateral_peg_position_tracks_non_extra_spline_centerline(self):
+        arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
+        spline_extra_depth = inches(1)
+        peg_parameters = SimplePegParameters(
+            shape=PegShape.SQUARE,
+            peg_positions=[(inches(2), Rational(0))],
+            size=inches(1),
+            tenon_hole_offset=Rational(0),
+        )
+
+        joint = cut_splined_opposing_double_butt_joint(
+            arrangement,
+            slot_thickness=inches(1),
+            slot_depth=inches(2),
+            spline_length=inches(12),
+            slot_facing_end_on_receiving_timber=TimberReferenceEnd.TOP,
+            spline_extra_depth=spline_extra_depth,
+            peg_parameters=peg_parameters,
+        )
+
+        peg_key = next(key for key in joint.jointAccessories if key.startswith("peg_butt_1_"))
+        peg = joint.jointAccessories[peg_key]
+        spline = joint.jointAccessories["spline"]
+
+        assert isinstance(peg, Peg)
+        assert isinstance(spline, CSGAccessory)
+
+        slot_direction_global = arrangement.receiving_timber.get_face_direction_global(
+            TimberReferenceEnd.TOP
+        )
+        non_extra_spline_center_global = (
+            spline.transform.position - slot_direction_global * spline_extra_depth / Rational(2)
+        )
+
+        peg_face_on_butt_1 = arrangement.front_face_on_butt_timber_1
+        assert peg_face_on_butt_1 is not None
+        if peg_face_on_butt_1 in [TimberLongFace.RIGHT, TimberLongFace.LEFT]:
+            lateral_axis = arrangement.butt_timber_1.get_face_direction_global(TimberFace.FRONT)
+        else:
+            lateral_axis = arrangement.butt_timber_1.get_face_direction_global(TimberFace.RIGHT)
+
+        peg_lateral_position = safe_dot_product(peg.transform.position, lateral_axis)
+        spline_lateral_position = safe_dot_product(non_extra_spline_center_global, lateral_axis)
+        actual_spline_lateral_position = safe_dot_product(spline.transform.position, lateral_axis)
+
+        assert zero_test(peg_lateral_position - spline_lateral_position)
+        assert zero_test(Abs(actual_spline_lateral_position - spline_lateral_position) - spline_extra_depth / Rational(2))

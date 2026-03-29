@@ -370,4 +370,5 @@ def create_canonical_example_opposing_double_butt_joint_timbers(position: Option
         receiving_timber=receiving_timber,
         butt_timber_1_end=TimberReferenceEnd.TOP,
         butt_timber_2_end=TimberReferenceEnd.TOP,
+        front_face_on_butt_timber_1=TimberLongFace.RIGHT,
     )
