@@ -2,12 +2,7 @@
 
 HorseCoAD is a Code Aided Design library for programmatically designing timber framed structures.
 
-HorseCoAD is written as an **AI friendly** library meaning it was designed to be easily understood and used by AI agents. 
-
-## Current State
-
-HorseCoAD is intended to ship with its own viewing app as a VSCode extension.
-Until then, HorseCoAD designs is visualized by writing to Fusion 360 and FreeCAD via their scripting APIs. This is intended to be replaced with exporting to common CAD file formats in the future as the scripting API workflow for most CAD programs is clunky.
+HorseCoAD is written as an **AI friendly** library meaning it was designed for use by AI agents.
 
 ## Setup
 

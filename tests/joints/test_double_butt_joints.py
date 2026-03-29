@@ -25,7 +25,7 @@ class TestSplinedOpposingDoubleButtJoint:
     def test_returns_joint_with_three_cut_timbers(self):
         """Implemented function returns all three cut timbers with one cut each."""
         arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
-        joint = cut_plain_splined_opposing_double_butt_joint(
+        joint = cut_basic_splined_opposing_double_butt_joint(
             arrangement,
             TimberReferenceEnd.TOP,
         )
@@ -38,7 +38,7 @@ class TestSplinedOpposingDoubleButtJoint:
     def test_slot_point_removed_on_all_three_members(self):
         """A point known to lie inside the default slot should be removed from all three timbers."""
         arrangement = create_canonical_example_opposing_double_butt_joint_timbers()
-        joint = cut_plain_splined_opposing_double_butt_joint(
+        joint = cut_basic_splined_opposing_double_butt_joint(
             arrangement,
             TimberReferenceEnd.TOP,
         )

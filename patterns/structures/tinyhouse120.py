@@ -11,7 +11,6 @@ from typing import Optional
 from giraffe import *
 from code_goes_here.timber import Frame
 from code_goes_here.patternbook import PatternBook, PatternMetadata
-from code_goes_here.joints.plain_joints import cut_plain_splined_opposing_double_butt_joint
 
 # ============================================================================
 # PARAMETERS
@@ -1133,7 +1132,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
         (beam_left_1, TimberReferenceEnd.TOP, beam_left_2, TimberReferenceEnd.BOTTOM, post_ML),
     ]:
         bottom_beam_corner_post_joints.append(
-            cut_plain_splined_opposing_double_butt_joint(
+            cut_basic_splined_opposing_double_butt_joint(
                 arrangement=DoubleButtJointTimberArrangement(
                     butt_timber_1=beam1,
                     butt_timber_2=beam2,

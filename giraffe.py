@@ -13,6 +13,7 @@ from code_goes_here.footprint import *
 from code_goes_here.construction import *
 from code_goes_here.joints.joint_shavings import *
 from code_goes_here.joints.plain_joints import *
+from code_goes_here.joints.basic_joints import *
 from code_goes_here.joints.mortise_and_tenon_joint import *
 from code_goes_here.joints.japanese_joints import *
 from code_goes_here.joints.double_butt_joints import *

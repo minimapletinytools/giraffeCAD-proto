@@ -7,6 +7,7 @@ dimensions and parameters, call the underlying cut_plain_*, cut_mortise_and_teno
 or cut_lapped_* functions directly.
 """
 
+from dataclasses import replace
 from typing import Optional, List, Tuple, cast
 from code_goes_here.timber import *
 from code_goes_here.rule import *
@@ -26,11 +27,13 @@ from code_goes_here.construction import (
     SpliceJointTimberArrangement,
     CornerJointTimberArrangement,
     CrossJointTimberArrangement,
+    DoubleButtJointTimberArrangement,
 )
 from .mortise_and_tenon_joint import (
     cut_mortise_and_tenon_joint_on_FAT,
 )
 from .build_a_butt_joint_shavings import SimplePegParameters
+from .double_butt_joints import cut_splined_opposing_double_butt_joint
 from .japanese_joints import (
     cut_lapped_gooseneck_joint,
     cut_housed_dovetail_butt_joint,
@@ -217,6 +220,86 @@ def cut_basic_house_joint(arrangement: CrossJointTimberArrangement) -> Joint:
     error = arrangement.check_face_aligned_and_orthogonal()
     assert error is None, error
     return cut_plain_house_joint(arrangement)
+
+
+def cut_basic_splined_opposing_double_butt_joint(
+    arrangement: DoubleButtJointTimberArrangement,
+    slot_facing_end_on_receiving_timber: TimberReferenceEnd,
+) -> Joint:
+    """
+    Creates a splined opposing double butt joint with default sizing and a default peg.
+
+    This basic wrapper always enables pegs and uses a default peg recipe:
+    - one square peg
+    - distance from shoulder = 30 mm
+    - lateral offset = 0
+    - peg size = 15 mm
+
+    Args:
+        arrangement: Double butt joint arrangement with butt_timber_1, butt_timber_2,
+            receiving_timber, butt_timber_1_end, butt_timber_2_end.
+        slot_facing_end_on_receiving_timber: Receiving-timber end that the slot faces.
+
+    Returns:
+        Joint containing all three cut timbers and spline/peg accessories.
+    """
+    # Ensure peg entry direction is defined. If unset, choose the butt-1 long face whose
+    # normal is closest to the joint-plane normal so drilling is perpendicular to the joint plane.
+    arrangement_with_peg_face = arrangement
+    if arrangement.front_face_on_butt_timber_1 is None:
+        butt_1_len = arrangement.butt_timber_1.get_length_direction_global()
+        receiving_len = arrangement.receiving_timber.get_length_direction_global()
+        joint_plane_normal = normalize_vector(cross_product(butt_1_len, receiving_len))
+        peg_face = arrangement.butt_timber_1.get_closest_oriented_long_face_from_global_direction(
+            joint_plane_normal
+        )
+        arrangement_with_peg_face = replace(
+            arrangement,
+            front_face_on_butt_timber_1=peg_face,
+        )
+
+    default_peg_parameters = SimplePegParameters(
+        shape=PegShape.SQUARE,
+        peg_positions=[(mm(30), Rational(0))],
+        size=mm(15),
+    )
+
+    butt_timber_1 = arrangement_with_peg_face.butt_timber_1
+    receiving_timber = arrangement_with_peg_face.receiving_timber
+
+    butt_length_direction_global = butt_timber_1.get_length_direction_global()
+    receiving_length_direction_global = receiving_timber.get_length_direction_global()
+    slot_direction_global = receiving_timber.get_face_direction_global(
+        slot_facing_end_on_receiving_timber
+    )
+    joint_plane_normal_global = normalize_vector(
+        cross_product(butt_length_direction_global, receiving_length_direction_global)
+    )
+
+    slot_face_on_butt_1 = butt_timber_1.get_closest_oriented_long_face_from_global_direction(
+        slot_direction_global
+    )
+
+    slot_thickness = receiving_timber.get_size_in_direction_3d(
+        joint_plane_normal_global
+    ) / Rational(3)
+    slot_depth = butt_timber_1.get_size_in_face_normal_axis(slot_face_on_butt_1) / Rational(2)
+    spline_length = receiving_timber.get_size_in_direction_3d(
+        butt_length_direction_global
+    ) * Integer(4)
+
+    return cut_splined_opposing_double_butt_joint(
+        arrangement=arrangement_with_peg_face,
+        slot_thickness=slot_thickness,
+        slot_depth=slot_depth,
+        spline_length=spline_length,
+        slot_facing_end_on_receiving_timber=slot_facing_end_on_receiving_timber,
+        spline_extra_depth=None,
+        slot_symmetric_extra_length=mm(3),
+        shoulder_symmetric_inset=Rational(0),
+        slot_lateral_offset=Rational(0),
+        peg_parameters=default_peg_parameters,
+    )
 
 
 def cut_basic_splice_lap_joint_on_aligned_timbers(

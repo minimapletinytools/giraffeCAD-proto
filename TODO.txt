@@ -132,12 +132,24 @@ the final returned csg has a ticket that points to a feature in the top level Di
   -detailed examples outlining every parameter (generate from python files)
 -appendix shit
 
+:: V0 release
+-finish README
+-finish agents doc
+-finish docs
+-make simple website
+-do pip package for release
+-do proper python env on installing extension, maybe add installation loading screen
+-do patternbook viewer (where to put python env in this case?)
+-do vscode extension release
+-make some content drip
 
 :: TODO
 DONE-splined opposing double butt joint :D (could have drawbore or key)
   -you need to create shoulder_shavings for making shoulder cuts
     -shoulder cuts should be infinite in one direction so can generate the positive and negative for both sides easily
       -I guess you need a full space cut?
+
+-add plane aligned variant of joint timbers
 -add dovetail shoulder to build a butt joint
 -add notching to build a butt joint (you can skip this if you want lol...)
 -ui widgets need to capture mouse inputs so they don't reset selection
@@ -332,12 +344,16 @@ TESTIFY
 
 
 
--M2 (reward: reimburse camera)
-  -improve ticket class
-  -features
-  -VIEWER :D
+DONE-M2 (reward: reimburse camera)
+  DONE-VIEWER
 
--M2.5
+-M2.5 V0 release
+  -improve ticket class
+  -features but no sub features
+    -allow clicknig on joint parts
+    -allow clicking onfaces to display which face yo uclicked on
+
+-M2.75
   -add panel/board support 
   -update shed example to include panels
   -add screw joint
