@@ -1,3 +1,15 @@
+:: 3/30/2026 math cleanup prompt
+
+Please review rule.py and all math operations in the code base.
+
+At some ponit Itried to make everything symbolic but realized that would accumluate too many symbols and make things impossibly slow so I switched back to floats but there are some hacks and stuff in the code that make thin sugly. Here's what I want
+
+when creating timbers from literals, use symbolic math everywhere possible and if symbols get even a little too complicated, eval down to float
+symbols should never exceed more than like 10 symbols, so lambify/numpy probably not necessary? stick to evalf? However creaet a giraffe_evalf function that calls evalf rather than call evalf directly. Basically I don't trust evalf and worry it will cause issues down the road so I want t obottle neck it all in my operation so I can do stuff like lambidy or timeouts if needed
+remove all the timeout and weird hacky stuff I did in rule.py
+use the safe_* math operations as much as possible. these check for symbols and shortcut to evalf if the symbols accumulate too much. in practice, they can always just eval down to floats.
+Any suggestions in the future? I think in many cases I don't even need to try and preserve symbols. So should we create numeric_* math operations that automatically collapse everything down to floats and prefer using these in most places. For example, CUTCsg are easily supre complicated and shouldnot really attempt to accumulate floats as they aren't used as features to generate anythnig else.
+
 :: 3/17/2026 selection / layer view
 
 Lets add a layout view.... We want a little menu on that spans the entire left side collumn that has an option >> expansion thingy to collapse it.
@@ -130,7 +142,8 @@ the final returned csg has a ticket that points to a feature in the top level Di
   -do patternbook viewer (where to put python env in this case?)
 -come up with sensible instalation strat
   -do pip package for release
-  -do proper python env on installing extension, maybe add installation loading screen
+  DONE-do proper python env on installing extension, maybe add installation loading screen
+  -do girrafe.yaml configuration stuff (I think it just needs python and girrafe verison in it?)
   -do vscode extension release
 -finish docs
   -finish README
@@ -146,6 +159,9 @@ the final returned csg has a ticket that points to a feature in the top level Di
 IGNORE-update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
 
 -add plane aligned variant of join_timbers
+  -rename join_face_parallel_on_face_parallel_timbers to join_plane_aligned...
+  -update brace example to use join_plane_aligned
+  -create some example with corner braces...
 -add dovetail shoulder to build a butt joint
 -add notching to build a butt joint (you can skip this if you want lol...)
 

@@ -52,9 +52,7 @@ To orient the timber we position, we often position the +Z and +X axis of the ti
 
 - A timber is *axis aligned* if its length vector is parallel to the +Z axis and its face vectors are parallel to either the X or Y axis.
 - Timbers are *face aligned* if each of the 6 faces of one timber is parallel with one of the 6 faces of the other timbers. 
-- Timbers are *plane aligned* if 2 of the 4 long faces on one timber are parallel to 2 of 4 long faces on the other timbers
-
-It follows that axis aligned timbers are also face aligned.
+- Timbers are *plane aligned* if 2 of the 4 long faces on one timber are parallel to 2 of 4 long faces on the other timbers. These faces are parallel to the *parallel face plane*.
 
 We often do not care to distinguish between 2 opposing faces on a timber thus:
 

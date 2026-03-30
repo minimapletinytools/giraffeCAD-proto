@@ -676,12 +676,56 @@ def join_face_parallel_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
                                                 # lateral offset (in the axis perpendicular to the face parallel plane) from feature_to_mark_on_joining_timber
                                                 lateral_offset_from_timber1: Numeric = Integer(0),
                                                 feature_to_mark_on_joining_timber: Optional[TimberFeature] = None,
-                                                orientation_long_face_on_timber1: Optional[TimberFace] = None, 
-                                                orientation_long_face_on_timber2: Optional[TimberFace] = None,
+                                                # if None, set to some arbitrary face of timber1 on the parallel face plane
+                                                orientation_long_face_on_timber1: Optional[TimberLongFace] = None, 
+                                                # this face on the created timber will align with orientation_long_face_on_timber1
+                                                orientation_long_face_on_timber2: Optional[TimberLongFace] = TimberLongFace.RIGHT,
                                                 ticket: Optional[Union[TimberTicket, str]] = None) -> Timber:
-    # TODO create an butt joint arrangement with timber1/2 and use it to assert tehy are face parallel and fetch the face parallel plane
-    # TODO finish
-    pass
+    require_check(None if are_timbers_plane_aligned(timber1, timber2) else "Timbers must be plane-aligned")
+    plane_normal = normalize_vector(cross_product(timber1.get_length_direction_global(), timber2.get_length_direction_global()))
+
+    if orientation_long_face_on_timber1 is None:
+        orientation_long_face_on_timber1 = timber1.get_closest_oriented_long_face_from_global_direction(plane_normal)
+    else:
+        require_check(
+            None
+            if are_vectors_parallel(timber1.get_face_direction_global(orientation_long_face_on_timber1), plane_normal)
+            else "orientation_long_face_on_timber1 must point in the aligned plane normal"
+        )
+
+    if orientation_long_face_on_timber2 is None:
+        orientation_long_face_on_timber2 = TimberLongFace.RIGHT
+
+    aligned_face_direction = timber1.get_face_direction_global(orientation_long_face_on_timber1)
+
+    point1 = locate_position_on_centerline_from_bottom(timber1, location_on_timber1).position
+    point2 = locate_position_on_centerline_from_bottom(timber2, location_on_timber2).position
+    joining_direction = normalize_vector(point2 - point1)
+    lateral_offset_direction = normalize_vector(cross_product(timber1.get_length_direction_global(), joining_direction))
+    lateral_offset = lateral_offset_from_timber1
+    if safe_compare(lateral_offset_direction.dot(plane_normal), Comparison.LT):
+        lateral_offset = -lateral_offset
+
+    if orientation_long_face_on_timber2 == TimberLongFace.RIGHT:
+        orientation_width_vector = aligned_face_direction
+    elif orientation_long_face_on_timber2 == TimberLongFace.LEFT:
+        orientation_width_vector = -aligned_face_direction
+    elif orientation_long_face_on_timber2 == TimberLongFace.FRONT:
+        orientation_width_vector = cross_product(aligned_face_direction, joining_direction)
+    else:
+        orientation_width_vector = -cross_product(aligned_face_direction, joining_direction)
+
+    return join_timbers(
+        timber1=timber1,
+        timber2=timber2,
+        location_on_timber1=location_on_timber1,
+        location_on_timber2=location_on_timber2,
+        lateral_offset=lateral_offset,
+        stickout=stickout,
+        size=size,
+        orientation_width_vector=normalize_vector(orientation_width_vector),
+        ticket=ticket,
+    )
 
 
 # TODO this function kinda sucks... awkward to measure to use, yo uneed to locate_face(timber1).mark_distance_from_end_along_centerline().distance or osmething crap like that to set lateral_offset_from_timber1 :(

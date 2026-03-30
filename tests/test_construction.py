@@ -1754,3 +1754,18 @@ class TestSplitTimber:
         assert top_timber.size[1] == timber.size[1]
 
 
+def test_join_face_parallel_on_face_parallel_timbers():
+    # Let's use create_timber
+    t1 = create_timber(create_v3(0, 0, 0), Rational(100), create_v2(10, 10), length_direction=create_v3(0, 1, 0), width_direction=create_v3(0, 0, 1))
+    t2 = create_timber(create_v3(50, -50, 0), Rational(100), create_v2(10, 10), length_direction=create_v3(1, 0, 0), width_direction=create_v3(0, 0, 1))
+    
+    stickout = Stickout(stickout1=Rational(0), stickout2=Rational(0))
+    size = create_v2(10, 10)
+    
+    res = join_face_parallel_on_face_parallel_timbers(t1, t2, Rational(20), Rational(70), stickout, size)
+    assert float(res.length) == pytest.approx(138.924, 0.01)
+    assert are_vectors_parallel(
+        res.get_face_direction_global(TimberLongFace.RIGHT),
+        t1.get_face_direction_global(TimberLongFace.LEFT),
+    )
+
