@@ -40,10 +40,10 @@ function escapeScriptJson(value) {
         .replace(/\u2029/g, '\\u2029');
 }
 
-function createFrameViewer(filePath) {
+function createFrameViewer(filePath, frameName = null, isLocalDev = false) {
     return vscode.window.createWebviewPanel(
         'horseyViewer',
-        getViewerTitle(filePath),
+        getViewerTitle(filePath, frameName, isLocalDev),
         vscode.ViewColumn.Two,
         {
             enableScripts: true,
@@ -53,7 +53,7 @@ function createFrameViewer(filePath) {
     );
 }
 
-function initializeFrameViewer(panel, filePath, options = {}) {
+function initializeFrameViewer(panel, filePath, options = {}, isLocalDev = false) {
     if (initializedPanels.has(panel)) {
         return;
     }
@@ -63,7 +63,7 @@ function initializeFrameViewer(panel, filePath, options = {}) {
         : 'initial creation';
     const viewerOptions = normalizeViewerOptions(options.viewerOptions);
 
-    panel.title = getViewerTitle(filePath);
+    panel.title = getViewerTitle(filePath, null, isLocalDev);
     panel.webview.html = getWebviewContent(
         panel.webview,
         {
@@ -97,8 +97,8 @@ function initializeFrameViewer(panel, filePath, options = {}) {
     initializedPanels.add(panel);
 }
 
-function renderFrameViewer(panel, filePath, frameData, geometryData, profiling, uiState = null, viewerOptions = null) {
-    panel.title = getViewerTitle(filePath, frameData.name);
+function renderFrameViewer(panel, filePath, frameData, geometryData, profiling, uiState = null, viewerOptions = null, isLocalDev = false) {
+    panel.title = getViewerTitle(filePath, frameData.name, isLocalDev);
     const nextUiState = uiState || {
         phase: ViewerPhase.READY,
         refreshToken: 0,
@@ -121,12 +121,13 @@ function renderFrameViewer(panel, filePath, frameData, geometryData, profiling, 
     }
 }
 
-function getViewerTitle(filePath, frameName = null) {
+function getViewerTitle(filePath, frameName = null, isLocalDev = false) {
     const fileName = path.basename(filePath);
+    const devTag = isLocalDev ? ' [Local Dev]' : '';
     if (frameName) {
-        return `Horsey: ${fileName} (${frameName}) · v${VIEWER_APP_VERSION}`;
+        return `Horsey: ${fileName} (${frameName})${devTag} · v${VIEWER_APP_VERSION}`;
     }
-    return `Horsey: ${fileName} · v${VIEWER_APP_VERSION}`;
+    return `Horsey: ${fileName}${devTag} · v${VIEWER_APP_VERSION}`;
 }
 
 function getWebviewContent(webview, frameData, geometryData, profiling, uiState = null, viewerOptions = null) {

@@ -18,23 +18,49 @@ class PythonRunnerSession {
         this.pending = new Map();
         this.startPromise = null;
         this.ready = false;
-        this.projectRoot = this.findProjectRoot(filePath) || path.dirname(context.extensionPath);
+        const env = this.resolveEnvironment(filePath);
+        this.projectRoot = env.projectRoot;
+        this.isLocalDev = env.isLocalDev;
         this.runnerScriptPath = path.join(context.extensionPath, 'runner.py');
     }
 
-    findProjectRoot(filePath) {
+
+    resolveEnvironment(filePath) {
         let candidate = path.dirname(path.resolve(filePath));
+        let projectRoot = null;
+        let isLocalDev = false;
+
         while (true) {
             if (fs.existsSync(path.join(candidate, 'giraffecad'))) {
-                return candidate;
+                projectRoot = candidate;
+                isLocalDev = true;
+                break;
+            }
+            if (fs.existsSync(path.join(candidate, '.giraffe.yaml'))) {
+                projectRoot = candidate;
+                isLocalDev = false;
+                break;
             }
             const parent = path.dirname(candidate);
             if (parent === candidate) {
-                return null;
+                break;
             }
             candidate = parent;
         }
+
+        if (!projectRoot) {
+            // Not found, default to folder of the filePath and create .giraffe.yaml
+            projectRoot = path.dirname(path.resolve(filePath));
+            const envYamlPath = path.join(projectRoot, '.giraffe.yaml');
+            if (!fs.existsSync(envYamlPath)) {
+                fs.writeFileSync(envYamlPath, 'giraffecad_version: latest\n', 'utf8');
+            }
+            isLocalDev = false;
+        }
+
+        return { projectRoot, isLocalDev };
     }
+
 
     isAlive() {
         return this.process && !this.process.killed && this.process.exitCode === null;

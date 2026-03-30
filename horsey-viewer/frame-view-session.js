@@ -100,15 +100,18 @@ class FrameViewSession {
         const initTiming = this.createTimingTracker({ stage: 'initialize' });
         this.markTiming(initTiming, 'initialize.start');
 
+        this.runnerSession = new PythonRunnerSession(this.filePath, this.context, this.channel);
+
         this.markTiming(initTiming, 'initialize.createPanel.start');
-        this.panel = createFrameViewer(this.filePath);
+        const isLocalDev = this.runnerSession.isLocalDev;
+        this.panel = createFrameViewer(this.filePath, null, isLocalDev);
         this.markTiming(initTiming, 'initialize.createPanel.end');
 
         this.markTiming(initTiming, 'initialize.webviewHtml.start');
         initializeFrameViewer(this.panel, this.filePath, {
             loadingText: 'initial creation',
             viewerOptions: this.refreshOptions,
-        });
+        }, this.runnerSession.isLocalDev);
         this.markTiming(initTiming, 'initialize.webviewHtml.end');
         this.panel.onDidDispose(() => {
             this.panel = null;
@@ -158,7 +161,6 @@ class FrameViewSession {
         this.postLoadingStatus('raising frame', { reason: 'session initialize', refreshToken: this.refreshSequence });
 
         this.markTiming(initTiming, 'initialize.runner.start');
-        this.runnerSession = new PythonRunnerSession(this.filePath, this.context, this.channel);
         await this.runnerSession.start();
         this.markTiming(initTiming, 'initialize.runner.end');
 

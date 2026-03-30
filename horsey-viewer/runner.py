@@ -20,27 +20,30 @@ import time
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, Tuple
 
 
-def _find_project_root_from_argv() -> "Path | None":
-    """Walk up from the target file path (argv[1]) to find the GiraffeCAD project root."""
+def _find_project_root_from_argv() -> "Tuple[Path | None, bool]":
+    """Walk up from the target file path (argv[1]) to find the project root and type.
+    Returns (root_path, is_local_dev) or (None, False)."""
     if len(sys.argv) < 2:
-        return None
+        return None, False
     candidate = Path(sys.argv[1]).resolve().parent
     while True:
         if (candidate / "giraffecad").is_dir():
-            return candidate
+            return candidate, True
+        if (candidate / ".giraffe.yaml").is_file():
+            return candidate, False
         parent = candidate.parent
         if parent == candidate:
-            return None
+            return None, False
         candidate = parent
 
 
-_project_root = _find_project_root_from_argv()
+_project_root, _is_local_dev = _find_project_root_from_argv()
 if _project_root is not None:
     _project_root_str = str(_project_root)
-    if _project_root_str not in sys.path:
+    if _is_local_dev and _project_root_str not in sys.path:
         sys.path.insert(0, _project_root_str)
 
     # If we're not running from the venv, re-exec with the venv python so all
@@ -56,6 +59,7 @@ if _project_root is not None:
     if _venv_python is not None and Path(sys.executable).resolve() != _venv_python.resolve():
         os.execv(str(_venv_python), [str(_venv_python)] + sys.argv)
         # os.execv replaces the current process; code below never runs if it succeeds
+
 
 TARGET_MODULE_NAME = "_horsey_viewer_target"
 
