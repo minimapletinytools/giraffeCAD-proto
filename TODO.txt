@@ -117,7 +117,11 @@ the final returned csg has a ticket that points to a feature in the top level Di
 - you will need to store this object now in cut timber instead of building it on the fly
 
 
+:: 3/30/2026 horsey viewer environment
 
+- when you open a my_structure.py file with the extension
+- check the parent folder for an existing .horsey/project.yaml file which will contain info on the python environment and the girrafecad version, otheriwse create it using the latest version available
+- cerate teh python virtual environment to run runner.py in
 
 
 

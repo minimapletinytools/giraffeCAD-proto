@@ -1,4 +1,4 @@
-## Quick Start
+content = """## Quick Start
 
 ```bash
 # Install uv if you don't have it
@@ -83,3 +83,7 @@ find . -type d -name "__pycache__" -exec rm -rf {} +
 find . -type f -name "*.pyc" -delete
 rm -rf htmlcov/ .coverage .pytest_cache/
 ```
+"""
+
+with open("DEVELOPERS.md", "w") as f:
+    f.write(content)

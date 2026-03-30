@@ -7,9 +7,10 @@ license = "MIT"
 authors = [{ name = "minimaple" }]
 readme = "README.md"
 dependencies = [
-    "manifold3d",
-    "sympy",
-    "trimesh",
+    "numpy>=1.21.0",
+    "manifold3d>=3.4.0",
+    "sympy>=1.12.0",
+    "trimesh>=4.7.0",
 ]
 
 [project.optional-dependencies]
@@ -29,11 +30,17 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
 
 [dependency-groups]
 dev = [
     "ty>=0.0.15",
-    "pytest",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
 ]
 
 [tool.ty.src]
