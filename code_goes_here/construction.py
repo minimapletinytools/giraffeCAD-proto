@@ -547,7 +547,6 @@ def split_timber(
     
     return (bottom_timber, top_timber)
 
-# TODO rename to create/raise_joining_timber
 def join_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin, 
                 location_on_timber1: Numeric,
                 location_on_timber2: Optional[Numeric] = None,
@@ -579,8 +578,8 @@ def join_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
         size: Optional size (width, height) of the joining timber. If not provided,
               determined from timber1's size based on orientation.
         orientation_width_vector: Optional width direction hint for the created timber in global space.
-                                 Will be automatically projected onto the plane perpendicular to the 
-                                 joining direction (from timber1 to timber2). This is useful for 
+                                 Will be automatically projected onto the normal plane of the length axis of the created timber.
+                                This is useful for 
                                  specifying orientation like "face up" for rafters.
                                  If not provided, uses timber1's length direction projected onto
                                  the perpendicular plane.
@@ -669,10 +668,27 @@ def join_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
     
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction, ticket=ticket)
 
+
+def join_face_parallel_on_face_parallel_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
+                                                location_on_timber1: Numeric, location_on_timber2: Numeric,
+                                                stickout: Stickout,
+                                                size: V2,
+                                                # lateral offset (in the axis perpendicular to the face parallel plane) from feature_to_mark_on_joining_timber
+                                                lateral_offset_from_timber1: Numeric = Integer(0),
+                                                feature_to_mark_on_joining_timber: Optional[TimberFeature] = None,
+                                                orientation_long_face_on_timber1: Optional[TimberFace] = None, 
+                                                orientation_long_face_on_timber2: Optional[TimberFace] = None,
+                                                ticket: Optional[Union[TimberTicket, str]] = None) -> Timber:
+    # TODO create an butt joint arrangement with timber1/2 and use it to assert tehy are face parallel and fetch the face parallel plane
+    # TODO finish
+    pass
+
+
 # TODO this function kinda sucks... awkward to measure to use, yo uneed to locate_face(timber1).mark_distance_from_end_along_centerline().distance or osmething crap like that to set lateral_offset_from_centerline_timber1 :(
 def join_perpendicular_on_face_aligned_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
                                                 location_on_timber1: Numeric,
                                                 stickout: Stickout,
+                                                # TODO rename to lateral_offset_from_timber1 and make optional = Integer(0), move this argument to be after size
                                                 lateral_offset_from_centerline_timber1: Numeric,
                                                 size: V2,
                                                 feature_to_mark_on_joining_timber: Optional[TimberFeature] = None,
