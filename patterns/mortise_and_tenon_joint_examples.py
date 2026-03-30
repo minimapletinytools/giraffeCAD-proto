@@ -2,7 +2,7 @@
 Example usage of mortise and tenon joint functions
 """
 
-from sympy import Matrix, Rational
+from sympy import Matrix, Rational, Integer
 from giraffecad.rule import inches, Transform
 from giraffecad.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberLongFace, Peg, Wedge,
@@ -13,7 +13,9 @@ from giraffecad.joints.mortise_and_tenon_joint import *
 
 from giraffecad.construction import (
     ButtJointTimberArrangement,
+    Stickout,
     create_axis_aligned_timber,
+    join_face_parallel_on_face_parallel_timbers,
 )
 from giraffecad.example_shavings import (
     create_canonical_example_brace_joint_timbers,
@@ -148,7 +150,17 @@ def example_brace_joint(position=None):
     brace_arrangement = create_canonical_example_brace_joint_timbers(position)
     timber1 = brace_arrangement.timber1
     timber2 = brace_arrangement.timber2
-    brace_timber = brace_arrangement.brace_timber
+    brace_timber = join_face_parallel_on_face_parallel_timbers(
+        timber1=timber1,
+        timber2=timber2,
+        location_on_timber1=timber1.length / Integer(2),
+        location_on_timber2=timber2.length / Integer(2),
+        stickout=Stickout.nostickout(),
+        size=timber1.size,
+        orientation_long_face_on_timber1=TimberLongFace.RIGHT,
+        orientation_long_face_on_timber2=TimberLongFace.RIGHT,
+        ticket="brace_timber",
+    )
     
     # Plain miter joint between the two corner timbers
     miter_joint = cut_basic_miter_joint(
