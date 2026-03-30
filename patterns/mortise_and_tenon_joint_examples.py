@@ -3,26 +3,26 @@ Example usage of mortise and tenon joint functions
 """
 
 from sympy import Matrix, Rational
-from code_goes_here.rule import inches, Transform
-from code_goes_here.timber import (
+from giraffecad.rule import inches, Transform
+from giraffecad.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberLongFace, Peg, Wedge,
     PegShape, timber_from_directions,
     create_v3, V2, CutTimber, Frame
 )
-from code_goes_here.joints.mortise_and_tenon_joint import *
+from giraffecad.joints.mortise_and_tenon_joint import *
 
-from code_goes_here.construction import (
+from giraffecad.construction import (
     ButtJointTimberArrangement,
     create_axis_aligned_timber,
 )
-from code_goes_here.example_shavings import (
+from giraffecad.example_shavings import (
     create_canonical_example_brace_joint_timbers,
     create_canonical_example_butt_joint_timbers,
 )
-from code_goes_here.joints.basic_joints import cut_basic_miter_joint
-from code_goes_here.construction import CornerJointTimberArrangement
-from code_goes_here.patternbook import PatternBook, PatternMetadata, make_pattern_from_joint, make_pattern_from_frame
-from code_goes_here.ticket import TimberTicket
+from giraffecad.joints.basic_joints import cut_basic_miter_joint
+from giraffecad.construction import CornerJointTimberArrangement
+from giraffecad.patternbook import PatternBook, PatternMetadata, make_pattern_from_joint, make_pattern_from_frame
+from giraffecad.ticket import TimberTicket
 
 
 def example_basic_mortise_and_tenon(position=None):
@@ -232,8 +232,8 @@ def example_double_angled_mortise_and_tenon(position=None):
     """
     from sympy import Integer, pi
     from dataclasses import replace
-    from code_goes_here.rule import Orientation, radians
-    from code_goes_here.ticket import Ticket
+    from giraffecad.rule import Orientation, radians
+    from giraffecad.ticket import Ticket
 
     if position is None:
         position = create_v3(0, 0, 0)

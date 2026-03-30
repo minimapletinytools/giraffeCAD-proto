@@ -46,8 +46,8 @@ Then press F5 in VSCode to launch the extension in development mode.
 Create a Python file with a `build_frame()` function:
 
 ```python
-from code_goes_here.timber import *
-from code_goes_here.construction import *
+from giraffecad.timber import *
+from giraffecad.construction import *
 
 def build_frame():
     timber1 = create_timber(

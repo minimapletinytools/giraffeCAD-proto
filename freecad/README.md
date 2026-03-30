@@ -123,13 +123,13 @@ Edit `CSG_EXAMPLE_TO_RENDER` in `run_examples.py` to choose which test to run.
 
 The scripts reload modules in dependency order:
 
-1. `code_goes_here.rule` - Core math/orientation
-2. `code_goes_here.footprint` - 2D footprints
-3. `code_goes_here.cutcsg` - CSG operations
-4. `code_goes_here.timber` - Timber data structures
-5. `code_goes_here.construction` - Construction functions
-6. `code_goes_here.joints.plain_joints` - Plain joint functions
-7. `code_goes_here.joints.mortise_and_tenon_joint` - Mortise & tenon functions
+1. `giraffecad.rule` - Core math/orientation
+2. `giraffecad.footprint` - 2D footprints
+3. `giraffecad.cutcsg` - CSG operations
+4. `giraffecad.timber` - Timber data structures
+5. `giraffecad.construction` - Construction functions
+6. `giraffecad.joints.plain_joints` - Plain joint functions
+7. `giraffecad.joints.mortise_and_tenon_joint` - Mortise & tenon functions
 8. `giraffe` - Main API module
 9. `giraffe_render_freecad` - FreeCAD renderer
 10. `patterns.*` - All pattern modules
@@ -138,7 +138,7 @@ The scripts reload modules in dependency order:
 
 **Import Errors:**
 - Make sure you're running from the `freecad/` directory
-- Check that the parent directory contains `code_goes_here/` and `patterns/`
+- Check that the parent directory contains `giraffecad/` and `patterns/`
 
 **Module Not Reloading:**
 - Check the console output to see which modules were reloaded
@@ -160,10 +160,10 @@ GiraffeCAD FreeCAD - Examples Runner
 ======================================================================
 
 Reloading all GiraffeCAD modules...
-  ✓ Reloaded code_goes_here.rule
-  ✓ Reloaded code_goes_here.timber
-  ✓ Reloaded code_goes_here.construction
-  ✓ Reloaded code_goes_here.joints.mortise_and_tenon_joint
+  ✓ Reloaded giraffecad.rule
+  ✓ Reloaded giraffecad.timber
+  ✓ Reloaded giraffecad.construction
+  ✓ Reloaded giraffecad.joints.mortise_and_tenon_joint
   ✓ Reloaded giraffe_render_freecad
   ✓ Reloaded patterns.structures.oscarshed
 

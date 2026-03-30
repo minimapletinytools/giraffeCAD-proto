@@ -71,7 +71,7 @@ def profile_pattern(name, func, args):
 
 def profile_timber_hashing(result):
     """Hash all timbers in a Frame result. Returns (hash_time, timber_count) or (None, 0)."""
-    from code_goes_here.timber import Frame
+    from giraffecad.timber import Frame
 
     if not isinstance(result, Frame):
         return None, 0
@@ -86,8 +86,8 @@ def profile_timber_hashing(result):
 
 def describe_result(result):
     """Return a short description of the build result."""
-    from code_goes_here.timber import Frame
-    from code_goes_here.patternbook import PatternBook
+    from giraffecad.timber import Frame
+    from giraffecad.patternbook import PatternBook
 
     if isinstance(result, Frame):
         return f"Frame with {len(result.cut_timbers)} timbers"

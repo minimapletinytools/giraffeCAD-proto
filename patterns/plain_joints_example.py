@@ -10,15 +10,15 @@ from sympy import Matrix, Rational
 from typing import Union, List
 from dataclasses import replace
 
-from code_goes_here.rule import inches, degrees, create_v2, create_v3, V3
-from code_goes_here.ticket import TimberTicket
-from code_goes_here.construction import (
+from giraffecad.rule import inches, degrees, create_v2, create_v3, V3
+from giraffecad.ticket import TimberTicket
+from giraffecad.construction import (
     CornerJointTimberArrangement,
     ButtJointTimberArrangement,
     SpliceJointTimberArrangement,
     CrossJointTimberArrangement,
 )
-from code_goes_here.timber import (
+from giraffecad.timber import (
     TimberReferenceEnd,
     TimberFace,
     TimberLongFace,
@@ -26,7 +26,7 @@ from code_goes_here.timber import (
     CutTimber,
     Frame,
 )
-from code_goes_here.joints.plain_joints import (
+from giraffecad.joints.plain_joints import (
     cut_plain_miter_joint,
     cut_plain_miter_joint_on_face_aligned_timbers,
     cut_plain_butt_joint_on_face_aligned_timbers,
@@ -37,13 +37,13 @@ from code_goes_here.joints.plain_joints import (
     cut_plain_house_joint,
     cut_plain_splice_lap_joint_on_aligned_timbers,
 )
-from code_goes_here.example_shavings import (
+from giraffecad.example_shavings import (
     create_canonical_example_corner_joint_timbers,
     create_canonical_example_right_angle_corner_joint_timbers,
     create_canonical_example_butt_joint_timbers,
     create_canonical_example_splice_joint_timbers,
 )
-from code_goes_here.patternbook import PatternBook, PatternMetadata
+from giraffecad.patternbook import PatternBook, PatternMetadata
 
 # Standard timber dimensions (4" x 5", 4' long) - matches canonical examples
 TIMBER_WIDTH = inches(4)   # 4"

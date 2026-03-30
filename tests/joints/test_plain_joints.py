@@ -4,7 +4,7 @@ Tests for GiraffeCAD timber framing system
 
 import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational, pi
-from giraffe import *
+from giraffecad import *
 from tests.testing_shavings import (
     create_standard_vertical_timber,
     create_standard_horizontal_timber,
@@ -474,7 +474,7 @@ class TestHouseJoint:
         Test that the prism being cut from the housing timber matches the housed timber
         when both are compared in global coordinates.
         """
-        from code_goes_here.cutcsg import RectangularPrism
+        from giraffecad.cutcsg import RectangularPrism
         
         # Create housing timber (vertical post)
         housing_timber = create_standard_vertical_timber(height=200, size=(10, 10), position=(0, 0, 0))
@@ -507,7 +507,7 @@ class TestHouseJoint:
         # Get the negative CSG (the prism being cut away)
         # This is in the housing timber's LOCAL coordinate system
         # Note: The new implementation uses a Difference(RectangularPrism, HalfSpace) for the cross lap joint
-        from code_goes_here.cutcsg import Difference
+        from giraffecad.cutcsg import Difference
         cut_csg_local = cut.negative_csg
         assert isinstance(cut_csg_local, Difference), "Negative CSG should be a Difference (cross lap implementation)"
         

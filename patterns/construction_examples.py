@@ -4,8 +4,8 @@ with different reference features
 """
 
 from sympy import Rational
-from giraffe import *
-from code_goes_here.patternbook import PatternBook, PatternMetadata
+from giraffecad import *
+from giraffecad.patternbook import PatternBook, PatternMetadata
 
 def inches(value):
     """Convert inches to meters using exact rational arithmetic."""

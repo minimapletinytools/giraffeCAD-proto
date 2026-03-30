@@ -8,8 +8,8 @@ from __future__ import annotations  # Enable deferred annotation evaluation
 import warnings
 from functools import wraps
 
-from code_goes_here.timber import *
-from code_goes_here.measuring import (
+from giraffecad.timber import *
+from giraffecad.measuring import (
     locate_top_center_position,
     locate_bottom_center_position,
     locate_position_on_centerline_from_bottom,
@@ -22,11 +22,11 @@ from code_goes_here.measuring import (
     get_point_on_face_global,
     Space,
 )
-from code_goes_here.construction import *
-from code_goes_here.timber_shavings import are_timbers_plane_aligned
-from code_goes_here.rule import *
-from code_goes_here.rule import safe_dot_product
-from code_goes_here.cutcsg import CutCSG, RectangularPrism, HalfSpace, Difference, adopt_csg
+from giraffecad.construction import *
+from giraffecad.timber_shavings import are_timbers_plane_aligned
+from giraffecad.rule import *
+from giraffecad.rule import safe_dot_product
+from giraffecad.cutcsg import CutCSG, RectangularPrism, HalfSpace, Difference, adopt_csg
 from .joint_shavings import chop_shoulder_notch_aligned_with_timber
 from .build_a_butt_joint_shavings import (
     PegPositionResult,

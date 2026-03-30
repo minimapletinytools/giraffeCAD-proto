@@ -11,7 +11,7 @@ This directory contains a complete, self-contained Fusion 360 script for renderi
 
 ### Imported from Parent Directory
 - **`../giraffe.py`** - Core GiraffeCAD timber framing library
-- **`../code_goes_here/`** - Core modules (rule, footprint, etc.)
+- **`../giraffecad/`** - Core modules (rule, footprint, etc.)
 - **`../patterns/structures/horsey_example.py`** - Sawhorse structure
 - **`../patterns/structures/oscarshed.py`** - Oscar's Shed structure
 - **`../patterns/basic_joints_examples.py`** - Basic joint type demonstrations and patternbook
@@ -139,7 +139,7 @@ fusion360/
 ├── libs/ (local dependencies: sympy, mpmath)
 └── imports from parent directory:
     ├── ../giraffe.py (timber framing API)
-    ├── ../code_goes_here/ (core modules)
+    ├── ../giraffecad/ (core modules)
     │   ├── rule.py (3D rotations)
     │   ├── footprint.py (2D layouts)
     │   ├── cutcsg.py (CSG operations)

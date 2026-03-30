@@ -8,12 +8,12 @@ Each joint is created from 4"x5" timbers that are 4' long.
 from sympy import Rational
 from typing import Union
 
-from code_goes_here.rule import V3, create_v3
-from code_goes_here.timber import *
-from code_goes_here.joints.double_butt_joints import cut_splined_opposing_double_butt_joint
-from code_goes_here.joints.build_a_butt_joint_shavings import SimplePegParameters
-from code_goes_here.example_shavings import create_canonical_example_opposing_double_butt_joint_timbers
-from code_goes_here.patternbook import PatternBook, PatternMetadata
+from giraffecad.rule import V3, create_v3
+from giraffecad.timber import *
+from giraffecad.joints.double_butt_joints import cut_splined_opposing_double_butt_joint
+from giraffecad.joints.build_a_butt_joint_shavings import SimplePegParameters
+from giraffecad.example_shavings import create_canonical_example_opposing_double_butt_joint_timbers
+from giraffecad.patternbook import PatternBook, PatternMetadata
 
 
 def make_splined_opposing_double_butt_joint_example(position: V3) -> Frame:

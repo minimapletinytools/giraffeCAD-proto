@@ -4,12 +4,12 @@ Contains traditional Japanese timber joint implementations
 """
 import warnings
 
-from code_goes_here.timber import *
-from code_goes_here.construction import *
+from giraffecad.timber import *
+from giraffecad.construction import *
 from .joint_shavings import *
-from code_goes_here.measuring import locate_top_center_position, locate_centerline, mark_distance_from_end_along_centerline
-from code_goes_here.rule import *
-from code_goes_here.cutcsg import *
+from giraffecad.measuring import locate_top_center_position, locate_centerline, mark_distance_from_end_along_centerline
+from giraffecad.rule import *
+from giraffecad.cutcsg import *
 
 # Aliases for backwards compatibility
 CSGUnion = SolidUnion
@@ -1006,8 +1006,8 @@ def cut_mitered_and_keyed_lap_joint(arrangement: CornerJointTimberArrangement, l
         finger_local = replace(finger_global, transform=finger_transform_local)
         
         # Apply crop using the opposing timber's inner face
-        from code_goes_here.measuring import locate_into_face
-        from code_goes_here.rule import safe_transform_vector
+        from giraffecad.measuring import locate_into_face
+        from giraffecad.rule import safe_transform_vector
         
         # Measure into opposing timber's inner face to create a cutting plane (in global space)
         crop_distance = miter_face_width - distance_between_lap_and_outside

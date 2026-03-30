@@ -3,7 +3,7 @@ Pytest configuration and fixtures for GiraffeCAD tests.
 """
 
 import pytest
-from code_goes_here.rule import set_numeric_mode, get_numeric_mode
+from giraffecad.rule import set_numeric_mode, get_numeric_mode
 
 
 @pytest.fixture

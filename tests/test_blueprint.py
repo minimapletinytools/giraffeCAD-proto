@@ -1,4 +1,4 @@
-"""Tests for code_goes_here.blueprint — STL (and STEP guard) export."""
+"""Tests for giraffecad.blueprint — STL (and STEP guard) export."""
 
 import importlib.util
 import os
@@ -10,14 +10,14 @@ from typing import Any, cast
 import pytest
 from sympy import Integer
 
-from code_goes_here.blueprint import (
+from giraffecad.blueprint import (
     export_cut_timber_stl,
     export_frame_stl,
     _TRIMESH_AVAILABLE,
     _OCP_AVAILABLE,
 )
-from code_goes_here.timber import CutTimber, Frame, Timber, timber_from_directions
-from code_goes_here.rule import create_v3, create_v2
+from giraffecad.timber import CutTimber, Frame, Timber, timber_from_directions
+from giraffecad.rule import create_v3, create_v2
 
 
 # ---------------------------------------------------------------------------
@@ -155,7 +155,7 @@ class TestStepImportGuard:
 
     @pytest.mark.skipif(_OCP_AVAILABLE, reason="OCP IS installed")
     def test_export_cut_timber_step_raises(self):
-        from code_goes_here.blueprint import export_cut_timber_step
+        from giraffecad.blueprint import export_cut_timber_step
 
         ct = _simple_cut_timber()
         with pytest.raises(ImportError, match="OCP"):
@@ -163,7 +163,7 @@ class TestStepImportGuard:
 
     @pytest.mark.skipif(_OCP_AVAILABLE, reason="OCP IS installed")
     def test_export_frame_step_raises(self):
-        from code_goes_here.blueprint import export_frame_step
+        from giraffecad.blueprint import export_frame_step
 
         frame = _simple_frame()
         with pytest.raises(ImportError, match="OCP"):
@@ -185,7 +185,7 @@ class TestStepOscarshed:
         return create_oscarshed()
 
     def test_export_single_timber_step(self, oscarshed_frame):
-        from code_goes_here.blueprint import export_cut_timber_step
+        from giraffecad.blueprint import export_cut_timber_step
 
         ct = oscarshed_frame.cut_timbers[0]
         with tempfile.TemporaryDirectory() as td:
@@ -195,7 +195,7 @@ class TestStepOscarshed:
             assert dest.stat().st_size > 0
 
     def test_export_all_timbers_step(self, oscarshed_frame):
-        from code_goes_here.blueprint import export_frame_step
+        from giraffecad.blueprint import export_frame_step
 
         with tempfile.TemporaryDirectory() as td:
             written = export_frame_step(oscarshed_frame, td)
@@ -215,11 +215,11 @@ class TestStepOscarshed:
         But the bounds should be within ~100mm of the expected corners — NOT
         off by thousands (which would indicate a broken half-space or transform).
         """
-        from code_goes_here.blueprint import _csg_to_ocp, _OCP_AVAILABLE
-        from code_goes_here.cutcsg import adopt_csg
-        from code_goes_here.rule import Transform
-        from code_goes_here.rendering_utils import sympy_to_float
-        from code_goes_here.timber import TimberCorner
+        from giraffecad.blueprint import _csg_to_ocp, _OCP_AVAILABLE
+        from giraffecad.cutcsg import adopt_csg
+        from giraffecad.rule import Transform
+        from giraffecad.rendering_utils import sympy_to_float
+        from giraffecad.timber import TimberCorner
         import OCP.Bnd as _Bnd
         import OCP.BRepBndLib as _BRepBndLib
 

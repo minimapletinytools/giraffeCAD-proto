@@ -91,7 +91,7 @@ def create_anthology_pattern_book():
     Returns:
         PatternBook: A single PatternBook with all patterns from all examples
     """
-    from code_goes_here.librarian import create_anthology_pattern_book_from_folder
+    from giraffecad.librarian import create_anthology_pattern_book_from_folder
 
     patterns_dir = os.path.join(parent_dir, 'patterns')
     anthology_book, scan_result = create_anthology_pattern_book_from_folder(patterns_dir)
@@ -127,7 +127,7 @@ def reload_all_modules():
     modules_to_delete = []
     for module_name in list(sys.modules.keys()):
         # Delete any module that starts with our project prefixes
-        if (module_name.startswith('code_goes_here') or 
+        if (module_name.startswith('giraffecad') or 
             module_name.startswith('patterns') or 
             module_name.startswith('giraffe_librarian_dynamic') or
             module_name == 'giraffe' or
@@ -142,21 +142,21 @@ def reload_all_modules():
     
     # List of modules to reload in dependency order
     modules_to_reload = [
-        'code_goes_here',  # Reload the package itself first
-        'code_goes_here.rule',
-        'code_goes_here.footprint',
-        'code_goes_here.cutcsg',
-        'code_goes_here.timber',
-        'code_goes_here.measuring',
-        'code_goes_here.construction',
-        'code_goes_here.rendering_utils',
-        'code_goes_here.joints.joint_shavings',
-        'code_goes_here.joints.plain_joints',
-        'code_goes_here.joints.basic_joints',
-        'code_goes_here.joints.mortise_and_tenon_joint',
-        'code_goes_here.joints.japanese_joints',
-        'code_goes_here.patternbook',
-        'code_goes_here.librarian',
+        'giraffecad',  # Reload the package itself first
+        'giraffecad.rule',
+        'giraffecad.footprint',
+        'giraffecad.cutcsg',
+        'giraffecad.timber',
+        'giraffecad.measuring',
+        'giraffecad.construction',
+        'giraffecad.rendering_utils',
+        'giraffecad.joints.joint_shavings',
+        'giraffecad.joints.plain_joints',
+        'giraffecad.joints.basic_joints',
+        'giraffecad.joints.mortise_and_tenon_joint',
+        'giraffecad.joints.japanese_joints',
+        'giraffecad.patternbook',
+        'giraffecad.librarian',
         'giraffe',
         'patterns',  # Reload the patterns package
         'giraffe_render_freecad',
@@ -188,8 +188,8 @@ def render_from_patternbook():
     Renders either a single pattern or a group of patterns based on configuration.
     """
     from giraffe_render_freecad import render_frame, render_csg_shape, clear_document, get_active_document
-    from code_goes_here.rule import m
-    from code_goes_here.timber import Frame
+    from giraffecad.rule import m
+    from giraffecad.timber import Frame
     
     print("="*70)
     print("GiraffeCAD FreeCAD - PatternBook Renderer")

@@ -1594,7 +1594,7 @@ def did_end_cuts_extend_timber(timber: PerfectTimberWithin, cuts: List['Cutting'
     Returns:
         True if any end cut extends beyond the timber's original length
     """
-    from code_goes_here.rule import safe_compare, Comparison
+    from giraffecad.rule import safe_compare, Comparison
     
     for cut in cuts:
         # Check top end cut
@@ -1829,7 +1829,7 @@ class CutTimber:
             # Check if it's a simple HalfSpace or a Difference with HalfSpaces
             if isinstance(csg, HalfSpace):
                 half_space = csg
-                from code_goes_here.rule import safe_compare, Comparison, safe_dot_product
+                from giraffecad.rule import safe_compare, Comparison, safe_dot_product
                 dot_product = safe_dot_product(half_space.normal, length_direction_local)
                 
                 if equality_test(Abs(dot_product), 1):
@@ -2376,7 +2376,7 @@ class Frame:
                         local_corners.append(local_corner)
             
             # Transform each corner to global coordinates
-            from code_goes_here.rule import safe_transform_vector
+            from giraffecad.rule import safe_transform_vector
             for local_corner in local_corners:
                 global_corner = prism.transform.position + safe_transform_vector(prism.transform.orientation.matrix, local_corner)
                 

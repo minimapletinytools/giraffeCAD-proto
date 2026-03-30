@@ -16,7 +16,7 @@ UNIT CONVERSION:
 
 Usage (as FreeCAD macro):
     # Import this module in your FreeCAD macro
-    import giraffe_render_freecad
+    import giraffecad_render_freecad
     
     # Your timber structure code here...
     cut_timbers = [...]
@@ -49,13 +49,13 @@ except ImportError:
 
 # GiraffeCAD imports
 from sympy import Matrix
-from giraffe import CutTimber, Timber, Frame
-from code_goes_here.timber import JointAccessory, Peg, Wedge, PegShape
-from code_goes_here.rule import Orientation
-from code_goes_here.cutcsg import (
+from giraffecad import CutTimber, Timber, Frame
+from giraffecad.timber import JointAccessory, Peg, Wedge, PegShape
+from giraffecad.rule import Orientation
+from giraffecad.cutcsg import (
     CutCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
-from code_goes_here.rendering_utils import (
+from giraffecad.rendering_utils import (
     calculate_structure_extents,
     sympy_to_float as _sympy_to_float_base
 )

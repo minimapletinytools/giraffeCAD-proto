@@ -6,8 +6,8 @@ This module contains tests for the CSG primitives and operations.
 
 import pytest
 from sympy import Matrix, Rational, Integer, simplify, sqrt, cos, sin, pi
-from code_goes_here.rule import Orientation, Transform, create_v3, radians
-from code_goes_here.cutcsg import (
+from giraffecad.rule import Orientation, Transform, create_v3, radians
+from giraffecad.cutcsg import (
     HalfSpace,
     RectangularPrism,
     Cylinder,
@@ -20,7 +20,7 @@ from code_goes_here.cutcsg import (
     translate_profile,
     translate_profiles,
 )
-from code_goes_here.rule import create_v2
+from giraffecad.rule import create_v2
 from tests.testing_shavings import assert_is_valid_rotation_matrix, create_standard_vertical_timber
 import random
 

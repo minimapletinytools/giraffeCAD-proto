@@ -57,7 +57,7 @@ Then reload VSCode.
 
 - VSCode 1.60.0 or higher
 - Python 3.6+
-- GiraffeCAD project structure (with `code_goes_here` directory)
+- GiraffeCAD project structure (with `giraffecad` directory)
 - Virtual environment with required dependencies (`venv/bin/python`)
 
 ## Troubleshooting

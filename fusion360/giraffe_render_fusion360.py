@@ -20,12 +20,12 @@ import traceback
 import time
 from typing import Optional, List, Tuple
 from sympy import Matrix, Float
-from giraffe import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge, Frame
-from code_goes_here.rule import Orientation
-from code_goes_here.cutcsg import (
+from giraffecad import CutTimber, Timber, JointAccessory, Peg, PegShape, Wedge, Frame
+from giraffecad.rule import Orientation
+from giraffecad.cutcsg import (
     CutCSG, HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference, ConvexPolygonExtrusion
 )
-from code_goes_here.rendering_utils import (
+from giraffecad.rendering_utils import (
     calculate_structure_extents,
     transform_halfspace_to_timber_local,
     sympy_to_float
@@ -1237,7 +1237,7 @@ def log_structure_extents(extent: float, cut_timbers: List[CutTimber]):
     app = get_fusion_app()
     if app:
         # Calculate detailed extents for logging
-        from code_goes_here.rendering_utils import calculate_timber_corners
+        from giraffecad.rendering_utils import calculate_timber_corners
         
     min_x = min_y = min_z = float('inf')
     max_x = max_y = max_z = float('-inf')

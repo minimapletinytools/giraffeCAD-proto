@@ -6,13 +6,13 @@ Run 'Render Horsey' command with this file open to test the viewer.
 import sys
 from pathlib import Path
 
-# Add the project root to the path so we can import code_goes_here
+# Add the project root to the path so we can import giraffecadcad
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from code_goes_here.timber import Frame, CutTimber
-from code_goes_here.construction import create_timber
-from code_goes_here.rule import create_v2, create_v3, mm
+from giraffecad.timber import Frame, CutTimber
+from giraffecad.construction import create_timber
+from giraffecad.rule import create_v2, create_v3, mm
 
 def build_frame():
     """

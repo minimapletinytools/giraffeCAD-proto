@@ -8,9 +8,9 @@ Structure:
 All dimensions use exact SymPy Rational values through helper unit functions.
 """
 
-from giraffe import *
-from code_goes_here.patternbook import PatternBook, PatternMetadata
-from code_goes_here.joints.basic_joints import cut_basic_miter_joint
+from giraffecad import *
+from giraffecad.patternbook import PatternBook, PatternMetadata
+from giraffecad.joints.basic_joints import cut_basic_miter_joint
 
 
 # -----------------------------------------------------------------------------

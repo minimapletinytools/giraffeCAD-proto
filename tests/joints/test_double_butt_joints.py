@@ -4,9 +4,9 @@ Tests for double butt joint construction functions.
 
 from dataclasses import replace
 from sympy import Rational, Abs
-from giraffe import *
-from code_goes_here.example_shavings import create_canonical_example_opposing_double_butt_joint_timbers
-from code_goes_here.joints.build_a_butt_joint_shavings import SimplePegParameters
+from giraffecad import *
+from giraffecad.example_shavings import create_canonical_example_opposing_double_butt_joint_timbers
+from giraffecad.joints.build_a_butt_joint_shavings import SimplePegParameters
 
 
 class TestSplinedOpposingDoubleButtJoint:

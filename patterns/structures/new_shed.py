@@ -9,9 +9,9 @@ from dataclasses import replace
 import sys
 sys.path.append('..')
 
-from giraffe import *
-from code_goes_here.timber import Frame
-from code_goes_here.patternbook import PatternBook, PatternMetadata
+from giraffecad import *
+from giraffecad.timber import Frame
+from giraffecad.patternbook import PatternBook, PatternMetadata
 
 # ============================================================================
 # PARAMETERS - Modify these to adjust the shed design

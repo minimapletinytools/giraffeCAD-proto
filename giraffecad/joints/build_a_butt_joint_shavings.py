@@ -17,8 +17,8 @@ outside of the purview of build-a-butt-joint, finish the joint:
 
 from __future__ import annotations
 
-from code_goes_here.timber import *
-from code_goes_here.measuring import (
+from giraffecad.timber import *
+from giraffecad.measuring import (
     locate_centerline,
     locate_face,
     locate_plane_from_edge_in_direction,
@@ -27,10 +27,10 @@ from code_goes_here.measuring import (
     Plane,
     Line,
 )
-from code_goes_here.construction import *
-from code_goes_here.rule import *
-from code_goes_here.rule import safe_dot_product, safe_transform_vector
-from code_goes_here.cutcsg import CutCSG
+from giraffecad.construction import *
+from giraffecad.rule import *
+from giraffecad.rule import safe_dot_product, safe_transform_vector
+from giraffecad.cutcsg import CutCSG
 
 # ============================================================================
 # Shoulder Plane

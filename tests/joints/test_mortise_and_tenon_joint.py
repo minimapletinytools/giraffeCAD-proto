@@ -5,19 +5,19 @@ Tests for mortise and tenon joint construction functions
 import pytest
 from typing import List
 from sympy import Matrix, Rational, simplify, sin, cos, pi
-from code_goes_here.rule import Orientation, create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product, normalize_vector
-from code_goes_here.timber import (
+from giraffecad.rule import Orientation, create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product, normalize_vector
+from giraffecad.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberLongFace,
     V2, V3, Numeric, PegShape, WedgeShape, Peg,
     timber_from_directions, create_v3
 )
-from code_goes_here.construction import ButtJointTimberArrangement
-from code_goes_here.timber_shavings import are_timbers_plane_aligned
-from code_goes_here.joints.build_a_butt_joint_shavings import (
+from giraffecad.construction import ButtJointTimberArrangement
+from giraffecad.timber_shavings import are_timbers_plane_aligned
+from giraffecad.joints.build_a_butt_joint_shavings import (
     SimplePegParameters,
     PegPositionSpace,
 )
-from code_goes_here.joints.mortise_and_tenon_joint import (
+from giraffecad.joints.mortise_and_tenon_joint import (
     WedgeParameters,
     _does_shoulder_plane_need_notching,
     cut_mortise_and_tenon_joint_on_FAT,
@@ -231,7 +231,7 @@ class TestPegStuff:
         tenon_cut_csg = tenon_cut_timber.cuts[0].negative_csg
         
         # Verify CSG includes peg holes (should be a SolidUnion with multiple children)
-        from code_goes_here.cutcsg import SolidUnion
+        from giraffecad.cutcsg import SolidUnion
         assert isinstance(tenon_cut_csg, SolidUnion), \
             "Tenon cut CSG with pegs should be a SolidUnion"
         assert len(tenon_cut_csg.children) >= 2, \
@@ -467,8 +467,8 @@ class TestPegStuff:
         Requesting MORTISE orientation means the peg Y-axis must be parallel to
         the mortise length axis (+Y), not the brace length axis.
         """
-        from code_goes_here.example_shavings import create_canonical_example_brace_joint_timbers
-        from code_goes_here.rule import are_vectors_parallel
+        from giraffecad.example_shavings import create_canonical_example_brace_joint_timbers
+        from giraffecad.rule import are_vectors_parallel
 
         brace_arrangement = create_canonical_example_brace_joint_timbers()
         brace_timber = brace_arrangement.brace_timber

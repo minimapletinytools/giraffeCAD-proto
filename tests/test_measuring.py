@@ -3,9 +3,9 @@ Tests for the measuring module (geometric primitives).
 """
 
 import pytest
-from code_goes_here.measuring import *
-from code_goes_here.timber import timber_from_directions, TimberFace, TimberLongEdge, TimberEdge, TimberCenterline, TimberCorner
-from code_goes_here.rule import create_v3, create_v2, Transform, Orientation
+from giraffecad.measuring import *
+from giraffecad.timber import timber_from_directions, TimberFace, TimberLongEdge, TimberEdge, TimberCenterline, TimberCorner
+from giraffecad.rule import create_v3, create_v2, Transform, Orientation
 from sympy import Matrix, Rational
 
 
@@ -617,7 +617,7 @@ class TestMeasureCenterLine:
     def test_locate_centerline_diagonal(self):
         """Test measuring the center line of a diagonally oriented timber"""
         # Timber pointing in diagonal direction
-        from code_goes_here.rule import normalize_vector
+        from giraffecad.rule import normalize_vector
         
         direction = normalize_vector(create_v3(1, 1, 1))  # Diagonal
         timber = timber_from_directions(
@@ -833,7 +833,7 @@ class TestMarkPlaneFromEdgeInDirection:
 
     def test_round_trip_diagonal_timber_and_direction(self):
         """Round-trip on a diagonal timber with a non-axis-aligned direction."""
-        from code_goes_here.rule import normalize_vector, zero_test
+        from giraffecad.rule import normalize_vector, zero_test
         from sympy import simplify
 
         timber = timber_from_directions(

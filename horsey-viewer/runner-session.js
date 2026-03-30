@@ -25,7 +25,7 @@ class PythonRunnerSession {
     findProjectRoot(filePath) {
         let candidate = path.dirname(path.resolve(filePath));
         while (true) {
-            if (fs.existsSync(path.join(candidate, 'code_goes_here'))) {
+            if (fs.existsSync(path.join(candidate, 'giraffecad'))) {
                 return candidate;
             }
             const parent = path.dirname(candidate);

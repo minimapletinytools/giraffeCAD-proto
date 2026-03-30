@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
-from code_goes_here.rule import Direction3D
+from giraffecad.rule import Direction3D
 
 
 @dataclass(frozen=True)

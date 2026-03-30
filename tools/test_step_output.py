@@ -18,7 +18,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from code_goes_here.blueprint import export_frame_step, export_cut_timber_step, _OCP_AVAILABLE
+from giraffecad.blueprint import export_frame_step, export_cut_timber_step, _OCP_AVAILABLE
 
 
 def _load_structure_factory(module_name: str, factory_name: str):

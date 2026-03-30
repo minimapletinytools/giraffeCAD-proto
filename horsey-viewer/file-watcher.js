@@ -3,7 +3,7 @@
  *
  * Watches:
  * 1. The example file itself (always)
- * 2. The code_goes_here library tree (optional, local dev only)
+ * 2. The giraffecad library tree (optional, local dev only)
  *
  * Debounces rapid file changes and notifies via callback.
  */
@@ -25,7 +25,7 @@ class FileWatcher {
     }
 
     /**
-     * Start watching the example file and optionally the code_goes_here library.
+     * Start watching the example file and optionally the giraffecad library.
      */
     start() {
         if (this.isDisposed) {
@@ -37,24 +37,24 @@ class FileWatcher {
         // Watch the example file itself
         this.watchExampleFile();
 
-        // Watch code_goes_here library (local dev only)
+        // Watch giraffecad library (local dev only)
         if (this.projectRoot && this.hasLocalCodeGoesHere()) {
-            this.logChange(`Library watcher enabled for: ${path.join(this.projectRoot, 'code_goes_here')}`);
+            this.logChange(`Library watcher enabled for: ${path.join(this.projectRoot, 'giraffecad')}`);
             this.watchLibrary();
             return;
         }
 
-        this.logChange('Library watcher disabled: no local code_goes_here checkout detected');
+        this.logChange('Library watcher disabled: no local giraffecad checkout detected');
     }
 
     /**
-     * Check if code_goes_here exists under the project root (local checkout detection).
+     * Check if giraffecad exists under the project root (local checkout detection).
      */
     hasLocalCodeGoesHere() {
         if (!this.projectRoot) {
             return false;
         }
-        return fs.existsSync(path.join(this.projectRoot, 'code_goes_here'));
+        return fs.existsSync(path.join(this.projectRoot, 'giraffecad'));
     }
 
     /**
@@ -86,10 +86,10 @@ class FileWatcher {
     }
 
     /**
-     * Create a watcher for the code_goes_here library tree.
+     * Create a watcher for the giraffecad library tree.
      */
     watchLibrary() {
-        const pattern = new vscode.RelativePattern(this.projectRoot, 'code_goes_here/**/*.py');
+        const pattern = new vscode.RelativePattern(this.projectRoot, 'giraffecad/**/*.py');
         const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
         watcher.onDidChange((uri) => {

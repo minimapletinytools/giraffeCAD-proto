@@ -9,8 +9,8 @@ or cut_lapped_* functions directly.
 
 from dataclasses import replace
 from typing import Optional, List, Tuple, cast
-from code_goes_here.timber import *
-from code_goes_here.rule import *
+from giraffecad.timber import *
+from giraffecad.rule import *
 from .plain_joints import (
     cut_plain_miter_joint,
     cut_plain_miter_joint_on_face_aligned_timbers,
@@ -22,7 +22,7 @@ from .plain_joints import (
     cut_plain_house_joint,
     cut_plain_splice_lap_joint_on_aligned_timbers,
 )
-from code_goes_here.construction import (
+from giraffecad.construction import (
     ButtJointTimberArrangement,
     SpliceJointTimberArrangement,
     CornerJointTimberArrangement,

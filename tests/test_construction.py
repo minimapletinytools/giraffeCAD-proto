@@ -4,14 +4,14 @@ Tests for GiraffeCAD timber framing system
 
 import pytest
 from sympy import Matrix, sqrt, simplify, Abs, Float, Rational
-from code_goes_here.rule import Orientation
-from giraffe import *
+from giraffecad.rule import Orientation
+from giraffecad import *
 from tests.testing_shavings import (
     create_standard_vertical_timber,
     create_standard_horizontal_timber,
     assert_vectors_perpendicular
 )
-from code_goes_here.rule import inches, feet
+from giraffecad.rule import inches, feet
 
 # ============================================================================
 # Tests for construction.py - Timber Creation and Manipulation
@@ -1390,7 +1390,7 @@ class TestHelperFunctions:
     def test_stickout_reference_assertions(self):
         """Test that join_timbers asserts when non-CENTER_LINE references are used."""
         import pytest
-        from giraffe import StickoutReference
+        from giraffecad import StickoutReference
         
         # Create two posts 2.0 meters apart
         post1 = create_standard_vertical_timber(height=2, size=(0.2, 0.2), position=(0, 0, 0))
@@ -1420,7 +1420,7 @@ class TestHelperFunctions:
     
     def test_stickout_reference_inside_face_aligned(self):
         """Test INSIDE stickout reference with face-aligned timbers."""
-        from giraffe import StickoutReference, join_perpendicular_on_face_aligned_timbers, TimberFace
+        from giraffecad import StickoutReference, join_perpendicular_on_face_aligned_timbers, TimberFace
         
         # Create two parallel horizontal posts 2.0 meters apart
         post1 = timber_from_directions(
@@ -1456,7 +1456,7 @@ class TestHelperFunctions:
     
     def test_stickout_reference_outside_face_aligned(self):
         """Test OUTSIDE stickout reference with face-aligned timbers."""
-        from giraffe import StickoutReference, join_perpendicular_on_face_aligned_timbers, TimberFace
+        from giraffecad import StickoutReference, join_perpendicular_on_face_aligned_timbers, TimberFace
         
         # Create two parallel horizontal posts 2.0 meters apart
         post1 = timber_from_directions(

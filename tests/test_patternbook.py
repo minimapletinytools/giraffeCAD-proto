@@ -4,10 +4,10 @@ Tests for the PatternBook module
 
 import pytest
 from sympy import Integer, Rational
-from code_goes_here.rule import create_v3, create_v2, inches, Transform, Orientation
-from code_goes_here.timber import timber_from_directions, Frame, CutTimber
-from code_goes_here.cutcsg import RectangularPrism
-from code_goes_here.patternbook import PatternMetadata, PatternBook, PatternLambda
+from giraffecad.rule import create_v3, create_v2, inches, Transform, Orientation
+from giraffecad.timber import timber_from_directions, Frame, CutTimber
+from giraffecad.cutcsg import RectangularPrism
+from giraffecad.patternbook import PatternMetadata, PatternBook, PatternLambda
 
 
 def test_pattern_metadata_creation():

@@ -9,14 +9,14 @@ live in construction.py.
 from typing import Optional
 from sympy import Integer
 
-from code_goes_here.timber import (
+from giraffecad.timber import (
     Timber, TimberReferenceEnd, TimberLongFace,
     timber_from_directions, normalize_vector,
 )
-from code_goes_here.rule import (
+from giraffecad.rule import (
     V3, Numeric, create_v2, create_v3, inches, radians,
 )
-from code_goes_here.construction import (
+from giraffecad.construction import (
     ButtJointTimberArrangement,
     DoubleButtJointTimberArrangement,
     SpliceJointTimberArrangement,

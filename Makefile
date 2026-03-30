@@ -25,7 +25,7 @@ test-verbose:
 	uv run pytest tests/ -v
 
 test-cov:
-	uv run pytest tests/ --cov=code_goes_here --cov-report=html --cov-report=term-missing
+	uv run pytest tests/ --cov=giraffecad --cov-report=html --cov-report=term-missing
 	@echo ""
 	@echo "✅ Coverage report generated in htmlcov/index.html"
 

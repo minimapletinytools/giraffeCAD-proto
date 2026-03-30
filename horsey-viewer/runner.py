@@ -29,7 +29,7 @@ def _find_project_root_from_argv() -> "Path | None":
         return None
     candidate = Path(sys.argv[1]).resolve().parent
     while True:
-        if (candidate / "code_goes_here").is_dir():
+        if (candidate / "giraffecad").is_dir():
             return candidate
         parent = candidate.parent
         if parent == candidate:
@@ -112,7 +112,7 @@ def get_timber_display_name(timber: Any) -> str:
 
 
 def _compute_csg_depth(csg: Any) -> int:
-    from code_goes_here.cutcsg import SolidUnion, Difference
+    from giraffecad.cutcsg import SolidUnion, Difference
 
     if isinstance(csg, SolidUnion):
         if not csg.children:
@@ -201,9 +201,9 @@ def _cut_timber_to_triangle_mesh_payload(
     timber_key: str,
     geometry_hash: str,
 ) -> Dict[str, Any]:
-    from code_goes_here.cutcsg import adopt_csg
-    from code_goes_here.rule import Transform
-    from code_goes_here.triangles import triangulate_cutcsg
+    from giraffecad.cutcsg import adopt_csg
+    from giraffecad.rule import Transform
+    from giraffecad.triangles import triangulate_cutcsg
 
     global_csg = adopt_csg(cut_timber.timber.transform, Transform.identity(), local_csg)
     triangle_mesh = triangulate_cutcsg(global_csg).mesh
@@ -237,9 +237,9 @@ def _accessory_to_triangle_mesh_payload(
     accessory_name: str,
     geometry_hash: str,
 ) -> Dict[str, Any]:
-    from code_goes_here.cutcsg import adopt_csg
-    from code_goes_here.rule import Transform
-    from code_goes_here.triangles import triangulate_cutcsg
+    from giraffecad.cutcsg import adopt_csg
+    from giraffecad.rule import Transform
+    from giraffecad.triangles import triangulate_cutcsg
 
     if hasattr(accessory, "transform"):
         global_csg = adopt_csg(accessory.transform, Transform.identity(), local_csg)
@@ -535,7 +535,7 @@ def load_module_from_path(file_path: Path, verbose: bool = False) -> Any:
         if verbose:
             log_stderr("[reload] WARNING: _project_root is None — project module purge skipped!")
             log_stderr(f"[reload]   sys.argv = {sys.argv}")
-            log_stderr("[reload]   Module changes to code_goes_here/ will NOT be picked up until runner restarts.")
+            log_stderr("[reload]   Module changes to giraffecad/ will NOT be picked up until runner restarts.")
 
     # Step 3: Ensure target module doesn't exist in sys.modules
     module_name = _module_name_for_path(file_path)

@@ -11,8 +11,8 @@ Layout summary:
 from sympy import Rational
 from typing import Optional
 
-from giraffe import *
-from code_goes_here.patternbook import PatternBook, PatternMetadata
+from giraffecad import *
+from giraffecad.patternbook import PatternBook, PatternMetadata
 
 
 # Timber sizes (metric)

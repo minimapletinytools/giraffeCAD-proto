@@ -162,7 +162,7 @@ class HalfSpace(CutCSG):
         Returns:
             True if the point is on the boundary plane, False otherwise
         """
-        from code_goes_here.rule import zero_test
+        from giraffecad.rule import zero_test
         # Compute dot product: point · normal
         dot_product = safe_dot_product(point, self.normal)
         # Use zero_test to handle Float vs Integer comparison with tolerance
@@ -1122,7 +1122,7 @@ class ConvexPolygonExtrusion(CutCSG):
         z_coord = local_coords[2]
         
         # Check Z bounds (use safe_compare for tolerance with Float vs Integer)
-        from code_goes_here.rule import safe_compare, Comparison
+        from giraffecad.rule import safe_compare, Comparison
         if self.start_distance is not None and safe_compare(z_coord - self.start_distance, Comparison.LT):
             return False
         if self.end_distance is not None and safe_compare(z_coord - self.end_distance, Comparison.GT):
@@ -1149,7 +1149,7 @@ class ConvexPolygonExtrusion(CutCSG):
             cross = edge[0] * to_point[1] - edge[1] * to_point[0]
             
             # Use safe_compare with tolerance to handle Float vs Integer comparisons
-            from code_goes_here.rule import safe_compare, Comparison
+            from giraffecad.rule import safe_compare, Comparison
             if safe_compare(cross, Comparison.LT):
                 return False
         
@@ -1181,7 +1181,7 @@ class ConvexPolygonExtrusion(CutCSG):
         y_coord = local_coords[1]
         z_coord = local_coords[2]
         
-        from code_goes_here.rule import zero_test
+        from giraffecad.rule import zero_test
         # Check if on top or bottom face (if finite)
         if self.start_distance is not None and zero_test(z_coord - self.start_distance):
             return True
@@ -1214,7 +1214,7 @@ class ConvexPolygonExtrusion(CutCSG):
             t = (to_point[0] * edge[0] + to_point[1] * edge[1]) / edge_length_sq
             
             # Check if projection is on the segment [0, 1]
-            from code_goes_here.rule import safe_compare, Comparison
+            from giraffecad.rule import safe_compare, Comparison
             t_in_range = safe_compare(t, Comparison.GE) and safe_compare(t - Integer(1), Comparison.LE)
             
             if t_in_range:
