@@ -167,7 +167,7 @@ def cut_mortise_and_tenon_joint(
     shoulder_from_tenon_end_mark = mark_distance_from_end_along_centerline(shoulder_plane, tenon_timber, tenon_end)
 
     tenon_end_direction = tenon_timber.get_face_direction_global(tenon_end)
-    shoulder_point_global = shoulder_from_tenon_end_mark.measure().position
+    shoulder_point_global = shoulder_from_tenon_end_mark.locate().position
 
     tenon_right = tenon_timber.get_face_direction_global(TimberFace.RIGHT)
     tenon_front = tenon_timber.get_face_direction_global(TimberFace.FRONT)

@@ -659,7 +659,7 @@ class TestDistanceFromPointIntoFaceMark:
             point=None  # Use face center
         )
         
-        point = measurement.measure()
+        point = measurement.locate()
         
         # Starting from face center (5, 0, 50), measuring 5 into timber (-X)
         # gives position (0, 0, 50)
@@ -684,7 +684,7 @@ class TestDistanceFromPointIntoFaceMark:
             point=custom_point
         )
         
-        point = measurement.measure()
+        point = measurement.locate()
         
         # Line should point away from FRONT face (negative Y direction)
         assert point.position.equals(create_v3(2, 2, 30))
@@ -711,7 +711,7 @@ class TestDistanceFromLongEdgeOnFaceMark:
             face=TimberFace.RIGHT
         )
         
-        line = measurement.measure()
+        line = measurement.locate()
         
         # Line should be parallel to timber length (Z direction)
         assert line.direction.equals(create_v3(0, 0, 1))
@@ -736,7 +736,7 @@ class TestDistanceFromLongEdgeOnFaceMark:
             face=TimberFace.BACK
         )
         
-        line = measurement.measure()
+        line = measurement.locate()
         
         # Line should be parallel to timber length (Z direction)
         assert line.direction.equals(create_v3(0, 0, 1))
@@ -775,7 +775,7 @@ class TestMeasureOntoCenterline:
         assert marking.point.equals(create_v3(0, 0, 0))
         
         # Test round-trip: mark should return a line at the correct position
-        point = marking.measure()
+        point = marking.locate()
         assert point.position.equals(create_v3(0, 0, 30))  # At the plane location
     
     def test_locate_line_onto_centerline(self, symbolic_mode):
@@ -806,7 +806,7 @@ class TestMeasureOntoCenterline:
         assert marking.point.equals(create_v3(0, 0, 0))
         
         # Test round-trip
-        marked_point = marking.measure()
+        marked_point = marking.locate()
         assert marked_point.position.equals(create_v3(0, 0, 40))
 
 
@@ -829,7 +829,7 @@ class TestMarkPlaneFromEdgeInDirection:
         result = mark_plane_from_edge_in_direction(plane, timber, TimberCenterline.CENTERLINE)
         assert result.direction.equals(direction)
         assert result.distance == distance
-        assert result.measure().point.equals(plane.point)
+        assert result.locate().point.equals(plane.point)
 
     def test_round_trip_diagonal_timber_and_direction(self):
         """Round-trip on a diagonal timber with a non-axis-aligned direction."""
@@ -852,7 +852,7 @@ class TestMarkPlaneFromEdgeInDirection:
         result = mark_plane_from_edge_in_direction(plane, timber, TimberEdge.RIGHT_FRONT)
         assert result.direction.equals(direction)
         assert zero_test(simplify(result.distance - distance))
-        round_trip_plane = result.measure()
+        round_trip_plane = result.locate()
         for i in range(3):
             assert zero_test(simplify(round_trip_plane.point[i] - plane.point[i]))
 
@@ -876,7 +876,7 @@ class TestPointFromCornerInFaceDirection:
             face=TimberFace.TOP,
             distance=Rational(3),
         )
-        pt = valid.measure()
+        pt = valid.locate()
         assert pt.position[0] == Rational(5)
         assert pt.position[1] == Rational(10)
         assert pt.position[2] == Rational(3)
@@ -889,7 +889,7 @@ class TestPointFromCornerInFaceDirection:
             distance=Rational(3),
         )
         with pytest.raises(AssertionError, match="points away"):
-            invalid.measure()
+            invalid.locate()
 
 
 class TestMarkDistanceFromCornerAlongEdge:
@@ -913,7 +913,7 @@ class TestMarkDistanceFromCornerAlongEdge:
         assert isinstance(result, DistanceFromCornerAlongEdge)
         assert result.distance == Rational(30)
         assert result.end == TimberReferenceEnd.BOTTOM
-        pt = result.measure()
+        pt = result.locate()
         assert pt.position[2] == Rational(30)
 
     def test_closest_point_on_centerline_to_perpendicular_line(self, symbolic_mode):
@@ -933,7 +933,7 @@ class TestMarkDistanceFromCornerAlongEdge:
         )
         assert isinstance(result, DistanceFromCornerAlongEdge)
         assert result.distance == Rational(40)
-        pt = result.measure()
+        pt = result.locate()
         assert pt.position[0] == Rational(0)
         assert pt.position[1] == Rational(0)
         assert pt.position[2] == Rational(40)

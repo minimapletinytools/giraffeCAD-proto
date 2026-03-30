@@ -144,29 +144,11 @@ the final returned csg has a ticket that points to a feature in the top level Di
 -make some content drip
 
 :: TODO
-DONE-splined opposing double butt joint :D (could have drawbore or key)
-  -you need to create shoulder_shavings for making shoulder cuts
-    -shoulder cuts should be infinite in one direction so can generate the positive and negative for both sides easily
-      -I guess you need a full space cut?
-DONE-see what you can do about zfighting issues
-DONE/IGNORE-ui widgets need to capture mouse inputs so they don't reset selection
-DONE-I think you need a 3 way joint, or at least a placeholder for it. Shachisen-tsugi (車知栓継ぎ)
-DONE-seemst o freak out after a python cash, need to add error handling
-DONE-disable critters or fix it.... (and turn off logging ug)
+IGNORE-update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
 
-DONE-do new mouse navigation
-DONE-render accessories
-DONE-fix reflection rendering and make background nicer?
-IGNORE-maybe background colors should inehirt from vscode theme :O
-
-
--need plain_double_butt joint examlpe
-
-
--add plane aligned variant of joint timbers
+-add plane aligned variant of join_timbers
 -add dovetail shoulder to build a butt joint
 -add notching to build a butt joint (you can skip this if you want lol...)
-
 
 -do tinyhouse shed
   DONE-fix joists between intermediate posts, they should mortise and tenon into the posts
@@ -190,6 +172,7 @@ IGNORE-maybe background colors should inehirt from vscode theme :O
 -DO META DATA
   -feature metadata
     -tag CSG with features
+    
   -do assembly metadata
     -create assemblydirection class 
     -for accessories, have assemblydriection but also have locking accessory
@@ -199,11 +182,17 @@ IGNORE-maybe background colors should inehirt from vscode theme :O
     -allow features to be labeled as saw or chisel so we can do cutting instructions
     -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
 
--fix all the crud you have in your safe math functions
+-fix all the crud you have in your safe math functions, maybe just clean up to all floats...
 -do another profiling pass
 -decide if hashing is ever worth it and or just remove it entirely
   -or maybe come up with a faster hashing method?
 
+-UI feature select
+  -if 2 feature sselected, do measurement rendering between them :O
+  -byd efault, noly features are the 6 sides of a timber
+    -you can usually not select the end face so how can we tell which is the top/bottom?
+      -maybe add an arrow gizmo pointing to the top in the center of teh timber?
+      -or for features that coincide with local cardinal dircetions of timber you can flag it
 -UI layer view 
   -decide on layer view organization
   -finish ticket system
@@ -219,38 +208,14 @@ IGNORE-maybe background colors should inehirt from vscode theme :O
   -figure out why box view doesn't render right for the gooseneck, end cut is correct
   DONE-add some background color choices (colors, gradient,s whatever fun stuff)
   
-IGNORE-do layout
-  -pop out left tab for hierarchy
-  -pop up right tab for gizmos
-  -info tab at right/bottom right???
-  -bottom left/center section to help you scroll further down to bottom views
-    -view options can go here
-
-
-
--update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
 -rewrite accessories as timbers probably, so you can leverage any drawing capabilites that are added to timbers in the future
 -add accessories to STEP STL and viewer
 -and export STEP/STL button back into viewer (comibne/single, step/stl options, defaultable)
 -lincoln log joints?
 -consider adding in some config object that gets passed through all functions (well ilke one dumpall objcet for joints, etc, so you can easily add carp to it)
-
 -add sensibility checks to arrangement (so basically they intersect at least a little bit)
   -maybe add a generic check intersection function so we can get more precise about it within the joit fuctions.
-
 -do image to frame experiments (some with chain of reason promptitng, some without)
-
--feature selection
-  -add feature selection support to viewer
-  -add some selection/feature selection info panel
-  -if 2 feature sselected, do measurement rendering between them :O
-  -byd efault, noly features are the 6 sides of a timber
-    -you can usually not select the end face so how can we tell which is the top/bottom?
-      -maybe add an arrow gizmo pointing to the top in the center of teh timber?
-      -or for features that coincide with local cardinal dircetions of timber you can flag it
-  -figure out how to do feature metadata and allow feature selection?
-    -review yoru notes
-    -you also wanted key named features for auto generation of drawings???
 
 -how dose selection change after refresh?
 -highlight timebrs in timber list with selection, or just get rid of timber list?
@@ -426,6 +391,29 @@ M3.5
 
 
 :: TODONE
+DONE-splined opposing double butt joint :D (could have drawbore or key)
+  -you need to create shoulder_shavings for making shoulder cuts
+    -shoulder cuts should be infinite in one direction so can generate the positive and negative for both sides easily
+      -I guess you need a full space cut?
+DONE-see what you can do about zfighting issues
+DONE/IGNORE-ui widgets need to capture mouse inputs so they don't reset selection
+DONE-I think you need a 3 way joint, or at least a placeholder for it. Shachisen-tsugi (車知栓継ぎ)
+DONE-seemst o freak out after a python cash, need to add error handling
+DONE-disable critters or fix it.... (and turn off logging ug)
+
+DONE-do new mouse navigation
+DONE-render accessories
+DONE-fix reflection rendering and make background nicer?
+IGNORE-maybe background colors should inehirt from vscode theme :O
+DONE-need plain_double_butt joint examlpe
+IGNORE-do layout
+  -pop out left tab for hierarchy
+  -pop up right tab for gizmos
+  -info tab at right/bottom right???
+  -bottom left/center section to help you scroll further down to bottom views
+    -view options can go here
+
+
 DONE-decide what "vanilla" project looks like
   DONE-can we just run the cdoe and take what it returns
   DONE-or do we scan for certain patterns
@@ -621,7 +609,7 @@ DONE-sympy refactor fml
 DONE-all methods have a property `as` that returns TimberFeature 
   -TimberFeature has methods `face` `reference_end` `long_face` etc 
   -so you do long_face.as.face() to do your enum castings
-DONE-MeasuredTimberFeature -> MarkedTimberFeature
+DONE-LocatedTimberFeature -> MarkedTimberFeature
 DONE-swap measure/mark
 DONE-move out all the get_ methods in Timber.py (change into mark functions)
 DONE-be consistent about get/find usage
@@ -857,7 +845,7 @@ class Ticket
 :: 2/24/2025 measure/mark rules
 
 we have the following measurements
-MeasuredTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane', 'Space']
+LocatedTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane', 'Space']
 
 And a bunch of different markings which are local to timber features. 
 

@@ -325,7 +325,7 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
             shoulder_mark = mark_distance_from_end_along_centerline(
                 shoulder_plane, butt_timber, butt_end
             )
-            shoulder_point_global = shoulder_mark.measure().position
+            shoulder_point_global = shoulder_mark.locate().position
 
             # Lateral peg positions are referenced from the centerline of the non-extra
             # spline body, not from the butt timber centerline at the shoulder.

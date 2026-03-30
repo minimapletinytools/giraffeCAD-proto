@@ -226,7 +226,7 @@ def compute_peg_positions(
         tenon_timber,
         tenon_end,
     )
-    shoulder_point_global = shoulder_mark.measure().position
+    shoulder_point_global = shoulder_mark.locate().position
 
     tenon_right = tenon_timber.get_face_direction_global(TimberFace.RIGHT)
     tenon_front = tenon_timber.get_face_direction_global(TimberFace.FRONT)
@@ -438,7 +438,7 @@ def compute_butt_joint_shoulder(
     shoulder_from_tenon_end_mark = mark_distance_from_end_along_centerline(
         shoulder_plane, tenon_timber, tenon_end
     )
-    shoulder_point_global = shoulder_from_tenon_end_mark.measure().position
+    shoulder_point_global = shoulder_from_tenon_end_mark.locate().position
 
     orientation = Orientation.from_x_and_y(
         x_direction=shoulder_plane.normal,

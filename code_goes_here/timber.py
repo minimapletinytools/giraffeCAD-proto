@@ -2147,7 +2147,7 @@ class CSGAccessory(JointAccessory):
         return self.positive_csg
 
 
-# TODO you should build this out, maybe do any MeasuredTimberFeature
+# TODO you should build this out, maybe do any LocatedTimberFeature
 @dataclass(frozen=True)
 class Sticker(JointAccessory):
     """

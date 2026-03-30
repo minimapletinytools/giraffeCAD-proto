@@ -1,40 +1,34 @@
 """
-Locations and geometric primitives for GiraffeCAD.
+Measuring related primitives and functions for marking timbers. The feature primitives defined in this class should only be used for measuring and marking.
 
-Geometric features are things like points, lines, planes, etc.
+When cutting joint on timbers, we want to do things like measure from a reference edge of one timber, and mark that location onto a face of another timber. The types defined in `LocatedTimberFeature` are exactly the features that we care about when measuring on timbers.
 
 Timber features are named geometric features on a timber, e.g. the centerline, the top face, etc. See `TimberFeature` enum in `timber.py` for a list of all timber features.
-
-When locating on timbers, we want to do things like mark from a reference edge, or mark into a face. The types defined in `MeasuredTimberFeature` are exactly the features that we care about when measuring on timbers.
 
 - Locations are GLOBAL features
 - Markings are LOCAL features
 
-Functions follow the following naming convention:
+Measuring functions follow the following naming convention:
 
 - `locate_*` : functions that take measurements relative to a (LOCAL) feature of a timber and outputs a feature in GLOBAL space
-
-- `???_*` : functions that take feature(s) in GLOBAL space and outputs features in GLOBAL space
-- `mark_*` : functions that take a feature in GLOBAL space and outputs a measurement relative to a (LOCAL) feature of a timber
+- `mark_*` : functions that take a feature in GLOBAL space and outputs a marking relative to a (LOCAL) feature of a timber
 - `scribe_*` : functions that take multiple measurements relative to (LOCAL) features of timbers and outputs a measurement relative to a (LOCAL) feature of a timber
-- `???_*` : functions that take feature(s) in GLOBAL space and outputs features in GLOBAL space
 
 OR put more simply:
+
 - `locate_*` means LOCAL to GLOBAL
 - `mark_*` means GLOBAL to LOCAL
 - `scribe_*` means LOCAL to LOCAL
-- `???_*` means GLOBAL to GLOBAL
 
-In addition we have `mark_*_by_*` methods which take specific features where as `mark_*` methods are generic and work with any feature and call mark_*_by_* methods internally. 
-
-TODO DEPRECATE all mark_* methods.
+In addition we use the naming convention `mark_*_by_*` which mark specific primitives using by the specified method.
+TODO All `mark_*` methods that are not mark_*_by_* should be deprecated!
 
 Using these functions, we can locate relative to features on one timber and mark them onto another timber. 
 
-For example, if we `my_feature = locate_into_face(mm(10), TimberFace.RIGHT, timberA)` we mean the feature that is a plane 10mm into and parallel with the right face of the timber.
-And then if we `mark_distance_from_face_in_normal_direction(my_feature, timberB, TimberFace.RIGHT)` we mean find the distance from `my_feature` to the right face of timberB
+For example, if we `my_feature = locate_into_face(mm(10), TimberFace.RIGHT, timberA)` we mean the location (feature) that is a plane 10mm into and parallel with the right face of the timber.
+And then if we `mark_distance_from_face_in_normal_direction(my_feature, timberB, TimberFace.RIGHT)` we mean mark the distance from `my_feature` to the right face of timberB. 
 
-Some located features are signed and oriented. These features follow the following sign conventions:
+Some locations are signed and oriented. These features follow the following sign conventions:
 
 - locations from timber faces are along the normal pointing INTO the timber i.e. positive is into the face
 - locations from timber halfplanes aligning with a timber edge
@@ -51,7 +45,12 @@ Some locations also have an "origin" point. This information is currently not us
 
 A `Point` is just a `V3` and sometimes you might find yourself marking a `Point` and simply using its contained `V3` directly! This is OK. We still wrap it in a `Point` to help ensure encapsulation of locating and marking functions. In particular, some of these functions can take many different types of features and we want to be intentional about passing `Points` into these functions!
 
-Finally, note that the feature classes in this module should NOT be used for anything besides locating and marking!!
+Note there is some redundancy in terminology:
+
+locate <-> measure
+location <-> feature
+
+measurements just mean some distance relative to some feature. Both markings and locations are measurements.
 """
 
 from dataclasses import dataclass
@@ -69,10 +68,10 @@ EdgeOrCenterline = Union[TimberEdge, TimberCenterline]
 # Geometric Feature Types
 # ============================================================================
 
-# TODO rename to LocatedTimberFeature
-# TODO use measuring ABC maybe? 
+
 # Type alias for all measurable geometric features on timbers
-MeasuredTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane', 'Space']
+# We may also refer to these as `Locations` 
+LocatedTimberFeature = Union['Point', 'Line', 'Plane', 'UnsignedPlane', 'HalfPlane', 'Space']
 
 @dataclass(frozen=True)
 class Point:
@@ -182,7 +181,7 @@ class Space:
 @dataclass(frozen=True)
 class Marking(ABC):
     @abstractmethod
-    def measure(self) -> Union[UnsignedPlane, Plane, Line, Point, HalfPlane, Space]:
+    def locate(self) -> Union[UnsignedPlane, Plane, Line, Point, HalfPlane, Space]:
         pass
 
 @dataclass(frozen=True)
@@ -195,7 +194,7 @@ class DistanceFromFace(Marking):
     face: SomeTimberFace
     
 
-    def measure(self) -> UnsignedPlane:
+    def locate(self) -> UnsignedPlane:
         """
         Convert the distance from a face to an unsigned plane.
         """
@@ -212,7 +211,7 @@ class DistanceFromPointIntoFace(Marking):
     face: TimberFace
     point: Optional[V3] = None
     
-    def measure(self) -> Point:
+    def locate(self) -> Point:
         """
         Convert the distance from a point into a face to a Point
 
@@ -249,7 +248,7 @@ class DistanceFromLongEdgeOnFace(Marking):
     edge: TimberLongEdge
     face: TimberFace
     
-    def measure(self) -> Line:
+    def locate(self) -> Line:
         """
         Convert the distance from a long edge to a line on the specified face.
 
@@ -313,7 +312,7 @@ class PointFromCornerInFaceDirection(Marking):
     face: TimberFace
     distance: Numeric
 
-    def measure(self) -> Point:
+    def locate(self) -> Point:
         _corner_to_faces = {
             TimberCorner.BOT_RIGHT_FRONT: (TimberFace.BOTTOM, TimberFace.RIGHT, TimberFace.FRONT),
             TimberCorner.BOT_FRONT_LEFT:  (TimberFace.BOTTOM, TimberFace.FRONT, TimberFace.LEFT),
@@ -342,7 +341,7 @@ class DistanceFromCornerAlongEdge(Marking):
     edge: EdgeOrCenterline
     end: TimberReferenceEnd
 
-    def measure(self) -> Point:
+    def locate(self) -> Point:
         edge_line = locate_edge(self.timber, self.edge)
         if self.end == TimberReferenceEnd.TOP:
             end_position = edge_line.point + edge_line.direction * (self.timber.length / Integer(2))
@@ -362,7 +361,7 @@ class PlaneFromEdgeInDirection(Marking):
     direction: Direction3D
     distance: Numeric
     
-    def measure(self) -> Plane:
+    def locate(self) -> Plane:
         return locate_plane_from_edge_in_direction(self.timber, self.edge, self.direction, self.distance)
 
 class MarkingSpace(Marking):
@@ -372,7 +371,7 @@ class MarkingSpace(Marking):
     timber: Timber
     local_transform: Transform
     
-    def measure(self) -> Space:
+    def locate(self) -> Space:
         return Space(self.timber.transform * self.local_transform)
 
 # ============================================================================

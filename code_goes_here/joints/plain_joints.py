@@ -377,7 +377,7 @@ def cut_tongue_and_fork_corner_joint(
     shoulder_from_tongue_end_mark = mark_distance_from_end_along_centerline(
         shoulder_plane, tongue_timber, tongue_end
     )
-    shoulder_point_global = shoulder_from_tongue_end_mark.measure().position
+    shoulder_point_global = shoulder_from_tongue_end_mark.locate().position
 
     # -------------------------------------------------------------------------
     # Marking space at shoulder (M&T pattern)
@@ -616,7 +616,7 @@ def cut_tongue_and_fork_butt_joint(
     shoulder_from_tongue_end_mark = mark_distance_from_end_along_centerline(
         shoulder_plane, tongue_timber, tongue_end
     )
-    shoulder_point_global = shoulder_from_tongue_end_mark.measure().position
+    shoulder_point_global = shoulder_from_tongue_end_mark.locate().position
 
     # -------------------------------------------------------------------------
     # Marking space at shoulder (M&T pattern)
