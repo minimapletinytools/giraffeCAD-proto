@@ -1,5 +1,5 @@
 """
-Construction Examples - Testing join_perpendicular_on_face_parallel_timbers
+Construction Examples - Testing join_perpendicular_on_face_aligned_timbers
 with different reference features
 """
 
@@ -44,7 +44,7 @@ def create_test_posts_with_beam_centerline():
     )
     
     # Join at mid-height (48" up) with centerline reference
-    beam_centerline = join_perpendicular_on_face_parallel_timbers(
+    beam_centerline = join_perpendicular_on_face_aligned_timbers(
         timber1=post_left,
         timber2=post_right,
         location_on_timber1=inches(4),  # Middle of 96" post

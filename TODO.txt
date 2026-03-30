@@ -257,7 +257,7 @@ EXEMPLIFY
 
 
 RENAMEIFY
-  -rename measure to locate
+  DONE-rename measure to locate
   -then you can use measure to measure between two located features (which we don't actually care about, we need to measure between 2 CSG features...)
   -be consistent about function local/golbal naming
     -local input vars should have the suffix  _local
@@ -308,7 +308,7 @@ TESTIFY
   -setup one test template so it can be used as an agent template for everything else
   -add test timber construction thingies on top of the example ones
     -btw you should update your current example so that everything is in the XY plane I think yo uhave soem in the Z plane
-  -do better testing on join_perpendicular_on_face_parallel_timbers to make sure it's right....
+  -do better testing on join_perpendicular_on_face_aligned_timbers to make sure it's right....
   -create test runner for examples so the exmaples are also tests :O
   -add test for finger miter joint thingy
 

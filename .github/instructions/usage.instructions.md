@@ -40,7 +40,7 @@ Timbers for a typical structure are usually defined
 - use methods in `footprint.py` to define timbers on the footprint
     - ... TODO
 - use methods in `construction.py` to define remaining timbers
-    - `join_perpendicular_on_face_parallel_timbers` for connecting timbers at right angles
+    - `join_perpendicular_on_face_aligned_timbers` for connecting timbers at right angles
     - `join_timbers` for simple connections between two timbers
     - `create_axis_aligned_timber` for timbers aligned to cartesian axis
     - `timber_from_directions` for arbitrarily aligned timbers
