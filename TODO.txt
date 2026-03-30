@@ -119,29 +119,24 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 
 
-:: documentation
 
--installation
--quick start 
--simple reference
-  -simple examples of how to use each method with default parameters (axis aligned, face parallel only)
-  -ALWAYS use Sympy types
--terminology
-  -detailed examples explaing all cnocepts
--advanced reference
-  -detailed examples outlining every parameter (generate from python files)
--appendix shit
 
 :: V0 release
--finish README
--finish agents doc
+-features
+  -do patternbook viewer (where to put python env in this case?)
+-come up with sensible instalation strat
+  -do pip package for release
+  -do proper python env on installing extension, maybe add installation loading screen
+  -do vscode extension release
 -finish docs
--make simple website
--do pip package for release
--do proper python env on installing extension, maybe add installation loading screen
--do patternbook viewer (where to put python env in this case?)
--do vscode extension release
--make some content drip
+  -finish README
+  -finish agents doc
+  -finish ond remove docs folder
+-marketing
+  -make simple website
+  -make some content drip
+
+
 
 :: TODO
 IGNORE-update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
@@ -161,8 +156,6 @@ IGNORE-update timber creation to do eval if the expression is even alittle compl
   -use cross lap point on the other side (you may need ot update cross lap joint to work on non FAT timbers)
   -make rafter logic not suck lol...
   -do yo uneed/want more rafters?
-  
-
 
 
 -tag reference faces on timber metadata?
@@ -801,6 +794,18 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 :: END TODONE
 
+:: 2025 documentation
+
+-installation
+-quick start 
+-simple reference
+  -simple examples of how to use each method with default parameters (axis aligned, face parallel only)
+  -ALWAYS use Sympy types
+-terminology
+  -detailed examples explaing all cnocepts
+-advanced reference
+  -detailed examples outlining every parameter (generate from python files)
+-appendix shit
 
 :: 1/6/2026 metadata
 

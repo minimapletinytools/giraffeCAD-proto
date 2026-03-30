@@ -76,3 +76,4 @@
 - In this joint, `SimplePegParameters.tenon_hole_offset` shifts the spline hole in the same away-from-joint direction (into the butt body). The test `test_tenon_hole_offset_moves_spline_hole_toward_receiving` verifies the Z-delta in spline local space matches the offset value.
 
 - When calculating clearance cuts/notches for joints, calculate absolute exact cross section projections instead of loose bounds whenever possible to produce clean exact intersections.
+- For construction helpers, name lateral-reference arguments after the timber datum they are measured from (for example `lateral_offset_from_timber1`), keep them after required geometry like `size`, and default them to `Integer(0)` when centered placement is the common case.

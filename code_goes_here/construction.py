@@ -684,13 +684,12 @@ def join_face_parallel_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
     pass
 
 
-# TODO this function kinda sucks... awkward to measure to use, yo uneed to locate_face(timber1).mark_distance_from_end_along_centerline().distance or osmething crap like that to set lateral_offset_from_centerline_timber1 :(
+# TODO this function kinda sucks... awkward to measure to use, yo uneed to locate_face(timber1).mark_distance_from_end_along_centerline().distance or osmething crap like that to set lateral_offset_from_timber1 :(
 def join_perpendicular_on_face_aligned_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
                                                 location_on_timber1: Numeric,
                                                 stickout: Stickout,
-                                                # TODO rename to lateral_offset_from_timber1 and make optional = Integer(0), move this argument to be after size
-                                                lateral_offset_from_centerline_timber1: Numeric,
                                                 size: V2,
+                                                lateral_offset_from_timber1: Numeric = Integer(0),
                                                 feature_to_mark_on_joining_timber: Optional[TimberFeature] = None,
                                                 orientation_face_on_timber1: Optional[TimberFace] = None, 
                                                 ticket: Optional[Union[TimberTicket, str]] = None) -> Timber:
@@ -702,12 +701,12 @@ def join_perpendicular_on_face_aligned_timbers(timber1: PerfectTimberWithin, tim
         timber2: Second timber to join (face-aligned with timber1)
         location_on_timber1: Position along timber1's length where the joining timber attaches
         stickout: How much the joining timber extends beyond each connection point
-        lateral_offset_from_centerline_timber1: the lateral position of the joining timber will be aligned to this
+        size: Cross-sectional size (width, height) of the joining timber
+        lateral_offset_from_timber1: Lateral offset from timber1's centerline reference.
+                        Defaults to Integer(0).
         feature_to_mark_on_joining_timber: Optional feature on the create timber to use as the reference for the lateral offset.
                                            It is intended for you to use the locate_face or locate_long_edge functions to create a plane or line on a timber.
                                            If not provided, uses the centerline. If a plane is provided, the "origin" of the plane is used for longitudinal positioning (i.e. location_on_timber1). In the case of locate_face, the origin aligns with the center of the created timber.
-                                           
-        size: Cross-sectional size (width, height) of the joining timber
         orientation_face_on_timber1: Optional face of timber1 to orient against. If provided,
                                      the width direction of the created timber will align with this face on timber1.
                                      If not provided, uses timber1's length direction projected onto
@@ -879,7 +878,7 @@ def join_perpendicular_on_face_aligned_timbers(timber1: PerfectTimberWithin, tim
     adjusted_location_on_timber1 = location_on_timber1 + longitudinal_offset
     
     # Adjust lateral offset
-    adjusted_lateral_offset = lateral_offset_from_centerline_timber1 + lateral_offset_adjustment
+    adjusted_lateral_offset = lateral_offset_from_timber1 + lateral_offset_adjustment
     
     # Recalculate pos1 with the adjusted location
     pos1 = locate_position_on_centerline_from_bottom(timber1, adjusted_location_on_timber1).position

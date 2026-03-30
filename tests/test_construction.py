@@ -576,7 +576,7 @@ class TestJoinTimbers:
             timber1, timber2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(0, 0),  # No stickout
-            lateral_offset_from_centerline_timber1=Rational(0),
+            lateral_offset_from_timber1=Rational(0),
             size=create_v2(Rational("0.15"), Rational("0.15")),
             feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP
@@ -594,7 +594,7 @@ class TestJoinTimbers:
             timber1, timber2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("1.2"), Rational("1.2")),  # Symmetric stickout
-            lateral_offset_from_centerline_timber1=Rational(0),
+            lateral_offset_from_timber1=Rational(0),
             size=create_v2(Rational("0.15"), Rational("0.15")),
             feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP
@@ -630,7 +630,7 @@ class TestJoinTimbers:
                 timber1, timber2,
                 location_on_timber1=Rational("1.5"),
                 stickout=Stickout(Rational(0), Rational(0)),
-                lateral_offset_from_centerline_timber1=Rational(0),
+                lateral_offset_from_timber1=Rational(0),
                 size=create_v2(Rational("0.15"), Rational("0.15")),
                 feature_to_mark_on_joining_timber=None,
                 orientation_face_on_timber1=TimberFace.TOP
@@ -649,7 +649,7 @@ class TestJoinTimbers:
             timber2=post2,
             location_on_timber1=Rational(3, 2),  # 1.5m up the post (exact rational)
             stickout=Stickout.nostickout(),
-            lateral_offset_from_centerline_timber1=Rational(0),
+            lateral_offset_from_timber1=Rational(0),
             size=None,  # Auto-determine size  # type: ignore
             feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP
@@ -874,7 +874,7 @@ class TestJoinTimbers:
                 timber2=beam,
                 location_on_timber1=location_on_base,
                 stickout=Stickout(stickout, stickout),  # Symmetric stickout
-                lateral_offset_from_centerline_timber1=Rational(0),
+                lateral_offset_from_timber1=Rational(0),
                 size=create_v2(Rational(8, 100), Rational(8, 100)),  # 8cm x 8cm posts
                 feature_to_mark_on_joining_timber=None
                 # Note: orientation_face_on_timber1 not specified - uses default projection
@@ -950,7 +950,7 @@ class TestJoinTimbers:
                 timber2=timber2,
                 location_on_timber1=loc1,
                 stickout=Stickout(stickout, stickout),  # Symmetric stickout
-                lateral_offset_from_centerline_timber1=Rational(0),
+                lateral_offset_from_timber1=Rational(0),
                 size=create_v2(Rational(6, 100), Rational(6, 100)),  # 6cm x 6cm
                 feature_to_mark_on_joining_timber=None,
                 orientation_face_on_timber1=TimberFace.TOP
@@ -1024,7 +1024,7 @@ class TestJoinTimbers:
                 timber2=post_right,
                 location_on_timber1=inches(48),  # Mid-height
                 stickout=Stickout.nostickout(),
-                lateral_offset_from_centerline_timber1=Rational(0),  # No additional offset
+                lateral_offset_from_timber1=Rational(0),  # No additional offset
                 size=beam_size,
                 feature_to_mark_on_joining_timber=feature,
                 orientation_face_on_timber1=TimberFace.TOP,
@@ -1444,7 +1444,7 @@ class TestHelperFunctions:
             post1, post2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("0.1"), Rational("0.1"), StickoutReference.INSIDE, StickoutReference.INSIDE),
-            lateral_offset_from_centerline_timber1=Rational(0),
+            lateral_offset_from_timber1=Rational(0),
             size=create_v2(Rational("0.2"), Rational("0.2")),
             feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP
@@ -1480,7 +1480,7 @@ class TestHelperFunctions:
             post1, post2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("0.2"), Rational("0.2"), StickoutReference.OUTSIDE, StickoutReference.OUTSIDE),
-            lateral_offset_from_centerline_timber1=Rational(0),
+            lateral_offset_from_timber1=Rational(0),
             size=create_v2(Rational("0.2"), Rational("0.2")),
             feature_to_mark_on_joining_timber=None,
             orientation_face_on_timber1=TimberFace.TOP

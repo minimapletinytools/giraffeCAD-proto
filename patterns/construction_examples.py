@@ -49,7 +49,7 @@ def create_test_posts_with_beam_centerline():
         timber2=post_right,
         location_on_timber1=inches(4),  # Middle of 96" post
         stickout=Stickout.nostickout(),
-        lateral_offset_from_centerline_timber1=inches(0),
+        lateral_offset_from_timber1=inches(0),
         size=beam_size,
         feature_to_mark_on_joining_timber=TimberFeature.CENTERLINE,  # Default: centerline
         orientation_face_on_timber1=TimberFace.TOP,
