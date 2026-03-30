@@ -15,7 +15,7 @@ from giraffecad.construction import (
     ButtJointTimberArrangement,
     Stickout,
     create_axis_aligned_timber,
-    join_face_parallel_on_face_parallel_timbers,
+    join_plane_aligned_on_place_aligned_timbers,
 )
 from giraffecad.example_shavings import (
     create_canonical_example_brace_joint_timbers,
@@ -150,7 +150,7 @@ def example_brace_joint(position=None):
     brace_arrangement = create_canonical_example_brace_joint_timbers(position)
     timber1 = brace_arrangement.timber1
     timber2 = brace_arrangement.timber2
-    brace_timber = join_face_parallel_on_face_parallel_timbers(
+    brace_timber = join_plane_aligned_on_place_aligned_timbers(
         timber1=timber1,
         timber2=timber2,
         location_on_timber1=timber1.length / Integer(2),

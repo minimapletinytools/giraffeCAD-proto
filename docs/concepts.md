@@ -149,7 +149,7 @@ use `create_vertical_timber_on_footprint_corner` to create "posts" on the corner
  
 Use joint timber methods to two timbers with a spanning timber (for example, adding a joist between 2 posts).
 
-If you want to maintain face alignment, use `join_perpendicular_on_face_aligned_timbers` which will ensure all created timbers are joined. The joining timber will be perpendicular and face aligned with the input timbers or it will error if not possible.
+If you want to maintain face alignment, use `join_face_aligned_on_face_aligned_timbers` which will ensure all created timbers are joined. The joining timber will be perpendicular and face aligned with the input timbers or it will error if not possible.
 
 Otherwise, use `join_timbers` which will create a new timber connecting the centerlines of the input timbers.
 

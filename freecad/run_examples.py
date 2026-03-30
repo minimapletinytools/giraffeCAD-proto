@@ -69,8 +69,8 @@ RENDER_TYPE = 'group'
 
 # GROUP_NAME: Name of a pattern group to render (when RENDER_TYPE = 'group')
 #GROUP_NAME = 'plain_joints'
-#GROUP_NAME = 'mortise_tenon'  # All mortise and tenon examples (brace_joint excluded until angled M&T is implemented)
-GROUP_NAME = 'basic_joints'  # All simplified basic joint examples
+GROUP_NAME = 'mortise_tenon'  # All mortise and tenon examples (brace_joint excluded until angled M&T is implemented)
+#GROUP_NAME = 'basic_joints'  # All simplified basic joint examples
 #GROUP_NAME = 'japanese_joints'
 #GROUP_NAME = 'posts'
 #GROUP_NAME = 'csg'

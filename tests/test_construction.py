@@ -568,11 +568,11 @@ class TestJoinTimbers:
         timber2 = create_standard_horizontal_timber(direction='x', length=3, size=(0.2, 0.2), position=(0, 2, 0))
         return timber1, timber2
     
-    def test_join_perpendicular_on_face_aligned_timbers_position_is_correct(self):
+    def test_join_face_aligned_on_face_aligned_timbers_position_is_correct(self):
         """Test perpendicular joining of face-aligned timbers."""
         timber1, timber2 = self.make_parallel_timbers()
 
-        joining_timber2 = join_perpendicular_on_face_aligned_timbers(
+        joining_timber2 = join_face_aligned_on_face_aligned_timbers(
             timber1, timber2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(0, 0),  # No stickout
@@ -586,11 +586,11 @@ class TestJoinTimbers:
         print(joining_timber2.orientation)
         
         
-    def test_join_perpendicular_on_face_aligned_timbers_length_is_correct(self):
+    def test_join_face_aligned_on_face_aligned_timbers_length_is_correct(self):
         """Test perpendicular joining of face-aligned timbers."""
         timber1, timber2 = self.make_parallel_timbers()
         
-        joining_timber2 = join_perpendicular_on_face_aligned_timbers(
+        joining_timber2 = join_face_aligned_on_face_aligned_timbers(
             timber1, timber2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("1.2"), Rational("1.2")),  # Symmetric stickout
@@ -604,8 +604,8 @@ class TestJoinTimbers:
         # Length should be centerline distance (2.0) + stickout1 (1.2) + stickout2 (1.2) = 4.4
         assert abs(joining_timber2.length - Rational("4.4")) < 1e-10
     
-    def test_join_perpendicular_on_face_aligned_timbers_assertion(self):
-        """Test that join_perpendicular_on_face_aligned_timbers asserts when timbers are not face-aligned."""
+    def test_join_face_aligned_on_face_aligned_timbers_assertion(self):
+        """Test that join_face_aligned_on_face_aligned_timbers asserts when timbers are not face-aligned."""
         import pytest
         
         # Create two timbers that are NOT face-aligned
@@ -626,7 +626,7 @@ class TestJoinTimbers:
         
         # Now try to join them - should raise AssertionError
         with pytest.raises(AssertionError, match="must be face-aligned"):
-            join_perpendicular_on_face_aligned_timbers(
+            join_face_aligned_on_face_aligned_timbers(
                 timber1, timber2,
                 location_on_timber1=Rational("1.5"),
                 stickout=Stickout(Rational(0), Rational(0)),
@@ -636,15 +636,15 @@ class TestJoinTimbers:
                 orientation_face_on_timber1=TimberFace.TOP
             )
     
-    def test_join_perpendicular_on_face_aligned_timbers_auto_size(self, symbolic_mode):
-        """Test automatic size determination in join_perpendicular_on_face_aligned_timbers."""
+    def test_join_face_aligned_on_face_aligned_timbers_auto_size(self, symbolic_mode):
+        """Test automatic size determination in join_face_aligned_on_face_aligned_timbers."""
         # Create two vertical posts with 1" x 2" cross-section
         post1 = create_standard_vertical_timber(height=3, size=(inches(1), inches(2)), position=(0, 0, 0))
         # Post2 is 5 feet away in the X direction
         post2 = create_standard_vertical_timber(height=3, size=(inches(1), inches(2)), position=(feet(5), 0, 0))
         
         # Join perpendicular with size=None (auto-determine)
-        beam = join_perpendicular_on_face_aligned_timbers(
+        beam = join_face_aligned_on_face_aligned_timbers(
             timber1=post1,
             timber2=post2,
             location_on_timber1=Rational(3, 2),  # 1.5m up the post (exact rational)
@@ -869,7 +869,7 @@ class TestJoinTimbers:
             # Join base timber to beam
             # Let the function determine the orientation automatically by projecting
             # timber1's length direction onto the perpendicular plane
-            joining_timber = join_perpendicular_on_face_aligned_timbers(
+            joining_timber = join_face_aligned_on_face_aligned_timbers(
                 timber1=base_timber,
                 timber2=beam,
                 location_on_timber1=location_on_base,
@@ -934,7 +934,7 @@ class TestJoinTimbers:
         # Use deterministic pairs and rational parameters for cross-connections
         cross_connection_configs = [
             # Use non-colinear pairs so projected points are distinct under
-            # unclamped join_perpendicular_on_face_aligned_timbers behavior.
+            # unclamped join_face_aligned_on_face_aligned_timbers behavior.
             (0, 3, Rational(1, 3), Rational(1, 20)),   # Left to Back, loc=0.333, stickout=0.05
             (1, 4, Rational(1, 2), Rational(3, 40)),   # Center to Front, loc=0.5, stickout=0.075
             (2, 3, Rational(2, 3), Rational(1, 10)),   # Right to Back, loc=0.667, stickout=0.1
@@ -945,7 +945,7 @@ class TestJoinTimbers:
             timber1 = base_timbers[timber1_idx]
             timber2 = base_timbers[timber2_idx]
             
-            cross_timber = join_perpendicular_on_face_aligned_timbers(
+            cross_timber = join_face_aligned_on_face_aligned_timbers(
                 timber1=timber1,
                 timber2=timber2,
                 location_on_timber1=loc1,
@@ -1019,7 +1019,7 @@ class TestJoinTimbers:
         
         beams = {}
         for feature in face_features:
-            beam = join_perpendicular_on_face_aligned_timbers(
+            beam = join_face_aligned_on_face_aligned_timbers(
                 timber1=post_left,
                 timber2=post_right,
                 location_on_timber1=inches(48),  # Mid-height
@@ -1420,7 +1420,7 @@ class TestHelperFunctions:
     
     def test_stickout_reference_inside_face_aligned(self):
         """Test INSIDE stickout reference with face-aligned timbers."""
-        from giraffecad import StickoutReference, join_perpendicular_on_face_aligned_timbers, TimberFace
+        from giraffecad import StickoutReference, join_face_aligned_on_face_aligned_timbers, TimberFace
         
         # Create two parallel horizontal posts 2.0 meters apart
         post1 = timber_from_directions(
@@ -1440,7 +1440,7 @@ class TestHelperFunctions:
         )
         
         # Join with INSIDE reference
-        beam = join_perpendicular_on_face_aligned_timbers(
+        beam = join_face_aligned_on_face_aligned_timbers(
             post1, post2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("0.1"), Rational("0.1"), StickoutReference.INSIDE, StickoutReference.INSIDE),
@@ -1456,7 +1456,7 @@ class TestHelperFunctions:
     
     def test_stickout_reference_outside_face_aligned(self):
         """Test OUTSIDE stickout reference with face-aligned timbers."""
-        from giraffecad import StickoutReference, join_perpendicular_on_face_aligned_timbers, TimberFace
+        from giraffecad import StickoutReference, join_face_aligned_on_face_aligned_timbers, TimberFace
         
         # Create two parallel horizontal posts 2.0 meters apart
         post1 = timber_from_directions(
@@ -1476,7 +1476,7 @@ class TestHelperFunctions:
         )
         
         # Join with OUTSIDE reference
-        beam = join_perpendicular_on_face_aligned_timbers(
+        beam = join_face_aligned_on_face_aligned_timbers(
             post1, post2,
             location_on_timber1=Rational("1.5"),
             stickout=Stickout(Rational("0.2"), Rational("0.2"), StickoutReference.OUTSIDE, StickoutReference.OUTSIDE),
@@ -1754,7 +1754,7 @@ class TestSplitTimber:
         assert top_timber.size[1] == timber.size[1]
 
 
-def test_join_face_parallel_on_face_parallel_timbers():
+def test_join_plane_aligned_on_place_aligned_timbers():
     # Let's use create_timber
     t1 = create_timber(create_v3(0, 0, 0), Rational(100), create_v2(10, 10), length_direction=create_v3(0, 1, 0), width_direction=create_v3(0, 0, 1))
     t2 = create_timber(create_v3(50, -50, 0), Rational(100), create_v2(10, 10), length_direction=create_v3(1, 0, 0), width_direction=create_v3(0, 0, 1))
@@ -1762,7 +1762,7 @@ def test_join_face_parallel_on_face_parallel_timbers():
     stickout = Stickout(stickout1=Rational(0), stickout2=Rational(0))
     size = create_v2(10, 10)
     
-    res = join_face_parallel_on_face_parallel_timbers(t1, t2, Rational(20), Rational(70), stickout, size)
+    res = join_plane_aligned_on_place_aligned_timbers(t1, t2, Rational(20), Rational(70), stickout, size)
     assert float(res.length) == pytest.approx(138.924, 0.01)
     assert are_vectors_parallel(
         res.get_face_direction_global(TimberLongFace.RIGHT),

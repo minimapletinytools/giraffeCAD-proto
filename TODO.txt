@@ -62,7 +62,7 @@ DONE-navigation support
   DONE-must lerp between all transitions!!!
 
 DONE-cute backgrounds
-  -creamy gradient background
+  DONE-creamy gradient background
   DONE-simple drop shadows? (you can fake this one)
   DONE-simple reflections? 
   -fun horse walking trhough background or osmething
@@ -140,6 +140,7 @@ the final returned csg has a ticket that points to a feature in the top level Di
 :: V0 release
 -features
   -do patternbook viewer (where to put python env in this case?)
+  -list view
 -come up with sensible instalation strat
   -do pip package for release
   DONE-do proper python env on installing extension, maybe add installation loading screen
@@ -159,8 +160,8 @@ the final returned csg has a ticket that points to a feature in the top level Di
 IGNORE-update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
 
 -add plane aligned variant of join_timbers
-  -rename join_face_parallel_on_face_parallel_timbers to join_plane_aligned...
-  -update brace example to use join_plane_aligned
+-rename join_plane_aligned_on_place_aligned_timbers to join_plane_aligned...
+  DONE-update brace example to use join_plane_aligned
   -create some example with corner braces...
 -add dovetail shoulder to build a butt joint
 -add notching to build a butt joint (you can skip this if you want lol...)
@@ -321,7 +322,7 @@ TESTIFY
   -setup one test template so it can be used as an agent template for everything else
   -add test timber construction thingies on top of the example ones
     -btw you should update your current example so that everything is in the XY plane I think yo uhave soem in the Z plane
-  -do better testing on join_perpendicular_on_face_aligned_timbers to make sure it's right....
+  -do better testing on join_face_aligned_on_face_aligned_timbers to make sure it's right....
   -create test runner for examples so the exmaples are also tests :O
   -add test for finger miter joint thingy
 

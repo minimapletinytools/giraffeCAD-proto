@@ -645,9 +645,9 @@ def join_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
     
     # Assert that join_timbers only uses CENTER_LINE stickout reference
     assert stickout.stickoutReference1 == StickoutReference.CENTER_LINE, \
-        "join_timbers only supports CENTER_LINE stickout reference. Use join_perpendicular_on_face_aligned_timbers for INSIDE/OUTSIDE references."
+        "join_timbers only supports CENTER_LINE stickout reference. Use join_face_aligned_on_face_aligned_timbers for INSIDE/OUTSIDE references."
     assert stickout.stickoutReference2 == StickoutReference.CENTER_LINE, \
-        "join_timbers only supports CENTER_LINE stickout reference. Use join_perpendicular_on_face_aligned_timbers for INSIDE/OUTSIDE references."
+        "join_timbers only supports CENTER_LINE stickout reference. Use join_face_aligned_on_face_aligned_timbers for INSIDE/OUTSIDE references."
     
     # Calculate timber length with stickout (always from centerline in join_timbers)
     centerline_distance = vector_magnitude(pos2 - pos1)
@@ -669,7 +669,7 @@ def join_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
     return create_timber(bottom_pos, timber_length, size, length_direction, width_direction, ticket=ticket)
 
 
-def join_face_parallel_on_face_parallel_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
+def join_plane_aligned_on_place_aligned_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
                                                 location_on_timber1: Numeric, location_on_timber2: Numeric,
                                                 stickout: Stickout,
                                                 size: V2,
@@ -729,7 +729,7 @@ def join_face_parallel_on_face_parallel_timbers(timber1: PerfectTimberWithin, ti
 
 
 # TODO this function kinda sucks... awkward to measure to use, yo uneed to locate_face(timber1).mark_distance_from_end_along_centerline().distance or osmething crap like that to set lateral_offset_from_timber1 :(
-def join_perpendicular_on_face_aligned_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
+def join_face_aligned_on_face_aligned_timbers(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin,
                                                 location_on_timber1: Numeric,
                                                 stickout: Stickout,
                                                 size: V2,
