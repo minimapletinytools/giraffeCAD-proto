@@ -158,16 +158,17 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 :: TODO
 IGNORE-update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
--fix all the crud you have in your safe math functions, maybe just clean up to all floats...
+DONE-fix all the crud you have in your safe math functions, maybe just clean up to all floats...
   DONE-girrafe_* methods 
   DONE-remove fast_zero test and fast_equality test
   DONe-safe_compare to take a compare arg
   DONE-do girrafe_* for compare and have all test function call it. all test functions should just be numeric
   DONE-I guess you might want symbolic test methods for some tests?? nah
-  -cleanup transform class to always use numeric
-  -add docs explaining how all this shit works
+  IGNORE-cleanup transform class to always use numeric
+  DONE-add docs explaining how all this shit works
   
 
+-do another perf pass
 -I think the meshing n/N in viewer is broken??? doesnt' match profiling times?
 
 -add plane aligned variant of join_timbers

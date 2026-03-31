@@ -19,6 +19,14 @@ RHS = Right Hand System
 - Y-axis: points north  
 - Z-axis: points up
 - Thumb = X, Index = Y, Middle = Z
+
+
+This library supports both numeric and symbolic computations. This library comes with 2 variants of each math function:
+- `numeric_*` variant always evals expressions to numeric Floats and returns Floats
+- `safe_*` variant returns symbolic expressions when possible, but will automatically eval to Float when expressions get too complex (e.g. large node count, or contain transcendental functions).
+
+Avoid `safe_*` variants in general unless it's being used for some top level geometry declaration where having symbolic exactness might be nice, otherwise just stick with numeric. 
+
 '''
 
 import sympy as sp
@@ -33,9 +41,8 @@ import warnings
 # Global Numeric Mode
 # ============================================================================
 
-# Controls behavior in hot math paths.
-# - "symbolic": preserve exact symbolic behavior (default)
-# - "float": favor numerical Float coercion before expensive matrix operations
+# TODO DELETE this does not do anything meaningufl, just determines whether we "warn on complex expressions in symbolic mode" or something less heavy-handed.
+# so rename this varibale
 NUMERIC_MODE = "float"
 
 
