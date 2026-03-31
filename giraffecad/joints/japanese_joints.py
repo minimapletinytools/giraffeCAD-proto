@@ -408,7 +408,8 @@ def cut_lapped_gooseneck_joint(
             receiving_timber.ticket.name: receiving_timber_cut,
             gooseneck_timber.ticket.name: gooseneck_timber_cut
         },
-        jointAccessories={}
+        jointAccessories={},
+        ticket=JointTicket(joint_type="lapped_gooseneck"),
     )
 
 def cut_housed_dovetail_butt_joint(
@@ -651,7 +652,8 @@ def cut_housed_dovetail_butt_joint(
             dovetail_timber.ticket.name: dovetail_timber_cut,
             receiving_timber.ticket.name: receiving_timber_cut
         },
-        jointAccessories={}
+        jointAccessories={},
+        ticket=JointTicket(joint_type="housed_dovetail_butt"),
     )
 
 
@@ -1276,7 +1278,8 @@ def cut_mitered_and_keyed_lap_joint(arrangement: CornerJointTimberArrangement, l
             timberA.ticket.name: cut_timberA,
             timberB.ticket.name: cut_timberB
         },
-        jointAccessories=joint_accessories
+        jointAccessories=joint_accessories,
+        ticket=JointTicket(joint_type="mitered_and_keyed_lap"),
     )
 
 

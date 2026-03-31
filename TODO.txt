@@ -172,8 +172,6 @@ DONE-rename join_plane_aligned_on_place_aligned_timbers to join_plane_aligned...
   DONE-update brace example to use join_plane_aligned
   IGNORE-create some example with corner braces...
 DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling times? in general displayed profiling times mismatch actual time  
--see what you can do about numeric percision of contains_point
--do yet another perf pass, still pretty slow
 
 
 -add dovetail shoulder to build a butt joint
@@ -190,6 +188,7 @@ DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling time
   -use cross lap point on the other side (you may need ot update cross lap joint to work on non FAT timbers)
   -make rafter logic not suck lol...
   -do yo uneed/want more rafters?
+  
 
 
 -tag reference faces on timber metadata?
@@ -209,10 +208,11 @@ DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling time
     -allow features to be labeled as saw or chisel so we can do cutting instructions
     -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
 
-
--do another profiling pass
--decide if hashing is ever worth it and or just remove it entirely
-  -or maybe come up with a faster hashing method?
+-perf related stuff stuff 
+  -see what you can do about numeric percision of contains_point
+  -do yet another perf pass, still pretty slow
+  -decide if hashing is ever worth it and or just remove it entirely
+    -or maybe come up with a faster hashing method?
 
 -UI feature select
   -if 2 feature sselected, do measurement rendering between them :O
@@ -226,13 +226,16 @@ DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling time
   -add layers view to left I guess
 
 -UI whatever
-  -selected info should just be one line
+  -render horsey should not open in new tab
+  DONE-selected info should just be one line
   -move focus button, make it more cute
   -add toggle for  debug info in lower right
-  -add # joints on  table view at bottom
+  -add # joints table view at bottom (shouldh include joint type, but you need metadat for this)
   -add front facing direction3d to Frame
   -maybe add "assume upright structure" to limit camera movement with mouse?
   -figure out why box view doesn't render right for the gooseneck, end cut is correct
+  -background seleciton should also change font color in viewer
+  -blueprint background sucks lololol blueprint should do infinite blueprint plane with horizon instead (horizon backgrounds)
   DONE-add some background color choices (colors, gradient,s whatever fun stuff)
   
 -rewrite accessories as timbers probably, so you can leverage any drawing capabilites that are added to timbers in the future
@@ -246,7 +249,6 @@ DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling time
 
 -how dose selection change after refresh?
 -highlight timebrs in timber list with selection, or just get rid of timber list?
-
 -document example/patternbook stuff
 -after viewer, you should integrate patternbook into viewer
 -update agent insturction

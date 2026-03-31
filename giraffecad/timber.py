@@ -7,7 +7,7 @@ from sympy import Matrix, Abs, Rational, Integer, Expr, sqrt, simplify, Min, Max
 from .rule import *
 from .footprint import *
 from .cutcsg import *
-from .ticket import Ticket, TimberTicket, AccessoryTicket
+from .ticket import Ticket, TimberTicket, AccessoryTicket, JointTicket
 from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict, Literal, final, cast, Callable
 from dataclasses import dataclass, field
@@ -2185,6 +2185,7 @@ class Sticker(JointAccessory):
 class Joint:
     cut_timbers: Dict[str, CutTimber]
     jointAccessories: Dict[str, JointAccessory] = field(default_factory=dict)
+    ticket: Optional[JointTicket] = None
 
 
 @dataclass(frozen=True)

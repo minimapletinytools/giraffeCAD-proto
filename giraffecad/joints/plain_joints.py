@@ -179,7 +179,8 @@ def cut_plain_miter_joint(arrangement: CornerJointTimberArrangement) -> Joint:
     # Create and return the Joint with all data at construction
     joint = Joint(
         cut_timbers={"timberA": cut_timberA, "timberB": cut_timberB},
-        jointAccessories={}
+        jointAccessories={},
+        ticket=JointTicket(joint_type="plain_miter"),
     )
     
     return joint
@@ -277,7 +278,8 @@ def cut_plain_butt_joint_on_face_aligned_timbers(arrangement: ButtJointTimberArr
     # Create and return the Joint with all data at construction
     joint = Joint(
         cut_timbers={"receiving_timber": cut_receiving, "butt_timber": cut_butt},
-        jointAccessories={}
+        jointAccessories={},
+        ticket=JointTicket(joint_type="plain_butt"),
     )
     
     return joint
@@ -514,6 +516,7 @@ def cut_tongue_and_fork_corner_joint(
             "fork_timber": CutTimber(fork_timber, cuts=[fork_cut]),
         },
         jointAccessories={},
+        ticket=JointTicket(joint_type="tongue_and_fork_corner"),
     )
 
 
@@ -730,6 +733,7 @@ def cut_tongue_and_fork_butt_joint(
             "fork_timber": CutTimber(fork_timber, cuts=[fork_cut]),
         },
         jointAccessories={},
+        ticket=JointTicket(joint_type="tongue_and_fork_butt"),
     )
 
 def cut_plain_butt_splice_joint_on_aligned_timbers(arrangement: SpliceJointTimberArrangement, splice_point: Optional[V3] = None) -> Joint:
@@ -851,7 +855,8 @@ def cut_plain_butt_splice_joint_on_aligned_timbers(arrangement: SpliceJointTimbe
     # Create and return the Joint with all data at construction
     joint = Joint(
         cut_timbers={"timberA": cut_timberA, "timberB": cut_timberB},
-        jointAccessories={}
+        jointAccessories={},
+        ticket=JointTicket(joint_type="plain_butt_splice"),
     )
     
     return joint
@@ -1164,7 +1169,8 @@ def cut_plain_cross_lap_joint(arrangement: CrossJointTimberArrangement, cut_rati
     # Create and return the Joint
     joint = Joint(
         cut_timbers={"timberA": cut_timberA, "timberB": cut_timberB},
-        jointAccessories={}
+        jointAccessories={},
+        ticket=JointTicket(joint_type="plain_cross_lap"),
     )
     
     return joint
@@ -1392,7 +1398,8 @@ def cut_plain_house_joint_DEPRECATED(housing_timber: TimberLike, housed_timber: 
     # Create and return the Joint
     joint = Joint(
         cut_timbers={"housing_timber": cut_housing, "housed_timber": cut_housed},
-        jointAccessories={}
+        jointAccessories={},
+        ticket=JointTicket(joint_type="plain_housing"),
     )
     
     return joint
@@ -1487,7 +1494,8 @@ def cut_plain_splice_lap_joint_on_aligned_timbers(
     # Create and return the Joint
     joint = Joint(
         cut_timbers={"top_lap_timber": cut_top_timber, "bottom_lap_timber": cut_bottom_timber},
-        jointAccessories={}
+        jointAccessories={},
+        ticket=JointTicket(joint_type="plain_splice_lap"),
     )
     
     return joint

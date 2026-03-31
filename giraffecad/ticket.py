@@ -101,5 +101,6 @@ class AssemblyFreedom:
 class JointTicket(ConceptTicket):
     """Concept ticket metadata for joints and assembly sequencing."""
 
+    joint_type: Optional[str] = None
     assembly_order: Optional[int] = None
     assembly_freedom: Optional[AssemblyFreedom] = None
