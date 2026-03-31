@@ -21,11 +21,26 @@ for i in "${!TARGETS[@]}"; do
     echo "Installing to $EDITOR: $EXT_DIR"
     mkdir -p "$EXT_DIR"
 
-    cp -R "$SCRIPT_DIR"/. "$EXT_DIR"/
-
-    rm -f "$EXT_DIR/install.sh"
-    rm -f "$EXT_DIR/test-frame.py"
-    rm -rf "$EXT_DIR/.vscode"
+    rsync -a --delete --delete-excluded \
+        --exclude node_modules \
+        --exclude .vscode-test \
+        --exclude .vscode \
+        --exclude .artifacts \
+        --exclude __pycache__ \
+        --exclude __tests__ \
+        --exclude test \
+        --exclude test-fixtures \
+        --exclude install.sh \
+        --exclude install \
+        --exclude test-frame.py \
+        --exclude jest.config.js \
+        --exclude package-lock.json \
+        --exclude check-extension.md \
+        --exclude .vscodeignore \
+        --exclude CURSOR-INSTALL.md \
+        --exclude INSTALL.md \
+        --exclude .git \
+        "$SCRIPT_DIR/" "$EXT_DIR/"
 done
 
 echo "✅ Horsey Viewer installed successfully in VSCode and Cursor!"

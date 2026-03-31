@@ -173,6 +173,12 @@ DONE-rename join_plane_aligned_on_place_aligned_timbers to join_plane_aligned...
   IGNORE-create some example with corner braces...
 DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling times? in general displayed profiling times mismatch actual time  
 
+-decide on layer view
+  -is patternbook part of layer view or separate thing
+  -figure out how to do show hide option
+  -decide on section: timbers, joints (this is fine for now)
+    -how do these sections integrate with folders
+  -decide on folders being string refs or actual refs when constructing...
 
 -add dovetail shoulder to build a butt joint
 -add notching to build a butt joint (you can skip this if you want lol...)
@@ -208,11 +214,7 @@ DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling time
     -allow features to be labeled as saw or chisel so we can do cutting instructions
     -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
 
--perf related stuff stuff 
-  -see what you can do about numeric percision of contains_point
-  -do yet another perf pass, still pretty slow
-  -decide if hashing is ever worth it and or just remove it entirely
-    -or maybe come up with a faster hashing method?
+
 
 -UI feature select
   -if 2 feature sselected, do measurement rendering between them :O
@@ -226,18 +228,25 @@ DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling time
   -add layers view to left I guess
 
 -UI whatever
+  -output proper error if you try and open a non-frame file
   -render horsey should not open in new tab
-  DONE-selected info should just be one line
   -move focus button, make it more cute
-  -add toggle for  debug info in lower right
   -add # joints table view at bottom (shouldh include joint type, but you need metadat for this)
-  -add front facing direction3d to Frame
   -maybe add "assume upright structure" to limit camera movement with mouse?
   -figure out why box view doesn't render right for the gooseneck, end cut is correct
   -background seleciton should also change font color in viewer
   -blueprint background sucks lololol blueprint should do infinite blueprint plane with horizon instead (horizon backgrounds)
+  DONE-add toggle for  debug info in lower right
+  DONE-selected info should just be one line
+  IGNORE-add front facing direction3d to Frame
   DONE-add some background color choices (colors, gradient,s whatever fun stuff)
   
+-perf related stuff stuff 
+  -see what you can do about numeric percision of contains_point
+  -do yet another perf pass, still pretty slow
+  -decide if hashing is ever worth it and or just remove it entirely
+    -or maybe come up with a faster hashing method?
+
 -rewrite accessories as timbers probably, so you can leverage any drawing capabilites that are added to timbers in the future
 -add accessories to STEP STL and viewer
 -and export STEP/STL button back into viewer (comibne/single, step/stl options, defaultable)
@@ -246,8 +255,7 @@ DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling time
 -add sensibility checks to arrangement (so basically they intersect at least a little bit)
   -maybe add a generic check intersection function so we can get more precise about it within the joit fuctions.
 -do image to frame experiments (some with chain of reason promptitng, some without)
-
--how dose selection change after refresh?
+DONE/IGNORE-how dose selection change after refresh?
 -highlight timebrs in timber list with selection, or just get rid of timber list?
 -document example/patternbook stuff
 -after viewer, you should integrate patternbook into viewer
