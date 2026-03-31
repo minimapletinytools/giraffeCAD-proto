@@ -174,6 +174,7 @@ class HorseyViewerApp extends LitElement {
         this.edgesEnabled = true;
         this.shadowsEnabled = true;
         this.reflectionsEnabled = true;
+        this.debugEnabled = false;
 
         this.lightAzimuth = 0;
         this.lightElevation = 0.8;
@@ -273,6 +274,10 @@ class HorseyViewerApp extends LitElement {
                 <label>
                     <input id="reflections-toggle" type="checkbox" ?checked=${this.reflectionsEnabled}>
                     reflection
+                </label>
+                <label>
+                    <input id="debug-toggle" type="checkbox" ?checked=${this.debugEnabled}>
+                    debug info
                 </label>
                 <label>
                     <input id="hash-geometry-check-toggle" type="checkbox" ?checked=${this.viewerOptions.enableHashGeometryCheck}>
@@ -395,6 +400,7 @@ class HorseyViewerApp extends LitElement {
         const shadowsToggle = this.renderRoot.querySelector('#shadows-toggle');
         const reflectionsToggle = this.renderRoot.querySelector('#reflections-toggle');
         const hashGeometryCheckToggle = this.renderRoot.querySelector('#hash-geometry-check-toggle');
+        const debugToggle = this.renderRoot.querySelector('#debug-toggle');
         const timberProfileSelect = this.renderRoot.querySelector('#timber-profile-select');
         const accessoryProfileSelect = this.renderRoot.querySelector('#accessory-profile-select');
         const refreshButton = this.renderRoot.querySelector('#refresh-btn');
@@ -456,6 +462,12 @@ class HorseyViewerApp extends LitElement {
 
         edgesToggle.addEventListener('change', (event) => {
             this.setEdgesEnabled(event.target.checked);
+        });
+
+        debugToggle.addEventListener('change', (event) => {
+            this.debugEnabled = event.target.checked;
+            const debugEl = this.renderRoot.querySelector('#debug');
+            if (debugEl) { debugEl.style.display = this.debugEnabled ? 'block' : 'none'; }
         });
 
         shadowsToggle.addEventListener('change', (event) => {

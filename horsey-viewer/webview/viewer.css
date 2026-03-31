@@ -57,6 +57,7 @@ canvas { display: block; width: 100%; height: 100%; }
 }
 #info strong { color: #39496e; font-size: 13px; }
 #debug {
+    display: none;
     position: absolute;
     bottom: 12px;
     right: 12px;
