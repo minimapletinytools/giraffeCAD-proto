@@ -142,6 +142,10 @@ class FrameViewSession {
                 }
                 return;
             }
+            if (message.type === 'openOutputChannel') {
+                this.channel.show(true);
+                return;
+            }
             if (message.type !== 'viewerLog') {
                 return;
             }
@@ -499,7 +503,11 @@ class FrameViewSession {
     }
 
     log(message) {
-        this.channel.appendLine(`[${path.basename(this.filePath)}] ${message}`);
+        const formatted = `[${path.basename(this.filePath)}] ${message}`;
+        this.channel.appendLine(formatted);
+        if (this.panel) {
+            this.panel.webview.postMessage({ type: 'logEntry', text: formatted }).catch(() => {});
+        }
     }
 
     createTimingTracker(meta = {}) {

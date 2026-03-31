@@ -175,6 +175,7 @@ class HorseyViewerApp extends LitElement {
         this.shadowsEnabled = true;
         this.reflectionsEnabled = true;
         this.debugEnabled = false;
+        this.logFilterText = '';
 
         this.lightAzimuth = 0;
         this.lightElevation = 0.8;
@@ -320,6 +321,17 @@ class HorseyViewerApp extends LitElement {
                 <div class="panel-box">
                     <div class="panel-title">Raw Python Output</div>
                     <pre id="raw-output"></pre>
+                </div>
+                <div id="log-panel-box" class="panel-box">
+                    <div class="panel-title">
+                        Log Output
+                        <div id="log-panel-toolbar">
+                            <input id="log-filter" type="text" placeholder="filter…">
+                            <button id="log-clear-btn" type="button">clear</button>
+                            <button id="log-open-output-btn" type="button">open VS Code output</button>
+                        </div>
+                    </div>
+                    <div id="log-output"></div>
                 </div>
             </div>
         `;
@@ -500,6 +512,16 @@ class HorseyViewerApp extends LitElement {
             this.setBackground(event.target.value);
         });
 
+        const logClearBtn = this.renderRoot.querySelector('#log-clear-btn');
+        const logFilterInput = this.renderRoot.querySelector('#log-filter');
+        const logOpenOutputBtn = this.renderRoot.querySelector('#log-open-output-btn');
+
+        logClearBtn.addEventListener('click', () => { this.clearLog(); });
+        logFilterInput.addEventListener('input', (event) => { this.applyLogFilter(event.target.value); });
+        logOpenOutputBtn.addEventListener('click', () => {
+            if (vscode) { vscode.postMessage({ type: 'openOutputChannel' }); }
+        });
+
         window.addEventListener('scroll', this.onWindowScroll);
         window.addEventListener('mouseup', this.onWindowMouseUp);
         window.addEventListener('mousemove', this.onWindowMouseMove);
@@ -578,6 +600,34 @@ class HorseyViewerApp extends LitElement {
             return;
         }
         console.info('[HorseyViewer]', payload);
+    }
+
+    appendLogLine(text) {
+        const container = this.renderRoot.querySelector('#log-output');
+        if (!container) { return; }
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.textContent = text;
+        if (this.logFilterText && !text.toLowerCase().includes(this.logFilterText)) {
+            line.classList.add('log-filtered-out');
+        }
+        container.appendChild(line);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    clearLog() {
+        const container = this.renderRoot.querySelector('#log-output');
+        if (container) { container.innerHTML = ''; }
+    }
+
+    applyLogFilter(filterText) {
+        this.logFilterText = filterText.toLowerCase();
+        const container = this.renderRoot.querySelector('#log-output');
+        if (!container) { return; }
+        for (const line of container.querySelectorAll('.log-line')) {
+            const match = !this.logFilterText || line.textContent.toLowerCase().includes(this.logFilterText);
+            line.classList.toggle('log-filtered-out', !match);
+        }
     }
 
     setViewerOptions(nextPartial, options = {}) {
@@ -693,6 +743,12 @@ class HorseyViewerApp extends LitElement {
 
         if (message.type === 'captureScreenshotRequest') {
             this.handleCaptureScreenshotRequest(message);
+            return;
+        }
+
+        if (message.type === 'logEntry') {
+            const text = typeof message.text === 'string' ? message.text : String(message.text);
+            this.appendLogLine(text);
         }
     }
 

@@ -1121,6 +1121,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
         bottom_beam_corner_post_joints.append(
             _beam_to_corner_post_joint(beam, post, beam_end)
         )
+        
     
     # Splined double butt joints for intermediate posts (antiparallel beams)
     for beam1, beam1_end, beam2, beam2_end, post in [

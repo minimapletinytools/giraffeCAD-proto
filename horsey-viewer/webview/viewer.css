@@ -231,6 +231,56 @@ canvas { display: block; width: 100%; height: 100%; }
     font: 11px/1.5 'Courier New', monospace;
     white-space: pre;
 }
+#log-panel-box .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#log-panel-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+#log-panel-toolbar button {
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(140, 164, 207, 0.22);
+    color: var(--hv-text);
+    font: 11px 'Segoe UI', sans-serif;
+    cursor: pointer;
+}
+#log-panel-toolbar button:hover {
+    background: rgba(140, 164, 207, 0.25);
+}
+#log-filter {
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(140, 164, 207, 0.22);
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--hv-text);
+    font: 11px 'Segoe UI', sans-serif;
+    width: 140px;
+}
+#log-filter::placeholder {
+    color: var(--hv-dim);
+}
+#log-output {
+    max-height: 220px;
+    overflow: auto;
+    padding: 8px 10px;
+    color: var(--hv-text);
+    font: 11px/1.5 'Courier New', monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+#log-output .log-line {
+    padding: 1px 0;
+}
+#log-output .log-line.log-filtered-out {
+    display: none;
+}
 #to-v3d {
     position: fixed;
     top: 12px;
