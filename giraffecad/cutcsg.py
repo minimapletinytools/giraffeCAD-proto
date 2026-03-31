@@ -1474,39 +1474,39 @@ def adopt_csg(
     # Helper: Transform from orig (or global) to adopting local
     def transform_transform(trans: Transform) -> Transform:
         if orig_transform is not None:
-            global_position = orig_transform.local_to_global(trans.position)
+            global_position = orig_transform.numeric_local_to_global(trans.position)
             global_orientation = orig_transform.orientation * trans.orientation
         else:
             global_position = trans.position
             global_orientation = trans.orientation
 
-        local_position = adopting_transform.global_to_local(global_position)
+        local_position = adopting_transform.numeric_global_to_local(global_position)
         local_orientation = adopting_transform.orientation.invert() * global_orientation
         return Transform(position=local_position, orientation=local_orientation)
 
     # Helper: HalfSpace from orig (or global) to adopting local
     def transform_halfspace(hp: HalfSpace) -> HalfSpace:
         if orig_transform is not None:
-            global_normal = safe_transform_vector(orig_transform.orientation.matrix, hp.normal)
+            global_normal = numeric_transform_vector(orig_transform.orientation.matrix, hp.normal)
         else:
             global_normal = hp.normal
 
-        new_local_normal = safe_transform_vector(
+        new_local_normal = numeric_transform_vector(
             adopting_transform.orientation.matrix.T, global_normal
         )
 
-        normal_length_sq = safe_dot_product(hp.normal, hp.normal)
+        normal_length_sq = numeric_dot_product(hp.normal, hp.normal)
         if normal_length_sq == Integer(0):
             return replace(hp, normal=new_local_normal, offset=hp.offset)
 
         point_on_plane_in_orig = hp.normal * (hp.offset / normal_length_sq)
         if orig_transform is not None:
-            point_on_plane_global = orig_transform.local_to_global(point_on_plane_in_orig)
+            point_on_plane_global = orig_transform.numeric_local_to_global(point_on_plane_in_orig)
         else:
             point_on_plane_global = point_on_plane_in_orig
 
-        point_on_plane_new_local = adopting_transform.global_to_local(point_on_plane_global)
-        new_offset = safe_dot_product(new_local_normal, point_on_plane_new_local)
+        point_on_plane_new_local = adopting_transform.numeric_global_to_local(point_on_plane_global)
+        new_offset = numeric_dot_product(new_local_normal, point_on_plane_new_local)
         return replace(hp, normal=new_local_normal, offset=new_offset)
 
     # Recursively transform based on CSG type

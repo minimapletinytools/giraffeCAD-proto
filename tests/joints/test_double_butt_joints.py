@@ -254,7 +254,7 @@ class TestSplinedOpposingDoubleButtJoint:
         first_hole_local_offset = spline_offset.positive_csg.subtract[0].transform.position
 
         z_delta = first_hole_local_offset[2] - first_hole_local_no_offset[2]
-        assert zero_test(Abs(z_delta) - inches(1))
+        assert numeric_compare(Abs(z_delta), inches(1), Comparison.EQ)
 
     def test_zero_lateral_peg_position_tracks_non_extra_spline_centerline(self):
         arrangement = create_canonical_example_opposing_double_butt_joint_timbers()

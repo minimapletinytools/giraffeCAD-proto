@@ -203,13 +203,11 @@ def are_timbers_parallel(timber1: PerfectTimberWithin, timber2: PerfectTimberWit
     Returns:
         True if timbers have parallel length directions, False otherwise
     """
-    dot_product = Abs(timber1.get_length_direction_global().dot(timber2.get_length_direction_global()))
+    dot_product = Abs(numeric_dot_product(timber1.get_length_direction_global(), timber2.get_length_direction_global()))
     
     if tolerance is None:
-        # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
         return equality_test(dot_product, 1)
     else:
-        # Use provided tolerance for approximate comparison
         return Abs(dot_product - 1) < tolerance
 
 def are_timbers_orthogonal(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin, tolerance: Optional[Numeric] = None) -> bool:
@@ -225,12 +223,11 @@ def are_timbers_orthogonal(timber1: PerfectTimberWithin, timber2: PerfectTimberW
     Returns:
         True if timbers have orthogonal length directions, False otherwise
     """
-    dot_product = timber1.get_length_direction_global().dot(timber2.get_length_direction_global())
+    dot_product = numeric_dot_product(timber1.get_length_direction_global(), timber2.get_length_direction_global())
     
     if tolerance is None:
         return zero_test(dot_product)
     else:
-        # Use provided tolerance for approximate comparison
         return Abs(dot_product) < tolerance
 
 def are_timbers_face_aligned(timber1: PerfectTimberWithin, timber2: PerfectTimberWithin, tolerance: Optional[Numeric] = None) -> bool:
@@ -261,14 +258,12 @@ def are_timbers_face_aligned(timber1: PerfectTimberWithin, timber2: PerfectTimbe
     # Check all pairs of directions
     for dir1 in dirs1:
         for dir2 in dirs2:
-            dot_product = Abs(dir1.dot(dir2))
+            dot_product = Abs(numeric_dot_product(dir1, dir2))
             
             if tolerance is None:
-                # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
                 if equality_test(dot_product, 1):
                     return True
             else:
-                # Use provided tolerance for approximate comparison
                 if Abs(dot_product - 1) < tolerance:
                     return True
     
@@ -297,14 +292,12 @@ def are_timbers_plane_aligned(timber1: PerfectTimberWithin, timber2: PerfectTimb
     # Check if any pair of long face normals are parallel
     for normal1 in long_face_normals1:
         for normal2 in long_face_normals2:
-            dot_product = Abs(normal1.dot(normal2))
+            dot_product = Abs(numeric_dot_product(normal1, normal2))
             
             if tolerance is None:
-                # Use automatic comparison (SymPy .equals() for symbolic, epsilon for floats)
                 if equality_test(dot_product, 1):
                     return True
             else:
-                # Use provided tolerance for approximate comparison
                 if Abs(dot_product - 1) < tolerance:
                     return True
     

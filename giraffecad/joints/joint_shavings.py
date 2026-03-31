@@ -173,7 +173,7 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     timberB_length_direction = timberB.get_length_direction_global()
     
     # First, check that timbers are parallel (not perpendicular or skewed)
-    dot_product = timberA_length_direction.dot(timberB_length_direction)
+    dot_product = numeric_dot_product(timberA_length_direction, timberB_length_direction)
     
     if not are_vectors_parallel(timberA_length_direction, timberB_length_direction):
         return (
@@ -206,7 +206,7 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     # For a proper splice joint, the specified ends should point towards each other
     # (dot product of end directions should be close to -1)
     from giraffecad.rule import safe_compare, Comparison
-    end_dot_product = timberA_end_direction.dot(timberB_end_direction)
+    end_dot_product = numeric_dot_product(timberA_end_direction, timberB_end_direction)
     
     if safe_compare(end_dot_product, 0, Comparison.GT):
         return (
@@ -223,10 +223,10 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     # Project this vector onto timberA's end direction
     # If positive, timberB end is in the direction timberA end is pointing (they overlap or touch)
     # If negative, timberB end is behind timberA end (they're separated)
-    projection_A = end_to_end_vector.dot(timberA_end_direction)
+    projection_A = numeric_dot_product(end_to_end_vector, timberA_end_direction)
     
     # Also check from timberB's perspective
-    projection_B = -end_to_end_vector.dot(timberB_end_direction)
+    projection_B = -numeric_dot_product(end_to_end_vector, timberB_end_direction)
     
     # For a valid splice, at least one timber should be extending towards or past the other
     # Both projections should be >= 0 (allowing for small numerical errors)

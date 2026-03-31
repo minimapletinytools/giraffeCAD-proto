@@ -279,6 +279,15 @@ class Transform:
         translated = global_point - self.position
         return safe_transform_vector(self.orientation.matrix.T, translated)
 
+    def numeric_local_to_global(self, local_point: V3) -> V3:
+        """Convert local to global using numeric (Float) math. For hot paths like CSG."""
+        return numeric_transform_vector(self.orientation.matrix, local_point) + self.position
+
+    def numeric_global_to_local(self, global_point: V3) -> V3:
+        """Convert global to local using numeric (Float) math. For hot paths like CSG."""
+        translated = global_point - self.position
+        return numeric_transform_vector(self.orientation.matrix.T, translated)
+
     # TODO consider renaming to leave_parent_transform
     def to_global_transform(self, old_parent: 'Transform') -> 'Transform':
         """
@@ -511,22 +520,27 @@ def giraffe_transform_vector(matrix: Matrix, vector: Matrix, collapse_mode: Coll
     mat_data = [[matrix[i, j] for j in range(matrix.cols)] for i in range(matrix.rows)]
     vec_data = [[vector[i, j] for j in range(vector.cols)] for i in range(vector.rows)]
 
-    # Manual multiplication
     result = []
     for i in range(len(mat_data)):
         row = []
         for k in range(len(vec_data[0])):
             elem = sum(mat_data[i][j] * vec_data[j][k] for j in range(len(vec_data)))
+            if collapse_mode == CollapseMode.ALWAYS:
+                elem = giraffe_evalf(elem)
+            elif collapse_mode == CollapseMode.SMART and is_complex_expr(elem):
+                if not is_float_numeric_mode():
+                    warnings.warn(
+                        f"Matrix element exceeded complexity threshold and will be collapsed "
+                        f"to Float: {repr(elem)[:120]}",
+                        stacklevel=3,
+                    )
+                elem = giraffe_evalf(elem)
             row.append(elem)
         result.append(row)
 
-    # Build Matrix, then optionally collapse
     if len(result[0]) == 1:
-        raw = Matrix([row[0] for row in result])
-    else:
-        raw = Matrix(result)
-
-    return _collapse_matrix(raw, collapse_mode)
+        return Matrix([row[0] for row in result])
+    return Matrix(result)
 
 
 def giraffe_normalize_vector(vec: Matrix, collapse_mode: CollapseMode = CollapseMode.SMART) -> Matrix:

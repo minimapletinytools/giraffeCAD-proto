@@ -168,6 +168,7 @@ DONE-fix all the crud you have in your safe math functions, maybe just clean up 
   DONE-add docs explaining how all this shit works
   
 
+-see what you can do about numeric percision of contains_point
 -do another perf pass
 -I think the meshing n/N in viewer is broken??? doesnt' match profiling times?
 

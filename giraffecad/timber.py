@@ -648,10 +648,11 @@ class PerfectTimberWithin(ABC):
 
     def _get_closest_oriented_face_from_faces(self, faces: List[TimberFace], target_direction: Direction3D) -> TimberFace:
         """Return the face in `faces` whose outward normal best aligns with `target_direction` (max dot product)."""
+        from giraffecad.rule import numeric_dot_product
         best_face = faces[0]
-        best_alignment = target_direction.dot(self.get_face_direction_global(faces[0]))
+        best_alignment = numeric_dot_product(target_direction, self.get_face_direction_global(faces[0]))
         for face in faces[1:]:
-            alignment = target_direction.dot(self.get_face_direction_global(face))
+            alignment = numeric_dot_product(target_direction, self.get_face_direction_global(face))
             if alignment > best_alignment:
                 best_alignment = alignment
                 best_face = face
