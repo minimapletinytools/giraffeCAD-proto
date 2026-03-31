@@ -84,8 +84,13 @@ Numeric = Union[Expr, int]
 # Giraffe Math Utilities - Complexity Detection & Collapse Control
 # ============================================================================
 
+
 # Precision for all numeric evaluation — single constant to tune globally.
 GIRAFFE_EVALF_PRECISION = 10
+# Epsilon constants for numerical comparisons
+EPSILON_GENERIC = Float('1e-8')      # Generic epsilon threshold for float comparisons, make sure this is larger than GIRAFFE_EVALF_PRECISION to avoid false positives
+EPSILON_FLOAT = 1e-10                # Epsilon for plain Python float comparisons (used in safe_compare)
+COMPLEX_NUM_NODES_THRESHOLD = 30  # Max number of nodes in expression tree before considering it complex
 
 
 class CollapseMode(Enum):
@@ -174,14 +179,14 @@ def _collapse_matrix(mat: Matrix, collapse_mode: CollapseMode) -> Matrix:
     return Matrix(collapsed)
 
 
-def is_complex_expr(expr, max_nodes: int = 30) -> bool:
+def is_complex_expr(expr, max_nodes: int = COMPLEX_NUM_NODES_THRESHOLD) -> bool:
     """
     Detect if a SymPy expression is complex enough to potentially cause slow operations.
     
     Uses heuristics with early bailout for performance:
     - Contains transcendental functions (sin, cos, exp, log) - always complex
     - Node count > max_nodes in expression tree (uses lazy traversal with early exit)
-    - Contains sqrt with node count > 30
+    - Contains sqrt with node count > COMPLEX_NUM_NODES_THRESHOLD
     
     Args:
         expr: SymPy expression to check
@@ -737,16 +742,6 @@ SHAKU_TO_METER = Rational(10, 33)         # ~0.303030... m (1 shaku = 10/33 m, t
 
 # Note: The traditional Japanese shaku is defined as 10/33 meters
 # This gives approximately 303.03mm, and ensures exact rational arithmetic
-
-
-# ============================================================================
-# Epsilon Constants for Numerical Comparisons
-# ============================================================================
-
-# Epsilon constants for numerical comparisons
-EPSILON_GENERIC = Float('1e-8')      # Generic epsilon threshold for float comparisons
-SYMPY_EXPR_EPSILON = Float('1e-12')  # Epsilon for SymPy expressions when .equals() returns None
-EPSILON_FLOAT = 1e-10                # Epsilon for plain Python float comparisons (used in safe_compare)
 
 
 # ============================================================================

@@ -1751,10 +1751,16 @@ class HorseyViewerApp extends LitElement {
                 parts.push('frame: ' + timingBreakdown.frame_request.toFixed(0) + ' ms');
             }
             if (typeof profiling.geometry_s === 'number') {
-                parts.push('mesh: ' + (profiling.geometry_s * 1000).toFixed(0) + ' ms');
+                parts.push('mesh (python): ' + (profiling.geometry_s * 1000).toFixed(0) + ' ms');
+            }
+            if (typeof profiling.webview_mesh_ms === 'number' && profiling.webview_mesh_ms > 0) {
+                parts.push('mesh (three.js): ' + profiling.webview_mesh_ms.toFixed(0) + ' ms');
             }
             if (typeof profiling.refresh_total_s === 'number') {
-                parts.push('total: ' + (profiling.refresh_total_s * 1000).toFixed(0) + ' ms');
+                parts.push('total (extension): ' + (profiling.refresh_total_s * 1000).toFixed(0) + ' ms');
+            }
+            if (typeof profiling.webview_apply_ms === 'number') {
+                parts.push('total (webview): ' + profiling.webview_apply_ms.toFixed(0) + ' ms');
             }
 
             if (parts.length > 0) {
@@ -1797,6 +1803,7 @@ class HorseyViewerApp extends LitElement {
         const total = meshes.length;
         let processed = 0;
         const nextKeys = new Set();
+        let meshBuildMs = 0;
 
         const reportProgress = () => {
             if (typeof onProgress === 'function') {
@@ -1841,6 +1848,7 @@ class HorseyViewerApp extends LitElement {
                 this.meshObjectsByKey.delete(key);
             }
 
+            const meshT0 = performance.now();
             const positions = new Float32Array(mesh.vertices || []);
             const indexedGeometry = new THREE.BufferGeometry();
             indexedGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -1880,6 +1888,7 @@ class HorseyViewerApp extends LitElement {
                 edges: edgeMesh,
                 reflection: reflectionMesh,
             });
+            meshBuildMs += performance.now() - meshT0;
             processed += 1;
             reportProgress();
             if (index === 0 || index === meshes.length - 1 || index % 8 === 0) {
@@ -1903,6 +1912,7 @@ class HorseyViewerApp extends LitElement {
         this.rebuildTimberTable(meshes);
         this.updateReflectionTransforms();
         this.applySelectionOpacity();
+        this._lastMeshBuildMs = meshBuildMs;
         return true;
     }
 
@@ -2055,7 +2065,7 @@ class HorseyViewerApp extends LitElement {
         }
 
         this.updateInfo(frameData);
-        this.updateDebug(geometryData, profiling);
+        const applyStartMs = performance.now();
         const completed = await this.updateMeshScene(geometryData, refreshToken, (processed, total) => {
             this.setViewPhase(ViewerPhase.APPLYING_GEOMETRY, `cutting joints ${processed}/${total}`, {
                 refreshToken,
@@ -2065,6 +2075,11 @@ class HorseyViewerApp extends LitElement {
         if (!completed || this.isRefreshStale(refreshToken)) {
             return;
         }
+        const applyElapsedMs = performance.now() - applyStartMs;
+        const enrichedProfiling = profiling
+            ? { ...profiling, webview_apply_ms: applyElapsedMs, webview_mesh_ms: this._lastMeshBuildMs || 0 }
+            : null;
+        this.updateDebug(geometryData, enrichedProfiling);
 
         this.renderRoot.querySelector('#raw-output').textContent = JSON.stringify({
             frame: frameData,

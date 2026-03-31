@@ -166,16 +166,16 @@ DONE-fix all the crud you have in your safe math functions, maybe just clean up 
   DONE-I guess you might want symbolic test methods for some tests?? nah
   IGNORE-cleanup transform class to always use numeric
   DONE-add docs explaining how all this shit works
-  
-
--see what you can do about numeric percision of contains_point
--do another perf pass
--I think the meshing n/N in viewer is broken??? doesnt' match profiling times?
-
--add plane aligned variant of join_timbers
--rename join_plane_aligned_on_place_aligned_timbers to join_plane_aligned...
+DONE-do another perf pass  
+DONE-add plane aligned variant of join_timbers
+DONE-rename join_plane_aligned_on_place_aligned_timbers to join_plane_aligned...
   DONE-update brace example to use join_plane_aligned
-  -create some example with corner braces...
+  IGNORE-create some example with corner braces...
+DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling times? in general displayed profiling times mismatch actual time  
+-see what you can do about numeric percision of contains_point
+-do yet another perf pass, still pretty slow
+
+
 -add dovetail shoulder to build a butt joint
 -add notching to build a butt joint (you can skip this if you want lol...)
 
