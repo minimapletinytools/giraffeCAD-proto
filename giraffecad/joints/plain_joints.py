@@ -126,7 +126,7 @@ def cut_plain_miter_joint(arrangement: CornerJointTimberArrangement) -> Joint:
     # For timberA: check if miter_normal points away from or towards the timber
     from giraffecad.rule import safe_compare, Comparison, safe_dot_product, safe_transform_vector
     dot_A = safe_dot_product(normA, miter_normal)
-    if safe_compare(dot_A, Comparison.GT):
+    if safe_compare(dot_A, 0, Comparison.GT):
         # Miter normal points away from timberA (in the direction of timberA's end)
         # This is what we want - the half-plane removes material in this direction
         normalA = miter_normal
@@ -142,7 +142,7 @@ def cut_plain_miter_joint(arrangement: CornerJointTimberArrangement) -> Joint:
     
     # For timberB: check if miter_normal points away from or towards the timber
     dot_B = safe_dot_product(normB, miter_normal)
-    if safe_compare(dot_B, Comparison.GT):
+    if safe_compare(dot_B, 0, Comparison.GT):
         # Miter normal points away from timberB (in the direction of timberB's end)
         normalB = miter_normal
     else:
@@ -343,13 +343,13 @@ def cut_tongue_and_fork_corner_joint(
     if tongue_thickness is None:
         tongue_thickness = tongue_normal_dimension / Rational(3)
 
-    assert safe_compare(tongue_thickness, Comparison.GT), "tongue_thickness must be greater than 0"
-    assert safe_compare(tongue_normal_dimension - tongue_thickness, Comparison.GE), \
+    assert safe_compare(tongue_thickness, 0, Comparison.GT), "tongue_thickness must be greater than 0"
+    assert safe_compare(tongue_normal_dimension - tongue_thickness, 0, Comparison.GE), \
         "tongue_thickness must be <= the tongue timber size in the shared plane normal axis"
 
     half_tongue_dimension = tongue_normal_dimension / Rational(2)
     half_tongue_thickness = tongue_thickness / Rational(2)
-    assert safe_compare(half_tongue_dimension - (Abs(tongue_position) + half_tongue_thickness), Comparison.GE), \
+    assert safe_compare(half_tongue_dimension - (Abs(tongue_position) + half_tongue_thickness), 0, Comparison.GE), \
         "tongue_position and tongue_thickness place the tongue outside the tongue timber boundary"
 
     tongue_normal_axis_index = tongue_timber.get_size_index_in_long_face_normal_axis(tongue_normal_face)
@@ -430,7 +430,7 @@ def cut_tongue_and_fork_corner_joint(
         fork_far_face_point_global - shoulder_point_global,
         normalize_vector(tongue_end_direction),
     )
-    assert safe_compare(fork_slot_depth, Comparison.GT), \
+    assert safe_compare(fork_slot_depth, 0, Comparison.GT), \
         "Fork slot depth must be > 0; check timber arrangement and end selections"
 
     # Fork slot uses the same orientation as the tongue prism so the slot
@@ -584,13 +584,13 @@ def cut_tongue_and_fork_butt_joint(
     if tongue_thickness is None:
         tongue_thickness = tongue_normal_dimension / Rational(3)
 
-    assert safe_compare(tongue_thickness, Comparison.GT), "tongue_thickness must be greater than 0"
-    assert safe_compare(tongue_normal_dimension - tongue_thickness, Comparison.GE), \
+    assert safe_compare(tongue_thickness, 0, Comparison.GT), "tongue_thickness must be greater than 0"
+    assert safe_compare(tongue_normal_dimension - tongue_thickness, 0, Comparison.GE), \
         "tongue_thickness must be <= the tongue timber size in the shared plane normal axis"
 
     half_tongue_dimension = tongue_normal_dimension / Rational(2)
     half_tongue_thickness = tongue_thickness / Rational(2)
-    assert safe_compare(half_tongue_dimension - (Abs(tongue_position) + half_tongue_thickness), Comparison.GE), \
+    assert safe_compare(half_tongue_dimension - (Abs(tongue_position) + half_tongue_thickness), 0, Comparison.GE), \
         "tongue_position and tongue_thickness place the tongue outside the tongue timber boundary"
 
     tongue_normal_axis_index = tongue_timber.get_size_index_in_long_face_normal_axis(tongue_normal_face)
@@ -671,7 +671,7 @@ def cut_tongue_and_fork_butt_joint(
         fork_far_face_point_global - shoulder_point_global,
         normalize_vector(tongue_end_direction),
     )
-    assert safe_compare(fork_slot_depth, Comparison.GT), \
+    assert safe_compare(fork_slot_depth, 0, Comparison.GT), \
         "Fork slot depth must be > 0; check timber arrangement and end selections"
 
     fork_slot_end_overshoot = max(fork_timber.size[0], fork_timber.size[1])
@@ -1041,7 +1041,7 @@ def cut_plain_cross_lap_joint(arrangement: CrossJointTimberArrangement, cut_rati
     # We want to keep the region on the timberB side (positive normal direction from A)
     # So we use the cutting plane as-is
     
-    if safe_compare(cut_ratio, Comparison.GT):  # Only cut timberA if cut_ratio > 0
+    if safe_compare(cut_ratio, 0, Comparison.GT):  # Only cut timberA if cut_ratio > 0
         # Transform timberB prism to timberA's local coordinates
         relative_orientation_B_in_A = Orientation(safe_transform_vector(timberA.orientation.matrix.T, timberB.orientation.matrix))
         timberB_origin_in_A_local = safe_transform_vector(timberA.orientation.matrix.T, timberB.get_bottom_position_global() - timberA.get_bottom_position_global())

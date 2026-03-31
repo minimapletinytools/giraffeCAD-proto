@@ -1172,7 +1172,7 @@ def cut_mitered_and_keyed_lap_joint(arrangement: CornerJointTimberArrangement, l
     
     # Create HalfSpace cuts for miter planes
     dot_A = safe_dot_product(normA, miter_normal)
-    if safe_compare(dot_A, Comparison.GT):
+    if safe_compare(dot_A, 0, Comparison.GT):
         normalA = miter_normal
     else:
         normalA = -miter_normal
@@ -1181,7 +1181,7 @@ def cut_mitered_and_keyed_lap_joint(arrangement: CornerJointTimberArrangement, l
     local_offsetA = safe_dot_product(intersection_point, normalA) - safe_dot_product(normalA, timberA.get_bottom_position_global())
     
     dot_B = safe_dot_product(normB, miter_normal)
-    if safe_compare(dot_B, Comparison.GT):
+    if safe_compare(dot_B, 0, Comparison.GT):
         normalB = miter_normal
     else:
         normalB = -miter_normal

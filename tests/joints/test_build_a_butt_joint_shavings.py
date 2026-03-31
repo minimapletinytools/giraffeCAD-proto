@@ -91,7 +91,7 @@ class TestMeasureMortiseShoulderPlane:
         assert zero_test(safe_dot_product(plane.normal, mortise_length_dir)), \
             "Plane normal should be perpendicular to the mortise length direction"
         dot_z = safe_dot_product(plane.normal, create_v3(Integer(0), Integer(0), Integer(1)))
-        assert safe_compare(dot_z, Comparison.GE), \
+        assert safe_compare(dot_z, 0, Comparison.GE), \
             "Plane normal should have a non-negative Z component (toward the tenon which is at +Z=3)"
 
         plane_positive = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
@@ -102,9 +102,9 @@ class TestMeasureMortiseShoulderPlane:
         )
         direction_to_tenon = plane_positive.point - plane.point
         dot_to_tenon = safe_dot_product(direction_to_tenon, create_v3(Integer(0), Integer(0), Integer(1)))
-        assert safe_compare(dot_to_tenon, Comparison.GE), \
+        assert safe_compare(dot_to_tenon, 0, Comparison.GE), \
             "Positive distance should offset toward the tenon (which is at +Z)"
         direction_away = plane_negative.point - plane.point
         dot_away = safe_dot_product(direction_away, create_v3(Integer(0), Integer(0), Integer(1)))
-        assert safe_compare(dot_away, Comparison.LE), \
+        assert safe_compare(dot_away, 0, Comparison.LE), \
             "Negative distance should offset away from the tenon"

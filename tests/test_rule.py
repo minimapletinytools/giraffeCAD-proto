@@ -26,6 +26,8 @@ from giraffecad.rule import (
     safe_compare,
     Comparison,
     equality_test,
+    safe_equality_test,
+    safe_zero_test,
     degrees,
     are_vectors_perpendicular,
     giraffe_evalf,
@@ -1155,7 +1157,7 @@ class TestGiraffeEvalf:
     def test_evaluates_rational(self):
         result = giraffe_evalf(Rational(1, 3))
         assert isinstance(result, sp.Float)
-        assert abs(float(result) - 1/3) < 1e-14
+        assert abs(float(result) - 1/3) < 10**(-GIRAFFE_EVALF_PRECISION + 2)
 
     def test_evaluates_sqrt(self):
         result = giraffe_evalf(sqrt(2))
@@ -1237,7 +1239,22 @@ class TestSafeSimplify:
 
 class TestSafeCompare:
     def test_gt_positive(self):
-        assert safe_compare(Rational(1, 2), Comparison.GT) == True
+        assert safe_compare(Rational(1, 2), 0, Comparison.GT) == True
+
+    def test_two_arg_equality(self):
+        assert safe_compare(Rational(1, 2), Rational(1, 2), Comparison.EQ) == True
+
+    def test_two_arg_gt(self):
+        assert safe_compare(Rational(3, 4), Rational(1, 4), Comparison.GT) == True
+
+
+class TestSafeEqualityTest:
+    def test_equal_rationals(self):
+        assert safe_equality_test(Rational(1, 2), Rational(1, 2)) == True
+
+    def test_zero_test(self):
+        assert safe_zero_test(Integer(0)) == True
+        assert safe_zero_test(Rational(1, 2)) == False
 
 
 class TestEqualityTest:

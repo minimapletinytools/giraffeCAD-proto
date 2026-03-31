@@ -703,7 +703,7 @@ def join_plane_aligned_on_place_aligned_timbers(timber1: PerfectTimberWithin, ti
     joining_direction = normalize_vector(point2 - point1)
     lateral_offset_direction = normalize_vector(cross_product(timber1.get_length_direction_global(), joining_direction))
     lateral_offset = lateral_offset_from_timber1
-    if safe_compare(lateral_offset_direction.dot(plane_normal), Comparison.LT):
+    if safe_compare(lateral_offset_direction.dot(plane_normal), 0, Comparison.LT):
         lateral_offset = -lateral_offset
 
     if orientation_long_face_on_timber2 == TimberLongFace.RIGHT:
@@ -871,7 +871,7 @@ def join_face_aligned_on_face_aligned_timbers(timber1: PerfectTimberWithin, timb
         # Determine which axis has the strongest alignment (should be close to ±1)
         if Abs(width_dot) > Abs(height_dot):
             # Normal is aligned with width_direction (RIGHT/LEFT faces)
-            if safe_compare(width_dot, Comparison.GT):
+            if safe_compare(width_dot, 0, Comparison.GT):
                 # RIGHT face (normal = +width_direction)
                 longitudinal_offset = size[0] / 2
                 lateral_offset_adjustment = Rational(0)
@@ -881,7 +881,7 @@ def join_face_aligned_on_face_aligned_timbers(timber1: PerfectTimberWithin, timb
                 lateral_offset_adjustment = Rational(0)
         else:
             # Normal is aligned with height_direction (FRONT/BACK faces)
-            if safe_compare(height_dot, Comparison.GT):
+            if safe_compare(height_dot, 0, Comparison.GT):
                 # FRONT face (normal = +height_direction)
                 longitudinal_offset = Rational(0)
                 lateral_offset_adjustment = size[1] / 2

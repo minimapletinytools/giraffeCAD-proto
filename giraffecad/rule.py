@@ -444,18 +444,20 @@ def _apply_comparison(val: float, comp: Comparison) -> bool:
         raise ValueError(f"Unknown comparison: {comp}")
 
 
-def giraffe_compare(expr, comparison: Comparison, collapse_mode: CollapseMode = CollapseMode.SMART) -> bool:
+def giraffe_compare(a, b, comparison: Comparison, collapse_mode: CollapseMode = CollapseMode.SMART) -> bool:
     """
-    Compare a SymPy expression against zero.
+    Compare two SymPy expressions: evaluates ``a - b`` and applies *comparison*
+    against zero.
 
-    In ALWAYS or float-numeric-mode, evaluates numerically via giraffe_evalf.
-    In NEVER mode with simple expressions, attempts direct symbolic comparison.
-    In SMART mode, uses heuristics to decide.
+    Examples:
+        giraffe_compare(x, y, Comparison.GT)   # x > y ?
+        giraffe_compare(x, 0, Comparison.EQ)   # x == 0 ?
     """
+    diff = a - b
     # Fast path: always collapse or expression is complex → evaluate numerically
-    if collapse_mode == CollapseMode.ALWAYS or _should_collapse(expr, collapse_mode):
+    if collapse_mode == CollapseMode.ALWAYS or _should_collapse(diff, collapse_mode):
         try:
-            val = float(giraffe_evalf(expr))
+            val = float(giraffe_evalf(diff))
             return _apply_comparison(val, comparison)
         except Exception:
             return False
@@ -463,23 +465,23 @@ def giraffe_compare(expr, comparison: Comparison, collapse_mode: CollapseMode = 
     # Symbolic path (NEVER mode, or SMART mode with simple expr in symbolic numeric mode)
     try:
         if comparison == Comparison.GT:
-            return bool(expr > 0)
+            return bool(diff > 0)
         elif comparison == Comparison.LT:
-            return bool(expr < 0)
+            return bool(diff < 0)
         elif comparison == Comparison.GE:
-            return bool(expr >= 0)
+            return bool(diff >= 0)
         elif comparison == Comparison.LE:
-            return bool(expr <= 0)
+            return bool(diff <= 0)
         elif comparison == Comparison.EQ:
-            return bool(expr == 0)
+            return bool(diff == 0)
         elif comparison == Comparison.NE:
-            return bool(expr != 0)
+            return bool(diff != 0)
         else:
             raise ValueError(f"Unknown comparison: {comparison}")
     except Exception:
         # Fallback to numerical evaluation
         try:
-            val = float(giraffe_evalf(expr))
+            val = float(giraffe_evalf(diff))
             return _apply_comparison(val, comparison)
         except Exception:
             return False
@@ -529,7 +531,7 @@ def giraffe_normalize_vector(vec: Matrix, collapse_mode: CollapseMode = Collapse
 
     norm = giraffe_norm(vec, collapse_mode)
 
-    if zero_test(norm):
+    if safe_zero_test(norm):
         return vec
 
     # For Float / numeric norms, divide and convert back to Rational for stability
@@ -572,9 +574,9 @@ def safe_simplify(expr):
     return giraffe_simplify(expr, CollapseMode.SMART)
 
 
-def safe_compare(expr, comparison: Comparison) -> bool:
-    """Compare expression against zero with smart collapse."""
-    return giraffe_compare(expr, comparison, CollapseMode.SMART)
+def safe_compare(a, b, comparison: Comparison) -> bool:
+    """Compare two expressions with smart collapse: ``a <op> b``."""
+    return giraffe_compare(a, b, comparison, CollapseMode.SMART)
 
 
 def safe_dot_product(vec1: Matrix, vec2: Matrix):
@@ -611,9 +613,9 @@ def numeric_det(matrix: Matrix):
     return giraffe_det(matrix, CollapseMode.ALWAYS)
 
 
-def numeric_compare(expr, comparison: Comparison) -> bool:
-    """Compare expression against zero, always using numeric evaluation."""
-    return giraffe_compare(expr, comparison, CollapseMode.ALWAYS)
+def numeric_compare(a, b, comparison: Comparison) -> bool:
+    """Compare two expressions, always using numeric evaluation: ``a <op> b``."""
+    return giraffe_compare(a, b, comparison, CollapseMode.ALWAYS)
 
 
 def numeric_dot_product(vec1: Matrix, vec2: Matrix):
@@ -894,79 +896,27 @@ def bu(numerator, denominator=1):
 
 
 # ============================================================================
-# Zero Test Helper Functions
+# Zero / Equality Test Helper Functions
 # ============================================================================
 
-# maybe rename to zero_test_with_fuzzy_fallback
+def safe_zero_test(value) -> bool:
+    """Test if a value is approximately zero."""
+    return safe_compare(value, 0, Comparison.EQ)
+
+
+def safe_equality_test(value, expected) -> bool:
+    """Test if two values are approximately equal."""
+    return safe_compare(value, expected, Comparison.EQ)
+
+
+# Deprecated aliases — use safe_zero_test / safe_equality_test
 def zero_test(value) -> bool:
-    """
-    Test if a value is zero using SymPy's equals() method or float comparison.
-    
-    Args:
-        value: The value to test (SymPy expression, Rational, Float, or numeric)
-    
-    Returns:
-        True if value is either exactly zero or approximately zero if symbolic check fails.
-    
-    """
-    return equality_test(value, 0)
+    """Deprecated: use safe_zero_test instead."""
+    return safe_zero_test(value)
 
-
-def fast_zero_test(value) -> bool:
-    """
-    Fast zero check that forces numerical coercion.
-
-    This is intended for hot paths where symbolic assumption checks are too slow.
-    """
-    return fast_equality_test(value, 0)
-
-
-# maybe rename to equality_test_with_fuzzy_fallback
 def equality_test(value, expected) -> bool:
-    """
-    Test if a value equals an expected value using SymPy's equals() method or float comparison.
-    
-    Args:
-        value: The value to test (SymPy expression, Rational, Float, or numeric)
-        expected: The expected value to compare against
-    
-    Returns:
-        True if value is (approximately) equal to expected
-    
-    Behavior:
-    - If value or expected contains Float: Use epsilon comparison (SYMPY_EXPR_EPSILON)
-    - If both have .equals() method: Try exact symbolic comparison with timeout
-    - If symbolic check times out or returns None: Fall back to numerical comparison
-    - For plain floats/ints: Use epsilon comparison (SYMPY_EXPR_EPSILON)
-    """
-    
-    # Check if either value contains Float components
-    has_float = False
-    if hasattr(value, 'has') and value.has(Float):
-        has_float = True
-    if hasattr(expected, 'has') and expected.has(Float):
-        has_float = True
-    if has_float:
-        return Abs(value - expected) < EPSILON_GENERIC
-    
-    # Try SymPy exact equality for symbolic/Rational values
-    if hasattr(value, 'equals') and hasattr(expected, 'equals'):
-        # Numerical comparison using giraffe_evalf()
-        numerical_diff = Abs(giraffe_evalf(value - expected))
-        return numerical_diff < SYMPY_EXPR_EPSILON
-    
-    # should never reach here?
-    return Abs(value - expected) < SYMPY_EXPR_EPSILON
-
-
-def fast_equality_test(value, expected) -> bool:
-    """
-    Fast equality check that forces numerical coercion.
-
-    This avoids SymPy symbolic assumption/equality machinery and is useful in
-    performance-sensitive geometric branch decisions.
-    """
-    return abs(float(value - expected)) < float(SYMPY_EXPR_EPSILON)
+    """Deprecated: use safe_equality_test instead."""
+    return safe_equality_test(value, expected)
 
 
 # ============================================================================
@@ -993,7 +943,7 @@ def are_vectors_parallel(vector1: Matrix, vector2: Matrix) -> bool:
     # This is equivalent to checking if abs(dot_product) is approximately 1
     deviation = Abs(Abs(dot_product) - 1)
     
-    return zero_test(deviation)
+    return safe_zero_test(deviation)
 
 def are_vectors_perpendicular(vector1: Matrix, vector2: Matrix) -> bool:
     """
@@ -1012,7 +962,7 @@ def are_vectors_perpendicular(vector1: Matrix, vector2: Matrix) -> bool:
     dot_product = vector1.dot(vector2)
     
     # Check if dot product is approximately zero
-    return zero_test(dot_product)
+    return safe_zero_test(dot_product)
 
 
 # ============================================================================

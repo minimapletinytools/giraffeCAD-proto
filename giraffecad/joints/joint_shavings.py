@@ -208,7 +208,7 @@ def check_timber_overlap_for_splice_joint_is_sensible(
     from giraffecad.rule import safe_compare, Comparison
     end_dot_product = timberA_end_direction.dot(timberB_end_direction)
     
-    if safe_compare(end_dot_product, Comparison.GT):
+    if safe_compare(end_dot_product, 0, Comparison.GT):
         return (
             f"Joint ends are pointing in the same direction (dot product = {float(end_dot_product):.3f}). "
             f"For a splice joint, the ends should point in opposite directions (dot product should be -1). "

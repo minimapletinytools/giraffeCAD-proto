@@ -21,7 +21,7 @@ def _numeric_min(*vals):
     """Return the minimum of given SymPy numeric values using safe comparison."""
     result = vals[0]
     for v in vals[1:]:
-        if safe_compare(v - result, Comparison.LT):
+        if safe_compare(v - result, 0, Comparison.LT):
             result = v
     return result
 
@@ -30,7 +30,7 @@ def _numeric_max(*vals):
     """Return the maximum of given SymPy numeric values using safe comparison."""
     result = vals[0]
     for v in vals[1:]:
-        if safe_compare(v - result, Comparison.GT):
+        if safe_compare(v - result, 0, Comparison.GT):
             result = v
     return result
 
@@ -290,7 +290,7 @@ class RectangularPrism(CutCSG):
             pass  # Both None, equal
         elif self.start_distance is None or other.start_distance is None:
             return False  # One is None, other isn't
-        elif not safe_compare(self.start_distance - other.start_distance, Comparison.EQ):
+        elif not safe_compare(self.start_distance - other.start_distance, 0, Comparison.EQ):
             return False
         
         # Check end_distance (handle None case)
@@ -298,7 +298,7 @@ class RectangularPrism(CutCSG):
             pass  # Both None, equal
         elif self.end_distance is None or other.end_distance is None:
             return False  # One is None, other isn't
-        elif not safe_compare(self.end_distance - other.end_distance, Comparison.EQ):
+        elif not safe_compare(self.end_distance - other.end_distance, 0, Comparison.EQ):
             return False
         
         return True
@@ -1123,9 +1123,9 @@ class ConvexPolygonExtrusion(CutCSG):
         
         # Check Z bounds (use safe_compare for tolerance with Float vs Integer)
         from giraffecad.rule import safe_compare, Comparison
-        if self.start_distance is not None and safe_compare(z_coord - self.start_distance, Comparison.LT):
+        if self.start_distance is not None and safe_compare(z_coord - self.start_distance, 0, Comparison.LT):
             return False
-        if self.end_distance is not None and safe_compare(z_coord - self.end_distance, Comparison.GT):
+        if self.end_distance is not None and safe_compare(z_coord - self.end_distance, 0, Comparison.GT):
             return False
         
         # Check if (x_coord, y_coord) is inside the convex polygon
@@ -1150,7 +1150,7 @@ class ConvexPolygonExtrusion(CutCSG):
             
             # Use safe_compare with tolerance to handle Float vs Integer comparisons
             from giraffecad.rule import safe_compare, Comparison
-            if safe_compare(cross, Comparison.LT):
+            if safe_compare(cross, 0, Comparison.LT):
                 return False
         
         return True
@@ -1215,7 +1215,7 @@ class ConvexPolygonExtrusion(CutCSG):
             
             # Check if projection is on the segment [0, 1]
             from giraffecad.rule import safe_compare, Comparison
-            t_in_range = safe_compare(t, Comparison.GE) and safe_compare(t - Integer(1), Comparison.LE)
+            t_in_range = safe_compare(t, 0, Comparison.GE) and safe_compare(t - Integer(1), 0, Comparison.LE)
             
             if t_in_range:
                 closest_point = p1 + edge * t
@@ -1387,11 +1387,11 @@ def _clip_bbox_by_halfspace_complement(bbox: BoundingBox, hs: HalfSpace) -> Boun
         na = safe_dot_product(hs.normal, a)
         nb = safe_dot_product(hs.normal, b)
         denom = nb - na
-        if safe_compare(denom, Comparison.EQ):
+        if safe_compare(denom, 0, Comparison.EQ):
             # Edge parallel to the plane — no intersection
             continue
         t = (hs.offset - na) / denom
-        if safe_compare(t, Comparison.GE) and safe_compare(t - Integer(1), Comparison.LE):
+        if safe_compare(t, 0, Comparison.GE) and safe_compare(t - Integer(1), 0, Comparison.LE):
             valid_points.append(a + (b - a) * t)
 
     if not valid_points:

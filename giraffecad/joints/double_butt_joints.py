@@ -88,21 +88,21 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
     if spline_extra_depth is None:
         spline_extra_depth = slot_depth / Rational(4)
 
-    assert safe_compare(slot_thickness, Comparison.GT), "slot_thickness must be > 0"
-    assert safe_compare(slot_depth, Comparison.GT), "slot_depth must be > 0"
-    assert safe_compare(slot_depth_axis_dimension - slot_depth, Comparison.GE), (
+    assert safe_compare(slot_thickness, 0, Comparison.GT), "slot_thickness must be > 0"
+    assert safe_compare(slot_depth, 0, Comparison.GT), "slot_depth must be > 0"
+    assert safe_compare(slot_depth_axis_dimension - slot_depth, 0, Comparison.GE), (
         "slot_depth must be <= butt timber thickness along slot depth axis"
     )
-    assert safe_compare(spline_length, Comparison.GT), "spline_length must be > 0"
+    assert safe_compare(spline_length, 0, Comparison.GT), "spline_length must be > 0"
     effective_slot_depth = slot_depth + spline_extra_depth
-    assert safe_compare(slot_thickness_axis_dimension - slot_thickness, Comparison.GE), (
+    assert safe_compare(slot_thickness_axis_dimension - slot_thickness, 0, Comparison.GE), (
         "slot_thickness must be <= butt timber thickness along joint-plane-normal axis"
     )
-    assert safe_compare(spline_extra_depth, Comparison.GE), "spline_extra_depth must be >= 0"
-    assert safe_compare(slot_symmetric_extra_length, Comparison.GE), "slot_symmetric_extra_length must be >= 0"
+    assert safe_compare(spline_extra_depth, 0, Comparison.GE), "spline_extra_depth must be >= 0"
+    assert safe_compare(slot_symmetric_extra_length, 0, Comparison.GE), "slot_symmetric_extra_length must be >= 0"
 
     slot_length = spline_length + Rational(2) * slot_symmetric_extra_length
-    assert safe_compare(slot_length, Comparison.GT), "slot_length must be > 0"
+    assert safe_compare(slot_length, 0, Comparison.GT), "slot_length must be > 0"
 
     def _locate_butt_end_center_global(timber: Timber, end: TimberReferenceEnd) -> V3:
         if end == TimberReferenceEnd.TOP:
@@ -168,8 +168,8 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
             distance_from_end = distance_from_bottom
 
         distance_from_end = distance_from_end - shoulder_symmetric_inset
-        assert safe_compare(distance_from_end, Comparison.GE), "shoulder cut distance must be >= 0"
-        assert safe_compare(timber.length - distance_from_end, Comparison.GE), (
+        assert safe_compare(distance_from_end, 0, Comparison.GE), "shoulder cut distance must be >= 0"
+        assert safe_compare(timber.length - distance_from_end, 0, Comparison.GE), (
             "shoulder cut distance from end exceeds timber length"
         )
         return Cutting.make_end_cut(timber, timber_end, distance_from_end)
@@ -183,7 +183,7 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
 
     receiving_negative_csg_parts = [receiving_slot_negative_csg_local]
 
-    if safe_compare(shoulder_symmetric_inset, Comparison.GT):
+    if safe_compare(shoulder_symmetric_inset, 0, Comparison.GT):
         def _make_receiving_shoulder_notch_local(
             butting_timber: Timber,
             butting_timber_end: TimberReferenceEnd,
@@ -195,7 +195,7 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
             receiving_face_half_size = receiving_timber.get_size_in_face_normal_axis(receiving_face) / Rational(2)
             shoulder_distance_from_centerline = receiving_face_half_size - shoulder_symmetric_inset
 
-            assert safe_compare(shoulder_distance_from_centerline, Comparison.GE), (
+            assert safe_compare(shoulder_distance_from_centerline, 0, Comparison.GE), (
                 "shoulder_symmetric_inset is too large for receiving timber half size"
             )
 
@@ -315,7 +315,7 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
             shoulder_distance_from_centerline = (
                 receiving_timber.get_size_in_face_normal_axis(receiving_face_towards_butt) / Rational(2)
             ) - shoulder_symmetric_inset
-            assert safe_compare(shoulder_distance_from_centerline, Comparison.GE), (
+            assert safe_compare(shoulder_distance_from_centerline, 0, Comparison.GE), (
                 "shoulder_symmetric_inset is too large for peg shoulder reference"
             )
             shoulder_plane = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(

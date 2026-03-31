@@ -1601,14 +1601,14 @@ def did_end_cuts_extend_timber(timber: PerfectTimberWithin, cuts: List['Cutting'
         if cut.maybe_top_end_cut is not None:
             # For top cuts, normal is (0,0,1) and offset is the z-position of the cut
             # If offset > timber.length, the cut extends beyond the top
-            if safe_compare(cut.maybe_top_end_cut.offset - timber.length, Comparison.GT):
+            if safe_compare(cut.maybe_top_end_cut.offset - timber.length, 0, Comparison.GT):
                 return True
         
         # Check bottom end cut
         if cut.maybe_bottom_end_cut is not None:
             # For bottom cuts, normal is (0,0,-1) and offset is negative
             # If offset > 0, the cut extends beyond the bottom (into negative z)
-            if safe_compare(cut.maybe_bottom_end_cut.offset, Comparison.GT):
+            if safe_compare(cut.maybe_bottom_end_cut.offset, 0, Comparison.GT):
                 return True
     
     return False
@@ -1836,7 +1836,7 @@ class CutTimber:
                     # HalfSpace aligned with length direction
                     # HalfSpace contains points where (p · normal) >= offset
                     # When subtracted, remaining points are where (p · normal) < offset
-                    if safe_compare(dot_product, Comparison.GT):
+                    if safe_compare(dot_product, 0, Comparison.GT):
                         # Normal points in +Z direction
                         # Subtraction removes points with Z >= offset
                         max_z = Min(max_z, half_space.offset)
@@ -2098,7 +2098,7 @@ class Wedge(JointAccessory):
         # Calculate width at stickout position (z = -stickout_length)
         # The taper goes from base_width at z=0 to tip_width at z=length
         # Linear interpolation: width(z) = base_width + (tip_width - base_width) * z / length
-        has_stickout = safe_compare(self.stickout_length, Comparison.GT)
+        has_stickout = safe_compare(self.stickout_length, 0, Comparison.GT)
         if has_stickout:
             # Width at z = -stickout_length
             stickout_width = self.base_width + (self.tip_width - self.base_width) * (-self.stickout_length) / self.length
