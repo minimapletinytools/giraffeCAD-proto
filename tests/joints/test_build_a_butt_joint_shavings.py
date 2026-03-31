@@ -4,7 +4,7 @@ Tests for build-a-butt-joint shoulder helpers
 
 import pytest
 from sympy import Rational, cos, sin, pi
-from giraffecad.rule import create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product, normalize_vector, safe_compare, Comparison
+from giraffecad.rule import create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product, safe_normalize_vector as normalize_vector, safe_compare, Comparison
 from giraffecad.timber import (
     TimberReferenceEnd,
     timber_from_directions, create_v3

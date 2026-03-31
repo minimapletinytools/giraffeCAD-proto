@@ -74,10 +74,100 @@ Numeric = Union[Expr, int]
 
 
 # ============================================================================
-# Safe SymPy Utilities - Timeout Protection & Complexity Detection
+# Giraffe Math Utilities - Complexity Detection & Collapse Control
 # ============================================================================
 
-def is_complex_expr(expr, max_nodes: int = 50) -> bool:
+# Precision for all numeric evaluation — single constant to tune globally.
+GIRAFFE_EVALF_PRECISION = 10
+
+
+class CollapseMode(Enum):
+    """Controls when symbolic expressions are collapsed to numeric Floats."""
+    ALWAYS = "always"    # Eagerly collapse to Float via giraffe_evalf
+    NEVER = "never"      # Keep symbolic form (for testing/debugging)
+    SMART = "smart"      # Collapse only when expression complexity exceeds threshold
+
+
+def giraffe_evalf(expr):
+    """
+    Evaluate a SymPy expression to a numeric Float. All numeric evaluation in the
+    library is bottlenecked through this function so we can swap strategy later
+    (e.g. lambdify, caching, timeouts) without touching callers.
+    """
+    if hasattr(expr, 'evalf'):
+        result = expr.evalf(GIRAFFE_EVALF_PRECISION)
+        # Ensure we always return a Float (e.g. Integer(0).evalf() returns Zero)
+        if not isinstance(result, Float):
+            return Float(float(result), GIRAFFE_EVALF_PRECISION)
+        return result
+    return Float(float(expr), GIRAFFE_EVALF_PRECISION)
+
+
+def _should_collapse(expr, collapse_mode: CollapseMode) -> bool:
+    """
+    Decide whether *expr* should be collapsed to a numeric Float.
+
+    - ALWAYS → True
+    - NEVER  → False
+    - SMART  → True when the expression exceeds the complexity threshold
+               (is_complex_expr).  In symbolic mode, also emits a warning.
+    """
+    if collapse_mode == CollapseMode.ALWAYS:
+        return True
+    if collapse_mode == CollapseMode.NEVER:
+        return False
+    # SMART mode — collapse only when expression is complex
+    if is_complex_expr(expr):
+        if not is_float_numeric_mode():
+            warnings.warn(
+                f"Expression exceeded complexity threshold and will be collapsed to Float "
+                f"(even in symbolic mode): {repr(expr)[:120]}",
+                stacklevel=3,
+            )
+        return True
+    return False
+
+
+def _collapse_scalar(value, collapse_mode: CollapseMode):
+    """Optionally collapse a scalar SymPy expression to Float."""
+    if _should_collapse(value, collapse_mode):
+        return giraffe_evalf(value)
+    return value
+
+
+def _collapse_matrix(mat: Matrix, collapse_mode: CollapseMode) -> Matrix:
+    """Optionally collapse each element of a vector/matrix to Float, preserving shape."""
+    if collapse_mode == CollapseMode.NEVER:
+        return mat
+    rows, cols = mat.shape
+    if collapse_mode == CollapseMode.ALWAYS:
+        collapsed = [[giraffe_evalf(mat[i, j]) for j in range(cols)] for i in range(rows)]
+        if cols == 1:
+            return Matrix([row[0] for row in collapsed])
+        return Matrix(collapsed)
+    # SMART: only collapse elements that are individually complex
+    collapsed = []
+    for i in range(rows):
+        row = []
+        for j in range(cols):
+            elem = mat[i, j]
+            if is_complex_expr(elem):
+                if not is_float_numeric_mode():
+                    warnings.warn(
+                        f"Matrix element exceeded complexity threshold and will be collapsed "
+                        f"to Float: {repr(elem)[:120]}",
+                        stacklevel=3,
+                    )
+                row.append(giraffe_evalf(elem))
+            else:
+                row.append(elem)
+        collapsed.append(row)
+    if cols == 1:
+        return Matrix([row[0] for row in collapsed])
+    return Matrix(collapsed)
+
+
+def is_complex_expr(expr, max_nodes: int = 30) -> bool:
     """
     Detect if a SymPy expression is complex enough to potentially cause slow operations.
     
@@ -123,55 +213,6 @@ def is_complex_expr(expr, max_nodes: int = 50) -> bool:
     except:
         # If traversal fails, assume complex to be safe
         return True
-
-def with_timeout_fallback(symbolic_func, numerical_func, timeout_seconds=0.1):
-    """
-    Execute symbolic_func with timeout, falling back to numerical_func if it takes too long.
-    
-    Args:
-        symbolic_func: Callable that performs symbolic computation
-        numerical_func: Callable that performs numerical fallback
-        timeout_seconds: Timeout in seconds (default 0.1s)
-    
-    Returns:
-        Result from symbolic_func or numerical_func
-    """
-    import signal
-    
-    class TimeoutException(Exception):
-        pass
-    
-    def timeout_handler(signum, frame):
-        raise TimeoutException()
-    
-    def restore_alarm_handler(handler):
-        # In embedded environments (e.g. Fusion 360), the previous handler may not be
-        # valid to pass back to signal.signal(); only restore if it's SIG_IGN, SIG_DFL, or callable.
-        if handler is signal.SIG_IGN or handler is signal.SIG_DFL or callable(handler):
-            signal.signal(signal.SIGALRM, handler)
-        else:
-            signal.signal(signal.SIGALRM, signal.SIG_DFL)
-    
-    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-    signal.setitimer(signal.ITIMER_REAL, timeout_seconds)
-    
-    try:
-        result = symbolic_func()
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        restore_alarm_handler(old_handler)
-        return result
-    except TimeoutException:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        restore_alarm_handler(old_handler)
-        return numerical_func()
-    except Exception as e:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        restore_alarm_handler(old_handler)
-        # For non-timeout exceptions, try numerical fallback
-        try:
-            return numerical_func()
-        except:
-            raise e  # Re-raise original exception if fallback also fails
 
 
 # ============================================================================
@@ -286,7 +327,7 @@ class Transform:
         from sympy import cos, sin, eye
         
         # Normalize the axis direction
-        axis_normalized = normalize_vector(axis.direction)
+        axis_normalized = safe_normalize_vector(axis.direction)
         kx, ky, kz = axis_normalized[0], axis_normalized[1], axis_normalized[2]
         
         # Rodrigues' rotation formula for rotation matrix around axis k by angle θ:
@@ -328,108 +369,52 @@ class Transform:
         return Transform(position=new_position, orientation=new_orientation)
 
 # ============================================================================
-# Safe SymPy Wrapper Functions - Protected Operations
+# Giraffe Math Operations — Base Layer
+#
+# Each giraffe_* function does the actual computation with a collapse_mode
+# parameter.  The public API is:
+#   safe_*    → giraffe_*(…, CollapseMode.SMART)   — default, backwards-compatible
+#   numeric_* → giraffe_*(…, CollapseMode.ALWAYS)  — for hot paths (e.g. CSG)
 # ============================================================================
 
-def safe_norm(vec: Matrix):
+def giraffe_norm(vec: Matrix, collapse_mode: CollapseMode = CollapseMode.SMART):
     """
-    Compute vector norm with timeout protection and numerical fallback.
-    
-    For simple expressions: Returns exact symbolic result
-    For complex expressions: Freeze constants as Floats then lambdify
-    """
-    from sympy import sqrt, lambdify, Float, Number
-    from fractions import Fraction
-    
-    def freeze_constants(expr, prec=53):
-        """Replace all numeric constants with Float equivalents to avoid slow evaluation"""
-        return expr.xreplace({
-            n: Float(n, prec) for n in expr.atoms(Number)
-        })
-    
-    def compute_numerical():
-        """Compute norm numerically by freezing constants first, then lambdify"""
-        try:
-            norm_squared = 0.0
-            for c in vec:
-                # Get free symbols (should be empty for closed-form expressions)
-                syms = list(c.free_symbols)
-                if syms:
-                    # Has free symbols, can't evaluate numerically
-                    raise ValueError(f"Cannot compute norm: vector has free symbols {syms}")
-                else:
-                    if is_float_numeric_mode():
-                        val = float(c.evalf()) if hasattr(c, "evalf") else float(c)
-                    else:
-                        # Freeze all constants to Float first - this avoids slow symbolic evaluation
-                        c_frozen = freeze_constants(c, prec=15)
-                        # Use only numpy (not scipy) for lambdify to avoid import issues
-                        f = lambdify((), c_frozen, "numpy")
-                        val = float(f())
-                norm_squared += val ** 2
-            
-            if is_float_numeric_mode():
-                return sqrt(Float(norm_squared))
+    Compute vector norm with optional collapse to Float.
 
-            result = sqrt(Rational(norm_squared).limit_denominator(10**9))
-            return result
-        except Exception as e:
-            # Provide detailed error instead of silently returning 1
-            raise RuntimeError(f"safe_norm numerical computation failed: {type(e).__name__}: {e}\nvec={vec}")
-
-    if is_float_numeric_mode():
-        return compute_numerical()
-    
-    # Quick check: if vector contains complex expressions, go straight to numerical
-    is_complex = any(is_complex_expr(component) for component in vec)
-    
-    if is_complex:
-        # For complex expressions, freeze constants then lambdify
-        # This avoids SymPy's slow symbolic evaluation entirely
-        result = compute_numerical()
-        return result
-    
-    # Try symbolic norm with timeout, fall back to numerical if it times out
-    def symbolic():
-        return vec.norm()
-    
-    return with_timeout_fallback(symbolic, compute_numerical, timeout_seconds=0.1)
-
-def safe_det(matrix: Matrix):
+    Uses manual element-wise sum-of-squares to bypass SymPy's matrix internals,
+    then applies *collapse_mode* to the result.
     """
-    Compute matrix determinant with timeout protection.
-    """
-    # Check if matrix contains complex expressions
-    is_complex = any(is_complex_expr(elem) for elem in matrix)
-    
-    if is_complex:
-        return matrix.det().evalf()
-    
-    def symbolic():
-        return matrix.det()
-    
-    def numerical():
-        return matrix.det().evalf()
-    
-    return with_timeout_fallback(symbolic, numerical, timeout_seconds=0.2)
+    from sympy import sqrt
 
-def safe_simplify(expr, timeout_seconds=0.5):
+    # Manual sum of squares — avoids SymPy matrix .norm() which triggers
+    # slow property checking on complex expressions.
+    sum_sq = sum(c * c for c in vec)  # type: ignore[arg-type]
+    result = sqrt(sum_sq)
+    return _collapse_scalar(result, collapse_mode)
+
+
+def giraffe_det(matrix: Matrix, collapse_mode: CollapseMode = CollapseMode.SMART):
+    """Compute matrix determinant with optional collapse."""
+    result = matrix.det()
+    return _collapse_scalar(result, collapse_mode)
+
+
+def giraffe_simplify(expr, collapse_mode: CollapseMode = CollapseMode.SMART):
     """
-    Simplify with timeout protection.
+    Simplify a SymPy expression.
+
+    If the expression is complex, skip simplification entirely (SymPy simplify
+    can be extremely slow on large trees).  Otherwise simplify, then optionally
+    collapse.
     """
     from sympy import simplify as sp_simplify
-    
+
     if is_complex_expr(expr):
-        # Don't even try to simplify complex expressions
-        return expr
-    
-    def symbolic():
-        return sp_simplify(expr)
-    
-    def numerical():
-        return expr  # Return original if simplification times out
-    
-    return with_timeout_fallback(symbolic, numerical, timeout_seconds)
+        return _collapse_scalar(expr, collapse_mode)
+
+    result = sp_simplify(expr)
+    return _collapse_scalar(result, collapse_mode)
+
 
 class Comparison(Enum):
     """Enum for safe comparison operations"""
@@ -440,64 +425,42 @@ class Comparison(Enum):
     EQ = "=="     # Equal
     NE = "!="     # Not equal
 
-# TODO make this 2 expr arguments...
-def safe_compare(expr, comparison: Comparison):
-    """
-    Safely evaluate a comparison by freezing constants first.
-    
-    Args:
-        expr: SymPy expression to compare against zero
-        comparison: Comparison enum value (e.g., Comparison.GT for > 0)
-    
-    Returns:
-        Boolean result of the comparison with zero
-    """
-    from sympy import Float, Number, lambdify
-    
-    def freeze_constants(e, prec=53):
-        """Replace all numeric constants with Float equivalents"""
-        return e.xreplace({
-            n: Float(n, prec) for n in e.atoms(Number)
-        })
-    
-    def apply_comparison(val: float, comp: Comparison) -> bool:
-        """Apply comparison operation to a float value"""
-        if comp == Comparison.GT:
-            return val > 0
-        elif comp == Comparison.LT:
-            return val < 0
-        elif comp == Comparison.GE:
-            return val >= 0
-        elif comp == Comparison.LE:
-            return val <= 0
-        elif comp == Comparison.EQ:
-            return abs(val) < EPSILON_FLOAT
-        elif comp == Comparison.NE:
-            return abs(val) >= EPSILON_FLOAT
-        else:
-            raise ValueError(f"Unknown comparison: {comp}")
 
-    if is_float_numeric_mode():
+def _apply_comparison(val: float, comp: Comparison) -> bool:
+    """Apply comparison operation to a float value against zero."""
+    if comp == Comparison.GT:
+        return val > 0
+    elif comp == Comparison.LT:
+        return val < 0
+    elif comp == Comparison.GE:
+        return val >= 0
+    elif comp == Comparison.LE:
+        return val <= 0
+    elif comp == Comparison.EQ:
+        return abs(val) < EPSILON_FLOAT
+    elif comp == Comparison.NE:
+        return abs(val) >= EPSILON_FLOAT
+    else:
+        raise ValueError(f"Unknown comparison: {comp}")
+
+
+def giraffe_compare(expr, comparison: Comparison, collapse_mode: CollapseMode = CollapseMode.SMART) -> bool:
+    """
+    Compare a SymPy expression against zero.
+
+    In ALWAYS or float-numeric-mode, evaluates numerically via giraffe_evalf.
+    In NEVER mode with simple expressions, attempts direct symbolic comparison.
+    In SMART mode, uses heuristics to decide.
+    """
+    # Fast path: always collapse or expression is complex → evaluate numerically
+    if collapse_mode == CollapseMode.ALWAYS or _should_collapse(expr, collapse_mode):
         try:
-            val = float(expr.evalf()) if hasattr(expr, "evalf") else float(expr)
-            return apply_comparison(val, comparison)
+            val = float(giraffe_evalf(expr))
+            return _apply_comparison(val, comparison)
         except Exception:
             return False
-    
-    # For complex expressions, freeze constants and evaluate numerically
-    if is_complex_expr(expr):
-        try:
-            # Freeze constants first
-            expr_frozen = freeze_constants(expr, prec=15)
-            # Convert to numerical function with numpy and scipy for speed
-            f = lambdify((), expr_frozen, ["numpy", "scipy"])
-            val = float(f())
-            return apply_comparison(val, comparison)
-        except Exception:
-            # If anything fails, default to False for safety
-            return False
-    
-    # For simple expressions, use direct comparison
+
+    # Symbolic path (NEVER mode, or SMART mode with simple expr in symbolic numeric mode)
     try:
         if comparison == Comparison.GT:
             return bool(expr > 0)
@@ -513,101 +476,164 @@ def safe_compare(expr, comparison: Comparison):
             return bool(expr != 0)
         else:
             raise ValueError(f"Unknown comparison: {comparison}")
-    except:
-        # Fallback to numerical evaluation with freeze_constants
+    except Exception:
+        # Fallback to numerical evaluation
         try:
-            expr_frozen = freeze_constants(expr, prec=15)
-            f = lambdify((), expr_frozen, ["numpy", "scipy"])
-            val = float(f())
-            return apply_comparison(val, comparison)
-        except:
+            val = float(giraffe_evalf(expr))
+            return _apply_comparison(val, comparison)
+        except Exception:
             return False
 
-def safe_dot_product(vec1: Matrix, vec2: Matrix):
+
+def giraffe_dot_product(vec1: Matrix, vec2: Matrix, collapse_mode: CollapseMode = CollapseMode.SMART):
     """
-    Safely compute dot product (vec1.T * vec2)[0, 0].
-    Bypasses SymPy's matrix multiplication entirely to avoid property checking freezes.
-    
-    Args:
-        vec1: First vector
-        vec2: Second vector
-    
-    Returns:
-        Scalar result of dot product
+    Compute dot product manually (bypasses SymPy's matrix multiplication).
+    Optionally collapse result to Float.
     """
-    from sympy import Float, Number
-    
-    # Only freeze constants in float mode — in symbolic mode, freezing converts
-    # Rational numbers inside trig functions (e.g. 2/9 in cos(2*pi/9)) to floats,
-    # corrupting symbolic expressions.
-    if is_float_numeric_mode():
-        has_complex = any(is_complex_expr(elem) for elem in vec1) or any(is_complex_expr(elem) for elem in vec2)
-        if has_complex:
-            def freeze_elem(e):
-                if not hasattr(e, 'atoms'):
-                    return e
-                return e.xreplace({n: Float(n, 15) for n in e.atoms(Number)})
-            
-            vec1_frozen = [freeze_elem(e) for e in vec1]
-            vec2_frozen = [freeze_elem(e) for e in vec2]
-            
-            # Compute dot product manually to bypass SymPy's matrix multiplication
-            result = sum(v1 * v2 for v1, v2 in zip(vec1_frozen, vec2_frozen))
-            return result
-    
-    # For simple expressions (or symbolic mode), compute manually without freezing
-    result = sum(v1 * v2 for v1, v2 in zip(vec1, vec2))  # type: ignore[arg-type]  # SymPy matrices are iterable
-    return result
+    result = sum(v1 * v2 for v1, v2 in zip(vec1, vec2))  # type: ignore[arg-type]
+    return _collapse_scalar(result, collapse_mode)
 
 
-def safe_transform_vector(matrix: Matrix, vector: Matrix) -> Matrix:
+def giraffe_transform_vector(matrix: Matrix, vector: Matrix, collapse_mode: CollapseMode = CollapseMode.SMART) -> Matrix:
     """
-    Safely compute matrix * vector (or matrix * matrix) transformation.
-    Always uses manual multiplication to completely avoid SymPy's property checking.
-    
-    Args:
-        matrix: Left matrix
-        vector: Right matrix (can be a column vector or another matrix)
-    
-    Returns:
-        Result of matrix multiplication
+    Compute matrix * vector (or matrix * matrix) transformation manually
+    to avoid SymPy's property checking.  Optionally collapse elements to Float.
     """
-    from sympy import Float, Number
-    
-    # Only freeze constants in float mode — in symbolic mode, freezing converts
-    # Rational numbers inside trig functions to floats, corrupting symbolic expressions.
-    def freeze_elem(e):
-        if not hasattr(e, 'atoms'):
-            return e
-        return e.xreplace({n: Float(n, 15) for n in e.atoms(Number)})
-    
-    should_freeze = is_float_numeric_mode() and (
-        any(is_complex_expr(elem) for elem in matrix) or
-        any(is_complex_expr(elem) for elem in vector)
-    )
-    
-    if should_freeze:
-        mat_data = [[freeze_elem(matrix[i, j]) for j in range(matrix.cols)] for i in range(matrix.rows)]
-        vec_data = [[freeze_elem(vector[i, j]) for j in range(vector.cols)] for i in range(vector.rows)]
-    else:
-        mat_data = [[matrix[i, j] for j in range(matrix.cols)] for i in range(matrix.rows)]
-        vec_data = [[vector[i, j] for j in range(vector.cols)] for i in range(vector.rows)]
-    
-    # ALWAYS compute manually to avoid SymPy's matrix multiplication property checking
-    # Handle both matrix-vector (Nx1) and matrix-matrix (NxM) multiplication
+    mat_data = [[matrix[i, j] for j in range(matrix.cols)] for i in range(matrix.rows)]
+    vec_data = [[vector[i, j] for j in range(vector.cols)] for i in range(vector.rows)]
+
+    # Manual multiplication
     result = []
     for i in range(len(mat_data)):
         row = []
-        for k in range(len(vec_data[0])):  # Iterate over columns of second matrix
+        for k in range(len(vec_data[0])):
             elem = sum(mat_data[i][j] * vec_data[j][k] for j in range(len(vec_data)))
             row.append(elem)
         result.append(row)
-    
-    # If result is a single column, return as column vector
+
+    # Build Matrix, then optionally collapse
     if len(result[0]) == 1:
-        return Matrix([row[0] for row in result])
+        raw = Matrix([row[0] for row in result])
     else:
-        return Matrix(result)
+        raw = Matrix(result)
+
+    return _collapse_matrix(raw, collapse_mode)
+
+
+def giraffe_normalize_vector(vec: Matrix, collapse_mode: CollapseMode = CollapseMode.SMART) -> Matrix:
+    """
+    Normalize a vector.  Uses giraffe_norm for the magnitude, then divides
+    element-wise.  Result elements are optionally collapsed to Float.
+    """
+    from fractions import Fraction
+
+    norm = giraffe_norm(vec, collapse_mode)
+
+    if zero_test(norm):
+        return vec
+
+    # For Float / numeric norms, divide and convert back to Rational for stability
+    if isinstance(norm, Float):
+        norm_val = float(norm)
+        if abs(norm_val) < 1e-15:
+            return vec
+        normalized = []
+        for component in vec:
+            comp_val = float(giraffe_evalf(component)) / norm_val
+            frac = Fraction(comp_val).limit_denominator(10**9)
+            normalized.append(Rational(frac.numerator, frac.denominator))
+        return Matrix(normalized)
+
+    # For exact symbolic norms (sqrt, Rational, Integer) — divide exactly
+    return vec / norm
+
+
+def giraffe_magnitude(vec: Matrix, collapse_mode: CollapseMode = CollapseMode.SMART):
+    """Compute vector magnitude.  Alias for giraffe_norm."""
+    return giraffe_norm(vec, collapse_mode)
+
+
+# ============================================================================
+# safe_* wrappers — backwards-compatible, use CollapseMode.SMART
+# ============================================================================
+
+def safe_norm(vec: Matrix):
+    """Compute vector norm with smart collapse."""
+    return giraffe_norm(vec, CollapseMode.SMART)
+
+
+def safe_det(matrix: Matrix):
+    """Compute matrix determinant with smart collapse."""
+    return giraffe_det(matrix, CollapseMode.SMART)
+
+
+def safe_simplify(expr):
+    """Simplify with smart collapse."""
+    return giraffe_simplify(expr, CollapseMode.SMART)
+
+
+def safe_compare(expr, comparison: Comparison) -> bool:
+    """Compare expression against zero with smart collapse."""
+    return giraffe_compare(expr, comparison, CollapseMode.SMART)
+
+
+def safe_dot_product(vec1: Matrix, vec2: Matrix):
+    """Compute dot product with smart collapse."""
+    return giraffe_dot_product(vec1, vec2, CollapseMode.SMART)
+
+
+def safe_transform_vector(matrix: Matrix, vector: Matrix) -> Matrix:
+    """Compute matrix * vector transformation with smart collapse."""
+    return giraffe_transform_vector(matrix, vector, CollapseMode.SMART)
+
+
+def safe_normalize_vector(vec: Matrix) -> Matrix:
+    """Normalize a vector with smart collapse."""
+    return giraffe_normalize_vector(vec, CollapseMode.SMART)
+
+
+def safe_magnitude(vec: Matrix):
+    """Compute vector magnitude with smart collapse."""
+    return giraffe_magnitude(vec, CollapseMode.SMART)
+
+
+# ============================================================================
+# numeric_* wrappers — always collapse to Float, for hot paths
+# ============================================================================
+
+def numeric_norm(vec: Matrix):
+    """Compute vector norm, always collapsed to Float."""
+    return giraffe_norm(vec, CollapseMode.ALWAYS)
+
+
+def numeric_det(matrix: Matrix):
+    """Compute determinant, always collapsed to Float."""
+    return giraffe_det(matrix, CollapseMode.ALWAYS)
+
+
+def numeric_compare(expr, comparison: Comparison) -> bool:
+    """Compare expression against zero, always using numeric evaluation."""
+    return giraffe_compare(expr, comparison, CollapseMode.ALWAYS)
+
+
+def numeric_dot_product(vec1: Matrix, vec2: Matrix):
+    """Compute dot product, always collapsed to Float."""
+    return giraffe_dot_product(vec1, vec2, CollapseMode.ALWAYS)
+
+
+def numeric_transform_vector(matrix: Matrix, vector: Matrix) -> Matrix:
+    """Compute matrix * vector transformation, always collapsed to Float."""
+    return giraffe_transform_vector(matrix, vector, CollapseMode.ALWAYS)
+
+
+def numeric_normalize_vector(vec: Matrix) -> Matrix:
+    """Normalize a vector, always collapsed to Float."""
+    return giraffe_normalize_vector(vec, CollapseMode.ALWAYS)
+
+
+def numeric_magnitude(vec: Matrix):
+    """Compute vector magnitude, always collapsed to Float."""
+    return giraffe_magnitude(vec, CollapseMode.ALWAYS)
 
 # ============================================================================
 # Helper Functions for Vector Operations
@@ -622,42 +648,8 @@ def create_v3(x: Numeric, y: Numeric, z: Numeric) -> V3:
     return Matrix([x, y, z])
 
 def normalize_vector(vec: Matrix) -> Matrix:
-    """Normalize a vector using safe norm computation with numerical fallback"""
-    from sympy import sqrt
-    from fractions import Fraction
-    
-    # Use safe norm
-    norm = safe_norm(vec)
-
-    if is_float_numeric_mode():
-        try:
-            norm_val = float(norm.evalf()) if hasattr(norm, "evalf") else float(norm)
-            if abs(norm_val) < 1e-15:
-                return vec
-            return Matrix([Float(float(component.evalf()) / norm_val) if hasattr(component, "evalf") else Float(float(component) / norm_val) for component in vec])
-        except Exception:
-            return vec
-    
-    if zero_test(norm):
-        return vec
-    
-    # Check if we got a Float result (needs conversion to rational)
-    # For symbolic expressions like sqrt(3) or Rational values, use exact division
-    if isinstance(norm, Float):
-        # Normalize numerically and convert to rationals
-        norm_val = float(norm)
-        if abs(norm_val) < 1e-15:
-            return vec
-        
-        normalized = []
-        for component in vec:
-            comp_val = float(component.evalf()) / norm_val
-            frac = Fraction(comp_val).limit_denominator(10**9)
-            normalized.append(Rational(frac.numerator, frac.denominator))
-        return Matrix(normalized)
-    
-    # For symbolic expressions (sqrt, Rational, Integer), use exact symbolic division
-    return vec / norm
+    """Deprecated: use safe_normalize_vector instead."""
+    return safe_normalize_vector(vec)
 
 def cross_product(v1: V3, v2: V3) -> V3:
     """Calculate cross product of two 3D vectors"""
@@ -668,8 +660,8 @@ def cross_product(v1: V3, v2: V3) -> V3:
     ])
 
 def vector_magnitude(vec: Matrix):
-    """Calculate magnitude of a vector using safe norm computation"""
-    return safe_norm(vec)
+    """Deprecated: use safe_magnitude instead."""
+    return safe_magnitude(vec)
 
 
 # ============================================================================
@@ -958,11 +950,9 @@ def equality_test(value, expected) -> bool:
         return Abs(value - expected) < EPSILON_GENERIC
     
     # Try SymPy exact equality for symbolic/Rational values
-    # For now, skip symbolic comparison entirely and use numerical to avoid freezes
-    # TODO: Implement proper timeout that works with SymPy's internal operations
     if hasattr(value, 'equals') and hasattr(expected, 'equals'):
-        # Fall back to numerical comparison using evalf()
-        numerical_diff = Abs((value - expected).evalf())
+        # Numerical comparison using giraffe_evalf()
+        numerical_diff = Abs(giraffe_evalf(value - expected))
         return numerical_diff < SYMPY_EXPR_EPSILON
     
     # should never reach here?
@@ -1107,7 +1097,7 @@ class Orientation:
     def from_angle_axis(cls, radians: Numeric, axis: Direction3D) -> 'Orientation':
         """Create an orientation from an angle-axis rotation (Rodrigues' formula)."""
         from sympy import cos, sin, eye
-        k = normalize_vector(axis)
+        k = safe_normalize_vector(axis)
         kx, ky, kz = k[0], k[1], k[2]
         K = Matrix([
             [Integer(0), -kz, ky],
@@ -1178,7 +1168,7 @@ class Orientation:
             Orientation object representing the rotation
         """
         # Normalize the axis
-        axis_normalized = normalize_vector(axis)
+        axis_normalized = safe_normalize_vector(axis)
         kx, ky, kz = axis_normalized[0], axis_normalized[1], axis_normalized[2]
         
         # Rodrigues' rotation formula: R = I + sin(θ)K + (1 - cos(θ))K²

@@ -158,6 +158,16 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 :: TODO
 IGNORE-update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
+-fix all the crud you have in your safe math functions, maybe just clean up to all floats...
+  -girrafe_* methods 
+  -remove fast_zero test and fast_equality test
+  -safe_compare to take a compare arg
+  -do girrafe_* for compare and have all test function call it. all test functions should just be numeric
+  -I guess you might want symbolic test methods for some tests?? nah
+  -cleanup transform class to always use numeric
+  -add docs explaining how all this shit works
+  
+  
 
 -add plane aligned variant of join_timbers
 -rename join_plane_aligned_on_place_aligned_timbers to join_plane_aligned...
@@ -196,7 +206,7 @@ IGNORE-update timber creation to do eval if the expression is even alittle compl
     -allow features to be labeled as saw or chisel so we can do cutting instructions
     -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
 
--fix all the crud you have in your safe math functions, maybe just clean up to all floats...
+
 -do another profiling pass
 -decide if hashing is ever worth it and or just remove it entirely
   -or maybe come up with a faster hashing method?

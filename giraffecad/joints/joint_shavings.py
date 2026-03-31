@@ -707,7 +707,7 @@ def chop_profile_on_timber_face(timber: TimberLike, end: TimberReferenceEnd, fac
     """
     assert isinstance(end, TimberReferenceEnd), f"expected TimberReferenceEnd, got {type(end).__name__}"
     from sympy import Rational, Matrix
-    from giraffecad.rule import Orientation, Transform, create_v3, cross_product, normalize_vector
+    from giraffecad.rule import Orientation, Transform, create_v3, cross_product, safe_normalize_vector as normalize_vector
     from giraffecad.cutcsg import ConvexPolygonExtrusion
     
     # Check if we have a single profile or multiple profiles

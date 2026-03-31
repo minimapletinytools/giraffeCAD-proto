@@ -7,6 +7,7 @@ This module contains tests for the Orientation class which represents
 
 import pytest
 import math
+import sympy as sp
 from sympy import Matrix, pi, simplify, Abs, eye, det, Rational, Integer, cos, sin, sqrt
 from giraffecad.rule import (
     Orientation,
@@ -16,10 +17,10 @@ from giraffecad.rule import (
     shaku, sun, bu,
     INCH_TO_METER, FOOT_TO_METER, SHAKU_TO_METER,
     create_v3,
+    safe_normalize_vector,
     normalize_vector,
     radians,
     is_complex_expr,
-    with_timeout_fallback,
     safe_det,
     safe_simplify,
     safe_compare,
@@ -27,6 +28,14 @@ from giraffecad.rule import (
     equality_test,
     degrees,
     are_vectors_perpendicular,
+    giraffe_evalf,
+    CollapseMode,
+    giraffe_dot_product,
+    giraffe_norm,
+    numeric_dot_product,
+    numeric_norm,
+    numeric_normalize_vector,
+    GIRAFFE_EVALF_PRECISION,
 )
 import random
 from tests.testing_shavings import generate_random_orientation, assert_is_valid_rotation_matrix
@@ -1142,10 +1151,76 @@ class TestIsComplexExpr:
         assert is_complex_expr(Rational(1, 2)) is False
 
 
-class TestWithTimeoutFallback:
-    def test_returns_symbolic_result_when_fast(self):
-        result = with_timeout_fallback(lambda: 42, lambda: 0)
-        assert result == 42
+class TestGiraffeEvalf:
+    def test_evaluates_rational(self):
+        result = giraffe_evalf(Rational(1, 3))
+        assert isinstance(result, sp.Float)
+        assert abs(float(result) - 1/3) < 1e-14
+
+    def test_evaluates_sqrt(self):
+        result = giraffe_evalf(sqrt(2))
+        assert abs(float(result) - 1.41421356237) < 1e-8
+
+    def test_evaluates_plain_int(self):
+        result = giraffe_evalf(Integer(42))
+        assert float(result) == 42.0
+
+
+class TestCollapseMode:
+    def test_smart_preserves_simple_in_symbolic_mode(self, symbolic_mode):
+        from giraffecad.rule import _collapse_scalar
+        expr = Rational(1, 2)
+        result = _collapse_scalar(expr, CollapseMode.SMART)
+        assert result == Rational(1, 2)
+
+    def test_always_collapses_simple(self):
+        from giraffecad.rule import _collapse_scalar
+        expr = Rational(1, 2)
+        result = _collapse_scalar(expr, CollapseMode.ALWAYS)
+        assert isinstance(result, sp.Float)
+
+    def test_never_preserves_complex(self):
+        from giraffecad.rule import _collapse_scalar
+        # sin(1) is flagged as complex by is_complex_expr
+        expr = sin(Integer(1)) + cos(Integer(2))
+        result = _collapse_scalar(expr, CollapseMode.NEVER)
+        assert result is expr  # unchanged
+
+
+class TestNumericWrappers:
+    def test_numeric_dot_product_returns_float(self):
+        v1 = create_v3(1, 0, 0)
+        v2 = create_v3(0, 1, 0)
+        result = numeric_dot_product(v1, v2)
+        assert isinstance(result, sp.Float)
+
+    def test_numeric_norm_returns_float(self):
+        v = create_v3(3, 4, 0)
+        result = numeric_norm(v)
+        assert isinstance(result, sp.Float)
+        assert abs(float(result) - 5.0) < 1e-10
+
+    def test_numeric_normalize_returns_float_elements(self):
+        v = create_v3(3, 4, 0)
+        result = numeric_normalize_vector(v)
+        for elem in result:
+            assert isinstance(elem, (sp.Float, sp.Rational))
+        # Should be unit vector
+        assert abs(float(result[0]) - 0.6) < 1e-10
+        assert abs(float(result[1]) - 0.8) < 1e-10
+
+
+class TestGiraffeDotProduct:
+    def test_orthogonal_is_zero(self, symbolic_mode):
+        v1 = create_v3(1, 0, 0)
+        v2 = create_v3(0, 1, 0)
+        result = giraffe_dot_product(v1, v2, CollapseMode.NEVER)
+        assert result == 0
+
+    def test_parallel_unit_is_one(self, symbolic_mode):
+        v = create_v3(1, 0, 0)
+        result = giraffe_dot_product(v, v, CollapseMode.NEVER)
+        assert result == 1
 
 
 class TestSafeDet:

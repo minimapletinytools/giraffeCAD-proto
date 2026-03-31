@@ -938,7 +938,7 @@ def cut_plain_cross_lap_joint(arrangement: CrossJointTimberArrangement, cut_rati
     # Choose the face on that axis on timberA that's closest to timberB
     # Then pick the opposite face on timberB
     if timberA_cut_face is None:
-        from giraffecad.rule import cross_product, normalize_vector, safe_norm
+        from giraffecad.rule import cross_product, safe_normalize_vector as normalize_vector, safe_norm
         
         # Get length directions of both timbers
         d1 = timberA.get_length_direction_global()

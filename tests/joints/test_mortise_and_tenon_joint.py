@@ -5,7 +5,7 @@ Tests for mortise and tenon joint construction functions
 import pytest
 from typing import List
 from sympy import Matrix, Rational, simplify, sin, cos, pi
-from giraffecad.rule import Orientation, create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product, normalize_vector
+from giraffecad.rule import Orientation, create_v2, inches, radians, are_vectors_parallel, zero_test, safe_dot_product, safe_normalize_vector as normalize_vector
 from giraffecad.timber import (
     Timber, TimberReferenceEnd, TimberFace, TimberLongFace,
     V2, V3, Numeric, PegShape, WedgeShape, Peg,
