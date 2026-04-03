@@ -156,22 +156,62 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 
 
+:: TICKET TODO
+-add reference faces to PTW ticket
+  -assert they are coincident
+  -for now require nominaland ptw dimensions to match on reference faces
+-do basic named tagging on CSG 
+  -just support tagging faces on halfspace and prism
+  -and passing through union/difference
+-then must be able to reference named tags inside of joint ticket
+  -then when you click on a cut timber, you need to find all joints the timber belongs to to find which features on that joint you clicked
+
+
+::layers TODO
+-NO dynamic folder for now, hardcode folders insted
+-worry about patterns later, they are logically different even if visually the same
+-add tags to timbers and joints, as a 1 tier overlapping folder system
+-search bar, autocompletes both names and tags
+-tag selection bar
+  -has option to choose how many tags to show
+  -unselected tags are grayed out, if all grayed out then show everything
+  -when one tag is selected, unavaialble tags dissapear
+-timbers/joints
+  -allow foldering by first tag option
+  -clicknig on fol
+-joints (separate group, shows up below timbers)
+  -allow foldering by first tag option?
+  -clicking on joint selects all timbers and accesories contained in it
+  -accessories only viewable as children of joints
+
+
+
 :: TODO
-IGNORE-update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
-DONE-fix all the crud you have in your safe math functions, maybe just clean up to all floats...
-  DONE-girrafe_* methods 
-  DONE-remove fast_zero test and fast_equality test
-  DONe-safe_compare to take a compare arg
-  DONE-do girrafe_* for compare and have all test function call it. all test functions should just be numeric
-  DONE-I guess you might want symbolic test methods for some tests?? nah
-  IGNORE-cleanup transform class to always use numeric
-  DONE-add docs explaining how all this shit works
-DONE-do another perf pass  
-DONE-add plane aligned variant of join_timbers
-DONE-rename join_plane_aligned_on_place_aligned_timbers to join_plane_aligned...
-  DONE-update brace example to use join_plane_aligned
-  IGNORE-create some example with corner braces...
-DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling times? in general displayed profiling times mismatch actual time  
+
+-add stdout makers for better profiling
+-add settings class for persisted settings in viewer
+-add unselecetd transparency option
+
+-improved CSG tagging
+  -allow half faces on prism
+  -allow side faces and top/bot flats to be tagged on CSG extrusion
+    -would be cool to allow union faces that are coplanar... but I think you can just name 2 features when defining the cutting instructions and check that they are coplanar then
+  -saw/chisel metadata 
+    -allow features to be labeled as saw or chisel so we can do cutting instructions
+    -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
+
+-do assembly metadata
+  DONE-create assemblydirection class 
+  -for accessories, have assemblydriection but also have locking accessory
+  -can you rename accessory btw??
+  -add assembly directions to existing joints
+    -can have helpers from arragement classes to do this in most cases
+
+  
+
+
+
+
 
 -decide on layer view
   -is patternbook part of layer view or separate thing
@@ -195,25 +235,6 @@ DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling time
   -make rafter logic not suck lol...
   -do yo uneed/want more rafters?
   
-
-
--tag reference faces on timber metadata?
-  -assert they are coincident
-  -for now require nominaland ptw dimensions to match
-
--DO META DATA
-  -feature metadata
-    -tag CSG with features
-    
-  -do assembly metadata
-    -create assemblydirection class 
-    -for accessories, have assemblydriection but also have locking accessory
-    -can you rename accessory btw??
-
-  -saw/chisel metadata 
-    -allow features to be labeled as saw or chisel so we can do cutting instructions
-    -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
-
 
 
 -UI feature select
@@ -295,7 +316,7 @@ EXEMPLIFY
 
 RENAMEIFY
   DONE-rename measure to locate
-  -then you can use measure to measure between two located features (which we don't actually care about, we need to measure between 2 CSG features...)
+    -then you can use measure to measure between two located features (which we don't actually care about, we need to measure between 2 CSG features...)
   -be consistent about function local/golbal naming
     -local input vars should have the suffix  _local
       -some things must be interpreted locally such as "face" or "distance", these d onot have the suffix
@@ -427,7 +448,24 @@ M3.5
 
 
 
-:: TODONE
+:: TODONE 
+
+IGNORE-update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
+DONE-fix all the crud you have in your safe math functions, maybe just clean up to all floats...
+  DONE-girrafe_* methods 
+  DONE-remove fast_zero test and fast_equality test
+  DONe-safe_compare to take a compare arg
+  DONE-do girrafe_* for compare and have all test function call it. all test functions should just be numeric
+  DONE-I guess you might want symbolic test methods for some tests?? nah
+  IGNORE-cleanup transform class to always use numeric
+  DONE-add docs explaining how all this shit works
+DONE-do another perf pass  
+DONE-add plane aligned variant of join_timbers
+DONE-rename join_plane_aligned_on_place_aligned_timbers to join_plane_aligned...
+  DONE-update brace example to use join_plane_aligned
+  IGNORE-create some example with corner braces...
+DONE-I think the meshing n/N in viewer is broken??? doesnt' match profiling times? in general displayed profiling times mismatch actual time  
+
 DONE-splined opposing double butt joint :D (could have drawbore or key)
   -you need to create shoulder_shavings for making shoulder cuts
     -shoulder cuts should be infinite in one direction so can generate the positive and negative for both sides easily
