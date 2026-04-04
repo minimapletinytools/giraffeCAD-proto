@@ -202,9 +202,10 @@ DONE/IGNORE-improve integration tests on the viewer. Can you think of some tests
     -expect milestones
   -one test for each of the options to see that they work
   -can we test each of the mouse/keyboard navigation things?
-
-
--unselected transparency slider should be inverted, and it should also make edge rendering transparent
+DONE-unselected transparency slider should be inverted
+DONE-edge rendering on unselected things should also have transparency applied
+DONE-transparent rendering covers shadow and reflection and also covers feature highlights :( fix pls
+-do some profiling on feature selection
 -try auto authoring tests again, this time ask it to use plain_joints as an example
 -improved CSG tagging
   -allow half faces on prism

@@ -186,14 +186,14 @@ class ViewerSettingsPanel {
                     hash geometry check
                 </label>
                 <label>
-                    unselected transparency (${this.app.unselectedTransparencyPercent}%)
+                    unselected visibility (${100 - this.app.unselectedTransparencyPercent}%)
                     <input
                         id="unselected-transparency-slider"
                         type="range"
-                        min="0"
-                        max="95"
+                        min="5"
+                        max="100"
                         step="5"
-                        .value=${String(this.app.unselectedTransparencyPercent)}>
+                        .value=${String(100 - this.app.unselectedTransparencyPercent)}>
                 </label>
                 <label>
                     timber profile
@@ -259,11 +259,11 @@ class ViewerSettingsPanel {
         });
 
         unselectedTransparencySlider.addEventListener('input', (event) => {
-            const rawPercent = Number(event.target.value);
-            const normalizedPercent = Number.isFinite(rawPercent)
-                ? Math.max(0, Math.min(95, Math.round(rawPercent / 5) * 5))
-                : 40;
-            this.app.setUnselectedTransparencyPercent(normalizedPercent);
+            const rawVisibility = Number(event.target.value);
+            const normalizedVisibility = Number.isFinite(rawVisibility)
+                ? Math.max(5, Math.min(100, Math.round(rawVisibility / 5) * 5))
+                : 60;
+            this.app.setUnselectedTransparencyPercent(100 - normalizedVisibility);
         });
 
         timberProfileSelect.addEventListener('change', (event) => {
@@ -292,7 +292,7 @@ class ViewerSettingsPanel {
         }
         const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
         if (unselectedTransparencySlider) {
-            unselectedTransparencySlider.value = String(this.app.unselectedTransparencyPercent);
+            unselectedTransparencySlider.value = String(100 - this.app.unselectedTransparencyPercent);
         }
     }
 }
@@ -1031,8 +1031,27 @@ class HorseyViewerApp extends LitElement {
         for (const [name, bundle] of this.meshObjectsByKey) {
             const selected = this.selectionManager.isTimberSelected(name);
             const opacity = hasTimberSelection ? (selected ? 1.0 : unselectedOpacity) : 1.0;
-            bundle.mesh.material.transparent = opacity < 1.0;
+            const isTransparent = opacity < 1.0;
+            bundle.mesh.material.transparent = isTransparent;
             bundle.mesh.material.opacity = opacity;
+            // Transparent unselected timbers should not cast shadows
+            bundle.mesh.castShadow = !isTransparent;
+            // Apply matching transparency to edges
+            if (bundle.edges && bundle.edges.material) {
+                const profile = this.resolveRenderProfile(bundle.profileId);
+                const baseEdgeOpacity = profile ? profile.edgeOpacity : 1.0;
+                bundle.edges.material.opacity = isTransparent
+                    ? baseEdgeOpacity * unselectedOpacity
+                    : baseEdgeOpacity;
+            }
+            // Apply matching transparency to reflections
+            if (bundle.reflection && bundle.reflection.material) {
+                const profile = this.resolveRenderProfile(bundle.profileId);
+                const baseReflectionOpacity = profile ? profile.reflectionOpacity : 0.14;
+                bundle.reflection.material.opacity = isTransparent
+                    ? baseReflectionOpacity * unselectedOpacity
+                    : baseReflectionOpacity;
+            }
         }
     }
 
@@ -1098,11 +1117,12 @@ class HorseyViewerApp extends LitElement {
             transparent: true,
             opacity: FEATURE_OVERLAY_OPACITY,
             side: THREE.DoubleSide,
+            depthTest: false,
             depthWrite: false,
         });
 
         const overlayMesh = new THREE.Mesh(overlayGeometry, overlayMaterial);
-        overlayMesh.renderOrder = 1;
+        overlayMesh.renderOrder = 10;
         this.scene.add(overlayMesh);
         this.featureOverlayMesh = overlayMesh;
     }
