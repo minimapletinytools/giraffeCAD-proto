@@ -885,7 +885,8 @@ class PerfectTimberWithin(ABC):
             size=self.size,
             transform=Transform.identity(),
             start_distance=Integer(0),
-            end_distance=self.length
+            end_distance=self.length,
+            named_features=_timber_face_tags(),
         )
     
     def get_actual_csg_local(self) -> CutCSG:
@@ -1000,7 +1001,8 @@ class Timber(PerfectTimberWithin):
             size=nominal_size,
             transform=Transform(position=offset, orientation=Orientation.identity()),
             start_distance=Integer(0),
-            end_distance=self.length
+            end_distance=self.length,
+            named_features=_timber_face_tags(),
         )
     
     def get_extended_actual_csg_local(self, extend_bot: bool, extend_top: bool) -> CutCSG:
@@ -1023,7 +1025,8 @@ class Timber(PerfectTimberWithin):
             size=nominal_size,
             transform=Transform(position=offset, orientation=Orientation.identity()),
             start_distance=None if extend_bot else Integer(0),
-            end_distance=None if extend_top else self.length
+            end_distance=None if extend_top else self.length,
+            named_features=_timber_face_tags(),
         )
     
     def deep_hash(self) -> str:
@@ -1540,6 +1543,18 @@ class Cutting:
             return HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(-1)), offset=-distance_from_end_to_cut)
 
 
+def _timber_face_tags() -> List[Tuple[str, PrismFace]]:
+    """Standard named feature tags for the 6 faces of a timber RectangularPrism."""
+    return [
+        ("right", PrismFace.RIGHT),
+        ("left", PrismFace.LEFT),
+        ("front", PrismFace.FRONT),
+        ("back", PrismFace.BACK),
+        ("top", PrismFace.TOP),
+        ("bottom", PrismFace.BOTTOM),
+    ]
+
+
 def _create_extended_rectangular_prism(
     size: V2,
     length: Numeric,
@@ -1563,7 +1578,8 @@ def _create_extended_rectangular_prism(
         size=size,
         transform=Transform.identity(),
         start_distance=None if extend_bot else Integer(0),
-        end_distance=None if extend_top else length
+        end_distance=None if extend_top else length,
+        named_features=_timber_face_tags(),
     )
 
 

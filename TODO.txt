@@ -161,11 +161,12 @@ DONE-add reference faces to PTW ticket
   -add a post init step to PTW that does the following
     -assert they are coincident
     -for now require nominal and ptw dimensions to match on reference faces
--do basic named tagging of features on CSGs 
+DONE-do basic named tagging of features on CSGs 
   -just support tagging faces on halfspace and prism
   -and passing through union/difference
 -then must be able to reference named tags inside of joint ticket
   -then when you click on a cut timber, you need to find all joints the timber belongs to to find which features on that joint you clicked
+-add some notes for adding broadphase so you don't forget.
 
 
 ::layers TODO
@@ -203,6 +204,7 @@ DONE/IGNORE-improve integration tests on the viewer. Can you think of some tests
   -can we test each of the mouse/keyboard navigation things?
 
 
+-unselected transparency slider should be inverted, and it should also make edge rendering transparent
 -try auto authoring tests again, this time ask it to use plain_joints as an example
 -improved CSG tagging
   -allow half faces on prism
