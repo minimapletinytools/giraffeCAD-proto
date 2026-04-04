@@ -189,7 +189,7 @@ the final returned csg has a ticket that points to a feature in the top level Di
 :: TODO
 
 DONE-add stdout makers for better profiling
--add settings class for persisted settings in viewer
+DONE-add settings class for persisted settings in viewer
 -add unselecetd transparency option
   -add a slider option so that we can set the transparency of unselected timbers (default 40%)
   -if no timbers are selected, then everything renders as if it were selected (I believe this is current behavior)

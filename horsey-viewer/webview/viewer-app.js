@@ -181,6 +181,16 @@ class ViewerSettingsPanel {
                     hash geometry check
                 </label>
                 <label>
+                    unselected transparency (${this.app.unselectedTransparencyPercent}%)
+                    <input
+                        id="unselected-transparency-slider"
+                        type="range"
+                        min="0"
+                        max="95"
+                        step="5"
+                        .value=${String(this.app.unselectedTransparencyPercent)}>
+                </label>
+                <label>
                     timber profile
                     <select id="timber-profile-select" .value=${this.app.memberRenderProfileByType.timber}>
                         ${Object.entries(this.app.renderProfiles).map(([profileId, profile]) => html`<option value=${profileId}>${profile.label}</option>`)}
@@ -208,6 +218,7 @@ class ViewerSettingsPanel {
         const shadowsToggle = renderRoot.querySelector('#shadows-toggle');
         const reflectionsToggle = renderRoot.querySelector('#reflections-toggle');
         const hashGeometryCheckToggle = renderRoot.querySelector('#hash-geometry-check-toggle');
+        const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
         const debugToggle = renderRoot.querySelector('#debug-toggle');
         const timberProfileSelect = renderRoot.querySelector('#timber-profile-select');
         const accessoryProfileSelect = renderRoot.querySelector('#accessory-profile-select');
@@ -242,6 +253,14 @@ class ViewerSettingsPanel {
             this.app.setViewerOptions({ enableHashGeometryCheck: event.target.checked }, { postMessage: true });
         });
 
+        unselectedTransparencySlider.addEventListener('input', (event) => {
+            const rawPercent = Number(event.target.value);
+            const normalizedPercent = Number.isFinite(rawPercent)
+                ? Math.max(0, Math.min(95, Math.round(rawPercent / 5) * 5))
+                : 40;
+            this.app.setUnselectedTransparencyPercent(normalizedPercent);
+        });
+
         timberProfileSelect.addEventListener('change', (event) => {
             this.app.setMemberRenderProfile('timber', event.target.value);
         });
@@ -265,6 +284,10 @@ class ViewerSettingsPanel {
         const hashToggle = renderRoot.querySelector('#hash-geometry-check-toggle');
         if (hashToggle) {
             hashToggle.checked = this.app.viewerOptions.enableHashGeometryCheck;
+        }
+        const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
+        if (unselectedTransparencySlider) {
+            unselectedTransparencySlider.value = String(this.app.unselectedTransparencyPercent);
         }
     }
 }
@@ -336,6 +359,7 @@ class HorseyViewerApp extends LitElement {
             timber: 'timber-default',
             accessory: 'accessory-cute',
         };
+        this.unselectedTransparencyPercent = 40;
         this.activeBackground = 'cream';
 
         this.animationHandle = null;
@@ -676,6 +700,18 @@ class HorseyViewerApp extends LitElement {
         }
     }
 
+    setUnselectedTransparencyPercent(nextPercent) {
+        const normalizedPercent = Number.isFinite(nextPercent)
+            ? Math.max(0, Math.min(95, Math.round(nextPercent / 5) * 5))
+            : 40;
+        if (this.unselectedTransparencyPercent === normalizedPercent) {
+            return;
+        }
+        this.unselectedTransparencyPercent = normalizedPercent;
+        this.requestUpdate();
+        this.applySelectionOpacity();
+    }
+
     updateStructureScreenBounds() {
         if (!this.camera || !this.lastBounds) {
             this.structureScreenBounds = null;
@@ -928,7 +964,7 @@ class HorseyViewerApp extends LitElement {
 
     applySelectionOpacity() {
         const hasTimberSelection = this.selectionManager.selectedTimbers.size > 0;
-        const unselectedOpacity = 0.3;
+        const unselectedOpacity = 1 - (this.unselectedTransparencyPercent / 100);
         for (const [name, bundle] of this.meshObjectsByKey) {
             const selected = this.selectionManager.isTimberSelected(name);
             const opacity = hasTimberSelection ? (selected ? 1.0 : unselectedOpacity) : 1.0;
