@@ -147,6 +147,128 @@ if (!SelectionStore) {
     throw new Error('SelectionStore is not loaded. Ensure selection-store.js is included before viewer-app.js.');
 }
 
+class ViewerSettingsPanel {
+    constructor(app) {
+        this.app = app;
+    }
+
+    render() {
+        return html`
+            <section id="render-controls" aria-label="Viewer options">
+                <button id="refresh-btn" type="button" title="Reload pattern">↻ refresh</button>
+                <label>
+                    <input id="center-gizmo-toggle" type="checkbox" ?checked=${this.app.showCenterGizmo}>
+                    center gizmo
+                </label>
+                <label>
+                    <input id="edges-toggle" type="checkbox" ?checked=${this.app.edgesEnabled}>
+                    edges
+                </label>
+                <label>
+                    <input id="shadows-toggle" type="checkbox" ?checked=${this.app.shadowsEnabled}>
+                    shadows
+                </label>
+                <label>
+                    <input id="reflections-toggle" type="checkbox" ?checked=${this.app.reflectionsEnabled}>
+                    reflection
+                </label>
+                <label>
+                    <input id="debug-toggle" type="checkbox" ?checked=${this.app.debugEnabled}>
+                    debug info
+                </label>
+                <label>
+                    <input id="hash-geometry-check-toggle" type="checkbox" ?checked=${this.app.viewerOptions.enableHashGeometryCheck}>
+                    hash geometry check
+                </label>
+                <label>
+                    timber profile
+                    <select id="timber-profile-select" .value=${this.app.memberRenderProfileByType.timber}>
+                        ${Object.entries(this.app.renderProfiles).map(([profileId, profile]) => html`<option value=${profileId}>${profile.label}</option>`)}
+                    </select>
+                </label>
+                <label>
+                    accessory profile
+                    <select id="accessory-profile-select" .value=${this.app.memberRenderProfileByType.accessory}>
+                        ${Object.entries(this.app.renderProfiles).map(([profileId, profile]) => html`<option value=${profileId}>${profile.label}</option>`)}
+                    </select>
+                </label>
+                <label>
+                    background
+                    <select id="background-select" .value=${this.app.activeBackground}>
+                        ${Object.entries(BACKGROUND_PRESETS).map(([bgId, bg]) => html`<option value=${bgId}>${bg.label}</option>`)}
+                    </select>
+                </label>
+            </section>
+        `;
+    }
+
+    bindEvents(renderRoot) {
+        const centerGizmoToggle = renderRoot.querySelector('#center-gizmo-toggle');
+        const edgesToggle = renderRoot.querySelector('#edges-toggle');
+        const shadowsToggle = renderRoot.querySelector('#shadows-toggle');
+        const reflectionsToggle = renderRoot.querySelector('#reflections-toggle');
+        const hashGeometryCheckToggle = renderRoot.querySelector('#hash-geometry-check-toggle');
+        const debugToggle = renderRoot.querySelector('#debug-toggle');
+        const timberProfileSelect = renderRoot.querySelector('#timber-profile-select');
+        const accessoryProfileSelect = renderRoot.querySelector('#accessory-profile-select');
+        const refreshButton = renderRoot.querySelector('#refresh-btn');
+        const backgroundSelect = renderRoot.querySelector('#background-select');
+
+        centerGizmoToggle.addEventListener('change', (event) => {
+            this.app.setCenterGizmoEnabled(event.target.checked);
+        });
+
+        edgesToggle.addEventListener('change', (event) => {
+            this.app.setEdgesEnabled(event.target.checked);
+        });
+
+        debugToggle.addEventListener('change', (event) => {
+            this.app.debugEnabled = event.target.checked;
+            const debugEl = renderRoot.querySelector('#debug');
+            if (debugEl) {
+                debugEl.style.display = this.app.debugEnabled ? 'block' : 'none';
+            }
+        });
+
+        shadowsToggle.addEventListener('change', (event) => {
+            this.app.setShadowsEnabled(event.target.checked);
+        });
+
+        reflectionsToggle.addEventListener('change', (event) => {
+            this.app.setReflectionsEnabled(event.target.checked);
+        });
+
+        hashGeometryCheckToggle.addEventListener('change', (event) => {
+            this.app.setViewerOptions({ enableHashGeometryCheck: event.target.checked }, { postMessage: true });
+        });
+
+        timberProfileSelect.addEventListener('change', (event) => {
+            this.app.setMemberRenderProfile('timber', event.target.value);
+        });
+
+        accessoryProfileSelect.addEventListener('change', (event) => {
+            this.app.setMemberRenderProfile('accessory', event.target.value);
+        });
+
+        refreshButton.addEventListener('click', () => {
+            if (vscode) {
+                vscode.postMessage({ type: 'requestRefresh' });
+            }
+        });
+
+        backgroundSelect.addEventListener('change', (event) => {
+            this.app.setBackground(event.target.value);
+        });
+    }
+
+    syncControls(renderRoot) {
+        const hashToggle = renderRoot.querySelector('#hash-geometry-check-toggle');
+        if (hashToggle) {
+            hashToggle.checked = this.app.viewerOptions.enableHashGeometryCheck;
+        }
+    }
+}
+
 class HorseyViewerApp extends LitElement {
     constructor() {
         super();
@@ -220,6 +342,7 @@ class HorseyViewerApp extends LitElement {
         this.viewState = createInitialViewState();
         this.currentFrameData = {};
         this.viewerOptions = normalizeViewerOptions(INITIAL_PAYLOAD.viewerOptions);
+        this.settingsPanel = new ViewerSettingsPanel(this);
         this.activeRefreshToken = 0;
         this.onWindowMessage = this.onWindowMessage.bind(this);
         this.onWindowScroll = this.onWindowScroll.bind(this);
@@ -258,51 +381,7 @@ class HorseyViewerApp extends LitElement {
                 <div id="debug"></div>
                 <div id="hint">right drag orbit • middle drag pan • scroll zoom • F focus</div>
             </div>
-            <section id="render-controls" aria-label="Viewer options">
-                <button id="refresh-btn" type="button" title="Reload pattern">↻ refresh</button>
-                <label>
-                    <input id="center-gizmo-toggle" type="checkbox" ?checked=${this.showCenterGizmo}>
-                    center gizmo
-                </label>
-                <label>
-                    <input id="edges-toggle" type="checkbox" ?checked=${this.edgesEnabled}>
-                    edges
-                </label>
-                <label>
-                    <input id="shadows-toggle" type="checkbox" ?checked=${this.shadowsEnabled}>
-                    shadows
-                </label>
-                <label>
-                    <input id="reflections-toggle" type="checkbox" ?checked=${this.reflectionsEnabled}>
-                    reflection
-                </label>
-                <label>
-                    <input id="debug-toggle" type="checkbox" ?checked=${this.debugEnabled}>
-                    debug info
-                </label>
-                <label>
-                    <input id="hash-geometry-check-toggle" type="checkbox" ?checked=${this.viewerOptions.enableHashGeometryCheck}>
-                    hash geometry check
-                </label>
-                <label>
-                    timber profile
-                    <select id="timber-profile-select" .value=${this.memberRenderProfileByType.timber}>
-                        ${Object.entries(this.renderProfiles).map(([profileId, profile]) => html`<option value=${profileId}>${profile.label}</option>`)}
-                    </select>
-                </label>
-                <label>
-                    accessory profile
-                    <select id="accessory-profile-select" .value=${this.memberRenderProfileByType.accessory}>
-                        ${Object.entries(this.renderProfiles).map(([profileId, profile]) => html`<option value=${profileId}>${profile.label}</option>`)}
-                    </select>
-                </label>
-                <label>
-                    background
-                    <select id="background-select" .value=${this.activeBackground}>
-                        ${Object.entries(BACKGROUND_PRESETS).map(([bgId, bg]) => html`<option value=${bgId}>${bg.label}</option>`)}
-                    </select>
-                </label>
-            </section>
+            ${this.settingsPanel.render()}
             <div id="panels">
                 <div class="panel-box">
                     <div class="panel-title">Member List</div>
@@ -407,16 +486,6 @@ class HorseyViewerApp extends LitElement {
         const gizmoCanvas = this.renderRoot.querySelector('#gizmo-cube-c');
         const focusButton = this.renderRoot.querySelector('#focus-btn');
         const lightDialCanvas = this.renderRoot.querySelector('#light-dial-c');
-        const centerGizmoToggle = this.renderRoot.querySelector('#center-gizmo-toggle');
-        const edgesToggle = this.renderRoot.querySelector('#edges-toggle');
-        const shadowsToggle = this.renderRoot.querySelector('#shadows-toggle');
-        const reflectionsToggle = this.renderRoot.querySelector('#reflections-toggle');
-        const hashGeometryCheckToggle = this.renderRoot.querySelector('#hash-geometry-check-toggle');
-        const debugToggle = this.renderRoot.querySelector('#debug-toggle');
-        const timberProfileSelect = this.renderRoot.querySelector('#timber-profile-select');
-        const accessoryProfileSelect = this.renderRoot.querySelector('#accessory-profile-select');
-        const refreshButton = this.renderRoot.querySelector('#refresh-btn');
-        const backgroundSelect = this.renderRoot.querySelector('#background-select');
 
         toV3d.addEventListener('click', () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -468,49 +537,7 @@ class HorseyViewerApp extends LitElement {
             this.applyLightDialFromPointer(event);
         });
 
-        centerGizmoToggle.addEventListener('change', (event) => {
-            this.setCenterGizmoEnabled(event.target.checked);
-        });
-
-        edgesToggle.addEventListener('change', (event) => {
-            this.setEdgesEnabled(event.target.checked);
-        });
-
-        debugToggle.addEventListener('change', (event) => {
-            this.debugEnabled = event.target.checked;
-            const debugEl = this.renderRoot.querySelector('#debug');
-            if (debugEl) { debugEl.style.display = this.debugEnabled ? 'block' : 'none'; }
-        });
-
-        shadowsToggle.addEventListener('change', (event) => {
-            this.setShadowsEnabled(event.target.checked);
-        });
-
-        reflectionsToggle.addEventListener('change', (event) => {
-            this.setReflectionsEnabled(event.target.checked);
-        });
-
-        hashGeometryCheckToggle.addEventListener('change', (event) => {
-            this.setViewerOptions({ enableHashGeometryCheck: event.target.checked }, { postMessage: true });
-        });
-
-        timberProfileSelect.addEventListener('change', (event) => {
-            this.setMemberRenderProfile('timber', event.target.value);
-        });
-
-        accessoryProfileSelect.addEventListener('change', (event) => {
-            this.setMemberRenderProfile('accessory', event.target.value);
-        });
-
-        refreshButton.addEventListener('click', () => {
-            if (vscode) {
-                vscode.postMessage({ type: 'requestRefresh' });
-            }
-        });
-
-        backgroundSelect.addEventListener('change', (event) => {
-            this.setBackground(event.target.value);
-        });
+        this.settingsPanel.bindEvents(this.renderRoot);
 
         const logClearBtn = this.renderRoot.querySelector('#log-clear-btn');
         const logFilterInput = this.renderRoot.querySelector('#log-filter');
@@ -637,11 +664,8 @@ class HorseyViewerApp extends LitElement {
             ...normalized,
         };
 
-        const toggle = this.renderRoot && this.renderRoot.querySelector
-            ? this.renderRoot.querySelector('#hash-geometry-check-toggle')
-            : null;
-        if (toggle) {
-            toggle.checked = this.viewerOptions.enableHashGeometryCheck;
+        if (this.renderRoot && this.renderRoot.querySelector) {
+            this.settingsPanel.syncControls(this.renderRoot);
         }
 
         if (options.postMessage && vscode) {
