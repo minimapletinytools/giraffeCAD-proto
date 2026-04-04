@@ -22,45 +22,13 @@ class Ticket(ABC):
     name: str = "[no-name]"
     parent: Optional["Ticket"] = None
 
-    @abstractmethod
-    def is_concept(self) -> bool:
-        """Concept tickets represent logical entities such as joints/features."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def is_construction(self) -> bool:
-        """Construction tickets represent physical entities or organization."""
-        raise NotImplementedError
-
 @dataclass(frozen=True)
-class ConstructionTicket(Ticket):
-    """Base class for physical/object-hierarchy tickets."""
-
-    def is_concept(self) -> bool:
-        return False
-
-    def is_construction(self) -> bool:
-        return True
-
-
-@dataclass(frozen=True)
-class ConceptTicket(Ticket):
-    """Base class for logical/conceptual tickets."""
-
-    def is_concept(self) -> bool:
-        return True
-
-    def is_construction(self) -> bool:
-        return False
-
-
-@dataclass(frozen=True)
-class FolderTicket(ConstructionTicket):
+class FolderTicket(Ticket):
     """Ticket that represents a grouping node in the hierarchy."""
 
 
 @dataclass(frozen=True)
-class TimberTicket(ConstructionTicket):
+class TimberTicket(Ticket):
     """Ticket metadata for physical timber members."""
 
     material: Optional[str] = None
@@ -68,12 +36,12 @@ class TimberTicket(ConstructionTicket):
 
 
 @dataclass(frozen=True)
-class AccessoryTicket(ConstructionTicket):
+class AccessoryTicket(Ticket):
     """Ticket metadata for accessories (pegs, wedges, hardware, etc.)."""
 
 
 @dataclass(frozen=True)
-class BoardTicket(ConstructionTicket):
+class BoardTicket(TimberTicket):
     """Ticket metadata for board-like members."""
 
 @dataclass(frozen=True)
@@ -98,7 +66,7 @@ class AssemblyFreedom:
 
 
 @dataclass(frozen=True)
-class JointTicket(ConceptTicket):
+class JointTicket(Ticket):
     """Concept ticket metadata for joints and assembly sequencing."""
 
     joint_type: Optional[str] = None

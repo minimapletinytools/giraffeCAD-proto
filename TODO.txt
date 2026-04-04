@@ -158,8 +158,9 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 :: TICKET TODO
 -add reference faces to PTW ticket
-  -assert they are coincident
-  -for now require nominaland ptw dimensions to match on reference faces
+  -add a post init step to PTW that does the following
+    -assert they are coincident
+    -for now require nominal and ptw dimensions to match on reference faces
 -do basic named tagging on CSG 
   -just support tagging faces on halfspace and prism
   -and passing through union/difference
@@ -193,14 +194,16 @@ DONE-add settings class for persisted settings in viewer
 DONE-add unselecetd transparency option
   -add a slider option so that we can set the transparency of unselected timbers (default 40%)
   -if no timbers are selected, then everything renders as if it were selected (I believe this is current behavior)
--add test for joints using max mode or something
--improve integration tests on the viewer. Can you think of some tests to help improve it 
+DONE/FAIL-add test for joints using max mode or something
+DONE/IGNORE-improve integration tests on the viewer. Can you think of some tests to help improve it 
   -epen a test file with a couple milestones, simple timebrs and joints
     -expect timbers show up in raw data
     -expect milestones
   -one test for each of the options to see that they work
   -can we test each of the mouse/keyboard navigation things?
 
+
+-try auto authoring tests again, this time ask it to use plain_joints as an example
 -improved CSG tagging
   -allow half faces on prism
   -allow side faces and top/bot flats to be tagged on CSG extrusion

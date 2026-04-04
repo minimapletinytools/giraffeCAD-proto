@@ -441,7 +441,40 @@ class PerfectTimberWithin(ABC):
     size: V2
     transform: Transform
     ticket: TimberTicket = field(default_factory=TimberTicket)
-    
+
+    def __post_init__(self):
+        if self.ticket.reference_faces is not None:
+            self._validate_reference_faces()
+
+    def _validate_reference_faces(self):
+        """Assert that each reference face is a valid long face and that
+        the nominal half-size matches the PTW half-size on that face
+        (i.e. the nominal face plane and PTW face plane are coincident)."""
+        ref_faces = self.ticket.reference_faces
+        assert ref_faces is not None
+        valid_names = {f.name for f in TimberLongFace}
+        ptw_w_half = self.size[0] / Integer(2)
+        ptw_h_half = self.size[1] / Integer(2)
+        width_halves, height_halves = self.get_nominal_half_sizes()
+
+        # TODO consider allowing top/bot ends?
+        _face_to_nominal_and_ptw = {
+            "RIGHT": (width_halves[0], ptw_w_half),
+            "LEFT":  (width_halves[1], ptw_w_half),
+            "FRONT": (height_halves[0], ptw_h_half),
+            "BACK":  (height_halves[1], ptw_h_half),
+        }
+        for face_name in ref_faces:
+            assert face_name in valid_names, (
+                f"reference_face '{face_name}' is not a valid TimberLongFace "
+                f"(expected one of {sorted(valid_names)})"
+            )
+            nominal_half, ptw_half = _face_to_nominal_and_ptw[face_name]
+            assert equality_test(nominal_half, ptw_half), (
+                f"Reference face {face_name} on timber '{self.ticket.name}' is not coincident: "
+                f"nominal half-size ({nominal_half}) != PTW half-size ({ptw_half})"
+            )
+
     @property
     def orientation(self) -> Orientation:
         """Get the orientation from the transform."""
