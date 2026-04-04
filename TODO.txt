@@ -190,9 +190,16 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 DONE-add stdout makers for better profiling
 DONE-add settings class for persisted settings in viewer
--add unselecetd transparency option
+DONE-add unselecetd transparency option
   -add a slider option so that we can set the transparency of unselected timbers (default 40%)
   -if no timbers are selected, then everything renders as if it were selected (I believe this is current behavior)
+-add test for joints using max mode or something
+-improve integration tests on the viewer. Can you think of some tests to help improve it 
+  -epen a test file with a couple milestones, simple timebrs and joints
+    -expect timbers show up in raw data
+    -expect milestones
+  -one test for each of the options to see that they work
+  -can we test each of the mouse/keyboard navigation things?
 
 -improved CSG tagging
   -allow half faces on prism

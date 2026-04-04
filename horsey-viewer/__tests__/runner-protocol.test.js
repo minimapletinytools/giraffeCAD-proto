@@ -85,11 +85,11 @@ function createRunnerClient(fixtureName = 'minimal_frame.py') {
   }
 
   let requestId = 0;
-  async function request(command, payload = {}) {
+  async function request(command, payload = {}, timeoutMs = 15000) {
     requestId += 1;
     const id = requestId;
     child.stdin.write(`${JSON.stringify({ id, command, payload })}\n`);
-    const message = await readMessage();
+    const message = await readMessage(timeoutMs);
     return message;
   }
 
@@ -107,6 +107,25 @@ function createRunnerClient(fixtureName = 'minimal_frame.py') {
   }
 
   return { child, readMessage, request, shutdown, stderr };
+}
+
+async function waitForReadyAndCollectMilestones(client, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  const milestones = [];
+
+  while (Date.now() < deadline) {
+    const remaining = Math.max(1, deadline - Date.now());
+    const message = await client.readMessage(remaining);
+    if (message && message.type === 'milestone') {
+      milestones.push(message);
+      continue;
+    }
+    if (message && message.type === 'ready') {
+      return { ready: message, milestones };
+    }
+  }
+
+  throw new Error('Timed out waiting for ready event');
 }
 
 describe('runner protocol', () => {
@@ -194,6 +213,54 @@ describe('runner protocol', () => {
         expect(typeof mesh.memberKey).toBe('string');
         expect(mesh.memberKey.startsWith('accessory:')).toBe(true);
       }
+    } finally {
+      await client.shutdown();
+    }
+  });
+
+  test('milestone fixture emits startup milestones and frame timbers in raw payload', async () => {
+    const client = createRunnerClient('milestone_joint_frame.py');
+
+    try {
+      const startup = await waitForReadyAndCollectMilestones(client, 20000);
+      expect(startup.ready.type).toBe('ready');
+      expect(startup.milestones.length).toBeGreaterThan(0);
+
+      const milestoneNames = startup.milestones
+        .map((entry) => (entry && typeof entry.name === 'string' ? entry.name : ''))
+        .filter(Boolean);
+
+      expect(milestoneNames).toEqual(
+        expect.arrayContaining([
+          'fixture:start',
+          'fixture:joint-created',
+          'fixture:frame-ready',
+        ])
+      );
+
+      const frame = await client.request('get_frame');
+      expect(frame.ok).toBe(true);
+      expect(frame.result.name).toBe('Runner Milestone Joint Frame');
+      expect(frame.result.timber_count).toBeGreaterThan(0);
+      expect(Array.isArray(frame.result.timbers)).toBe(true);
+      expect(frame.result.timbers.length).toBe(frame.result.timber_count);
+      expect(frame.result.timbers.some((timber) => timber && typeof timber.name === 'string' && timber.name.length > 0)).toBe(true);
+    } finally {
+      await client.shutdown();
+    }
+  });
+
+  test('explicit hash geometry option is propagated to geometry response', async () => {
+    const client = createRunnerClient();
+
+    try {
+      const startup = await waitForReadyAndCollectMilestones(client);
+      expect(startup.ready.type).toBe('ready');
+
+      const geometryWithoutHash = await client.request('get_geometry', { enableHashGeometryCheck: false });
+      expect(geometryWithoutHash.ok).toBe(true);
+      expect(geometryWithoutHash.result.kind).toBe('triangle-geometry');
+      expect(geometryWithoutHash.result.options.enableHashGeometryCheck).toBe(false);
     } finally {
       await client.shutdown();
     }
