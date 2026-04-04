@@ -157,11 +157,11 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 
 :: TICKET TODO
--add reference faces to PTW ticket
+DONE-add reference faces to PTW ticket
   -add a post init step to PTW that does the following
     -assert they are coincident
     -for now require nominal and ptw dimensions to match on reference faces
--do basic named tagging on CSG 
+-do basic named tagging of features on CSGs 
   -just support tagging faces on halfspace and prism
   -and passing through union/difference
 -then must be able to reference named tags inside of joint ticket

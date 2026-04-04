@@ -49,6 +49,21 @@ class BoundingBox:
     max_y: Optional[Numeric]
     max_z: Optional[Numeric]
 
+@dataclass(frozen=True)
+class CSGFeature(ABC):
+    """
+    Represents a feature of a CSG object, such as a face or edge, that can be used for referencing in tickets.
+    """
+    name: str
+    priority: int 
+
+    @abstractmethod
+    def test_point(self, point: V3) -> bool:
+        """
+        Test if a given point is on this feature (e.g. on the face or edge).
+        This can be used to determine if a cut should reference this feature.
+        """
+        pass
 
 class CutCSG(ABC):
     """Base class for all CSG operations."""
@@ -57,6 +72,16 @@ class CutCSG(ABC):
     def __repr__(self) -> str:
         """String representation for debugging."""
         pass
+
+    
+    @abstractmethod
+    def find_feature(self, point: V3) -> Optional[CSGFeature]:
+        # TODO default implementation calls get_all_features, sort by priority, and test individually
+        return None
+    
+    @abstractmethod
+    def get_all_features(self, point: V3) -> [CSGFeature]:
+        return []
 
 
     @abstractmethod
