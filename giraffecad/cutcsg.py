@@ -6,9 +6,10 @@ and geometry operations. All operations use SymPy symbolic math for exact comput
 """
 
 from sympy import Matrix, Rational, Expr, sqrt, oo
-from typing import List, Optional, Union, cast
+from typing import List, Optional, Tuple, Union, cast
 from dataclasses import dataclass, field, replace
 from abc import ABC, abstractmethod
+from enum import Enum
 import warnings
 from .rule import *
 
@@ -49,6 +50,16 @@ class BoundingBox:
     max_y: Optional[Numeric]
     max_z: Optional[Numeric]
 
+class PrismFace(Enum):
+    """Face of a RectangularPrism, indices match TimberFace."""
+    TOP = 1
+    BOTTOM = 2
+    RIGHT = 3
+    FRONT = 4
+    LEFT = 5
+    BACK = 6
+
+
 @dataclass(frozen=True)
 class CSGFeature(ABC):
     """
@@ -65,6 +76,50 @@ class CSGFeature(ABC):
         """
         pass
 
+
+@dataclass(frozen=True)
+class HalfSpaceFeature(CSGFeature):
+    """Feature representing the entire boundary plane of a HalfSpace."""
+    owner: 'HalfSpace'
+
+    def test_point(self, point: V3) -> bool:
+        return self.owner.is_point_on_boundary(point)
+
+
+@dataclass(frozen=True)
+class RectangularPrismFeature(CSGFeature):
+    """Feature representing a single face of a RectangularPrism."""
+    owner: 'RectangularPrism'
+    face: PrismFace
+
+    def test_point(self, point: V3) -> bool:
+        if not self.owner.is_point_on_boundary(point):
+            return False
+        local_point = point - self.owner.transform.position
+        m = self.owner.transform.orientation.matrix
+        width_dir = Matrix([m[0, 0], m[1, 0], m[2, 0]])
+        height_dir = Matrix([m[0, 1], m[1, 1], m[2, 1]])
+        length_dir = Matrix([m[0, 2], m[1, 2], m[2, 2]])
+        x = safe_dot_product(local_point, width_dir)
+        y = safe_dot_product(local_point, height_dir)
+        z = safe_dot_product(local_point, length_dir)
+        hw = self.owner.size[0] / 2
+        hh = self.owner.size[1] / 2
+        if self.face == PrismFace.RIGHT:
+            return equality_test(x, hw)
+        elif self.face == PrismFace.LEFT:
+            return equality_test(x, -hw)
+        elif self.face == PrismFace.FRONT:
+            return equality_test(y, hh)
+        elif self.face == PrismFace.BACK:
+            return equality_test(y, -hh)
+        elif self.face == PrismFace.TOP:
+            return self.owner.end_distance is not None and equality_test(z, self.owner.end_distance)
+        elif self.face == PrismFace.BOTTOM:
+            return self.owner.start_distance is not None and equality_test(z, self.owner.start_distance)
+        return False
+
+
 class CutCSG(ABC):
     """Base class for all CSG operations."""
     
@@ -73,14 +128,19 @@ class CutCSG(ABC):
         """String representation for debugging."""
         pass
 
-    
-    @abstractmethod
     def find_feature(self, point: V3) -> Optional[CSGFeature]:
-        # TODO default implementation calls get_all_features, sort by priority, and test individually
+        """Return the highest-priority feature at *point*, or None."""
+        features = self.get_all_features(point)
+        if not features:
+            return None
+        features.sort(key=lambda f: f.priority)
+        for f in features:
+            if f.test_point(point):
+                return f
         return None
-    
-    @abstractmethod
-    def get_all_features(self, point: V3) -> [CSGFeature]:
+
+    def get_all_features(self, point: V3) -> List[CSGFeature]:
+        """Return all features that the point may belong to."""
         return []
 
 
@@ -155,7 +215,7 @@ class HalfSpace(CutCSG):
     """
     normal: Direction3D
     offset: Numeric = Integer(0)
-    
+    named_feature: Optional[str] = None
     def __repr__(self) -> str:
         return f"HalfSpace(normal={self.normal.T}, offset={self.offset})"
     
@@ -207,6 +267,11 @@ class HalfSpace(CutCSG):
         """
         return -self.normal
 
+    def get_all_features(self, point: V3) -> List[CSGFeature]:
+        if self.named_feature is not None and self.is_point_on_boundary(point):
+            return [HalfSpaceFeature(name=self.named_feature, priority=0, owner=self)]
+        return []
+
     def get_aabb(self) -> BoundingBox:
         warnings.warn(
             "get_aabb() called on HalfSpace, which has infinite extent — result is unbounded",
@@ -247,6 +312,7 @@ class RectangularPrism(CutCSG):
     transform: Transform = field(default_factory=Transform.identity)
     start_distance: Optional[Numeric] = None  # starting distance of the prism in the direction of the +Z axis. None means infinite in negative direction
     end_distance: Optional[Numeric] = None    # ending distance of the prism in the direction of the +Z axis. None means infinite in positive direction
+    named_features: Optional[List[Tuple[str, PrismFace]]] = None
 
     def get_bottom_position(self) -> V3:
         """
@@ -509,6 +575,34 @@ class RectangularPrism(CutCSG):
         
         # Should not reach here if point is actually on boundary
         return None
+
+    def get_all_features(self, point: V3) -> List[CSGFeature]:
+        if self.named_features is None or not self.is_point_on_boundary(point):
+            return []
+        # Transform to local coords
+        local_point = point - self.transform.position
+        m = self.transform.orientation.matrix
+        width_dir = Matrix([m[0, 0], m[1, 0], m[2, 0]])
+        height_dir = Matrix([m[0, 1], m[1, 1], m[2, 1]])
+        length_dir = Matrix([m[0, 2], m[1, 2], m[2, 2]])
+        x = safe_dot_product(local_point, width_dir)
+        y = safe_dot_product(local_point, height_dir)
+        z = safe_dot_product(local_point, length_dir)
+        hw = self.size[0] / 2
+        hh = self.size[1] / 2
+        face_checks = {
+            PrismFace.RIGHT: lambda: equality_test(x, hw),
+            PrismFace.LEFT: lambda: equality_test(x, -hw),
+            PrismFace.FRONT: lambda: equality_test(y, hh),
+            PrismFace.BACK: lambda: equality_test(y, -hh),
+            PrismFace.TOP: lambda: self.end_distance is not None and equality_test(z, self.end_distance),
+            PrismFace.BOTTOM: lambda: self.start_distance is not None and equality_test(z, self.start_distance),
+        }
+        features: List[CSGFeature] = []
+        for name, face in self.named_features:
+            if face_checks[face]():
+                features.append(RectangularPrismFeature(name=name, priority=0, owner=self, face=face))
+        return features
 
     def get_aabb(self) -> BoundingBox:
         if self.start_distance is None or self.end_distance is None:
@@ -818,6 +912,13 @@ class SolidUnion(CutCSG):
                 return None
             return avg_normal / norm
 
+    def get_all_features(self, point: V3) -> List[CSGFeature]:
+        features: List[CSGFeature] = []
+        for child in self.children:
+            features.extend(child.get_all_features(point))
+        features.sort(key=lambda f: f.priority)
+        return features
+
     def get_aabb(self) -> BoundingBox:
         if not self.children:
             return BoundingBox(None, None, None, None, None, None)
@@ -999,6 +1100,17 @@ class Difference(CutCSG):
             if norm == Integer(0):
                 return None
             return avg_normal / norm
+
+    def get_all_features(self, point: V3) -> List[CSGFeature]:
+        if not self.is_point_on_boundary(point):
+            return []
+        # Collect features from both the base and subtract children
+        features: List[CSGFeature] = []
+        features.extend(self.base.get_all_features(point))
+        for sub in self.subtract:
+            features.extend(sub.get_all_features(point))
+        features.sort(key=lambda f: f.priority)
+        return features
 
     def get_aabb(self) -> BoundingBox:
         bbox = self.base.get_aabb()
