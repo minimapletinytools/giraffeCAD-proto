@@ -18,6 +18,7 @@ class PythonRunnerSession {
         this.pending = new Map();
         this.startPromise = null;
         this.ready = false;
+        this.onMilestone = null;
         const env = this.resolveEnvironment(filePath);
         this.projectRoot = env.projectRoot;
         this.isLocalDev = env.isLocalDev;
@@ -175,6 +176,13 @@ class PythonRunnerSession {
             this.channel.appendLine(`Runner fatal error: ${this.extractErrorMessage(message.error)}`);
             this.startResolved = true;
             rejectStart(error);
+            return;
+        }
+
+        if (message.type === 'milestone') {
+            if (typeof this.onMilestone === 'function') {
+                this.onMilestone(message);
+            }
             return;
         }
 

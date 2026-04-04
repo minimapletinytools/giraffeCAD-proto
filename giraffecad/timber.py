@@ -2487,3 +2487,19 @@ class Frame:
 def require_check(err: Optional[str]):
     if err is not None:
         raise AssertionError(err)
+
+
+def add_milestone(name: str):
+    """Emit a milestone marker for the viewer loading screen.
+
+    Writes a JSON protocol message to the real stdout pipe so the viewer
+    extension can display progress during script execution.  No-ops when
+    not running inside the Horsey Viewer (checks HORSEY_VIEWER_MILESTONES
+    environment variable).
+    """
+    import os, sys, json as _json  # noqa: E401 — lazy imports to avoid burdening the core module
+    if not os.environ.get("HORSEY_VIEWER_MILESTONES"):
+        return
+    _json.dump({"type": "milestone", "name": name}, sys.__stdout__)
+    sys.__stdout__.write("\n")
+    sys.__stdout__.flush()

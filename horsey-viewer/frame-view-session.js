@@ -3,6 +3,7 @@ const fs = require('fs');
 const vscode = require('vscode');
 const { PythonRunnerSession } = require('./runner-session');
 const { FileWatcher } = require('./file-watcher');
+const { RefreshProfiler } = require('./refresh-profiler');
 const { createFrameViewer, initializeFrameViewer, renderFrameViewer, requestViewerScreenshot } = require('./viewer');
 
 const VIEWER_LOG_LEVEL_ORDER = {
@@ -50,6 +51,7 @@ class FrameViewSession {
         this.refreshOptions = {
             enableHashGeometryCheck: false,
         };
+        this.profiler = new RefreshProfiler({ log: (msg) => this.log(msg) });
     }
 
     getRefreshStatsPath() {
@@ -78,15 +80,7 @@ class FrameViewSession {
     }
 
     writeRefreshStats(statsPayload) {
-        try {
-            const outputPath = this.getRefreshStatsPath();
-            fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-            fs.writeFileSync(outputPath, `${JSON.stringify(statsPayload, null, 2)}\n`, 'utf8');
-            return outputPath;
-        } catch (error) {
-            this.log(`[refresh] Failed to write stats JSON: ${error.message || error}`);
-            return null;
-        }
+        return this.profiler.writeRefreshStats(statsPayload, this.getRefreshStatsPath());
     }
 
     async initialize() {
@@ -97,22 +91,23 @@ class FrameViewSession {
             return;
         }
 
-        const initTiming = this.createTimingTracker({ stage: 'initialize' });
-        this.markTiming(initTiming, 'initialize.start');
+        const initTiming = this.profiler.createTimingTracker({ stage: 'initialize' });
+        this.profiler.markTiming(initTiming, 'initialize.start');
 
         this.runnerSession = new PythonRunnerSession(this.filePath, this.context, this.channel);
+        this._setupRunnerMilestoneHandler();
 
-        this.markTiming(initTiming, 'initialize.createPanel.start');
+        this.profiler.markTiming(initTiming, 'initialize.createPanel.start');
         const isLocalDev = this.runnerSession.isLocalDev;
         this.panel = createFrameViewer(this.filePath, null, isLocalDev);
-        this.markTiming(initTiming, 'initialize.createPanel.end');
+        this.profiler.markTiming(initTiming, 'initialize.createPanel.end');
 
-        this.markTiming(initTiming, 'initialize.webviewHtml.start');
+        this.profiler.markTiming(initTiming, 'initialize.webviewHtml.start');
         initializeFrameViewer(this.panel, this.filePath, {
             loadingText: 'initial creation',
             viewerOptions: this.refreshOptions,
         }, this.runnerSession.isLocalDev);
-        this.markTiming(initTiming, 'initialize.webviewHtml.end');
+        this.profiler.markTiming(initTiming, 'initialize.webviewHtml.end');
         this.panel.onDidDispose(() => {
             this.panel = null;
             void this.dispose();
@@ -164,11 +159,12 @@ class FrameViewSession {
         this.log('[webview] viewer log bridge active');
         this.postLoadingStatus('raising frame', { reason: 'session initialize', refreshToken: this.refreshSequence });
 
-        this.markTiming(initTiming, 'initialize.runner.start');
+        this.profiler.resetMilestones();
+        this.profiler.markTiming(initTiming, 'initialize.runner.start');
         await this.runnerSession.start();
-        this.markTiming(initTiming, 'initialize.runner.end');
+        this.profiler.markTiming(initTiming, 'initialize.runner.end');
 
-        this.markTiming(initTiming, 'initialize.watcher.start');
+        this.profiler.markTiming(initTiming, 'initialize.watcher.start');
         this.fileWatcher = new FileWatcher(
             this.filePath,
             this.runnerSession.projectRoot,
@@ -176,9 +172,9 @@ class FrameViewSession {
             (message) => this.log(`[watcher] ${message}`)
         );
         this.fileWatcher.start();
-        this.markTiming(initTiming, 'initialize.watcher.end');
+        this.profiler.markTiming(initTiming, 'initialize.watcher.end');
 
-        this.markTiming(initTiming, 'initialize.end');
+        this.profiler.markTiming(initTiming, 'initialize.end');
 
         this.log(`Session initialized for ${this.filePath}`);
     }
@@ -208,6 +204,7 @@ class FrameViewSession {
 
         this.log(`[runner] Restarting Python runner for ${path.basename(this.filePath)}`);
         this.runnerSession = new PythonRunnerSession(this.filePath, this.context, this.channel);
+        this._setupRunnerMilestoneHandler();
         await this.runnerSession.start();
     }
 
@@ -228,28 +225,29 @@ class FrameViewSession {
         this.log(`[refresh] Reloading ${path.basename(this.filePath)} (${reason})`);
         this.postLoadingStatus('raising frame', { reason, refreshToken });
         let refreshError = null;
-        const timing = this.createTimingTracker({ reason, refreshToken });
-        this.markTiming(timing, 'refresh.start', { reason, refreshToken });
+        const timing = this.profiler.createTimingTracker({ reason, refreshToken });
+        this.profiler.markTiming(timing, 'refresh.start', { reason, refreshToken });
+        this.profiler.resetMilestones();
         try {
             const refreshStartNs = process.hrtime.bigint();
 
-            this.markTiming(timing, 'ensureRunner.start');
+            this.profiler.markTiming(timing, 'ensureRunner.start');
             await this.ensureRunnerSession();
-            this.markTiming(timing, 'ensureRunner.end');
+            this.profiler.markTiming(timing, 'ensureRunner.end');
 
-            this.markTiming(timing, 'runner.reload_example.start');
+            this.profiler.markTiming(timing, 'runner.reload_example.start');
             const reloadResult = await this.runnerSession.request('reload_example', { filePath: this.filePath });
-            this.markTiming(timing, 'runner.reload_example.end');
+            this.profiler.markTiming(timing, 'runner.reload_example.end');
 
-            this.markTiming(timing, 'runner.get_frame.start');
+            this.profiler.markTiming(timing, 'runner.get_frame.start');
             const frameData = await this.runnerSession.request('get_frame');
-            this.markTiming(timing, 'runner.get_frame.end');
+            this.profiler.markTiming(timing, 'runner.get_frame.end');
 
-            this.markTiming(timing, 'runner.get_geometry.start', {
+            this.profiler.markTiming(timing, 'runner.get_geometry.start', {
                 enableHashGeometryCheck: this.refreshOptions.enableHashGeometryCheck,
             });
             const geometryData = await this.runnerSession.request('get_geometry', this.refreshOptions);
-            this.markTiming(timing, 'runner.get_geometry.end');
+            this.profiler.markTiming(timing, 'runner.get_geometry.end');
 
             const refresh_total_s = Number(process.hrtime.bigint() - refreshStartNs) / 1e9;
 
@@ -279,7 +277,7 @@ class FrameViewSession {
                     totalTimberCount: totalTimbers,
                     changedTimberKeys: changedKeys,
                     removedTimberKeys: removedKeys,
-                    timings: this.buildTimingSummary(timing, reloadResult, geometryData),
+                    timings: this.profiler.buildTimingSummary(timing, reloadResult, geometryData),
                     perTimberMetrics: remeshMetrics.map((entry) => ({
                         timberKey: entry.timberKey,
                         remeshDuration_ms: typeof entry.remesh_s === 'number' ? Math.round(entry.remesh_s * 1000) : null,
@@ -289,11 +287,11 @@ class FrameViewSession {
                 },
             };
 
-            this.markTiming(timing, 'stats.write.start');
+            this.profiler.markTiming(timing, 'stats.write.start');
             const statsPath = this.writeRefreshStats(refreshStatsPayload);
-            this.markTiming(timing, 'stats.write.end', { statsPath });
+            this.profiler.markTiming(timing, 'stats.write.end', { statsPath });
 
-            this.markTiming(timing, 'webview.renderFrameViewer.start');
+            this.profiler.markTiming(timing, 'webview.renderFrameViewer.start');
             const profiling = {
                 reload_s: reloadResult && reloadResult.profiling ? reloadResult.profiling.reload_s : null,
                 geometry_s: geometryData && geometryData.profiling ? geometryData.profiling.geometry_s : null,
@@ -303,7 +301,8 @@ class FrameViewSession {
                 removed_timbers: removedKeys.length,
                 total_timbers: totalTimbers,
                 remesh_metrics: remeshMetrics,
-                timing: this.buildTimingSummary(timing, reloadResult, geometryData),
+                timing: this.profiler.buildTimingSummary(timing, reloadResult, geometryData),
+                milestones: this.profiler.getMilestones(),
                 stats_path: statsPath,
             };
             renderFrameViewer(this.panel, this.filePath, frameData, geometryData, profiling, {
@@ -312,12 +311,12 @@ class FrameViewSession {
                 loadingText: '',
                 keepLoading: false,
             }, this.refreshOptions);
-            this.markTiming(timing, 'webview.renderFrameViewer.end');
-            this.markTiming(timing, 'refresh.end', { refresh_total_ms: Math.round(refresh_total_s * 1000) });
+            this.profiler.markTiming(timing, 'webview.renderFrameViewer.end');
+            this.profiler.markTiming(timing, 'refresh.end', { refresh_total_ms: Math.round(refresh_total_s * 1000) });
             this.log(`[refresh] Reload complete for ${path.basename(this.filePath)}`);
         } catch (error) {
             refreshError = error;
-            this.markTiming(timing, 'refresh.error', {
+            this.profiler.markTiming(timing, 'refresh.error', {
                 message: error && error.message ? error.message : String(error),
             });
         } finally {
@@ -510,82 +509,14 @@ class FrameViewSession {
         }
     }
 
-    createTimingTracker(meta = {}) {
-        return {
-            startNs: process.hrtime.bigint(),
-            lastNs: process.hrtime.bigint(),
-            steps: [],
-            meta,
-        };
-    }
-
-    markTiming(tracker, step, extra = null) {
-        if (!tracker) {
+    _setupRunnerMilestoneHandler() {
+        if (!this.runnerSession) {
             return;
         }
-        const nowNs = process.hrtime.bigint();
-        const elapsedMs = Number(nowNs - tracker.startNs) / 1e6;
-        const deltaMs = Number(nowNs - tracker.lastNs) / 1e6;
-        tracker.lastNs = nowNs;
-        const stampIso = new Date().toISOString();
-        const entry = {
-            step,
-            timestamp: stampIso,
-            elapsed_ms: elapsedMs,
-            delta_ms: deltaMs,
-        };
-        if (extra && typeof extra === 'object') {
-            entry.extra = extra;
-        }
-        tracker.steps.push(entry);
-
-        const extraJson = entry.extra ? ` extra=${JSON.stringify(entry.extra)}` : '';
-        this.log(`[refresh][timing] ${stampIso} step=${step} elapsed=${elapsedMs.toFixed(1)}ms delta=${deltaMs.toFixed(1)}ms${extraJson}`);
-    }
-
-    buildTimingSummary(tracker, reloadResult, geometryData) {
-        const reloadRunnerMs = reloadResult && reloadResult.profiling && typeof reloadResult.profiling.reload_s === 'number'
-            ? reloadResult.profiling.reload_s * 1000
-            : null;
-        const geometryRunnerMs = geometryData && geometryData.profiling && typeof geometryData.profiling.geometry_s === 'number'
-            ? geometryData.profiling.geometry_s * 1000
-            : null;
-
-        const getStep = (name) => tracker.steps.find((step) => step.step === name);
-        const durationBetween = (startName, endName) => {
-            const start = getStep(startName);
-            const end = getStep(endName);
-            if (!start || !end) {
-                return null;
-            }
-            return Math.max(0, end.elapsed_ms - start.elapsed_ms);
-        };
-
-        const reloadRequestMs = durationBetween('runner.reload_example.start', 'runner.reload_example.end');
-        const frameRequestMs = durationBetween('runner.get_frame.start', 'runner.get_frame.end');
-        const geometryRequestMs = durationBetween('runner.get_geometry.start', 'runner.get_geometry.end');
-        const statsWriteMs = durationBetween('stats.write.start', 'stats.write.end');
-        const renderDispatchMs = durationBetween('webview.renderFrameViewer.start', 'webview.renderFrameViewer.end');
-
-        return {
-            timeline: tracker.steps,
-            breakdown_ms: {
-                ensure_runner: durationBetween('ensureRunner.start', 'ensureRunner.end'),
-                reload_request: reloadRequestMs,
-                reload_runner: reloadRunnerMs,
-                reload_overhead: (reloadRequestMs != null && reloadRunnerMs != null)
-                    ? Math.max(0, reloadRequestMs - reloadRunnerMs)
-                    : null,
-                frame_request: frameRequestMs,
-                geometry_request: geometryRequestMs,
-                geometry_runner: geometryRunnerMs,
-                geometry_overhead: (geometryRequestMs != null && geometryRunnerMs != null)
-                    ? Math.max(0, geometryRequestMs - geometryRunnerMs)
-                    : null,
-                stats_write: statsWriteMs,
-                render_dispatch: renderDispatchMs,
-                refresh_total: durationBetween('refresh.start', 'refresh.end'),
-            },
+        this.runnerSession.onMilestone = (milestone) => {
+            const name = typeof milestone.name === 'string' ? milestone.name : 'milestone';
+            this.profiler.addMilestone(name);
+            this.postLoadingStatus(name);
         };
     }
 }

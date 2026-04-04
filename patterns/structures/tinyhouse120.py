@@ -9,7 +9,7 @@ from sympy import Rational, Integer, sqrt
 from typing import Optional
 
 from giraffecad import *
-from giraffecad.timber import Frame
+from giraffecad.timber import Frame, add_milestone
 from giraffecad.patternbook import PatternBook, PatternMetadata
 
 # ============================================================================
@@ -63,6 +63,8 @@ def create_tinyhouse120(center: Optional[V3] = None):
     Create a 120 sqft tiny house frame (15' x 8').
     No joints yet — just timbers placed in position.
     """
+    add_milestone('begin')
+    
     if center is None:
         center = create_v3(Rational(0), Rational(0), Rational(0))
 
@@ -183,6 +185,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
         post_BR, post_BM1, post_BM2, post_BL,
         post_ML,
     ]
+    add_milestone('posts')
 
     # ========================================================================
     # BOTTOM PERIMETER BEAMS — 4x6 connecting each post to its neighbor
@@ -350,6 +353,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
     )
 
     floor_joists = [floor_joist_1, floor_joist_2, floor_joist_3, floor_joist_4, floor_joist_5]
+    add_milestone('floor joists')
 
     # ========================================================================
     # MID-HEIGHT PERIMETER BEAM at 7' — connects corner posts only
@@ -488,6 +492,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
         orientation_face_on_timber1=TimberFace.TOP,
         ticket="Top Plate Back (Left-to-Right)"
     )
+    add_milestone('beams and plates')
 
     # ========================================================================
     # ========================================================================
@@ -838,6 +843,8 @@ def create_tinyhouse120(center: Optional[V3] = None):
 
         rafter_pairs.append((front_rafter, back_rafter))
 
+    add_milestone('roof structure')
+
     # ========================================================================
     # COLLECT ALL TIMBERS (no joints yet)
     # ========================================================================
@@ -883,6 +890,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
         peg_positions=[(mm(25), Rational(0))],
         size=mm(15),
     )
+    add_milestone('cutting joints')
 
     def _is_horizontal_timber(timber: PerfectTimberWithin) -> bool:
         return zero_test(
@@ -1017,6 +1025,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
     for stud in upper_studs_left:
         wall_stud_joints.append(_wall_stud_joint(stud, mid_beam_left, TimberReferenceEnd.BOTTOM))
         wall_stud_joints.append(_wall_stud_joint(stud, top_plate_left, TimberReferenceEnd.TOP))
+    add_milestone('wall stud joints')
 
     def _tenon_size_with_long_axis(stud: PerfectTimberWithin, long_axis_global: V3) -> V2:
         stud_right = stud.get_face_direction_global(TimberFace.RIGHT)
@@ -1438,6 +1447,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
                 )
             )
         )
+    add_milestone('all joints done')
 
     all_timbers = all_posts + all_beams + all_studs + rafters
 
@@ -1466,6 +1476,7 @@ def create_tinyhouse120(center: Optional[V3] = None):
         if id(timber) not in jointed_timber_ids
     ]
 
+    add_milestone('assembling frame')
     return Frame.from_joints(
         joints=(
             wall_stud_joints

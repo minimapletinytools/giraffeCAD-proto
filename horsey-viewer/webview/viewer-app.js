@@ -1856,6 +1856,16 @@ class HorseyViewerApp extends LitElement {
                 'max CSG depth: ' + maxCsgDepth;
         }
 
+        let milestonesHtml = '';
+        if (profiling && Array.isArray(profiling.milestones) && profiling.milestones.length > 0) {
+            milestonesHtml = '<br><strong>Script Milestones</strong><br>';
+            for (const m of profiling.milestones) {
+                const elapsed = typeof m.elapsed_ms === 'number' ? m.elapsed_ms.toFixed(0) : '?';
+                const delta = typeof m.delta_ms === 'number' ? m.delta_ms.toFixed(0) : '?';
+                milestonesHtml += m.name + ': ' + elapsed + ' ms (+' + delta + ' ms)<br>';
+            }
+        }
+
         this.renderRoot.querySelector('#debug').innerHTML =
             '<strong>Refresh Debug</strong><br>' +
             'total: ' + total + '<br>' +
@@ -1863,6 +1873,7 @@ class HorseyViewerApp extends LitElement {
             'reused: ' + reused + '<br>' +
             'removed: ' + removed +
             remeshHtml +
+            milestonesHtml +
             profilingHtml;
     }
 

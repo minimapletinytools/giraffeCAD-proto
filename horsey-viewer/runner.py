@@ -61,6 +61,9 @@ if _project_root is not None:
         # os.execv replaces the current process; code below never runs if it succeeds
 
 
+# Enable milestone emission so pattern scripts can report progress to the viewer.
+os.environ["HORSEY_VIEWER_MILESTONES"] = "1"
+
 TARGET_MODULE_NAME = "_horsey_viewer_target"
 
 
