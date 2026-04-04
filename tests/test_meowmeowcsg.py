@@ -15,6 +15,9 @@ from giraffecad.cutcsg import (
     Difference,
     ConvexPolygonExtrusion,
     BoundingBox,
+    PrismFace,
+    HalfSpaceFeature,
+    RectangularPrismFeature,
     adopt_csg,
     translate_csg,
     translate_profile,
@@ -2109,4 +2112,124 @@ class TestGetAABB:
         assert bbox.min_y == Rational(0)
         assert simplify(bbox.max_x - 5 * sqrt(Integer(2))) == Integer(0)
         assert simplify(bbox.max_y - 5 * sqrt(Integer(2))) == Integer(0)
+
+
+# ============================================================================
+# CSG Feature Tests
+# ============================================================================
+
+class TestCSGFeatures:
+    """Tests for opt-in named CSG features on primitives."""
+
+    def test_halfspace_named_feature(self):
+        """HalfSpace with named_feature returns a HalfSpaceFeature for boundary points."""
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(5), named_feature="shoulder")
+        on_boundary = create_v3(Integer(0), Integer(0), Integer(5))
+        off_boundary = create_v3(Integer(0), Integer(0), Integer(6))
+
+        feat = hs.find_feature(on_boundary)
+        assert feat is not None
+        assert isinstance(feat, HalfSpaceFeature)
+        assert feat.name == "shoulder"
+        assert feat.owner is hs
+
+        assert hs.find_feature(off_boundary) is None
+
+    def test_halfspace_no_named_feature(self):
+        """HalfSpace without named_feature returns no features."""
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(5))
+        on_boundary = create_v3(Integer(0), Integer(0), Integer(5))
+        assert hs.find_feature(on_boundary) is None
+        assert hs.get_all_features(on_boundary) == []
+
+    def test_rectangular_prism_named_features(self):
+        """RectangularPrism with named_features returns features only for named faces."""
+        prism = RectangularPrism(
+            size=Matrix([Integer(4), Integer(6)]),
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=Integer(10),
+            named_features=[("my_right", PrismFace.RIGHT), ("my_top", PrismFace.TOP)],
+        )
+        # Point on right face (x = +2, within height and length bounds)
+        right_pt = create_v3(Integer(2), Integer(0), Integer(5))
+        feat = prism.find_feature(right_pt)
+        assert feat is not None
+        assert isinstance(feat, RectangularPrismFeature)
+        assert feat.name == "my_right"
+        assert feat.face == PrismFace.RIGHT
+
+        # Point on top face (z = 10)
+        top_pt = create_v3(Integer(0), Integer(0), Integer(10))
+        feat = prism.find_feature(top_pt)
+        assert feat is not None
+        assert feat.name == "my_top"
+        assert feat.face == PrismFace.TOP
+
+        # Point on left face — not named, so no feature
+        left_pt = create_v3(Integer(-2), Integer(0), Integer(5))
+        assert prism.find_feature(left_pt) is None
+
+    def test_rectangular_prism_no_named_features(self):
+        """RectangularPrism without named_features returns nothing."""
+        prism = RectangularPrism(
+            size=Matrix([Integer(4), Integer(6)]),
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=Integer(10),
+        )
+        right_pt = create_v3(Integer(2), Integer(0), Integer(5))
+        assert prism.find_feature(right_pt) is None
+
+    def test_cylinder_returns_no_features(self):
+        """Cylinder has no feature support — always returns empty."""
+        cyl = Cylinder(
+            axis_direction=Matrix([Integer(0), Integer(0), Integer(1)]),
+            radius=Integer(3),
+            position=create_v3(Integer(0), Integer(0), Integer(0)),
+            start_distance=Integer(0),
+            end_distance=Integer(10),
+        )
+        on_boundary = create_v3(Integer(3), Integer(0), Integer(5))
+        assert cyl.get_all_features(on_boundary) == []
+
+    def test_solid_union_collects_child_features(self):
+        """SolidUnion collects features from children that have named features."""
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0), named_feature="floor")
+        prism = RectangularPrism(
+            size=Matrix([Integer(4), Integer(4)]),
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=Integer(10),
+            named_features=[("wall", PrismFace.RIGHT)],
+        )
+        union = SolidUnion(children=[hs, prism])
+
+        # Point on the halfspace boundary (z=0) and inside prism bottom face
+        pt = create_v3(Integer(0), Integer(0), Integer(0))
+        features = union.get_all_features(pt)
+        names = [f.name for f in features]
+        assert "floor" in names
+
+    def test_difference_collects_features_from_base_and_subtract(self):
+        """Difference collects features from base and subtract children."""
+        base = RectangularPrism(
+            size=Matrix([Integer(10), Integer(10)]),
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=Integer(20),
+            named_features=[("base_top", PrismFace.TOP)],
+        )
+        cut = HalfSpace(
+            normal=Matrix([Integer(0), Integer(0), Integer(-1)]),
+            offset=Integer(-15),
+            named_feature="cut_plane",
+        )
+        diff = Difference(base=base, subtract=[cut])
+
+        # Point on the cut plane (z=15) which is now a boundary of the difference
+        pt = create_v3(Integer(0), Integer(0), Integer(15))
+        features = diff.get_all_features(pt)
+        names = [f.name for f in features]
+        assert "cut_plane" in names
 
