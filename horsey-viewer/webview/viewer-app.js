@@ -40,6 +40,11 @@ const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : nul
 const VIEWER_APP_VERSION = '2026.03.17.4';
 const SelectionStore = window.SelectionStore;
 
+const FEATURE_ACCENT_COLOR = 0x4fc3f7;
+const FEATURE_OVERLAY_OPACITY = 0.7;
+const FEATURE_NORMAL_DOT_THRESHOLD = 0.95;
+const FEATURE_OVERLAY_OFFSET = 0.01;
+
 const RENDER_PROFILES = Object.freeze({
     'timber-default': Object.freeze({
         label: 'Timber Default',
@@ -361,6 +366,8 @@ class HorseyViewerApp extends LitElement {
         };
         this.unselectedTransparencyPercent = 40;
         this.activeBackground = 'cream';
+        this.featureOverlayMesh = null;
+        this.pendingFeatureNormal = null;
 
         this.animationHandle = null;
         this.viewState = createInitialViewState();
@@ -415,6 +422,7 @@ class HorseyViewerApp extends LitElement {
                                 <tr>
                                     <th>#</th><th>Type</th><th>Name</th>
                                     <th>Length</th><th>Width</th><th>Height</th>
+                                    <th>CSG</th><th>Feat</th>
                                 </tr>
                             </thead>
                             <tbody id="timber-rows"></tbody>
@@ -449,9 +457,17 @@ class HorseyViewerApp extends LitElement {
         void this.beginPayloadApplication(INITIAL_PAYLOAD);
         
         // Setup selection listener
-        this.selectionManager.onSelectionChanged(() => {
+        this.selectionManager.onSelectionChanged((event) => {
             this.applySelectionOpacity();
             this.updateInfo(this.currentFrameData);
+            // Clear feature overlay when timber selection changes (not feature events)
+            if (event && (event.type === 'timber-selected' || event.type === 'timber-deselected' || event.type === 'clear-timbers')) {
+                this.selectionManager.clearFeatureSelection();
+                this.removeFeatureOverlay();
+            }
+            if (event && event.type === 'clear-features') {
+                this.removeFeatureOverlay();
+            }
         });
         
         this.emitViewerLog('viewer-ready', {});
@@ -498,6 +514,7 @@ class HorseyViewerApp extends LitElement {
         for (const bundle of this.meshObjectsByKey.values()) {
             this.disposeMeshBundle(bundle);
         }
+        this.removeFeatureOverlay();
         this.meshObjectsByKey.clear();
         this.meshKeyMap.clear();
         this.memberMetadataByKey.clear();
@@ -809,7 +826,36 @@ class HorseyViewerApp extends LitElement {
         if (message.type === 'logEntry') {
             const text = typeof message.text === 'string' ? message.text : String(message.text);
             this.appendLogLine(text);
+            return;
         }
+
+        if (message.type === 'featureResult') {
+            this.handleFeatureResult(message);
+            return;
+        }
+    }
+
+    handleFeatureResult(message) {
+        const featureName = message.featureName || null;
+        const memberKey = message.memberKey || null;
+        const faceNormalWorld = message.faceNormalWorld || null;
+
+        if (!featureName || !memberKey) {
+            this.selectionManager.clearFeatureSelection();
+            this.removeFeatureOverlay();
+            return;
+        }
+
+        this.selectionManager.selectFeature(memberKey, featureName);
+        this.pendingFeatureNormal = faceNormalWorld;
+        this.buildFeatureOverlay(memberKey, faceNormalWorld);
+        this.updateInfo(this.currentFrameData);
+
+        this.emitViewerLog('feature-selected', {
+            memberKey,
+            featureName,
+            faceNormalWorld,
+        });
     }
 
     async handleCaptureScreenshotRequest(message) {
@@ -950,8 +996,14 @@ class HorseyViewerApp extends LitElement {
             return;
         }
 
+        const alreadySelected = this.selectionManager.isTimberSelected(memberKey);
+
         if (event.shiftKey) {
             this.selectionManager.toggleTimber(memberKey);
+        } else if (alreadySelected && !event.shiftKey) {
+            // Re-click on selected timber: ask Python for the feature at the hit point
+            this.requestFeatureAtPoint(memberKey, hit.point);
+            return;
         } else {
             this.selectionManager.selectTimber(memberKey, false);
         }
@@ -959,6 +1011,17 @@ class HorseyViewerApp extends LitElement {
         this.emitViewerLog('selection-changed', {
             selectedTimbers: this.selectionManager.getSelectedTimbers(),
             selectedFeatures: this.selectionManager.selectedFeatures,
+        });
+    }
+
+    requestFeatureAtPoint(memberKey, hitPoint) {
+        if (!vscode) {
+            return;
+        }
+        vscode.postMessage({
+            type: 'findFeatureAtPoint',
+            memberKey,
+            point: [hitPoint.x, hitPoint.y, hitPoint.z],
         });
     }
 
@@ -970,6 +1033,90 @@ class HorseyViewerApp extends LitElement {
             const opacity = hasTimberSelection ? (selected ? 1.0 : unselectedOpacity) : 1.0;
             bundle.mesh.material.transparent = opacity < 1.0;
             bundle.mesh.material.opacity = opacity;
+        }
+    }
+
+    buildFeatureOverlay(memberKey, faceNormalWorld) {
+        this.removeFeatureOverlay();
+
+        if (!faceNormalWorld || !Array.isArray(faceNormalWorld) || faceNormalWorld.length !== 3) {
+            return;
+        }
+
+        const bundle = this.meshObjectsByKey.get(memberKey);
+        if (!bundle || !bundle.mesh || !bundle.mesh.geometry) {
+            return;
+        }
+
+        const sourceGeometry = bundle.mesh.geometry;
+        const positionAttr = sourceGeometry.getAttribute('position');
+        const normalAttr = sourceGeometry.getAttribute('normal');
+        if (!positionAttr || !normalAttr) {
+            return;
+        }
+
+        const nw = new THREE.Vector3(faceNormalWorld[0], faceNormalWorld[1], faceNormalWorld[2]).normalize();
+        const triNormal = new THREE.Vector3();
+        const n0 = new THREE.Vector3();
+        const n1 = new THREE.Vector3();
+        const n2 = new THREE.Vector3();
+
+        // Non-indexed geometry: every 3 vertices = 1 triangle
+        const vertexCount = positionAttr.count;
+        const matchingIndices = [];
+
+        for (let i = 0; i < vertexCount; i += 3) {
+            n0.fromBufferAttribute(normalAttr, i);
+            n1.fromBufferAttribute(normalAttr, i + 1);
+            n2.fromBufferAttribute(normalAttr, i + 2);
+            triNormal.copy(n0).add(n1).add(n2).normalize();
+
+            if (triNormal.dot(nw) > FEATURE_NORMAL_DOT_THRESHOLD) {
+                matchingIndices.push(i, i + 1, i + 2);
+            }
+        }
+
+        if (matchingIndices.length === 0) {
+            return;
+        }
+
+        // Build overlay geometry from matching triangles
+        const positions = new Float32Array(matchingIndices.length * 3);
+        for (let j = 0; j < matchingIndices.length; j++) {
+            const srcIdx = matchingIndices[j];
+            positions[j * 3] = positionAttr.getX(srcIdx) + nw.x * FEATURE_OVERLAY_OFFSET;
+            positions[j * 3 + 1] = positionAttr.getY(srcIdx) + nw.y * FEATURE_OVERLAY_OFFSET;
+            positions[j * 3 + 2] = positionAttr.getZ(srcIdx) + nw.z * FEATURE_OVERLAY_OFFSET;
+        }
+
+        const overlayGeometry = new THREE.BufferGeometry();
+        overlayGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        overlayGeometry.computeVertexNormals();
+
+        const overlayMaterial = new THREE.MeshStandardMaterial({
+            color: FEATURE_ACCENT_COLOR,
+            transparent: true,
+            opacity: FEATURE_OVERLAY_OPACITY,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+        });
+
+        const overlayMesh = new THREE.Mesh(overlayGeometry, overlayMaterial);
+        overlayMesh.renderOrder = 1;
+        this.scene.add(overlayMesh);
+        this.featureOverlayMesh = overlayMesh;
+    }
+
+    removeFeatureOverlay() {
+        if (this.featureOverlayMesh) {
+            this.scene.remove(this.featureOverlayMesh);
+            if (this.featureOverlayMesh.geometry) {
+                this.featureOverlayMesh.geometry.dispose();
+            }
+            if (this.featureOverlayMesh.material && typeof this.featureOverlayMesh.material.dispose === 'function') {
+                this.featureOverlayMesh.material.dispose();
+            }
+            this.featureOverlayMesh = null;
         }
     }
 
@@ -1816,7 +1963,9 @@ class HorseyViewerApp extends LitElement {
                 '<td>' + memberName + '</td>' +
                 '<td class="dim">' + (mesh.prism_length !== undefined ? this.fmt(mesh.prism_length) : '—') + '</td>' +
                 '<td class="dim">' + (mesh.prism_width  !== undefined ? this.fmt(mesh.prism_width)  : '—') + '</td>' +
-                '<td class="dim">' + (mesh.prism_height !== undefined ? this.fmt(mesh.prism_height) : '—') + '</td>';
+                '<td class="dim">' + (mesh.prism_height !== undefined ? this.fmt(mesh.prism_height) : '—') + '</td>' +
+                '<td class="dim">' + (mesh.csg_nodes !== undefined ? mesh.csg_nodes : '—') + '</td>' +
+                '<td class="dim">' + (mesh.csg_features !== undefined ? mesh.csg_features : '—') + '</td>';
             tbody.appendChild(row);
         }
     }
@@ -1851,9 +2000,15 @@ class HorseyViewerApp extends LitElement {
             selectedSingleName = '';
         }
 
+        // Append feature name if a single timber is selected and has a feature
+        let featureLabel = '';
+        if (selectedSingleName && this.selectionManager.selectedFeatures.length === 1) {
+            featureLabel = ' &gt; ' + this.selectionManager.selectedFeatures[0].featureId;
+        }
+
         this.renderRoot.querySelector('#info').innerHTML =
             'timbers (' + selectedTimberCount + '/' + timberCount + ') accesories (' + selectedAccessoryCount + '/' + accessoriesCount + ')' +
-            '<br>' + selectedSingleName;
+            '<br>' + selectedSingleName + featureLabel;
     }
 
     updateDebug(geometryData, profiling) {

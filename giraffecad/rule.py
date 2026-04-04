@@ -90,7 +90,7 @@ GIRAFFE_EVALF_PRECISION = 10
 # Epsilon constants for numerical comparisons
 EPSILON_GENERIC = Float('1e-8')      # Generic epsilon threshold for float comparisons, make sure this is larger than GIRAFFE_EVALF_PRECISION to avoid false positives
 EPSILON_FLOAT = 1e-10                # Epsilon for plain Python float comparisons (used in safe_compare)
-COMPLEX_NUM_NODES_THRESHOLD = 30  # Max number of nodes in expression tree before considering it complex
+COMPLEX_NUM_NODES_THRESHOLD = 50  # Max number of nodes in expression tree before considering it complex
 
 
 class CollapseMode(Enum):
@@ -132,8 +132,7 @@ def _should_collapse(expr, collapse_mode: CollapseMode) -> bool:
     if is_complex_expr(expr):
         if not is_float_numeric_mode():
             warnings.warn(
-                f"Expression exceeded complexity threshold and will be collapsed to Float "
-                f"(even in symbolic mode): {repr(expr)[:120]}",
+                f"Expression exceeded complexity threshold and will be collapsed to Float: {repr(expr)[:120]}",
                 stacklevel=3,
             )
         return True
