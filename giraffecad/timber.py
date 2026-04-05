@@ -1310,7 +1310,7 @@ BoardLike = Union[Board]
 @dataclass(frozen=True)
 class Cutting:
     """
-    A cut on a timber, defined by a CSG object representing the volume to be removed.
+    A set of cuts on a timber (to create a joint, for example), defined by a CSG object representing the volume to be removed.
     
     The CSG object represents the volume to be REMOVED from the timber (negative CSG),
     in LOCAL coordinates (relative to timber.bottom_position).
@@ -1328,12 +1328,18 @@ class Cutting:
     # in LOCAL coordinates (relative to timber.bottom_position)
     # Does NOT include the end cuts (those are stored separately above)
     negative_csg: Optional[CutCSG] = None
+
+    # Optional name for this cutting in the CSG hierarchy (e.g. "mortise_and_tenon").
+    # When set, get_negative_csg_local() wraps the result in a named SolidUnion so that
+    # the viewer can navigate the CSG tree by name.
+    name: Optional[str] = None
     
     def get_negative_csg_local(self) -> CutCSG:
         """
         Get the complete negative CSG including end cuts.
         
         Returns the union of negative_csg with any end cuts that are defined.
+        If self.name is set, wraps the result in a named SolidUnion grouping node.
         """
         # Collect all CSG components
         csg_components = []
@@ -1354,10 +1360,21 @@ class Cutting:
             # Return a HalfSpace that contains nothing (impossible condition)
             return HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(1)), offset=Rational(-999999))
         elif len(csg_components) == 1:
-            return csg_components[0]
+            result = csg_components[0]
         else:
             from .cutcsg import SolidUnion
-            return SolidUnion(csg_components)
+            result = SolidUnion(csg_components)
+
+        # Wrap in a named grouping node if this cutting has a name
+        if self.name is not None:
+            from .cutcsg import SolidUnion
+            if isinstance(result, SolidUnion):
+                # Already a SolidUnion, just add the name
+                result = SolidUnion(result.children, name=self.name)
+            else:
+                result = SolidUnion([result], name=self.name)
+
+        return result
 
     @staticmethod
     def make_end_cut(timber: PerfectTimberWithin, end: TimberReferenceEnd, distance_from_end_to_cut: Numeric) -> HalfSpace:

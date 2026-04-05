@@ -634,7 +634,7 @@ def make_ready_event(state: RunnerState) -> Dict[str, Any]:
     return {
         "type": "ready",
         "examplePath": str(state.file_path),
-        "commands": ["ping", "reload_example", "get_frame", "get_geometry", "get_member", "shutdown"],
+        "commands": ["ping", "reload_example", "get_frame", "get_geometry", "get_member", "find_csg_at_point", "shutdown"],
         "frame": {
             "name": frame_summary["name"],
             "timber_count": frame_summary["timber_count"],
@@ -676,6 +676,374 @@ def get_member_result(frame: Any, member_name: str) -> Dict[str, Any]:
                 },
             }
     raise KeyError(f"No timber named '{member_name}' in frame")
+
+
+# ===========================================================================
+# CSG navigation + highlight-mesh extraction (Phase B)
+# ===========================================================================
+
+def _dot3(a: List[float], b: List[float]) -> float:
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+
+
+def _build_inv_transform_float(transform: Any) -> Tuple[List[List[float]], List[float]]:
+    """Pre-compute float data for global→local.  Returns (rot_cols, position).
+    local = R^T * (global - pos) where rot_cols is the FORWARD rotation matrix."""
+    M = transform.orientation.matrix
+    P = transform.position
+    rot = [[float(M[r, c]) for c in range(3)] for r in range(3)]
+    pos = [float(P[i]) for i in range(3)]
+    return rot, pos
+
+
+def _inv_transform_point(rot: List[List[float]], pos: List[float], pt: List[float]) -> List[float]:
+    """Apply inverse transform: local = R^T * (pt - pos)."""
+    dx = pt[0] - pos[0]
+    dy = pt[1] - pos[1]
+    dz = pt[2] - pos[2]
+    return [
+        rot[0][0]*dx + rot[1][0]*dy + rot[2][0]*dz,
+        rot[0][1]*dx + rot[1][1]*dy + rot[2][1]*dz,
+        rot[0][2]*dx + rot[1][2]*dy + rot[2][2]*dz,
+    ]
+
+
+def _is_point_inside_csg_float(csg: Any, pt: List[float], eps: float = 1e-4) -> bool:
+    """True if *pt* (timber-local floats) is inside *csg* (±eps tolerance)."""
+    from giraffecad.cutcsg import (
+        HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference,
+        ConvexPolygonExtrusion,
+    )
+
+    if isinstance(csg, HalfSpace):
+        n = [float(csg.normal[i]) for i in range(3)]
+        return _dot3(n, pt) <= float(csg.offset) + eps
+
+    if isinstance(csg, RectangularPrism):
+        rot, pos = _build_inv_transform_float(csg.transform)
+        lp = _inv_transform_point(rot, pos, pt)
+        hw = float(csg.size[0]) / 2.0
+        hh = float(csg.size[1]) / 2.0
+        z0 = -float(csg.start_distance) if csg.start_distance is not None else -1e9
+        z1 = float(csg.end_distance) if csg.end_distance is not None else 1e9
+        return (-hw - eps <= lp[0] <= hw + eps
+                and -hh - eps <= lp[1] <= hh + eps
+                and z0 - eps <= lp[2] <= z1 + eps)
+
+    if isinstance(csg, Cylinder):
+        n = [float(csg.axis_direction[i]) for i in range(3)]
+        c = [float(csg.position[i]) for i in range(3)]
+        d = [pt[i] - c[i] for i in range(3)]
+        along = _dot3(d, n)
+        perp = [d[i] - along * n[i] for i in range(3)]
+        dist_sq = _dot3(perp, perp)
+        r = float(csg.radius)
+        z0 = -float(csg.start_distance) if csg.start_distance is not None else -1e9
+        z1 = float(csg.end_distance) if csg.end_distance is not None else 1e9
+        return dist_sq <= (r + eps) ** 2 and z0 - eps <= along <= z1 + eps
+
+    if isinstance(csg, SolidUnion):
+        return any(_is_point_inside_csg_float(ch, pt, eps) for ch in csg.children)
+
+    if isinstance(csg, Difference):
+        if not _is_point_inside_csg_float(csg.base, pt, eps):
+            return False
+        return not any(_is_point_inside_csg_float(sub, pt, -eps) for sub in csg.subtract)
+
+    if isinstance(csg, ConvexPolygonExtrusion):
+        # Conservative fallback — treat as always inside
+        return True
+
+    return False
+
+
+def _is_point_on_csg_boundary_float(csg: Any, pt: List[float], eps: float = 1e-4) -> bool:
+    """True if *pt* (timber-local floats) lies on the boundary of *csg*."""
+    from giraffecad.cutcsg import (
+        HalfSpace, RectangularPrism, Cylinder, SolidUnion, Difference,
+        ConvexPolygonExtrusion,
+    )
+
+    if isinstance(csg, HalfSpace):
+        n = [float(csg.normal[i]) for i in range(3)]
+        return abs(_dot3(n, pt) - float(csg.offset)) < eps
+
+    if isinstance(csg, RectangularPrism):
+        rot, pos = _build_inv_transform_float(csg.transform)
+        lp = _inv_transform_point(rot, pos, pt)
+        hw = float(csg.size[0]) / 2.0
+        hh = float(csg.size[1]) / 2.0
+        z0 = -float(csg.start_distance) if csg.start_distance is not None else None
+        z1 = float(csg.end_distance) if csg.end_distance is not None else None
+        # Must be within bounds
+        if lp[0] < -hw - eps or lp[0] > hw + eps:
+            return False
+        if lp[1] < -hh - eps or lp[1] > hh + eps:
+            return False
+        if z0 is not None and lp[2] < z0 - eps:
+            return False
+        if z1 is not None and lp[2] > z1 + eps:
+            return False
+        # Must be on at least one face
+        on_x = abs(lp[0] + hw) < eps or abs(lp[0] - hw) < eps
+        on_y = abs(lp[1] + hh) < eps or abs(lp[1] - hh) < eps
+        on_z0 = z0 is not None and abs(lp[2] - z0) < eps
+        on_z1 = z1 is not None and abs(lp[2] - z1) < eps
+        return on_x or on_y or on_z0 or on_z1
+
+    if isinstance(csg, Cylinder):
+        n = [float(csg.axis_direction[i]) for i in range(3)]
+        c = [float(csg.position[i]) for i in range(3)]
+        d = [pt[i] - c[i] for i in range(3)]
+        along = _dot3(d, n)
+        perp = [d[i] - along * n[i] for i in range(3)]
+        dist = _dot3(perp, perp) ** 0.5
+        r = float(csg.radius)
+        z0 = -float(csg.start_distance) if csg.start_distance is not None else None
+        z1 = float(csg.end_distance) if csg.end_distance is not None else None
+        if z0 is not None and along < z0 - eps:
+            return False
+        if z1 is not None and along > z1 + eps:
+            return False
+        on_side = abs(dist - r) < eps
+        on_cap_lo = z0 is not None and abs(along - z0) < eps and dist <= r + eps
+        on_cap_hi = z1 is not None and abs(along - z1) < eps and dist <= r + eps
+        return on_side or on_cap_lo or on_cap_hi
+
+    if isinstance(csg, SolidUnion):
+        return any(_is_point_on_csg_boundary_float(ch, pt, eps) for ch in csg.children)
+
+    if isinstance(csg, Difference):
+        on_base = _is_point_on_csg_boundary_float(csg.base, pt, eps)
+        if on_base and not any(_is_point_inside_csg_float(sub, pt, -eps) for sub in csg.subtract):
+            return True
+        if _is_point_inside_csg_float(csg.base, pt, eps):
+            return any(_is_point_on_csg_boundary_float(sub, pt, eps) for sub in csg.subtract)
+        return False
+
+    # ConvexPolygonExtrusion — not yet implemented
+    return False
+
+
+def _detect_face_label(csg: Any, pt: List[float], eps: float = 1e-4) -> str:
+    """Determine which face of a primitive CSG node *pt* lies on."""
+    from giraffecad.cutcsg import HalfSpace, RectangularPrism, Cylinder
+
+    if isinstance(csg, HalfSpace):
+        return getattr(csg, "named_feature", None) or "cut_plane"
+
+    if isinstance(csg, RectangularPrism):
+        rot, pos = _build_inv_transform_float(csg.transform)
+        lp = _inv_transform_point(rot, pos, pt)
+        hw = float(csg.size[0]) / 2.0
+        hh = float(csg.size[1]) / 2.0
+        z0 = -float(csg.start_distance) if csg.start_distance is not None else None
+        z1 = float(csg.end_distance) if csg.end_distance is not None else None
+
+        # Collect candidates (label, distance_from_face)
+        candidates: List[Tuple[str, float]] = []
+        candidates.append(("left", abs(lp[0] + hw)))
+        candidates.append(("right", abs(lp[0] - hw)))
+        candidates.append(("front", abs(lp[1] + hh)))
+        candidates.append(("back", abs(lp[1] - hh)))
+        if z0 is not None:
+            candidates.append(("bottom", abs(lp[2] - z0)))
+        if z1 is not None:
+            candidates.append(("top", abs(lp[2] - z1)))
+
+        within_eps = [(label, d) for label, d in candidates if d < eps]
+        if within_eps:
+            within_eps.sort(key=lambda c: c[1])
+            return within_eps[0][0]
+        return "face"
+
+    if isinstance(csg, Cylinder):
+        return "cylindrical_surface"
+
+    return "face"
+
+
+def _resolve_csg_at_path(csg: Any, path: List[str]) -> Any:
+    """Walk the CSG tree following *path* of named CSG nodes."""
+    from giraffecad.cutcsg import SolidUnion, Difference
+
+    node = csg
+    for name in path:
+        found = False
+        if isinstance(node, Difference):
+            for sub in node.subtract:
+                if getattr(sub, "name", None) == name:
+                    node = sub
+                    found = True
+                    break
+        elif isinstance(node, SolidUnion):
+            for ch in node.children:
+                if getattr(ch, "name", None) == name:
+                    node = ch
+                    found = True
+                    break
+        if not found:
+            break
+    return node
+
+
+def _navigate_csg_one_level(
+    node: Any,
+    pt_local: List[float],
+    current_path: List[str],
+    eps: float = 1e-4,
+) -> Tuple[List[str], Any, Optional[str]]:
+    """Navigate one level deeper into *node* based on click point.
+
+    Returns (new_path, target_csg_to_highlight, feature_label_or_None).
+    """
+    from giraffecad.cutcsg import SolidUnion, Difference
+
+    if isinstance(node, Difference):
+        # Check which subtract child the point lies on
+        for sub in node.subtract:
+            if _is_point_on_csg_boundary_float(sub, pt_local, eps):
+                sub_name = getattr(sub, "name", None)
+                if sub_name:
+                    return (current_path + [sub_name], sub, None)
+                else:
+                    # Unnamed — report face of this primitive directly
+                    return (current_path, sub, _detect_face_label(sub, pt_local, eps))
+        # Point is on the base timber surface
+        return (current_path, node.base, _detect_face_label(node.base, pt_local, eps))
+
+    if isinstance(node, SolidUnion):
+        for ch in node.children:
+            if _is_point_on_csg_boundary_float(ch, pt_local, eps):
+                ch_name = getattr(ch, "name", None)
+                if ch_name:
+                    return (current_path + [ch_name], ch, None)
+                else:
+                    return (current_path, ch, _detect_face_label(ch, pt_local, eps))
+        # Couldn't match a specific child — report face of whole union
+        return (current_path, node, "face")
+
+    # Leaf primitive — report face
+    return (current_path, node, _detect_face_label(node, pt_local, eps))
+
+
+def _navigate_csg_to_leaf(
+    csg: Any,
+    pt_local: List[float],
+    eps: float = 1e-4,
+) -> Tuple[List[str], Any, Optional[str]]:
+    """Ctrl+click: traverse from root to deepest named node, then report face."""
+    from giraffecad.cutcsg import SolidUnion, Difference
+
+    path: List[str] = []
+    node = csg
+    while True:
+        new_path, target, label = _navigate_csg_one_level(node, pt_local, path, eps)
+        if label is not None:
+            # Reached a leaf
+            return (new_path, target, label)
+        if new_path == path:
+            # No progress — shouldn't happen but guard against infinite loop
+            return (path, node, "face")
+        path = new_path
+        node = target
+
+
+def _extract_highlight_mesh(
+    mesh_vertices: List[float],
+    mesh_indices: List[int],
+    target_csg: Any,
+    timber_rot: List[List[float]],
+    timber_pos: List[float],
+    eps: float = 1e-4,
+) -> Tuple[List[float], List[int], int, int]:
+    """Extract triangles belonging to *target_csg* from the rendered mesh.
+
+    *mesh_vertices* / *mesh_indices* are in global coords (flat lists).
+    Returns (highlight_vertices, highlight_indices, matched_tris, total_tris).
+    """
+    total_tris = len(mesh_indices) // 3
+    out_verts: List[float] = []
+    out_idx: List[int] = []
+    matched = 0
+
+    for tri in range(total_tris):
+        i0 = mesh_indices[tri * 3]
+        i1 = mesh_indices[tri * 3 + 1]
+        i2 = mesh_indices[tri * 3 + 2]
+        # Centroid in global
+        cx = (mesh_vertices[i0*3] + mesh_vertices[i1*3] + mesh_vertices[i2*3]) / 3.0
+        cy = (mesh_vertices[i0*3+1] + mesh_vertices[i1*3+1] + mesh_vertices[i2*3+1]) / 3.0
+        cz = (mesh_vertices[i0*3+2] + mesh_vertices[i1*3+2] + mesh_vertices[i2*3+2]) / 3.0
+        # Convert centroid to timber-local
+        local_c = _inv_transform_point(timber_rot, timber_pos, [cx, cy, cz])
+        if _is_point_on_csg_boundary_float(target_csg, local_c, eps):
+            base = len(out_verts) // 3
+            out_verts.extend(mesh_vertices[i0*3 : i0*3+3])
+            out_verts.extend(mesh_vertices[i1*3 : i1*3+3])
+            out_verts.extend(mesh_vertices[i2*3 : i2*3+3])
+            out_idx.extend([base, base+1, base+2])
+            matched += 1
+
+    return out_verts, out_idx, matched, total_tris
+
+
+def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Process a find_csg_at_point request and return the result dict."""
+    member_key = payload.get("memberKey")
+    point = payload.get("point")
+    current_path = payload.get("currentPath") or []
+    ctrl_click = payload.get("ctrlClick", False)
+    eps = 5e-4  # generous epsilon for raycast-based click points
+
+    if not isinstance(member_key, str) or member_key not in state.mesh_cache:
+        raise ValueError(f"Unknown memberKey: {member_key}")
+    if not isinstance(point, list) or len(point) != 3:
+        raise ValueError("point must be [x, y, z]")
+
+    cached = state.mesh_cache[member_key]
+    local_csg = cached.get("local_csg")
+    cut_timber = cached.get("cut_timber")
+    mesh = cached.get("mesh")
+
+    if local_csg is None or cut_timber is None or mesh is None:
+        raise ValueError(f"No CSG data cached for {member_key}")
+
+    timber = cut_timber.timber
+    timber_rot, timber_pos = _build_inv_transform_float(timber.transform)
+
+    # Convert global click point to timber-local
+    pt_local = _inv_transform_point(timber_rot, timber_pos, [float(p) for p in point])
+
+    t0 = time.monotonic()
+
+    if ctrl_click:
+        new_path, target_csg, feature_label = _navigate_csg_to_leaf(local_csg, pt_local, eps)
+    else:
+        node = _resolve_csg_at_path(local_csg, current_path)
+        new_path, target_csg, feature_label = _navigate_csg_one_level(
+            node, pt_local, current_path, eps,
+        )
+
+    # Extract highlight mesh
+    hl_verts, hl_idx, matched, total = _extract_highlight_mesh(
+        mesh["vertices"], mesh["indices"], target_csg, timber_rot, timber_pos, eps,
+    )
+    mesh_walk_ms = (time.monotonic() - t0) * 1000.0
+
+    return {
+        "path": new_path,
+        "featureLabel": feature_label,
+        "highlightMesh": {
+            "vertices": hl_verts,
+            "indices": hl_idx,
+        },
+        "stats": {
+            "meshWalkMs": round(mesh_walk_ms, 2),
+            "trianglesMatched": matched,
+            "totalTriangles": total,
+        },
+    }
 
 
 def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerState, Dict[str, Any], bool]:
@@ -723,6 +1091,9 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
             raise ValueError("get_member requires payload.name")
         return state, make_success_response(request_id, command, get_member_result(state.frame, member_name)), False
 
+    if command == "find_csg_at_point":
+        result = _handle_find_csg_at_point(state, payload)
+        return state, make_success_response(request_id, command, result), False
 
     if command == "shutdown":
         return state, make_success_response(request_id, command, {"shutting_down": True}), True

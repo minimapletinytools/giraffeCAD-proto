@@ -2233,3 +2233,110 @@ class TestCSGFeatures:
         names = [f.name for f in features]
         assert "cut_plane" in names
 
+
+class TestCSGNaming:
+    """Tests for the hierarchical name field on CutCSG subclasses."""
+
+    def test_halfspace_name_field(self):
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0), name="shoulder")
+        assert hs.name == "shoulder"
+
+    def test_halfspace_name_default_none(self):
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0))
+        assert hs.name is None
+
+    def test_rectangular_prism_name_field(self):
+        prism = RectangularPrism(
+            size=Matrix([Integer(4), Integer(6)]),
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=Integer(10),
+            name="tenon",
+        )
+        assert prism.name == "tenon"
+
+    def test_solid_union_name_field(self):
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0))
+        union = SolidUnion(children=[hs], name="my_cut")
+        assert union.name == "my_cut"
+
+    def test_difference_name_field(self):
+        base = RectangularPrism(
+            size=Matrix([Integer(4), Integer(4)]),
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=Integer(10),
+        )
+        cut = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(-1)]), offset=Integer(-5))
+        diff = Difference(base=base, subtract=[cut], name="tenon_cut")
+        assert diff.name == "tenon_cut"
+
+    def test_adopt_csg_preserves_name_on_solid_union(self):
+        """adopt_csg should preserve the name field when transforming SolidUnion."""
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0), name="plane_a")
+        union = SolidUnion(children=[hs], name="my_joint")
+        adopted = adopt_csg(None, Transform.identity(), union)
+        assert isinstance(adopted, SolidUnion)
+        assert adopted.name == "my_joint"
+        assert adopted.children[0].name == "plane_a"
+
+    def test_adopt_csg_preserves_name_on_difference(self):
+        """adopt_csg should preserve the name field when transforming Difference."""
+        base = RectangularPrism(
+            size=Matrix([Integer(4), Integer(4)]),
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=Integer(10),
+            name="base_prism",
+        )
+        cut = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(-1)]), offset=Integer(-5), name="cut_plane")
+        diff = Difference(base=base, subtract=[cut], name="my_diff")
+        adopted = adopt_csg(None, Transform.identity(), diff)
+        assert isinstance(adopted, Difference)
+        assert adopted.name == "my_diff"
+        assert adopted.base.name == "base_prism"
+        assert adopted.subtract[0].name == "cut_plane"
+
+    def test_adopt_csg_preserves_name_on_primitives(self):
+        """adopt_csg should preserve name on primitive types that use replace()."""
+        prism = RectangularPrism(
+            size=Matrix([Integer(4), Integer(4)]),
+            transform=Transform.identity(),
+            start_distance=Integer(0),
+            end_distance=Integer(10),
+            name="my_prism",
+        )
+        adopted = adopt_csg(None, Transform.identity(), prism)
+        assert adopted.name == "my_prism"
+
+    def test_cutting_name_wraps_in_named_solid_union(self):
+        """Cutting with a name wraps get_negative_csg_local() in a named SolidUnion."""
+        from giraffecad.timber import Cutting, Timber
+        from giraffecad.ticket import TimberTicket
+        timber = Timber(
+            size=Matrix([Rational(4), Rational(6)]),
+            length=Rational(100),
+            transform=Transform.identity(),
+            ticket=TimberTicket(name="test_timber"),
+        )
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(50))
+        cutting = Cutting(timber=timber, maybe_top_end_cut=hs, name="my_joint")
+        result = cutting.get_negative_csg_local()
+        assert isinstance(result, SolidUnion)
+        assert result.name == "my_joint"
+
+    def test_cutting_no_name_returns_raw_csg(self):
+        """Cutting without a name returns the raw CSG, not wrapped."""
+        from giraffecad.timber import Cutting, Timber
+        from giraffecad.ticket import TimberTicket
+        timber = Timber(
+            size=Matrix([Rational(4), Rational(6)]),
+            length=Rational(100),
+            transform=Transform.identity(),
+            ticket=TimberTicket(name="test_timber"),
+        )
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(50))
+        cutting = Cutting(timber=timber, maybe_top_end_cut=hs)
+        result = cutting.get_negative_csg_local()
+        assert isinstance(result, HalfSpace)
+

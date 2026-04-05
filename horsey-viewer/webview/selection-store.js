@@ -3,6 +3,7 @@
         constructor() {
             this.selectedTimbers = new Set();
             this.selectedFeatures = [];
+            this.csgSelection = null;
             this.listeners = new Set();
         }
 
@@ -69,8 +70,21 @@
             this.emit({ type: 'clear-features' });
         }
 
+        selectCSG(timberKey, path, featureLabel) {
+            this.csgSelection = { timberKey, path: path || [], featureLabel: featureLabel || null };
+            this.emit({ type: 'csg-selected', csgSelection: this.csgSelection });
+        }
+
+        clearCSGSelection() {
+            if (!this.csgSelection) {
+                return;
+            }
+            this.csgSelection = null;
+            this.emit({ type: 'clear-csg' });
+        }
+
         hasSelection() {
-            return this.selectedTimbers.size > 0 || this.selectedFeatures.length > 0;
+            return this.selectedTimbers.size > 0 || this.selectedFeatures.length > 0 || this.csgSelection !== null;
         }
 
         onSelectionChanged(callback) {

@@ -123,6 +123,12 @@ class FrameViewSession {
                 this.channel.show(true);
                 return;
             }
+            if (message.type === 'findCSGAtPoint') {
+                this._handleFindCSGAtPoint(message).catch((err) => {
+                    this.log(`[csg-nav] findCSGAtPoint error: ${err.message || err}`);
+                });
+                return;
+            }
             if (message.type !== 'viewerLog') {
                 return;
             }
@@ -345,6 +351,22 @@ class FrameViewSession {
             width: result.width,
             height: result.height,
         };
+    }
+
+    async _handleFindCSGAtPoint(message) {
+        if (!this.runnerSession) {
+            return;
+        }
+        const payload = {
+            memberKey: message.memberKey,
+            point: message.point,
+            currentPath: message.currentPath || [],
+            ctrlClick: !!message.ctrlClick,
+        };
+        const result = await this.runnerSession.request('find_csg_at_point', payload);
+        if (this.panel && !this.isDisposed) {
+            this.panel.webview.postMessage({ type: 'csgSelectionResult', ...result });
+        }
     }
 
     async onFileChanged(source) {

@@ -334,6 +334,7 @@ class HorseyViewerApp extends LitElement {
         this.orbitCenterGizmo = null;
 
         this.selectionManager = new SelectionStore();
+        this._csgHighlightMesh = null;
         this.meshKeyMap = new Map(); // mesh object -> member key
         this.memberMetadataByKey = new Map(); // member key -> { name, type }
         this.renderProfiles = RENDER_PROFILES;
@@ -433,6 +434,10 @@ class HorseyViewerApp extends LitElement {
         
         // Setup selection listener
         this.selectionManager.onSelectionChanged((event) => {
+            if (event.type === 'clear-timbers' || event.type === 'timber-selected') {
+                this.selectionManager.clearCSGSelection();
+                this.removeCSGHighlight();
+            }
             this.applySelectionOpacity();
             this.updateInfo(this.currentFrameData);
         });
@@ -796,7 +801,12 @@ class HorseyViewerApp extends LitElement {
         }
 
         if (message.type === 'featureResult') {
-            // TODO: feature selection revamp — handle hierarchical CSG selection results
+            // Legacy stub — replaced by csgSelectionResult
+            return;
+        }
+
+        if (message.type === 'csgSelectionResult') {
+            this.handleCSGSelectionResult(message);
             return;
         }
     }
@@ -878,7 +888,12 @@ class HorseyViewerApp extends LitElement {
         }
         if (event.key === 'Escape') {
             event.preventDefault();
-            this.selectionManager.clearTimberSelection();
+            if (this.selectionManager.csgSelection) {
+                this.selectionManager.clearCSGSelection();
+                this.removeCSGHighlight();
+            } else {
+                this.selectionManager.clearTimberSelection();
+            }
             return;
         }
         if (event.key !== 'f' && event.key !== 'F') {
@@ -927,6 +942,8 @@ class HorseyViewerApp extends LitElement {
         const intersects = this.navigationRaycaster.intersectObjects(targetMeshes, false);
 
         if (intersects.length === 0) {
+            this.selectionManager.clearCSGSelection();
+            this.removeCSGHighlight();
             this.selectionManager.clearTimberSelection();
             return;
         }
@@ -938,14 +955,106 @@ class HorseyViewerApp extends LitElement {
         }
 
         if (event.shiftKey) {
+            this.selectionManager.clearCSGSelection();
+            this.removeCSGHighlight();
             this.selectionManager.toggleTimber(memberKey);
+        } else if (this.selectionManager.isTimberSelected(memberKey) && this.selectionManager.selectedTimbers.size === 1) {
+            // Already selected single timber — navigate CSG tree
+            const point = [hit.point.x, hit.point.y, hit.point.z];
+            const csg = this.selectionManager.csgSelection;
+            const currentPath = (csg && csg.timberKey === memberKey) ? csg.path : [];
+            if (typeof vscode !== 'undefined') {
+                vscode.postMessage({
+                    type: 'findCSGAtPoint',
+                    memberKey,
+                    point,
+                    currentPath,
+                    ctrlClick: !!event.ctrlKey || !!event.metaKey,
+                });
+            }
         } else {
+            this.selectionManager.clearCSGSelection();
+            this.removeCSGHighlight();
             this.selectionManager.selectTimber(memberKey, false);
         }
 
         this.emitViewerLog('selection-changed', {
             selectedTimbers: this.selectionManager.getSelectedTimbers(),
         });
+    }
+
+    handleCSGSelectionResult(message) {
+        const path = Array.isArray(message.path) ? message.path : [];
+        const featureLabel = message.featureLabel || null;
+        const hlMesh = message.highlightMesh;
+        const stats = message.stats;
+
+        // Find which timber this applies to
+        const csg = this.selectionManager.csgSelection;
+        const timberKey = (csg && csg.timberKey) || (this.selectionManager.selectedTimbers.size === 1
+            ? this.selectionManager.getSelectedTimbers()[0]
+            : null);
+
+        if (timberKey) {
+            this.selectionManager.selectCSG(timberKey, path, featureLabel);
+        }
+
+        // Build highlight geometry
+        this.removeCSGHighlight();
+        if (hlMesh && Array.isArray(hlMesh.vertices) && hlMesh.vertices.length > 0 && Array.isArray(hlMesh.indices)) {
+            this.buildCSGHighlight(hlMesh.vertices, hlMesh.indices);
+        }
+
+        if (stats) {
+            this.emitViewerLog('csg-selection', {
+                path,
+                featureLabel,
+                meshWalkMs: stats.meshWalkMs,
+                trianglesMatched: stats.trianglesMatched,
+                totalTriangles: stats.totalTriangles,
+            });
+        }
+
+        this.updateInfo(this.currentFrameData);
+    }
+
+    buildCSGHighlight(vertices, indices) {
+        const FEATURE_ACCENT_COLOR = 0x4fc3f7;
+        const geometry = new THREE.BufferGeometry();
+        const posArray = new Float32Array(vertices);
+        geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshStandardMaterial({
+            color: FEATURE_ACCENT_COLOR,
+            transparent: true,
+            opacity: 0.7,
+            depthTest: true,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1,
+            side: THREE.DoubleSide,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
+        this.scene.add(mesh);
+        this._csgHighlightMesh = mesh;
+    }
+
+    removeCSGHighlight() {
+        if (this._csgHighlightMesh) {
+            this.scene.remove(this._csgHighlightMesh);
+            if (this._csgHighlightMesh.geometry) {
+                this._csgHighlightMesh.geometry.dispose();
+            }
+            if (this._csgHighlightMesh.material) {
+                this._csgHighlightMesh.material.dispose();
+            }
+            this._csgHighlightMesh = null;
+        }
     }
 
     applySelectionOpacity() {
@@ -1858,9 +1967,21 @@ class HorseyViewerApp extends LitElement {
             selectedSingleName = '';
         }
 
+        let breadcrumb = '';
+        if (selectedSingleName && this.selectionManager.csgSelection) {
+            const csg = this.selectionManager.csgSelection;
+            const parts = [selectedSingleName].concat(csg.path);
+            if (csg.featureLabel) {
+                parts.push('face (' + csg.featureLabel + ')');
+            }
+            breadcrumb = parts.join(' &gt; ');
+        } else {
+            breadcrumb = selectedSingleName;
+        }
+
         this.renderRoot.querySelector('#info').innerHTML =
             'timbers (' + selectedTimberCount + '/' + timberCount + ') accesories (' + selectedAccessoryCount + '/' + accessoriesCount + ')' +
-            '<br>' + selectedSingleName;
+            '<br>' + breadcrumb;
     }
 
     updateDebug(geometryData, profiling) {

@@ -63,4 +63,87 @@ describe('SelectionStore', () => {
     store.selectTimber('B');
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  test('selectCSG stores csg selection state', () => {
+    const store = new SelectionStore();
+    store.selectCSG('post#0', ['mortise_and_tenon'], null);
+
+    expect(store.csgSelection).toEqual({
+      timberKey: 'post#0',
+      path: ['mortise_and_tenon'],
+      featureLabel: null,
+    });
+  });
+
+  test('selectCSG updates path on deeper navigation', () => {
+    const store = new SelectionStore();
+    store.selectCSG('post#0', ['mortise_and_tenon'], null);
+    store.selectCSG('post#0', ['mortise_and_tenon', 'tenon'], null);
+
+    expect(store.csgSelection.path).toEqual(['mortise_and_tenon', 'tenon']);
+  });
+
+  test('selectCSG sets featureLabel at leaf', () => {
+    const store = new SelectionStore();
+    store.selectCSG('post#0', ['mortise_and_tenon', 'tenon'], 'front');
+
+    expect(store.csgSelection.featureLabel).toBe('front');
+  });
+
+  test('clearCSGSelection clears csg state', () => {
+    const store = new SelectionStore();
+    store.selectCSG('post#0', ['mortise_and_tenon'], null);
+    store.clearCSGSelection();
+
+    expect(store.csgSelection).toBeNull();
+  });
+
+  test('clearCSGSelection is no-op when already null', () => {
+    const store = new SelectionStore();
+    const listener = jest.fn();
+    store.onSelectionChanged(listener);
+    store.clearCSGSelection();
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  test('hasSelection includes csg selection', () => {
+    const store = new SelectionStore();
+    expect(store.hasSelection()).toBe(false);
+
+    store.selectCSG('post#0', [], null);
+    expect(store.hasSelection()).toBe(true);
+
+    store.clearCSGSelection();
+    expect(store.hasSelection()).toBe(false);
+  });
+
+  test('selectCSG emits csg-selected event', () => {
+    const store = new SelectionStore();
+    const listener = jest.fn();
+    store.onSelectionChanged(listener);
+
+    store.selectCSG('post#0', ['mortise_and_tenon'], null);
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({
+      type: 'csg-selected',
+      csgSelection: {
+        timberKey: 'post#0',
+        path: ['mortise_and_tenon'],
+        featureLabel: null,
+      },
+    });
+  });
+
+  test('clearCSGSelection emits clear-csg event', () => {
+    const store = new SelectionStore();
+    store.selectCSG('post#0', ['mortise_and_tenon'], null);
+
+    const listener = jest.fn();
+    store.onSelectionChanged(listener);
+    store.clearCSGSelection();
+
+    expect(listener).toHaveBeenCalledWith({ type: 'clear-csg' });
+  });
 });

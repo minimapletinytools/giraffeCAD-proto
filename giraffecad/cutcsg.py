@@ -120,9 +120,11 @@ class RectangularPrismFeature(CSGFeature):
         return False
 
 
+@dataclass(frozen=True)
 class CutCSG(ABC):
     """Base class for all CSG operations."""
-    
+    name: Optional[str] = field(default=None, kw_only=True)
+
     @abstractmethod
     def __repr__(self) -> str:
         """String representation for debugging."""
@@ -216,6 +218,7 @@ class HalfSpace(CutCSG):
     normal: Direction3D
     offset: Numeric = Integer(0)
     named_feature: Optional[str] = None
+
     def __repr__(self) -> str:
         return f"HalfSpace(normal={self.normal.T}, offset={self.offset})"
     
@@ -660,7 +663,7 @@ class Cylinder(CutCSG):
     position: V3 = field(default_factory=lambda: Matrix([Integer(0), Integer(0), Integer(0)]))  # Position in global coordinates
     start_distance: Optional[Numeric] = None  # None means infinite in negative direction
     end_distance: Optional[Numeric] = None    # None means infinite in positive direction
-    
+
     def __repr__(self) -> str:
         return (f"Cylinder(axis={self.axis_direction.T}, "
                 f"radius={self.radius}, "
@@ -829,7 +832,7 @@ class SolidUnion(CutCSG):
         children: List of CSG objects to union together
     """
     children: List[CutCSG]
-    
+
     def __repr__(self) -> str:
         return f"SolidUnion({len(self.children)} children)"
     
@@ -959,7 +962,7 @@ class Difference(CutCSG):
     """
     base: CutCSG
     subtract: List[CutCSG]
-    
+
     def __repr__(self) -> str:
         return f"Difference(base={self.base}, subtract={len(self.subtract)} objects)"
     
@@ -1561,11 +1564,12 @@ def translate_csg(csg: CutCSG, translation: V3) -> CutCSG:
         A new CSG object with the same structure but translated by translation
     """
     if isinstance(csg, SolidUnion):
-        return SolidUnion(children=[translate_csg(c, translation) for c in csg.children])
+        return SolidUnion(children=[translate_csg(c, translation) for c in csg.children], name=csg.name)
     if isinstance(csg, Difference):
         return Difference(
             base=translate_csg(csg.base, translation),
             subtract=[translate_csg(s, translation) for s in csg.subtract],
+            name=csg.name,
         )
     if isinstance(csg, HalfSpace):
         # HalfSpace: normal·P >= offset. After translating by T: normal·(P - T) >= offset => normal·P >= offset + normal·T
@@ -1652,7 +1656,7 @@ def adopt_csg(
             adopt_csg(orig_transform, adopting_transform, child)
             for child in csg_in_orig_space.children
         ]
-        return SolidUnion(transformed_children)
+        return SolidUnion(transformed_children, name=csg_in_orig_space.name)
 
     elif isinstance(csg_in_orig_space, Difference):
         transformed_base = adopt_csg(orig_transform, adopting_transform, csg_in_orig_space.base)
@@ -1660,7 +1664,7 @@ def adopt_csg(
             adopt_csg(orig_transform, adopting_transform, sub)
             for sub in csg_in_orig_space.subtract
         ]
-        return Difference(base=transformed_base, subtract=transformed_subtract)
+        return Difference(base=transformed_base, subtract=transformed_subtract, name=csg_in_orig_space.name)
 
     elif isinstance(csg_in_orig_space, HalfSpace):
         return transform_halfspace(csg_in_orig_space)
