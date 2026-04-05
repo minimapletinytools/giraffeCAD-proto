@@ -207,10 +207,15 @@ DONE-edge rendering on unselected things should also have transparency applied
 DONE-transparent rendering covers shadow and reflection and also covers feature highlights :( fix pls
 
 
+-probably remove CSG feature stuff you added
+-probably remove hashing stuff you added
+
+-have python return the feature mesh for js to render...
 -do some profiling on feature selection
 -try auto authoring tests again, this time ask it to use plain_joints as an example
 -improved CSG tagging
-  -allow half faces on prism
+  DONE-allow half faces on prism
+  -allow full CSG feature naming
   -allow side faces and top/bot flats to be tagged on CSG extrusion
     -would be cool to allow union faces that are coplanar... but I think you can just name 2 features when defining the cutting instructions and check that they are coplanar then
   -saw/chisel metadata 
