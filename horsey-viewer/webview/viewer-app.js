@@ -44,6 +44,7 @@ const FEATURE_ACCENT_COLOR = 0x4fc3f7;
 const FEATURE_OVERLAY_OPACITY = 0.7;
 const FEATURE_NORMAL_DOT_THRESHOLD = 0.95;
 const FEATURE_OVERLAY_OFFSET = 0.01;
+const FEATURE_PLANE_DISTANCE_THRESHOLD = 0.01;
 
 const RENDER_PROFILES = Object.freeze({
     'timber-default': Object.freeze({
@@ -848,7 +849,8 @@ class HorseyViewerApp extends LitElement {
 
         this.selectionManager.selectFeature(memberKey, featureName);
         this.pendingFeatureNormal = faceNormalWorld;
-        this.buildFeatureOverlay(memberKey, faceNormalWorld);
+        this.buildFeatureOverlay(memberKey, faceNormalWorld, this.pendingFeatureHitPoint);
+        this.pendingFeatureHitPoint = null;
         this.updateInfo(this.currentFrameData);
 
         this.emitViewerLog('feature-selected', {
@@ -990,20 +992,28 @@ class HorseyViewerApp extends LitElement {
             return;
         }
 
+        // When a timber is already selected and this is not a shift-click,
+        // look through all intersections for an already-selected timber first
+        // so feature selection works even when an unselected timber is in front.
+        if (!event.shiftKey && this.selectionManager.selectedTimbers.size > 0) {
+            for (const candidate of intersects) {
+                const candidateKey = this.meshKeyMap.get(candidate.object);
+                if (candidateKey && this.selectionManager.isTimberSelected(candidateKey)) {
+                    this.pendingFeatureHitPoint = candidate.point.clone();
+                    this.requestFeatureAtPoint(candidateKey, candidate.point);
+                    return;
+                }
+            }
+        }
+
         const hit = intersects[0];
         const memberKey = this.meshKeyMap.get(hit.object);
         if (!memberKey) {
             return;
         }
 
-        const alreadySelected = this.selectionManager.isTimberSelected(memberKey);
-
         if (event.shiftKey) {
             this.selectionManager.toggleTimber(memberKey);
-        } else if (alreadySelected && !event.shiftKey) {
-            // Re-click on selected timber: ask Python for the feature at the hit point
-            this.requestFeatureAtPoint(memberKey, hit.point);
-            return;
         } else {
             this.selectionManager.selectTimber(memberKey, false);
         }
@@ -1055,7 +1065,7 @@ class HorseyViewerApp extends LitElement {
         }
     }
 
-    buildFeatureOverlay(memberKey, faceNormalWorld) {
+    buildFeatureOverlay(memberKey, faceNormalWorld, hitPoint) {
         this.removeFeatureOverlay();
 
         if (!faceNormalWorld || !Array.isArray(faceNormalWorld) || faceNormalWorld.length !== 3) {
@@ -1079,6 +1089,10 @@ class HorseyViewerApp extends LitElement {
         const n0 = new THREE.Vector3();
         const n1 = new THREE.Vector3();
         const n2 = new THREE.Vector3();
+        const v0 = new THREE.Vector3();
+
+        // Plane distance of the hit point along the face normal (for coplanarity filter)
+        const hitPlaneDist = hitPoint ? nw.dot(hitPoint) : null;
 
         // Non-indexed geometry: every 3 vertices = 1 triangle
         const vertexCount = positionAttr.count;
@@ -1090,7 +1104,16 @@ class HorseyViewerApp extends LitElement {
             n2.fromBufferAttribute(normalAttr, i + 2);
             triNormal.copy(n0).add(n1).add(n2).normalize();
 
+            // TODO maybe you can find a better way to do this... like having python return triangles for the feature mesh
             if (triNormal.dot(nw) > FEATURE_NORMAL_DOT_THRESHOLD) {
+                // Also check that the triangle lies on the same plane as the hit point
+                if (hitPlaneDist !== null) {
+                    v0.fromBufferAttribute(positionAttr, i);
+                    const triPlaneDist = nw.dot(v0);
+                    if (Math.abs(triPlaneDist - hitPlaneDist) > FEATURE_PLANE_DISTANCE_THRESHOLD) {
+                        continue;
+                    }
+                }
                 matchingIndices.push(i, i + 1, i + 2);
             }
         }

@@ -26,7 +26,7 @@ from giraffecad.construction import *
 from giraffecad.timber_shavings import are_timbers_plane_aligned
 from giraffecad.rule import *
 from giraffecad.rule import safe_dot_product
-from giraffecad.cutcsg import CutCSG, RectangularPrism, HalfSpace, Difference, adopt_csg
+from giraffecad.cutcsg import CutCSG, RectangularPrism, HalfSpace, Difference, adopt_csg, PrismFace
 from .joint_shavings import chop_shoulder_notch_aligned_with_timber
 from .build_a_butt_joint_shavings import (
     PegPositionResult,
@@ -204,11 +204,19 @@ def cut_mortise_and_tenon_joint(
     sin_angle_safe = Rational(1, 10000) if safe_zero_test(sin_angle_sq) else sqrt(Abs(sin_angle_sq))
     back_extension = max(tenon_size[0], tenon_size[1]) / sin_angle_safe
 
+    tenon_tip_name = "tenon_top" if tenon_end == TimberReferenceEnd.TOP else "tenon_bot"
     tenon_prism_global = RectangularPrism(
         size=tenon_size,
         transform=marking_space.transform,
         start_distance=-back_extension,
         end_distance=tenon_length,
+        named_features=[
+            ("tenon_right", PrismFace.RIGHT),
+            ("tenon_left", PrismFace.LEFT),
+            ("tenon_front", PrismFace.FRONT),
+            ("tenon_back", PrismFace.BACK),
+            (tenon_tip_name, PrismFace.TOP),
+        ],
     )
 
     tenon_prism_cropping_csgs: Optional[List[CutCSG]] = None
