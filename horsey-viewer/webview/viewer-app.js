@@ -35,12 +35,6 @@ const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : nul
 const VIEWER_APP_VERSION = '2026.03.17.4';
 const SelectionStore = window.SelectionStore;
 
-const FEATURE_ACCENT_COLOR = 0x4fc3f7;
-const FEATURE_OVERLAY_OPACITY = 0.7;
-const FEATURE_NORMAL_DOT_THRESHOLD = 0.95;
-const FEATURE_OVERLAY_OFFSET = 0.01;
-const FEATURE_PLANE_DISTANCE_THRESHOLD = 0.01;
-
 const RENDER_PROFILES = Object.freeze({
     'timber-default': Object.freeze({
         label: 'Timber Default',
@@ -349,8 +343,6 @@ class HorseyViewerApp extends LitElement {
         };
         this.unselectedTransparencyPercent = 40;
         this.activeBackground = 'cream';
-        this.featureOverlayMesh = null;
-        this.pendingFeatureNormal = null;
 
         this.animationHandle = null;
         this.viewState = createInitialViewState();
@@ -443,14 +435,6 @@ class HorseyViewerApp extends LitElement {
         this.selectionManager.onSelectionChanged((event) => {
             this.applySelectionOpacity();
             this.updateInfo(this.currentFrameData);
-            // Clear feature overlay when timber selection changes (not feature events)
-            if (event && (event.type === 'timber-selected' || event.type === 'timber-deselected' || event.type === 'clear-timbers')) {
-                this.selectionManager.clearFeatureSelection();
-                this.removeFeatureOverlay();
-            }
-            if (event && event.type === 'clear-features') {
-                this.removeFeatureOverlay();
-            }
         });
         
         this.emitViewerLog('viewer-ready', {});
@@ -497,7 +481,6 @@ class HorseyViewerApp extends LitElement {
         for (const bundle of this.meshObjectsByKey.values()) {
             this.disposeMeshBundle(bundle);
         }
-        this.removeFeatureOverlay();
         this.meshObjectsByKey.clear();
         this.meshKeyMap.clear();
         this.memberMetadataByKey.clear();
@@ -813,33 +796,9 @@ class HorseyViewerApp extends LitElement {
         }
 
         if (message.type === 'featureResult') {
-            this.handleFeatureResult(message);
+            // TODO: feature selection revamp — handle hierarchical CSG selection results
             return;
         }
-    }
-
-    handleFeatureResult(message) {
-        const featureName = message.featureName || null;
-        const memberKey = message.memberKey || null;
-        const faceNormalWorld = message.faceNormalWorld || null;
-
-        if (!featureName || !memberKey) {
-            this.selectionManager.clearFeatureSelection();
-            this.removeFeatureOverlay();
-            return;
-        }
-
-        this.selectionManager.selectFeature(memberKey, featureName);
-        this.pendingFeatureNormal = faceNormalWorld;
-        this.buildFeatureOverlay(memberKey, faceNormalWorld, this.pendingFeatureHitPoint);
-        this.pendingFeatureHitPoint = null;
-        this.updateInfo(this.currentFrameData);
-
-        this.emitViewerLog('feature-selected', {
-            memberKey,
-            featureName,
-            faceNormalWorld,
-        });
     }
 
     async handleCaptureScreenshotRequest(message) {
@@ -920,7 +879,6 @@ class HorseyViewerApp extends LitElement {
         if (event.key === 'Escape') {
             event.preventDefault();
             this.selectionManager.clearTimberSelection();
-            this.selectionManager.clearFeatureSelection();
             return;
         }
         if (event.key !== 'f' && event.key !== 'F') {
@@ -970,22 +928,7 @@ class HorseyViewerApp extends LitElement {
 
         if (intersects.length === 0) {
             this.selectionManager.clearTimberSelection();
-            this.selectionManager.clearFeatureSelection();
             return;
-        }
-
-        // When a timber is already selected and this is not a shift-click,
-        // look through all intersections for an already-selected timber first
-        // so feature selection works even when an unselected timber is in front.
-        if (!event.shiftKey && this.selectionManager.selectedTimbers.size > 0) {
-            for (const candidate of intersects) {
-                const candidateKey = this.meshKeyMap.get(candidate.object);
-                if (candidateKey && this.selectionManager.isTimberSelected(candidateKey)) {
-                    this.pendingFeatureHitPoint = candidate.point.clone();
-                    this.requestFeatureAtPoint(candidateKey, candidate.point);
-                    return;
-                }
-            }
         }
 
         const hit = intersects[0];
@@ -1002,18 +945,6 @@ class HorseyViewerApp extends LitElement {
 
         this.emitViewerLog('selection-changed', {
             selectedTimbers: this.selectionManager.getSelectedTimbers(),
-            selectedFeatures: this.selectionManager.selectedFeatures,
-        });
-    }
-
-    requestFeatureAtPoint(memberKey, hitPoint) {
-        if (!vscode) {
-            return;
-        }
-        vscode.postMessage({
-            type: 'findFeatureAtPoint',
-            memberKey,
-            point: [hitPoint.x, hitPoint.y, hitPoint.z],
         });
     }
 
@@ -1044,104 +975,6 @@ class HorseyViewerApp extends LitElement {
                     ? baseReflectionOpacity * unselectedOpacity
                     : baseReflectionOpacity;
             }
-        }
-    }
-
-    buildFeatureOverlay(memberKey, faceNormalWorld, hitPoint) {
-        this.removeFeatureOverlay();
-
-        if (!faceNormalWorld || !Array.isArray(faceNormalWorld) || faceNormalWorld.length !== 3) {
-            return;
-        }
-
-        const bundle = this.meshObjectsByKey.get(memberKey);
-        if (!bundle || !bundle.mesh || !bundle.mesh.geometry) {
-            return;
-        }
-
-        const sourceGeometry = bundle.mesh.geometry;
-        const positionAttr = sourceGeometry.getAttribute('position');
-        const normalAttr = sourceGeometry.getAttribute('normal');
-        if (!positionAttr || !normalAttr) {
-            return;
-        }
-
-        const nw = new THREE.Vector3(faceNormalWorld[0], faceNormalWorld[1], faceNormalWorld[2]).normalize();
-        const triNormal = new THREE.Vector3();
-        const n0 = new THREE.Vector3();
-        const n1 = new THREE.Vector3();
-        const n2 = new THREE.Vector3();
-        const v0 = new THREE.Vector3();
-
-        // Plane distance of the hit point along the face normal (for coplanarity filter)
-        const hitPlaneDist = hitPoint ? nw.dot(hitPoint) : null;
-
-        // Non-indexed geometry: every 3 vertices = 1 triangle
-        const vertexCount = positionAttr.count;
-        const matchingIndices = [];
-
-        for (let i = 0; i < vertexCount; i += 3) {
-            n0.fromBufferAttribute(normalAttr, i);
-            n1.fromBufferAttribute(normalAttr, i + 1);
-            n2.fromBufferAttribute(normalAttr, i + 2);
-            triNormal.copy(n0).add(n1).add(n2).normalize();
-
-            // TODO maybe you can find a better way to do this... like having python return triangles for the feature mesh
-            if (triNormal.dot(nw) > FEATURE_NORMAL_DOT_THRESHOLD) {
-                // Also check that the triangle lies on the same plane as the hit point
-                if (hitPlaneDist !== null) {
-                    v0.fromBufferAttribute(positionAttr, i);
-                    const triPlaneDist = nw.dot(v0);
-                    if (Math.abs(triPlaneDist - hitPlaneDist) > FEATURE_PLANE_DISTANCE_THRESHOLD) {
-                        continue;
-                    }
-                }
-                matchingIndices.push(i, i + 1, i + 2);
-            }
-        }
-
-        if (matchingIndices.length === 0) {
-            return;
-        }
-
-        // Build overlay geometry from matching triangles
-        const positions = new Float32Array(matchingIndices.length * 3);
-        for (let j = 0; j < matchingIndices.length; j++) {
-            const srcIdx = matchingIndices[j];
-            positions[j * 3] = positionAttr.getX(srcIdx) + nw.x * FEATURE_OVERLAY_OFFSET;
-            positions[j * 3 + 1] = positionAttr.getY(srcIdx) + nw.y * FEATURE_OVERLAY_OFFSET;
-            positions[j * 3 + 2] = positionAttr.getZ(srcIdx) + nw.z * FEATURE_OVERLAY_OFFSET;
-        }
-
-        const overlayGeometry = new THREE.BufferGeometry();
-        overlayGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        overlayGeometry.computeVertexNormals();
-
-        const overlayMaterial = new THREE.MeshStandardMaterial({
-            color: FEATURE_ACCENT_COLOR,
-            transparent: true,
-            opacity: FEATURE_OVERLAY_OPACITY,
-            side: THREE.DoubleSide,
-            depthTest: false,
-            depthWrite: false,
-        });
-
-        const overlayMesh = new THREE.Mesh(overlayGeometry, overlayMaterial);
-        overlayMesh.renderOrder = 10;
-        this.scene.add(overlayMesh);
-        this.featureOverlayMesh = overlayMesh;
-    }
-
-    removeFeatureOverlay() {
-        if (this.featureOverlayMesh) {
-            this.scene.remove(this.featureOverlayMesh);
-            if (this.featureOverlayMesh.geometry) {
-                this.featureOverlayMesh.geometry.dispose();
-            }
-            if (this.featureOverlayMesh.material && typeof this.featureOverlayMesh.material.dispose === 'function') {
-                this.featureOverlayMesh.material.dispose();
-            }
-            this.featureOverlayMesh = null;
         }
     }
 
@@ -2025,15 +1858,9 @@ class HorseyViewerApp extends LitElement {
             selectedSingleName = '';
         }
 
-        // Append feature name if a single timber is selected and has a feature
-        let featureLabel = '';
-        if (selectedSingleName && this.selectionManager.selectedFeatures.length === 1) {
-            featureLabel = ' &gt; ' + this.selectionManager.selectedFeatures[0].featureId;
-        }
-
         this.renderRoot.querySelector('#info').innerHTML =
             'timbers (' + selectedTimberCount + '/' + timberCount + ') accesories (' + selectedAccessoryCount + '/' + accessoriesCount + ')' +
-            '<br>' + selectedSingleName + featureLabel;
+            '<br>' + selectedSingleName;
     }
 
     updateDebug(geometryData, profiling) {

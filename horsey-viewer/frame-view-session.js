@@ -123,10 +123,6 @@ class FrameViewSession {
                 this.channel.show(true);
                 return;
             }
-            if (message.type === 'findFeatureAtPoint') {
-                this.handleFindFeatureAtPoint(message);
-                return;
-            }
             if (message.type !== 'viewerLog') {
                 return;
             }
@@ -168,36 +164,6 @@ class FrameViewSession {
     reveal() {
         if (this.panel) {
             this.panel.reveal();
-        }
-    }
-
-    async handleFindFeatureAtPoint(message) {
-        const memberKey = message.memberKey;
-        const point = message.point;
-        if (!memberKey || !Array.isArray(point) || point.length !== 3) {
-            return;
-        }
-        try {
-            await this.ensureRunnerSession();
-            const result = await this.runnerSession.request('find_feature_at_point', {
-                memberKey,
-                point,
-            });
-            if (this.panel) {
-                this.panel.webview.postMessage({
-                    type: 'featureResult',
-                    ...result,
-                });
-            }
-        } catch (error) {
-            this.log(`[feature] find_feature_at_point failed: ${error.message || error}`);
-            if (this.panel) {
-                this.panel.webview.postMessage({
-                    type: 'featureResult',
-                    featureName: null,
-                    memberKey,
-                });
-            }
         }
     }
 

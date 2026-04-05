@@ -208,7 +208,7 @@ DONE-transparent rendering covers shadow and reflection and also covers feature 
 DONE-probably remove hashing stuff you added
 
 -redo CSG features
-  -add CSG naming which creates a hierarchical naming scheme e.g. for mortise and tenon joint
+  -add an optional name field to CutCSG which creates a hierarchical naming scheme e.g. for mortise and tenon joint
     -timber, top level, the entire timber is considered a named CSG
       -* unnamed csg that is the top level mortise and tenon joint, which is a difference halfspace, rectangular prism CSG
         -halfspace -> "shoulderplane"
@@ -221,6 +221,8 @@ DONE-probably remove hashing stuff you added
     -ctrl click goes straigh to selecting features
     -not all CSGs have features yet, in these cases, you just select the CSG itself
   -add feature mesh finding/generation/rendering stats each time you click
+  -display the CSG/fetaure selection string in the info section
+    -hard code in "front/back/left/right/top/bot" face by checking normal when you select a face, so if you select a face that shares a normal with these direction (locally) display it e.g. (selected: post > beam mortise and tenon joint > top end tenon > face (front))
   -keep named features, they are specifically for saw/chisel metadata where we need feature level tagging, however they aren't actually being used at the moment.
       -allow features to be labeled as saw or chisel so we can do cutting instructions
       -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
