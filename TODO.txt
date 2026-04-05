@@ -205,22 +205,33 @@ DONE/IGNORE-improve integration tests on the viewer. Can you think of some tests
 DONE-unselected transparency slider should be inverted
 DONE-edge rendering on unselected things should also have transparency applied
 DONE-transparent rendering covers shadow and reflection and also covers feature highlights :( fix pls
-
-
--probably remove CSG feature stuff you added
 DONE-probably remove hashing stuff you added
 
--have python return the feature mesh for js to render...
--do some profiling on feature selection
+-redo CSG features
+  -add CSG naming which creates a hierarchical naming scheme e.g. for mortise and tenon joint
+    -timber, top level, the entire timber is considered a named CSG
+      -* unnamed csg that is the top level mortise and tenon joint, which is a difference halfspace, rectangular prism CSG
+        -halfspace -> "shoulderplane"
+        -rectangular prism -> "tenon"
+  -each time you click, it navigates a layer deeper
+  -feature mesh generation should happen in python on request, not in javascript
+    -walk over existing mesh and extract points that land on the feature in question, return resulting tris
+  -you still want to be able to select features
+    -clicking on selected CSG raycasts and selsects named CSGs within it or features if raycast hits no named CSG
+    -ctrl click goes straigh to selecting features
+    -not all CSGs have features yet, in these cases, you just select the CSG itself
+  -add feature mesh finding/generation/rendering stats each time you click
+  -keep named features, they are specifically for saw/chisel metadata where we need feature level tagging, however they aren't actually being used at the moment.
+      -allow features to be labeled as saw or chisel so we can do cutting instructions
+      -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
+
+  
 -try auto authoring tests again, this time ask it to use plain_joints as an example
--improved CSG tagging
+DONE/IGNORE-improved CSG tagging
   DONE-allow half faces on prism
   -allow full CSG feature naming
   -allow side faces and top/bot flats to be tagged on CSG extrusion
     -would be cool to allow union faces that are coplanar... but I think you can just name 2 features when defining the cutting instructions and check that they are coplanar then
-  -saw/chisel metadata 
-    -allow features to be labeled as saw or chisel so we can do cutting instructions
-    -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
 
 -do assembly metadata
   DONE-create assemblydirection class 
