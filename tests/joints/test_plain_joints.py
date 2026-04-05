@@ -941,34 +941,4 @@ class TestTongueAndForkButtJoint:
         fork_csg = joint.cut_timbers["fork_timber"].render_timber_with_cuts_csg_local()
         assert tongue_csg is not None
         assert fork_csg is not None
-
-
-class TestCutTimberDeepHash:
-    def test_cut_timber_hash_changes_when_joint_geometry_changes(self):
-        timberA_1 = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
-        timberB_1 = create_standard_horizontal_timber(direction='y', length=100, size=(6, 6), position=(0, 0, 0))
-        joint_1 = cut_plain_miter_joint(
-            CornerJointTimberArrangement(
-                timber1=timberA_1, timber2=timberB_1,
-                timber1_end=TimberReferenceEnd.BOTTOM, timber2_end=TimberReferenceEnd.BOTTOM,
-            )
-        )
-        hash_1 = joint_1.cut_timbers["timberA"].deep_hash()
-
-        timberA_2 = create_standard_horizontal_timber(direction='x', length=100, size=(6, 6), position=(0, 0, 0))
-        timberB_2 = create_standard_horizontal_timber(
-            direction='y',
-            length=100,
-            size=(6, 6),
-            position=(Rational(1, 10), 0, 0),
-        )
-        joint_2 = cut_plain_miter_joint(
-            CornerJointTimberArrangement(
-                timber1=timberA_2, timber2=timberB_2,
-                timber1_end=TimberReferenceEnd.BOTTOM, timber2_end=TimberReferenceEnd.BOTTOM,
-            )
-        )
-        hash_2 = joint_2.cut_timbers["timberA"].deep_hash()
-
-        assert hash_1 != hash_2
         

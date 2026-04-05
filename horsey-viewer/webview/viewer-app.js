@@ -9,10 +9,7 @@ const ViewerPhase = Object.freeze({
 });
 
 function normalizeViewerOptions(viewerOptions) {
-    const next = viewerOptions && typeof viewerOptions === 'object' ? viewerOptions : {};
-    return {
-        enableHashGeometryCheck: Boolean(next.enableHashGeometryCheck),
-    };
+    return {};
 }
 
 function createInitialViewState() {
@@ -32,9 +29,7 @@ const INITIAL_PAYLOAD = window.__HORSEY_INITIAL_PAYLOAD__ || {
         loadingText: 'raising frame',
         refreshToken: 0,
     },
-    viewerOptions: {
-        enableHashGeometryCheck: false,
-    },
+    viewerOptions: {},
 };
 const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
 const VIEWER_APP_VERSION = '2026.03.17.4';
@@ -183,10 +178,6 @@ class ViewerSettingsPanel {
                     debug info
                 </label>
                 <label>
-                    <input id="hash-geometry-check-toggle" type="checkbox" ?checked=${this.app.viewerOptions.enableHashGeometryCheck}>
-                    hash geometry check
-                </label>
-                <label>
                     unselected visibility (${100 - this.app.unselectedTransparencyPercent}%)
                     <input
                         id="unselected-transparency-slider"
@@ -223,7 +214,6 @@ class ViewerSettingsPanel {
         const edgesToggle = renderRoot.querySelector('#edges-toggle');
         const shadowsToggle = renderRoot.querySelector('#shadows-toggle');
         const reflectionsToggle = renderRoot.querySelector('#reflections-toggle');
-        const hashGeometryCheckToggle = renderRoot.querySelector('#hash-geometry-check-toggle');
         const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
         const debugToggle = renderRoot.querySelector('#debug-toggle');
         const timberProfileSelect = renderRoot.querySelector('#timber-profile-select');
@@ -255,10 +245,6 @@ class ViewerSettingsPanel {
             this.app.setReflectionsEnabled(event.target.checked);
         });
 
-        hashGeometryCheckToggle.addEventListener('change', (event) => {
-            this.app.setViewerOptions({ enableHashGeometryCheck: event.target.checked }, { postMessage: true });
-        });
-
         unselectedTransparencySlider.addEventListener('input', (event) => {
             const rawVisibility = Number(event.target.value);
             const normalizedVisibility = Number.isFinite(rawVisibility)
@@ -287,10 +273,6 @@ class ViewerSettingsPanel {
     }
 
     syncControls(renderRoot) {
-        const hashToggle = renderRoot.querySelector('#hash-geometry-check-toggle');
-        if (hashToggle) {
-            hashToggle.checked = this.app.viewerOptions.enableHashGeometryCheck;
-        }
         const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
         if (unselectedTransparencySlider) {
             unselectedTransparencySlider.value = String(100 - this.app.unselectedTransparencyPercent);
@@ -2158,26 +2140,9 @@ class HorseyViewerApp extends LitElement {
             const key = mesh.memberKey || mesh.timberKey || ('index-' + index);
             const memberType = mesh.memberType === 'accessory' ? 'accessory' : 'timber';
             const memberName = mesh.memberName || mesh.name || key;
-            const hash = mesh.hash || null;
             nextKeys.add(key);
 
             const existing = this.meshObjectsByKey.get(key);
-            if (existing && hash !== null && existing.hash !== null && existing.hash === hash) {
-                this.meshKeyMap.set(existing.mesh, key);
-                this.memberMetadataByKey.set(key, { name: memberName, type: memberType });
-                existing.memberType = memberType;
-                this.applyRenderProfileToBundle(existing, this.resolveRenderProfileIdForMemberType(memberType));
-                processed += 1;
-                reportProgress();
-                if (index === 0 || index === meshes.length - 1 || index % 8 === 0) {
-                    await this.waitForNextPaint();
-                    if (this.isRefreshStale(refreshToken)) {
-                        return false;
-                    }
-                }
-                continue;
-            }
-
             if (existing) {
                 this.meshKeyMap.delete(existing.mesh);
                 this.memberMetadataByKey.delete(key);
@@ -2218,7 +2183,6 @@ class HorseyViewerApp extends LitElement {
             this.meshKeyMap.set(solidMesh, key);
             this.memberMetadataByKey.set(key, { name: memberName, type: memberType });
             this.meshObjectsByKey.set(key, {
-                hash: hash,
                 memberType,
                 profileId: materialSet.profileId,
                 mesh: solidMesh,

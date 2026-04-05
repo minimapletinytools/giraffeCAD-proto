@@ -12,7 +12,6 @@ from enum import Enum
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING, Dict, Literal, final, cast, Callable
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-import hashlib
 import warnings
 
 # Aliases for backwards compatibility
@@ -1029,28 +1028,6 @@ class Timber(PerfectTimberWithin):
             named_features=_timber_face_tags(),
         )
     
-    def deep_hash(self) -> str:
-        """
-        Compute a deterministic deep hash of this timber's data state.
-        
-        Traverses all instance fields (length, size, transform, ticket, nominal_half_sizes)
-        and produces a stable hexadecimal hash string. The hash is deterministic
-        across process runs and independent of method definitions or Python object identities.
-        
-        Uses local circular-reference tracking for debug detection: if a cycle is found,
-        emits a warning with object type information and continues hashing with a
-        cycle marker to avoid infinite recursion.
-        
-        For debugging: collect warnings (e.g., via pytest.warns) to detect unexpected
-        circular references in your timber data.
-        
-        Returns:
-            str: Hexadecimal SHA-256 hash of the timber's data
-        """
-        print("doing expensive deep hash of timber with ticket:", self.ticket)
-        visited: Dict[int, str] = {}
-        return _compute_deep_hash(self, visited)
-
 
 @dataclass(frozen=True)
 class Board(PerfectTimberWithin):
@@ -1316,147 +1293,6 @@ class RegularPolygonTimber(PerfectTimberWithin):
         )
 
 
-# ============================================================================
-# Deep Hash Utilities for Timber Data Integrity Debugging
-# ============================================================================
-
-
-def _compute_deep_hash(obj, visited: Dict[int, str], path: str = "root") -> str:
-    """
-    Internal helper to compute deterministic hash of an object with cycle detection.
-    
-    Args:
-        obj: Object to hash
-        visited: dict mapping id(obj) to path where first seen; used for cycle detection
-        path: Current traversal path (for debug warning messages)
-        
-    Returns:
-        Hexadecimal hash string representing the object's data
-    """
-    # Dispatch to canonicalization
-    canonical = _canonicalize_for_hash(obj, visited, path)
-    return _hash_value(canonical)
-
-
-def _canonicalize_for_hash(obj, visited: Dict[int, str], path: str = "root") -> str:
-    """
-    Convert an object to a canonical string representation for deterministic hashing.
-    
-    Supports: None, bool, str, int, SymPy numeric types, Matrix, Transform, Ticket,
-    dataclasses, Enum, and standard containers (list, tuple, dict).
-    
-    Dicts are traversed in sorted canonical-key order for determinism.
-    
-    Args:
-        obj: Object to canonicalize
-        visited: Circular-reference tracking map
-        path: Current traversal path
-        
-    Returns:
-        str: Canonical representation
-    """
-    if obj is None:
-        return "None"
-    
-    if isinstance(obj, bool):
-        return f"bool:{obj}"
-    
-    if isinstance(obj, str):
-        return f"str:{len(obj)}:{obj}"
-    
-    if isinstance(obj, int):
-        return f"int:{obj}"
-    
-    # SymPy numeric types
-    if isinstance(obj, (Integer, Rational)):
-        return f"sympy:{type(obj).__name__}:{str(obj)}"
-    
-    if isinstance(obj, Expr):
-        # Generic SymPy expression
-        simplified = simplify(obj)
-        return f"sympy:Expr:{str(simplified)}"
-    
-    if isinstance(obj, Matrix):
-        # Serialize matrix shape and all element values
-        rows, cols = obj.shape
-        flat = ",".join(str(obj[i, j]) for i in range(rows) for j in range(cols))
-        return f"matrix:{rows}x{cols}:[{flat}]"
-    
-    if isinstance(obj, Enum):
-        return f"enum:{type(obj).__name__}:{obj.name}"
-    
-    if isinstance(obj, (list, tuple)):
-        container_type = type(obj).__name__
-        items = [_canonicalize_for_hash(item, visited, f"{path}[{i}]") for i, item in enumerate(obj)]
-        return f"{container_type}:[{','.join(items)}]"
-    
-    if isinstance(obj, dict):
-        # Sort by canonical representation of keys for determinism
-        sorted_items = sorted(
-            obj.items(),
-            key=lambda kv: _canonicalize_for_hash(kv[0], visited, f"{path}.key")
-        )
-        items = [
-            f"{_canonicalize_for_hash(k, visited, f'{path}[{i}].key')}:"
-            f"{_canonicalize_for_hash(v, visited, f'{path}[{i}].val')}"
-            for i, (k, v) in enumerate(sorted_items)
-        ]
-        return f"dict:[{','.join(items)}]"
-    
-    # Dataclass or similar object with __dataclass_fields__
-    if hasattr(obj, "__dataclass_fields__"):
-        obj_id = id(obj)
-        if obj_id in visited:
-            # Already visited; return cycle marker and emit warning
-            first_path = visited[obj_id]
-            warnings.warn(
-                f"Circular reference detected: {type(obj).__name__} at path '{path}' "
-                f"(first seen at '{first_path}'). Hash will use cycle marker.",
-                stacklevel=5
-            )
-            return "<CYCLE>"
-        
-        # Mark as visited before processing fields
-        visited[obj_id] = path
-        
-        class_name = type(obj).__name__
-        fields = []
-        for field_name in sorted(obj.__dataclass_fields__.keys()):
-            field_val = getattr(obj, field_name)
-            canonical_val = _canonicalize_for_hash(field_val, visited, f"{path}.{field_name}")
-            fields.append(f"{field_name}:{canonical_val}")
-        return f"dataclass:{class_name}:{{{','.join(fields)}}}"
-    
-    # Fallback: use type name and object string representation
-    return f"object:{type(obj).__name__}:{str(obj)}"
-
-
-def _hash_value(canonical: str) -> str:
-    """
-    Compute deterministic hexadecimal hash from canonical string.
-    
-    Args:
-        canonical: Canonical string representation
-        
-    Returns:
-        Hexadecimal hash string (SHA-256)
-    """
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-
-
-def _encode_csg_for_hash(csg: Optional[CutCSG]) -> str:
-    """Encode a CutCSG tree into a deterministic string for hashing."""
-    if csg is None:
-        return "None"
-    if isinstance(csg, SolidUnion):
-        children = [_encode_csg_for_hash(child) for child in csg.children]
-        return f"SolidUnion:[{'|'.join(children)}]"
-    if isinstance(csg, Difference):
-        base = _encode_csg_for_hash(csg.base)
-        subtract = [_encode_csg_for_hash(child) for child in csg.subtract]
-        return f"Difference:base={base};subtract=[{'|'.join(subtract)}]"
-    return repr(csg)
-
 
 # Type alias for all timber-like objects (excludes Board)
 # TimberLike objects are timbers that can be used in structural joinery
@@ -1688,46 +1524,6 @@ class CutTimber:
     def name(self) -> str:
         """Get the name from the underlying timber's ticket."""
         return self.timber.ticket.name
-
-    def get_viewer_cache_key_base(self) -> str:
-        """Stable base key for viewer-side mesh cache identity."""
-        name = self.name if self.name is not None else type(self.timber).__name__
-        if hasattr(self.timber, "deep_hash") and callable(self.timber.deep_hash):
-            base_hash = str(cast(Callable[[], str], self.timber.deep_hash)())
-        else:
-            visited: Dict[int, str] = {}
-            base_hash = _compute_deep_hash(self.timber, visited)
-        return f"{name}|{base_hash}"
-
-    def deep_hash(self) -> str:
-        """
-        Deterministic hash of rendered CutTimber geometry inputs.
-
-        Includes base timber hash, all cuts/end-cuts, and the full rendered local CSG.
-        This is intended for incremental viewer rerender decisions.
-        """
-        if hasattr(self.timber, "deep_hash") and callable(self.timber.deep_hash):
-            base_hash = str(cast(Callable[[], str], self.timber.deep_hash)())
-        else:
-            visited: Dict[int, str] = {}
-            base_hash = _compute_deep_hash(self.timber, visited)
-
-        cut_tokens = []
-        for cut in self.cuts:
-            cut_tokens.append("|".join([
-                repr(cut.maybe_top_end_cut),
-                repr(cut.maybe_bottom_end_cut),
-                _encode_csg_for_hash(cut.negative_csg),
-            ]))
-
-        local_csg = self.render_timber_with_cuts_csg_local()
-        payload = "\n".join([
-            f"base={base_hash}",
-            f"csg={_encode_csg_for_hash(local_csg)}",
-            f"cuts={len(self.cuts)}",
-            *cut_tokens,
-        ])
-        return _hash_value(payload)
 
     # this one returns the timber without cuts where ends with joints are infinite in length
     def _extended_timber_without_cuts_csg_local(self) -> CutCSG:

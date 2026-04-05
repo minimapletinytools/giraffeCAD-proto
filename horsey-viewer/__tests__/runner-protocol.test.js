@@ -149,7 +149,7 @@ describe('runner protocol', () => {
       expect(frame.ok).toBe(true);
       expect(frame.result.timber_count).toBeGreaterThan(0);
 
-      const geometry1 = await client.request('get_geometry', { enableHashGeometryCheck: false });
+      const geometry1 = await client.request('get_geometry');
       expect(geometry1.ok).toBe(true);
       expect(geometry1.result.kind).toBe('triangle-geometry');
       expect(Array.isArray(geometry1.result.meshes)).toBe(true);
@@ -158,7 +158,6 @@ describe('runner protocol', () => {
       expect(typeof firstMesh.memberKey).toBe('string');
       expect(typeof firstMesh.memberType).toBe('string');
       expect(firstMesh.memberType).toBe('timber');
-      expect(geometry1.result.options.enableHashGeometryCheck).toBe(false);
       expect(geometry1.result.changedKeys.length).toBe(geometry1.result.meshes.length);
       expect(Array.isArray(geometry1.result.remeshMetrics)).toBe(true);
       expect(geometry1.result.remeshMetrics.length).toBe(geometry1.result.changedKeys.length);
@@ -176,11 +175,10 @@ describe('runner protocol', () => {
         expect(metric.triangle_count).toBeGreaterThanOrEqual(0);
       }
 
-      const geometry2 = await client.request('get_geometry', { enableHashGeometryCheck: false });
+      const geometry2 = await client.request('get_geometry');
       expect(geometry2.ok).toBe(true);
       expect(geometry2.result.kind).toBe('triangle-geometry');
       expect(Array.isArray(geometry2.result.changedKeys)).toBe(true);
-      expect(geometry2.result.options.enableHashGeometryCheck).toBe(false);
       expect(geometry2.result.changedKeys).toHaveLength(geometry2.result.meshes.length);
       expect(Array.isArray(geometry2.result.remeshMetrics)).toBe(true);
       expect(geometry2.result.remeshMetrics).toHaveLength(geometry2.result.meshes.length);
@@ -202,7 +200,7 @@ describe('runner protocol', () => {
       expect(frame.ok).toBe(true);
       expect(frame.result.accessories_count).toBeGreaterThan(0);
 
-      const geometry = await client.request('get_geometry', { enableHashGeometryCheck: false });
+      const geometry = await client.request('get_geometry');
       expect(geometry.ok).toBe(true);
       expect(Array.isArray(geometry.result.meshes)).toBe(true);
       expect(geometry.result.meshes.length).toBeGreaterThanOrEqual(frame.result.timber_count + frame.result.accessories_count);
@@ -245,22 +243,6 @@ describe('runner protocol', () => {
       expect(Array.isArray(frame.result.timbers)).toBe(true);
       expect(frame.result.timbers.length).toBe(frame.result.timber_count);
       expect(frame.result.timbers.some((timber) => timber && typeof timber.name === 'string' && timber.name.length > 0)).toBe(true);
-    } finally {
-      await client.shutdown();
-    }
-  });
-
-  test('explicit hash geometry option is propagated to geometry response', async () => {
-    const client = createRunnerClient();
-
-    try {
-      const startup = await waitForReadyAndCollectMilestones(client);
-      expect(startup.ready.type).toBe('ready');
-
-      const geometryWithoutHash = await client.request('get_geometry', { enableHashGeometryCheck: false });
-      expect(geometryWithoutHash.ok).toBe(true);
-      expect(geometryWithoutHash.result.kind).toBe('triangle-geometry');
-      expect(geometryWithoutHash.result.options.enableHashGeometryCheck).toBe(false);
     } finally {
       await client.shutdown();
     }

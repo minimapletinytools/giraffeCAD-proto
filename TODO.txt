@@ -208,7 +208,7 @@ DONE-transparent rendering covers shadow and reflection and also covers feature 
 
 
 -probably remove CSG feature stuff you added
--probably remove hashing stuff you added
+DONE-probably remove hashing stuff you added
 
 -have python return the feature mesh for js to render...
 -do some profiling on feature selection
@@ -231,7 +231,7 @@ DONE-transparent rendering covers shadow and reflection and also covers feature 
 
   
 
-
+-the right way to do hashing is to have all joints hash their input properties and store a _hash property
 
 
 

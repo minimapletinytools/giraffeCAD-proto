@@ -48,9 +48,7 @@ class FrameViewSession {
         this.isRefreshing = false;
         this.pendingRefreshReason = null;
         this.refreshSequence = 0;
-        this.refreshOptions = {
-            enableHashGeometryCheck: false,
-        };
+        this.refreshOptions = {};
         this.profiler = new RefreshProfiler({ log: (msg) => this.log(msg) });
     }
 
@@ -119,22 +117,6 @@ class FrameViewSession {
             if (message.type === 'requestRefresh') {
                 this.log('[webview] Manual refresh requested from viewer');
                 this.onFileChanged('manual refresh button');
-                return;
-            }
-            if (message.type === 'setRefreshOptions') {
-                const nextOptions = message.options && typeof message.options === 'object'
-                    ? message.options
-                    : {};
-                const enableHashGeometryCheck = Boolean(nextOptions.enableHashGeometryCheck);
-                const changed = enableHashGeometryCheck !== this.refreshOptions.enableHashGeometryCheck;
-                this.refreshOptions = {
-                    ...this.refreshOptions,
-                    enableHashGeometryCheck,
-                };
-                this.log(`[refresh] Hash geometry check ${enableHashGeometryCheck ? 'enabled' : 'disabled'}`);
-                if (changed) {
-                    void this.refresh(`viewer option change: hash geometry check ${enableHashGeometryCheck ? 'enabled' : 'disabled'}`);
-                }
                 return;
             }
             if (message.type === 'openOutputChannel') {
@@ -277,9 +259,7 @@ class FrameViewSession {
             const frameData = await this.runnerSession.request('get_frame');
             this.profiler.markTiming(timing, 'runner.get_frame.end');
 
-            this.profiler.markTiming(timing, 'runner.get_geometry.start', {
-                enableHashGeometryCheck: this.refreshOptions.enableHashGeometryCheck,
-            });
+            this.profiler.markTiming(timing, 'runner.get_geometry.start');
             const geometryData = await this.runnerSession.request('get_geometry', this.refreshOptions);
             this.profiler.markTiming(timing, 'runner.get_geometry.end');
 
@@ -298,7 +278,6 @@ class FrameViewSession {
                 sourceFile: this.filePath,
                 reason,
                 refresh: {
-                    hashGeometryCheckEnabled: this.refreshOptions.enableHashGeometryCheck,
                     scriptReloadDuration_ms: reloadResult && reloadResult.profiling && typeof reloadResult.profiling.reload_s === 'number'
                         ? Math.round(reloadResult.profiling.reload_s * 1000)
                         : null,
@@ -330,7 +309,6 @@ class FrameViewSession {
                 reload_s: reloadResult && reloadResult.profiling ? reloadResult.profiling.reload_s : null,
                 geometry_s: geometryData && geometryData.profiling ? geometryData.profiling.geometry_s : null,
                 refresh_total_s,
-                hash_geometry_check_enabled: this.refreshOptions.enableHashGeometryCheck,
                 changed_timbers: changedKeys.length,
                 removed_timbers: removedKeys.length,
                 total_timbers: totalTimbers,

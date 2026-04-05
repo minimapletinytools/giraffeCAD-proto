@@ -16,10 +16,7 @@ const ViewerPhase = Object.freeze({
 });
 
 function normalizeViewerOptions(viewerOptions) {
-    const next = viewerOptions && typeof viewerOptions === 'object' ? viewerOptions : {};
-    return {
-        enableHashGeometryCheck: Boolean(next.enableHashGeometryCheck),
-    };
+    return {};
 }
 
 function getNonce() {

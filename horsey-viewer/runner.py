@@ -238,7 +238,6 @@ def _cut_timber_to_triangle_mesh_payload(
     cut_timber: Any,
     local_csg: Any,
     timber_key: str,
-    geometry_hash: str,
 ) -> Dict[str, Any]:
     from giraffecad.cutcsg import adopt_csg
     from giraffecad.rule import Transform
@@ -261,7 +260,6 @@ def _cut_timber_to_triangle_mesh_payload(
         "memberType": "timber",
         "memberKey": timber_key,
         "timberKey": timber_key,
-        "hash": geometry_hash,
         "vertices": vertices,
         "indices": indices,
         "prism_length": round(float(getattr(timber, "length", dims[2])), 6),
@@ -277,7 +275,6 @@ def _accessory_to_triangle_mesh_payload(
     local_csg: Any,
     accessory_key: str,
     accessory_name: str,
-    geometry_hash: str,
 ) -> Dict[str, Any]:
     from giraffecad.cutcsg import adopt_csg
     from giraffecad.rule import Transform
@@ -303,7 +300,6 @@ def _accessory_to_triangle_mesh_payload(
         "memberType": "accessory",
         "memberKey": accessory_key,
         "timberKey": accessory_key,
-        "hash": geometry_hash,
         "vertices": vertices,
         "indices": indices,
         "prism_length": round(float(dims[2]), 6),
@@ -312,8 +308,8 @@ def _accessory_to_triangle_mesh_payload(
     }
 
 
-def build_real_geometry(state: RunnerState, enable_hash_geometry_check: bool = True) -> Dict[str, Any]:
-    """Build triangle mesh geometry for every cut timber, reusing unchanged cached meshes."""
+def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
+    """Build triangle mesh geometry for every cut timber."""
     frame = state.frame
     meshes = []
     changed_keys = []
@@ -324,49 +320,35 @@ def build_real_geometry(state: RunnerState, enable_hash_geometry_check: bool = T
     for cut_timber in frame.cut_timbers:
         try:
             timber = cut_timber.timber
-            if enable_hash_geometry_check and hasattr(cut_timber, "get_viewer_cache_key_base") and callable(cut_timber.get_viewer_cache_key_base):
-                key_base = str(cut_timber.get_viewer_cache_key_base())
-            else:
-                key_base = get_timber_display_name(timber)
+            key_base = get_timber_display_name(timber)
 
             occurrence = key_counts.get(key_base, 0)
             key_counts[key_base] = occurrence + 1
             timber_key = f"{key_base}#{occurrence}"
 
             local_csg = cut_timber.render_timber_with_cuts_csg_local()
-            geometry_hash = None
-            if enable_hash_geometry_check and hasattr(cut_timber, "deep_hash") and callable(cut_timber.deep_hash):
-                geometry_hash = str(cut_timber.deep_hash())
-            elif enable_hash_geometry_check:
-                geometry_hash = repr(local_csg)
 
-            cached = state.mesh_cache.get(timber_key) if enable_hash_geometry_check else None
-            if cached is not None and cached.get("hash") == geometry_hash:
-                mesh_payload = cached["mesh"]
-            else:
-                remesh_t0 = time.monotonic()
-                csg_depth = _compute_csg_depth(local_csg)
-                mesh_payload = _cut_timber_to_triangle_mesh_payload(
-                    cut_timber,
-                    local_csg,
-                    timber_key,
-                    geometry_hash,
-                )
-                remesh_s = time.monotonic() - remesh_t0
-                triangle_count = len(mesh_payload.get("indices", [])) // 3
-                state.mesh_cache[timber_key] = {
-                    "hash": geometry_hash,
-                    "mesh": mesh_payload,
-                    "local_csg": local_csg,
-                    "cut_timber": cut_timber,
-                }
-                changed_keys.append(timber_key)
-                remesh_metrics.append({
-                    "timberKey": timber_key,
-                    "remesh_s": remesh_s,
-                    "csg_depth": csg_depth,
-                    "triangle_count": triangle_count,
-                })
+            remesh_t0 = time.monotonic()
+            csg_depth = _compute_csg_depth(local_csg)
+            mesh_payload = _cut_timber_to_triangle_mesh_payload(
+                cut_timber,
+                local_csg,
+                timber_key,
+            )
+            remesh_s = time.monotonic() - remesh_t0
+            triangle_count = len(mesh_payload.get("indices", [])) // 3
+            state.mesh_cache[timber_key] = {
+                "mesh": mesh_payload,
+                "local_csg": local_csg,
+                "cut_timber": cut_timber,
+            }
+            changed_keys.append(timber_key)
+            remesh_metrics.append({
+                "timberKey": timber_key,
+                "remesh_s": remesh_s,
+                "csg_depth": csg_depth,
+                "triangle_count": triangle_count,
+            })
 
             meshes.append(mesh_payload)
             seen_keys.add(timber_key)
@@ -385,39 +367,28 @@ def build_real_geometry(state: RunnerState, enable_hash_geometry_check: bool = T
             accessory_name = f"{accessory_type} {occurrence + 1}"
 
             local_csg = accessory.render_csg_local()
-            geometry_hash = None
-            if enable_hash_geometry_check and hasattr(accessory, "deep_hash") and callable(accessory.deep_hash):
-                geometry_hash = str(accessory.deep_hash())
-            elif enable_hash_geometry_check:
-                geometry_hash = repr(local_csg)
 
-            cached = state.mesh_cache.get(accessory_key) if enable_hash_geometry_check else None
-            if cached is not None and cached.get("hash") == geometry_hash:
-                mesh_payload = cached["mesh"]
-            else:
-                remesh_t0 = time.monotonic()
-                csg_depth = _compute_csg_depth(local_csg)
-                mesh_payload = _accessory_to_triangle_mesh_payload(
-                    accessory,
-                    local_csg,
-                    accessory_key,
-                    accessory_name,
-                    geometry_hash,
-                )
-                remesh_s = time.monotonic() - remesh_t0
-                triangle_count = len(mesh_payload.get("indices", [])) // 3
-                state.mesh_cache[accessory_key] = {
-                    "hash": geometry_hash,
-                    "mesh": mesh_payload,
-                }
-                changed_keys.append(accessory_key)
-                remesh_metrics.append({
-                    "timberKey": accessory_key,
-                    "memberType": "accessory",
-                    "remesh_s": remesh_s,
-                    "csg_depth": csg_depth,
-                    "triangle_count": triangle_count,
-                })
+            remesh_t0 = time.monotonic()
+            csg_depth = _compute_csg_depth(local_csg)
+            mesh_payload = _accessory_to_triangle_mesh_payload(
+                accessory,
+                local_csg,
+                accessory_key,
+                accessory_name,
+            )
+            remesh_s = time.monotonic() - remesh_t0
+            triangle_count = len(mesh_payload.get("indices", [])) // 3
+            state.mesh_cache[accessory_key] = {
+                "mesh": mesh_payload,
+            }
+            changed_keys.append(accessory_key)
+            remesh_metrics.append({
+                "timberKey": accessory_key,
+                "memberType": "accessory",
+                "remesh_s": remesh_s,
+                "csg_depth": csg_depth,
+                "triangle_count": triangle_count,
+            })
 
             meshes.append(mesh_payload)
             seen_keys.add(accessory_key)
@@ -442,9 +413,6 @@ def build_real_geometry(state: RunnerState, enable_hash_geometry_check: bool = T
             "removedTimbers": len(removed_keys),
             "totalAccessories": len(accessories),
             "totalMembers": len(meshes),
-        },
-        "options": {
-            "enableHashGeometryCheck": enable_hash_geometry_check,
         },
     }
 
@@ -916,9 +884,8 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
         return state, make_success_response(request_id, command, serialize_frame(state.frame)), False
 
     if command == "get_geometry":
-        enable_hash_geometry_check = bool(payload.get("enableHashGeometryCheck", True))
         t0 = time.monotonic()
-        geometry = build_real_geometry(state, enable_hash_geometry_check=enable_hash_geometry_check)
+        geometry = build_real_geometry(state)
         geometry_s = time.monotonic() - t0
         geometry["profiling"] = {"geometry_s": geometry_s}
         return state, make_success_response(request_id, command, geometry), False
