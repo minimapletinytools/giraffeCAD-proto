@@ -1,5 +1,5 @@
 """
-Tests for Japanese joint construction functions (mitered and keyed lap joint).
+Tests for Japanese joint construction functions.
 """
 
 import pytest
@@ -7,11 +7,13 @@ from sympy import Matrix, Rational, Integer, simplify, pi, Abs
 from giraffecad import *
 from giraffecad.rule import inches, degrees, are_vectors_parallel, safe_dot_product, normalize_vector
 from giraffecad.ticket import TimberTicket
+from giraffecad.cutcsg import Difference, SolidUnion, ConvexPolygonExtrusion
 from giraffecad.example_shavings import (
+    create_canonical_example_butt_joint_timbers,
     create_canonical_example_corner_joint_timbers,
     create_canonical_example_right_angle_corner_joint_timbers,
 )
-from giraffecad.joints.japanese_joints import cut_mitered_and_keyed_lap_joint
+from giraffecad.joints.japanese_joints import cut_mitered_and_keyed_lap_joint, cut_housed_dovetail_butt_joint
 from tests.testing_shavings import (
     create_standard_horizontal_timber,
 )
@@ -241,4 +243,261 @@ class TestMiteredAndKeyedLapJoint:
             cut_mitered_and_keyed_lap_joint(
                 arrangement=arrangement,
                 num_laps=2,
+            )
+
+
+# ============================================================================
+# Tests for cut_housed_dovetail_butt_joint
+# ============================================================================
+
+
+def _make_butt_arrangement(front_face=TimberLongFace.RIGHT):
+    """Create a canonical butt joint arrangement with the given front face."""
+    from dataclasses import replace as dc_replace
+    return dc_replace(
+        create_canonical_example_butt_joint_timbers(),
+        front_face_on_butt_timber=front_face,
+    )
+
+
+def _make_simple_butt_arrangement():
+    """
+    Create a butt joint arrangement with simple integer coordinates (no unit conversion).
+
+    - Receiving timber (post): vertical along +Z, height 100, size (8, 8), at origin.
+      Cross-section: x ∈ [-4, 4], y ∈ [-4, 4].
+    - Dovetail timber (beam): horizontal along +X, length 100, size (8, 8),
+      bottom at (-100, 0, 50). Cross-section: y ∈ [-4, 4], z ∈ [46, 54].
+    - butt_timber_end = TOP (x=0)
+    - front_face_on_butt_timber = RIGHT (+Y, perpendicular to post length +Z)
+    """
+    from tests.testing_shavings import create_standard_vertical_timber
+    post = create_standard_vertical_timber(height=100, size=(8, 8), position=(0, 0, 0), ticket="receiving_timber")
+    beam = create_standard_horizontal_timber(
+        direction='x', length=100, size=(8, 8), position=(-100, 0, 50), ticket="butt_timber",
+    )
+    return ButtJointTimberArrangement(
+        butt_timber=beam,
+        receiving_timber=post,
+        butt_timber_end=TimberReferenceEnd.TOP,
+        front_face_on_butt_timber=TimberLongFace.RIGHT,
+    )
+
+
+class TestHousedDovetailButtJoint:
+    """Test cut_housed_dovetail_butt_joint function."""
+
+    def test_general_housed_dovetail_butt_joint(self):
+        """
+        General test: create the joint with normal parameters, validate structure
+        (cut counts, CSG types, end cuts), then walk key points through the geometry.
+
+        Simple arrangement (no unit conversion):
+        - receiving_timber (post): +Z, size 8×8, at origin
+        - butt_timber (beam): +X, size 8×8, bottom at (-100, 0, 50), TOP end at x=0
+        - front_face_on_butt_timber = RIGHT (+Y)
+
+        Post LEFT face at x=-4.  shoulder_distance_from_end = 4 - 1 = 3.
+        Shoulder in global: x = 0 - 3 = -3.
+        dovetail_depth = 8/2 = 4 (from RIGHT face y=+4 inward to y=0).
+        Dovetail profile: narrow (small_width=2) at shoulder x=-3,
+        widening (large_width=4) toward x=1 (past end, clipped by timber body at x=0).
+        At x=-1: profile width ≈ 3, Z ∈ [48.5, 51.5], Y ∈ [0, 4].
+        """
+        arrangement = _make_simple_butt_arrangement()
+        dovetail_timber = arrangement.butt_timber
+        receiving_timber = arrangement.receiving_timber
+
+        joint = cut_housed_dovetail_butt_joint(
+            arrangement=arrangement,
+            receiving_timber_shoulder_inset=Rational(1),
+            dovetail_length=Rational(4),
+            dovetail_small_width=Rational(2),
+            dovetail_large_width=Rational(4),
+        )
+
+        # ---- structure ----
+        assert len(joint.cut_timbers) == 2
+        assert dovetail_timber.ticket.name in joint.cut_timbers
+        assert receiving_timber.ticket.name in joint.cut_timbers
+        assert joint.ticket is not None
+        assert joint.ticket.joint_type == "housed_dovetail_butt"
+        assert len(joint.jointAccessories) == 0
+
+        dt_cut = joint.cut_timbers[dovetail_timber.ticket.name]
+        recv_cut = joint.cut_timbers[receiving_timber.ticket.name]
+
+        # Dovetail timber: 1 cut, end cut at TOP, negative CSG = Difference(housing, profile)
+        assert len(dt_cut.cuts) == 1
+        assert isinstance(dt_cut.cuts[0], Cutting)
+        assert dt_cut.cuts[0].maybe_top_end_cut is not None
+        assert dt_cut.cuts[0].maybe_bottom_end_cut is None
+        assert isinstance(dt_cut.cuts[0].negative_csg, Difference)
+
+        # Receiving timber: 1 cut, no end cuts, with inset > 0 → SolidUnion(notch, socket)
+        assert len(recv_cut.cuts) == 1
+        assert isinstance(recv_cut.cuts[0], Cutting)
+        assert recv_cut.cuts[0].maybe_top_end_cut is None
+        assert recv_cut.cuts[0].maybe_bottom_end_cut is None
+        assert isinstance(recv_cut.cuts[0].negative_csg, SolidUnion)
+
+        # ---- render both timbers ----
+        dt_csg = dt_cut.render_timber_with_cuts_csg_local()
+        recv_csg = recv_cut.render_timber_with_cuts_csg_local()
+
+        def in_dt(pt):
+            return dt_csg.contains_point(dovetail_timber.transform.global_to_local(pt))
+
+        def in_recv(pt):
+            return recv_csg.contains_point(receiving_timber.transform.global_to_local(pt))
+
+        # ---- walk a line along the dovetail timber centerline ----
+
+        # Well inside the beam body (far from joint, x=-50)
+        assert in_dt(create_v3(Rational(-50), 0, Rational(50)))
+        # Past the dovetail end (x=5, well beyond TOP at x=0)
+        assert not in_dt(create_v3(Rational(5), 0, Rational(50)))
+
+        # ---- walk a line perpendicular to the dovetail face at x=-1 ----
+        # At x=-1 (in the housing region between shoulder x=-3 and end x=0):
+        #   profile width ≈ 3, Z ∈ [48.5, 51.5], Y depth ∈ [0, 4]
+
+        # Inside the dovetail tenon: y=1 ∈ [0,4], z=50 ∈ [48.5,51.5]
+        tenon_pt = create_v3(Rational(-1), Rational(1), Rational(50))
+        assert in_dt(tenon_pt), "Point inside dovetail tenon should be in dovetail timber"
+        assert not in_recv(tenon_pt), "Point inside dovetail socket should not be in receiving timber"
+
+        # On the opposite side of the dovetail depth: y=-1 ∉ [0,4]
+        void_pt = create_v3(Rational(-1), Rational(-1), Rational(50))
+        assert not in_dt(void_pt), "Point in housing void should not be in dovetail timber"
+        assert in_recv(void_pt), "Point outside socket should still be in receiving timber"
+
+        # Outside the dovetail width: z=53 ∉ [48.5,51.5]
+        outside_width_pt = create_v3(Rational(-1), Rational(1), Rational(53))
+        assert not in_dt(outside_width_pt), "Point outside dovetail width should not be in dovetail timber"
+        assert in_recv(outside_width_pt), "Point outside socket width should be in receiving timber"
+
+        # ---- receiving timber body far from the joint ----
+        assert in_recv(create_v3(0, 0, Rational(10)))
+        assert not in_dt(create_v3(0, 0, Rational(10)))
+
+        # ---- before shoulder, full cross-section is intact ----
+        body_near_shoulder = create_v3(Rational(-5), Rational(-1), Rational(50))
+        assert in_dt(body_near_shoulder), "Full cross-section before shoulder should be intact"
+
+    def test_multiple_orientations(self):
+        """Test that the joint is constructable in several timber orientation combos."""
+        test_cases = [
+            # (butt_dir, recv_dir, butt_end, front_face)
+            ('y', 'x', TimberReferenceEnd.BOTTOM, TimberLongFace.FRONT),
+            ('-y', 'x', TimberReferenceEnd.BOTTOM, TimberLongFace.FRONT),
+            ('x', 'y', TimberReferenceEnd.BOTTOM, TimberLongFace.FRONT),
+            ('x', '-y', TimberReferenceEnd.TOP, TimberLongFace.FRONT),
+        ]
+
+        for butt_dir, recv_dir, butt_end, front_face in test_cases:
+            butt = create_standard_horizontal_timber(
+                direction=butt_dir, length=100, size=(6, 6),
+                position=(0, 0, 0), ticket="butt_timber",
+            )
+            recv = create_standard_horizontal_timber(
+                direction=recv_dir, length=100, size=(6, 6),
+                position=(0, 0, 0), ticket="receiving_timber",
+            )
+
+            arrangement = ButtJointTimberArrangement(
+                butt_timber=butt,
+                receiving_timber=recv,
+                butt_timber_end=butt_end,
+                front_face_on_butt_timber=front_face,
+            )
+
+            joint = cut_housed_dovetail_butt_joint(
+                arrangement=arrangement,
+                receiving_timber_shoulder_inset=Rational(1),
+                dovetail_length=Rational(3),
+                dovetail_small_width=Rational(3, 2),
+                dovetail_large_width=Rational(3),
+            )
+
+            assert len(joint.cut_timbers) == 2
+            # Both timbers should be renderable
+            joint.cut_timbers["butt_timber"].render_timber_with_cuts_csg_local()
+            joint.cut_timbers["receiving_timber"].render_timber_with_cuts_csg_local()
+
+    def test_zero_shoulder_inset(self):
+        """With shoulder_inset=0 receiving timber has no shoulder notch (no SolidUnion)."""
+        arrangement = _make_butt_arrangement()
+
+        joint = cut_housed_dovetail_butt_joint(
+            arrangement=arrangement,
+            receiving_timber_shoulder_inset=Rational(0),
+            dovetail_length=Rational(3),
+            dovetail_small_width=Rational(3, 2),
+            dovetail_large_width=Rational(3),
+        )
+
+        recv_neg_csg = joint.cut_timbers[arrangement.receiving_timber.ticket.name].cuts[0].negative_csg
+        assert not isinstance(recv_neg_csg, SolidUnion), \
+            "With zero inset, receiving negative CSG should be the socket alone (no SolidUnion)"
+
+    def test_validation_errors(self):
+        """Test that invalid parameters raise ValueErrors."""
+        arrangement = _make_butt_arrangement()
+
+        with pytest.raises(ValueError, match="dovetail_length must be positive"):
+            cut_housed_dovetail_butt_joint(
+                arrangement=arrangement, receiving_timber_shoulder_inset=Rational(1, 2),
+                dovetail_length=Rational(0), dovetail_small_width=Rational(3, 2), dovetail_large_width=Rational(3),
+            )
+
+        with pytest.raises(ValueError, match="dovetail_small_width must be positive"):
+            cut_housed_dovetail_butt_joint(
+                arrangement=arrangement, receiving_timber_shoulder_inset=Rational(1, 2),
+                dovetail_length=Rational(3), dovetail_small_width=Rational(-1), dovetail_large_width=Rational(3),
+            )
+
+        with pytest.raises(ValueError, match="dovetail_large_width.*must be greater"):
+            cut_housed_dovetail_butt_joint(
+                arrangement=arrangement, receiving_timber_shoulder_inset=Rational(1, 2),
+                dovetail_length=Rational(3), dovetail_small_width=Rational(3, 2), dovetail_large_width=Rational(1),
+            )
+
+        with pytest.raises(ValueError, match="receiving_timber_shoulder_inset must be non-negative"):
+            cut_housed_dovetail_butt_joint(
+                arrangement=arrangement, receiving_timber_shoulder_inset=Rational(-1),
+                dovetail_length=Rational(3), dovetail_small_width=Rational(3, 2), dovetail_large_width=Rational(3),
+            )
+
+        with pytest.raises(ValueError, match="dovetail_depth must be positive"):
+            cut_housed_dovetail_butt_joint(
+                arrangement=arrangement, receiving_timber_shoulder_inset=Rational(1, 2),
+                dovetail_length=Rational(3), dovetail_small_width=Rational(3, 2), dovetail_large_width=Rational(3),
+                dovetail_depth=Rational(0),
+            )
+
+    def test_parallel_face_raises(self):
+        """Front face parallel to receiving length direction should raise ValueError."""
+        butt = create_standard_horizontal_timber(
+            direction='y', length=100, size=(6, 6),
+            position=(0, 0, 0), ticket="butt_timber",
+        )
+        recv = create_standard_horizontal_timber(
+            direction='x', length=100, size=(6, 6),
+            position=(0, 0, 0), ticket="receiving_timber",
+        )
+        # For butt 'y': RIGHT face is +X, which is parallel to recv length +X
+        arrangement = ButtJointTimberArrangement(
+            butt_timber=butt,
+            receiving_timber=recv,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+            front_face_on_butt_timber=TimberLongFace.RIGHT,
+        )
+        with pytest.raises(ValueError, match="perpendicular to receiving timber length"):
+            cut_housed_dovetail_butt_joint(
+                arrangement=arrangement,
+                receiving_timber_shoulder_inset=Rational(1),
+                dovetail_length=Rational(3),
+                dovetail_small_width=Rational(3, 2),
+                dovetail_large_width=Rational(3),
             )
