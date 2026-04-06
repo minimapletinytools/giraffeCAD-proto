@@ -187,11 +187,11 @@ def prism_to_mesh(prism: Any) -> Dict[str, Any]:
     Vertex layout (8 corners, indices 0-7):
         0: -hw, -hh, z0    1: +hw, -hh, z0    2: +hw, +hh, z0    3: -hw, +hh, z0
         4: -hw, -hh, z1    5: +hw, -hh, z1    6: +hw, +hh, z1    7: -hw, +hh, z1
-    where z0 = -start_distance (bottom) and z1 = end_distance (top) in local Z.
+    where z0 = start_distance (bottom) and z1 = end_distance (top) in local Z.
     """
     hw = float(prism.size[0]) / 2.0
     hh = float(prism.size[1]) / 2.0
-    z0 = -float(prism.start_distance) if prism.start_distance is not None else 0.0
+    z0 = float(prism.start_distance) if prism.start_distance is not None else 0.0
     z1 = float(prism.end_distance) if prism.end_distance is not None else 0.0
 
     M = prism.transform.orientation.matrix
@@ -717,14 +717,14 @@ def _is_point_inside_csg_float(csg: Any, pt: List[float], eps: float = 1e-4) -> 
 
     if isinstance(csg, HalfSpace):
         n = [float(csg.normal[i]) for i in range(3)]
-        return _dot3(n, pt) <= float(csg.offset) + eps
+        return _dot3(n, pt) >= float(csg.offset) - eps
 
     if isinstance(csg, RectangularPrism):
         rot, pos = _build_inv_transform_float(csg.transform)
         lp = _inv_transform_point(rot, pos, pt)
         hw = float(csg.size[0]) / 2.0
         hh = float(csg.size[1]) / 2.0
-        z0 = -float(csg.start_distance) if csg.start_distance is not None else -1e9
+        z0 = float(csg.start_distance) if csg.start_distance is not None else -1e9
         z1 = float(csg.end_distance) if csg.end_distance is not None else 1e9
         return (-hw - eps <= lp[0] <= hw + eps
                 and -hh - eps <= lp[1] <= hh + eps
@@ -738,7 +738,7 @@ def _is_point_inside_csg_float(csg: Any, pt: List[float], eps: float = 1e-4) -> 
         perp = [d[i] - along * n[i] for i in range(3)]
         dist_sq = _dot3(perp, perp)
         r = float(csg.radius)
-        z0 = -float(csg.start_distance) if csg.start_distance is not None else -1e9
+        z0 = float(csg.start_distance) if csg.start_distance is not None else -1e9
         z1 = float(csg.end_distance) if csg.end_distance is not None else 1e9
         return dist_sq <= (r + eps) ** 2 and z0 - eps <= along <= z1 + eps
 
@@ -773,7 +773,7 @@ def _is_point_on_csg_boundary_float(csg: Any, pt: List[float], eps: float = 1e-4
         lp = _inv_transform_point(rot, pos, pt)
         hw = float(csg.size[0]) / 2.0
         hh = float(csg.size[1]) / 2.0
-        z0 = -float(csg.start_distance) if csg.start_distance is not None else None
+        z0 = float(csg.start_distance) if csg.start_distance is not None else None
         z1 = float(csg.end_distance) if csg.end_distance is not None else None
         # Must be within bounds
         if lp[0] < -hw - eps or lp[0] > hw + eps:
@@ -799,7 +799,7 @@ def _is_point_on_csg_boundary_float(csg: Any, pt: List[float], eps: float = 1e-4
         perp = [d[i] - along * n[i] for i in range(3)]
         dist = _dot3(perp, perp) ** 0.5
         r = float(csg.radius)
-        z0 = -float(csg.start_distance) if csg.start_distance is not None else None
+        z0 = float(csg.start_distance) if csg.start_distance is not None else None
         z1 = float(csg.end_distance) if csg.end_distance is not None else None
         if z0 is not None and along < z0 - eps:
             return False
@@ -837,7 +837,7 @@ def _detect_face_label(csg: Any, pt: List[float], eps: float = 1e-4) -> str:
         lp = _inv_transform_point(rot, pos, pt)
         hw = float(csg.size[0]) / 2.0
         hh = float(csg.size[1]) / 2.0
-        z0 = -float(csg.start_distance) if csg.start_distance is not None else None
+        z0 = float(csg.start_distance) if csg.start_distance is not None else None
         z1 = float(csg.end_distance) if csg.end_distance is not None else None
 
         # Collect candidates (label, distance_from_face)
@@ -863,27 +863,55 @@ def _detect_face_label(csg: Any, pt: List[float], eps: float = 1e-4) -> str:
     return "face"
 
 
-def _resolve_csg_at_path(csg: Any, path: List[str]) -> Any:
-    """Walk the CSG tree following *path* of named CSG nodes."""
+def _resolve_csg_at_path(csg: Any, path: List[str], pt: Optional[List[float]] = None, eps: float = 1e-4) -> Any:
+    """Walk the CSG tree following *path* of named CSG nodes.
+
+    Searches through unnamed intermediate Difference/SolidUnion nodes
+    transparently.  When *pt* is given and multiple children share the
+    same name, prefer the one whose boundary contains *pt*.
+    """
     from giraffecad.cutcsg import SolidUnion, Difference
+
+    def _find_named(node: Any, name: str) -> List[Any]:
+        """Return all descendants of *node* with the given *name*, searching
+        through unnamed compound intermediaries."""
+        results: List[Any] = []
+        children: List[Any] = []
+        if isinstance(node, Difference):
+            children = list(node.subtract)
+            # Also check base
+            base_name = getattr(node.base, "name", None)
+            if base_name == name:
+                results.append(node.base)
+            elif isinstance(node.base, (SolidUnion, Difference)) and base_name is None:
+                results.extend(_find_named(node.base, name))
+        elif isinstance(node, SolidUnion):
+            children = list(node.children)
+        for ch in children:
+            ch_name = getattr(ch, "name", None)
+            if ch_name == name:
+                results.append(ch)
+            elif isinstance(ch, (SolidUnion, Difference)) and ch_name is None:
+                results.extend(_find_named(ch, name))
+        return results
 
     node = csg
     for name in path:
-        found = False
-        if isinstance(node, Difference):
-            for sub in node.subtract:
-                if getattr(sub, "name", None) == name:
-                    node = sub
-                    found = True
-                    break
-        elif isinstance(node, SolidUnion):
-            for ch in node.children:
-                if getattr(ch, "name", None) == name:
-                    node = ch
-                    found = True
-                    break
-        if not found:
+        candidates = _find_named(node, name)
+        if not candidates:
             break
+        if len(candidates) == 1 or pt is None:
+            node = candidates[0]
+        else:
+            # Multiple with same name — pick the one on boundary
+            picked = candidates[0]
+            for c in candidates:
+                if _is_point_on_csg_boundary_float(c, pt, eps):
+                    picked = c
+                    break
+                if _is_point_inside_csg_float(c, pt, eps):
+                    picked = c
+            node = picked
     return node
 
 
@@ -906,10 +934,16 @@ def _navigate_csg_one_level(
                 sub_name = getattr(sub, "name", None)
                 if sub_name:
                     return (current_path + [sub_name], sub, None)
-                else:
-                    # Unnamed — report face of this primitive directly
-                    return (current_path, sub, _detect_face_label(sub, pt_local, eps))
-        # Point is on the base timber surface
+                # Unnamed compound → drill through transparently
+                if isinstance(sub, (SolidUnion, Difference)):
+                    return _navigate_csg_one_level(sub, pt_local, current_path, eps)
+                return (current_path, sub, _detect_face_label(sub, pt_local, eps))
+        # Point is on the base surface
+        base_name = getattr(node.base, "name", None)
+        if base_name:
+            return (current_path + [base_name], node.base, None)
+        if isinstance(node.base, (SolidUnion, Difference)):
+            return _navigate_csg_one_level(node.base, pt_local, current_path, eps)
         return (current_path, node.base, _detect_face_label(node.base, pt_local, eps))
 
     if isinstance(node, SolidUnion):
@@ -918,8 +952,10 @@ def _navigate_csg_one_level(
                 ch_name = getattr(ch, "name", None)
                 if ch_name:
                     return (current_path + [ch_name], ch, None)
-                else:
-                    return (current_path, ch, _detect_face_label(ch, pt_local, eps))
+                # Unnamed compound → drill through transparently
+                if isinstance(ch, (SolidUnion, Difference)):
+                    return _navigate_csg_one_level(ch, pt_local, current_path, eps)
+                return (current_path, ch, _detect_face_label(ch, pt_local, eps))
         # Couldn't match a specific child — report face of whole union
         return (current_path, node, "face")
 
@@ -988,6 +1024,55 @@ def _extract_highlight_mesh(
     return out_verts, out_idx, matched, total_tris
 
 
+def _debug_prism_distances(prism: Any, pt: List[float], eps: float, indent: int = 4) -> None:
+    """Log detailed distances from point to each face of a RectangularPrism."""
+    rot, pos = _build_inv_transform_float(prism.transform)
+    lp = _inv_transform_point(rot, pos, pt)
+    hw = float(prism.size[0]) / 2.0
+    hh = float(prism.size[1]) / 2.0
+    z0 = float(prism.start_distance) if prism.start_distance is not None else None
+    z1 = float(prism.end_distance) if prism.end_distance is not None else None
+    pad = " " * indent
+    log_stderr(f"[csg-nav] {pad}prism local_pt={[round(v,6) for v in lp]}, hw={hw:.4f}, hh={hh:.4f}, z0={z0}, z1={z1}")
+    log_stderr(f"[csg-nav] {pad}  dist to -X: {abs(lp[0]+hw):.6f}, +X: {abs(lp[0]-hw):.6f}")
+    log_stderr(f"[csg-nav] {pad}  dist to -Y: {abs(lp[1]+hh):.6f}, +Y: {abs(lp[1]-hh):.6f}")
+    if z0 is not None:
+        log_stderr(f"[csg-nav] {pad}  dist to z0: {abs(lp[2]-z0):.6f}")
+    else:
+        log_stderr(f"[csg-nav] {pad}  z0=None (infinite)")
+    if z1 is not None:
+        log_stderr(f"[csg-nav] {pad}  dist to z1: {abs(lp[2]-z1):.6f}")
+    else:
+        log_stderr(f"[csg-nav] {pad}  z1=None (infinite)")
+
+
+def _debug_difference_distances(diff: Any, pt: List[float], eps: float, indent: int = 4) -> None:
+    """Log detailed distances for a Difference CSG."""
+    from giraffecad.cutcsg import HalfSpace as _HS, RectangularPrism as _RP
+    pad = " " * indent
+    base = diff.base
+    if isinstance(base, _HS):
+        n = [float(base.normal[k]) for k in range(3)]
+        dot_val = _dot3(n, pt)
+        offset = float(base.offset)
+        dist = abs(dot_val - offset)
+        inside = dot_val >= offset
+        log_stderr(f"[csg-nav] {pad}Diff.base HalfSpace: dot={dot_val:.6f}, offset={offset:.6f}, dist={dist:.6f}, inside={inside} (eps={eps})")
+    elif isinstance(base, _RP):
+        log_stderr(f"[csg-nav] {pad}Diff.base RectangularPrism:")
+        _debug_prism_distances(base, pt, eps, indent + 2)
+    for i, sub in enumerate(diff.subtract):
+        if isinstance(sub, _HS):
+            n = [float(sub.normal[k]) for k in range(3)]
+            dot_val = _dot3(n, pt)
+            offset = float(sub.offset)
+            dist = abs(dot_val - offset)
+            log_stderr(f"[csg-nav] {pad}Diff.sub[{i}] HalfSpace: dot={dot_val:.6f}, offset={offset:.6f}, dist={dist:.6f}")
+        elif isinstance(sub, _RP):
+            log_stderr(f"[csg-nav] {pad}Diff.sub[{i}] RectangularPrism:")
+            _debug_prism_distances(sub, pt, eps, indent + 2)
+
+
 def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Dict[str, Any]:
     """Process a find_csg_at_point request and return the result dict."""
     member_key = payload.get("memberKey")
@@ -1017,21 +1102,102 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Di
 
     t0 = time.monotonic()
 
+    # --- Debug: describe the CSG tree ---
+    def _csg_debug_label(c: Any) -> str:
+        name = getattr(c, "name", None)
+        ctype = type(c).__name__
+        label = f"{ctype}"
+        if name:
+            label += f'(name="{name}")'
+        return label
+
+    def _csg_tree_debug(c: Any, depth: int = 0) -> List[str]:
+        from giraffecad.cutcsg import SolidUnion, Difference
+        indent = "  " * depth
+        lines = [f"{indent}{_csg_debug_label(c)}"]
+        if isinstance(c, Difference):
+            lines.append(f"{indent}  base: {_csg_debug_label(c.base)}")
+            for i, s in enumerate(c.subtract):
+                lines.append(f"{indent}  subtract[{i}]:")
+                lines.extend(_csg_tree_debug(s, depth + 2))
+        elif isinstance(c, SolidUnion):
+            for i, ch in enumerate(c.children):
+                lines.append(f"{indent}  child[{i}]:")
+                lines.extend(_csg_tree_debug(ch, depth + 2))
+        return lines
+
+    log_stderr(f"[csg-nav] === find_csg_at_point ===")
+    log_stderr(f"[csg-nav] memberKey={member_key}, ctrlClick={ctrl_click}")
+    log_stderr(f"[csg-nav] global point={[round(float(p), 4) for p in point]}")
+    log_stderr(f"[csg-nav] local point={[round(v, 4) for v in pt_local]}")
+    log_stderr(f"[csg-nav] currentPath={current_path}")
+    log_stderr(f"[csg-nav] CSG tree:")
+    for line in _csg_tree_debug(local_csg):
+        log_stderr(f"[csg-nav]   {line}")
+
     if ctrl_click:
         new_path, target_csg, feature_label = _navigate_csg_to_leaf(local_csg, pt_local, eps)
     else:
-        node = _resolve_csg_at_path(local_csg, current_path)
+        if current_path:
+            node = _resolve_csg_at_path(local_csg, current_path, pt_local, eps)
+            on_boundary = _is_point_on_csg_boundary_float(node, pt_local, eps)
+            log_stderr(f"[csg-nav] resolved node at path: {_csg_debug_label(node)}, point on boundary={on_boundary}")
+            if not on_boundary:
+                node = local_csg
+                current_path = []
+                log_stderr(f"[csg-nav] popped back to root")
+        else:
+            node = local_csg
+        log_stderr(f"[csg-nav] navigating from: {_csg_debug_label(node)}")
+
+        # Debug: test each subtract child boundary for Difference nodes
+        from giraffecad.cutcsg import Difference as _Diff, SolidUnion as _SU, HalfSpace as _HS, RectangularPrism as _RP
+        if isinstance(node, _Diff):
+            for i, sub in enumerate(node.subtract):
+                on_b = _is_point_on_csg_boundary_float(sub, pt_local, eps)
+                log_stderr(f"[csg-nav]   subtract[{i}] {_csg_debug_label(sub)} boundary={on_b}")
+                if isinstance(sub, _SU):
+                    for j, ch in enumerate(sub.children):
+                        on_ch = _is_point_on_csg_boundary_float(ch, pt_local, eps)
+                        log_stderr(f"[csg-nav]     child[{j}] {_csg_debug_label(ch)} boundary={on_ch}")
+                        # Deep debug: show distances for primitives inside this child
+                        if isinstance(ch, _Diff):
+                            _debug_difference_distances(ch, pt_local, eps, indent=6)
+                        elif isinstance(ch, _HS):
+                            n = [float(ch.normal[k]) for k in range(3)]
+                            dist = abs(_dot3(n, pt_local) - float(ch.offset))
+                            log_stderr(f"[csg-nav]       HalfSpace dist={dist:.6f} (eps={eps}), n={[round(v,4) for v in n]}, offset={float(ch.offset):.4f}")
+            on_base = _is_point_on_csg_boundary_float(node.base, pt_local, eps)
+            log_stderr(f"[csg-nav]   base {_csg_debug_label(node.base)} boundary={on_base}")
+            if isinstance(node.base, _RP):
+                _debug_prism_distances(node.base, pt_local, eps, indent=4)
+
         new_path, target_csg, feature_label = _navigate_csg_one_level(
             node, pt_local, current_path, eps,
         )
 
-    # Extract highlight mesh
+    log_stderr(f"[csg-nav] result: path={new_path}, featureLabel={feature_label}, target={_csg_debug_label(target_csg)}")
+
+    # Extract highlight mesh for the selected target
     hl_verts, hl_idx, matched, total = _extract_highlight_mesh(
         mesh["vertices"], mesh["indices"], target_csg, timber_rot, timber_pos, eps,
     )
+    log_stderr(f"[csg-nav] highlight mesh: {matched}/{total} triangles matched")
+
+    # When a feature (face) is selected, also extract the parent named CSG mesh
+    # so the viewer can render the parent dimmer and the feature brighter.
+    parent_hl = None
+    if feature_label is not None and new_path:
+        parent_csg = _resolve_csg_at_path(local_csg, new_path, pt_local, eps)
+        p_verts, p_idx, _, _ = _extract_highlight_mesh(
+            mesh["vertices"], mesh["indices"], parent_csg, timber_rot, timber_pos, eps,
+        )
+        if p_verts:
+            parent_hl = {"vertices": p_verts, "indices": p_idx}
+
     mesh_walk_ms = (time.monotonic() - t0) * 1000.0
 
-    return {
+    result: Dict[str, Any] = {
         "path": new_path,
         "featureLabel": feature_label,
         "highlightMesh": {
@@ -1044,6 +1210,9 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Di
             "totalTriangles": total,
         },
     }
+    if parent_hl is not None:
+        result["parentHighlightMesh"] = parent_hl
+    return result
 
 
 def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerState, Dict[str, Any], bool]:

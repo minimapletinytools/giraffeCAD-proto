@@ -335,6 +335,7 @@ class HorseyViewerApp extends LitElement {
 
         this.selectionManager = new SelectionStore();
         this._csgHighlightMesh = null;
+        this._csgParentHighlightMesh = null;
         this.meshKeyMap = new Map(); // mesh object -> member key
         this.memberMetadataByKey = new Map(); // member key -> { name, type }
         this.renderProfiles = RENDER_PROFILES;
@@ -948,13 +949,38 @@ class HorseyViewerApp extends LitElement {
             return;
         }
 
-        const hit = intersects[0];
-        const memberKey = this.meshKeyMap.get(hit.object);
+        // When a single timber is selected, find its hit among all intersects
+        // (it may be behind unselected timbers). Otherwise use the closest hit.
+        let hit = intersects[0];
+        let memberKey = this.meshKeyMap.get(hit.object);
+
+        const allHitKeys = intersects.map((h) => this.meshKeyMap.get(h.object)).filter(Boolean);
+        const isTimberSelected = this.selectionManager.selectedTimbers.size === 1;
+        console.log('[csg-nav] click: allHits=' + JSON.stringify(allHitKeys) +
+            ', selectedTimbers=' + JSON.stringify(this.selectionManager.getSelectedTimbers()) +
+            ', csgSelection=' + JSON.stringify(this.selectionManager.csgSelection));
+
+        if (this.selectionManager.selectedTimbers.size === 1 && !event.shiftKey) {
+            const selectedKey = this.selectionManager.getSelectedTimbers()[0];
+            let foundSelected = false;
+            for (const candidate of intersects) {
+                const candidateKey = this.meshKeyMap.get(candidate.object);
+                if (candidateKey === selectedKey) {
+                    hit = candidate;
+                    memberKey = candidateKey;
+                    foundSelected = true;
+                    break;
+                }
+            }
+            console.log('[csg-nav] looking for selected timber "' + selectedKey + '" in hits: found=' + foundSelected);
+        }
+
         if (!memberKey) {
             return;
         }
 
         if (event.shiftKey) {
+            console.log('[csg-nav] action: shift-toggle');
             this.selectionManager.clearCSGSelection();
             this.removeCSGHighlight();
             this.selectionManager.toggleTimber(memberKey);
@@ -963,6 +989,7 @@ class HorseyViewerApp extends LitElement {
             const point = [hit.point.x, hit.point.y, hit.point.z];
             const csg = this.selectionManager.csgSelection;
             const currentPath = (csg && csg.timberKey === memberKey) ? csg.path : [];
+            console.log('[csg-nav] action: navigate CSG, memberKey=' + memberKey + ', point=' + JSON.stringify(point) + ', currentPath=' + JSON.stringify(currentPath));
             if (typeof vscode !== 'undefined') {
                 vscode.postMessage({
                     type: 'findCSGAtPoint',
@@ -973,6 +1000,7 @@ class HorseyViewerApp extends LitElement {
                 });
             }
         } else {
+            console.log('[csg-nav] action: select new timber ' + memberKey);
             this.selectionManager.clearCSGSelection();
             this.removeCSGHighlight();
             this.selectionManager.selectTimber(memberKey, false);
@@ -987,7 +1015,17 @@ class HorseyViewerApp extends LitElement {
         const path = Array.isArray(message.path) ? message.path : [];
         const featureLabel = message.featureLabel || null;
         const hlMesh = message.highlightMesh;
+        const parentHlMesh = message.parentHighlightMesh || null;
         const stats = message.stats;
+
+        console.log('[csg-nav] csgSelectionResult:', JSON.stringify({
+            path,
+            featureLabel,
+            hlVerts: hlMesh ? hlMesh.vertices.length : 0,
+            hlIdx: hlMesh ? hlMesh.indices.length : 0,
+            parentHlVerts: parentHlMesh ? parentHlMesh.vertices.length : 0,
+            stats,
+        }));
 
         // Find which timber this applies to
         const csg = this.selectionManager.csgSelection;
@@ -1001,8 +1039,15 @@ class HorseyViewerApp extends LitElement {
 
         // Build highlight geometry
         this.removeCSGHighlight();
-        if (hlMesh && Array.isArray(hlMesh.vertices) && hlMesh.vertices.length > 0 && Array.isArray(hlMesh.indices)) {
-            this.buildCSGHighlight(hlMesh.vertices, hlMesh.indices);
+        if (featureLabel && parentHlMesh && Array.isArray(parentHlMesh.vertices) && parentHlMesh.vertices.length > 0) {
+            // Feature selected: parent CSG gets dim highlight, feature face gets bright highlight
+            this._buildHighlightMesh(parentHlMesh.vertices, parentHlMesh.indices, 0x4fc3f7, 0.35, '_csgParentHighlightMesh');
+            if (hlMesh && Array.isArray(hlMesh.vertices) && hlMesh.vertices.length > 0) {
+                this._buildHighlightMesh(hlMesh.vertices, hlMesh.indices, 0x80d8ff, 0.85, '_csgHighlightMesh');
+            }
+        } else if (hlMesh && Array.isArray(hlMesh.vertices) && hlMesh.vertices.length > 0 && Array.isArray(hlMesh.indices)) {
+            // Named CSG selected (no feature): standard highlight
+            this._buildHighlightMesh(hlMesh.vertices, hlMesh.indices, 0x4fc3f7, 0.7, '_csgHighlightMesh');
         }
 
         if (stats) {
@@ -1018,42 +1063,47 @@ class HorseyViewerApp extends LitElement {
         this.updateInfo(this.currentFrameData);
     }
 
-    buildCSGHighlight(vertices, indices) {
-        const FEATURE_ACCENT_COLOR = 0x4fc3f7;
+    _buildHighlightMesh(vertices, indices, color, opacity, storeKey) {
+        console.log('[csg-nav] _buildHighlightMesh:', storeKey, 'verts=' + vertices.length, 'idx=' + indices.length, 'color=0x' + color.toString(16), 'opacity=' + opacity);
         const geometry = new THREE.BufferGeometry();
         const posArray = new Float32Array(vertices);
         geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
         geometry.setIndex(indices);
         geometry.computeVertexNormals();
 
-        const material = new THREE.MeshStandardMaterial({
-            color: FEATURE_ACCENT_COLOR,
+        const material = new THREE.MeshBasicMaterial({
+            color,
             transparent: true,
-            opacity: 0.7,
-            depthTest: true,
-            polygonOffset: true,
-            polygonOffsetFactor: -1,
-            polygonOffsetUnits: -1,
+            opacity,
+            depthTest: false,
+            depthWrite: false,
             side: THREE.DoubleSide,
         });
 
         const mesh = new THREE.Mesh(geometry, material);
+        mesh.renderOrder = 999;
         mesh.castShadow = false;
         mesh.receiveShadow = false;
         this.scene.add(mesh);
-        this._csgHighlightMesh = mesh;
+        this[storeKey] = mesh;
     }
 
     removeCSGHighlight() {
-        if (this._csgHighlightMesh) {
-            this.scene.remove(this._csgHighlightMesh);
-            if (this._csgHighlightMesh.geometry) {
-                this._csgHighlightMesh.geometry.dispose();
+        this._disposeHighlightMesh('_csgHighlightMesh');
+        this._disposeHighlightMesh('_csgParentHighlightMesh');
+    }
+
+    _disposeHighlightMesh(storeKey) {
+        const mesh = this[storeKey];
+        if (mesh) {
+            this.scene.remove(mesh);
+            if (mesh.geometry) {
+                mesh.geometry.dispose();
             }
-            if (this._csgHighlightMesh.material) {
-                this._csgHighlightMesh.material.dispose();
+            if (mesh.material) {
+                mesh.material.dispose();
             }
-            this._csgHighlightMesh = null;
+            this[storeKey] = null;
         }
     }
 

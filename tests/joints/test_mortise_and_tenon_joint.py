@@ -564,3 +564,81 @@ class TestShoulderNotchingDecision:
 
         assert not are_timbers_plane_aligned(non_plane_mortise, non_plane_tenon)
         assert _does_shoulder_plane_need_notching(non_plane_arrangement, Rational(100))
+
+
+class TestMortiseAndTenonCSGHierarchy:
+    """Test that the CSG tree has the expected named node hierarchy."""
+
+    def test_tenon_timber_csg_hierarchy(self, simple_T_configuration):
+        from giraffecad.cutcsg import Difference, SolidUnion, HalfSpace, RectangularPrism
+
+        tenon_timber, mortise_timber = simple_T_configuration
+        arrangement = ButtJointTimberArrangement(
+            receiving_timber=mortise_timber,
+            butt_timber=tenon_timber,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+        )
+        joint = cut_mortise_and_tenon_joint_on_FAT(
+            arrangement=arrangement,
+            tenon_size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(5),
+        )
+        csg = joint.cut_timbers["tenon_timber"].render_timber_with_cuts_csg_local()
+
+        # Top level: Difference
+        assert isinstance(csg, Difference)
+        assert isinstance(csg.base, RectangularPrism)
+
+        # subtract[0] should be the named "mortise_and_tenon" SolidUnion
+        assert len(csg.subtract) == 1
+        mt_union = csg.subtract[0]
+        assert isinstance(mt_union, SolidUnion)
+        assert mt_union.name == "mortise_and_tenon"
+
+        # Inside the SolidUnion: a Difference (shoulder - tenon) + a redundant end HalfSpace
+        assert len(mt_union.children) == 2
+        cut_diff = mt_union.children[0]
+        redundant_end = mt_union.children[1]
+
+        assert isinstance(cut_diff, Difference)
+        assert isinstance(cut_diff.base, HalfSpace)
+        assert cut_diff.base.name == "shoulder"
+        assert len(cut_diff.subtract) == 1
+        assert isinstance(cut_diff.subtract[0], RectangularPrism)
+        assert cut_diff.subtract[0].name == "tenon"
+
+        assert isinstance(redundant_end, HalfSpace)
+
+    def test_mortise_timber_csg_hierarchy(self, simple_T_configuration):
+        from giraffecad.cutcsg import Difference, SolidUnion, RectangularPrism
+
+        tenon_timber, mortise_timber = simple_T_configuration
+        arrangement = ButtJointTimberArrangement(
+            receiving_timber=mortise_timber,
+            butt_timber=tenon_timber,
+            butt_timber_end=TimberReferenceEnd.BOTTOM,
+        )
+        joint = cut_mortise_and_tenon_joint_on_FAT(
+            arrangement=arrangement,
+            tenon_size=Matrix([Rational(2), Rational(2)]),
+            tenon_length=Rational(4),
+            mortise_depth=Rational(5),
+        )
+        csg = joint.cut_timbers["mortise_timber"].render_timber_with_cuts_csg_local()
+
+        # Top level: Difference
+        assert isinstance(csg, Difference)
+        assert isinstance(csg.base, RectangularPrism)
+
+        # subtract[0] should be the named "mortise_and_tenon" SolidUnion
+        assert len(csg.subtract) == 1
+        mt_union = csg.subtract[0]
+        assert isinstance(mt_union, SolidUnion)
+        assert mt_union.name == "mortise_and_tenon"
+
+        # Inside: just the mortise_hole RectangularPrism (wrapped in SolidUnion by Cutting.name)
+        assert len(mt_union.children) == 1
+        mortise_hole = mt_union.children[0]
+        assert isinstance(mortise_hole, RectangularPrism)
+        assert mortise_hole.name == "mortise_hole"

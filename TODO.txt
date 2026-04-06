@@ -207,6 +207,7 @@ DONE-edge rendering on unselected things should also have transparency applied
 DONE-transparent rendering covers shadow and reflection and also covers feature highlights :( fix pls
 DONE-probably remove hashing stuff you added
 
+-change selection coloring tobe more distinct I think.
 -redo CSG features
   -add an optional name field to CutCSG which creates a hierarchical naming scheme e.g. for mortise and tenon joint
     -timber, top level, the entire timber is considered a named CSG
