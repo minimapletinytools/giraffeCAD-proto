@@ -95,6 +95,6 @@ Additional tests (not required but encouraged):
 3. Test that invalid configurations raise errors
 4. Test degenerate / edge cases (e.g. tenon length of 0)
 
-Do not write too many tests that aren't actually testing geometry. We want quality over quantity.
+Do not write too many tests that aren't actually testing geometry. We want quality over quantity. Look for tests marked with `# 🐪` for examples of good tests. In particular, look at the ones in `test_plain_joints.py`
 
 Tests marked with a `# 🐪` have been hand verified to be relevant, never mark tests as `# 🐪` unless user gives the ok. Never delete tests marked with `# 🐪` and be a little more cautious when modifynig them. In contrasts, tests not morked with a `# 🐪` can be deleted and rewritten at will.

@@ -156,17 +156,7 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 
 
-:: TICKET TODO
-DONE-add reference faces to PTW ticket
-  -add a post init step to PTW that does the following
-    -assert they are coincident
-    -for now require nominal and ptw dimensions to match on reference faces
-DONE-do basic named tagging of features on CSGs 
-  -just support tagging faces on halfspace and prism
-  -and passing through union/difference
--then must be able to reference named tags inside of joint ticket
-  -then when you click on a cut timber, you need to find all joints the timber belongs to to find which features on that joint you clicked
--add some notes for adding broadphase so you don't forget.
+
 
 
 ::layers TODO
@@ -190,51 +180,27 @@ DONE-do basic named tagging of features on CSGs
 
 :: TODO
 
-DONE-add stdout makers for better profiling
-DONE-add settings class for persisted settings in viewer
-DONE-add unselecetd transparency option
-  -add a slider option so that we can set the transparency of unselected timbers (default 40%)
-  -if no timbers are selected, then everything renders as if it were selected (I believe this is current behavior)
-DONE/FAIL-add test for joints using max mode or something
-DONE/IGNORE-improve integration tests on the viewer. Can you think of some tests to help improve it 
-  -epen a test file with a couple milestones, simple timebrs and joints
-    -expect timbers show up in raw data
-    -expect milestones
-  -one test for each of the options to see that they work
-  -can we test each of the mouse/keyboard navigation things?
-DONE-unselected transparency slider should be inverted
-DONE-edge rendering on unselected things should also have transparency applied
-DONE-transparent rendering covers shadow and reflection and also covers feature highlights :( fix pls
-DONE-probably remove hashing stuff you added
 
--change selection coloring tobe more distinct I think.
--redo CSG features
-  -add an optional name field to CutCSG which creates a hierarchical naming scheme e.g. for mortise and tenon joint
-    -timber, top level, the entire timber is considered a named CSG
-      -* unnamed csg that is the top level mortise and tenon joint, which is a difference halfspace, rectangular prism CSG
-        -halfspace -> "shoulderplane"
-        -rectangular prism -> "tenon"
-  -each time you click, it navigates a layer deeper
-  -feature mesh generation should happen in python on request, not in javascript
-    -walk over existing mesh and extract points that land on the feature in question, return resulting tris
-  -you still want to be able to select features
-    -clicking on selected CSG raycasts and selsects named CSGs within it or features if raycast hits no named CSG
-    -ctrl click goes straigh to selecting features
-    -not all CSGs have features yet, in these cases, you just select the CSG itself
-  -add feature mesh finding/generation/rendering stats each time you click
-  -display the CSG/fetaure selection string in the info section
-    -hard code in "front/back/left/right/top/bot" face by checking normal when you select a face, so if you select a face that shares a normal with these direction (locally) display it e.g. (selected: post > beam mortise and tenon joint > top end tenon > face (front))
-  -keep named features, they are specifically for saw/chisel metadata where we need feature level tagging, however they aren't actually being used at the moment.
-      -allow features to be labeled as saw or chisel so we can do cutting instructions
-      -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
+-fix feature issues
+  -come up with a better term for "named CSG"
+  -when generating named CSG meshes, it's selecting way too much, maybe you can fix with broad phase? or explicitly test each point against the CSG rather than just using geometry + normal which I assume is what's it's donig right now... or maybe it's using the CSG name which is the same rather than using CSG hierarchy
+    -I think it general you should just rewrite named CSG mesh/feature generation. 
+  -selecting feature still doesn't highlight properly. I suspect its related to geo generation
 
-  
--try auto authoring tests again, this time ask it to use plain_joints as an example
-DONE/IGNORE-improved CSG tagging
-  DONE-allow half faces on prism
-  -allow full CSG feature naming
-  -allow side faces and top/bot flats to be tagged on CSG extrusion
-    -would be cool to allow union faces that are coplanar... but I think you can just name 2 features when defining the cutting instructions and check that they are coplanar then
+-do new selection hierarchy here are the states
+  -nothing selected (show everything)
+  -unselected (use transparency)
+  -timber selected (no sub selection)
+  -timber selected (with sub selection)
+  -CSG selected (no sub selection)
+  -CSG selected (with sub selection)
+  -feature selected
+  -I guess just use transparency for outer stuff when focusing in on selection? But you should make distinct states for each of them... but maybe combine the options for changing their look 
+
+
+
+-review TestHousedDovetailButtJoint and see if it deserves a camel
+-add more tests using the right way
 
 -do assembly metadata
   DONE-create assemblydirection class 
@@ -485,7 +451,58 @@ M3.5
 
 
 :: TODONE 
-
+DONE-TICKET TODO
+  DONE-add reference faces to PTW ticket
+    -add a post init step to PTW that does the following
+      -assert they are coincident
+      -for now require nominal and ptw dimensions to match on reference faces
+  DONE-do basic named tagging of features on CSGs 
+    -just support tagging faces on halfspace and prism
+    -and passing through union/difference
+  IGNORE-then must be able to reference named tags inside of joint ticket
+    -then when you click on a cut timber, you need to find all joints the timber belongs to to find which features on that joint you clicked
+  IGNORE-add some notes for adding broadphase so you don't forget.
+DONE-add stdout makers for better profiling
+DONE-add settings class for persisted settings in viewer
+DONE-add unselecetd transparency option
+  -add a slider option so that we can set the transparency of unselected timbers (default 40%)
+  -if no timbers are selected, then everything renders as if it were selected (I believe this is current behavior)
+DONE/FAIL-add test for joints using max mode or something
+DONE/IGNORE-improve integration tests on the viewer. Can you think of some tests to help improve it 
+  -epen a test file with a couple milestones, simple timebrs and joints
+    -expect timbers show up in raw data
+    -expect milestones
+  -one test for each of the options to see that they work
+  -can we test each of the mouse/keyboard navigation things?
+DONE-unselected transparency slider should be inverted
+DONE-edge rendering on unselected things should also have transparency applied
+DONE-transparent rendering covers shadow and reflection and also covers feature highlights :( fix pls
+DONE-probably remove hashing stuff you added
+DONE-redo CSG features
+  -add an optional name field to CutCSG which creates a hierarchical naming scheme e.g. for mortise and tenon joint
+    -timber, top level, the entire timber is considered a named CSG
+      -* unnamed csg that is the top level mortise and tenon joint, which is a difference halfspace, rectangular prism CSG
+        -halfspace -> "shoulderplane"
+        -rectangular prism -> "tenon"
+  -each time you click, it navigates a layer deeper
+  -feature mesh generation should happen in python on request, not in javascript
+    -walk over existing mesh and extract points that land on the feature in question, return resulting tris
+  -you still want to be able to select features
+    -clicking on selected CSG raycasts and selsects named CSGs within it or features if raycast hits no named CSG
+    -ctrl click goes straigh to selecting features
+    -not all CSGs have features yet, in these cases, you just select the CSG itself
+  -add feature mesh finding/generation/rendering stats each time you click
+  -display the CSG/fetaure selection string in the info section
+    -hard code in "front/back/left/right/top/bot" face by checking normal when you select a face, so if you select a face that shares a normal with these direction (locally) display it e.g. (selected: post > beam mortise and tenon joint > top end tenon > face (front))
+  -keep named features, they are specifically for saw/chisel metadata where we need feature level tagging, however they aren't actually being used at the moment.
+      -allow features to be labeled as saw or chisel so we can do cutting instructions
+      -for saw, you need to be able to saw a triangel shape (specify 3 vertices)
+DONE/IGNORE-improved CSG tagging
+  DONE-allow half faces on prism
+  -allow full CSG feature naming
+  -allow side faces and top/bot flats to be tagged on CSG extrusion
+    -would be cool to allow union faces that are coplanar... but I think you can just name 2 features when defining the cutting instructions and check that they are coplanar then
+DONE-try auto authoring tests again, this time ask it to use plain_joints as an example
 IGNORE-update timber creation to do eval if the expression is even alittle complex and see how honeycomb shed profiling differs
 DONE-fix all the crud you have in your safe math functions, maybe just clean up to all floats...
   DONE-girrafe_* methods 
