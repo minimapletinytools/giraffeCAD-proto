@@ -10,6 +10,8 @@ CURSOR_EXT_DIR="$HOME/.cursor/extensions/horsey-viewer"
 
 TARGETS=("$VSCODE_EXT_DIR" "$CURSOR_EXT_DIR")
 EDITORS=("VSCode" "Cursor")
+#TARGETS=("$VSCODE_EXT_DIR")
+#EDITORS=("VSCode")
 #TARGETS=("$CURSOR_EXT_DIR")
 #EDITORS=("Cursor")
 
