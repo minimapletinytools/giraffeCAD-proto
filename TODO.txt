@@ -180,9 +180,10 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 :: TODO
 
+DONE-review TestHousedDovetailButtJoint and see if it deserves a camel
 
 -fix feature issues
-  -come up with a better term for "named CSG"
+  DONE-come up with a better term for "named CSG"
     -how about tagged CSG
   -when generating named CSG meshes, it's selecting way too much, maybe you can fix with broad phase? or explicitly test each point against the CSG rather than just using geometry + normal which I assume is what's it's donig right now... or maybe it's using the CSG name which is the same rather than using CSG hierarchy
     -I think it general you should just rewrite named CSG mesh/feature generation. 
@@ -200,7 +201,10 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 
 
--review TestHousedDovetailButtJoint and see if it deserves a camel
+
+-add dovetail shoulder to build a butt joint
+-add notching to build a butt joint (you can skip this if you want lol...)
+
 -add more tests using the right way
 
 -do assembly metadata
@@ -214,17 +218,12 @@ the final returned csg has a ticket that points to a feature in the top level Di
 
 -the right way to do hashing is to have all joints hash their input properties and store a _hash property
 
-
-
 -decide on layer view
   -is patternbook part of layer view or separate thing
   -figure out how to do show hide option
   -decide on section: timbers, joints (this is fine for now)
     -how do these sections integrate with folders
   -decide on folders being string refs or actual refs when constructing...
-
--add dovetail shoulder to build a butt joint
--add notching to build a butt joint (you can skip this if you want lol...)
 
 -do tinyhouse shed
   DONE-fix joists between intermediate posts, they should mortise and tenon into the posts

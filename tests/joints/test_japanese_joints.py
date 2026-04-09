@@ -351,6 +351,7 @@ class TestHousedDovetailButtJoint:
         def in_recv(pt):
             return recv_csg.contains_point(receiving_timber.transform.global_to_local(pt))
 
+        # TODO use formula based on dovetail joint sizing parameters rather than hardcoded numbers
         # ---- walk a line along the dovetail timber centerline ----
 
         # Well inside the beam body (far from joint, x=-50)
@@ -441,6 +442,7 @@ class TestHousedDovetailButtJoint:
         assert not isinstance(recv_neg_csg, SolidUnion), \
             "With zero inset, receiving negative CSG should be the socket alone (no SolidUnion)"
 
+    # 🐪
     def test_validation_errors(self):
         """Test that invalid parameters raise ValueErrors."""
         arrangement = _make_butt_arrangement()
