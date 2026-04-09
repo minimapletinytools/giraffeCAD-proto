@@ -1361,18 +1361,13 @@ class Cutting:
             return HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(1)), offset=Rational(-999999))
         elif len(csg_components) == 1:
             result = csg_components[0]
+            if self.tag is not None:
+                from .cutcsg import SolidUnion
+                # Preserve any existing tag on the component by wrapping it.
+                result = SolidUnion([result], tag=self.tag)
         else:
             from .cutcsg import SolidUnion
-            result = SolidUnion(csg_components)
-
-        # Wrap in a named grouping node if this cutting has a name
-        if self.tag is not None:
-            from .cutcsg import SolidUnion
-            if isinstance(result, SolidUnion):
-                # Already a SolidUnion, just add the tag
-                result = SolidUnion(result.children, tag=self.tag)
-            else:
-                result = SolidUnion([result], tag=self.tag)
+            result = SolidUnion(csg_components, tag=self.tag)
 
         return result
 
