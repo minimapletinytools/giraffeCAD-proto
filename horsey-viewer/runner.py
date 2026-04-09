@@ -992,6 +992,9 @@ def _extract_highlight_mesh(
     timber_rot: List[List[float]],
     timber_pos: List[float],
     eps: float = 1e-4,
+    root_csg: Optional[Any] = None,
+    selected_path: Optional[List[str]] = None,
+    selected_ref: Optional[Any] = None,
 ) -> Tuple[List[float], List[int], int, int]:
     """Extract triangles belonging to *target_csg* from the rendered mesh.
 
@@ -1002,6 +1005,13 @@ def _extract_highlight_mesh(
     out_verts: List[float] = []
     out_idx: List[int] = []
     matched = 0
+
+    enforce_owner = (
+        root_csg is not None
+        and selected_ref is not None
+        and selected_path is not None
+        and len(selected_path) > 0
+    )
 
     for tri in range(total_tris):
         i0 = mesh_indices[tri * 3]
@@ -1014,6 +1024,10 @@ def _extract_highlight_mesh(
         # Convert centroid to timber-local
         local_c = _inv_transform_point(timber_rot, timber_pos, [cx, cy, cz])
         if _is_point_on_csg_boundary_float(target_csg, local_c, eps):
+            if enforce_owner:
+                owner = _resolve_csg_at_path(root_csg, selected_path, local_c, eps)
+                if owner is not selected_ref:
+                    continue
             base = len(out_verts) // 3
             out_verts.extend(mesh_vertices[i0*3 : i0*3+3])
             out_verts.extend(mesh_vertices[i1*3 : i1*3+3])
@@ -1180,7 +1194,15 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Di
 
     # Extract highlight mesh for the selected target
     hl_verts, hl_idx, matched, total = _extract_highlight_mesh(
-        mesh["vertices"], mesh["indices"], target_csg, timber_rot, timber_pos, eps,
+        mesh["vertices"],
+        mesh["indices"],
+        target_csg,
+        timber_rot,
+        timber_pos,
+        eps,
+        root_csg=local_csg,
+        selected_path=new_path,
+        selected_ref=target_csg,
     )
     log_stderr(f"[csg-nav] highlight mesh: {matched}/{total} triangles matched")
 
@@ -1190,7 +1212,15 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Di
     if feature_label is not None and new_path:
         parent_csg = _resolve_csg_at_path(local_csg, new_path, pt_local, eps)
         p_verts, p_idx, _, _ = _extract_highlight_mesh(
-            mesh["vertices"], mesh["indices"], parent_csg, timber_rot, timber_pos, eps,
+            mesh["vertices"],
+            mesh["indices"],
+            parent_csg,
+            timber_rot,
+            timber_pos,
+            eps,
+            root_csg=local_csg,
+            selected_path=new_path,
+            selected_ref=parent_csg,
         )
         if p_verts:
             parent_hl = {"vertices": p_verts, "indices": p_idx}
