@@ -1329,17 +1329,17 @@ class Cutting:
     # Does NOT include the end cuts (those are stored separately above)
     negative_csg: Optional[CutCSG] = None
 
-    # Optional name for this cutting in the CSG hierarchy (e.g. "mortise_and_tenon").
-    # When set, get_negative_csg_local() wraps the result in a named SolidUnion so that
-    # the viewer can navigate the CSG tree by name.
-    name: Optional[str] = None
+    # Optional tag for this cutting in the CSG hierarchy (e.g. "mortise_and_tenon").
+    # When set, get_negative_csg_local() wraps the result in a tagged SolidUnion so that
+    # the viewer can navigate the CSG tree by tag.
+    tag: Optional[str] = None
     
     def get_negative_csg_local(self) -> CutCSG:
         """
         Get the complete negative CSG including end cuts.
         
         Returns the union of negative_csg with any end cuts that are defined.
-        If self.name is set, wraps the result in a named SolidUnion grouping node.
+        If self.tag is set, wraps the result in a tagged SolidUnion grouping node.
         """
         # Collect all CSG components
         csg_components = []
@@ -1366,13 +1366,13 @@ class Cutting:
             result = SolidUnion(csg_components)
 
         # Wrap in a named grouping node if this cutting has a name
-        if self.name is not None:
+        if self.tag is not None:
             from .cutcsg import SolidUnion
             if isinstance(result, SolidUnion):
-                # Already a SolidUnion, just add the name
-                result = SolidUnion(result.children, name=self.name)
+                # Already a SolidUnion, just add the tag
+                result = SolidUnion(result.children, tag=self.tag)
             else:
-                result = SolidUnion([result], name=self.name)
+                result = SolidUnion([result], tag=self.tag)
 
         return result
 

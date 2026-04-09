@@ -594,7 +594,7 @@ class TestMortiseAndTenonCSGHierarchy:
         assert len(csg.subtract) == 1
         mt_union = csg.subtract[0]
         assert isinstance(mt_union, SolidUnion)
-        assert mt_union.name == "mortise_and_tenon"
+        assert mt_union.tag == "mortise_and_tenon"
 
         # Inside the SolidUnion: a Difference (shoulder - tenon) + a redundant end HalfSpace
         assert len(mt_union.children) == 2
@@ -603,10 +603,10 @@ class TestMortiseAndTenonCSGHierarchy:
 
         assert isinstance(cut_diff, Difference)
         assert isinstance(cut_diff.base, HalfSpace)
-        assert cut_diff.base.name == "shoulder"
+        assert cut_diff.base.tag == "shoulder"
         assert len(cut_diff.subtract) == 1
         assert isinstance(cut_diff.subtract[0], RectangularPrism)
-        assert cut_diff.subtract[0].name == "tenon"
+        assert cut_diff.subtract[0].tag == "tenon"
 
         assert isinstance(redundant_end, HalfSpace)
 
@@ -635,10 +635,10 @@ class TestMortiseAndTenonCSGHierarchy:
         assert len(csg.subtract) == 1
         mt_union = csg.subtract[0]
         assert isinstance(mt_union, SolidUnion)
-        assert mt_union.name == "mortise_and_tenon"
+        assert mt_union.tag == "mortise_and_tenon"
 
-        # Inside: just the mortise_hole RectangularPrism (wrapped in SolidUnion by Cutting.name)
+        # Inside: just the mortise_hole RectangularPrism (wrapped in SolidUnion by Cutting.tag)
         assert len(mt_union.children) == 1
         mortise_hole = mt_union.children[0]
         assert isinstance(mortise_hole, RectangularPrism)
-        assert mortise_hole.name == "mortise_hole"
+        assert mortise_hole.tag == "mortise_hole"

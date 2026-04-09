@@ -864,40 +864,40 @@ def _detect_face_label(csg: Any, pt: List[float], eps: float = 1e-4) -> str:
 
 
 def _resolve_csg_at_path(csg: Any, path: List[str], pt: Optional[List[float]] = None, eps: float = 1e-4) -> Any:
-    """Walk the CSG tree following *path* of named CSG nodes.
+    """Walk the CSG tree following *path* of tagged CSG nodes.
 
-    Searches through unnamed intermediate Difference/SolidUnion nodes
+    Searches through untagged intermediate Difference/SolidUnion nodes
     transparently.  When *pt* is given and multiple children share the
-    same name, prefer the one whose boundary contains *pt*.
+    same tag, prefer the one whose boundary contains *pt*.
     """
     from giraffecad.cutcsg import SolidUnion, Difference
 
-    def _find_named(node: Any, name: str) -> List[Any]:
-        """Return all descendants of *node* with the given *name*, searching
-        through unnamed compound intermediaries."""
+    def _find_tagged(node: Any, tag_name: str) -> List[Any]:
+        """Return all descendants of *node* with the given *tag*, searching
+        through untagged compound intermediaries."""
         results: List[Any] = []
         children: List[Any] = []
         if isinstance(node, Difference):
             children = list(node.subtract)
             # Also check base
-            base_name = getattr(node.base, "name", None)
-            if base_name == name:
+            base_tag = getattr(node.base, "tag", None)
+            if base_tag == tag_name:
                 results.append(node.base)
-            elif isinstance(node.base, (SolidUnion, Difference)) and base_name is None:
-                results.extend(_find_named(node.base, name))
+            elif isinstance(node.base, (SolidUnion, Difference)) and base_tag is None:
+                results.extend(_find_tagged(node.base, tag_name))
         elif isinstance(node, SolidUnion):
             children = list(node.children)
         for ch in children:
-            ch_name = getattr(ch, "name", None)
-            if ch_name == name:
+            ch_tag = getattr(ch, "tag", None)
+            if ch_tag == tag_name:
                 results.append(ch)
-            elif isinstance(ch, (SolidUnion, Difference)) and ch_name is None:
-                results.extend(_find_named(ch, name))
+            elif isinstance(ch, (SolidUnion, Difference)) and ch_tag is None:
+                results.extend(_find_tagged(ch, tag_name))
         return results
 
     node = csg
     for name in path:
-        candidates = _find_named(node, name)
+        candidates = _find_tagged(node, name)
         if not candidates:
             break
         if len(candidates) == 1 or pt is None:
@@ -931,17 +931,17 @@ def _navigate_csg_one_level(
         # Check which subtract child the point lies on
         for sub in node.subtract:
             if _is_point_on_csg_boundary_float(sub, pt_local, eps):
-                sub_name = getattr(sub, "name", None)
-                if sub_name:
-                    return (current_path + [sub_name], sub, None)
+                sub_tag = getattr(sub, "tag", None)
+                if sub_tag:
+                    return (current_path + [sub_tag], sub, None)
                 # Unnamed compound → drill through transparently
                 if isinstance(sub, (SolidUnion, Difference)):
                     return _navigate_csg_one_level(sub, pt_local, current_path, eps)
                 return (current_path, sub, _detect_face_label(sub, pt_local, eps))
         # Point is on the base surface
-        base_name = getattr(node.base, "name", None)
-        if base_name:
-            return (current_path + [base_name], node.base, None)
+        base_tag = getattr(node.base, "tag", None)
+        if base_tag:
+            return (current_path + [base_tag], node.base, None)
         if isinstance(node.base, (SolidUnion, Difference)):
             return _navigate_csg_one_level(node.base, pt_local, current_path, eps)
         return (current_path, node.base, _detect_face_label(node.base, pt_local, eps))
@@ -949,9 +949,9 @@ def _navigate_csg_one_level(
     if isinstance(node, SolidUnion):
         for ch in node.children:
             if _is_point_on_csg_boundary_float(ch, pt_local, eps):
-                ch_name = getattr(ch, "name", None)
-                if ch_name:
-                    return (current_path + [ch_name], ch, None)
+                ch_tag = getattr(ch, "tag", None)
+                if ch_tag:
+                    return (current_path + [ch_tag], ch, None)
                 # Unnamed compound → drill through transparently
                 if isinstance(ch, (SolidUnion, Difference)):
                     return _navigate_csg_one_level(ch, pt_local, current_path, eps)
@@ -1104,11 +1104,11 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Di
 
     # --- Debug: describe the CSG tree ---
     def _csg_debug_label(c: Any) -> str:
-        name = getattr(c, "name", None)
+        tag = getattr(c, "tag", None)
         ctype = type(c).__name__
         label = f"{ctype}"
-        if name:
-            label += f'(name="{name}")'
+        if tag:
+            label += f'(tag="{tag}")'
         return label
 
     def _csg_tree_debug(c: Any, depth: int = 0) -> List[str]:
@@ -1184,7 +1184,7 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Di
     )
     log_stderr(f"[csg-nav] highlight mesh: {matched}/{total} triangles matched")
 
-    # When a feature (face) is selected, also extract the parent named CSG mesh
+    # When a feature (face) is selected, also extract the parent tagged CSG mesh
     # so the viewer can render the parent dimmer and the feature brighter.
     parent_hl = None
     if feature_label is not None and new_path:

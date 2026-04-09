@@ -123,7 +123,7 @@ class RectangularPrismFeature(CSGFeature):
 @dataclass(frozen=True)
 class CutCSG(ABC):
     """Base class for all CSG operations."""
-    name: Optional[str] = field(default=None, kw_only=True)
+    tag: Optional[str] = field(default=None, kw_only=True)
 
     @abstractmethod
     def __repr__(self) -> str:
@@ -1564,12 +1564,12 @@ def translate_csg(csg: CutCSG, translation: V3) -> CutCSG:
         A new CSG object with the same structure but translated by translation
     """
     if isinstance(csg, SolidUnion):
-        return SolidUnion(children=[translate_csg(c, translation) for c in csg.children], name=csg.name)
+        return SolidUnion(children=[translate_csg(c, translation) for c in csg.children], tag=csg.tag)
     if isinstance(csg, Difference):
         return Difference(
             base=translate_csg(csg.base, translation),
             subtract=[translate_csg(s, translation) for s in csg.subtract],
-            name=csg.name,
+            tag=csg.tag,
         )
     if isinstance(csg, HalfSpace):
         # HalfSpace: normal·P >= offset. After translating by T: normal·(P - T) >= offset => normal·P >= offset + normal·T
@@ -1656,7 +1656,7 @@ def adopt_csg(
             adopt_csg(orig_transform, adopting_transform, child)
             for child in csg_in_orig_space.children
         ]
-        return SolidUnion(transformed_children, name=csg_in_orig_space.name)
+        return SolidUnion(transformed_children, tag=csg_in_orig_space.tag)
 
     elif isinstance(csg_in_orig_space, Difference):
         transformed_base = adopt_csg(orig_transform, adopting_transform, csg_in_orig_space.base)
@@ -1664,7 +1664,7 @@ def adopt_csg(
             adopt_csg(orig_transform, adopting_transform, sub)
             for sub in csg_in_orig_space.subtract
         ]
-        return Difference(base=transformed_base, subtract=transformed_subtract, name=csg_in_orig_space.name)
+        return Difference(base=transformed_base, subtract=transformed_subtract, tag=csg_in_orig_space.tag)
 
     elif isinstance(csg_in_orig_space, HalfSpace):
         return transform_halfspace(csg_in_orig_space)

@@ -1046,7 +1046,7 @@ class HorseyViewerApp extends LitElement {
                 this._buildHighlightMesh(hlMesh.vertices, hlMesh.indices, 0x80d8ff, 0.85, '_csgHighlightMesh');
             }
         } else if (hlMesh && Array.isArray(hlMesh.vertices) && hlMesh.vertices.length > 0 && Array.isArray(hlMesh.indices)) {
-            // Named CSG selected (no feature): standard highlight
+            // Tagged CSG selected (no feature): standard highlight
             this._buildHighlightMesh(hlMesh.vertices, hlMesh.indices, 0x4fc3f7, 0.7, '_csgHighlightMesh');
         }
 
