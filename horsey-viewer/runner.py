@@ -995,6 +995,7 @@ def _extract_highlight_mesh(
     root_csg: Optional[Any] = None,
     selected_path: Optional[List[str]] = None,
     selected_ref: Optional[Any] = None,
+    feature_label: Optional[str] = None,
 ) -> Tuple[List[float], List[int], int, int]:
     """Extract triangles belonging to *target_csg* from the rendered mesh.
 
@@ -1027,6 +1028,10 @@ def _extract_highlight_mesh(
             if enforce_owner:
                 owner = _resolve_csg_at_path(root_csg, selected_path, local_c, eps)
                 if owner is not selected_ref:
+                    continue
+            if feature_label is not None:
+                tri_face_label = _detect_face_label(target_csg, local_c, eps)
+                if tri_face_label != feature_label:
                     continue
             base = len(out_verts) // 3
             out_verts.extend(mesh_vertices[i0*3 : i0*3+3])
@@ -1192,6 +1197,10 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Di
 
     log_stderr(f"[csg-nav] result: path={new_path}, featureLabel={feature_label}, target={_csg_debug_label(target_csg)}")
 
+    parent_csg = None
+    if new_path:
+        parent_csg = _resolve_csg_at_path(local_csg, new_path, pt_local, eps)
+
     # Extract highlight mesh for the selected target
     hl_verts, hl_idx, matched, total = _extract_highlight_mesh(
         mesh["vertices"],
@@ -1202,15 +1211,15 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Di
         eps,
         root_csg=local_csg,
         selected_path=new_path,
-        selected_ref=target_csg,
+        selected_ref=parent_csg if feature_label is not None else target_csg,
+        feature_label=feature_label,
     )
     log_stderr(f"[csg-nav] highlight mesh: {matched}/{total} triangles matched")
 
     # When a feature (face) is selected, also extract the parent tagged CSG mesh
     # so the viewer can render the parent dimmer and the feature brighter.
     parent_hl = None
-    if feature_label is not None and new_path:
-        parent_csg = _resolve_csg_at_path(local_csg, new_path, pt_local, eps)
+    if feature_label is not None and parent_csg is not None:
         p_verts, p_idx, _, _ = _extract_highlight_mesh(
             mesh["vertices"],
             mesh["indices"],
