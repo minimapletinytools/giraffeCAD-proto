@@ -188,13 +188,14 @@ DONE-fix feature issues
     -I think it general you should just rewrite named CSG mesh/feature generation. 
   DONE-selecting feature still doesn't highlight properly. I suspect its related to geo generation
 
+-rethink hierarchical feature selection, as you'll want to be able to select 2 features to measure them in the future.
 -do new selection hierarchy here are the states
   -nothing selected (show everything)
   -unselected (use transparency)
   -timber selected (no sub selection)
   -timber selected (with sub selection)
-  -CSG selected (no sub selection)
-  -CSG selected (with sub selection)
+  -tagged CSG selected (no sub selection)
+  -tagged CSG selected (with sub selection)
   -feature selected
   -I guess just use transparency for outer stuff when focusing in on selection? But you should make distinct states for each of them... but maybe combine the options for changing their look 
 
@@ -204,8 +205,6 @@ DONE-fix feature issues
 -add dovetail shoulder to build a butt joint
 -add notching to build a butt joint (you can skip this if you want lol...)
 
--add more tests using the right way
-
 -do assembly metadata
   DONE-create assemblydirection class 
   -for accessories, have assemblydriection but also have locking accessory
@@ -214,7 +213,7 @@ DONE-fix feature issues
     -can have helpers from arragement classes to do this in most cases
 
   
-
+-add more tests using the right way
 -the right way to do hashing is to have all joints hash their input properties and store a _hash property
 
 -decide on layer view

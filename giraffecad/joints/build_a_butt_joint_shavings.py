@@ -112,6 +112,102 @@ def locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(ar
         mortise_timber, TimberCenterline.CENTERLINE, direction_in_plane, distance_from_centerline
     )
 
+@dataclass(frozen=True)
+class ButtJointShoulderResult:
+    """
+    Result of computing a butt joint shoulder plane and its associated marking space.
+
+    Attributes:
+        shoulder_plane: The shoulder plane (normal points from mortise centerline toward tenon).
+        butt_direction: Direction the butt timber is pointing into the receiving timber.
+        marking_space: Located where tenon centerline intersects the shoulder plane, oriented with:
+            +X = shoulder_plane.normal (from mortise centerline toward tenon)
+            +Y = caller-provided up_direction (orthogonalized)
+            +Z = derived via right-hand rule
+    """
+    shoulder_plane: Plane
+    butt_direction: Direction3D
+    marking_space: Space
+
+
+def compute_butt_joint_shoulder(
+    arrangement: ButtJointTimberArrangement,
+    distance_from_centerline: Numeric,
+    up_direction: Direction3D,
+) -> ButtJointShoulderResult:
+    """
+    Compute the shoulder plane and an oriented marking space for a butt joint.
+
+    The marking space is positioned where the tenon (butt) timber's centerline
+    intersects the shoulder plane, oriented with:
+        +X = shoulder_plane.normal (from mortise centerline toward tenon)
+        +Y = up_direction (orthogonalized against +X)
+        +Z = right-hand rule cross product
+
+    Args:
+        arrangement: Butt joint arrangement (receiving_timber = mortise, butt_timber = tenon).
+        distance_from_centerline: Signed offset from the mortise centerline toward the tenon.
+            0 = plane through the mortise centerline. Positive = toward tenon.
+        up_direction: Direction for +Y axis of the marking space. Will be orthogonalized
+            against the shoulder plane normal.
+
+    Returns:
+        ButtJointShoulderResult with the shoulder plane, intersection point, and marking space.
+    """
+    tenon_timber = arrangement.butt_timber
+    tenon_end = arrangement.butt_timber_end
+
+    shoulder_plane = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
+        arrangement, distance_from_centerline
+    )
+
+    shoulder_from_tenon_end_mark = mark_distance_from_end_along_centerline(
+        shoulder_plane, tenon_timber, tenon_end
+    )
+    shoulder_point_global = shoulder_from_tenon_end_mark.locate().position
+
+    orientation = Orientation.from_x_and_y(
+        x_direction=shoulder_plane.normal,
+        y_direction=up_direction,
+    )
+    marking_space = Space(
+        transform=Transform(position=shoulder_point_global, orientation=orientation)
+    )
+
+    butt_direction = tenon_timber.get_face_direction_global(tenon_end)
+
+    return ButtJointShoulderResult(
+        shoulder_plane=shoulder_plane,
+        butt_direction=butt_direction,
+        marking_space=marking_space,
+    )
+
+
+# ============================================================================
+# Shoulder Geometry
+# ============================================================================
+def build_dovetail_shoulder_geometery(
+    arrangement: ButtJointTimberArrangement,
+    shoulder_result: ButtJointShoulderResult,
+    dovetail_depth: Numeric) -> CutCSG:
+    """
+
+    Creates the shoulder geometry for a dovetail shoulder. The height of the dovetail is determined by the dimensions of the receiving timber.
+    The depth of the dovetail is determined by the dovetail_depth parameter.
+
+
+          |       |
+    ______|       |
+          \       |
+           \      |
+    ________\     |
+          | ^     |
+          | dovetail_depth
+
+
+    The resulting CutCSG object is in global space. It includes part of the butt timber itself, not just the dovetail shape.
+    The resulting CutCSG object includes part of the butt timber itself, not just the dovetail shape. This is useful for cutting notches into the receiving timber for non perfect receiving timbers.
+    """
 
 # ============================================================================
 # Peg Geometry
@@ -382,80 +478,6 @@ def compute_peg_positions(
     return results
 
 
-# ============================================================================
-# Butt Joint Shoulder Result
-# ============================================================================
-
-@dataclass(frozen=True)
-class ButtJointShoulderResult:
-    """
-    Result of computing a butt joint shoulder plane and its associated marking space.
-
-    Attributes:
-        shoulder_plane: The shoulder plane (normal points from mortise centerline toward tenon).
-        butt_direction: Direction the butt timber is pointing into the receiving timber.
-        marking_space: Located where tenon centerline intersects the shoulder plane, oriented with:
-            +X = shoulder_plane.normal (from mortise centerline toward tenon)
-            +Y = caller-provided up_direction (orthogonalized)
-            +Z = derived via right-hand rule
-    """
-    shoulder_plane: Plane
-    butt_direction: Direction3D
-    marking_space: Space
-
-
-def compute_butt_joint_shoulder(
-    arrangement: ButtJointTimberArrangement,
-    distance_from_centerline: Numeric,
-    up_direction: Direction3D,
-) -> ButtJointShoulderResult:
-    """
-    Compute the shoulder plane and an oriented marking space for a butt joint.
-
-    The marking space is positioned where the tenon (butt) timber's centerline
-    intersects the shoulder plane, oriented with:
-        +X = shoulder_plane.normal (from mortise centerline toward tenon)
-        +Y = up_direction (orthogonalized against +X)
-        +Z = right-hand rule cross product
-
-    Args:
-        arrangement: Butt joint arrangement (receiving_timber = mortise, butt_timber = tenon).
-        distance_from_centerline: Signed offset from the mortise centerline toward the tenon.
-            0 = plane through the mortise centerline. Positive = toward tenon.
-        up_direction: Direction for +Y axis of the marking space. Will be orthogonalized
-            against the shoulder plane normal.
-
-    Returns:
-        ButtJointShoulderResult with the shoulder plane, intersection point, and marking space.
-    """
-    tenon_timber = arrangement.butt_timber
-    tenon_end = arrangement.butt_timber_end
-
-    shoulder_plane = locate_mortise_timber_shoulder_plane_from_centerline_towards_tenon_timber(
-        arrangement, distance_from_centerline
-    )
-
-    shoulder_from_tenon_end_mark = mark_distance_from_end_along_centerline(
-        shoulder_plane, tenon_timber, tenon_end
-    )
-    shoulder_point_global = shoulder_from_tenon_end_mark.locate().position
-
-    orientation = Orientation.from_x_and_y(
-        x_direction=shoulder_plane.normal,
-        y_direction=up_direction,
-    )
-    marking_space = Space(
-        transform=Transform(position=shoulder_point_global, orientation=orientation)
-    )
-
-    butt_direction = tenon_timber.get_face_direction_global(tenon_end)
-
-    return ButtJointShoulderResult(
-        shoulder_plane=shoulder_plane,
-        butt_direction=butt_direction,
-        marking_space=marking_space,
-    )
-
 
 # ============================================================================
 # Butt Joint Geometry Definitions
@@ -471,3 +493,9 @@ class ButtJointCSGParts:
     negative_receiving_csg: Optional[CutCSG] = None
     positive_butt_csg: Optional[CutCSG] = None
     negative_butt_csg: Optional[CutCSG] = None
+
+
+
+# ============================================================================
+# Butt Joint Geometry Functions
+# ============================================================================
