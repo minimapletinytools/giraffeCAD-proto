@@ -16,6 +16,7 @@ outside of the purview of build-a-butt-joint, finish the joint:
 """
 
 from __future__ import annotations
+from typing import NamedTuple
 
 from giraffecad.timber import *
 from giraffecad.measuring import (
@@ -189,15 +190,16 @@ def compute_butt_joint_shoulder(
 def build_dovetail_shoulder_geometery(
     arrangement: ButtJointTimberArrangement,
     shoulder_result: ButtJointShoulderResult,
-    dovetail_depth: Numeric) -> CutCSG:
+    dovetail_depth: Numeric
+    ) -> CutCSG:
     """
 
     Creates the shoulder geometry for a dovetail shoulder. The height of the dovetail is determined by the dimensions of the receiving timber.
     The depth of the dovetail is determined by the dovetail_depth parameter.
 
 
-          |       |
-    ______|       |
+          |   
+    ______|  v    |
            \      |
             \     |
     _________\    |
@@ -270,6 +272,31 @@ class ButtJointCSGParts:
 # Butt Joint Geometry Functions
 # ============================================================================
 
+class DovetailTenonGeometeryResult(NamedTuple):
+    """
+    Result of computing the geometry for a dovetail tenon.
+
+    Attributes:
+        tenon_csg: CSG representing the tenon shape to be cut from the butt timber.
+        mortise_csg: CSG representing the mortise shape to be cut from the receiving timber.
+    """
+    tenon_csg: CutCSG
+    mortise_csg: CutCSG
+    wedge_accessory_csg: Optional[CutCSG] = None
+
+class DovetailTenonWedgeAccessoryParameters(NamedTuple):
+    """
+    Parameters for an optional wedge accessory for a dovetail tenon.
+
+    Attributes:
+        wedge_from_receiving_timber_side: If true, the wedge is designed to be cut from the receiving timber and inserted from that side. If false, the wedge is designed to be cut from the tenon timber and inserted from the tenon side.
+        wedge_angle: The angle of the wedge taper. 0 means a rectangular wedge, X means a wedge with an X angle taper.
+        wedge_small_width: The width of the narrow end of the wedge. Measured at tenon_length if wedge_from_receiving_timber_side is False, measured from the shoulder if wedge_from_receiving_timber_side is True. If None, dovetail_depth is used.
+    """
+    wedge_from_receiving_timber_side: bool = False
+    wedge_angle: Numeric = degrees(10)
+    wedge_small_width: Optional[Numeric] = None
+
 def dovetail_tenon_geometry(
     arrangement: ButtJointTimberArrangement,
     shoulder_result: ButtJointShoulderResult,
@@ -278,6 +305,9 @@ def dovetail_tenon_geometry(
     tenon_depth: Numeric,
     dovetail_depth: Numeric,
     tenon_lateral_offset: Numeric = 0,
+    # the extra depth for the mortise hole in the receiving timber
+    receiving_timber_extra_depth: Numeric = 0,
+    wedge_accessory_parameters: Optional[DovetailTenonWedgeAccessoryParameters] = None,
 ) -> CutCSG:
     """
     Build the tenon geometry for a dovetail shoulder. The "top" of dovetail tenon is always flush with dovetail_top_side_on_butt_timber face of the butt timber, however x/y sizing still aligns with the usual width/height axis of the butt timber.
@@ -294,10 +324,6 @@ def dovetail_tenon_geometry(
           | \|  <
     ______|
            ^^^ tenon_depth
-
-    TODO this method should also do the wedge that goes above the dovetail tenon
-
-    wedge_from_receiving_timber_side: bool = false # if true, tenon_depth must meet the opposite end of the receiving timber for this to work
     """ 
 
 
