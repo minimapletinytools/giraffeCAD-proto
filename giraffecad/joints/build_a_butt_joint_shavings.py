@@ -198,9 +198,9 @@ def build_dovetail_shoulder_geometery(
 
           |       |
     ______|       |
-          \       |
            \      |
-    ________\     |
+            \     |
+    _________\    |
           | ^     |
           | dovetail_depth
 
@@ -208,6 +208,100 @@ def build_dovetail_shoulder_geometery(
     The resulting CutCSG object is in global space. It includes part of the butt timber itself, not just the dovetail shape.
     The resulting CutCSG object includes part of the butt timber itself, not just the dovetail shape. This is useful for cutting notches into the receiving timber for non perfect receiving timbers.
     """
+    from giraffecad.cutcsg import ConvexPolygonExtrusion
+
+    if safe_compare(dovetail_depth, Integer(0), Comparison.LE):
+        raise ValueError(f"dovetail_depth must be positive, got {dovetail_depth}")
+
+    receiving_timber = arrangement.receiving_timber
+    butt_timber = arrangement.butt_timber
+
+    shoulder_transform = shoulder_result.marking_space.transform
+    orientation_matrix = shoulder_transform.orientation.matrix
+
+    x_axis_global = create_v3(orientation_matrix[0, 0], orientation_matrix[1, 0], orientation_matrix[2, 0])
+    y_axis_global = create_v3(orientation_matrix[0, 1], orientation_matrix[1, 1], orientation_matrix[2, 1])
+    z_axis_global = create_v3(orientation_matrix[0, 2], orientation_matrix[1, 2], orientation_matrix[2, 2])
+
+    shoulder_height = receiving_timber.get_size_in_direction_3d(y_axis_global)
+    half_height = shoulder_height / Rational(2)
+
+    shoulder_span = butt_timber.get_size_in_direction_3d(z_axis_global)
+    half_span = shoulder_span / Rational(2)
+
+    # Keep a rectangular butt-side section so this geometry includes part of the
+    # butt timber itself before transitioning along the dovetail ramp.
+    butt_side_thickness = butt_timber.get_size_in_direction_3d(x_axis_global) / Rational(2)
+
+    profile_points = [
+        create_v2(-butt_side_thickness, -half_height),
+        create_v2(-butt_side_thickness, half_height),
+        create_v2(Integer(0), half_height),
+        create_v2(dovetail_depth, -half_height),
+    ]
+
+    return ConvexPolygonExtrusion(
+        points=profile_points,
+        transform=shoulder_transform,
+        start_distance=-half_span,
+        end_distance=half_span,
+    )
+
+
+
+# ============================================================================
+# Butt Joint Geometry Definitions
+# ============================================================================
+
+@dataclass(frozen=True)
+class ButtJointCSGParts:
+    """
+    Representation of the geometry components that make up a butt joint.
+    They are combined by unioning the positive parts, then differencing the negative parts.
+    """
+    positive_receiving_csg: Optional[CutCSG] = None
+    negative_receiving_csg: Optional[CutCSG] = None
+    positive_butt_csg: Optional[CutCSG] = None
+    negative_butt_csg: Optional[CutCSG] = None
+
+
+
+# ============================================================================
+# Butt Joint Geometry Functions
+# ============================================================================
+
+def dovetail_tenon_geometry(
+    arrangement: ButtJointTimberArrangement,
+    shoulder_result: ButtJointShoulderResult,
+    dovetail_top_side_on_butt_timber: TimberLongFace,
+    tenon_size: V2,
+    tenon_depth: Numeric,
+    dovetail_depth: Numeric,
+    tenon_lateral_offset: Numeric = 0,
+) -> CutCSG:
+    """
+    Build the tenon geometry for a dovetail shoulder. The "top" of dovetail tenon is always flush with dovetail_top_side_on_butt_timber face of the butt timber, however x/y sizing still aligns with the usual width/height axis of the butt timber.
+    tenon_lateral_offset is always in the perpendicular axis of the joint on the tenon timber. When 0, the tenon is laterally centered on the the butt timber.
+
+
+
+        dovetail_top_side_on_butt_timber
+           v 
+    _________
+             |
+             |
+          |\ |  < dovetail_depth
+          | \|  <
+    ______|
+           ^^^ tenon_depth
+
+    TODO this method should also do the wedge that goes above the dovetail tenon
+
+    wedge_from_receiving_timber_side: bool = false # if true, tenon_depth must meet the opposite end of the receiving timber for this to work
+    """ 
+
+
+
 
 # ============================================================================
 # Peg Geometry
@@ -476,26 +570,3 @@ def compute_peg_positions(
         ))
 
     return results
-
-
-
-# ============================================================================
-# Butt Joint Geometry Definitions
-# ============================================================================
-
-@dataclass(frozen=True)
-class ButtJointCSGParts:
-    """
-    Representation of the geometry components that make up a butt joint.
-    They are combined by unioning the positive parts, then differencing the negative parts.
-    """
-    positive_receiving_csg: Optional[CutCSG] = None
-    negative_receiving_csg: Optional[CutCSG] = None
-    positive_butt_csg: Optional[CutCSG] = None
-    negative_butt_csg: Optional[CutCSG] = None
-
-
-
-# ============================================================================
-# Butt Joint Geometry Functions
-# ============================================================================
