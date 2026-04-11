@@ -289,7 +289,7 @@ class DovetailTenonWedgeAccessoryParameters(NamedTuple):
     Parameters for an optional wedge accessory for a dovetail tenon.
 
     Attributes:
-        wedge_from_receiving_timber_side: If true, the wedge is designed to be cut from the receiving timber and inserted from that side. If false, the wedge is designed to be cut from the tenon timber and inserted from the tenon side.
+        wedge_from_receiving_timber_side: If true, the wedge is designed to be cut from the receiving timber and inserted from that side. If false, the wedge is designed to be cut from the tenon timber and inserted from the tenon side. We must have tenon_depth + receiving_timber_extra_depth > the matching width on the receivingtimber for this to work
         wedge_angle: The angle of the wedge taper. 0 means a rectangular wedge, X means a wedge with an X angle taper.
         wedge_small_width: The width of the narrow end of the wedge. Measured at tenon_length if wedge_from_receiving_timber_side is False, measured from the shoulder if wedge_from_receiving_timber_side is True. If None, dovetail_depth is used.
     """
@@ -308,7 +308,7 @@ def dovetail_tenon_geometry(
     # the extra depth for the mortise hole in the receiving timber
     receiving_timber_extra_depth: Numeric = 0,
     wedge_accessory_parameters: Optional[DovetailTenonWedgeAccessoryParameters] = None,
-) -> CutCSG:
+) -> DovetailTenonGeometeryResult:
     """
     Build the tenon geometry for a dovetail shoulder. The "top" of dovetail tenon is always flush with dovetail_top_side_on_butt_timber face of the butt timber, however x/y sizing still aligns with the usual width/height axis of the butt timber.
     tenon_lateral_offset is always in the perpendicular axis of the joint on the tenon timber. When 0, the tenon is laterally centered on the the butt timber.
@@ -326,8 +326,19 @@ def dovetail_tenon_geometry(
            ^^^ tenon_depth
     """ 
 
+    if safe_compare(tenon_depth, Integer(0), Comparison.LE):
+        raise ValueError(f"tenon_depth must be positive, got {tenon_depth}")
+    if safe_compare(dovetail_depth, Integer(0), Comparison.LT):
+        raise ValueError(f"dovetail_depth must be non-negative, got {dovetail_depth}")
+    if safe_compare(receiving_timber_extra_depth, Integer(0), Comparison.LT):
+        raise ValueError(
+            "receiving_timber_extra_depth must be non-negative, "
+            f"got {receiving_timber_extra_depth}"
+        )
+    if safe_compare(tenon_size[0], Integer(0), Comparison.LE) or safe_compare(tenon_size[1], Integer(0), Comparison.LE):
+        raise ValueError(f"tenon_size values must be positive, got {tenon_size}")
 
-
+    raise NotImplementedError("dovetail tenon geometry function is not implemented yet")
 
 # ============================================================================
 # Peg Geometry
