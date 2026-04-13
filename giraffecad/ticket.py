@@ -6,10 +6,18 @@ subclasses represent concrete ticket categories.
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from itertools import count
 from typing import Optional
 
 from giraffecad.rule import Direction3D
+
+
+_HORSEY_ID_COUNTER = count(1)
+
+
+def _next_horsey_id() -> int:
+    return next(_HORSEY_ID_COUNTER)
 
 
 @dataclass(frozen=True)
@@ -21,6 +29,9 @@ class Ticket(ABC):
 
     name: str = "[no-name]"
     parent: Optional["Ticket"] = None
+    # Runtime-only identifier for the Horsey viewer. It has no meaning outside
+    # the viewer runtime and should not be used as persistent data.
+    horsey_id: int = field(default_factory=_next_horsey_id, init=False, compare=False, repr=False)
 
 @dataclass(frozen=True)
 class FolderTicket(Ticket):
