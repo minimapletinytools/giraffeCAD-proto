@@ -630,9 +630,17 @@ def resolve_frame_from_module(module: Any) -> "tuple[Any, Optional[Any]]":
     """Resolve a frame from a loaded module.
 
     Returns (frame, patternbook_or_None).
+
+    The module-level ``example`` may be a Frame/PatternBook *instance* (legacy)
+    or a **callable** that returns one (preferred — avoids heavy work at import
+    time).
     """
     if hasattr(module, "example"):
         example = getattr(module, "example")
+        # If example is a callable (function reference), invoke it now
+        if callable(example):
+            with contextlib.redirect_stdout(sys.stderr):
+                example = example()
         if _looks_like_frame(example):
             return example, None
         if _looks_like_patternbook(example):
@@ -1408,8 +1416,14 @@ def _raise_specific_pattern(source_file: str, pattern_name: str) -> "tuple[SlotS
     patternbook = None
     if hasattr(module, "patternbook") and _looks_like_patternbook(module.patternbook):
         patternbook = module.patternbook
-    elif hasattr(module, "example") and _looks_like_patternbook(module.example):
-        patternbook = module.example
+    elif hasattr(module, "example"):
+        candidate = getattr(module, "example")
+        # Resolve callable example references
+        if callable(candidate) and not _looks_like_patternbook(candidate):
+            with contextlib.redirect_stdout(sys.stderr):
+                candidate = candidate()
+        if _looks_like_patternbook(candidate):
+            patternbook = candidate
     else:
         # Try factory functions
         for attr_name in dir(module):

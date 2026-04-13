@@ -571,7 +571,7 @@ def create_gateway(center: Optional[V3] = None) -> Frame:
     )
 
 
-example = create_gateway()
+example = create_gateway
 
 
 def main() -> Frame:

@@ -271,4 +271,4 @@ def create_all_ladder_examples() -> Frame:
     return create_ladder_frame()
 
 
-example = create_all_ladder_examples()
+example = create_all_ladder_examples

@@ -477,7 +477,7 @@ def create_honeycomb_shed():
     )
 
 
-example = create_honeycomb_shed()
+example = create_honeycomb_shed
 
 
 # ============================================================================

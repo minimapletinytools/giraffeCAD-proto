@@ -92,4 +92,4 @@ def create_all_construction_examples():
     return create_test_posts_with_beam_centerline()
 
 
-example = create_all_construction_examples()
+example = create_all_construction_examples

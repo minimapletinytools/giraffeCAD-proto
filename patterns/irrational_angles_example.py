@@ -96,7 +96,7 @@ def create_all_irrational_examples() -> Frame:
     return frame
 
 
-example = create_all_irrational_examples()
+example = create_all_irrational_examples
 
 
 if __name__ == "__main__":

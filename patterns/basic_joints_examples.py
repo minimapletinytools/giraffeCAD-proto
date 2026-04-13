@@ -339,4 +339,4 @@ def create_all_basic_joints_examples():
     return frame
 
 
-example = create_all_basic_joints_examples()
+example = create_all_basic_joints_examples

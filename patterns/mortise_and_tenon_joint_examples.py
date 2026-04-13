@@ -340,7 +340,7 @@ def create_all_mortise_and_tenon_examples():
     return frame
 
 
-example = create_all_mortise_and_tenon_examples()
+example = create_all_mortise_and_tenon_examples
 
 
 if __name__ == "__main__":

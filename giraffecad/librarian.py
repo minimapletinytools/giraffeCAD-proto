@@ -133,6 +133,14 @@ def _resolve_patternbook(module: Any, warnings: List[str]) -> Optional[PatternBo
 
 
 def _resolve_example(module: Any, warnings: List[str]) -> Optional[Any]:
+    """Return the module-level ``example`` attribute if present.
+
+    The value may be a concrete object (legacy) **or** a callable that will
+    produce the object when invoked (preferred — avoids heavy work at import
+    time).  The librarian stores whatever the module provides without calling
+    it; callers who need the concrete value should check ``callable()`` and
+    invoke it themselves.
+    """
     if hasattr(module, "example"):
         return getattr(module, "example")
 

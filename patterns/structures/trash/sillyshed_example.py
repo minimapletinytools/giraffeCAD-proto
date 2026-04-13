@@ -349,4 +349,4 @@ def create_all_sillyshed_examples() -> Frame:
     return create_sillyshed_frame()
 
 
-example = create_all_sillyshed_examples()
+example = create_all_sillyshed_examples

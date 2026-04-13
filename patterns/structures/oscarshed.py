@@ -1088,7 +1088,7 @@ def create_oscarshed(center: Optional[V3] = None):
     return Frame.from_joints(all_joints, additional_unjointed_timbers=unjointed_timbers, name="Oscar's Shed")
 
 
-example = create_oscarshed()
+example = create_oscarshed
 
 
 # ============================================================================

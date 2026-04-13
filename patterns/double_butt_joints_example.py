@@ -83,4 +83,4 @@ def create_all_double_butt_joint_examples() -> Union[Frame]:
     return frame
 
 
-example = create_all_double_butt_joint_examples()
+example = create_all_double_butt_joint_examples
