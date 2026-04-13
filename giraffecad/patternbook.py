@@ -6,7 +6,7 @@ and raise them at different positions for visualization and testing.
 """
 
 from sympy import Rational
-from typing import List, Tuple, Optional, Callable, Union, Literal
+from typing import List, Tuple, Optional, Callable, Union, Literal, Sequence
 from dataclasses import dataclass, field
 from .rule import V3, create_v3, Transform
 from .timber import Frame, CutTimber, Timber, Peg, Wedge, CSGAccessory, Joint, JointAccessory
@@ -320,11 +320,7 @@ class PatternBook:
 
         if len(pattern_names) == 1:
             single = self.raise_pattern(pattern_names[0], center=start_center)
-            if not isinstance(single, Frame):
-                raise TypeError(
-                    f"Pattern '{pattern_names[0]}' returned {type(single).__name__}, expected Frame"
-                )
-            return single
+            return self._coerce_pattern_result_to_frame(single, pattern_names[0])
 
         separation_distance, start_center = self._normalize_spacing_args(
             separation_distance,
@@ -344,29 +340,14 @@ class PatternBook:
                 separation_distance=separation_distance,
                 start_center=start_center,
             )
-            if not isinstance(grouped_result, Frame):
-                raise TypeError(
-                    f"Pattern group '{umbrella_group}' returned {type(grouped_result).__name__}, expected Frame"
-                )
-            return grouped_result
-
-        frame_entries = [
-            (metadata, pattern_lambda)
-            for metadata, pattern_lambda in self.patterns
-            if metadata.pattern_type == 'frame'
-        ]
-        if not frame_entries:
-            raise TypeError("No frame patterns found in PatternBook")
+            return self._coerce_pattern_result_to_frame(grouped_result, umbrella_group)
 
         results = self._raise_entries_with_spacing(
-            frame_entries,
+            self.patterns,
             separation_distance,
             start_center,
         )
-        frames = [result for result in results if isinstance(result, Frame)]
-        if not frames:
-            raise TypeError("No frame patterns found in PatternBook")
-        return self._combine_frames(frames, "all_patterns")
+        return self._combine_pattern_results_as_frame(results, "all_patterns")
 
     def _normalize_spacing_args(
         self,
@@ -396,6 +377,63 @@ class PatternBook:
             center = start_center + offset
             results.append(pattern_lambda(center))
         return results
+
+    def _coerce_pattern_result_to_frame(
+        self,
+        result: Union[Frame, CutCSG, List[CutCSG]],
+        name: str,
+    ) -> Frame:
+        if isinstance(result, Frame):
+            return result
+        # hack CutCSG into a Frame so we can view CutCSG examples directly in the viewer
+        # this is just for development, for examples, you should always wrap in a frame.
+        if isinstance(result, CutCSG):
+            return Frame(
+                cut_timbers=[],
+                accessories=[
+                    CSGAccessory(
+                        transform=Transform.identity(),
+                        positive_csg=result,
+                    )
+                ],
+                name=name,
+            )
+        if isinstance(result, list):
+            return self._combine_pattern_results_as_frame(result, name)
+        raise TypeError(
+            f"Pattern '{name}' returned {type(result).__name__}, expected Frame or CutCSG"
+        )
+
+    def _combine_pattern_results_as_frame(
+        self,
+        results: Sequence[Union[Frame, CutCSG]],
+        name: str,
+    ) -> Frame:
+        all_cut_timbers: List[CutTimber] = []
+        all_accessories: List[JointAccessory] = []
+
+        for result in results:
+            if isinstance(result, Frame):
+                all_cut_timbers.extend(result.cut_timbers)
+                all_accessories.extend(result.accessories)
+                continue
+            if isinstance(result, CutCSG):
+                all_accessories.append(
+                    CSGAccessory(
+                        transform=Transform.identity(),
+                        positive_csg=result,
+                    )
+                )
+                continue
+            raise TypeError(
+                f"PatternBook result {type(result).__name__} cannot be combined into a Frame"
+            )
+
+        return Frame(
+            cut_timbers=all_cut_timbers,
+            accessories=all_accessories,
+            name=name,
+        )
     
     def _combine_frames(self, frames: List[Frame], group_name: str) -> Frame:
         """

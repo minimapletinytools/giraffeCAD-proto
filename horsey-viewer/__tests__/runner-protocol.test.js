@@ -343,6 +343,36 @@ describe('runner protocol', () => {
     }
   });
 
+  test('raise_specific_pattern supports csg patterns', async () => {
+    const client = createRunnerClient();
+
+    try {
+      const ready = await client.readMessage();
+      expect(ready.type).toBe('ready');
+
+      const projectRoot = path.resolve(__dirname, '..', '..');
+      const sourceFile = path.join(projectRoot, 'patterns', 'CSG_debug_examples.py');
+      const raise = await client.request('raise_specific_pattern', {
+        slot: 'pattern_csg',
+        sourceFile,
+        patternName: 'halfspace_cut',
+      });
+
+      expect(raise.ok).toBe(true);
+      expect(raise.result.patternName).toBe('halfspace_cut');
+      expect(raise.result.slot).toBe('pattern_csg');
+      expect(raise.result.frame.timber_count).toBe(0);
+      expect(raise.result.frame.accessories_count).toBeGreaterThan(0);
+
+      const geom = await client.request('get_geometry', { slot: 'pattern_csg' });
+      expect(geom.ok).toBe(true);
+      expect(geom.result.meshes.length).toBeGreaterThan(0);
+      expect(geom.result.meshes[0].memberType).toBe('accessory');
+    } finally {
+      await client.shutdown();
+    }
+  });
+
   test('list_available_patterns discovers patterns', async () => {
     const client = createRunnerClient();
 

@@ -617,11 +617,47 @@ def frame_from_patternbook(patternbook: Any) -> Any:
     with contextlib.redirect_stdout(sys.stderr):
         result = patternbook.raise_patternbook_as_frame()
 
-    if not _looks_like_frame(result):
-        raise TypeError(
-            f"PatternBook raised {type(result).__name__}, expected frame-like object"
+    return _coerce_viewable_frame(result, "patternbook")
+
+
+def _coerce_viewable_frame(value: Any, name: Optional[str] = None) -> Any:
+    if _looks_like_frame(value):
+        return value
+
+    from giraffecad.cutcsg import CutCSG
+    from giraffecad.rule import Transform
+    from giraffecad.timber import CSGAccessory, Frame
+
+    frame_name = name or type(value).__name__
+
+    if isinstance(value, CutCSG):
+        return Frame(
+            cut_timbers=[],
+            accessories=[
+                CSGAccessory(
+                    transform=Transform.identity(),
+                    positive_csg=value,
+                )
+            ],
+            name=frame_name,
         )
-    return result
+
+    if isinstance(value, list) and all(isinstance(item, CutCSG) for item in value):
+        return Frame(
+            cut_timbers=[],
+            accessories=[
+                CSGAccessory(
+                    transform=Transform.identity(),
+                    positive_csg=item,
+                )
+                for item in value
+            ],
+            name=frame_name,
+        )
+
+    raise TypeError(
+        f"{frame_name} returned {type(value).__name__}, expected frame-like object or CutCSG"
+    )
 
 
 def resolve_frame_from_module(module: Any) -> "tuple[Any, Optional[Any]]":
@@ -641,15 +677,17 @@ def resolve_frame_from_module(module: Any) -> "tuple[Any, Optional[Any]]":
                 example = example()
         if _looks_like_frame(example):
             return example, None
+        try:
+            return _coerce_viewable_frame(example, "example"), None
+        except TypeError:
+            pass
         if _looks_like_patternbook(example):
             return frame_from_patternbook(example), example
 
     if hasattr(module, "build_frame") and callable(module.build_frame):
         with contextlib.redirect_stdout(sys.stderr):
             frame = module.build_frame()
-        if _looks_like_frame(frame):
-            return frame, None
-        raise TypeError(f"build_frame() returned {type(frame).__name__}, expected frame-like object")
+        return _coerce_viewable_frame(frame, "build_frame"), None
 
     if hasattr(module, "patternbook"):
         patternbook = getattr(module, "patternbook")
@@ -1441,9 +1479,8 @@ def _raise_specific_pattern(source_file: str, pattern_name: str) -> "tuple[SlotS
         raise ValueError(f"Pattern '{pattern_name}' not found. Available: {available}")
 
     with contextlib.redirect_stdout(sys.stderr):
-        frame = patternbook.raise_pattern(pattern_name)
-    if not _looks_like_frame(frame):
-        raise TypeError(f"Pattern '{pattern_name}' returned {type(frame).__name__}, expected Frame")
+        pattern_result = patternbook.raise_pattern(pattern_name)
+    frame = _coerce_viewable_frame(pattern_result, f"Pattern '{pattern_name}'")
 
     reload_s = time.monotonic() - t0
     slot = SlotState(
