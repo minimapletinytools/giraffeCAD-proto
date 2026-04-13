@@ -1318,8 +1318,20 @@ def _resolve_slot_name(state: RunnerState, payload: Dict[str, Any]) -> str:
 # Pattern discovery
 # ---------------------------------------------------------------------------
 
-def _list_available_patterns() -> Dict[str, Any]:
-    """Scan shipped and local pattern folders and return pattern metadata."""
+_patterns_cache: Optional[Dict[str, Any]] = None
+
+
+def _list_available_patterns(force_rescan: bool = False) -> Dict[str, Any]:
+    """Scan shipped and local pattern folders and return pattern metadata.
+
+    Results are cached after the first scan. Pass *force_rescan=True* (or
+    send ``"rescan": true`` in the command payload) to re-import everything.
+    """
+    global _patterns_cache
+    if _patterns_cache is not None and not force_rescan:
+        return _patterns_cache
+
+    t0 = time.monotonic()
     from giraffecad.librarian import scan_library_folder
 
     sources: List[Dict[str, Any]] = []
@@ -1375,7 +1387,12 @@ def _list_available_patterns() -> Dict[str, Any]:
             except Exception as exc:
                 log_stderr(f"[patterns] Error scanning local patterns: {exc}")
 
-    return {"sources": sources}
+    scan_s = time.monotonic() - t0
+    total_patterns = sum(len(s["patterns"]) for s in sources)
+    log_stderr(f"[patterns] Scanned {total_patterns} patterns in {scan_s:.2f}s")
+    result = {"sources": sources, "scan_s": scan_s}
+    _patterns_cache = result
+    return result
 
 
 def _raise_specific_pattern(source_file: str, pattern_name: str) -> "tuple[SlotState, Dict[str, Any]]":
@@ -1547,7 +1564,8 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
     # --- Pattern discovery ---
 
     if command == "list_available_patterns":
-        result = _list_available_patterns()
+        force_rescan = bool(payload.get("rescan", False))
+        result = _list_available_patterns(force_rescan=force_rescan)
         return state, make_success_response(request_id, command, result), False
 
     if command == "raise_specific_pattern":

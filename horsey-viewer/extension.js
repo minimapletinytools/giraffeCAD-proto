@@ -229,6 +229,47 @@ function _findAnyAliveMainSession() {
 }
 
 /**
+ * Open a pattern viewer triggered from the webview pattern list.
+ */
+async function _openPatternFromWebview(mainSession, patternName, sourceFile, context) {
+    const runner = mainSession.runnerSession;
+    if (!runner || !runner.isAlive()) {
+        vscode.window.showErrorMessage('Horsey runner is not running.');
+        return;
+    }
+
+    patternSlotCounter += 1;
+    const slotName = `pattern_${patternSlotCounter}`;
+
+    await runner.request('raise_specific_pattern', {
+        slot: slotName,
+        sourceFile,
+        patternName,
+    });
+
+    const patternSession = new FrameViewSession(
+        sourceFile,
+        context,
+        outputChannel,
+        (_filePath, disposedSlotName) => {
+            if (patternSessions.get(disposedSlotName) === patternSession) {
+                patternSessions.delete(disposedSlotName);
+            }
+        },
+        {
+            slotName,
+            sessionType: 'pattern',
+            sharedRunner: runner,
+            patternName,
+        }
+    );
+    patternSessions.set(slotName, patternSession);
+    await patternSession.initialize();
+    patternSession.reveal();
+    await patternSession.refresh('pattern open from webview');
+}
+
+/**
  * Get or create a session for the given file path.
  * Reuses an existing session for the same file or creates a new panel/session.
  */
@@ -249,6 +290,9 @@ async function getOrCreateSession(filePath, context) {
         },
         { slotName: 'main', sessionType: 'main' }
     );
+    session.onLoadPattern = async (patternName, sourceFile) => {
+        await _openPatternFromWebview(session, patternName, sourceFile, context);
+    };
     frameSessions.set(filePath, session);
     await session.initialize();
     return session;

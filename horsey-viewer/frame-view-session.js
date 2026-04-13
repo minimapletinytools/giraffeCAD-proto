@@ -179,6 +179,20 @@ class FrameViewSession {
                 this.onFileChanged('manual refresh button');
                 return;
             }
+            if (message.type === 'loadPattern') {
+                this._handleLoadPatternFromWebview(message).catch((err) => {
+                    this.log(`[patterns] loadPattern error: ${err.message || err}`);
+                });
+                return;
+            }
+            if (message.type === 'requestLoadPatterns') {
+                const rescan = !!message.rescan;
+                this.log(`[webview] Load patterns requested from viewer (rescan=${rescan})`);
+                this._sendPatternsToWebview(rescan).catch((err) => {
+                    this.log(`[patterns] requestLoadPatterns error: ${err.message || err}`);
+                });
+                return;
+            }
             if (message.type === 'openOutputChannel') {
                 this.channel.show(true);
                 return;
@@ -204,6 +218,59 @@ class FrameViewSession {
                 : '{}';
             this.log(`[webview:${source}:${level}] ${eventName} v${version} ${details}`);
         });
+    }
+
+    /**
+     * Ask runner for available patterns and send them to the webview.
+     * @param {boolean} [rescan=false] - Force re-import of all pattern modules
+     */
+    async _sendPatternsToWebview(rescan = false) {
+        if (!this.panel || !this.runnerSession || !this.runnerSession.isAlive()) {
+            return;
+        }
+        try {
+            const payload = rescan ? { rescan: true } : {};
+            const result = await this.runnerSession.request('list_available_patterns', payload);
+            if (!this.panel) {
+                return;
+            }
+            this.panel.webview.postMessage({
+                type: 'patternsAvailable',
+                sources: (result && result.sources) || [],
+            }).catch((err) => {
+                this.log(`[patterns] Failed to post patterns: ${err.message || err}`);
+            });
+        } catch (err) {
+            this.log(`[patterns] Error fetching patterns: ${err.message || err}`);
+        }
+    }
+
+    /**
+     * Handle a loadPattern message from the webview.
+     */
+    async _handleLoadPatternFromWebview(message) {
+        const patternName = typeof message.patternName === 'string' ? message.patternName : '';
+        const sourceFile = typeof message.sourceFile === 'string' ? message.sourceFile : '';
+        if (!patternName || !sourceFile) {
+            this.log('[patterns] loadPattern missing patternName or sourceFile');
+            return;
+        }
+
+        this.log(`[patterns] Webview requested pattern: ${patternName} from ${sourceFile}`);
+
+        // Delegate to the onLoadPattern callback (set by extension.js)
+        if (typeof this.onLoadPattern === 'function') {
+            await this.onLoadPattern(patternName, sourceFile);
+        }
+
+        // Notify the webview that loading is complete so it can remove the spinner
+        if (this.panel) {
+            this.panel.webview.postMessage({
+                type: 'patternLoadResult',
+                patternName,
+                ok: true,
+            }).catch(() => {});
+        }
     }
 
     /**

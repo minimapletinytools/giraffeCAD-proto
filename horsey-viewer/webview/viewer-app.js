@@ -346,6 +346,9 @@ class HorseyViewerApp extends LitElement {
         this.unselectedTransparencyPercent = 40;
         this.activeBackground = 'cream';
 
+        this.availablePatterns = [];  // [{name, groups, source_file, source}]
+        this.patternsLoading = new Set();  // pattern names currently loading
+
         this.animationHandle = null;
         this.viewState = createInitialViewState();
         this.currentFrameData = {};
@@ -409,6 +412,18 @@ class HorseyViewerApp extends LitElement {
                 <div class="panel-box">
                     <div class="panel-title">Raw Python Output</div>
                     <pre id="raw-output"></pre>
+                </div>
+                <div id="patterns-panel-box" class="panel-box">
+                    <div class="panel-title">
+                        Patterns
+                        <div id="patterns-toolbar">
+                            <button id="patterns-load-btn" type="button">load patterns</button>
+                        </div>
+                    </div>
+                    <div id="patterns-panel">
+                        <div id="patterns-empty" class="patterns-empty-msg">click “load patterns” to scan for available patterns</div>
+                        <div id="patterns-list"></div>
+                    </div>
                 </div>
                 <div id="log-panel-box" class="panel-box">
                     <div class="panel-title">
@@ -561,6 +576,13 @@ class HorseyViewerApp extends LitElement {
         logOpenOutputBtn.addEventListener('click', () => {
             if (vscode) { vscode.postMessage({ type: 'openOutputChannel' }); }
         });
+
+        const patternsLoadBtn = this.renderRoot.querySelector('#patterns-load-btn');
+        if (patternsLoadBtn) {
+            patternsLoadBtn.addEventListener('click', () => {
+                this.requestLoadPatterns();
+            });
+        }
 
         window.addEventListener('scroll', this.onWindowScroll);
         window.addEventListener('mouseup', this.onWindowMouseUp);
@@ -808,6 +830,16 @@ class HorseyViewerApp extends LitElement {
 
         if (message.type === 'csgSelectionResult') {
             this.handleCSGSelectionResult(message);
+            return;
+        }
+
+        if (message.type === 'patternsAvailable') {
+            this.handlePatternsAvailable(message);
+            return;
+        }
+
+        if (message.type === 'patternLoadResult') {
+            this.handlePatternLoadResult(message);
             return;
         }
     }
@@ -1061,6 +1093,135 @@ class HorseyViewerApp extends LitElement {
         }
 
         this.updateInfo(this.currentFrameData);
+    }
+
+    handlePatternsAvailable(message) {
+        const sources = Array.isArray(message.sources) ? message.sources : [];
+        const flat = [];
+        for (const src of sources) {
+            const sourceLabel = src.source || 'unknown';
+            const patterns = Array.isArray(src.patterns) ? src.patterns : [];
+            for (const p of patterns) {
+                flat.push({
+                    name: p.name,
+                    groups: Array.isArray(p.groups) ? p.groups : [],
+                    source_file: p.source_file || '',
+                    source: sourceLabel,
+                });
+            }
+        }
+        this.availablePatterns = flat;
+        this.patternsLoading.clear();
+        const loadBtn = this.renderRoot.querySelector('#patterns-load-btn');
+        if (loadBtn) {
+            loadBtn.disabled = false;
+            loadBtn.textContent = 'reload patterns';
+        }
+        this.renderPatternsList();
+    }
+
+    handlePatternLoadResult(message) {
+        const patternName = message.patternName;
+        if (patternName) {
+            this.patternsLoading.delete(patternName);
+        }
+        this.renderPatternsList();
+    }
+
+    onPatternClick(patternName, sourceFile) {
+        if (this.patternsLoading.has(patternName)) {
+            return;
+        }
+        this.patternsLoading.add(patternName);
+        this.renderPatternsList();
+        if (vscode) {
+            vscode.postMessage({
+                type: 'loadPattern',
+                patternName,
+                sourceFile,
+            });
+        }
+    }
+
+    requestLoadPatterns() {
+        const rescan = this.availablePatterns.length > 0;
+        const loadBtn = this.renderRoot.querySelector('#patterns-load-btn');
+        if (loadBtn) {
+            loadBtn.disabled = true;
+            loadBtn.textContent = 'scanning…';
+        }
+        const emptyEl = this.renderRoot.querySelector('#patterns-empty');
+        if (emptyEl && this.availablePatterns.length === 0) {
+            emptyEl.textContent = 'scanning for patterns…';
+            emptyEl.style.display = 'block';
+        }
+        if (vscode) {
+            vscode.postMessage({ type: 'requestLoadPatterns', rescan });
+        }
+    }
+
+    renderPatternsList() {
+        const listEl = this.renderRoot.querySelector('#patterns-list');
+        const emptyEl = this.renderRoot.querySelector('#patterns-empty');
+        if (!listEl || !emptyEl) {
+            return;
+        }
+
+        if (this.availablePatterns.length === 0) {
+            emptyEl.style.display = 'block';
+            listEl.innerHTML = '';
+            return;
+        }
+        emptyEl.style.display = 'none';
+
+        // Group by source
+        const grouped = new Map();
+        for (const p of this.availablePatterns) {
+            const key = p.source === 'shipped' ? 'Shipped Library' : p.source === 'local' ? 'Local Project' : p.source;
+            if (!grouped.has(key)) {
+                grouped.set(key, []);
+            }
+            grouped.get(key).push(p);
+        }
+
+        let html = '';
+        for (const [groupLabel, patterns] of grouped) {
+            html += `<div class="patterns-group-label">${this._escapeHtml(groupLabel)}</div>`;
+            for (const p of patterns) {
+                const isLoading = this.patternsLoading.has(p.name);
+                const groupsStr = p.groups.length > 0 ? ` <span class="patterns-groups">${this._escapeHtml(p.groups.join(', '))}</span>` : '';
+                const loadingClass = isLoading ? ' patterns-item-loading' : '';
+                html += `<button class="patterns-item${loadingClass}" data-pattern-name="${this._escapeAttr(p.name)}" data-source-file="${this._escapeAttr(p.source_file)}" ${isLoading ? 'disabled' : ''}>`;
+                html += `<span class="patterns-item-name">${this._escapeHtml(p.name)}</span>${groupsStr}`;
+                if (isLoading) {
+                    html += ' <span class="patterns-item-spinner">…</span>';
+                }
+                html += '</button>';
+            }
+        }
+        listEl.innerHTML = html;
+
+        // Bind click events
+        const buttons = listEl.querySelectorAll('.patterns-item');
+        for (const btn of buttons) {
+            btn.addEventListener('click', () => {
+                const name = btn.getAttribute('data-pattern-name');
+                const file = btn.getAttribute('data-source-file');
+                if (name && file) {
+                    this.onPatternClick(name, file);
+                }
+            });
+        }
+    }
+
+    _escapeHtml(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    _escapeAttr(str) {
+        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     _buildHighlightMesh(vertices, indices, color, opacity, storeKey) {
