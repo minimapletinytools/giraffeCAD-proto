@@ -408,7 +408,7 @@ def giraffe_norm(vec: Matrix, collapse_mode: CollapseMode = CollapseMode.SMART):
 
     # Manual sum of squares — avoids SymPy matrix .norm() which triggers
     # slow property checking on complex expressions.
-    sum_sq = sum(c * c for c in vec)  # type: ignore[arg-type]
+    sum_sq = sum(c * c for c in vec)
     result = sqrt(sum_sq)
     return _collapse_scalar(result, collapse_mode)
 

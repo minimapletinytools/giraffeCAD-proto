@@ -2357,6 +2357,8 @@ def add_milestone(name: str):
     import os, sys, json as _json  # noqa: E401 — lazy imports to avoid burdening the core module
     if not os.environ.get("HORSEY_VIEWER_MILESTONES"):
         return
-    _json.dump({"type": "milestone", "name": name}, sys.__stdout__)
-    sys.__stdout__.write("\n")
-    sys.__stdout__.flush()
+    stdout = sys.__stdout__
+    assert stdout is not None
+    _json.dump({"type": "milestone", "name": name}, stdout)
+    stdout.write("\n")
+    stdout.flush()

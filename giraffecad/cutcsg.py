@@ -1671,7 +1671,7 @@ def adopt_csg(
 
     elif hasattr(csg_in_orig_space, "transform"):
         new_transform = transform_transform(cast(Transform, csg_in_orig_space.transform))
-        return replace(csg_in_orig_space, transform=new_transform)  # type: ignore[misc]
+        return replace(csg_in_orig_space, transform=new_transform)
 
     else:
         return csg_in_orig_space

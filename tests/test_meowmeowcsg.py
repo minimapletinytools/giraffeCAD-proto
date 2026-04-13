@@ -2163,6 +2163,7 @@ class TestCSGFeatures:
         top_pt = create_v3(Integer(0), Integer(0), Integer(10))
         feat = prism.find_feature(top_pt)
         assert feat is not None
+        assert isinstance(feat, RectangularPrismFeature)
         assert feat.name == "my_top"
         assert feat.face == PrismFace.TOP
 
