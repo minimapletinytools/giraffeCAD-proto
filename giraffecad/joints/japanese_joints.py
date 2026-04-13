@@ -274,15 +274,19 @@ def cut_lapped_gooseneck_joint(
     receiving_timber_lap_face_direction = -gooseneck_timber.get_face_direction_global(gooseneck_timber_face)
     receiving_timber_lap_face = receiving_timber.get_closest_oriented_face_from_global_direction(receiving_timber_lap_face_direction)
     
-    # Cut lap on receiving timber
-    receiving_timber_lap_prism, receiving_timber_end_cut = chop_lap_on_timber_end(
-        lap_timber=receiving_timber,
-        lap_timber_end=receiving_timber_end,
-        lap_timber_face=receiving_timber_lap_face,
-        lap_length=lap_length,
-        lap_shoulder_position_from_lap_timber_end=receiving_timber_shoulder_from_end,
-        lap_depth=receiving_timber_lap_depth
-    )
+    # Cut lap on receiving timber (only when lap_length > 0; a zero-length lap would
+    # produce a degenerate RectangularPrism that breaks triangulation).
+    if lap_length > 0:
+        receiving_timber_lap_prism, receiving_timber_end_cut = chop_lap_on_timber_end(
+            lap_timber=receiving_timber,
+            lap_timber_end=receiving_timber_end,
+            lap_timber_face=receiving_timber_lap_face,
+            lap_length=lap_length,
+            lap_shoulder_position_from_lap_timber_end=receiving_timber_shoulder_from_end,
+            lap_depth=receiving_timber_lap_depth
+        )
+    else:
+        receiving_timber_end_cut = None
     
     # Calculate shoulder position for gooseneck timber
     # The gooseneck timber's lap starts at the point where it meets the receiving timber's lap end
@@ -372,19 +376,20 @@ def cut_lapped_gooseneck_joint(
 
     # Transform the gooseneck profile CSG from gooseneck_timber coordinates to receiving_timber coordinates
     # Use the generic adopt_csg function to handle all CSG types (SolidUnion, Difference, RectangularPrism, etc.)
-    gooseneck_csg_on_receiving_timber = adopt_csg(gooseneck_timber.transform, receiving_timber.transform, gooseneck_profile_csg) 
+    gooseneck_csg_on_receiving_timber = adopt_csg(gooseneck_timber.transform, receiving_timber.transform, gooseneck_profile_csg)
 
+    if lap_length > 0:
+        receiving_timber_negative_csg: CutCSG = CSGUnion([receiving_timber_lap_prism, gooseneck_csg_on_receiving_timber])
+    else:
+        receiving_timber_negative_csg = gooseneck_csg_on_receiving_timber
 
-    
     # Create Cut objects for each timber
     receiving_timber_cut_obj = Cutting(
         timber=receiving_timber,
         maybe_top_end_cut=receiving_timber_end_cut if receiving_timber_end == TimberReferenceEnd.TOP else None,
         maybe_bottom_end_cut=receiving_timber_end_cut if receiving_timber_end == TimberReferenceEnd.BOTTOM else None,
-        negative_csg=CSGUnion([receiving_timber_lap_prism, gooseneck_csg_on_receiving_timber])
+        negative_csg=receiving_timber_negative_csg
     )
-
-    
     gooseneck_timber_cut_obj = Cutting(
         timber=gooseneck_timber,
         maybe_top_end_cut=gooseneck_timber_end_cut if gooseneck_timber_end == TimberReferenceEnd.TOP else None,
