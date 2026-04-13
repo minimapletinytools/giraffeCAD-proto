@@ -90,6 +90,11 @@ DONE-fix feature issues
     -I think it general you should just rewrite named CSG mesh/feature generation. 
   DONE-selecting feature still doesn't highlight properly. I suspect its related to geo generation
 DONE-refactor patterns to not actually load the entire pattern
+DONE-BUG basic_gooseneck pattern is broken, it's not rendering teh housing tiimber. It works fine when I opne the xample in freecad. in the viewer it shows only 1 timber when there should be 2 so it's not rendering one of the timbers for some reason ,prheaps due to a name duplication? Can you figuer out why.
+
+-fix 0 length prism rendering triangulation
+-BUG hrosey viewer seems to run in teh background after closing all tabs... need better cleanup routine, 
+-BUG sharde runners that have been stopped stil have their auto relod watcher thingy running, make suer to stop it when you close it or whatever when yo cuose the tab
 
 -rethink hierarchical feature selection, as you'll want to be able to select 2 features to measure them in the future.
 -do new selection hierarchy here are the states
@@ -104,7 +109,7 @@ DONE-refactor patterns to not actually load the entire pattern
 
 
 
--BUG basic_gooseneck pattern is broken, it's not rendering teh housing tiimber. It works fine when I opne the xample in freecad. in the viewer it shows only 1 timber when there should be 2 so it's not rendering one of the timbers for some reason ,prheaps due to a name duplication? Can you figuer out why.
+
 -BUG pattern viewer thingy does not support CSG stuff
   [tinyhouse120.py] [patterns] loadPattern error: Runner command 'raise_specific_pattern' failed: Pattern 'halfspace_cut' returned Difference, expected Frame
 can you lok into 

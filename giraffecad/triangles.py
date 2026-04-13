@@ -7,6 +7,7 @@ model and trimesh. All SymPy-to-float conversion happens here.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from typing import Iterable, Optional, Sequence, Tuple, Union
 
@@ -173,12 +174,23 @@ def _mesh_difference(csg: Difference) -> TriangleMesh:
 
 
 def _run_boolean(operation: str, meshes: Sequence[trimesh.Trimesh]) -> trimesh.Trimesh:
-    if len(meshes) < 2:
-        if not meshes:
-            raise ValueError("Boolean operations require at least one mesh")
-        return _finalize_mesh(meshes[0].copy())
+    # Filter out empty meshes (those with no vertices)
+    non_empty_meshes = [mesh for mesh in meshes if len(mesh.vertices) > 0]
+    
+    if len(non_empty_meshes) == 0:
+        # All meshes are empty, return an empty mesh
+        print(
+            f"Warning: All meshes in boolean {operation} operation are empty, returning empty mesh",
+            file=sys.stderr,
+            flush=True,
+        )
+        return trimesh.Trimesh(vertices=np.empty((0, 3)), faces=np.empty((0, 3), dtype=np.int64))
+    
+    if len(non_empty_meshes) == 1:
+        # Only one non-empty mesh, return it directly
+        return _finalize_mesh(non_empty_meshes[0].copy())
 
-    copied_meshes = [_finalize_mesh(mesh.copy()) for mesh in meshes]
+    copied_meshes = [_finalize_mesh(mesh.copy()) for mesh in non_empty_meshes]
     try:
         if operation == "union":
             result = trimesh.boolean.union(copied_meshes, engine="manifold", check_volume=False)
@@ -205,7 +217,17 @@ def _mesh_rectangular_prism(prism: RectangularPrism) -> trimesh.Trimesh:
     start_distance, end_distance = _finite_extent_pair(prism.start_distance, prism.end_distance)
     length = end_distance - start_distance
     if length <= 0:
-        raise ValueError("RectangularPrism must have positive length after finite conversion")
+        size_x = _numeric_to_float(prism.size[0])
+        size_y = _numeric_to_float(prism.size[1])
+        print(
+            f"Warning: skipping zero/negative-length RectangularPrism: "
+            f"size=[{size_x}, {size_y}], start_distance={start_distance}, end_distance={end_distance}, length={length}",
+            file=sys.stderr,
+            flush=True,
+        )
+        # Return an empty mesh instead of raising an exception
+        # This allows the rest of the CSG tree to be processed correctly
+        return trimesh.Trimesh(vertices=np.empty((0, 3)), faces=np.empty((0, 3), dtype=np.int64))
 
     extents = [
         _numeric_to_float(prism.size[0]),
@@ -222,7 +244,16 @@ def _mesh_cylinder(cylinder: Cylinder) -> trimesh.Trimesh:
     start_distance, end_distance = _finite_extent_pair(cylinder.start_distance, cylinder.end_distance)
     height = end_distance - start_distance
     if height <= 0:
-        raise ValueError("Cylinder must have positive height after finite conversion")
+        radius = _numeric_to_float(cylinder.radius)
+        print(
+            f"Warning: skipping zero/negative-height Cylinder: "
+            f"radius={radius}, start_distance={start_distance}, end_distance={end_distance}, height={height}",
+            file=sys.stderr,
+            flush=True,
+        )
+        # Return an empty mesh instead of raising an exception
+        # This allows the rest of the CSG tree to be processed correctly
+        return trimesh.Trimesh(vertices=np.empty((0, 3)), faces=np.empty((0, 3), dtype=np.int64))
 
     mesh = trimesh.creation.cylinder(
         radius=_numeric_to_float(cylinder.radius),
