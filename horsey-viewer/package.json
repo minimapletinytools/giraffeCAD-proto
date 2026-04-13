@@ -20,6 +20,14 @@
       {
         "command": "horsey-viewer.renderHorsey",
         "title": "Render Horsey"
+      },
+      {
+        "command": "horsey-viewer.browsePatterns",
+        "title": "Browse Patterns"
+      },
+      {
+        "command": "horsey-viewer.unloadPattern",
+        "title": "Unload Pattern Viewer"
       }
     ]
   },

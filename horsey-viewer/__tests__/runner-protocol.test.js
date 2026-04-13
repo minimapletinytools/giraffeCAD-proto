@@ -247,4 +247,125 @@ describe('runner protocol', () => {
       await client.shutdown();
     }
   });
+
+  test('slot commands: load_slot, list_slots, get_frame with slot, unload_slot', async () => {
+    const client = createRunnerClient();
+
+    try {
+      const ready = await client.readMessage();
+      expect(ready.type).toBe('ready');
+
+      // Main slot should already be loaded
+      const slots1 = await client.request('list_slots');
+      expect(slots1.ok).toBe(true);
+      expect(slots1.result.activeSlot).toBe('main');
+      expect(slots1.result.slots).toHaveProperty('main');
+
+      // Load a second slot
+      const extensionRoot = path.resolve(__dirname, '..');
+      const secondFixture = path.join(extensionRoot, 'test-fixtures', 'minimal_frame.py');
+      const loadSlot = await client.request('load_slot', { slot: 'secondary', filePath: secondFixture });
+      expect(loadSlot.ok).toBe(true);
+      expect(loadSlot.result.slot).toBe('secondary');
+      expect(loadSlot.result.frame.timber_count).toBeGreaterThan(0);
+
+      // List slots — should now have 2
+      const slots2 = await client.request('list_slots');
+      expect(slots2.ok).toBe(true);
+      expect(Object.keys(slots2.result.slots)).toHaveLength(2);
+      expect(slots2.result.slots).toHaveProperty('secondary');
+
+      // Get frame from secondary slot
+      const frame = await client.request('get_frame', { slot: 'secondary' });
+      expect(frame.ok).toBe(true);
+      expect(frame.result.timber_count).toBeGreaterThan(0);
+
+      // Get geometry from secondary slot
+      const geom = await client.request('get_geometry', { slot: 'secondary' });
+      expect(geom.ok).toBe(true);
+      expect(geom.result.kind).toBe('triangle-geometry');
+      expect(geom.result.meshes.length).toBeGreaterThan(0);
+
+      // Unload second slot
+      const unload = await client.request('unload_slot', { slot: 'secondary' });
+      expect(unload.ok).toBe(true);
+      expect(unload.result.removed).toBe(true);
+
+      // Verify it's gone
+      const slots3 = await client.request('list_slots');
+      expect(Object.keys(slots3.result.slots)).toHaveLength(1);
+      expect(slots3.result.slots).not.toHaveProperty('secondary');
+    } finally {
+      await client.shutdown();
+    }
+  });
+
+  test('raise_specific_pattern loads pattern into slot', async () => {
+    const client = createRunnerClient('patternbook_frame.py');
+
+    try {
+      const ready = await client.readMessage();
+      expect(ready.type).toBe('ready');
+
+      // The main slot loaded the first pattern from the patternbook
+      const mainFrame = await client.request('get_frame');
+      expect(mainFrame.ok).toBe(true);
+      expect(mainFrame.result.timber_count).toBeGreaterThan(0);
+
+      // Now load the second pattern into a new slot
+      const extensionRoot = path.resolve(__dirname, '..');
+      const sourceFile = path.join(extensionRoot, 'test-fixtures', 'patternbook_frame.py');
+      const raise = await client.request('raise_specific_pattern', {
+        slot: 'pattern_1',
+        sourceFile,
+        patternName: 'tall_post_pattern',
+      });
+      expect(raise.ok).toBe(true);
+      expect(raise.result.patternName).toBe('tall_post_pattern');
+      expect(raise.result.slot).toBe('pattern_1');
+      expect(raise.result.frame.timber_count).toBeGreaterThan(0);
+
+      // Get geometry from the pattern slot
+      const geom = await client.request('get_geometry', { slot: 'pattern_1' });
+      expect(geom.ok).toBe(true);
+      expect(geom.result.meshes.length).toBeGreaterThan(0);
+
+      // Main slot should still work
+      const mainGeom = await client.request('get_geometry', { slot: 'main' });
+      expect(mainGeom.ok).toBe(true);
+
+      // Unload pattern slot
+      const unload = await client.request('unload_slot', { slot: 'pattern_1' });
+      expect(unload.ok).toBe(true);
+      expect(unload.result.removed).toBe(true);
+    } finally {
+      await client.shutdown();
+    }
+  });
+
+  test('list_available_patterns discovers patterns', async () => {
+    const client = createRunnerClient();
+
+    try {
+      const ready = await client.readMessage();
+      expect(ready.type).toBe('ready');
+
+      // Pattern scanning loads every pattern file — give it plenty of time
+      const result = await client.request('list_available_patterns', {}, 120000);
+      expect(result.ok).toBe(true);
+      expect(Array.isArray(result.result.sources)).toBe(true);
+      // In this project, shipped and/or local patterns should exist
+      if (result.result.sources.length > 0) {
+        const source = result.result.sources[0];
+        expect(typeof source.source).toBe('string');
+        expect(Array.isArray(source.patterns)).toBe(true);
+        if (source.patterns.length > 0) {
+          expect(typeof source.patterns[0].name).toBe('string');
+          expect(typeof source.patterns[0].source_file).toBe('string');
+        }
+      }
+    } finally {
+      await client.shutdown();
+    }
+  });
 });

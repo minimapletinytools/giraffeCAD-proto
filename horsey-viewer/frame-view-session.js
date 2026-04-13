@@ -36,13 +36,25 @@ function shouldSuppressViewerLog(source, level) {
 }
 
 class FrameViewSession {
-    constructor(filePath, context, channel, onDispose) {
+    /**
+     * @param {string} filePath
+     * @param {vscode.ExtensionContext} context
+     * @param {vscode.OutputChannel} channel
+     * @param {Function} onDispose
+     * @param {object} [options]
+     * @param {string} [options.slotName]      - runner slot name (default: 'main')
+     * @param {'main'|'pattern'} [options.sessionType] - controls panel-close behaviour
+     * @param {PythonRunnerSession} [options.sharedRunner] - reuse an existing runner
+     * @param {string} [options.patternName]   - human-readable pattern label
+     */
+    constructor(filePath, context, channel, onDispose, options = {}) {
         this.filePath = filePath;
         this.context = context;
         this.channel = channel;
         this.onDispose = onDispose;
         this.panel = null;
-        this.runnerSession = null;
+        this.runnerSession = options.sharedRunner || null;
+        this.ownsRunner = !options.sharedRunner;
         this.fileWatcher = null;
         this.isDisposed = false;
         this.isRefreshing = false;
@@ -50,6 +62,13 @@ class FrameViewSession {
         this.refreshSequence = 0;
         this.refreshOptions = {};
         this.profiler = new RefreshProfiler({ log: (msg) => this.log(msg) });
+        this.slotName = options.slotName || 'main';
+        this.sessionType = options.sessionType || 'main';
+        this.patternName = options.patternName || null;
+        // Cached payloads for panel re-open (pattern sessions survive panel close)
+        this._lastFrameData = null;
+        this._lastGeometryData = null;
+        this._lastProfiling = null;
     }
 
     getRefreshStatsPath() {
@@ -92,12 +111,15 @@ class FrameViewSession {
         const initTiming = this.profiler.createTimingTracker({ stage: 'initialize' });
         this.profiler.markTiming(initTiming, 'initialize.start');
 
-        this.runnerSession = new PythonRunnerSession(this.filePath, this.context, this.channel);
+        if (!this.runnerSession) {
+            this.runnerSession = new PythonRunnerSession(this.filePath, this.context, this.channel);
+            this.ownsRunner = true;
+        }
         this._setupRunnerMilestoneHandler();
 
         this.profiler.markTiming(initTiming, 'initialize.createPanel.start');
         const isLocalDev = this.runnerSession.isLocalDev;
-        this.panel = createFrameViewer(this.filePath, null, isLocalDev);
+        this.panel = createFrameViewer(this.filePath, this.patternName, isLocalDev);
         this.profiler.markTiming(initTiming, 'initialize.createPanel.end');
 
         this.profiler.markTiming(initTiming, 'initialize.webviewHtml.start');
@@ -108,8 +130,46 @@ class FrameViewSession {
         this.profiler.markTiming(initTiming, 'initialize.webviewHtml.end');
         this.panel.onDidDispose(() => {
             this.panel = null;
-            void this.dispose();
+            if (this.sessionType === 'pattern') {
+                // Pattern sessions keep the runner alive when the tab is closed.
+                this.log(`[panel] Pattern panel closed (runner stays alive for slot '${this.slotName}')`);
+            } else {
+                void this.dispose();
+            }
         });
+        this._setupWebviewMessageHandler();
+        this.log('[webview] viewer log bridge active');
+        this.postLoadingStatus('raising frame', { reason: 'session initialize', refreshToken: this.refreshSequence });
+
+        this.profiler.resetMilestones();
+        this.profiler.markTiming(initTiming, 'initialize.runner.start');
+        await this.runnerSession.start();
+        this.profiler.markTiming(initTiming, 'initialize.runner.end');
+
+        // For shared-runner pattern sessions, load the slot now
+        if (this.sessionType === 'pattern' && !this.ownsRunner) {
+            // Slot was already loaded by the caller (extension.js raise_specific_pattern)
+        }
+
+        this.profiler.markTiming(initTiming, 'initialize.watcher.start');
+        this.fileWatcher = new FileWatcher(
+            this.filePath,
+            this.runnerSession.projectRoot,
+            (source) => this.onFileChanged(source),
+            (message) => this.log(`[watcher] ${message}`)
+        );
+        this.fileWatcher.start();
+        this.profiler.markTiming(initTiming, 'initialize.watcher.end');
+
+        this.profiler.markTiming(initTiming, 'initialize.end');
+
+        this.log(`Session initialized for ${this.filePath} (slot=${this.slotName}, type=${this.sessionType})`);
+    }
+
+    _setupWebviewMessageHandler() {
+        if (!this.panel) {
+            return;
+        }
         this.panel.webview.onDidReceiveMessage((message) => {
             if (!message) {
                 return;
@@ -144,27 +204,50 @@ class FrameViewSession {
                 : '{}';
             this.log(`[webview:${source}:${level}] ${eventName} v${version} ${details}`);
         });
-        this.log('[webview] viewer log bridge active');
-        this.postLoadingStatus('raising frame', { reason: 'session initialize', refreshToken: this.refreshSequence });
+    }
 
-        this.profiler.resetMilestones();
-        this.profiler.markTiming(initTiming, 'initialize.runner.start');
-        await this.runnerSession.start();
-        this.profiler.markTiming(initTiming, 'initialize.runner.end');
+    /**
+     * Re-create the webview panel for a pattern session whose runner is still alive.
+     */
+    async reopenPanel() {
+        if (this.isDisposed) {
+            throw new Error(`Cannot reopen disposed session for ${this.filePath}`);
+        }
+        if (this.panel) {
+            return; // already has a panel
+        }
+        if (!this.runnerSession || !this.runnerSession.isAlive()) {
+            throw new Error(`Runner is not alive for ${this.filePath}`);
+        }
 
-        this.profiler.markTiming(initTiming, 'initialize.watcher.start');
-        this.fileWatcher = new FileWatcher(
-            this.filePath,
-            this.runnerSession.projectRoot,
-            (source) => this.onFileChanged(source),
-            (message) => this.log(`[watcher] ${message}`)
-        );
-        this.fileWatcher.start();
-        this.profiler.markTiming(initTiming, 'initialize.watcher.end');
+        const isLocalDev = this.runnerSession.isLocalDev;
+        this.panel = createFrameViewer(this.filePath, this.patternName, isLocalDev);
+        this.panel.onDidDispose(() => {
+            this.panel = null;
+            if (this.sessionType === 'pattern') {
+                this.log(`[panel] Pattern panel closed (runner stays alive for slot '${this.slotName}')`);
+            } else {
+                void this.dispose();
+            }
+        });
+        this._setupWebviewMessageHandler();
 
-        this.profiler.markTiming(initTiming, 'initialize.end');
-
-        this.log(`Session initialized for ${this.filePath}`);
+        if (this._lastFrameData && this._lastGeometryData) {
+            // Fast path: use cached data, no round-trip to runner
+            renderFrameViewer(this.panel, this.filePath, this._lastFrameData, this._lastGeometryData, this._lastProfiling, {
+                phase: 'ready',
+                refreshToken: this.refreshSequence,
+                loadingText: '',
+                keepLoading: false,
+            }, this.refreshOptions);
+            this.log(`[reopen] Re-rendered from cached data for slot '${this.slotName}'`);
+        } else {
+            initializeFrameViewer(this.panel, this.filePath, {
+                loadingText: 'reopening',
+                viewerOptions: this.refreshOptions,
+            }, isLocalDev);
+            await this.refresh('panel reopen');
+        }
     }
 
     reveal() {
@@ -180,6 +263,11 @@ class FrameViewSession {
 
         if (this.runnerSession && this.runnerSession.isAlive()) {
             return;
+        }
+
+        // Shared runners are managed by the owner — don't restart here
+        if (!this.ownsRunner) {
+            throw new Error(`Shared runner is dead for slot '${this.slotName}'; owner must restart it`);
         }
 
         if (this.runnerSession) {
@@ -224,15 +312,15 @@ class FrameViewSession {
             this.profiler.markTiming(timing, 'ensureRunner.end');
 
             this.profiler.markTiming(timing, 'runner.reload_example.start');
-            const reloadResult = await this.runnerSession.request('reload_example', { filePath: this.filePath });
+            const reloadResult = await this.runnerSession.slotRequest('reload_example', this.slotName, { filePath: this.filePath });
             this.profiler.markTiming(timing, 'runner.reload_example.end');
 
             this.profiler.markTiming(timing, 'runner.get_frame.start');
-            const frameData = await this.runnerSession.request('get_frame');
+            const frameData = await this.runnerSession.slotRequest('get_frame', this.slotName);
             this.profiler.markTiming(timing, 'runner.get_frame.end');
 
             this.profiler.markTiming(timing, 'runner.get_geometry.start');
-            const geometryData = await this.runnerSession.request('get_geometry', this.refreshOptions);
+            const geometryData = await this.runnerSession.slotRequest('get_geometry', this.slotName, this.refreshOptions);
             this.profiler.markTiming(timing, 'runner.get_geometry.end');
 
             const refresh_total_s = Number(process.hrtime.bigint() - refreshStartNs) / 1e9;
@@ -295,6 +383,10 @@ class FrameViewSession {
                 loadingText: '',
                 keepLoading: false,
             }, this.refreshOptions);
+            // Cache payloads for panel re-open (pattern sessions)
+            this._lastFrameData = frameData;
+            this._lastGeometryData = geometryData;
+            this._lastProfiling = profiling;
             this.profiler.markTiming(timing, 'webview.renderFrameViewer.end');
             this.profiler.markTiming(timing, 'refresh.end', { refresh_total_ms: Math.round(refresh_total_s * 1000) });
             this.log(`[refresh] Reload complete for ${path.basename(this.filePath)}`);
@@ -363,7 +455,7 @@ class FrameViewSession {
             currentPath: message.currentPath || [],
             ctrlClick: !!message.ctrlClick,
         };
-        const result = await this.runnerSession.request('find_csg_at_point', payload);
+        const result = await this.runnerSession.slotRequest('find_csg_at_point', this.slotName, payload);
         if (this.panel && !this.isDisposed) {
             this.panel.webview.postMessage({ type: 'csgSelectionResult', ...result });
         }
@@ -478,7 +570,7 @@ class FrameViewSession {
         }
         this.isDisposed = true;
 
-        this.log(`Disposing session for ${this.filePath}`);
+        this.log(`Disposing session for ${this.filePath} (slot=${this.slotName})`);
 
         if (this.fileWatcher) {
             this.fileWatcher.dispose();
@@ -486,7 +578,18 @@ class FrameViewSession {
         }
 
         if (this.runnerSession) {
-            await this.runnerSession.dispose();
+            if (this.ownsRunner) {
+                await this.runnerSession.dispose();
+            } else {
+                // Unload our slot from the shared runner, but don't kill the process
+                try {
+                    if (this.runnerSession.isAlive() && this.slotName !== 'main') {
+                        await this.runnerSession.request('unload_slot', { slot: this.slotName });
+                    }
+                } catch (error) {
+                    this.log(`[slot] Failed to unload slot '${this.slotName}': ${error.message || error}`);
+                }
+            }
             this.runnerSession = null;
         }
 
@@ -497,7 +600,7 @@ class FrameViewSession {
         }
 
         if (this.onDispose) {
-            this.onDispose(this.filePath);
+            this.onDispose(this.filePath, this.slotName);
         }
     }
 

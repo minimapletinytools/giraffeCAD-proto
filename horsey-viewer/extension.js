@@ -2,7 +2,9 @@ const vscode = require('vscode');
 const { FrameViewSession } = require('./frame-view-session');
 
 let outputChannel = null;
-const frameSessions = new Map();
+const frameSessions = new Map();       // filePath → FrameViewSession (main sessions)
+const patternSessions = new Map();     // slotName → FrameViewSession (pattern sessions)
+let patternSlotCounter = 0;
 
 /**
  * Main activation function for the Horsey Viewer extension.
@@ -45,6 +47,133 @@ function activate(context) {
 
     context.subscriptions.push(disposable);
 
+    // --- Browse Patterns command ---
+    const browsePatterns = vscode.commands.registerCommand('horsey-viewer.browsePatterns', async function () {
+        try {
+            // We need a running main session to query patterns via its runner process.
+            // If none exists, try to create one from the active editor.
+            let mainSession = _findAnyAliveMainSession();
+            if (!mainSession) {
+                const editor = vscode.window.activeTextEditor;
+                if (!editor || editor.document.languageId !== 'python') {
+                    vscode.window.showErrorMessage('Open a Python file first, then run Render Horsey before browsing patterns.');
+                    return;
+                }
+                if (editor.document.isDirty) {
+                    await editor.document.save();
+                }
+                mainSession = await getOrCreateSession(editor.document.fileName, context);
+            }
+
+            const runner = mainSession.runnerSession;
+            if (!runner || !runner.isAlive()) {
+                vscode.window.showErrorMessage('Horsey runner is not running. Run Render Horsey first.');
+                return;
+            }
+
+            // Query available patterns
+            const result = await runner.request('list_available_patterns');
+            if (!result || !result.sources || result.sources.length === 0) {
+                vscode.window.showInformationMessage('No patterns found in shipped library or local project.');
+                return;
+            }
+
+            // Build QuickPick items
+            const items = [];
+            for (const source of result.sources) {
+                const sourceLabel = source.source === 'shipped' ? 'Shipped Library' : 'Local Project';
+                items.push({ label: sourceLabel, kind: vscode.QuickPickItemKind.Separator });
+                for (const pattern of source.patterns) {
+                    const groupsStr = pattern.groups.length > 0 ? ` (${pattern.groups.join(', ')})` : '';
+                    items.push({
+                        label: pattern.name,
+                        description: `${sourceLabel}${groupsStr}`,
+                        detail: pattern.source_file,
+                        _sourceFile: pattern.source_file,
+                        _patternName: pattern.name,
+                    });
+                }
+            }
+
+            const picked = await vscode.window.showQuickPick(items, {
+                placeHolder: 'Select a pattern to view',
+                matchOnDescription: true,
+                matchOnDetail: true,
+            });
+            if (!picked || !picked._patternName) {
+                return;
+            }
+
+            // Open pattern in a new slot
+            patternSlotCounter += 1;
+            const slotName = `pattern_${patternSlotCounter}`;
+
+            // Load the pattern into the shared runner
+            await runner.request('raise_specific_pattern', {
+                slot: slotName,
+                sourceFile: picked._sourceFile,
+                patternName: picked._patternName,
+            });
+
+            // Create a FrameViewSession that shares the main runner
+            const patternSession = new FrameViewSession(
+                picked._sourceFile,
+                context,
+                outputChannel,
+                (_filePath, disposedSlotName) => {
+                    if (patternSessions.get(disposedSlotName) === patternSession) {
+                        patternSessions.delete(disposedSlotName);
+                    }
+                },
+                {
+                    slotName,
+                    sessionType: 'pattern',
+                    sharedRunner: runner,
+                    patternName: picked._patternName,
+                }
+            );
+            patternSessions.set(slotName, patternSession);
+            await patternSession.initialize();
+            patternSession.reveal();
+            await patternSession.refresh('pattern open');
+        } catch (error) {
+            outputChannel.show(true);
+            if (!error || !error.horseyErrorNotified) {
+                vscode.window.showErrorMessage(`Browse Patterns error: ${error.message}`);
+            }
+        }
+    });
+
+    context.subscriptions.push(browsePatterns);
+
+    // --- Unload Pattern command ---
+    const unloadPattern = vscode.commands.registerCommand('horsey-viewer.unloadPattern', async function () {
+        if (patternSessions.size === 0) {
+            vscode.window.showInformationMessage('No pattern viewers are open.');
+            return;
+        }
+
+        const items = [];
+        for (const [slotName, session] of patternSessions) {
+            const label = session.patternName || slotName;
+            items.push({ label, description: slotName, _slotName: slotName });
+        }
+
+        const picked = await vscode.window.showQuickPick(items, {
+            placeHolder: 'Select a pattern to unload',
+        });
+        if (!picked) {
+            return;
+        }
+
+        const session = patternSessions.get(picked._slotName);
+        if (session) {
+            await session.dispose();
+        }
+    });
+
+    context.subscriptions.push(unloadPattern);
+
     const screenshotDisposable = vscode.commands.registerCommand(
         'horsey-viewer.captureRenderedScreenshot',
         async (options = {}) => {
@@ -76,11 +205,27 @@ function activate(context) {
     context.subscriptions.push(screenshotDisposable);
     context.subscriptions.push({
         dispose: async () => {
-            const sessions = Array.from(frameSessions.values());
+            const allSessions = [
+                ...Array.from(frameSessions.values()),
+                ...Array.from(patternSessions.values()),
+            ];
             frameSessions.clear();
-            await Promise.allSettled(sessions.map((session) => session.dispose()));
+            patternSessions.clear();
+            await Promise.allSettled(allSessions.map((session) => session.dispose()));
         },
     });
+}
+
+/**
+ * Find any alive main session (for reusing its runner).
+ */
+function _findAnyAliveMainSession() {
+    for (const session of frameSessions.values()) {
+        if (!session.isDisposed && session.runnerSession && session.runnerSession.isAlive()) {
+            return session;
+        }
+    }
+    return null;
 }
 
 /**
@@ -101,7 +246,8 @@ async function getOrCreateSession(filePath, context) {
             if (frameSessions.get(disposedFilePath) === session) {
                 frameSessions.delete(disposedFilePath);
             }
-        }
+        },
+        { slotName: 'main', sessionType: 'main' }
     );
     frameSessions.set(filePath, session);
     await session.initialize();
@@ -109,9 +255,13 @@ async function getOrCreateSession(filePath, context) {
 }
 
 async function deactivate() {
-    const sessions = Array.from(frameSessions.values());
+    const allSessions = [
+        ...Array.from(frameSessions.values()),
+        ...Array.from(patternSessions.values()),
+    ];
     frameSessions.clear();
-    await Promise.allSettled(sessions.map((session) => session.dispose()));
+    patternSessions.clear();
+    await Promise.allSettled(allSessions.map((session) => session.dispose()));
 }
 
 module.exports = {

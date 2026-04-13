@@ -122,7 +122,7 @@ function getViewerTitle(filePath, frameName = null, isLocalDev = false) {
     const fileName = path.basename(filePath);
     const devTag = isLocalDev ? ' [Local Dev]' : '';
     if (frameName) {
-        return `Horsey: ${fileName} (${frameName})${devTag} · v${VIEWER_APP_VERSION}`;
+        return `Horsey: ${frameName}${devTag} · v${VIEWER_APP_VERSION}`;
     }
     return `Horsey: ${fileName}${devTag} · v${VIEWER_APP_VERSION}`;
 }

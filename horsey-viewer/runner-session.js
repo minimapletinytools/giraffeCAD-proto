@@ -252,6 +252,13 @@ class PythonRunnerSession {
         });
     }
 
+    /**
+     * Send a slot-scoped request.  Merges {slot} into the payload automatically.
+     */
+    async slotRequest(command, slot, payload = {}) {
+        return this.request(command, { ...payload, slot });
+    }
+
     async dispose() {
         if (!this.process) {
             return;

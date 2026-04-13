@@ -75,11 +75,46 @@ class ProfilingStats:
 
 
 @dataclass
-class RunnerState:
+class SlotState:
+    """State for a single named viewer slot (e.g. 'main' or a pattern)."""
     file_path: Path
     module: Any
     frame: Any
     mesh_cache: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    patternbook: Optional[Any] = None
+
+
+@dataclass
+class RunnerState:
+    """Top-level runner state containing one or more named slots."""
+    slots: Dict[str, SlotState] = field(default_factory=dict)
+    active_slot: str = "main"
+
+    # --- backwards-compat shims so existing code that reads state.frame etc. still works ---
+    @property
+    def _active(self) -> SlotState:
+        return self.slots[self.active_slot]
+
+    @property
+    def file_path(self) -> Path:
+        return self._active.file_path
+
+    @property
+    def module(self) -> Any:
+        return self._active.module
+
+    @property
+    def frame(self) -> Any:
+        return self._active.frame
+
+    @property
+    def mesh_cache(self) -> Dict[str, Dict[str, Any]]:
+        return self._active.mesh_cache
+
+    def get_slot(self, slot: str) -> SlotState:
+        if slot not in self.slots:
+            raise KeyError(f"No slot named '{slot}'. Active slots: {list(self.slots.keys())}")
+        return self.slots[slot]
 
 
 def log_stderr(message: str) -> None:
@@ -308,9 +343,10 @@ def _accessory_to_triangle_mesh_payload(
     }
 
 
-def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
+def build_real_geometry(state: RunnerState, slot_state: Optional['SlotState'] = None) -> Dict[str, Any]:
     """Build triangle mesh geometry for every cut timber."""
-    frame = state.frame
+    ss = slot_state if slot_state is not None else state._active
+    frame = ss.frame
     meshes = []
     changed_keys = []
     remesh_metrics = []
@@ -337,7 +373,7 @@ def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
             )
             remesh_s = time.monotonic() - remesh_t0
             triangle_count = len(mesh_payload.get("indices", [])) // 3
-            state.mesh_cache[timber_key] = {
+            ss.mesh_cache[timber_key] = {
                 "mesh": mesh_payload,
                 "local_csg": local_csg,
                 "cut_timber": cut_timber,
@@ -378,7 +414,7 @@ def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
             )
             remesh_s = time.monotonic() - remesh_t0
             triangle_count = len(mesh_payload.get("indices", [])) // 3
-            state.mesh_cache[accessory_key] = {
+            ss.mesh_cache[accessory_key] = {
                 "mesh": mesh_payload,
             }
             changed_keys.append(accessory_key)
@@ -396,10 +432,10 @@ def build_real_geometry(state: RunnerState) -> Dict[str, Any]:
             log_stderr(f"Warning: skipping geometry for accessory {type(accessory).__name__}: {exc}")
 
     removed_keys = []
-    for cached_key in list(state.mesh_cache.keys()):
+    for cached_key in list(ss.mesh_cache.keys()):
         if cached_key not in seen_keys:
             removed_keys.append(cached_key)
-            del state.mesh_cache[cached_key]
+            del ss.mesh_cache[cached_key]
 
     return {
         "kind": "triangle-geometry",
@@ -436,7 +472,8 @@ def serialize_frame(frame: Any) -> Dict[str, Any]:
 
 def build_placeholder_geometry(frame: Any) -> Dict[str, Any]:
     # kept for reference – use build_real_geometry instead
-    dummy_state = RunnerState(file_path=Path("."), module=None, frame=frame)
+    slot = SlotState(file_path=Path("."), module=None, frame=frame)
+    dummy_state = RunnerState(slots={"main": slot}, active_slot="main")
     return build_real_geometry(dummy_state)
 
 
@@ -589,52 +626,64 @@ def frame_from_patternbook(patternbook: Any) -> Any:
     return result
 
 
-def resolve_frame_from_module(module: Any) -> Any:
+def resolve_frame_from_module(module: Any) -> "tuple[Any, Optional[Any]]":
+    """Resolve a frame from a loaded module.
+
+    Returns (frame, patternbook_or_None).
+    """
     if hasattr(module, "example"):
         example = getattr(module, "example")
         if _looks_like_frame(example):
-            return example
+            return example, None
         if _looks_like_patternbook(example):
-            return frame_from_patternbook(example)
+            return frame_from_patternbook(example), example
 
     if hasattr(module, "build_frame") and callable(module.build_frame):
         with contextlib.redirect_stdout(sys.stderr):
             frame = module.build_frame()
         if _looks_like_frame(frame):
-            return frame
+            return frame, None
         raise TypeError(f"build_frame() returned {type(frame).__name__}, expected frame-like object")
 
     if hasattr(module, "patternbook"):
         patternbook = getattr(module, "patternbook")
         if _looks_like_patternbook(patternbook):
-            return frame_from_patternbook(patternbook)
+            return frame_from_patternbook(patternbook), patternbook
 
     raise AttributeError(
         "Module must expose a module-level 'example' Frame, a 'patternbook', or a build_frame() function"
     )
 
 
-def load_runner_state(file_path: str, previous_mesh_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> RunnerState:
+def load_slot_state(file_path: str, previous_mesh_cache: Optional[Dict[str, Dict[str, Any]]] = None) -> SlotState:
     resolved_path = Path(file_path).resolve()
     if not resolved_path.exists():
         raise FileNotFoundError(f"File not found: {resolved_path}")
 
     module = load_module_from_path(resolved_path, verbose=True)
-    frame = resolve_frame_from_module(module)
-    return RunnerState(
+    frame, patternbook = resolve_frame_from_module(module)
+    return SlotState(
         file_path=resolved_path,
         module=module,
         frame=frame,
         mesh_cache=previous_mesh_cache if previous_mesh_cache is not None else {},
+        patternbook=patternbook,
     )
 
 
 def make_ready_event(state: RunnerState) -> Dict[str, Any]:
-    frame_summary = serialize_frame(state.frame)
+    ss = state._active
+    frame_summary = serialize_frame(ss.frame)
     return {
         "type": "ready",
-        "examplePath": str(state.file_path),
-        "commands": ["ping", "reload_example", "get_frame", "get_geometry", "get_member", "find_csg_at_point", "shutdown"],
+        "examplePath": str(ss.file_path),
+        "commands": [
+            "ping", "reload_example", "get_frame", "get_geometry",
+            "get_member", "find_csg_at_point",
+            "load_slot", "unload_slot", "list_slots",
+            "list_available_patterns", "raise_specific_pattern",
+            "shutdown",
+        ],
         "frame": {
             "name": frame_summary["name"],
             "timber_count": frame_summary["timber_count"],
@@ -1092,20 +1141,21 @@ def _debug_difference_distances(diff: Any, pt: List[float], eps: float, indent: 
             _debug_prism_distances(sub, pt, eps, indent + 2)
 
 
-def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Dict[str, Any]:
+def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any], slot_state: Optional['SlotState'] = None) -> Dict[str, Any]:
     """Process a find_csg_at_point request and return the result dict."""
+    ss = slot_state if slot_state is not None else state._active
     member_key = payload.get("memberKey")
     point = payload.get("point")
     current_path = payload.get("currentPath") or []
     ctrl_click = payload.get("ctrlClick", False)
     eps = 5e-4  # generous epsilon for raycast-based click points
 
-    if not isinstance(member_key, str) or member_key not in state.mesh_cache:
+    if not isinstance(member_key, str) or member_key not in ss.mesh_cache:
         raise ValueError(f"Unknown memberKey: {member_key}")
     if not isinstance(point, list) or len(point) != 3:
         raise ValueError("point must be [x, y, z]")
 
-    cached = state.mesh_cache[member_key]
+    cached = ss.mesh_cache[member_key]
     local_csg = cached.get("local_csg")
     cut_timber = cached.get("cut_timber")
     mesh = cached.get("mesh")
@@ -1254,6 +1304,139 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any]) -> Di
     return result
 
 
+def _resolve_slot(state: RunnerState, payload: Dict[str, Any]) -> SlotState:
+    """Return the SlotState targeted by the request payload (defaults to active_slot)."""
+    slot_name = payload.get("slot", state.active_slot)
+    return state.get_slot(slot_name)
+
+
+def _resolve_slot_name(state: RunnerState, payload: Dict[str, Any]) -> str:
+    return payload.get("slot", state.active_slot)
+
+
+# ---------------------------------------------------------------------------
+# Pattern discovery
+# ---------------------------------------------------------------------------
+
+def _list_available_patterns() -> Dict[str, Any]:
+    """Scan shipped and local pattern folders and return pattern metadata."""
+    from giraffecad.librarian import scan_library_folder
+
+    sources: List[Dict[str, Any]] = []
+
+    # Shipped patterns (relative to giraffecad package)
+    try:
+        import giraffecad
+        giraffecad_dir = Path(giraffecad.__file__).resolve().parent
+        shipped_patterns_dir = giraffecad_dir.parent / "patterns"
+        if shipped_patterns_dir.is_dir():
+            with contextlib.redirect_stdout(sys.stderr):
+                scan = scan_library_folder(str(shipped_patterns_dir))
+            patterns_list = []
+            for mod_record in scan.modules:
+                if mod_record.patternbook is not None:
+                    for name in mod_record.patternbook.list_patterns():
+                        groups = []
+                        for g in mod_record.patternbook.list_groups():
+                            if name in mod_record.patternbook.get_patterns_in_group(g):
+                                groups.append(g)
+                        patterns_list.append({
+                            "name": name,
+                            "groups": groups,
+                            "source_file": str(shipped_patterns_dir / mod_record.relative_path),
+                        })
+            if patterns_list:
+                sources.append({"source": "shipped", "folder": str(shipped_patterns_dir), "patterns": patterns_list})
+    except Exception as exc:
+        log_stderr(f"[patterns] Error scanning shipped patterns: {exc}")
+
+    # Local project patterns
+    if _project_root is not None:
+        local_patterns_dir = _project_root / "patterns"
+        if local_patterns_dir.is_dir():
+            try:
+                with contextlib.redirect_stdout(sys.stderr):
+                    scan = scan_library_folder(str(local_patterns_dir))
+                patterns_list = []
+                for mod_record in scan.modules:
+                    if mod_record.patternbook is not None:
+                        for name in mod_record.patternbook.list_patterns():
+                            groups = []
+                            for g in mod_record.patternbook.list_groups():
+                                if name in mod_record.patternbook.get_patterns_in_group(g):
+                                    groups.append(g)
+                            patterns_list.append({
+                                "name": name,
+                                "groups": groups,
+                                "source_file": str(local_patterns_dir / mod_record.relative_path),
+                            })
+                if patterns_list:
+                    sources.append({"source": "local", "folder": str(local_patterns_dir), "patterns": patterns_list})
+            except Exception as exc:
+                log_stderr(f"[patterns] Error scanning local patterns: {exc}")
+
+    return {"sources": sources}
+
+
+def _raise_specific_pattern(source_file: str, pattern_name: str) -> "tuple[SlotState, Dict[str, Any]]":
+    """Load a specific pattern from a source file and return (SlotState, result_dict)."""
+    resolved = Path(source_file).resolve()
+    if not resolved.exists():
+        raise FileNotFoundError(f"Pattern source file not found: {resolved}")
+
+    t0 = time.monotonic()
+    module = load_module_from_path(resolved, verbose=True)
+
+    # Find patternbook
+    patternbook = None
+    if hasattr(module, "patternbook") and _looks_like_patternbook(module.patternbook):
+        patternbook = module.patternbook
+    elif hasattr(module, "example") and _looks_like_patternbook(module.example):
+        patternbook = module.example
+    else:
+        # Try factory functions
+        for attr_name in dir(module):
+            if attr_name.startswith("create_") and attr_name.endswith("_patternbook"):
+                factory = getattr(module, attr_name)
+                if callable(factory):
+                    result = factory()
+                    if _looks_like_patternbook(result):
+                        patternbook = result
+                        break
+
+    if patternbook is None:
+        raise ValueError(f"No patternbook found in {source_file}")
+
+    available = patternbook.list_patterns()
+    if pattern_name not in available:
+        raise ValueError(f"Pattern '{pattern_name}' not found. Available: {available}")
+
+    with contextlib.redirect_stdout(sys.stderr):
+        frame = patternbook.raise_pattern(pattern_name)
+    if not _looks_like_frame(frame):
+        raise TypeError(f"Pattern '{pattern_name}' returned {type(frame).__name__}, expected Frame")
+
+    reload_s = time.monotonic() - t0
+    slot = SlotState(
+        file_path=resolved,
+        module=module,
+        frame=frame,
+        mesh_cache={},
+        patternbook=patternbook,
+    )
+    result = {
+        "examplePath": str(resolved),
+        "patternName": pattern_name,
+        "frame": {
+            "name": frame.name if hasattr(frame, "name") else pattern_name,
+            "timber_count": len(frame.cut_timbers),
+            "accessories_count": len(frame.accessories) if hasattr(frame, "accessories") else 0,
+        },
+        "profiling": {"reload_s": reload_s},
+    }
+    return slot, result
+
+
 def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerState, Dict[str, Any], bool]:
     request_id = request.get("id")
     command = request.get("command")
@@ -1266,41 +1449,121 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
         return state, make_success_response(request_id, command, {"pong": True}), False
 
     if command == "reload_example":
-        next_path = payload.get("filePath", str(state.file_path))
+        slot_name = _resolve_slot_name(state, payload)
+        next_path = payload.get("filePath", str(state.get_slot(slot_name).file_path))
+        old_cache = state.slots[slot_name].mesh_cache if slot_name in state.slots else {}
         t0 = time.monotonic()
-        next_state = load_runner_state(next_path, state.mesh_cache)
+        next_slot = load_slot_state(next_path, old_cache)
         reload_s = time.monotonic() - t0
-        frame_name = next_state.frame.name if hasattr(next_state.frame, "name") else "?"
-        log_stderr(f"[reload] Frame loaded: '{frame_name}', {len(next_state.frame.cut_timbers)} timbers")
+        state.slots[slot_name] = next_slot
+        frame_name = next_slot.frame.name if hasattr(next_slot.frame, "name") else "?"
+        log_stderr(f"[reload] [{slot_name}] Frame loaded: '{frame_name}', {len(next_slot.frame.cut_timbers)} timbers")
         result = {
-            "examplePath": str(next_state.file_path),
+            "examplePath": str(next_slot.file_path),
             "frame": {
-                "name": next_state.frame.name,
-                "timber_count": len(next_state.frame.cut_timbers),
-                "accessories_count": len(next_state.frame.accessories),
+                "name": next_slot.frame.name,
+                "timber_count": len(next_slot.frame.cut_timbers),
+                "accessories_count": len(next_slot.frame.accessories),
             },
             "profiling": {"reload_s": reload_s},
         }
-        return next_state, make_success_response(request_id, command, result), False
+        return state, make_success_response(request_id, command, result), False
 
     if command == "get_frame":
-        return state, make_success_response(request_id, command, serialize_frame(state.frame)), False
+        ss = _resolve_slot(state, payload)
+        return state, make_success_response(request_id, command, serialize_frame(ss.frame)), False
 
     if command == "get_geometry":
+        ss = _resolve_slot(state, payload)
         t0 = time.monotonic()
-        geometry = build_real_geometry(state)
+        geometry = build_real_geometry(state, ss)
         geometry_s = time.monotonic() - t0
         geometry["profiling"] = {"geometry_s": geometry_s}
         return state, make_success_response(request_id, command, geometry), False
 
     if command == "get_member":
+        ss = _resolve_slot(state, payload)
         member_name = payload.get("name")
         if not isinstance(member_name, str) or not member_name:
             raise ValueError("get_member requires payload.name")
-        return state, make_success_response(request_id, command, get_member_result(state.frame, member_name)), False
+        return state, make_success_response(request_id, command, get_member_result(ss.frame, member_name)), False
 
     if command == "find_csg_at_point":
-        result = _handle_find_csg_at_point(state, payload)
+        ss = _resolve_slot(state, payload)
+        result = _handle_find_csg_at_point(state, payload, ss)
+        return state, make_success_response(request_id, command, result), False
+
+    # --- Slot management ---
+
+    if command == "load_slot":
+        slot_name = payload.get("slot")
+        file_path = payload.get("filePath")
+        if not isinstance(slot_name, str) or not slot_name:
+            raise ValueError("load_slot requires payload.slot")
+        if not isinstance(file_path, str) or not file_path:
+            raise ValueError("load_slot requires payload.filePath")
+        t0 = time.monotonic()
+        new_slot = load_slot_state(file_path)
+        reload_s = time.monotonic() - t0
+        state.slots[slot_name] = new_slot
+        log_stderr(f"[slot] Loaded slot '{slot_name}' from {file_path}")
+        result = {
+            "slot": slot_name,
+            "examplePath": str(new_slot.file_path),
+            "frame": {
+                "name": new_slot.frame.name if hasattr(new_slot.frame, "name") else None,
+                "timber_count": len(new_slot.frame.cut_timbers),
+                "accessories_count": len(new_slot.frame.accessories) if hasattr(new_slot.frame, "accessories") else 0,
+            },
+            "profiling": {"reload_s": reload_s},
+        }
+        return state, make_success_response(request_id, command, result), False
+
+    if command == "unload_slot":
+        slot_name = payload.get("slot")
+        if not isinstance(slot_name, str) or not slot_name:
+            raise ValueError("unload_slot requires payload.slot")
+        if slot_name == state.active_slot:
+            raise ValueError(f"Cannot unload the active slot '{slot_name}'")
+        removed = slot_name in state.slots
+        if removed:
+            del state.slots[slot_name]
+            log_stderr(f"[slot] Unloaded slot '{slot_name}'")
+        return state, make_success_response(request_id, command, {"slot": slot_name, "removed": removed}), False
+
+    if command == "list_slots":
+        slot_info = {}
+        for name, ss in state.slots.items():
+            slot_info[name] = {
+                "filePath": str(ss.file_path),
+                "frameName": ss.frame.name if hasattr(ss.frame, "name") else None,
+                "timberCount": len(ss.frame.cut_timbers),
+            }
+        return state, make_success_response(request_id, command, {
+            "slots": slot_info,
+            "activeSlot": state.active_slot,
+        }), False
+
+    # --- Pattern discovery ---
+
+    if command == "list_available_patterns":
+        result = _list_available_patterns()
+        return state, make_success_response(request_id, command, result), False
+
+    if command == "raise_specific_pattern":
+        slot_name = payload.get("slot")
+        source_file = payload.get("sourceFile")
+        pattern_name = payload.get("patternName")
+        if not isinstance(slot_name, str) or not slot_name:
+            raise ValueError("raise_specific_pattern requires payload.slot")
+        if not isinstance(source_file, str) or not source_file:
+            raise ValueError("raise_specific_pattern requires payload.sourceFile")
+        if not isinstance(pattern_name, str) or not pattern_name:
+            raise ValueError("raise_specific_pattern requires payload.patternName")
+        new_slot, result = _raise_specific_pattern(source_file, pattern_name)
+        state.slots[slot_name] = new_slot
+        result["slot"] = slot_name
+        log_stderr(f"[slot] Raised pattern '{pattern_name}' in slot '{slot_name}'")
         return state, make_success_response(request_id, command, result), False
 
     if command == "shutdown":
@@ -1324,7 +1587,8 @@ def main() -> None:
     log_stderr(f"[startup] target={target_path}")
 
     try:
-        state = load_runner_state(target_path)
+        initial_slot = load_slot_state(target_path)
+        state = RunnerState(slots={"main": initial_slot}, active_slot="main")
     except Exception as exc:
         emit_message({
             "type": "fatal_error",
