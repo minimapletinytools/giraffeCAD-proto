@@ -1,14 +1,3 @@
-:: 3/30/2026 math cleanup prompt
-
-Please review rule.py and all math operations in the code base.
-
-At some ponit Itried to make everything symbolic but realized that would accumluate too many symbols and make things impossibly slow so I switched back to floats but there are some hacks and stuff in the code that make thin sugly. Here's what I want
-
-when creating timbers from literals, use symbolic math everywhere possible and if symbols get even a little too complicated, eval down to float
-symbols should never exceed more than like 10 symbols, so lambify/numpy probably not necessary? stick to evalf? However creaet a giraffe_evalf function that calls evalf rather than call evalf directly. Basically I don't trust evalf and worry it will cause issues down the road so I want t obottle neck it all in my operation so I can do stuff like lambidy or timeouts if needed
-remove all the timeout and weird hacky stuff I did in rule.py
-use the safe_* math operations as much as possible. these check for symbols and shortcut to evalf if the symbols accumulate too much. in practice, they can always just eval down to floats.
-Any suggestions in the future? I think in many cases I don't even need to try and preserve symbols. So should we create numeric_* math operations that automatically collapse everything down to floats and prefer using these in most places. For example, CUTCsg are easily supre complicated and shouldnot really attempt to accumulate floats as they aren't used as features to generate anythnig else.
 
 :: 3/17/2026 selection / layer view
 
@@ -23,111 +12,24 @@ it should contain a hirerchacial list view. For now, the list view contais the f
 - joints
   - list of all joints
      - list of timbers belonging to that joint (these will be duplicated)
+     - list af accesories belonging to the joint
 
-introduce a concept of selection.  we can keep it simple. when objcets are selected make everything else slightly mor etransparent
-escape deselects
-pressing F focuses on the selection
+Timbers themselves have a sub hierarchy
+-timber 
+  -tagged CSGs
+    -features
 
+Accessories do not have the sub hierarchy
 
-:: 3/8/2025 viewer next steps
-DONE-update vscode plugin to use python IPC or something
-  -probably wrap in an interface s you can use websocket or stdio or whatever
+we may support stuff like locking, fixing and hiding through the layers view so make sure to architect it to support this
 
-DONE-triangulation in python
-  -try triangulating CSG in python first, you can add more triangle data in the future but for now just need tris
-  -actualy I think you want to store fetaure information as features need to be highlightable, not trias correspond to facees, you need to store edges and points separately
-    -I guess after generating mesh you walk the mesh to tie back to features :( hope that's not too slow
+when you select an element in the viewer it should also highlight in the layers view and conversely as well
+so basically there needs to be mapping sbetween th eselection manage,r layers view and main view.
 
-DONE-smart refresh
-  DONE-add filewatcher
-  DONE-add hashing on timbers to determine which ones changed
-  DONE-the runner keeps a hash map
-  DONE-then only generate triangles for stuff that changed
-
-IGNORE-doc tab support?
-
-IGNORE-debug console lol
-
-DONE-select support
-  -select timber highlights it in 3d
-
-DONE-navigation support
-  -by default camera center is in center of focused objects, can be moved in view plane by panning
-  -middle mouse pans
-  -scroll wheel zooms and pans towards where mouse location is (in particular, it zooms to the mous eprojected onto the focal plane which is parallel to the screen and intersects the mouse orbit center)
-  -pressing F resets focus (using lepr)
-  DONE-right click drag rotates camera (or maybe just left click...)
-  DONE-maybe include cube gizmo with preset views
-  -ortho perspective toggle?
-  DONE-must lerp between all transitions!!!
-
-DONE-cute backgrounds
-  DONE-creamy gradient background
-  DONE-simple drop shadows? (you can fake this one)
-  DONE-simple reflections? 
-  -fun horse walking trhough background or osmething
-    -still walking trhough structure
-    -slow down speed and spawn rate a lot. jumps should eb more subtle
-
--simple list view
-  -needs parent list hirearchy support
-  -for now just show a list of timbers
-    -double clicking on a timber focuses in on it
-  -also show list of joints
-    -double clicking focuses in on the joint (you probably need some joint center metadata, but you can just derive from the 2 timbers that make the joint for now)
-
--save as STL or STEP or whatever button
-
--patternbook integration 
-  -patterns are loaded in a hierarchy (horesCoAd < imported libraries < user space)
-  -"try me" button creates a copy of teh pattern script in user space with comments indicating that this is temporar yand ovewriting
-  -"view source" button takes you to github or something? or maybe just makes a copy in user space or whatever
-
--bonus feature highlighting
-  -clicking on a timber that is in focus highlight sthe featuer on the timber
-    -umm, but yo udon't want to do this when too much is selecetd, maybe only do this if a joint or single timber is selected
-
--bonus, simple measurement support??
-  -identify 2 features and draw a distance line between them, lines always show up above everything
-  -distance lines can be clicked on which highlight the fetaures they measure from, hence features need to be selectively rendered
-
--bonus ortho view drawing support
-  -take simple measurement support and then render a single timber in ortho view
-  -you need a method to check if 2 timbers are the same or rotatinos/reflections of each other
-  -maybe there is a likea. "drawing page" that lets you group timbers into pages, and then select how to orient timbers
+Propose a refactor to suppor this.
 
 
-
-:: 2/5/2026 CSG feature notes
-
-CSG creates features, I think we can reasonable identify all faces and edges from intersections in our potato CSG code
-After CSG gets triangulated, when we click/hover we can raycast onto that triangle
-So we want to reveres map from that triangle to some feature
-Face features can be uniquely identified by normal and boundaries
-edge features are harder, as you can't click exactly on an edge, instead we can check proximity, however we only want to click on the edge if the triangle we clicked on a face that forms that edge. We can map to teh faec first, and then maybe in our csg logic we can find all edges on that face :O
-
-Ok, so we only need to do the following:
--find the fetaure we want to track, this is either a primitive CSG feature or a derived one in the derived case, I think it's really only edges fromed from halfplanes and prism differences (e.g. the edges of a tenon shoulder)
--so we need CSG feature and we need to be able to send it through the CSG tree to diff away stuff from it.
--and CSG features can be primitive CSG features or derived ones. For derived features... maybe the noly derived feature we support is differences between some primitive CSG feature and the uncut timber prism :O, that seems reasoabel to me?
-
-3/22 actual plan:
-
-interface looks like:
-`check_feature(csg, feature) -> bool`
-
-feature are defined when constructing the CSG tree. We can limit it to the following 2 cases:
-- as as an edge or face feature of a primitive
-- as an edge feature in a difference/union of 2 face features
-
-features are stored in a tree
-- ecah csg has a feature field (should I just derive from the Ticket class so you can use the name field? probably not??)
-- derive_fetaure(csg, feature_field) -> CSGFeature
-- feature_field is CSG class specific, it can refer to child features in union/difference, in primitives it refers to the primitive geometry
-
-the final returned csg has a ticket that points to a feature in the top level Difference(ptw, [negative_cuts]) 
-- you will need to store this object now in cut timber instead of building it on the fly
-
+A couple other things, we may show patterns in the layers view using a similar looking UI. patterns are semantically different as they are just a file browser, but they should levearge the same UI to do this. please work this into your plan
 
 :: 3/30/2026 horsey viewer environment
 
@@ -926,6 +828,120 @@ IGNORE- you need a better system for determining timber orientation after each t
 
 
 :: END TODONE
+
+:: 3/30/2026 math cleanup prompt
+
+Please review rule.py and all math operations in the code base.
+
+At some ponit Itried to make everything symbolic but realized that would accumluate too many symbols and make things impossibly slow so I switched back to floats but there are some hacks and stuff in the code that make thin sugly. Here's what I want
+
+when creating timbers from literals, use symbolic math everywhere possible and if symbols get even a little too complicated, eval down to float
+symbols should never exceed more than like 10 symbols, so lambify/numpy probably not necessary? stick to evalf? However creaet a giraffe_evalf function that calls evalf rather than call evalf directly. Basically I don't trust evalf and worry it will cause issues down the road so I want t obottle neck it all in my operation so I can do stuff like lambidy or timeouts if needed
+remove all the timeout and weird hacky stuff I did in rule.py
+use the safe_* math operations as much as possible. these check for symbols and shortcut to evalf if the symbols accumulate too much. in practice, they can always just eval down to floats.
+Any suggestions in the future? I think in many cases I don't even need to try and preserve symbols. So should we create numeric_* math operations that automatically collapse everything down to floats and prefer using these in most places. For example, CUTCsg are easily supre complicated and shouldnot really attempt to accumulate floats as they aren't used as features to generate anythnig else.
+
+
+:: 3/8/2025 viewer next steps
+DONE-update vscode plugin to use python IPC or something
+  -probably wrap in an interface s you can use websocket or stdio or whatever
+
+DONE-triangulation in python
+  -try triangulating CSG in python first, you can add more triangle data in the future but for now just need tris
+  -actualy I think you want to store fetaure information as features need to be highlightable, not trias correspond to facees, you need to store edges and points separately
+    -I guess after generating mesh you walk the mesh to tie back to features :( hope that's not too slow
+
+DONE-smart refresh
+  DONE-add filewatcher
+  DONE-add hashing on timbers to determine which ones changed
+  DONE-the runner keeps a hash map
+  DONE-then only generate triangles for stuff that changed
+
+IGNORE-doc tab support?
+
+IGNORE-debug console lol
+
+DONE-select support
+  -select timber highlights it in 3d
+
+DONE-navigation support
+  -by default camera center is in center of focused objects, can be moved in view plane by panning
+  -middle mouse pans
+  -scroll wheel zooms and pans towards where mouse location is (in particular, it zooms to the mous eprojected onto the focal plane which is parallel to the screen and intersects the mouse orbit center)
+  -pressing F resets focus (using lepr)
+  DONE-right click drag rotates camera (or maybe just left click...)
+  DONE-maybe include cube gizmo with preset views
+  -ortho perspective toggle?
+  DONE-must lerp between all transitions!!!
+
+DONE-cute backgrounds
+  DONE-creamy gradient background
+  DONE-simple drop shadows? (you can fake this one)
+  DONE-simple reflections? 
+  -fun horse walking trhough background or osmething
+    -still walking trhough structure
+    -slow down speed and spawn rate a lot. jumps should eb more subtle
+
+-simple list view
+  -needs parent list hirearchy support
+  -for now just show a list of timbers
+    -double clicking on a timber focuses in on it
+  -also show list of joints
+    -double clicking focuses in on the joint (you probably need some joint center metadata, but you can just derive from the 2 timbers that make the joint for now)
+
+-save as STL or STEP or whatever button
+
+-patternbook integration 
+  -patterns are loaded in a hierarchy (horesCoAd < imported libraries < user space)
+  -"try me" button creates a copy of teh pattern script in user space with comments indicating that this is temporar yand ovewriting
+  -"view source" button takes you to github or something? or maybe just makes a copy in user space or whatever
+
+-bonus feature highlighting
+  -clicking on a timber that is in focus highlight sthe featuer on the timber
+    -umm, but yo udon't want to do this when too much is selecetd, maybe only do this if a joint or single timber is selected
+
+-bonus, simple measurement support??
+  -identify 2 features and draw a distance line between them, lines always show up above everything
+  -distance lines can be clicked on which highlight the fetaures they measure from, hence features need to be selectively rendered
+
+-bonus ortho view drawing support
+  -take simple measurement support and then render a single timber in ortho view
+  -you need a method to check if 2 timbers are the same or rotatinos/reflections of each other
+  -maybe there is a likea. "drawing page" that lets you group timbers into pages, and then select how to orient timbers
+
+
+
+:: 2/5/2026 CSG feature notes
+
+CSG creates features, I think we can reasonable identify all faces and edges from intersections in our potato CSG code
+After CSG gets triangulated, when we click/hover we can raycast onto that triangle
+So we want to reveres map from that triangle to some feature
+Face features can be uniquely identified by normal and boundaries
+edge features are harder, as you can't click exactly on an edge, instead we can check proximity, however we only want to click on the edge if the triangle we clicked on a face that forms that edge. We can map to teh faec first, and then maybe in our csg logic we can find all edges on that face :O
+
+Ok, so we only need to do the following:
+-find the fetaure we want to track, this is either a primitive CSG feature or a derived one in the derived case, I think it's really only edges fromed from halfplanes and prism differences (e.g. the edges of a tenon shoulder)
+-so we need CSG feature and we need to be able to send it through the CSG tree to diff away stuff from it.
+-and CSG features can be primitive CSG features or derived ones. For derived features... maybe the noly derived feature we support is differences between some primitive CSG feature and the uncut timber prism :O, that seems reasoabel to me?
+
+3/22 actual plan:
+
+interface looks like:
+`check_feature(csg, feature) -> bool`
+
+feature are defined when constructing the CSG tree. We can limit it to the following 2 cases:
+- as as an edge or face feature of a primitive
+- as an edge feature in a difference/union of 2 face features
+
+features are stored in a tree
+- ecah csg has a feature field (should I just derive from the Ticket class so you can use the name field? probably not??)
+- derive_fetaure(csg, feature_field) -> CSGFeature
+- feature_field is CSG class specific, it can refer to child features in union/difference, in primitives it refers to the primitive geometry
+
+the final returned csg has a ticket that points to a feature in the top level Difference(ptw, [negative_cuts]) 
+- you will need to store this object now in cut timber instead of building it on the fly
+
+
 
 :: 2025 documentation
 

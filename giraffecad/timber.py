@@ -2041,8 +2041,8 @@ class Sticker(JointAccessory):
 @dataclass(frozen=True)
 class Joint:
     cut_timbers: Dict[str, CutTimber]
+    ticket: JointTicket
     jointAccessories: Dict[str, JointAccessory] = field(default_factory=dict)
-    ticket: Optional[JointTicket] = None
 
 
 @dataclass(frozen=True)

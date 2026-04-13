@@ -941,6 +941,7 @@ class TestFrameFromJoints:
         # Create a joint
         joint = Joint(
             cut_timbers={"timber1": cut_timber1, "timber2": cut_timber2},
+            ticket=JointTicket(joint_type="test_simple_joint"),
             jointAccessories={}
         )
         
@@ -981,11 +982,13 @@ class TestFrameFromJoints:
         # Create two joints that both reference the same timber
         joint1 = Joint(
             cut_timbers={"timber": cut_timber1},
+            ticket=JointTicket(joint_type="test_merge_shared_1"),
             jointAccessories={}
         )
         
         joint2 = Joint(
             cut_timbers={"timber": cut_timber2},
+            ticket=JointTicket(joint_type="test_merge_shared_2"),
             jointAccessories={}
         )
         
@@ -1040,11 +1043,13 @@ class TestFrameFromJoints:
         # Create joints with accessories
         joint1 = Joint(
             cut_timbers={"timber": CutTimber(timber, cuts=[])},
+            ticket=JointTicket(joint_type="test_accessories_peg"),
             jointAccessories={"peg": peg}
         )
         
         joint2 = Joint(
             cut_timbers={"timber": CutTimber(timber, cuts=[])},
+            ticket=JointTicket(joint_type="test_accessories_wedge"),
             jointAccessories={"wedge": wedge}
         )
         
@@ -1081,6 +1086,7 @@ class TestFrameFromJoints:
         # Create a joint with timber1
         joint = Joint(
             cut_timbers={"timber1": CutTimber(timber1, cuts=[MockCutting(timber1, create_v3(Integer(0), Integer(0), Integer(0)))])},  # type: ignore
+            ticket=JointTicket(joint_type="test_with_unjointed"),
             jointAccessories={}
         )
         
@@ -1122,11 +1128,13 @@ class TestFrameFromJoints:
         # Create joints
         joint1 = Joint(
             cut_timbers={"timber1": CutTimber(timber1, cuts=[])},
+            ticket=JointTicket(joint_type="test_same_name_warn_1"),
             jointAccessories={}
         )
         
         joint2 = Joint(
             cut_timbers={"timber2": CutTimber(timber2, cuts=[])},
+            ticket=JointTicket(joint_type="test_same_name_warn_2"),
             jointAccessories={}
         )
         
@@ -1170,11 +1178,13 @@ class TestFrameFromJoints:
         # Create joints
         joint1 = Joint(
             cut_timbers={"timber1": CutTimber(timber1, cuts=[])},
+            ticket=JointTicket(joint_type="test_dup_data_1"),
             jointAccessories={}
         )
         
         joint2 = Joint(
             cut_timbers={"timber2": CutTimber(timber2, cuts=[])},
+            ticket=JointTicket(joint_type="test_dup_data_2"),
             jointAccessories={}
         )
         

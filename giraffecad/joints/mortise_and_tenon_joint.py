@@ -449,8 +449,8 @@ def cut_mortise_and_tenon_joint(
             tenon_timber.ticket.name: tenon_cut_timber,
             mortise_timber.ticket.name: mortise_cut_timber,
         },
-        jointAccessories=joint_accessories,
         ticket=JointTicket(joint_type="mortise_and_tenon"),
+        jointAccessories=joint_accessories,
     ) 
 
 
