@@ -185,6 +185,12 @@ class FrameViewSession {
                 });
                 return;
             }
+            if (message.type === 'loadBook') {
+                this._handleLoadBookFromWebview(message).catch((err) => {
+                    this.log(`[patterns] loadBook error: ${err.message || err}`);
+                });
+                return;
+            }
             if (message.type === 'requestLoadPatterns') {
                 const rescan = !!message.rescan;
                 this.log(`[webview] Load patterns requested from viewer (rescan=${rescan})`);
@@ -268,6 +274,31 @@ class FrameViewSession {
             this.panel.webview.postMessage({
                 type: 'patternLoadResult',
                 patternName,
+                ok: true,
+            }).catch(() => {});
+        }
+    }
+
+    /**
+     * Handle a loadBook message from the webview — opens whole book as one tab.
+     */
+    async _handleLoadBookFromWebview(message) {
+        const sourceFile = typeof message.sourceFile === 'string' ? message.sourceFile : '';
+        if (!sourceFile) {
+            this.log('[patterns] loadBook missing sourceFile');
+            return;
+        }
+
+        this.log(`[patterns] Webview requested book: ${sourceFile}`);
+
+        if (typeof this.onLoadBook === 'function') {
+            await this.onLoadBook(sourceFile);
+        }
+
+        if (this.panel) {
+            this.panel.webview.postMessage({
+                type: 'patternLoadResult',
+                sourceFile,
                 ok: true,
             }).catch(() => {});
         }

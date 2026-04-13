@@ -89,8 +89,7 @@ DONE-fix feature issues
   DONE-when generating named CSG meshes, it's selecting way too much, maybe you can fix with broad phase? or explicitly test each point against the CSG rather than just using geometry + normal which I assume is what's it's donig right now... or maybe it's using the CSG name which is the same rather than using CSG hierarchy
     -I think it general you should just rewrite named CSG mesh/feature generation. 
   DONE-selecting feature still doesn't highlight properly. I suspect its related to geo generation
-
--refactor patterns to not actually load the entire pattern
+DONE-refactor patterns to not actually load the entire pattern
 
 -rethink hierarchical feature selection, as you'll want to be able to select 2 features to measure them in the future.
 -do new selection hierarchy here are the states
@@ -104,7 +103,10 @@ DONE-fix feature issues
   -I guess just use transparency for outer stuff when focusing in on selection? But you should make distinct states for each of them... but maybe combine the options for changing their look 
 
 
-
+-BUG pattern viewer thingy does not support CSG stuff
+  [tinyhouse120.py] [patterns] loadPattern error: Runner command 'raise_specific_pattern' failed: Pattern 'halfspace_cut' returned Difference, expected Frame
+-BUG basic gooseneck emxaple broken, not rendering the housing 
+-BUG doubel dildo joint on oscar shed still having z fighting issues.
 
 -add dovetail shoulder to build a butt joint
 -add notching to build a butt joint (you can skip this if you want lol...)

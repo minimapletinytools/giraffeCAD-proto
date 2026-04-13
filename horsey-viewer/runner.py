@@ -82,6 +82,7 @@ class SlotState:
     frame: Any
     mesh_cache: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     patternbook: Optional[Any] = None
+    single_pattern_name: Optional[str] = None
 
 
 @dataclass
@@ -1454,6 +1455,7 @@ def _raise_specific_pattern(source_file: str, pattern_name: str) -> "tuple[SlotS
         frame=frame,
         mesh_cache={},
         patternbook=patternbook,
+        single_pattern_name=pattern_name,
     )
     result = {
         "examplePath": str(resolved),
@@ -1481,10 +1483,18 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
 
     if command == "reload_example":
         slot_name = _resolve_slot_name(state, payload)
+        old_slot = state.slots.get(slot_name)
         next_path = payload.get("filePath", str(state.get_slot(slot_name).file_path))
-        old_cache = state.slots[slot_name].mesh_cache if slot_name in state.slots else {}
+        old_cache = old_slot.mesh_cache if old_slot else {}
         t0 = time.monotonic()
-        next_slot = load_slot_state(next_path, old_cache)
+
+        # If this slot was loaded for a single pattern, re-raise just that pattern
+        if old_slot and old_slot.single_pattern_name:
+            next_slot, _ = _raise_specific_pattern(next_path, old_slot.single_pattern_name)
+            next_slot.mesh_cache = old_cache
+        else:
+            next_slot = load_slot_state(next_path, old_cache)
+
         reload_s = time.monotonic() - t0
         state.slots[slot_name] = next_slot
         frame_name = next_slot.frame.name if hasattr(next_slot.frame, "name") else "?"

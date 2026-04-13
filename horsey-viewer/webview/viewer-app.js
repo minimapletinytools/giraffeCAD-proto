@@ -1125,6 +1125,10 @@ class HorseyViewerApp extends LitElement {
         if (patternName) {
             this.patternsLoading.delete(patternName);
         }
+        const sourceFile = message.sourceFile;
+        if (sourceFile) {
+            this.patternsLoading.delete('book:' + sourceFile);
+        }
         this.renderPatternsList();
     }
 
@@ -1138,6 +1142,22 @@ class HorseyViewerApp extends LitElement {
             vscode.postMessage({
                 type: 'loadPattern',
                 patternName,
+                sourceFile,
+            });
+        }
+    }
+
+    onBookClick(sourceFile) {
+        // Use the source_file as a loading key for the book
+        const bookKey = 'book:' + sourceFile;
+        if (this.patternsLoading.has(bookKey)) {
+            return;
+        }
+        this.patternsLoading.add(bookKey);
+        this.renderPatternsList();
+        if (vscode) {
+            vscode.postMessage({
+                type: 'loadBook',
                 sourceFile,
             });
         }
@@ -1174,41 +1194,74 @@ class HorseyViewerApp extends LitElement {
         }
         emptyEl.style.display = 'none';
 
-        // Group by source
-        const grouped = new Map();
+        // Group by source (shipped/local), then by book (source_file)
+        const bySource = new Map();
         for (const p of this.availablePatterns) {
-            const key = p.source === 'shipped' ? 'Shipped Library' : p.source === 'local' ? 'Local Project' : p.source;
-            if (!grouped.has(key)) {
-                grouped.set(key, []);
+            const sourceKey = p.source === 'shipped' ? 'Shipped Library' : p.source === 'local' ? 'Local Project' : p.source;
+            if (!bySource.has(sourceKey)) {
+                bySource.set(sourceKey, new Map());
             }
-            grouped.get(key).push(p);
+            const books = bySource.get(sourceKey);
+            if (!books.has(p.source_file)) {
+                books.set(p.source_file, []);
+            }
+            books.get(p.source_file).push(p);
         }
 
         let html = '';
-        for (const [groupLabel, patterns] of grouped) {
-            html += `<div class="patterns-group-label">${this._escapeHtml(groupLabel)}</div>`;
-            for (const p of patterns) {
-                const isLoading = this.patternsLoading.has(p.name);
-                const groupsStr = p.groups.length > 0 ? ` <span class="patterns-groups">${this._escapeHtml(p.groups.join(', '))}</span>` : '';
-                const loadingClass = isLoading ? ' patterns-item-loading' : '';
-                html += `<button class="patterns-item${loadingClass}" data-pattern-name="${this._escapeAttr(p.name)}" data-source-file="${this._escapeAttr(p.source_file)}" ${isLoading ? 'disabled' : ''}>`;
-                html += `<span class="patterns-item-name">${this._escapeHtml(p.name)}</span>${groupsStr}`;
-                if (isLoading) {
+        let bookIdx = 0;
+        for (const [sourceLabel, books] of bySource) {
+            html += `<div class="patterns-source-label">${this._escapeHtml(sourceLabel)}</div>`;
+            for (const [sourceFile, patterns] of books) {
+                const bookName = sourceFile.replace(/\\/g, '/').split('/').pop().replace(/\.py$/, '');
+                const bookLoading = this.patternsLoading.has('book:' + sourceFile);
+                const anyPatternLoading = patterns.some(p => this.patternsLoading.has(p.name));
+                const bookClass = bookLoading ? ' patterns-book-loading' : '';
+                html += `<div class="patterns-book${bookClass}" data-book-idx="${bookIdx}">`;
+                html += `<button class="patterns-book-header" data-book-idx="${bookIdx}" data-source-file="${this._escapeAttr(sourceFile)}" ${bookLoading ? 'disabled' : ''}>`;
+                html += `<span class="patterns-book-name">${this._escapeHtml(bookName)}</span>`;
+                html += `<span class="patterns-book-count">${patterns.length}</span>`;
+                if (bookLoading || anyPatternLoading) {
                     html += ' <span class="patterns-item-spinner">…</span>';
                 }
                 html += '</button>';
+                html += '<div class="patterns-book-items">';
+                for (const p of patterns) {
+                    const isLoading = this.patternsLoading.has(p.name);
+                    const loadingClass = isLoading ? ' patterns-item-loading' : '';
+                    html += `<button class="patterns-item${loadingClass}" data-pattern-name="${this._escapeAttr(p.name)}" data-source-file="${this._escapeAttr(p.source_file)}" ${isLoading ? 'disabled' : ''}>`;
+                    html += `<span class="patterns-item-name">${this._escapeHtml(p.name)}</span>`;
+                    if (isLoading) {
+                        html += ' <span class="patterns-item-spinner">…</span>';
+                    }
+                    html += '</button>';
+                }
+                html += '</div></div>';
+                bookIdx++;
             }
         }
         listEl.innerHTML = html;
 
-        // Bind click events
+        // Bind pattern click events
         const buttons = listEl.querySelectorAll('.patterns-item');
         for (const btn of buttons) {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 const name = btn.getAttribute('data-pattern-name');
                 const file = btn.getAttribute('data-source-file');
                 if (name && file) {
                     this.onPatternClick(name, file);
+                }
+            });
+        }
+
+        // Bind book header click events (open all patterns in book)
+        const bookHeaders = listEl.querySelectorAll('.patterns-book-header');
+        for (const header of bookHeaders) {
+            header.addEventListener('click', () => {
+                const sourceFile = header.getAttribute('data-source-file');
+                if (sourceFile) {
+                    this.onBookClick(sourceFile);
                 }
             });
         }

@@ -270,6 +270,48 @@ async function _openPatternFromWebview(mainSession, patternName, sourceFile, con
 }
 
 /**
+ * Open a whole pattern book as one tab (renders the file's example/patternbook).
+ */
+async function _openBookFromWebview(mainSession, sourceFile, context) {
+    const runner = mainSession.runnerSession;
+    if (!runner || !runner.isAlive()) {
+        vscode.window.showErrorMessage('Horsey runner is not running.');
+        return;
+    }
+
+    patternSlotCounter += 1;
+    const slotName = `pattern_${patternSlotCounter}`;
+    const bookName = sourceFile.replace(/\\/g, '/').split('/').pop().replace(/\.py$/, '');
+
+    // Load the whole file into a slot (uses resolve_frame_from_module → renders all patterns)
+    await runner.request('load_slot', {
+        slot: slotName,
+        filePath: sourceFile,
+    });
+
+    const patternSession = new FrameViewSession(
+        sourceFile,
+        context,
+        outputChannel,
+        (_filePath, disposedSlotName) => {
+            if (patternSessions.get(disposedSlotName) === patternSession) {
+                patternSessions.delete(disposedSlotName);
+            }
+        },
+        {
+            slotName,
+            sessionType: 'pattern',
+            sharedRunner: runner,
+            patternName: bookName,
+        }
+    );
+    patternSessions.set(slotName, patternSession);
+    await patternSession.initialize();
+    patternSession.reveal();
+    await patternSession.refresh('book open from webview');
+}
+
+/**
  * Get or create a session for the given file path.
  * Reuses an existing session for the same file or creates a new panel/session.
  */
@@ -292,6 +334,9 @@ async function getOrCreateSession(filePath, context) {
     );
     session.onLoadPattern = async (patternName, sourceFile) => {
         await _openPatternFromWebview(session, patternName, sourceFile, context);
+    };
+    session.onLoadBook = async (sourceFile) => {
+        await _openBookFromWebview(session, sourceFile, context);
     };
     frameSessions.set(filePath, session);
     await session.initialize();
