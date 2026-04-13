@@ -103,10 +103,17 @@ DONE-refactor patterns to not actually load the entire pattern
   -I guess just use transparency for outer stuff when focusing in on selection? But you should make distinct states for each of them... but maybe combine the options for changing their look 
 
 
+
+-BUG basic_gooseneck pattern is broken, it's not rendering teh housing tiimber. It works fine when I opne the xample in freecad. in the viewer it shows only 1 timber when there should be 2 so it's not rendering one of the timbers for some reason ,prheaps due to a name duplication? Can you figuer out why.
 -BUG pattern viewer thingy does not support CSG stuff
   [tinyhouse120.py] [patterns] loadPattern error: Runner command 'raise_specific_pattern' failed: Pattern 'halfspace_cut' returned Difference, expected Frame
--BUG basic gooseneck emxaple broken, not rendering the housing 
+can you lok into 
 -BUG doubel dildo joint on oscar shed still having z fighting issues.
+
+-pattern viewer
+  -add tag searching module. it will be shared for searching both patterns and for layers stuff
+  -add tag searching funcitonailty to pattern selection
+  -allow opening groups of patterns hsaring the same tag as one unit
 
 -add dovetail shoulder to build a butt joint
 -add notching to build a butt joint (you can skip this if you want lol...)

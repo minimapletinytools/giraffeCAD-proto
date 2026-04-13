@@ -614,15 +614,12 @@ def load_module_from_path(file_path: Path, verbose: bool = False) -> Any:
 
 
 def frame_from_patternbook(patternbook: Any) -> Any:
-    pattern_names = patternbook.list_patterns()
-    if not pattern_names:
-        raise ValueError("PatternBook is empty")
-    first_pattern = pattern_names[0]
     with contextlib.redirect_stdout(sys.stderr):
-        result = patternbook.raise_pattern(first_pattern)
+        result = patternbook.raise_patternbook_as_frame()
+
     if not _looks_like_frame(result):
         raise TypeError(
-            f"First pattern '{first_pattern}' returned {type(result).__name__}, expected frame-like object"
+            f"PatternBook raised {type(result).__name__}, expected frame-like object"
         )
     return result
 

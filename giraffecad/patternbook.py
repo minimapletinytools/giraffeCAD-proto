@@ -253,13 +253,10 @@ class PatternBook:
         Raises:
             ValueError: If group_name is not found or if frame and CSG patterns are mixed
         """
-        if start_center is None:
-            from sympy import Integer
-            start_center = create_v3(Integer(0), Integer(0), Integer(0))
-        
-        # Convert separation_distance to Rational
-        if not isinstance(separation_distance, Rational):
-            separation_distance = Rational(separation_distance)
+        separation_distance, start_center = self._normalize_spacing_args(
+            separation_distance,
+            start_center,
+        )
         
         # Find all patterns in the group (check if group_name is in pattern_group_names list)
         group_patterns = [
@@ -283,24 +280,122 @@ class PatternBook:
         pattern_type = list(pattern_types)[0]
         
         # Raise all patterns with appropriate spacing
-        results = []
-        for i, (metadata, pattern_lambda) in enumerate(group_patterns):
-            # Calculate center position for this pattern
-            from sympy import Integer
-            offset = create_v3(Integer(i) * separation_distance, Integer(0), Integer(0))
-            center = start_center + offset
-            
-            # Raise the pattern
-            result = pattern_lambda(center)
-            results.append(result)
+        results = self._raise_entries_with_spacing(
+            group_patterns,
+            separation_distance,
+            start_center,
+        )
         
         # Process results based on pattern type
         if pattern_type == 'frame':
             # Combine all frames into a megaframe
-            return self._combine_frames(results, group_name)
+            frame_results = [result for result in results if isinstance(result, Frame)]
+            if len(frame_results) != len(results):
+                raise TypeError(
+                    f"Group '{group_name}' contains non-frame results while pattern_type='frame'"
+                )
+            return self._combine_frames(frame_results, group_name)
         else:  # pattern_type == 'csg'
             # Return list of CSG objects
-            return results
+            csg_results = [result for result in results if isinstance(result, CutCSG)]
+            if len(csg_results) != len(results):
+                raise TypeError(
+                    f"Group '{group_name}' contains non-CSG results while pattern_type='csg'"
+                )
+            return csg_results
+
+    def raise_patternbook_as_frame(
+        self,
+        separation_distance: Union[float, int, Rational] = Rational(2),
+        start_center: Optional[V3] = None,
+    ) -> Frame:
+        """Raise this PatternBook as a single combined Frame.
+
+        Prefers ``raise_pattern_group`` when one group covers all patterns.
+        Falls back to raising each frame pattern by position and combining.
+        """
+        pattern_names = self.list_patterns()
+        if not pattern_names:
+            raise ValueError("PatternBook is empty")
+
+        if len(pattern_names) == 1:
+            single = self.raise_pattern(pattern_names[0], center=start_center)
+            if not isinstance(single, Frame):
+                raise TypeError(
+                    f"Pattern '{pattern_names[0]}' returned {type(single).__name__}, expected Frame"
+                )
+            return single
+
+        separation_distance, start_center = self._normalize_spacing_args(
+            separation_distance,
+            start_center,
+        )
+
+        all_pattern_set = set(pattern_names)
+        umbrella_group: Optional[str] = None
+        for group_name in self.list_groups():
+            if set(self.get_patterns_in_group(group_name)) >= all_pattern_set:
+                umbrella_group = group_name
+                break
+
+        if umbrella_group is not None:
+            grouped_result = self.raise_pattern_group(
+                umbrella_group,
+                separation_distance=separation_distance,
+                start_center=start_center,
+            )
+            if not isinstance(grouped_result, Frame):
+                raise TypeError(
+                    f"Pattern group '{umbrella_group}' returned {type(grouped_result).__name__}, expected Frame"
+                )
+            return grouped_result
+
+        frame_entries = [
+            (metadata, pattern_lambda)
+            for metadata, pattern_lambda in self.patterns
+            if metadata.pattern_type == 'frame'
+        ]
+        if not frame_entries:
+            raise TypeError("No frame patterns found in PatternBook")
+
+        results = self._raise_entries_with_spacing(
+            frame_entries,
+            separation_distance,
+            start_center,
+        )
+        frames = [result for result in results if isinstance(result, Frame)]
+        if not frames:
+            raise TypeError("No frame patterns found in PatternBook")
+        return self._combine_frames(frames, "all_patterns")
+
+    def _normalize_spacing_args(
+        self,
+        separation_distance: Union[float, int, Rational],
+        start_center: Optional[V3],
+    ) -> Tuple[Rational, V3]:
+        if start_center is None:
+            from sympy import Integer
+            start_center = create_v3(Integer(0), Integer(0), Integer(0))
+
+        if not isinstance(separation_distance, Rational):
+            separation_distance = Rational(separation_distance)
+
+        return separation_distance, start_center
+
+    def _raise_entries_with_spacing(
+        self,
+        entries: List[Tuple[PatternMetadata, PatternLambda]],
+        separation_distance: Rational,
+        start_center: V3,
+    ) -> List[Union[Frame, CutCSG]]:
+        from sympy import Integer
+
+        results: List[Union[Frame, CutCSG]] = []
+        for i, (_metadata, pattern_lambda) in enumerate(entries):
+            offset = create_v3(Integer(i) * separation_distance, Integer(0), Integer(0))
+            center = start_center + offset
+            results.append(pattern_lambda(center))
+        return results
     
     def _combine_frames(self, frames: List[Frame], group_name: str) -> Frame:
         """

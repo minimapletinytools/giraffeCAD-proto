@@ -28,7 +28,7 @@ describe('Horsey Viewer extension flow', () => {
     const document = await vscode.workspace.openTextDocument(fixtureUri);
     await vscode.window.showTextDocument(document, { preview: false });
 
-    const expectedTabPrefix = 'Horsey: milestone_joint_frame.py (Runner Milestone Joint Frame)';
+    const expectedTabPrefix = 'Horsey: Runner Milestone Joint Frame';
 
     await vscode.commands.executeCommand('horsey-viewer.renderHorsey');
 
@@ -44,7 +44,7 @@ describe('Horsey Viewer extension flow', () => {
     const tabs = getAllTabs();
     assert.ok(
       tabs.some((tab) => tab.label.startsWith(expectedTabPrefix)),
-      'Expected Horsey webview tab for milestone_joint_frame.py with rendered frame name'
+      'Expected Horsey webview tab for milestone_joint_frame.py with the current frame-name title format'
     );
   });
 });
