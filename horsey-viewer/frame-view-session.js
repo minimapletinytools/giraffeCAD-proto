@@ -65,7 +65,7 @@ class FrameViewSession {
         this.slotName = options.slotName || 'main';
         this.sessionType = options.sessionType || 'main';
         this.patternName = options.patternName || null;
-        // Cached payloads for panel re-open (pattern sessions survive panel close)
+        // Cached payloads for potential panel re-open flows
         this._lastFrameData = null;
         this._lastGeometryData = null;
         this._lastProfiling = null;
@@ -130,12 +130,8 @@ class FrameViewSession {
         this.profiler.markTiming(initTiming, 'initialize.webviewHtml.end');
         this.panel.onDidDispose(() => {
             this.panel = null;
-            if (this.sessionType === 'pattern') {
-                // Pattern sessions keep the runner alive when the tab is closed.
-                this.log(`[panel] Pattern panel closed (runner stays alive for slot '${this.slotName}')`);
-            } else {
-                void this.dispose();
-            }
+            this.log(`[panel] Panel closed, disposing session for slot '${this.slotName}'`);
+            void this.dispose();
         });
         this._setupWebviewMessageHandler();
         this.log('[webview] viewer log bridge active');
@@ -322,11 +318,8 @@ class FrameViewSession {
         this.panel = createFrameViewer(this.filePath, this.patternName, isLocalDev);
         this.panel.onDidDispose(() => {
             this.panel = null;
-            if (this.sessionType === 'pattern') {
-                this.log(`[panel] Pattern panel closed (runner stays alive for slot '${this.slotName}')`);
-            } else {
-                void this.dispose();
-            }
+            this.log(`[panel] Panel closed, disposing session for slot '${this.slotName}'`);
+            void this.dispose();
         });
         this._setupWebviewMessageHandler();
 
