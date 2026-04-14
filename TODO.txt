@@ -1,4 +1,32 @@
 
+:: 4/14/2026 drawing generation coad
+
+automatic drawing
+- ensures every feature can be solved
+- can tag features to be used as reference features and drawer prioritizes drawing to these features
+- can tag features with pN to determine order which they get solved in. And P0 means a reference feature
+- solve the feature tree such taht each feature is referenced to some other fetaure and teh entire tree is navigatable
+- can tag features as no measure
+- some feature are coincident (e.g. one face of a row of ortise holes are all coplanar) and only one of the needs to be drawn
+  - this can be represented as a "shares plane" or whatever measure so no specila treatment neede necessarily
+bonus
+-in UI, can select which fetaure to use a reference to draw some other feature
+  -so ecah feature has a list of features it is measured to
+
+
+CoAD based feature refreenceing
+we have a way to reference any feature on the cut timbers, so this will be the unit that CoAD drawing is done from
+
+case study: double miter 2x4 with double miter on both end
+- first flag one vertex and adjacent edge as p0
+  - all miter angles will get mesaured to this edge by default 
+- flag the opposite vertex as p1 and the remaining vertices are flagged as p∞ as we don't want to show solutions for them in the drawing
+- using default drawer, we get the first set of stuff we need
+- next, use custom drawer, we could generate a table referencing each miter angle in the drawing write the matching bevel angle for it into a table
+- I guess we could also mark the bevel angle directly on the drawnig
+- we could create a feature plane that cuts on the first miter and then use that to generate the bevel angle directly in the 3d view!
+
+
 :: 3/17/2026 selection / layer view
 
 Lets add a layout view.... We want a little menu on that spans the entire left side collumn that has an option >> expansion thingy to collapse it.
@@ -116,6 +144,8 @@ DONE-BUG doubel dildo joint on oscar shed still having z fighting issues.
   -add tag searching module. it will be shared for searching both patterns and for layers stuff
   -add tag searching funcitonailty to pattern selection
   -allow opening groups of patterns hsaring the same tag as one unit
+  -tag-search-plan.txt
+  -but I think you want to integrate pattern with the viewer so you can more easily look at patterns and jumb cakt o your designs...
 
 -add dovetail shoulder to build a butt joint
 -add notching to build a butt joint (you can skip this if you want lol...)

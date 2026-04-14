@@ -1380,11 +1380,16 @@ def _list_available_patterns(force_rescan: bool = False) -> Dict[str, Any]:
 
     sources: List[Dict[str, Any]] = []
 
-    # Shipped patterns (relative to giraffecad package)
+    # Shipped patterns — bundled inside the giraffecad package as giraffecad/patterns/
+    # (pip-installed) or at the sibling patterns/ folder in a dev checkout.
     try:
         import giraffecad
         giraffecad_dir = Path(giraffecad.__file__).resolve().parent
-        shipped_patterns_dir = giraffecad_dir.parent / "patterns"
+        # Installed wheel: patterns are inside the package directory.
+        # Dev checkout fallback: patterns/ sits next to the giraffecad/ folder.
+        shipped_patterns_dir = giraffecad_dir / "patterns"
+        if not shipped_patterns_dir.is_dir():
+            shipped_patterns_dir = giraffecad_dir.parent / "patterns"
         if shipped_patterns_dir.is_dir():
             with contextlib.redirect_stdout(sys.stderr):
                 scan = scan_library_folder(str(shipped_patterns_dir))

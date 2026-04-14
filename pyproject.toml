@@ -2,18 +2,21 @@
 name = "giraffeCAD"
 version = "0.1.0"
 description = "A library for programmatic timber frame CAD design"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.10"
 license = "MIT"
 authors = [{ name = "minimaple" }]
 readme = "README.md"
 dependencies = [
-    "numpy>=1.21.0",
-    "manifold3d>=3.4.0",
     "sympy>=1.12.0",
-    "trimesh>=4.7.0",
 ]
 
 [project.optional-dependencies]
+# Triangle mesh rendering and CSG boolean operations (required for the viewer)
+viewer = [
+    "numpy>=1.21.0",
+    "trimesh>=4.7.0",
+    "manifold3d>=3.4.0",
+]
 step = ["cadquery-ocp>=7.7.0"]
 step-cadquery = ["cadquery>=2.0.0"]  # legacy: full CadQuery wrapper (see blueprint_cadquery.py)
 
@@ -23,6 +26,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["giraffecad"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"patterns" = "giraffecad/patterns"
 
 [tool.pytest.ini_options]
 # Pytest configuration

@@ -5,6 +5,8 @@ Based on the API specification in morenotes.md
 This is the main entry point that imports and re-exports all giraffeCAD functionality.
 """
 
+__version__ = "0.1.0"
+
 # Import everything from the organized modules
 from .rule import *
 from .cutcsg import *
