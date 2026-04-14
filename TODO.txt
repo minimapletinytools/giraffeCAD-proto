@@ -94,6 +94,9 @@ DONE-BUG basic_gooseneck pattern is broken, it's not rendering teh housing tiimb
 DONE-fix 0 length prism rendering triangulation
 DONE-BUG hrosey viewer seems to run in teh background after closing all tabs... need better cleanup routine, 
 DONE-BUG sharde runners that have been stopped stil have their auto relod watcher thingy running, make suer to stop it when you close it or whatever when yo cuose the tab
+DONE-BUG pattern viewer thingy does not support CSG stuff
+  [tinyhouse120.py] [patterns] loadPattern error: Runner command 'raise_specific_pattern' failed: Pattern 'halfspace_cut' returned Difference, expected Frame can you lok into 
+DONE-BUG doubel dildo joint on oscar shed still having z fighting issues.
 
 -rethink hierarchical feature selection, as you'll want to be able to select 2 features to measure them in the future.
 -do new selection hierarchy here are the states
@@ -107,10 +110,7 @@ DONE-BUG sharde runners that have been stopped stil have their auto relod watche
   -I guess just use transparency for outer stuff when focusing in on selection? But you should make distinct states for each of them... but maybe combine the options for changing their look 
 
 
--BUG pattern viewer thingy does not support CSG stuff
-  [tinyhouse120.py] [patterns] loadPattern error: Runner command 'raise_specific_pattern' failed: Pattern 'halfspace_cut' returned Difference, expected Frame can you lok into 
-  
--BUG doubel dildo joint on oscar shed still having z fighting issues.
+
 
 -pattern viewer
   -add tag searching module. it will be shared for searching both patterns and for layers stuff

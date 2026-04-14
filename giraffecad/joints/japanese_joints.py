@@ -339,11 +339,17 @@ def cut_lapped_gooseneck_joint(
         profile_y_offset_from_end=-gooseneck_profile_y_position
     )
 
-    # use chop_timber_end_with_prism to create a prism starting from gooseneck_profile_y_position
+    # Use chop_timber_end_with_prism to create the end-side volume for the profile cut.
+    # NOTE:
+    # The prism boundary and gooseneck profile offset both use gooseneck_profile_y_position.
+    # This creates coplanar overlap in Difference(prism - profile), which can cause the
+    # manifold boolean engine to emit nano-thickness shoulder flaps. These are removed
+    # as degenerate geometry during rendering (see triangles._remove_tiny_disconnected_components).
+    # I'm not sure why this doesn't happen in more places, maybe connected nano-thickness flaps get removed but not disconnected ones?
     gooseneck_profile_prism = chop_timber_end_with_prism(
         timber=gooseneck_timber,
         end=gooseneck_timber_end,
-        distance_from_end_to_cut=-gooseneck_profile_y_position
+        distance_from_end_to_cut=-(gooseneck_profile_y_position)
     )
 
     # difference the gooseneck profile prism with the gooseneck profile csg

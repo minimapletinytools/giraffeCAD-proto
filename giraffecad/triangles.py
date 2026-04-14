@@ -39,6 +39,8 @@ TRIANGLES_PRISM_INFINITE_EXTENT = 1000.0
 TRIANGLES_HALF_SPACE_INFINITE_EXTENT = TRIANGLES_PRISM_INFINITE_EXTENT * 10.0
 TRIANGLES_CYLINDER_SECTIONS = 32
 TRIANGLES_RAY_EPSILON = 1e-8
+TRIANGLES_TINY_COMPONENT_VOLUME_RATIO = 1e-4
+TRIANGLES_TINY_COMPONENT_MIN_ABS_VOLUME = 1e-10
 
 
 Float3 = Tuple[float, float, float]
@@ -400,9 +402,120 @@ def _polygon_points_ccw(points: Iterable[V2]) -> list[V2]:
     return ordered
 
 
+def _remove_nonmanifold_faces(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Remove faces with non-manifold edges (edges shared by != 2 faces).
+
+    Coplanar CSG boolean operations can emit zero-thickness flap faces that create
+    non-manifold edges. Valid solid geometry from the manifold engine is fully
+    manifold, so this targets the artifact faces without affecting valid geometry.
+    """
+    n_faces = len(mesh.faces)
+    if n_faces == 0:
+        return mesh
+
+    # edges_sorted: (3*n_faces, 2) — each face contributes 3 sorted-vertex-pair edges
+    edges = mesh.edges_sorted
+    _, inverse_indices, counts = np.unique(edges, axis=0, return_inverse=True, return_counts=True)
+
+    # For each face's 3 edge slots, check if the edge is shared by exactly 2 faces
+    edge_count_per_slot = counts[inverse_indices]  # (3*n_faces,)
+    is_bad_face = (edge_count_per_slot != 2).reshape(n_faces, 3).any(axis=1)  # (n_faces,)
+
+    if not is_bad_face.any():
+        return mesh
+
+    new_faces = mesh.faces[~is_bad_face]
+    if len(new_faces) == 0:
+        return mesh  # safety: never discard the entire mesh
+
+    result = trimesh.Trimesh(vertices=mesh.vertices.copy(), faces=new_faces, process=False)
+    result.remove_unreferenced_vertices()
+    return result
+
+
+def _connected_face_components(faces: np.ndarray) -> list[np.ndarray]:
+    """Return connected face components where connectivity is shared edges."""
+    face_count = len(faces)
+    if face_count == 0:
+        return []
+
+    edge_to_faces: dict[Tuple[int, int], list[int]] = {}
+    for face_index, (a, b, c) in enumerate(faces):
+        edges = ((a, b), (b, c), (c, a))
+        for u, v in edges:
+            edge = (int(u), int(v)) if u <= v else (int(v), int(u))
+            edge_to_faces.setdefault(edge, []).append(face_index)
+
+    adjacency: list[set[int]] = [set() for _ in range(face_count)]
+    for attached_faces in edge_to_faces.values():
+        if len(attached_faces) < 2:
+            continue
+        for i, face_a in enumerate(attached_faces):
+            for face_b in attached_faces[i + 1 :]:
+                adjacency[face_a].add(face_b)
+                adjacency[face_b].add(face_a)
+
+    visited = np.zeros(face_count, dtype=bool)
+    components: list[np.ndarray] = []
+    for start in range(face_count):
+        if visited[start]:
+            continue
+        stack = [start]
+        visited[start] = True
+        component: list[int] = []
+        while stack:
+            current = stack.pop()
+            component.append(current)
+            for nxt in adjacency[current]:
+                if not visited[nxt]:
+                    visited[nxt] = True
+                    stack.append(nxt)
+        components.append(np.asarray(component, dtype=np.int64))
+    return components
+
+
+def _remove_tiny_disconnected_components(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Drop tiny disconnected solids created by boolean numeric artifacts."""
+    components = _connected_face_components(mesh.faces)
+    if len(components) <= 1:
+        return mesh
+
+    parts: list[trimesh.Trimesh] = []
+    volumes: list[float] = []
+    for component_faces in components:
+        part = trimesh.Trimesh(
+            vertices=mesh.vertices.copy(),
+            faces=mesh.faces[component_faces],
+            process=False,
+        )
+        part.remove_unreferenced_vertices()
+        volume = abs(float(part.volume)) if part.is_watertight else 0.0
+        parts.append(part)
+        volumes.append(volume)
+
+    max_volume = max(volumes)
+    if max_volume <= 0.0:
+        return mesh
+
+    keep_threshold = max(
+        TRIANGLES_TINY_COMPONENT_MIN_ABS_VOLUME,
+        max_volume * TRIANGLES_TINY_COMPONENT_VOLUME_RATIO,
+    )
+    kept_parts = [part for part, volume in zip(parts, volumes) if volume >= keep_threshold]
+
+    if not kept_parts or len(kept_parts) == len(parts):
+        return mesh
+
+    result = trimesh.util.concatenate(kept_parts)
+    result.remove_unreferenced_vertices()
+    return result
+
+
 def _finalize_mesh(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
     mesh.remove_unreferenced_vertices()
     mesh.merge_vertices()
+    mesh = _remove_tiny_disconnected_components(mesh)
+    mesh = _remove_nonmanifold_faces(mesh)
     mesh.fix_normals(multibody=False)
     return mesh
 
