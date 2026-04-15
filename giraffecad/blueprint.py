@@ -27,15 +27,8 @@ from .rule import Transform
 from .rendering_utils import sympy_to_float
 from .timber import CutTimber, Frame
 
-try:
-    import numpy as np
-    import trimesh
-
-    _TRIMESH_AVAILABLE = True
-except ImportError:
-    np = None  # type: ignore[assignment]
-    trimesh = None  # type: ignore[assignment]
-    _TRIMESH_AVAILABLE = False
+import numpy as np
+import trimesh
 
 BRepPrimAPI_MakeBox = cast(Any, None)
 BRepPrimAPI_MakeCylinder = cast(Any, None)
@@ -126,11 +119,6 @@ def export_cut_timber_stl(cut_timber: CutTimber, filepath: Union[str, Path]) -> 
         cut_timber: The timber (with cuts applied) to export.
         filepath: Destination path. Parent directories are created if needed.
     """
-    if not _TRIMESH_AVAILABLE:
-        raise ImportError(
-            "trimesh and numpy are required for STL export. "
-            "Install them with: pip install trimesh numpy"
-        )
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
     mesh = _cut_timber_to_trimesh(cut_timber)
@@ -154,11 +142,6 @@ def export_frame_stl(
     Returns:
         List of paths written.
     """
-    if not _TRIMESH_AVAILABLE:
-        raise ImportError(
-            "trimesh and numpy are required for STL export. "
-            "Install them with: pip install trimesh numpy"
-        )
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     written: List[Path] = []

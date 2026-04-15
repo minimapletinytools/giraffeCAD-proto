@@ -329,9 +329,9 @@ class PythonRunnerSession {
             await this.runCommand(pythonCmd, ['-m', 'pip', 'install', '--upgrade', 'pip']);
 
             if (this.isLocalDev && fs.existsSync(path.join(this.projectRoot, 'pyproject.toml'))) {
-                await this.runCommand(pythonCmd, ['-m', 'pip', 'install', '-e', `${this.projectRoot}[viewer]`]);
+                await this.runCommand(pythonCmd, ['-m', 'pip', 'install', '-e', this.projectRoot]);
             } else {
-                await this.runCommand(pythonCmd, ['-m', 'pip', 'install', 'giraffecad[viewer]']);
+                await this.runCommand(pythonCmd, ['-m', 'pip', 'install', 'giraffecad']);
             }
             installedViewerDeps = true;
         }

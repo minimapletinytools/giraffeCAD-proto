@@ -8,17 +8,10 @@ authors = [{ name = "minimaple" }]
 readme = "README.md"
 dependencies = [
     "sympy>=1.12.0",
-]
-
-[project.optional-dependencies]
-# Triangle mesh rendering and CSG boolean operations (required for the viewer)
-viewer = [
     "numpy>=1.21.0",
     "trimesh>=4.7.0",
     "manifold3d>=3.4.0",
 ]
-step = ["cadquery-ocp>=7.7.0"]
-step-cadquery = ["cadquery>=2.0.0"]  # legacy: full CadQuery wrapper (see blueprint_cadquery.py)
 
 [build-system]
 requires = ["hatchling"]

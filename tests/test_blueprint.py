@@ -13,7 +13,6 @@ from sympy import Integer
 from giraffecad.blueprint import (
     export_cut_timber_stl,
     export_frame_stl,
-    _TRIMESH_AVAILABLE,
     _OCP_AVAILABLE,
 )
 from giraffecad.timber import CutTimber, Frame, Timber, timber_from_directions
@@ -73,7 +72,6 @@ def _load_structure_factory(module_name: str, factory_name: str) -> Any:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(not _TRIMESH_AVAILABLE, reason="trimesh not installed")
 class TestExportCutTimberStl:
     def test_creates_stl_file(self):
         ct = _simple_cut_timber()
@@ -108,7 +106,6 @@ class TestExportCutTimberStl:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(not _TRIMESH_AVAILABLE, reason="trimesh not installed")
 class TestExportFrameStl:
     def test_creates_one_file_per_timber(self):
         frame = _simple_frame()
