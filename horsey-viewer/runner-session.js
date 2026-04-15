@@ -7,6 +7,8 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+const ENV_SETUP_CACHE = new Map();
+
 class PythonRunnerSession {
     constructor(filePath, context, channel) {
         this.filePath = filePath;
@@ -67,7 +69,51 @@ class PythonRunnerSession {
         return this.process && !this.process.killed && this.process.exitCode === null;
     }
 
+    getPythonCandidates(root) {
+        if (process.platform === 'win32') {
+            return [
+                path.join(root, '.venv', 'Scripts', 'python.exe'),
+                path.join(root, 'venv', 'Scripts', 'python.exe'),
+            ];
+        }
+        return [
+            path.join(root, '.venv', 'bin', 'python3'),
+            path.join(root, '.venv', 'bin', 'python'),
+            path.join(root, 'venv', 'bin', 'python3'),
+            path.join(root, 'venv', 'bin', 'python'),
+        ];
+    }
+
+    getConfiguredPythonFromProjectYaml() {
+        if (!this.projectRoot) {
+            return null;
+        }
+        const yamlPath = path.join(this.projectRoot, '.horsey', 'project.yaml');
+        if (!fs.existsSync(yamlPath)) {
+            return null;
+        }
+        try {
+            const text = fs.readFileSync(yamlPath, 'utf8');
+            const match = text.match(/^python_path:\s*['\"]?(.+?)['\"]?\s*$/m);
+            if (!match || !match[1]) {
+                return null;
+            }
+            const pythonPath = match[1].trim();
+            if (pythonPath && fs.existsSync(pythonPath)) {
+                return pythonPath;
+            }
+        } catch (error) {
+            this.channel.appendLine(`[env] Failed reading .horsey/project.yaml: ${error.message}`);
+        }
+        return null;
+    }
+
     getPythonCommand() {
+        const configuredPython = this.getConfiguredPythonFromProjectYaml();
+        if (configuredPython) {
+            return configuredPython;
+        }
+
         const searchRoots = [];
 
         // First: workspace folders (most reliable — VS Code knows the open project)
@@ -85,8 +131,7 @@ class PythonRunnerSession {
         }
 
         for (const root of searchRoots) {
-            for (const rel of ['.venv/bin/python3', '.venv/bin/python', 'venv/bin/python3', 'venv/bin/python']) {
-                const candidate = path.join(root, rel);
+            for (const candidate of this.getPythonCandidates(root)) {
                 if (fs.existsSync(candidate)) {
                     return candidate;
                 }
@@ -96,43 +141,253 @@ class PythonRunnerSession {
         return 'python3';
     }
 
+    runCommand(command, args, options = {}) {
+        return new Promise((resolve, reject) => {
+            const child = spawn(command, args, {
+                cwd: options.cwd || this.projectRoot,
+                env: options.env || process.env,
+                stdio: ['ignore', 'pipe', 'pipe'],
+            });
+
+            let stdout = '';
+            let stderr = '';
+
+            child.stdout.on('data', (chunk) => {
+                stdout += chunk.toString();
+            });
+            child.stderr.on('data', (chunk) => {
+                stderr += chunk.toString();
+            });
+
+            child.on('error', (error) => {
+                reject(error);
+            });
+
+            child.on('close', (code) => {
+                if (code === 0) {
+                    resolve({ stdout, stderr });
+                    return;
+                }
+                reject(new Error(`Command failed (${command} ${args.join(' ')}), exit=${code}, stderr=${stderr.trim()}`));
+            });
+        });
+    }
+
+    async canRunCommand(command, args = ['--version']) {
+        try {
+            await this.runCommand(command, args);
+            return true;
+        } catch (error) {
+            const code = error && (error.code || error.errno);
+            if (code === 'ENOENT') {
+                return false;
+            }
+
+            // Some commands can return non-zero for --version in unusual setups,
+            // but command existence is enough for bootstrap purposes.
+            if (error && typeof error.message === 'string' && error.message.includes('Command failed')) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    async findBootstrapPythonLauncher() {
+        const launchers = process.platform === 'win32'
+            ? [
+                { command: 'py', prefixArgs: ['-3'] },
+                { command: 'python', prefixArgs: [] },
+                { command: 'python3', prefixArgs: [] },
+            ]
+            : [
+                { command: 'python3', prefixArgs: [] },
+                { command: 'python', prefixArgs: [] },
+            ];
+
+        for (const launcher of launchers) {
+            const probeArgs = launcher.prefixArgs.length > 0
+                ? [...launcher.prefixArgs, '--version']
+                : ['--version'];
+            if (await this.canRunCommand(launcher.command, probeArgs)) {
+                return launcher;
+            }
+        }
+
+        return null;
+    }
+
+    getPythonInstallHelpMessage() {
+        return [
+            'Python was not found on this machine, so Horsey cannot create a project virtual environment.',
+            'Install Python 3.10+ and then run Render Horsey again.',
+            'Download: https://www.python.org/downloads/',
+            process.platform === 'darwin' ? 'macOS (Homebrew): brew install python' : null,
+            process.platform === 'win32' ? 'Windows: install Python from python.org and enable "Add python.exe to PATH".' : null,
+            process.platform !== 'darwin' && process.platform !== 'win32' ? 'Linux: install python3 and python3-venv from your distro package manager.' : null,
+        ].filter(Boolean).join(' ');
+    }
+
+    async getMissingViewerDependencies(pythonCmd) {
+        const snippet = [
+            'import importlib.util',
+            'required = ["sympy", "numpy", "trimesh", "manifold3d"]',
+            'missing = [name for name in required if importlib.util.find_spec(name) is None]',
+            'print("\\n".join(missing))',
+        ].join('; ');
+        const { stdout } = await this.runCommand(pythonCmd, ['-c', snippet]);
+        return stdout
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+    }
+
+    yamlQuote(value) {
+        return `'${String(value).replace(/'/g, "''")}'`;
+    }
+
+    writeProjectYaml(pythonCmd, metadata) {
+        if (!this.projectRoot) {
+            return;
+        }
+        const horseyDir = path.join(this.projectRoot, '.horsey');
+        fs.mkdirSync(horseyDir, { recursive: true });
+
+        const lines = [
+            'schema_version: 1',
+            `project_root: ${this.yamlQuote(this.projectRoot)}`,
+            `python_path: ${this.yamlQuote(pythonCmd)}`,
+            `venv_path: ${this.yamlQuote(path.join(this.projectRoot, '.venv'))}`,
+            `local_dev: ${this.isLocalDev ? 'true' : 'false'}`,
+            `last_setup_at: ${this.yamlQuote(new Date().toISOString())}`,
+            `created_venv: ${metadata.createdVenv ? 'true' : 'false'}`,
+            `installed_viewer_deps: ${metadata.installedViewerDeps ? 'true' : 'false'}`,
+        ];
+        if (metadata.missingBefore.length > 0) {
+            lines.push('missing_before_setup:');
+            for (const pkg of metadata.missingBefore) {
+                lines.push(`  - ${pkg}`);
+            }
+        }
+
+        fs.writeFileSync(path.join(horseyDir, 'project.yaml'), `${lines.join('\n')}\n`, 'utf8');
+    }
+
+    async ensurePythonEnvironment() {
+        if (!this.projectRoot) {
+            return;
+        }
+
+        const cacheKey = this.projectRoot;
+        if (ENV_SETUP_CACHE.has(cacheKey)) {
+            return ENV_SETUP_CACHE.get(cacheKey);
+        }
+
+        const setupPromise = this.ensurePythonEnvironmentInternal()
+            .catch((error) => {
+                ENV_SETUP_CACHE.delete(cacheKey);
+                throw error;
+            });
+        ENV_SETUP_CACHE.set(cacheKey, setupPromise);
+        return setupPromise;
+    }
+
+    async ensurePythonEnvironmentInternal() {
+        const venvDir = path.join(this.projectRoot, '.venv');
+        const expectedVenvPython = this.getPythonCandidates(this.projectRoot)[0];
+        let createdVenv = false;
+
+        fs.mkdirSync(path.join(this.projectRoot, '.horsey'), { recursive: true });
+
+        if (!fs.existsSync(expectedVenvPython)) {
+            this.channel.appendLine(`[env] Creating virtual environment at ${venvDir}`);
+
+            const bootstrapLauncher = await this.findBootstrapPythonLauncher();
+            if (!bootstrapLauncher) {
+                const helpMessage = this.getPythonInstallHelpMessage();
+                this.channel.appendLine(`[env] ${helpMessage}`);
+                throw new Error(helpMessage);
+            }
+
+            const createArgs = [...bootstrapLauncher.prefixArgs, '-m', 'venv', venvDir];
+            try {
+                await this.runCommand(bootstrapLauncher.command, createArgs, { cwd: this.projectRoot });
+            } catch (error) {
+                const helpMessage = this.getPythonInstallHelpMessage();
+                this.channel.appendLine(`[env] Failed to create virtual environment: ${error.message}`);
+                this.channel.appendLine(`[env] ${helpMessage}`);
+                throw new Error(`${helpMessage} Original error: ${error.message}`);
+            }
+            createdVenv = true;
+        }
+
+        const pythonCmd = this.getPythonCommand();
+        const missingBefore = await this.getMissingViewerDependencies(pythonCmd);
+
+        let installedViewerDeps = false;
+        if (missingBefore.length > 0) {
+            this.channel.appendLine(`[env] Missing viewer deps: ${missingBefore.join(', ')}; installing...`);
+            await this.runCommand(pythonCmd, ['-m', 'pip', 'install', '--upgrade', 'pip']);
+
+            if (this.isLocalDev && fs.existsSync(path.join(this.projectRoot, 'pyproject.toml'))) {
+                await this.runCommand(pythonCmd, ['-m', 'pip', 'install', '-e', `${this.projectRoot}[viewer]`]);
+            } else {
+                await this.runCommand(pythonCmd, ['-m', 'pip', 'install', 'giraffecad[viewer]']);
+            }
+            installedViewerDeps = true;
+        }
+
+        this.writeProjectYaml(pythonCmd, {
+            createdVenv,
+            installedViewerDeps,
+            missingBefore,
+        });
+    }
+
     start() {
         if (this.startPromise) {
             return this.startPromise;
         }
 
-        this.startPromise = new Promise((resolve, reject) => {
-            const pythonCmd = this.getPythonCommand();
-            this.channel.appendLine(`Starting runner: ${pythonCmd} ${this.runnerScriptPath} ${this.filePath}`);
+        this.startResolved = false;
+        this.startPromise = (async () => {
+            await this.ensurePythonEnvironment();
 
-            this.process = spawn(pythonCmd, [this.runnerScriptPath, this.filePath], {
-                cwd: this.projectRoot,
-                stdio: ['pipe', 'pipe', 'pipe'],
-            });
+            return new Promise((resolve, reject) => {
+                const pythonCmd = this.getPythonCommand();
+                this.channel.appendLine(`Starting runner: ${pythonCmd} ${this.runnerScriptPath} ${this.filePath}`);
 
-            this.process.stdout.on('data', (chunk) => {
-                this.handleStdout(chunk, resolve, reject);
-            });
+                this.process = spawn(pythonCmd, [this.runnerScriptPath, this.filePath], {
+                    cwd: this.projectRoot,
+                    stdio: ['pipe', 'pipe', 'pipe'],
+                });
 
-            this.process.stderr.on('data', (chunk) => {
-                this.channel.append(chunk.toString());
-            });
+                this.process.stdout.on('data', (chunk) => {
+                    this.handleStdout(chunk, resolve, reject);
+                });
 
-            this.process.on('error', (error) => {
-                this.rejectAllPending(error);
-                reject(error);
-            });
+                this.process.stderr.on('data', (chunk) => {
+                    this.channel.append(chunk.toString());
+                });
 
-            this.process.on('exit', (code, signal) => {
-                this.ready = false;
-                const error = new Error(`Runner exited (code=${code}, signal=${signal})`);
-                this.rejectAllPending(error);
-                if (!this.startResolved) {
+                this.process.on('error', (error) => {
+                    this.rejectAllPending(error);
                     reject(error);
-                }
-                this.startPromise = null;
-                this.process = null;
+                });
+
+                this.process.on('exit', (code, signal) => {
+                    this.ready = false;
+                    const error = new Error(`Runner exited (code=${code}, signal=${signal})`);
+                    this.rejectAllPending(error);
+                    if (!this.startResolved) {
+                        reject(error);
+                    }
+                    this.startPromise = null;
+                    this.process = null;
+                });
             });
+        })().catch((error) => {
+            this.startPromise = null;
+            throw error;
         });
 
         return this.startPromise;
