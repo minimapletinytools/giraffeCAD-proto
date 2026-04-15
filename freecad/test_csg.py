@@ -31,11 +31,11 @@ print("\nReloading all GiraffeCAD modules...")
 
 # List of modules to reload in dependency order
 modules_to_reload = [
-    'code_goes_here.rule',
-    'code_goes_here.footprint',
-    'code_goes_here.cutcsg',
-    'code_goes_here.timber',
-    'code_goes_here.construction',
+    'giraffecad.rule',
+    'giraffecad.footprint',
+    'giraffecad.cutcsg',
+    'giraffecad.timber',
+    'giraffecad.construction',
     'giraffe',
     'giraffe_render_freecad',
     'patterns.CSG_debug_examples',

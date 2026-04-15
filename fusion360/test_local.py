@@ -46,17 +46,17 @@ def test_giraffe_modules():
     print("\nTesting GiraffeCAD module imports from parent directory...")
     
     try:
-        from code_goes_here.rule import Orientation
+        from giraffecad.rule import Orientation
         print("✓ rule.Orientation imported successfully from parent dir")
     except ImportError as e:
         print(f"✗ Failed to import rule from parent dir: {e}")
         return False
     
     try:
-        from giraffe import CutTimber, Timber, create_v3
+        from giraffecad import CutTimber, Timber, create_v3
         print("✓ giraffe core classes imported successfully from parent dir")
     except ImportError as e:
-        print(f"✗ Failed to import giraffe from parent dir: {e}")
+        print(f"✗ Failed to import giraffecad from parent dir: {e}")
         return False
     
     try:
@@ -69,7 +69,7 @@ def test_giraffe_modules():
     # Note: We can't test giraffe_render_fusion360 outside of Fusion 360
     # because it depends on adsk modules, but we can test that the file exists
     try:
-        import giraffe_render_fusion360
+        import giraffecad_render_fusion360
         print("✓ giraffe_render_fusion360 found in current dir (requires Fusion 360 to run)")
     except ImportError as e:
         if "adsk" in str(e):
@@ -114,7 +114,7 @@ def test_path_structure():
     # Files that should be in parent directory
     parent_required_files = [
         'giraffe.py',
-        'code_goes_here/rule.py', 
+        'giraffecad/rule.py', 
         'patterns/structures/horsey_example.py',
     ]
     

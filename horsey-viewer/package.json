@@ -4,15 +4,27 @@
   "description": "Timber frame viewer for GiraffeCAD",
   "version": "0.0.1",
   "publisher": "giraffeCAD",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/minimapletinytools/giraffeCAD-proto"
+  },
   "engines": {
     "vscode": "^1.60.0"
   },
+  "keywords": [
+    "cad",
+    "timber",
+    "woodworking",
+    "geometry",
+    "viewer"
+  ],
   "categories": [
-    "Other"
+    "Visualization"
   ],
   "activationEvents": [
     "onCommand:horsey-viewer.renderHorsey",
-    "onLanguage:python"
+    "onCommand:horsey-viewer.browsePatterns",
+    "onCommand:horsey-viewer.unloadPattern"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -20,6 +32,14 @@
       {
         "command": "horsey-viewer.renderHorsey",
         "title": "Render Horsey"
+      },
+      {
+        "command": "horsey-viewer.browsePatterns",
+        "title": "Browse Patterns"
+      },
+      {
+        "command": "horsey-viewer.unloadPattern",
+        "title": "Unload Pattern Viewer"
       }
     ]
   },
@@ -32,6 +52,7 @@
     "test:all": "npm run test:unit && npm run test:ext"
   },
   "devDependencies": {
+    "@vscode/vsce": "^3.6.2",
     "@vscode/test-electron": "^2.5.2",
     "@types/vscode": "^1.60.0",
     "jest": "^29.7.0"

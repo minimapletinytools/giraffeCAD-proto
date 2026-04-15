@@ -8,8 +8,13 @@ async function run() {
     timeout: 30000,
   });
 
-  const testFile = path.resolve(__dirname, 'extension-smoke.test.js');
-  mocha.addFile(testFile);
+  const testFiles = [
+    path.resolve(__dirname, 'extension-smoke.test.js'),
+    path.resolve(__dirname, 'extension-viewer-flow.test.js'),
+  ];
+  for (const testFile of testFiles) {
+    mocha.addFile(testFile);
+  }
 
   return new Promise((resolve, reject) => {
     mocha.run((failures) => {

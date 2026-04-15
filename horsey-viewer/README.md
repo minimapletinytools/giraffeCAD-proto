@@ -1,97 +1,149 @@
-# Horsey Viewer - VSCode Extension for GiraffeCAD
+# Horsey Viewer
 
-A VSCode extension for viewing timber frame structures created with GiraffeCAD.
+Horsey Viewer is a VS Code extension that renders GiraffeCAD frames from Python modules into an interactive webview.
 
-WIP WIP WIP
+It is designed for two workflows:
 
-## Features
+- Local GiraffeCAD development checkouts (repo root contains `giraffecad/`)
+- Installed-package projects (project root contains `.giraffe.yaml`)
 
-- **Render Horsey** command: Import and visualize timber frames from Python files
-- Automatically calls the `build_frame()` function in your Python file
-- Displays frame data in a formatted webview
-- Shows timber details, accessories, and complete structure information
+## What It Does
 
-## Usage
+- Renders the currently open Python file with the command **Render Horsey**
+- Watches files and refreshes the viewer when source changes
+- Browses shipped and local pattern libraries with **Browse Patterns**
+- Opens pattern results in separate tabs backed by one shared runner process
+- Generates triangle mesh geometry in Python and streams JSON to the webview
 
-1. Open a Python file that defines a `build_frame()` function returning a `Frame` object
-2. Run the command: **Render Horsey** (via Command Palette: Cmd+Shift+P / Ctrl+Shift+P)
-3. View the rendered frame data in a new panel
+## Runtime Contract for Python Files
 
-> **Note:** Originally wanted to use `raise()` (as in "raising a frame" in timber framing), but that's a Python keyword, so we use `build_frame()` instead.
+When Horsey imports a Python module, it uses reflection to resolve what to render in this order:
 
-## Requirements
+1. Module-level `example`
+2. `build_frame()` function
+3. Module-level `patternbook`
 
-- Python 3.6+
-- GiraffeCAD library must be importable from your Python file
+`example` may be either:
 
-## Installation
+- A frame-like value
+- A callable returning a frame-like value
+- A patternbook
 
-1. Copy the `horsey-viewer` directory to your VSCode extensions folder:
-   - macOS/Linux: `~/.vscode/extensions/`
-   - Windows: `%USERPROFILE%\.vscode\extensions\`
+If no supported entry point exists, the viewer returns an error.
 
-2. Reload VSCode
+## First Run: Automatic Python Environment Setup
 
-Or install from source:
+On first render in a project, Horsey bootstraps a project-local environment automatically:
+
+1. Finds project root by walking upward from the target file
+2. Creates `.venv` if needed
+3. Checks for required viewer dependencies (`sympy`, `numpy`, `trimesh`, `manifold3d`)
+4. Installs dependencies when missing:
+   - Local dev checkout: `pip install -e <projectRoot>[viewer]`
+   - Non-local project: `pip install giraffecad[viewer]`
+5. Writes `.horsey/project.yaml` with selected Python path and setup metadata
+
+On later runs, Horsey reuses the configured interpreter from `.horsey/project.yaml` when available.
+
+## Commands
+
+- `Render Horsey` (`horsey-viewer.renderHorsey`)
+- `Browse Patterns` (`horsey-viewer.browsePatterns`)
+- `Unload Pattern Viewer` (`horsey-viewer.unloadPattern`)
+
+Open the command palette and run any of the commands above.
+
+## Pattern Browsing
+
+Horsey scans two sources:
+
+- Shipped patterns bundled with `giraffecad`
+- Local project patterns in `<projectRoot>/patterns`
+
+Pattern sessions are loaded into dedicated slots in the runner and displayed as separate viewer panels.
+
+## Install and Run (Development)
+
+From this folder:
 
 ```bash
-cd horsey-viewer
 npm install
 ```
 
-Then press F5 in VSCode to launch the extension in development mode.
+Then in VS Code:
 
-## Example
+1. Open the `horsey-viewer` folder
+2. Press `F5` (Run Extension)
+3. In the Extension Development Host window, open a Python frame file
+4. Run **Render Horsey**
 
-Create a Python file with a `build_frame()` function:
+## Quick Example
 
 ```python
-from code_goes_here.timber import *
-from code_goes_here.construction import *
+from giraffecad.timber import *
+from giraffecad.construction import *
 
 def build_frame():
-    timber1 = create_timber(
+    timber = create_timber(
         bottom_position=create_v3(0, 0, 0),
         length=mm(1000),
         size=create_v2(mm(100), mm(100)),
         length_direction=create_v3(0, 0, 1),
         width_direction=create_v3(1, 0, 0),
-        name="Test Timber"
+        name="Demo Timber",
     )
-
-    frame = Frame.from_joints([], [timber1], name="Test Frame")
-    return frame
+    return Frame.from_joints([], [timber], name="Demo Frame")
 ```
 
-Run **Render Horsey** to see the frame!
+## How The System Is Structured
 
-You can also use the included `test-frame.py` for testing.
+- `extension.js`: command registration and session orchestration
+- `frame-view-session.js`: panel lifecycle, refresh pipeline, file watching, webview messaging
+- `runner-session.js`: Python process lifecycle and environment bootstrap
+- `runner.py`: persistent stdio protocol server, module loading, pattern discovery, geometry build
+- `webview/`: UI app and viewer components
 
-## Development
+The extension side is responsible for lifecycle/orchestration. The runner side is responsible for Python import, frame resolution, and geometry generation.
 
-This extension is part of the GiraffeCAD project for timber frame design and visualization.
+## Testing
 
-### Test workflow
+From `horsey-viewer/`:
 
-Use a layered loop so agents and humans can pick the fastest test level:
+```bash
+npm run test:unit
+npm run test:runner
+npm run test:ext
+npm run test:all
+```
 
-- `npm run test:unit` — all Jest tests (`__tests__`), including the headless runner protocol test.
-- `npm run test:runner` — only the stdio protocol integration test against `runner.py`.
-- `npm run test:ext` — extension-host smoke tests via `@vscode/test-electron`.
-- `npm run test:all` — unit + extension-host smoke tests.
+Screenshot options for extension smoke tests:
 
-Optional extension-host screenshot capture:
+- `HORSEY_EXT_SCREENSHOT_MODE=never`
+- `HORSEY_EXT_SCREENSHOT_MODE=always`
+- `HORSEY_EXT_SCREENSHOT_MODE=on-failure`
+- `HORSEY_EXT_SCREENSHOT_DIR=/custom/path`
 
-- `HORSEY_EXT_SCREENSHOT_MODE=never` (default) — no screenshots.
-- `HORSEY_EXT_SCREENSHOT_MODE=always` — capture screenshots on successful render assertions.
-- `HORSEY_EXT_SCREENSHOT_MODE=on-failure` — capture only when the render smoke assertion fails.
-- `HORSEY_EXT_SCREENSHOT_DIR=/custom/path` — override output directory (default: `horsey-viewer/.artifacts/screenshots`).
+## Troubleshooting
 
-If Python discovery is non-standard, set `HORSEY_VIEWER_PYTHON` to the Python executable used for runner tests.
+### Render command does nothing
 
-## Roadmap
+- Confirm the active editor is a Python file
+- Save the file and rerun **Render Horsey**
+- Open the `Horsey Viewer` output channel for logs
 
-- [ ] Add Three.js 3D visualization
-- [ ] Interactive timber inspection
-- [ ] Export to various CAD formats
-- [ ] Real-time preview on file changes
+### Missing Python dependencies
+
+- Run **Render Horsey** once and let auto bootstrap finish
+- If your interpreter is non-standard, set `python_path` in `.horsey/project.yaml` to a valid Python executable
+
+### Unsupported module shape
+
+Expose one of:
+
+- `example`
+- `build_frame()`
+- `patternbook`
+
+### Pattern list is stale
+
+Use the pattern browser refresh action (rescan) so modules are re-imported.

@@ -20,8 +20,8 @@ import traceback
 import time
 from typing import Optional, Tuple, List
 from sympy import Matrix, Float
-from giraffe import CutTimber, Timber, TimberFace, TimberReferenceEnd, TimberLongFace
-from code_goes_here.rule import Orientation
+from giraffecad import CutTimber, Timber, TimberFace, TimberReferenceEnd, TimberLongFace
+from giraffecad.rule import Orientation
 
 
 def get_fusion_app() -> Optional[adsk.core.Application]:

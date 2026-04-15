@@ -15,8 +15,8 @@ import random
 import math
 from typing import Optional, Tuple
 from sympy import Matrix, Rational, simplify, det, eye
-from code_goes_here.rule import *
-from giraffe import *
+from giraffecad.rule import *
+from giraffecad import *
 
 
 # ============================================================================

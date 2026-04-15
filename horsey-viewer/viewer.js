@@ -10,6 +10,14 @@ const initializedPanels = new WeakSet();
 const webviewDir = path.join(__dirname, 'webview');
 let screenshotRequestCounter = 1;
 const VIEWER_APP_VERSION = '2026.03.17.4';
+const ViewerPhase = Object.freeze({
+    WAITING_FOR_RUNNER: 'waiting_for_runner',
+    READY: 'ready',
+});
+
+function normalizeViewerOptions(viewerOptions) {
+    return {};
+}
 
 function getNonce() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -29,42 +37,97 @@ function escapeScriptJson(value) {
         .replace(/\u2029/g, '\\u2029');
 }
 
-function createFrameViewer(filePath) {
+function createFrameViewer(filePath, frameName = null, isLocalDev = false) {
     return vscode.window.createWebviewPanel(
         'horseyViewer',
-        getViewerTitle(filePath),
+        getViewerTitle(filePath, frameName, isLocalDev),
         vscode.ViewColumn.Two,
         {
             enableScripts: true,
+            retainContextWhenHidden: true,
             localResourceRoots: [vscode.Uri.file(webviewDir)],
         }
     );
 }
 
-function renderFrameViewer(panel, filePath, frameData, geometryData) {
-    panel.title = getViewerTitle(filePath, frameData.name);
+function initializeFrameViewer(panel, filePath, options = {}, isLocalDev = false) {
+    if (initializedPanels.has(panel)) {
+        return;
+    }
+
+    const loadingText = typeof options.loadingText === 'string' && options.loadingText
+        ? options.loadingText
+        : 'initial creation';
+    const viewerOptions = normalizeViewerOptions(options.viewerOptions);
+
+    panel.title = getViewerTitle(filePath, null, isLocalDev);
+    panel.webview.html = getWebviewContent(
+        panel.webview,
+        {
+            name: null,
+            timber_count: 0,
+            accessories_count: 0,
+            timbers: [],
+            accessories: [],
+        },
+        {
+            meshes: [],
+            changedKeys: [],
+            removedKeys: [],
+            remeshMetrics: [],
+            counts: {
+                totalTimbers: 0,
+                changedTimbers: 0,
+                removedTimbers: 0,
+            },
+        },
+        null,
+        {
+            phase: ViewerPhase.WAITING_FOR_RUNNER,
+            refreshToken: 0,
+            keepLoading: true,
+            loadingText,
+            emptyState: true,
+        },
+        viewerOptions
+    );
+    initializedPanels.add(panel);
+}
+
+function renderFrameViewer(panel, filePath, frameData, geometryData, profiling, uiState = null, viewerOptions = null, isLocalDev = false) {
+    panel.title = getViewerTitle(filePath, frameData.name, isLocalDev);
+    const nextUiState = uiState || {
+        phase: ViewerPhase.READY,
+        refreshToken: 0,
+        loadingText: '',
+        keepLoading: false,
+    };
+    const nextViewerOptions = normalizeViewerOptions(viewerOptions);
     if (!initializedPanels.has(panel)) {
-        panel.webview.html = getWebviewContent(panel.webview, frameData, geometryData);
+        panel.webview.html = getWebviewContent(panel.webview, frameData, geometryData, profiling, nextUiState, nextViewerOptions);
         initializedPanels.add(panel);
     } else {
         panel.webview.postMessage({
-            type: 'refresh',
+            type: 'viewerState',
             frame: frameData,
             geometry: geometryData,
+            profiling: profiling || null,
+            uiState: nextUiState,
+            viewerOptions: nextViewerOptions,
         });
     }
-    panel.reveal(vscode.ViewColumn.Two);
 }
 
-function getViewerTitle(filePath, frameName = null) {
+function getViewerTitle(filePath, frameName = null, isLocalDev = false) {
     const fileName = path.basename(filePath);
+    const devTag = isLocalDev ? ' [Local Dev]' : '';
     if (frameName) {
-        return `Horsey: ${fileName} (${frameName}) · v${VIEWER_APP_VERSION}`;
+        return `Horsey: ${frameName}${devTag} · v${VIEWER_APP_VERSION}`;
     }
-    return `Horsey: ${fileName} · v${VIEWER_APP_VERSION}`;
+    return `Horsey: ${fileName}${devTag} · v${VIEWER_APP_VERSION}`;
 }
 
-function getWebviewContent(webview, frameData, geometryData) {
+function getWebviewContent(webview, frameData, geometryData, profiling, uiState = null, viewerOptions = null) {
     const templatePath = path.join(webviewDir, 'viewer.html');
     const template = fs.readFileSync(templatePath, 'utf8');
 
@@ -76,6 +139,9 @@ function getWebviewContent(webview, frameData, geometryData) {
     const payloadJson = escapeScriptJson(JSON.stringify({
         frame: frameData,
         geometry: geometryData,
+        profiling: profiling || null,
+        uiState: uiState || null,
+        viewerOptions: normalizeViewerOptions(viewerOptions),
     }));
 
     return template
@@ -155,4 +221,4 @@ function requestViewerScreenshot(panel, options = {}) {
     });
 }
 
-module.exports = { createFrameViewer, renderFrameViewer, requestViewerScreenshot };
+module.exports = { createFrameViewer, initializeFrameViewer, renderFrameViewer, requestViewerScreenshot };

@@ -70,7 +70,7 @@ def create_anthology_pattern_book():
     Returns:
         PatternBook: A single PatternBook with all patterns from all examples
     """
-    from code_goes_here.patternbook import PatternBook
+    from giraffecad.patternbook import PatternBook
     from patterns.basic_joints_examples import create_basic_joints_patternbook
     from patterns.mortise_and_tenon_joint_examples import create_mortise_and_tenon_patternbook
     from patterns.construction_examples import create_construction_patternbook
@@ -118,7 +118,7 @@ def reload_all_modules():
     modules_to_delete = []
     for module_name in list(sys.modules.keys()):
         # Delete any module that starts with our project prefixes
-        if (module_name.startswith('code_goes_here') or 
+        if (module_name.startswith('giraffecad') or 
             module_name.startswith('patterns') or 
             module_name == 'giraffe' or
             module_name.startswith('giraffe.') or
@@ -133,19 +133,19 @@ def reload_all_modules():
     
     # List of modules to reload in dependency order
     modules_to_reload = [
-        'code_goes_here',  # Reload the package itself first
-        'code_goes_here.rule',
-        'code_goes_here.footprint',
-        'code_goes_here.cutcsg',
-        'code_goes_here.timber',
-        'code_goes_here.construction',
-        'code_goes_here.rendering_utils',
-        'code_goes_here.joints.joint_shavings',
-        'code_goes_here.measuring',
-        'code_goes_here.joints.plain_joints',
-        'code_goes_here.joints.mortise_and_tenon_joint',
-        'code_goes_here.joints.japanese_joints',
-        'code_goes_here.patternbook',
+        'giraffecad',  # Reload the package itself first
+        'giraffecad.rule',
+        'giraffecad.footprint',
+        'giraffecad.cutcsg',
+        'giraffecad.timber',
+        'giraffecad.construction',
+        'giraffecad.rendering_utils',
+        'giraffecad.joints.joint_shavings',
+        'giraffecad.measuring',
+        'giraffecad.joints.plain_joints',
+        'giraffecad.joints.mortise_and_tenon_joint',
+        'giraffecad.joints.japanese_joints',
+        'giraffecad.patternbook',
         'giraffe',
         'patterns',  # Reload the patterns package
         'giraffe_render_fusion360',  # Add this so the rendering module itself gets reloaded
@@ -184,7 +184,7 @@ def reload_all_modules():
 def render_plain_joints():
     """Render all plain joint examples using anthology PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from code_goes_here.rule import m
+    from giraffecad.rule import m
     
     print("="*60)
     print("GiraffeCAD Fusion 360 - All Plain Joints")
@@ -223,7 +223,7 @@ def render_plain_joints():
 def render_mortise_and_tenon():
     """Render mortise and tenon joint examples with pegs using anthology PatternBook."""
     from giraffe_render_fusion360 import render_frame, clear_design
-    from code_goes_here.rule import inches
+    from giraffecad.rule import inches
     
     print("="*70)
     print("GiraffeCAD Fusion 360 - Mortise and Tenon Joint Examples")

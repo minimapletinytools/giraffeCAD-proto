@@ -53,6 +53,8 @@ describe('Horsey Viewer extension smoke', () => {
 
     const commands = await vscode.commands.getCommands(true);
     assert.ok(commands.includes('horsey-viewer.renderHorsey'));
+    assert.ok(commands.includes('horsey-viewer.browsePatterns'));
+    assert.ok(commands.includes('horsey-viewer.unloadPattern'));
   });
 
   it('executes Render Horsey command without crashing when no editor is active', async () => {
@@ -72,19 +74,19 @@ describe('Horsey Viewer extension smoke', () => {
     const document = await vscode.workspace.openTextDocument(fixtureUri);
     await vscode.window.showTextDocument(document, { preview: false });
 
-    const expectedTab = 'Horsey: minimal_frame.py (Runner Test Frame)';
+    const expectedTabPrefix = 'Horsey: Runner Test Frame';
 
     const runAssertions = async () => {
       await vscode.commands.executeCommand('horsey-viewer.renderHorsey');
 
       await waitFor(() => {
         const tabs = getAllTabs();
-        return tabs.some((tab) => tab.label === expectedTab);
+        return tabs.some((tab) => tab.label.startsWith(expectedTabPrefix));
       }, 20000, 120);
 
       const tabs = getAllTabs();
       assert.ok(
-        tabs.some((tab) => tab.label === expectedTab),
+        tabs.some((tab) => tab.label.startsWith(expectedTabPrefix)),
         'Expected Horsey webview tab for minimal_frame.py with rendered frame name'
       );
     };

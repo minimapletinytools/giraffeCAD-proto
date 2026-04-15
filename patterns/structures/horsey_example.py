@@ -10,8 +10,8 @@ This example creates a sawhorse with:
 All joints are mortise and tenon with pegs.
 """
 
-from giraffe import *
-from code_goes_here.patternbook import PatternBook, PatternMetadata
+from giraffecad import *
+from giraffecad.patternbook import PatternBook, PatternMetadata
 
 # Define timber dimensions
 beam_size = Matrix([inches(4), inches(6)])  # 4x6 with 6" in Z
@@ -264,7 +264,7 @@ def create_sawhorse() -> Frame:
     return Frame.from_joints(all_joints, name="Sawhorse")
 
 
-example = create_sawhorse()
+example = create_sawhorse
 
 
 def main():

@@ -8,10 +8,11 @@ from typing import Optional
 import sys
 sys.path.append('..')
 
-from giraffe import *
-from code_goes_here.timber import Frame
-from code_goes_here.patternbook import PatternBook, PatternMetadata
-from code_goes_here.joints.basic_joints import cut_basic_mitered_and_keyed_lap_joint
+from giraffecad import *
+from giraffecad.timber import Frame
+from giraffecad.patternbook import PatternBook, PatternMetadata
+from giraffecad.joints.basic_joints import cut_basic_mitered_and_keyed_lap_joint
+
 
 # ============================================================================
 # PARAMETERS - Modify these to adjust the shed design
@@ -902,6 +903,7 @@ def create_oscarshed(center: Optional[V3] = None):
         )
         joists.append(joist)
 
+
     # ============================================================================
     # Create dovetail butt joints for joists with mudsills
     # ============================================================================
@@ -1086,7 +1088,7 @@ def create_oscarshed(center: Optional[V3] = None):
     return Frame.from_joints(all_joints, additional_unjointed_timbers=unjointed_timbers, name="Oscar's Shed")
 
 
-example = create_oscarshed()
+example = create_oscarshed
 
 
 # ============================================================================
