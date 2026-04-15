@@ -1,6 +1,6 @@
 # HorseCoAD
 
-HorseCoAD is a Code Aided Design library for programmatically designing timber framed structures.
+HorseCoAD is a Code aided Design library for programmatically designing timber framed structures.
 
 HorseCoAD is written as an **AI friendly** library meaning it was designed for use by AI agents.
 
