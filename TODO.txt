@@ -1,4 +1,31 @@
 
+:: 4/14/2026 menu view
+So it goes as follows, the LHS has 3 sections in this order
+>files
+  **currently open pattern overriding frame x
+  *currently open frame
+  >current project folder
+    >current frame (the currentyl open frame in the viewer)
+    >(other frames in the directory)
+  >(cached history of other projects folders you've opened recently I guess) 
+>patterns
+  >project patterns (in your project dirs pattern folder and its dependency patterns)
+  >builtin patterns (from jonits)
+  >beta patterns (from joints/beta)
+>shop
+  >timbers
+  >joints
+I guess you have a radio toggle to pick which ones to show? Or just collaps projects and patterns it's fine...
+The advantage of the radio toggel is that you can remove the top level folder in teh view...
+
+
+-clicking on patterns opens them in temp override viewer
+-you can also right click or command cilkc to open in new tab 
+  -this open up the pattern as a regular project? or maybe still temp, but without regular project open why not
+
+
+
+
 :: 4/14/2026 drawing generation coad
 
 automatic drawing
@@ -58,6 +85,9 @@ Propose a refactor to suppor this.
 
 
 A couple other things, we may show patterns in the layers view using a similar looking UI. patterns are semantically different as they are just a file browser, but they should levearge the same UI to do this. please work this into your plan
+
+
+
 
 :: 3/30/2026 horsey viewer environment
 
@@ -125,9 +155,10 @@ DONE-BUG sharde runners that have been stopped stil have their auto relod watche
 DONE-BUG pattern viewer thingy does not support CSG stuff
   [tinyhouse120.py] [patterns] loadPattern error: Runner command 'raise_specific_pattern' failed: Pattern 'halfspace_cut' returned Difference, expected Frame can you lok into 
 DONE-BUG doubel dildo joint on oscar shed still having z fighting issues.
+DONE-get rid of the old step file generatinon thing and then figure out which dependencies are mandatory and just amke them all mandatory, ono optional deps!!
 
+-rename to kumiki/kigumi
 
--get rid of the old step file generatino thing and then figure out which dependencies are mandatory and just amke them all mandatory, ono optional deps!!
 -rethink hierarchical feature selection, as you'll want to be able to select 2 features to measure them in the future.
 -do new selection hierarchy here are the states
   -nothing selected (show everything)
