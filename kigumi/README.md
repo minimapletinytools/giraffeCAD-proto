@@ -31,19 +31,32 @@ When Kumiki imports a Python module, it uses reflection to resolve what to rende
 
 If no supported entry point exists, the viewer returns an error.
 
+## Prerequisites
+
+To use Kigumi, you need:
+
+- **VS Code** with the Kigumi extension installed
+- **Python 3.10 or later** available on your system path
+  - On macOS/Linux: `python3` or `python`
+  - On Windows: `py`, `python`, or `python3`
+
+Kigumi does NOT require pre-installed packages. It handles dependency setup automatically.
+
 ## First Run: Automatic Python Environment Setup
 
 On first render in a project, Kumiki bootstraps a project-local environment automatically:
 
 1. Finds project root by walking upward from the target file
-2. Creates `.venv` if needed
-3. Checks for required viewer dependencies (`sympy`, `numpy`, `trimesh`, `manifold3d`)
-4. Installs dependencies when missing:
-   - Local dev checkout: `pip install -e <projectRoot>[viewer]`
-   - Non-local project: `pip install kumiki[viewer]`
-5. Writes `.kigumi/project.yaml` with selected Python path and setup metadata
+2. Creates `.venv` using Python's built-in `venv` module if needed
+3. Installs required dependencies via `pip`:
+   - Local dev checkout: `pip install -e <projectRoot>` (editable kumiki)
+   - Non-local project: `pip install kumiki` (from PyPI)
+   - Core packages: `sympy`, `numpy`, `trimesh`, `manifold3d`
+4. Writes `.kigumi/project.yaml` with Python path and setup metadata
 
-On later runs, Kumiki reuses the configured interpreter from `.kigumi/project.yaml` when available.
+On later runs, Kigumi reuses the configured interpreter from `.kigumi/project.yaml` when available.
+
+Note: If Python 3.10+ is not available or not on your system path, initialization will fail. Install it via your system package manager or [python.org](https://www.python.org).
 
 ## Commands
 

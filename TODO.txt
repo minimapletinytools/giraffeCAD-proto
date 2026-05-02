@@ -172,7 +172,7 @@ DONE-kigumi
 DONE-show proper error if you open a non pattern
 
 -publish python package
-  -publish to testpypi first
+  DONE-publish to testpypi first
   -setup pypi account
   -publish to pypi
 
