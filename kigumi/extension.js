@@ -434,22 +434,29 @@ function activate(context) {
     void vscode.commands.executeCommand('setContext', 'kigumi.splitViewEnabled', openInSplitView);
 
     async function runProjectHeaderAction() {
+        const activeFilePath = getActivePythonFilePath();
         const workspaceRoot = getWorkspaceRoot();
-        if (!workspaceRoot) {
-            vscode.window.showErrorMessage('Open a workspace folder first.');
+        if (!workspaceRoot && !activeFilePath) {
+            vscode.window.showErrorMessage('Open a workspace folder or open a Python file first.');
             return;
         }
 
-        const initStatus = getInitializationStatus(workspaceRoot);
+        const rootHint = workspaceRoot || path.dirname(activeFilePath);
+
+        const initStatus = getInitializationStatus(rootHint, activeFilePath);
         if (initStatus.projectStatus === 'local-dev') {
             vscode.window.showInformationMessage('Local development mode: using workspace kumiki source; initialization is disabled.');
-            await sidebarProvider.refresh(true);
+            if (sidebarProvider) {
+                await sidebarProvider.refresh(true);
+            }
             return;
         }
 
         if (initStatus.isInitialized) {
             vscode.window.showInformationMessage('Project initialized: .kigumi.yaml, .kigumi/project.yaml, .venv, and my_cute_frame.py are present.');
-            await sidebarProvider.refresh(true);
+            if (sidebarProvider) {
+                await sidebarProvider.refresh(true);
+            }
             return;
         }
 
@@ -459,14 +466,16 @@ function activate(context) {
                 title: 'Initializing Kigumi project',
                 cancellable: false,
             }, async () => {
-                await initializeWorkspaceProject(workspaceRoot);
+                await initializeWorkspaceProject(rootHint, activeFilePath);
             });
             vscode.window.showInformationMessage('Kigumi workspace initialized.');
         } catch (error) {
             outputChannel.show(true);
             vscode.window.showErrorMessage(`Initialize project failed: ${error.message || error}`);
         } finally {
-            await sidebarProvider.refresh(true);
+            if (sidebarProvider) {
+                await sidebarProvider.refresh(true);
+            }
         }
     }
 }
@@ -477,6 +486,14 @@ function getWorkspaceRoot() {
         return null;
     }
     return folders[0].uri.fsPath;
+}
+
+function getActivePythonFilePath() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || !editor.document || editor.document.languageId !== 'python') {
+        return null;
+    }
+    return editor.document.fileName;
 }
 
 async function renderActiveEditor(context) {

@@ -170,15 +170,15 @@ DONE-kigumi
     -remov ethe open current file in viewer button in the top bar
     -remove the initialize project button in the top bar
 DONE-show proper error if you open a non pattern
-
--publish python package
+DONE-publish python package
   DONE-publish to testpypi first
   -setup pypi account
   -publish to pypi
+DONE-kigumi bootstrapping has 2 ways, on file open and when you hit the initialize workspace button. make sure they are consistent
 
+-have publish package job bump the version number (check current version and bump I guess)
 -test the initialize project thing lol
   -need to pbulish kumiki first
-
 
 -rethink hierarchical feature selection, as you'll want to be able to select 2 features to measure them in the future.
 

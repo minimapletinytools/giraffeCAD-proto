@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+const { ensureKigumiYaml, resolveProjectEnvironment } = require('./project-root');
 
 function getVenvPython(workspaceRoot) {
     if (process.platform === 'win32') {
@@ -41,12 +42,8 @@ function runCommand(command, args, cwd) {
     });
 }
 
-function ensureKigumiYaml(workspaceRoot) {
-    const filePath = path.join(workspaceRoot, '.kigumi.yaml');
-    if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, 'kumiki_version: latest\n', 'utf8');
-    }
-    return filePath;
+function yamlQuote(value) {
+    return `'${String(value).replace(/'/g, "''")}'`;
 }
 
 function writeProjectYaml(workspaceRoot, pythonPath, metadata) {
@@ -55,12 +52,21 @@ function writeProjectYaml(workspaceRoot, pythonPath, metadata) {
 
     const lines = [
         'schema_version: 1',
-        `project_root: '${workspaceRoot.replace(/'/g, "''")}'`,
-        `python_path: '${pythonPath.replace(/'/g, "''")}'`,
-        `venv_path: '${path.join(workspaceRoot, '.venv').replace(/'/g, "''")}'`,
-        `last_setup_at: '${new Date().toISOString()}'`,
+        `project_root: ${yamlQuote(workspaceRoot)}`,
+        `python_path: ${yamlQuote(pythonPath)}`,
+        `venv_path: ${yamlQuote(path.join(workspaceRoot, '.venv'))}`,
+        `local_dev: ${metadata.isLocalDev ? 'true' : 'false'}`,
+        `last_setup_at: ${yamlQuote(new Date().toISOString())}`,
         `created_venv: ${metadata.createdVenv ? 'true' : 'false'}`,
+        `installed_viewer_deps: ${metadata.installedViewerDeps ? 'true' : 'false'}`,
     ];
+
+    if (metadata.missingBefore.length > 0) {
+        lines.push('missing_before_setup:');
+        for (const pkg of metadata.missingBefore) {
+            lines.push(`  - ${pkg}`);
+        }
+    }
 
     fs.writeFileSync(path.join(folder, 'project.yaml'), `${lines.join('\n')}\n`, 'utf8');
 }
@@ -119,28 +125,56 @@ async function createVenv(workspaceRoot) {
     throw lastError || new Error('Unable to create virtual environment');
 }
 
-async function installBasePackages(workspaceRoot, pythonPath) {
+async function getMissingViewerDependencies(workspaceRoot, pythonPath) {
+    const snippet = [
+        'import importlib.util',
+        'required = ["sympy", "numpy", "trimesh", "manifold3d"]',
+        'missing = [name for name in required if importlib.util.find_spec(name) is None]',
+        'print("\\n".join(missing))',
+    ].join('; ');
+
+    const { stdout } = await runCommand(pythonPath, ['-c', snippet], workspaceRoot);
+    return stdout
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+}
+
+async function installBasePackages(workspaceRoot, pythonPath, isLocalDev) {
+    const missingBefore = await getMissingViewerDependencies(workspaceRoot, pythonPath);
+    if (missingBefore.length === 0) {
+        return {
+            installedViewerDeps: false,
+            missingBefore,
+        };
+    }
+
     await runCommand(pythonPath, ['-m', 'pip', 'install', '--upgrade', 'pip'], workspaceRoot);
 
-    const localDevInstall = fs.existsSync(path.join(workspaceRoot, 'pyproject.toml'))
-        && fs.existsSync(path.join(workspaceRoot, 'kumiki'));
-
-    if (localDevInstall) {
+    if (isLocalDev && fs.existsSync(path.join(workspaceRoot, 'pyproject.toml'))) {
         await runCommand(pythonPath, ['-m', 'pip', 'install', '-e', workspaceRoot], workspaceRoot);
     } else {
         await runCommand(pythonPath, ['-m', 'pip', 'install', 'kumiki'], workspaceRoot);
     }
 
-    await runCommand(pythonPath, ['-m', 'pip', 'install', 'sympy', 'numpy', 'trimesh', 'manifold3d'], workspaceRoot);
+    return {
+        installedViewerDeps: true,
+        missingBefore,
+    };
 }
 
-function getInitializationStatus(workspaceRoot) {
-    const isLocalDev = fs.existsSync(path.join(workspaceRoot, 'pyproject.toml'))
-        && fs.existsSync(path.join(workspaceRoot, 'kumiki'));
-    const hasKigumiYaml = fs.existsSync(path.join(workspaceRoot, '.kigumi.yaml'));
-    const hasProjectYaml = fs.existsSync(path.join(workspaceRoot, '.kigumi', 'project.yaml'));
-    const hasVenvPython = fs.existsSync(getVenvPython(workspaceRoot));
-    const hasExampleFile = fs.existsSync(path.join(workspaceRoot, 'my_cute_frame.py'));
+function getInitializationStatus(workspaceRoot, filePath) {
+    const env = resolveProjectEnvironment({
+        workspaceRoot,
+        filePath,
+        createMarkerIfMissing: false,
+    });
+    const resolvedRoot = env.projectRoot || workspaceRoot;
+    const isLocalDev = !!env.isLocalDev;
+    const hasKigumiYaml = fs.existsSync(path.join(resolvedRoot, '.kigumi.yaml'));
+    const hasProjectYaml = fs.existsSync(path.join(resolvedRoot, '.kigumi', 'project.yaml'));
+    const hasVenvPython = fs.existsSync(getVenvPython(resolvedRoot));
+    const hasExampleFile = fs.existsSync(path.join(resolvedRoot, 'my_cute_frame.py'));
     const hasExistingProject = hasKigumiYaml || hasProjectYaml || hasVenvPython || hasExampleFile;
 
     let projectStatus = 'no-project';
@@ -151,6 +185,7 @@ function getInitializationStatus(workspaceRoot) {
     }
 
     return {
+        projectRoot: resolvedRoot,
         projectStatus,
         isLocalDev,
         hasExistingProject,
@@ -162,20 +197,34 @@ function getInitializationStatus(workspaceRoot) {
     };
 }
 
-async function initializeWorkspaceProject(workspaceRoot) {
-    ensureKigumiYaml(workspaceRoot);
-    const envResult = await createVenv(workspaceRoot);
-    await installBasePackages(workspaceRoot, envResult.pythonPath);
+async function initializeWorkspaceProject(workspaceRoot, filePath) {
+    const env = resolveProjectEnvironment({
+        workspaceRoot,
+        filePath,
+        createMarkerIfMissing: true,
+    });
+    const resolvedRoot = env.projectRoot || workspaceRoot;
 
-    writeProjectYaml(workspaceRoot, envResult.pythonPath, {
+    ensureKigumiYaml(resolvedRoot);
+    const envResult = await createVenv(resolvedRoot);
+    const installResult = await installBasePackages(resolvedRoot, envResult.pythonPath, env.isLocalDev);
+
+    writeProjectYaml(resolvedRoot, envResult.pythonPath, {
         createdVenv: envResult.createdVenv,
+        installedViewerDeps: installResult.installedViewerDeps,
+        missingBefore: installResult.missingBefore,
+        isLocalDev: env.isLocalDev,
     });
 
-    const exampleResult = ensureExampleFrame(workspaceRoot);
+    const exampleResult = ensureExampleFrame(resolvedRoot);
 
     return {
+        projectRoot: resolvedRoot,
+        isLocalDev: env.isLocalDev,
         pythonPath: envResult.pythonPath,
         createdVenv: envResult.createdVenv,
+        installedViewerDeps: installResult.installedViewerDeps,
+        missingBefore: installResult.missingBefore,
         exampleFilePath: exampleResult.filePath,
         createdExampleFile: exampleResult.created,
     };

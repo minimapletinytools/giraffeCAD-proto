@@ -6,6 +6,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { resolveProjectEnvironment } = require('./project-root');
 
 const ENV_SETUP_CACHE = new Map();
 
@@ -29,39 +30,15 @@ class PythonRunnerSession {
 
 
     resolveEnvironment(filePath) {
-        let candidate = path.dirname(path.resolve(filePath));
-        let projectRoot = null;
-        let isLocalDev = false;
+        const resolved = resolveProjectEnvironment({
+            filePath,
+            createMarkerIfMissing: true,
+        });
 
-        while (true) {
-            if (fs.existsSync(path.join(candidate, 'kumiki'))) {
-                projectRoot = candidate;
-                isLocalDev = true;
-                break;
-            }
-            if (fs.existsSync(path.join(candidate, '.kigumi.yaml'))) {
-                projectRoot = candidate;
-                isLocalDev = false;
-                break;
-            }
-            const parent = path.dirname(candidate);
-            if (parent === candidate) {
-                break;
-            }
-            candidate = parent;
-        }
-
-        if (!projectRoot) {
-            // Not found, default to folder of the filePath and create .kigumi.yaml
-            projectRoot = path.dirname(path.resolve(filePath));
-            const envYamlPath = path.join(projectRoot, '.kigumi.yaml');
-            if (!fs.existsSync(envYamlPath)) {
-                fs.writeFileSync(envYamlPath, 'kumiki_version: latest\n', 'utf8');
-            }
-            isLocalDev = false;
-        }
-
-        return { projectRoot, isLocalDev };
+        return {
+            projectRoot: resolved.projectRoot,
+            isLocalDev: resolved.isLocalDev,
+        };
     }
 
 

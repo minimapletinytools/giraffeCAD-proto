@@ -42,6 +42,17 @@ To use Kigumi, you need:
 
 Kigumi does NOT require pre-installed packages. It handles dependency setup automatically.
 
+## Project Discovery
+
+Kigumi resolves project roots the same way for both "Render Kigumi" and "Initialize Current Project":
+
+1. Start from the active Python file (when available) and walk upward.
+2. If a folder contains `kumiki/`, treat it as local development mode.
+3. If a folder contains `.kigumi.yaml`, treat it as a normal Kigumi project.
+4. If no marker is found, fall back to the workspace root (or file parent) and create `.kigumi.yaml`.
+
+This lets you open a single Python file and still bootstrap a runnable Kigumi project without manual setup first.
+
 ## First Run: Automatic Python Environment Setup
 
 On first render in a project, Kumiki bootstraps a project-local environment automatically:
