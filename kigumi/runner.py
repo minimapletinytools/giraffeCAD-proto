@@ -1376,7 +1376,7 @@ def _list_available_patterns(force_rescan: bool = False) -> Dict[str, Any]:
         return _patterns_cache
 
     t0 = time.monotonic()
-    from kumiki.librarian import scan_library_folder
+    from kumiki.librarian import scan_library_index
 
     sources: List[Dict[str, Any]] = []
 
@@ -1392,20 +1392,17 @@ def _list_available_patterns(force_rescan: bool = False) -> Dict[str, Any]:
             shipped_patterns_dir = kumiki_dir.parent / "patterns"
         if shipped_patterns_dir.is_dir():
             with contextlib.redirect_stdout(sys.stderr):
-                scan = scan_library_folder(str(shipped_patterns_dir))
+                index = scan_library_index(str(shipped_patterns_dir))
             patterns_list = []
-            for mod_record in scan.modules:
-                if mod_record.patternbook is not None:
-                    for name in mod_record.patternbook.list_patterns():
-                        groups = []
-                        for g in mod_record.patternbook.list_groups():
-                            if name in mod_record.patternbook.get_patterns_in_group(g):
-                                groups.append(g)
-                        patterns_list.append({
-                            "name": name,
-                            "groups": groups,
-                            "source_file": str(shipped_patterns_dir / mod_record.relative_path),
-                        })
+            for pb_record in index.get("patternbooks", []):
+                source_file = pb_record.get("file_path")
+                group_names = list(pb_record.get("group_names") or [])
+                for name in pb_record.get("pattern_names") or []:
+                    patterns_list.append({
+                        "name": name,
+                        "groups": group_names,
+                        "source_file": source_file,
+                    })
             if patterns_list:
                 sources.append({"source": "shipped", "folder": str(shipped_patterns_dir), "patterns": patterns_list})
     except Exception as exc:
@@ -1417,20 +1414,17 @@ def _list_available_patterns(force_rescan: bool = False) -> Dict[str, Any]:
         if local_patterns_dir.is_dir():
             try:
                 with contextlib.redirect_stdout(sys.stderr):
-                    scan = scan_library_folder(str(local_patterns_dir))
+                    index = scan_library_index(str(local_patterns_dir))
                 patterns_list = []
-                for mod_record in scan.modules:
-                    if mod_record.patternbook is not None:
-                        for name in mod_record.patternbook.list_patterns():
-                            groups = []
-                            for g in mod_record.patternbook.list_groups():
-                                if name in mod_record.patternbook.get_patterns_in_group(g):
-                                    groups.append(g)
-                            patterns_list.append({
-                                "name": name,
-                                "groups": groups,
-                                "source_file": str(local_patterns_dir / mod_record.relative_path),
-                            })
+                for pb_record in index.get("patternbooks", []):
+                    source_file = pb_record.get("file_path")
+                    group_names = list(pb_record.get("group_names") or [])
+                    for name in pb_record.get("pattern_names") or []:
+                        patterns_list.append({
+                            "name": name,
+                            "groups": group_names,
+                            "source_file": source_file,
+                        })
                 if patterns_list:
                     sources.append({"source": "local", "folder": str(local_patterns_dir), "patterns": patterns_list})
             except Exception as exc:

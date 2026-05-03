@@ -64,32 +64,29 @@ if os.path.isdir(os.path.join(ws, 'kumiki')) and ws not in sys.path:
 try:
     data = json.loads(sys.stdin.read())
     files = data.get('files', [])
-    from kumiki.librarian import scan_specific_files
+    from kumiki.librarian import scan_specific_files_index
     with contextlib.redirect_stdout(sys.stderr):
-        result = scan_specific_files(files, ws)
+        index = scan_specific_files_index(files, ws)
     modules = []
-    for rec in result.modules:
-        fp = os.path.join(result.root_folder, rec.relative_path)
-        pattern_names = []
-        if rec.patternbook is not None:
-            try:
-                pattern_names = [m.pattern_name for m, _ in rec.patternbook.patterns]
-            except Exception:
-                pass
-        has_build_frame = False
-        if rec.patternbook is None:
-            mod = sys.modules.get(rec.module_name)
-            if mod is not None:
-                fn = getattr(mod, 'build_frame', None)
-                has_build_frame = callable(fn)
+    for rec in index.get('patternbooks', []):
         modules.append({
-            'filePath': fp,
-            'relativePath': rec.relative_path,
-            'hasPatternbook': rec.patternbook is not None,
-            'patternNames': pattern_names,
-            'hasExample': rec.example is not None,
-            'hasBuildFrame': has_build_frame,
-            'loadError': rec.load_error,
+            'filePath': rec.get('file_path'),
+            'relativePath': rec.get('relative_path'),
+            'hasPatternbook': True,
+            'patternNames': rec.get('pattern_names') or [],
+            'hasExample': False,
+            'hasBuildFrame': False,
+            'loadError': rec.get('load_error'),
+        })
+    for rec in index.get('frame_examples', []):
+        modules.append({
+            'filePath': rec.get('file_path'),
+            'relativePath': rec.get('relative_path'),
+            'hasPatternbook': False,
+            'patternNames': [],
+            'hasExample': bool(rec.get('has_example')),
+            'hasBuildFrame': bool(rec.get('has_build_frame')),
+            'loadError': rec.get('load_error'),
         })
     print(json.dumps({'ok': True, 'modules': modules}))
 except Exception as e:

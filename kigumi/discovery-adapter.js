@@ -16,44 +16,6 @@ function dedupeAndSortPaths(pathsList) {
     return Array.from(new Set(pathsList || [])).sort((a, b) => a.localeCompare(b));
 }
 
-function classifyPythonFile(filePath) {
-    try {
-        const content = fs.readFileSync(filePath, 'utf8');
-        const hasPatternbook = /^\s*patternbook\s*=/m.test(content)
-            || /^\s*def\s+create_\w+_patternbook\s*\(/m.test(content);
-        const hasExample = /^\s*example\s*=/m.test(content);
-
-        if (hasPatternbook) {
-            return 'pattern';
-        }
-        if (hasExample) {
-            return 'example';
-        }
-        return 'other';
-    } catch (_error) {
-        return 'other';
-    }
-}
-
-function splitPatternAndExampleFiles(filePaths) {
-    const patterns = [];
-    const examples = [];
-
-    for (const filePath of filePaths || []) {
-        const classification = classifyPythonFile(filePath);
-        if (classification === 'pattern') {
-            patterns.push(filePath);
-        } else if (classification === 'example') {
-            examples.push(filePath);
-        }
-    }
-
-    return {
-        patterns: dedupeAndSortPaths(patterns),
-        examples: dedupeAndSortPaths(examples),
-    };
-}
-
 async function listPythonFiles(rootDir) {
     const results = [];
     const queue = [rootDir];
@@ -176,17 +138,17 @@ async function discoverDependencyContent(workspaceRoot, options = {}) {
         'import os',
         'import site',
         'import sysconfig',
+        'import contextlib',
+        'from kumiki.librarian import scan_library_index',
         '',
-        'def list_py_files(root):',
-        '    out = []',
-        '    if not root or not os.path.isdir(root):',
-        '        return out',
-        '    for current, dirs, files in os.walk(root):',
-        "        dirs[:] = [d for d in dirs if d not in {'__pycache__', '.git', '.venv', 'venv', 'node_modules', 'dist', 'build'} and not d.endswith('.dist-info') and not d.endswith('.egg-info')]",
-        "        for name in files:",
-        "            if name.endswith('.py') and name != '__init__.py':",
-        '                out.append(os.path.join(current, name))',
-        '    return out',
+        'def index_paths(folder):',
+        '    if not folder or not os.path.isdir(folder):',
+        '        return [], []',
+        '    with contextlib.redirect_stdout(__import__("sys").stderr):',
+        '        idx = scan_library_index(folder)',
+        '    pattern_files = [entry.get("file_path") for entry in idx.get("patternbooks", []) if entry.get("file_path")]',
+        '    frame_example_files = [entry.get("file_path") for entry in idx.get("frame_examples", []) if entry.get("file_path")]',
+        '    return pattern_files, frame_example_files',
         '',
         'site_roots = set()',
         "for key in ('purelib', 'platlib'):",
@@ -205,10 +167,10 @@ async function discoverDependencyContent(workspaceRoot, options = {}) {
         'except Exception:',
         '    pass',
         '',
-        'kumiki_patterns = []',
-        'kumiki_examples = []',
-        'dependency_patterns = []',
-        'dependency_examples = []',
+        'kumiki_patterns = set()',
+        'kumiki_examples = set()',
+        'dependency_patterns = set()',
+        'dependency_examples = set()',
         '',
         'for site_root in list(site_roots):',
         '    if not os.path.isdir(site_root):',
@@ -222,21 +184,33 @@ async function discoverDependencyContent(workspaceRoot, options = {}) {
         '            continue',
         '        name = entry.name',
         '        if name == "kumiki":',
-        '            kumiki_patterns.extend(list_py_files(os.path.join(entry.path, "patterns")))',
-        '            kumiki_examples.extend(list_py_files(os.path.join(entry.path, "examples")))',
-        '            kumiki_examples.extend(list_py_files(os.path.join(entry.path, "patterns", "examples")))',
-        '            kumiki_examples.extend(list_py_files(os.path.join(entry.path, "patternbooks", "examples")))',
+        '            kp, ke = index_paths(os.path.join(entry.path, "patterns"))',
+        '            kumiki_patterns.update(kp)',
+        '            kumiki_examples.update(ke)',
+        '            kp, ke = index_paths(os.path.join(entry.path, "examples"))',
+        '            kumiki_patterns.update(kp)',
+        '            kumiki_examples.update(ke)',
+        '            kp, ke = index_paths(os.path.join(entry.path, "patterns", "examples"))',
+        '            kumiki_patterns.update(kp)',
+        '            kumiki_examples.update(ke)',
+        '            kp, ke = index_paths(os.path.join(entry.path, "patternbooks", "examples"))',
+        '            kumiki_patterns.update(kp)',
+        '            kumiki_examples.update(ke)',
         '            continue',
         '        if name.startswith("_"):',
         '            continue',
-        '        dependency_patterns.extend(list_py_files(os.path.join(entry.path, "patterns")))',
-        '        dependency_examples.extend(list_py_files(os.path.join(entry.path, "examples")))',
+        '        kp, ke = index_paths(os.path.join(entry.path, "patterns"))',
+        '        dependency_patterns.update(kp)',
+        '        dependency_examples.update(ke)',
+        '        kp, ke = index_paths(os.path.join(entry.path, "examples"))',
+        '        dependency_patterns.update(kp)',
+        '        dependency_examples.update(ke)',
         '',
         'print(json.dumps({',
-        '    "kumikiPatterns": sorted(set(kumiki_patterns)),',
-        '    "kumikiExamples": sorted(set(kumiki_examples)),',
-        '    "dependencyPatterns": sorted(set(dependency_patterns)),',
-        '    "dependencyExamples": sorted(set(dependency_examples)),',
+        '    "kumikiPatterns": sorted(kumiki_patterns),',
+        '    "kumikiExamples": sorted(kumiki_examples),',
+        '    "dependencyPatterns": sorted(dependency_patterns),',
+        '    "dependencyExamples": sorted(dependency_examples),',
         '}))',
     ].join('\n');
 
@@ -248,14 +222,11 @@ async function discoverDependencyContent(workspaceRoot, options = {}) {
             }
             const raw = await runPythonJson(candidate, script, workspaceRoot, timeoutMs);
 
-            const kumikiSplit = splitPatternAndExampleFiles(raw.kumikiPatterns || []);
-            const depSplit = splitPatternAndExampleFiles(raw.dependencyPatterns || []);
-
             return {
-                kumikiPatterns: kumikiSplit.patterns,
-                kumikiExamples: dedupeAndSortPaths([...(raw.kumikiExamples || []), ...kumikiSplit.examples]),
-                dependencyPatterns: depSplit.patterns,
-                dependencyExamples: dedupeAndSortPaths([...(raw.dependencyExamples || []), ...depSplit.examples]),
+                kumikiPatterns: dedupeAndSortPaths(raw.kumikiPatterns || []),
+                kumikiExamples: dedupeAndSortPaths(raw.kumikiExamples || []),
+                dependencyPatterns: dedupeAndSortPaths(raw.dependencyPatterns || []),
+                dependencyExamples: dedupeAndSortPaths(raw.dependencyExamples || []),
             };
         } catch (error) {
             lastError = error;

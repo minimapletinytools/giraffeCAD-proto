@@ -253,6 +253,91 @@ def scan_specific_files(
     return result
 
 
+def _pattern_names_from_patternbook(patternbook: PatternBook) -> List[str]:
+    try:
+        return [pattern_name for pattern_name in patternbook.list_patterns()]
+    except Exception:
+        return []
+
+
+def _group_names_from_patternbook(patternbook: PatternBook) -> List[str]:
+    try:
+        return [group_name for group_name in patternbook.list_groups()]
+    except Exception:
+        return []
+
+
+def _has_build_frame(module_name: str) -> bool:
+    module = sys.modules.get(module_name)
+    if module is None:
+        return False
+    fn = getattr(module, "build_frame", None)
+    return callable(fn)
+
+
+def build_scan_index(scan_result: LibrarianScanResult) -> Dict[str, Any]:
+    """Build a JSON-friendly index from a ``LibrarianScanResult``.
+
+    Returns a dict with:
+    - ``patternbooks``: modules that expose a patternbook (plus pattern/group names)
+    - ``frame_examples``: modules that expose example/build_frame and no patternbook
+    """
+    root_folder = Path(scan_result.root_folder).resolve()
+    patternbooks: List[Dict[str, Any]] = []
+    frame_examples: List[Dict[str, Any]] = []
+
+    for rec in scan_result.modules:
+        abs_path = str((root_folder / rec.relative_path).resolve())
+        warnings = list(rec.warnings or [])
+
+        if rec.patternbook is not None:
+            patternbooks.append({
+                "file_path": abs_path,
+                "relative_path": rec.relative_path,
+                "module_name": rec.module_name,
+                "pattern_names": _pattern_names_from_patternbook(rec.patternbook),
+                "group_names": _group_names_from_patternbook(rec.patternbook),
+                "load_error": rec.load_error,
+                "warnings": warnings,
+            })
+            continue
+
+        has_example = rec.example is not None
+        has_build_frame = _has_build_frame(rec.module_name)
+        if has_example or has_build_frame:
+            frame_examples.append({
+                "file_path": abs_path,
+                "relative_path": rec.relative_path,
+                "module_name": rec.module_name,
+                "has_example": has_example,
+                "has_build_frame": has_build_frame,
+                "load_error": rec.load_error,
+                "warnings": warnings,
+            })
+
+    patternbooks.sort(key=lambda item: item["relative_path"])
+    frame_examples.sort(key=lambda item: item["relative_path"])
+
+    return {
+        "root_folder": str(root_folder),
+        "patternbooks": patternbooks,
+        "frame_examples": frame_examples,
+    }
+
+
+def scan_library_index(folder_path: str) -> Dict[str, Any]:
+    """Scan *folder_path* and return a centralized pattern/frame index."""
+    return build_scan_index(scan_library_folder(folder_path))
+
+
+def scan_specific_files_index(
+    file_paths: List[str],
+    root_folder: str,
+) -> Dict[str, Any]:
+    """Scan explicit files and return a centralized pattern/frame index."""
+    return build_scan_index(scan_specific_files(file_paths, root_folder))
+
+
 def create_anthology_pattern_book_from_folder(folder_path: str) -> Tuple[PatternBook, LibrarianScanResult]:
     scan_result = scan_library_folder(folder_path)
     if not scan_result.pattern_books:
