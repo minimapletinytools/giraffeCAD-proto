@@ -35,6 +35,20 @@ const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : nul
 const VIEWER_APP_VERSION = '2026.03.17.4';
 const SelectionStore = window.SelectionStore;
 
+const CSG_HIGHLIGHT_COLORS = Object.freeze({
+    tagged: 0x4fc3f7,
+    feature: 0x80d8ff,
+});
+
+const SELECTION_VISUAL_STATES = Object.freeze({
+    NOTHING_SELECTED: 'nothing_selected',
+    TIMBER_SELECTED_NO_SUB: 'timber_selected_no_sub',
+    TIMBER_SELECTED_WITH_SUB: 'timber_selected_with_sub',
+    TAGGED_CSG_SELECTED_NO_SUB: 'tagged_csg_selected_no_sub',
+    TAGGED_CSG_SELECTED_WITH_SUB: 'tagged_csg_selected_with_sub',
+    FEATURE_SELECTED: 'feature_selected',
+});
+
 const RENDER_PROFILES = Object.freeze({
     'timber-default': Object.freeze({
         label: 'Timber Default',
@@ -1079,17 +1093,39 @@ class KigumiViewerApp extends LitElement {
             this.selectionManager.selectCSG(timberKey, path, featureLabel);
         }
 
+        const baseUnselectedOpacity = 1 - (this.unselectedTransparencyPercent / 100);
+        const visualContext = this._getSelectionVisualContext();
+        const policy = this._getSelectionVisualPolicy(visualContext.state, baseUnselectedOpacity);
+
         // Build highlight geometry
         this.removeCSGHighlight();
         if (featureLabel && parentHlMesh && Array.isArray(parentHlMesh.vertices) && parentHlMesh.vertices.length > 0) {
             // Feature selected: parent CSG gets dim highlight, feature face gets bright highlight
-            this._buildHighlightMesh(parentHlMesh.vertices, parentHlMesh.indices, 0x4fc3f7, 0.35, '_csgParentHighlightMesh');
+            this._buildHighlightMesh(
+                parentHlMesh.vertices,
+                parentHlMesh.indices,
+                CSG_HIGHLIGHT_COLORS.tagged,
+                policy.parentHighlightOpacity,
+                '_csgParentHighlightMesh',
+            );
             if (hlMesh && Array.isArray(hlMesh.vertices) && hlMesh.vertices.length > 0) {
-                this._buildHighlightMesh(hlMesh.vertices, hlMesh.indices, 0x80d8ff, 0.85, '_csgHighlightMesh');
+                this._buildHighlightMesh(
+                    hlMesh.vertices,
+                    hlMesh.indices,
+                    CSG_HIGHLIGHT_COLORS.feature,
+                    policy.featureHighlightOpacity,
+                    '_csgHighlightMesh',
+                );
             }
         } else if (hlMesh && Array.isArray(hlMesh.vertices) && hlMesh.vertices.length > 0 && Array.isArray(hlMesh.indices)) {
             // Tagged CSG selected (no feature): standard highlight
-            this._buildHighlightMesh(hlMesh.vertices, hlMesh.indices, 0x4fc3f7, 0.7, '_csgHighlightMesh');
+            this._buildHighlightMesh(
+                hlMesh.vertices,
+                hlMesh.indices,
+                CSG_HIGHLIGHT_COLORS.tagged,
+                policy.csgHighlightOpacity,
+                '_csgHighlightMesh',
+            );
         }
 
         if (stats) {
@@ -1331,12 +1367,147 @@ class KigumiViewerApp extends LitElement {
         }
     }
 
+    _getSelectionVisualContext() {
+        const selectedTimbers = this.selectionManager.getSelectedTimbers();
+        const selectedTimberSet = new Set(selectedTimbers);
+        const hasTimberSelection = selectedTimberSet.size > 0;
+        if (!hasTimberSelection) {
+            return {
+                state: SELECTION_VISUAL_STATES.NOTHING_SELECTED,
+                selectedTimberSet,
+                hasSubselection: false,
+                subselectionTimberKey: null,
+            };
+        }
+
+        const csg = this.selectionManager.csgSelection;
+        const path = csg && Array.isArray(csg.path) ? csg.path : [];
+        const featureLabel = csg && csg.featureLabel ? csg.featureLabel : null;
+        const csgTimberKey = csg && csg.timberKey ? csg.timberKey : null;
+        const hasSubselection = !!csg && (path.length > 0 || !!featureLabel);
+        const subselectionTimberKey = hasSubselection
+            ? (csgTimberKey || (selectedTimbers.length === 1 ? selectedTimbers[0] : null))
+            : null;
+
+        if (!hasSubselection) {
+            return {
+                state: SELECTION_VISUAL_STATES.TIMBER_SELECTED_NO_SUB,
+                selectedTimberSet,
+                hasSubselection: false,
+                subselectionTimberKey: null,
+            };
+        }
+
+        if (featureLabel) {
+            return {
+                state: SELECTION_VISUAL_STATES.FEATURE_SELECTED,
+                selectedTimberSet,
+                hasSubselection: true,
+                subselectionTimberKey,
+            };
+        }
+
+        if (path.length >= 2) {
+            return {
+                state: SELECTION_VISUAL_STATES.TAGGED_CSG_SELECTED_WITH_SUB,
+                selectedTimberSet,
+                hasSubselection: true,
+                subselectionTimberKey,
+            };
+        }
+
+        if (path.length === 1) {
+            return {
+                state: SELECTION_VISUAL_STATES.TAGGED_CSG_SELECTED_NO_SUB,
+                selectedTimberSet,
+                hasSubselection: true,
+                subselectionTimberKey,
+            };
+        }
+
+        return {
+            state: SELECTION_VISUAL_STATES.TIMBER_SELECTED_WITH_SUB,
+            selectedTimberSet,
+            hasSubselection: true,
+            subselectionTimberKey,
+        };
+    }
+
+    _getSelectionVisualPolicy(state, baseUnselectedOpacity) {
+        if (state === SELECTION_VISUAL_STATES.NOTHING_SELECTED) {
+            return {
+                selectedTimberOpacity: 1.0,
+                dimmedOpacity: 1.0,
+                csgHighlightOpacity: 0.7,
+                parentHighlightOpacity: 0.35,
+                featureHighlightOpacity: 0.85,
+            };
+        }
+
+        if (state === SELECTION_VISUAL_STATES.TIMBER_SELECTED_NO_SUB) {
+            return {
+                selectedTimberOpacity: 1.0,
+                dimmedOpacity: baseUnselectedOpacity,
+                csgHighlightOpacity: 0.7,
+                parentHighlightOpacity: 0.35,
+                featureHighlightOpacity: 0.85,
+            };
+        }
+
+        if (state === SELECTION_VISUAL_STATES.FEATURE_SELECTED) {
+            return {
+                selectedTimberOpacity: 0.62,
+                dimmedOpacity: Math.min(baseUnselectedOpacity, 0.18),
+                csgHighlightOpacity: 0.9,
+                parentHighlightOpacity: 0.35,
+                featureHighlightOpacity: 0.9,
+            };
+        }
+
+        if (state === SELECTION_VISUAL_STATES.TAGGED_CSG_SELECTED_WITH_SUB) {
+            return {
+                selectedTimberOpacity: 0.66,
+                dimmedOpacity: Math.min(baseUnselectedOpacity, 0.2),
+                csgHighlightOpacity: 0.8,
+                parentHighlightOpacity: 0.3,
+                featureHighlightOpacity: 0.85,
+            };
+        }
+
+        if (state === SELECTION_VISUAL_STATES.TAGGED_CSG_SELECTED_NO_SUB) {
+            return {
+                selectedTimberOpacity: 0.72,
+                dimmedOpacity: Math.min(baseUnselectedOpacity, 0.25),
+                csgHighlightOpacity: 0.72,
+                parentHighlightOpacity: 0.35,
+                featureHighlightOpacity: 0.85,
+            };
+        }
+
+        return {
+            selectedTimberOpacity: 0.72,
+            dimmedOpacity: Math.min(baseUnselectedOpacity, 0.25),
+            csgHighlightOpacity: 0.72,
+            parentHighlightOpacity: 0.35,
+            featureHighlightOpacity: 0.85,
+        };
+    }
+
     applySelectionOpacity() {
-        const hasTimberSelection = this.selectionManager.selectedTimbers.size > 0;
-        const unselectedOpacity = 1 - (this.unselectedTransparencyPercent / 100);
+        const baseUnselectedOpacity = 1 - (this.unselectedTransparencyPercent / 100);
+        const visualContext = this._getSelectionVisualContext();
+        const policy = this._getSelectionVisualPolicy(visualContext.state, baseUnselectedOpacity);
+
         for (const [name, bundle] of this.meshObjectsByKey) {
-            const selected = this.selectionManager.isTimberSelected(name);
-            const opacity = hasTimberSelection ? (selected ? 1.0 : unselectedOpacity) : 1.0;
+            let opacity = 1.0;
+
+            if (visualContext.state === SELECTION_VISUAL_STATES.TIMBER_SELECTED_NO_SUB) {
+                opacity = visualContext.selectedTimberSet.has(name) ? 1.0 : policy.dimmedOpacity;
+            } else if (visualContext.hasSubselection) {
+                const isSubselectionTarget = visualContext.subselectionTimberKey === name;
+                opacity = isSubselectionTarget ? policy.selectedTimberOpacity : policy.dimmedOpacity;
+            }
+
             const isTransparent = opacity < 1.0;
             bundle.mesh.material.transparent = isTransparent;
             bundle.mesh.material.opacity = opacity;
@@ -1346,17 +1517,13 @@ class KigumiViewerApp extends LitElement {
             if (bundle.edges && bundle.edges.material) {
                 const profile = this.resolveRenderProfile(bundle.profileId);
                 const baseEdgeOpacity = profile ? profile.edgeOpacity : 1.0;
-                bundle.edges.material.opacity = isTransparent
-                    ? baseEdgeOpacity * unselectedOpacity
-                    : baseEdgeOpacity;
+                bundle.edges.material.opacity = baseEdgeOpacity * opacity;
             }
             // Apply matching transparency to reflections
             if (bundle.reflection && bundle.reflection.material) {
                 const profile = this.resolveRenderProfile(bundle.profileId);
                 const baseReflectionOpacity = profile ? profile.reflectionOpacity : 0.14;
-                bundle.reflection.material.opacity = isTransparent
-                    ? baseReflectionOpacity * unselectedOpacity
-                    : baseReflectionOpacity;
+                bundle.reflection.material.opacity = baseReflectionOpacity * opacity;
             }
         }
     }
