@@ -2046,6 +2046,23 @@ class Joint:
 
 
 @dataclass(frozen=True)
+class JointRecord:
+    """Lightweight record of a Joint's contributions used by the layers view.
+
+    Captured during ``Frame.from_joints`` so the joint -> (timber, cuts, accessories)
+    relationship is preserved after cuts from multiple joints are merged onto a
+    shared CutTimber.
+    """
+
+    joint_kumiki_id: int
+    joint_name: str
+    joint_type: Optional[str]
+    # member_cut_indices: list of (timber_kumiki_id, [cut_index_in_merged_cut_timber, ...])
+    member_cut_indices: Tuple[Tuple[int, Tuple[int, ...]], ...] = ()
+    accessory_kumiki_ids: Tuple[int, ...] = ()
+
+
+@dataclass(frozen=True)
 class Frame:
     """
     Represents a complete timber frame structure with all cut timbers and accessories.
@@ -2062,6 +2079,9 @@ class Frame:
     cut_timbers: List[CutTimber]
     accessories: List[JointAccessory] = field(default_factory=list)
     name: Optional[str] = None
+    # Layers-view metadata: lightweight record of joint -> timber/cut/accessory linkage.
+    # Populated by ``Frame.from_joints``; empty when Frame is constructed directly.
+    joint_records: Tuple[JointRecord, ...] = ()
     
     @classmethod
     def from_joints(cls, joints: List[Joint], 
@@ -2153,6 +2173,10 @@ class Frame:
         
         # Merge cut timbers with the same underlying timber reference
         merged_cut_timbers: List[CutTimber] = []
+        # Map from id(timber) -> {id(cut): cut_index_in_merged} so we can recover
+        # joint provenance after merging.
+        timber_id_to_cut_indices: Dict[int, Dict[int, int]] = {}
+        timber_id_to_kumiki: Dict[int, int] = {}
         for timber_id, cut_timber_list in timber_ref_to_cut_timbers.items():
             timber = cut_timber_list[0].timber
             
@@ -2164,6 +2188,11 @@ class Frame:
             # Create a single merged CutTimber
             merged_cut_timber = CutTimber(timber, cuts=all_cuts)
             merged_cut_timbers.append(merged_cut_timber)
+
+            timber_id_to_cut_indices[timber_id] = {
+                id(cut): idx for idx, cut in enumerate(all_cuts)
+            }
+            timber_id_to_kumiki[timber_id] = timber.ticket.kumiki_id
         
         # Add additional unjointed timbers as CutTimbers with no cuts
         for timber in additional_unjointed_timbers:
@@ -2173,12 +2202,43 @@ class Frame:
         all_accessories: List[JointAccessory] = []
         for joint in joints:
             all_accessories.extend(joint.jointAccessories.values())
-        
+
+        # Build joint_records: preserve joint -> (timber, cut indices, accessories) mapping.
+        joint_records_list: List[JointRecord] = []
+        for joint in joints:
+            members_map: Dict[int, List[int]] = {}
+            for cut_timber in joint.cut_timbers.values():
+                timber_id = id(cut_timber.timber)
+                timber_kid = timber_id_to_kumiki.get(timber_id)
+                cut_idx_lookup = timber_id_to_cut_indices.get(timber_id, {})
+                if timber_kid is None:
+                    continue
+                bucket = members_map.setdefault(timber_kid, [])
+                for cut in cut_timber.cuts:
+                    idx = cut_idx_lookup.get(id(cut))
+                    if idx is not None and idx not in bucket:
+                        bucket.append(idx)
+            member_cut_indices = tuple(
+                (kid, tuple(sorted(indices))) for kid, indices in members_map.items()
+            )
+            accessory_ids = tuple(
+                accessory.ticket.kumiki_id
+                for accessory in joint.jointAccessories.values()
+            )
+            joint_records_list.append(JointRecord(
+                joint_kumiki_id=joint.ticket.kumiki_id,
+                joint_name=joint.ticket.name,
+                joint_type=joint.ticket.joint_type,
+                member_cut_indices=member_cut_indices,
+                accessory_kumiki_ids=accessory_ids,
+            ))
+
         # Create and return the Frame
         return cls(
             cut_timbers=merged_cut_timbers,
             accessories=all_accessories,
-            name=name
+            name=name,
+            joint_records=tuple(joint_records_list),
         )
     
     def get_bounding_box(self) -> tuple[V3, V3]:

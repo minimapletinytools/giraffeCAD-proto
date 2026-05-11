@@ -388,6 +388,7 @@ class KigumiViewerApp extends LitElement {
     render() {
         return html`
             <button id="to-v3d" title="Jump back to 3D view">to v3d view</button>
+            <kigumi-layers-view id="layers-view"></kigumi-layers-view>
             <div id="viewport">
                 <canvas id="c"></canvas>
                 <div id="loading-overlay" class=${this.isOverlayVisible() ? 'visible' : ''}>
@@ -468,13 +469,27 @@ class KigumiViewerApp extends LitElement {
         // Setup selection listener
         this.selectionManager.onSelectionChanged((event) => {
             if (event.type === 'clear-timbers' || event.type === 'timber-selected') {
-                this.selectionManager.clearCSGSelection();
-                this.removeCSGHighlight();
+                // Only clear CSG when the timber change is a "fresh" user
+                // action (not caused by layers-view setting CSG first, which
+                // also selects the timber for opacity purposes).
+                if (!this.selectionManager.csgSelection) {
+                    this.removeCSGHighlight();
+                }
             }
             this.applySelectionOpacity();
             this.updateInfo(this.currentFrameData);
         });
-        
+
+        // Attach Layers panel to selection store + extension messaging.
+        const layersView = this.renderRoot.querySelector('#layers-view');
+        if (layersView && typeof layersView.attach === 'function') {
+            layersView.attach(this.selectionManager, vscode);
+        }
+        this._layersView = layersView;
+        if (vscode) {
+            vscode.postMessage({ type: 'requestLayersTree' });
+        }
+
         this.emitViewerLog('viewer-ready', {});
     }
 
@@ -859,6 +874,20 @@ class KigumiViewerApp extends LitElement {
 
         if (message.type === 'patternsAvailable') {
             this.handlePatternsAvailable(message);
+            return;
+        }
+
+        if (message.type === 'layersTree') {
+            if (this._layersView && typeof this._layersView.setLayersPayload === 'function') {
+                this._layersView.setLayersPayload(message.payload || {});
+            }
+            return;
+        }
+
+        if (message.type === 'csgTree') {
+            if (this._layersView && typeof this._layersView.mergeCSGTreePayload === 'function') {
+                this._layersView.mergeCSGTreePayload(message.payload || {});
+            }
             return;
         }
 

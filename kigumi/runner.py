@@ -290,12 +290,14 @@ def _cut_timber_to_triangle_mesh_payload(
 
     timber = cut_timber.timber
     csg_nodes, csg_features = _count_csg_nodes_and_features(local_csg)
+    timber_kumiki_id = int(timber.ticket.kumiki_id)
     return {
         "name": get_timber_display_name(timber),
         "memberName": get_timber_display_name(timber),
         "memberType": "timber",
         "memberKey": timber_key,
         "timberKey": timber_key,
+        "kumikiId": timber_kumiki_id,
         "vertices": vertices,
         "indices": indices,
         "prism_length": round(float(getattr(timber, "length", dims[2])), 6),
@@ -330,12 +332,14 @@ def _accessory_to_triangle_mesh_payload(
     bounds = triangle_mesh.bounds
     dims = bounds[1] - bounds[0]
 
+    accessory_kumiki_id = int(accessory.ticket.kumiki_id) if getattr(accessory, "ticket", None) is not None else 0
     return {
         "name": accessory_name,
         "memberName": accessory_name,
         "memberType": "accessory",
         "memberKey": accessory_key,
         "timberKey": accessory_key,
+        "kumikiId": accessory_kumiki_id,
         "vertices": vertices,
         "indices": indices,
         "prism_length": round(float(dims[2]), 6),
@@ -468,6 +472,191 @@ def serialize_frame(frame: Any) -> Dict[str, Any]:
             }
             for accessory in accessories
         ],
+    }
+
+
+def _assign_member_keys(frame: Any) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Compute the same memberKey scheme used by build_real_geometry.
+
+    Returns (timber_entries, accessory_entries) with stable ordering.
+    Each timber entry: {memberKey, kumikiId, timber, cutTimber, displayName}.
+    Each accessory entry: {memberKey, kumikiId, accessory, displayName, type}.
+    """
+    timber_entries: List[Dict[str, Any]] = []
+    accessory_entries: List[Dict[str, Any]] = []
+    key_counts: Dict[str, int] = {}
+
+    for cut_timber in frame.cut_timbers:
+        timber = cut_timber.timber
+        display = get_timber_display_name(timber)
+        occurrence = key_counts.get(display, 0)
+        key_counts[display] = occurrence + 1
+        member_key = f"{display}#{occurrence}"
+        timber_entries.append({
+            "memberKey": member_key,
+            "kumikiId": int(timber.ticket.kumiki_id),
+            "timber": timber,
+            "cutTimber": cut_timber,
+            "displayName": display,
+        })
+
+    accessories = list(frame.accessories) if hasattr(frame, "accessories") and frame.accessories else []
+    for accessory in accessories:
+        accessory_type = type(accessory).__name__
+        key_base = f"accessory:{accessory_type}"
+        occurrence = key_counts.get(key_base, 0)
+        key_counts[key_base] = occurrence + 1
+        member_key = f"{key_base}#{occurrence}"
+        ticket = getattr(accessory, "ticket", None)
+        kumiki_id = int(ticket.kumiki_id) if ticket is not None else 0
+        ticket_name = getattr(ticket, "name", None) if ticket is not None else None
+        display = ticket_name if ticket_name and ticket_name != "[no-name]" else f"{accessory_type} {occurrence + 1}"
+        accessory_entries.append({
+            "memberKey": member_key,
+            "kumikiId": kumiki_id,
+            "accessory": accessory,
+            "displayName": display,
+            "type": accessory_type,
+        })
+
+    return timber_entries, accessory_entries
+
+
+def _serialize_cutting_summary(cut_timber: Any) -> List[Dict[str, Any]]:
+    cuts_meta: List[Dict[str, Any]] = []
+    cuts = list(getattr(cut_timber, "cuts", []) or [])
+    for idx, cut in enumerate(cuts):
+        tag = getattr(cut, "tag", None)
+        has_csg = getattr(cut, "negative_csg", None) is not None
+        has_top = getattr(cut, "maybe_top_end_cut", None) is not None
+        has_bot = getattr(cut, "maybe_bottom_end_cut", None) is not None
+        if tag and isinstance(tag, str):
+            display = tag
+        elif has_csg:
+            display = f"cut {idx + 1}"
+        elif has_top or has_bot:
+            display = f"end-cut {idx + 1}"
+        else:
+            display = f"cut {idx + 1}"
+        cuts_meta.append({
+            "cutIndex": idx,
+            "tag": tag,
+            "hasCSG": has_csg,
+            "hasEndCut": has_top or has_bot,
+            "displayName": display,
+        })
+    return cuts_meta
+
+
+def serialize_layers(frame: Any) -> Dict[str, Any]:
+    """Build the data payload consumed by the viewer's Layers panel.
+
+    Stable identities use ``ticket.kumiki_id`` for tickets-bearing entities
+    (timbers, joints, accessories). Cuts have no ticket and are referenced as
+    ``"<timber_kumiki_id>/cut/<cut_index>"`` on the JS side.
+    """
+    timber_entries, accessory_entries = _assign_member_keys(frame)
+
+    accessory_kumiki_to_joint: Dict[int, int] = {}
+    joint_records = list(getattr(frame, "joint_records", ()) or ())
+    for record in joint_records:
+        for accessory_kid in record.accessory_kumiki_ids:
+            accessory_kumiki_to_joint[int(accessory_kid)] = int(record.joint_kumiki_id)
+
+    timbers_payload: List[Dict[str, Any]] = []
+    for entry in timber_entries:
+        cuts_meta = _serialize_cutting_summary(entry["cutTimber"])
+        timbers_payload.append({
+            "kumikiId": entry["kumikiId"],
+            "memberKey": entry["memberKey"],
+            "name": entry["displayName"],
+            "cuts": cuts_meta,
+        })
+
+    accessories_payload: List[Dict[str, Any]] = []
+    for entry in accessory_entries:
+        accessories_payload.append({
+            "kumikiId": entry["kumikiId"],
+            "memberKey": entry["memberKey"],
+            "name": entry["displayName"],
+            "type": entry["type"],
+            "jointKumikiId": accessory_kumiki_to_joint.get(entry["kumikiId"]),
+        })
+
+    joints_payload: List[Dict[str, Any]] = []
+    for record in joint_records:
+        joint_name = record.joint_name if record.joint_name and record.joint_name != "[no-name]" else (record.joint_type or "joint")
+        joints_payload.append({
+            "kumikiId": int(record.joint_kumiki_id),
+            "name": joint_name,
+            "jointType": record.joint_type,
+            "members": [
+                {
+                    "timberKumikiId": int(timber_kid),
+                    "cutIndices": [int(i) for i in indices],
+                }
+                for timber_kid, indices in record.member_cut_indices
+            ],
+            "accessoryKumikiIds": [int(a) for a in record.accessory_kumiki_ids],
+        })
+
+    return {
+        "frameName": frame.name if hasattr(frame, "name") else None,
+        "timbers": timbers_payload,
+        "accessories": accessories_payload,
+        "joints": joints_payload,
+    }
+
+
+def _walk_tagged_csg(csg: Any, current_path: List[str], collected: List[Dict[str, Any]]) -> None:
+    """Walk a CSG tree, collecting tagged nodes with their path and feature labels."""
+    from kumiki.cutcsg import (
+        SolidUnion, Difference, HalfSpace, RectangularPrism, Cylinder,
+    )
+
+    tag = getattr(csg, "tag", None)
+    next_path = current_path
+    if tag:
+        next_path = current_path + [tag]
+        features: List[str] = []
+        if isinstance(csg, RectangularPrism):
+            named_features = getattr(csg, "named_features", None)
+            if named_features:
+                for label, _face in named_features:
+                    if label and label not in features:
+                        features.append(label)
+        elif isinstance(csg, HalfSpace):
+            named_feature = getattr(csg, "named_feature", None)
+            if named_feature and named_feature not in features:
+                features.append(named_feature)
+        collected.append({
+            "tag": tag,
+            "path": list(next_path),
+            "type": type(csg).__name__,
+            "features": features,
+        })
+
+    if isinstance(csg, SolidUnion):
+        for child in csg.children:
+            _walk_tagged_csg(child, next_path, collected)
+    elif isinstance(csg, Difference):
+        _walk_tagged_csg(csg.base, next_path, collected)
+        for sub in csg.subtract:
+            _walk_tagged_csg(sub, next_path, collected)
+
+
+def serialize_cut_csg_tree(cut_timber: Any, cut_index: int) -> Dict[str, Any]:
+    cuts = list(getattr(cut_timber, "cuts", []) or [])
+    if cut_index < 0 or cut_index >= len(cuts):
+        raise IndexError(f"cutIndex {cut_index} out of range for timber with {len(cuts)} cuts")
+    cut = cuts[cut_index]
+    csg = cut.get_negative_csg_local() if hasattr(cut, "get_negative_csg_local") else getattr(cut, "negative_csg", None)
+    collected: List[Dict[str, Any]] = []
+    if csg is not None:
+        _walk_tagged_csg(csg, [], collected)
+    return {
+        "cutIndex": cut_index,
+        "taggedCSGs": collected,
     }
 
 
@@ -723,7 +912,8 @@ def make_ready_event(state: RunnerState) -> Dict[str, Any]:
         "examplePath": str(ss.file_path),
         "commands": [
             "ping", "reload_example", "get_frame", "get_geometry",
-            "get_member", "find_csg_at_point",
+            "get_member", "find_csg_at_point", "find_csg_by_path",
+            "get_layers_tree", "get_csg_tree",
             "load_slot", "unload_slot", "list_slots",
             "list_available_patterns", "raise_specific_pattern",
             "shutdown",
@@ -1348,6 +1538,98 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any], slot_
     return result
 
 
+def _handle_find_csg_by_path(state: RunnerState, payload: Dict[str, Any], slot_state: Optional['SlotState'] = None) -> Dict[str, Any]:
+    """Resolve a CSG at a known path and return highlight mesh for the viewer."""
+    ss = slot_state if slot_state is not None else state._active
+    member_key = payload.get("memberKey")
+    path = payload.get("path") or []
+    feature_label = payload.get("featureLabel") or None
+    eps = 5e-4
+
+    if not isinstance(member_key, str) or member_key not in ss.mesh_cache:
+        raise ValueError(f"Unknown memberKey: {member_key}")
+    if not isinstance(path, list) or len(path) == 0:
+        raise ValueError("path must be a non-empty list of tag strings")
+
+    cached = ss.mesh_cache[member_key]
+    local_csg = cached.get("local_csg")
+    cut_timber = cached.get("cut_timber")
+    mesh = cached.get("mesh")
+
+    if local_csg is None or cut_timber is None or mesh is None:
+        raise ValueError(f"No CSG data cached for {member_key}")
+
+    timber = cut_timber.timber
+    timber_rot, timber_pos = _build_inv_transform_float(timber.transform)
+
+    # Resolve the CSG node at the given path (no point hint needed)
+    target_csg = _resolve_csg_at_path(local_csg, path, None, eps)
+
+    # If a feature label is specified, resolve the named face on the target
+    actual_feature_label = None
+    feature_target = target_csg
+    if feature_label:
+        from kumiki.cutcsg import RectangularPrism, HalfSpace
+        if isinstance(target_csg, RectangularPrism):
+            named_features = getattr(target_csg, "named_features", None)
+            if named_features:
+                for label, face in named_features:
+                    if label == feature_label:
+                        feature_target = face
+                        actual_feature_label = label
+                        break
+        elif isinstance(target_csg, HalfSpace):
+            named_feature = getattr(target_csg, "named_feature", None)
+            if named_feature == feature_label:
+                actual_feature_label = feature_label
+                feature_target = target_csg
+
+    hl_verts, hl_idx, matched, total = _extract_highlight_mesh(
+        mesh["vertices"],
+        mesh["indices"],
+        feature_target if actual_feature_label else target_csg,
+        timber_rot,
+        timber_pos,
+        eps,
+        root_csg=local_csg,
+        selected_path=path,
+        selected_ref=target_csg,
+        feature_label=actual_feature_label,
+    )
+
+    parent_hl = None
+    if actual_feature_label and target_csg is not feature_target:
+        p_verts, p_idx, _, _ = _extract_highlight_mesh(
+            mesh["vertices"],
+            mesh["indices"],
+            target_csg,
+            timber_rot,
+            timber_pos,
+            eps,
+            root_csg=local_csg,
+            selected_path=path,
+            selected_ref=target_csg,
+        )
+        if p_verts:
+            parent_hl = {"vertices": p_verts, "indices": p_idx}
+
+    result: Dict[str, Any] = {
+        "path": path,
+        "featureLabel": actual_feature_label,
+        "highlightMesh": {
+            "vertices": hl_verts,
+            "indices": hl_idx,
+        },
+        "stats": {
+            "trianglesMatched": matched,
+            "totalTriangles": total,
+        },
+    }
+    if parent_hl is not None:
+        result["parentHighlightMesh"] = parent_hl
+    return result
+
+
 def _resolve_slot(state: RunnerState, payload: Dict[str, Any]) -> SlotState:
     """Return the SlotState targeted by the request payload (defaults to active_slot)."""
     slot_name = payload.get("slot", state.active_slot)
@@ -1547,6 +1829,31 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
         ss = _resolve_slot(state, payload)
         return state, make_success_response(request_id, command, serialize_frame(ss.frame)), False
 
+    if command == "get_layers_tree":
+        ss = _resolve_slot(state, payload)
+        return state, make_success_response(request_id, command, serialize_layers(ss.frame)), False
+
+    if command == "get_csg_tree":
+        ss = _resolve_slot(state, payload)
+        member_key = payload.get("memberKey")
+        cut_index = payload.get("cutIndex")
+        if not isinstance(member_key, str) or not member_key:
+            raise ValueError("get_csg_tree requires payload.memberKey")
+        if not isinstance(cut_index, int):
+            raise ValueError("get_csg_tree requires integer payload.cutIndex")
+        cached = ss.mesh_cache.get(member_key)
+        cut_timber = cached.get("cut_timber") if cached else None
+        if cut_timber is None:
+            # Fall back to scanning frame for the matching memberKey by name+occurrence.
+            timber_entries, _ = _assign_member_keys(ss.frame)
+            match = next((e for e in timber_entries if e["memberKey"] == member_key), None)
+            if match is None:
+                raise ValueError(f"Unknown memberKey: {member_key}")
+            cut_timber = match["cutTimber"]
+        result = serialize_cut_csg_tree(cut_timber, cut_index)
+        result["memberKey"] = member_key
+        return state, make_success_response(request_id, command, result), False
+
     if command == "get_geometry":
         ss = _resolve_slot(state, payload)
         t0 = time.monotonic()
@@ -1565,6 +1872,11 @@ def handle_request(state: RunnerState, request: Dict[str, Any]) -> tuple[RunnerS
     if command == "find_csg_at_point":
         ss = _resolve_slot(state, payload)
         result = _handle_find_csg_at_point(state, payload, ss)
+        return state, make_success_response(request_id, command, result), False
+
+    if command == "find_csg_by_path":
+        ss = _resolve_slot(state, payload)
+        result = _handle_find_csg_by_path(state, payload, ss)
         return state, make_success_response(request_id, command, result), False
 
     # --- Slot management ---

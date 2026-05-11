@@ -134,6 +134,8 @@ function getWebviewContent(webview, frameData, geometryData, profiling, uiState 
 
     const appJsUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, 'viewer-app.js'))).toString();
     const selectionStoreJsUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, 'selection-store.js'))).toString();
+    const layersModelJsUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, 'layers-model.js'))).toString();
+    const layersViewJsUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, 'layers-view.js'))).toString();
     const stylesCssUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, 'viewer.css'))).toString();
     const nonce = getNonce();
 
@@ -150,6 +152,8 @@ function getWebviewContent(webview, frameData, geometryData, profiling, uiState 
         .replace(/__NONCE__/g, nonce)
         .replace('__INITIAL_PAYLOAD_JSON__', payloadJson)
         .replace('__SELECTION_STORE_JS_URI__', selectionStoreJsUri)
+        .replace('__LAYERS_MODEL_JS_URI__', layersModelJsUri)
+        .replace('__LAYERS_VIEW_JS_URI__', layersViewJsUri)
         .replace('__APP_JS_URI__', appJsUri)
         .replace('__STYLES_CSS_URI__', stylesCssUri);
 }
