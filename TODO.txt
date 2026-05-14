@@ -33,6 +33,11 @@ Propose a refactor to suppor this.
 
 
 
+-the layers view should not have a scroll bar OVERLAY over the existing view             
+-hide the show/lock icons for now since tehy aren't implemneted
+
+
+
 
 :: 4/14/2026 drawing generation coad
 
