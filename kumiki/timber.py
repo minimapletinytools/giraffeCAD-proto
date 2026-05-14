@@ -2062,9 +2062,10 @@ class Frame:
     cut_timbers: List[CutTimber]
     accessories: List[JointAccessory] = field(default_factory=list)
     name: Optional[str] = None
-    
+    source_joints: Optional[List] = field(default=None, compare=False, hash=False, repr=False)
+
     @classmethod
-    def from_joints(cls, joints: List[Joint], 
+    def from_joints(cls, joints: List[Joint],
                     additional_unjointed_timbers: Optional[List[Timber]] = None,
                     name: Optional[str] = None) -> 'Frame':
         """
@@ -2178,7 +2179,8 @@ class Frame:
         return cls(
             cut_timbers=merged_cut_timbers,
             accessories=all_accessories,
-            name=name
+            name=name,
+            source_joints=list(joints),
         )
     
     def get_bounding_box(self) -> tuple[V3, V3]:
