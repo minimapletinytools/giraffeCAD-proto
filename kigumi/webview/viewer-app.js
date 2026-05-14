@@ -34,6 +34,8 @@ const INITIAL_PAYLOAD = window.__KIGUMI_INITIAL_PAYLOAD__ || {
 const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
 const VIEWER_APP_VERSION = '2026.03.17.4';
 const SelectionStore = window.SelectionStore;
+const LayerStateStore = window.LayerStateStore;
+const LayersPanel = window.LayersPanel;
 
 const CSG_HIGHLIGHT_COLORS = Object.freeze({
     tagged: 0x4fc3f7,
@@ -348,6 +350,8 @@ class KigumiViewerApp extends LitElement {
         this.orbitCenterGizmo = null;
 
         this.selectionManager = new SelectionStore();
+        this.layerStateStore = new LayerStateStore();
+        this.layersPanel = new LayersPanel(this.selectionManager, this.layerStateStore);
         this._csgHighlightMesh = null;
         this._csgParentHighlightMesh = null;
         this.meshKeyMap = new Map(); // mesh object -> member key
@@ -412,21 +416,6 @@ class KigumiViewerApp extends LitElement {
             ${this.settingsPanel.render()}
             <div id="panels">
                 <div class="panel-box">
-                    <div class="panel-title">Member List</div>
-                    <div id="timber-panel">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>#</th><th>Type</th><th>Name</th>
-                                    <th>Length</th><th>Width</th><th>Height</th>
-                                    <th>CSG</th><th>Feat</th>
-                                </tr>
-                            </thead>
-                            <tbody id="timber-rows"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="panel-box">
                     <div class="panel-title">Raw Python Output</div>
                     <pre id="raw-output"></pre>
                 </div>
@@ -460,6 +449,7 @@ class KigumiViewerApp extends LitElement {
     firstUpdated() {
         this.setupUiEvents();
         this.setupThreeScene();
+        this.layersPanel.mount(this.renderRoot.querySelector('#viewport'));
         window.addEventListener('message', this.onWindowMessage);
         this.setViewerOptions(INITIAL_PAYLOAD.viewerOptions);
         this.setViewPhase(ViewerPhase.WAITING_FOR_RUNNER, 'raising frame', { refreshToken: 0 });
@@ -516,6 +506,7 @@ class KigumiViewerApp extends LitElement {
             });
             this.orbitCenterGizmo = null;
         }
+        this.layersPanel.destroy();
         for (const bundle of this.meshObjectsByKey.values()) {
             this.disposeMeshBundle(bundle);
         }
@@ -2358,26 +2349,6 @@ class KigumiViewerApp extends LitElement {
         }
     }
 
-    rebuildTimberTable(meshes) {
-        const tbody = this.renderRoot.querySelector('#timber-rows');
-        tbody.textContent = '';
-        for (let index = 0; index < meshes.length; index += 1) {
-            const mesh = meshes[index];
-            const typeLabel = mesh.memberType === 'accessory' ? 'Accessory' : 'Timber';
-            const memberName = mesh.memberName || mesh.name || '?';
-            const row = document.createElement('tr');
-            row.innerHTML = '<td>' + (index + 1) + '</td>' +
-                '<td>' + typeLabel + '</td>' +
-                '<td>' + memberName + '</td>' +
-                '<td class="dim">' + (mesh.prism_length !== undefined ? this.fmt(mesh.prism_length) : '—') + '</td>' +
-                '<td class="dim">' + (mesh.prism_width  !== undefined ? this.fmt(mesh.prism_width)  : '—') + '</td>' +
-                '<td class="dim">' + (mesh.prism_height !== undefined ? this.fmt(mesh.prism_height) : '—') + '</td>' +
-                '<td class="dim">' + (mesh.csg_nodes !== undefined ? mesh.csg_nodes : '—') + '</td>' +
-                '<td class="dim">' + (mesh.csg_features !== undefined ? mesh.csg_features : '—') + '</td>';
-            tbody.appendChild(row);
-        }
-    }
-
     updateInfo(frameData) {
         this.currentFrameData = frameData || {};
         const timberCount = frameData && frameData.timber_count ? frameData.timber_count : 0;
@@ -2599,7 +2570,6 @@ class KigumiViewerApp extends LitElement {
             }
         }
 
-        this.rebuildTimberTable(meshes);
         this.updateReflectionTransforms();
         this.applySelectionOpacity();
         this._lastMeshBuildMs = meshBuildMs;
@@ -2777,6 +2747,7 @@ class KigumiViewerApp extends LitElement {
         if (!completed || this.isRefreshStale(refreshToken)) {
             return;
         }
+        this.layersPanel.setHierarchy(geometryData.layerHierarchy || null);
         const applyElapsedMs = performance.now() - applyStartMs;
         const enrichedProfiling = profiling
             ? { ...profiling, webview_apply_ms: applyElapsedMs, webview_mesh_ms: this._lastMeshBuildMs || 0 }

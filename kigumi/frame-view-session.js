@@ -221,6 +221,12 @@ class FrameViewSession {
                 });
                 return;
             }
+            if (message.type === 'getCsgByPath') {
+                this._handleGetCsgByPath(message).catch((err) => {
+                    this.log(`[csg-nav] getCsgByPath error: ${err.message || err}`);
+                });
+                return;
+            }
             if (message.type !== 'viewerLog') {
                 return;
             }
@@ -550,6 +556,20 @@ class FrameViewSession {
             width: result.width,
             height: result.height,
         };
+    }
+
+    async _handleGetCsgByPath(message) {
+        if (!this.runnerSession) {
+            return;
+        }
+        const payload = {
+            memberKey: message.memberKey,
+            path: message.path || [],
+        };
+        const result = await this.runnerSession.slotRequest('get_csg_by_path', this.slotName, payload);
+        if (this.panel && !this.isDisposed) {
+            this.panel.webview.postMessage({ type: 'csgSelectionResult', ...result });
+        }
     }
 
     async _handleFindCSGAtPoint(message) {

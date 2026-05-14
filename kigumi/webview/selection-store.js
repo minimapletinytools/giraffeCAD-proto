@@ -1,9 +1,17 @@
 (function (globalScope) {
+    // Layer node descriptor shapes:
+    //   { type: 'timber',    key }
+    //   { type: 'cutting',   timberKey, cuttingIdx }
+    //   { type: 'csgNode',   timberKey, path }
+    //   { type: 'joint',     jointId, timberKeys }
+    //   { type: 'accessory', key }
+
     class SelectionStore {
         constructor() {
             this.selectedTimbers = new Set();
             this.selectedFeatures = [];
             this.csgSelection = null;
+            this.selectedLayerNode = null;
             this.listeners = new Set();
         }
 
@@ -83,8 +91,55 @@
             this.emit({ type: 'clear-csg' });
         }
 
+        // --- Layer node selection ---
+
+        selectLayerNode(node) {
+            this.selectedLayerNode = node;
+
+            if (node.type === 'timber') {
+                this.clearCSGSelection();
+                this.clearFeatureSelection();
+                this.selectedTimbers.clear();
+                this.selectedTimbers.add(node.key);
+                this.emit({ type: 'timber-selected', timberName: node.key });
+            } else if (node.type === 'cutting') {
+                this.clearCSGSelection();
+                this.clearFeatureSelection();
+                this.selectedTimbers.clear();
+                this.selectedTimbers.add(node.timberKey);
+                this.emit({ type: 'timber-selected', timberName: node.timberKey });
+            } else if (node.type === 'csgNode') {
+                this.selectedTimbers.clear();
+                this.selectedTimbers.add(node.timberKey);
+                this.csgSelection = { timberKey: node.timberKey, path: node.path || [], featureLabel: null };
+                this.emit({ type: 'csg-selected', csgSelection: this.csgSelection });
+            } else if (node.type === 'joint') {
+                this.clearCSGSelection();
+                this.clearFeatureSelection();
+                this.selectedTimbers.clear();
+                for (const key of (node.timberKeys || [])) {
+                    this.selectedTimbers.add(key);
+                }
+                this.emit({ type: 'joint-selected', jointId: node.jointId, timberKeys: node.timberKeys || [] });
+            } else if (node.type === 'accessory') {
+                this.clearCSGSelection();
+                this.clearFeatureSelection();
+                this.selectedTimbers.clear();
+                this.selectedTimbers.add(node.key);
+                this.emit({ type: 'timber-selected', timberName: node.key });
+            }
+
+            this.emit({ type: 'layer-node-selected', node });
+        }
+
+        clearLayerSelection() {
+            if (!this.selectedLayerNode) return;
+            this.selectedLayerNode = null;
+            this.emit({ type: 'clear-layer-node' });
+        }
+
         hasSelection() {
-            return this.selectedTimbers.size > 0 || this.selectedFeatures.length > 0 || this.csgSelection !== null;
+            return this.selectedTimbers.size > 0 || this.selectedFeatures.length > 0 || this.csgSelection !== null || this.selectedLayerNode !== null;
         }
 
         onSelectionChanged(callback) {
