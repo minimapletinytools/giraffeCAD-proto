@@ -23,16 +23,13 @@ def cut_plain_miter_joint(arrangement: CornerJointTimberArrangement) -> Joint:
     Creates a miter joint between two timbers, cutting each end at half the angle between them.
 
     Both ends are cut by the same bisecting plane so they meet flush at the corner.
-    Works for any non-parallel angle.
+    Works for any angle including parallel timbers (parallel produces a perpendicular end cut).
 
     Args:
         arrangement: Corner joint arrangement with timber1, timber2, timber1_end, timber2_end.
 
     Returns:
         Joint object containing the two CutTimbers.
-
-    Raises:
-        ValueError: If the timbers are parallel or the intersection is degenerate.
     """
     import warnings
     
@@ -56,56 +53,58 @@ def cut_plain_miter_joint(arrangement: CornerJointTimberArrangement) -> Joint:
         directionB = -timberB.get_length_direction_global()
         endB_position = locate_bottom_center_position(timberB).position
     
-    # Check that the timbers are not parallel
-    if are_vectors_parallel(directionA, directionB):
-        raise ValueError("Timbers cannot be parallel for a miter joint")
-    
     # Find the intersection point (or closest point) between the two timber centerlines
     # Using the formula for closest point between two lines in 3D
     # Line 1: P1 = endA_position + t * directionA
     # Line 2: P2 = endB_position + s * directionB
-    
+
     w0 = endA_position - endB_position
     a = directionA.dot(directionA)  # always >= 0
     b = directionA.dot(directionB)
     c = directionB.dot(directionB)  # always >= 0
     d = directionA.dot(w0)
     e = directionB.dot(w0)
-    
+
     denom = a * c - b * b
     if zero_test(denom):
-        raise ValueError("Cannot compute intersection point (degenerate case)")
-    
-    # Parameters for closest points on each line
-    t = (b * e - c * d) / denom
-    s = (a * e - b * d) / denom
-    
-    # Get the closest points on each centerline
-    pointA = endA_position + directionA * t
-    pointB = endB_position + directionB * s
-    
-    # The intersection point is the midpoint between the two closest points
-    intersection_point = (pointA + pointB) / 2
-    
+        # Parallel timbers: lines don't converge; bisect between the two end positions
+        intersection_point = (endA_position + endB_position) / 2
+    else:
+        # Parameters for closest points on each line
+        t = (b * e - c * d) / denom
+        s = (a * e - b * d) / denom
+
+        # Get the closest points on each centerline
+        pointA = endA_position + directionA * t
+        pointB = endB_position + directionB * s
+
+        # The intersection point is the midpoint between the two closest points
+        intersection_point = (pointA + pointB) / 2
+
     # Create the miter plane normal
     # Normalize the directions first
     normA = normalize_vector(directionA)
     normB = normalize_vector(directionB)
-    
+
     # The bisecting direction is the normalized sum of the two directions
     # This points "into" the joint (towards the acute angle)
     # IMPORTANT: The bisector lives IN the miter plane (it's the line you draw on the wood)
     bisector = normalize_vector(normA + normB)
-    
+
     # The plane formed by the two timber directions has normal:
     plane_normal = cross_product(normA, normB)
-    
+
     # The miter plane:
     # 1. Contains the bisector line
     # 2. Is perpendicular to the plane formed by directionA and directionB
     # Therefore, the miter plane's normal is perpendicular to both the bisector
     # and the plane_normal. This is the cross product: bisector × plane_normal
-    miter_normal = normalize_vector(cross_product(bisector, plane_normal))
+    # For parallel timbers plane_normal is zero, so fall back to a perpendicular end cut.
+    plane_normal_sq = plane_normal.dot(plane_normal)
+    if zero_test(plane_normal_sq):
+        miter_normal = normA
+    else:
+        miter_normal = normalize_vector(cross_product(bisector, plane_normal))
     
     # The miter plane passes through the intersection point
     # Both timbers will be cut by this same plane, but each timber needs its half-plane

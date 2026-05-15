@@ -110,6 +110,55 @@ def make_miter_joint_face_aligned_example(position: V3) -> list[CutTimber]:
     return list(joint.cut_timbers.values())
 
 
+def make_miter_joint_3d_angles_example(position: V3) -> list[CutTimber]:
+    """
+    Miter joint with timbers at oblique 3D angles.
+
+    TimberA runs at ~37° elevation in the XZ plane: direction (4, 0, 3)/5.
+    TimberB runs with components in all three axes: direction (2, 4, 3)/sqrt(29).
+    Neither timber is axis-aligned, demonstrating the general 3D case.
+    """
+    from sympy import sqrt
+
+    sqrt29 = sqrt(29)
+    sqrt5 = sqrt(5)
+
+    # (4,0,3)/5 is a unit vector, elevation ~37° from horizontal in XZ plane
+    dirA = Matrix([Rational(4), Rational(0), Rational(3)]) / 5
+    widthA = Matrix([Rational(0), Rational(1), Rational(0)])  # perp to dirA since dirA has no Y component
+
+    # (2,4,3)/sqrt(29) — has components in all 3 axes
+    dirB = Matrix([Rational(2), Rational(4), Rational(3)]) / sqrt29
+    # (-4,2,0)/sqrt(20) = (-2,1,0)/sqrt(5) is perpendicular to dirB: 2*(-2)+4*1+3*0 = 0
+    widthB = Matrix([Rational(-2), Rational(1), Rational(0)]) / sqrt5
+
+    timberA = timber_from_directions(
+        length=TIMBER_LENGTH,
+        size=TIMBER_SIZE_2D,
+        bottom_position=position,
+        length_direction=dirA,
+        width_direction=widthA,
+        ticket=TimberTicket("MiterWeird_TimberA"),
+    )
+    timberB = timber_from_directions(
+        length=TIMBER_LENGTH,
+        size=TIMBER_SIZE_2D,
+        bottom_position=position,
+        length_direction=dirB,
+        width_direction=widthB,
+        ticket=TimberTicket("MiterWeird_TimberB"),
+    )
+
+    arrangement = CornerJointTimberArrangement(
+        timber1=timberA,
+        timber2=timberB,
+        timber1_end=TimberReferenceEnd.BOTTOM,
+        timber2_end=TimberReferenceEnd.BOTTOM,
+    )
+    joint = cut_plain_miter_joint(arrangement)
+    return list(joint.cut_timbers.values())
+
+
 def make_tongue_and_fork_corner_joint_90_example(position: V3) -> list[CutTimber]:
     """
     Create a tongue-and-fork corner joint at 90 degrees using canonical right-angle timbers.
@@ -397,6 +446,9 @@ def create_plain_joints_patternbook() -> PatternBook:
 
         (PatternMetadata("miter_joint_face_aligned", ["plain_joints", "miter"], "frame"),
          lambda center: Frame(cut_timbers=make_miter_joint_face_aligned_example(center), name="Miter Joint (Face Aligned)")),
+
+        (PatternMetadata("miter_joint_3d_angles", ["plain_joints", "miter"], "frame"),
+         lambda center: Frame(cut_timbers=make_miter_joint_3d_angles_example(center), name="Miter Joint (3D Angles)")),
 
         (PatternMetadata("butt_joint", ["plain_joints", "butt"], "frame"),
          lambda center: Frame(cut_timbers=make_butt_joint_example(center), name="Butt Joint")),

@@ -192,8 +192,42 @@ class TestMiterJoint:
             )
             cut_plain_miter_joint_on_face_aligned_timbers(arrangement)
 
+    # 🐪
+    def test_miter_joint_on_parallel_timbers_produces_perpendicular_cuts(self):
+        """cut_plain_miter_joint (base function) accepts parallel timbers and produces end cuts perpendicular to the timber axis."""
+        timberA = timber_from_directions(
+            length=Rational(100),
+            size=Matrix([Rational(6), Rational(6)]),
+            bottom_position=Matrix([Rational(0), Rational(0), Rational(0)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)]),
+        )
+        timberB = timber_from_directions(
+            length=Rational(100),
+            size=Matrix([Rational(6), Rational(6)]),
+            bottom_position=Matrix([Rational(0), Rational(0), Rational(10)]),
+            length_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+            width_direction=Matrix([Rational(0), Rational(1), Rational(0)]),
+        )
 
-        
+        arrangement = CornerJointTimberArrangement(
+            timber1=timberA, timber2=timberB,
+            timber1_end=TimberReferenceEnd.BOTTOM, timber2_end=TimberReferenceEnd.BOTTOM,
+        )
+        joint = cut_plain_miter_joint(arrangement)
+
+        assert joint is not None
+        assert len(joint.cut_timbers) == 2
+
+        for key, timber in [("timberA", timberA), ("timberB", timberB)]:
+            cut = joint.cut_timbers[key].cuts[0]
+            end_cut = cut.maybe_bottom_end_cut
+            assert end_cut is not None, f"{key} should have a bottom end cut"
+            global_normal = timber.orientation.matrix * end_cut.normal
+            length_dir = timber.get_length_direction_global()
+            dot = simplify(Abs((global_normal.T * length_dir)[0, 0]))
+            assert dot == 1, f"{key} end cut should be perpendicular to timber axis, got |dot|={dot}"
+
 
 class TestButtJoint:
     """Test cut_plain_butt_joint_on_face_aligned_timbers function."""
