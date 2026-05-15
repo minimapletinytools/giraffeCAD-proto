@@ -226,9 +226,9 @@ def _collect_csg_tagged_nodes(csg: Any) -> List[Dict[str, Any]]:
         return feats
 
     def _walk(node: Any, inside_tagged: bool) -> None:
-        tag = getattr(node, 'tag', None)
-        if tag and not inside_tagged:
-            results.append({'tag': str(tag), 'features': _leaf_features(node)})
+        label = getattr(node, 'label', None)
+        if label and not inside_tagged:
+            results.append({'label': str(label), 'features': _leaf_features(node)})
             return
         if isinstance(node, Difference):
             _walk(node.base, inside_tagged)
@@ -259,14 +259,17 @@ def serialize_layer_hierarchy(
         cuts = getattr(cut_timber, 'cuts', None) or []
         cuttings_data = []
         for idx, cutting in enumerate(cuts):
-            raw_tag = getattr(cutting, 'tag', None)
-            tag = str(raw_tag) if raw_tag is not None else f'cut_{idx}'
+            raw_label = getattr(cutting, 'label', None)
+            cutting_label = str(raw_label) if raw_label is not None else f'cut_{idx}'
             neg_csg = getattr(cutting, 'negative_csg', None)
             csg_nodes = _collect_csg_tagged_nodes(neg_csg)
-            cuttings_data.append({'idx': idx, 'tag': tag, 'csgNodes': csg_nodes})
+            cuttings_data.append({'idx': idx, 'label': cutting_label, 'csgNodes': csg_nodes})
+        timber_ticket = getattr(cut_timber.timber, 'ticket', None)
+        timber_tags = list(getattr(timber_ticket, 'tags', ()) or ())
         timbers_data.append({
             'key': timber_key,
             'name': get_timber_display_name(cut_timber.timber),
+            'tags': timber_tags,
             'cuttings': cuttings_data,
         })
 
@@ -301,10 +304,12 @@ def serialize_layer_hierarchy(
             if k:
                 accessory_keys.append(k)
 
+        joint_tags = list(getattr(ticket, 'tags', ()) or ())
         joints_data.append({
             'id': f'joint#{joint_idx}',
             'name': joint_label,
             'type': joint_type,
+            'tags': joint_tags,
             'timberKeys': timber_keys,
             'accessoryKeys': accessory_keys,
         })
@@ -1094,7 +1099,7 @@ def _resolve_csg_at_path(csg: Any, path: List[str], pt: Optional[List[float]] = 
         if isinstance(node, Difference):
             children = list(node.subtract)
             # Also check base
-            base_tag = getattr(node.base, "tag", None)
+            base_tag = getattr(node.base, "label", None)
             if base_tag == tag_name:
                 results.append(node.base)
             elif isinstance(node.base, (SolidUnion, Difference)) and base_tag is None:
@@ -1102,7 +1107,7 @@ def _resolve_csg_at_path(csg: Any, path: List[str], pt: Optional[List[float]] = 
         elif isinstance(node, SolidUnion):
             children = list(node.children)
         for ch in children:
-            ch_tag = getattr(ch, "tag", None)
+            ch_tag = getattr(ch, "label", None)
             if ch_tag == tag_name:
                 results.append(ch)
             elif isinstance(ch, (SolidUnion, Difference)) and ch_tag is None:
@@ -1145,7 +1150,7 @@ def _navigate_csg_one_level(
         # Check which subtract child the point lies on
         for sub in node.subtract:
             if _is_point_on_csg_boundary_float(sub, pt_local, eps):
-                sub_tag = getattr(sub, "tag", None)
+                sub_tag = getattr(sub, "label", None)
                 if sub_tag:
                     return (current_path + [sub_tag], sub, None)
                 # Unnamed compound → drill through transparently
@@ -1153,7 +1158,7 @@ def _navigate_csg_one_level(
                     return _navigate_csg_one_level(sub, pt_local, current_path, eps)
                 return (current_path, sub, _detect_face_label(sub, pt_local, eps))
         # Point is on the base surface
-        base_tag = getattr(node.base, "tag", None)
+        base_tag = getattr(node.base, "label", None)
         if base_tag:
             return (current_path + [base_tag], node.base, None)
         if isinstance(node.base, (SolidUnion, Difference)):
@@ -1163,7 +1168,7 @@ def _navigate_csg_one_level(
     if isinstance(node, SolidUnion):
         for ch in node.children:
             if _is_point_on_csg_boundary_float(ch, pt_local, eps):
-                ch_tag = getattr(ch, "tag", None)
+                ch_tag = getattr(ch, "label", None)
                 if ch_tag:
                     return (current_path + [ch_tag], ch, None)
                 # Unnamed compound → drill through transparently
@@ -1390,12 +1395,12 @@ def _handle_find_csg_at_point(state: RunnerState, payload: Dict[str, Any], slot_
 
     # --- Debug: describe the CSG tree ---
     def _csg_debug_label(c: Any) -> str:
-        tag = getattr(c, "tag", None)
+        csg_label = getattr(c, "label", None)
         ctype = type(c).__name__
-        label = f"{ctype}"
-        if tag:
-            label += f'(tag="{tag}")'
-        return label
+        display = f"{ctype}"
+        if csg_label:
+            display += f'(label="{csg_label}")'
+        return display
 
     def _csg_tree_debug(c: Any, depth: int = 0) -> List[str]:
         from kumiki.cutcsg import SolidUnion, Difference

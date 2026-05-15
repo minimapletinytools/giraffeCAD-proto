@@ -188,6 +188,10 @@ class ViewerSettingsPanel {
                     debug info
                 </label>
                 <label>
+                    <input id="tag-pills-toggle" type="checkbox" ?checked=${this.app.layersPanel && this.app.layersPanel.showTagPills}>
+                    tag pills
+                </label>
+                <label>
                     unselected visibility (${100 - this.app.unselectedTransparencyPercent}%)
                     <input
                         id="unselected-transparency-slider"
@@ -226,6 +230,7 @@ class ViewerSettingsPanel {
         const reflectionsToggle = renderRoot.querySelector('#reflections-toggle');
         const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
         const debugToggle = renderRoot.querySelector('#debug-toggle');
+        const tagPillsToggle = renderRoot.querySelector('#tag-pills-toggle');
         const timberProfileSelect = renderRoot.querySelector('#timber-profile-select');
         const accessoryProfileSelect = renderRoot.querySelector('#accessory-profile-select');
         const refreshButton = renderRoot.querySelector('#refresh-btn');
@@ -246,6 +251,14 @@ class ViewerSettingsPanel {
                 debugEl.style.display = this.app.debugEnabled ? 'block' : 'none';
             }
         });
+
+        if (tagPillsToggle) {
+            tagPillsToggle.addEventListener('change', (event) => {
+                if (this.app.layersPanel) {
+                    this.app.layersPanel.setShowTagPills(event.target.checked);
+                }
+            });
+        }
 
         shadowsToggle.addEventListener('change', (event) => {
             this.app.setShadowsEnabled(event.target.checked);

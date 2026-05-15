@@ -10,6 +10,7 @@ sys.path.append('..')
 
 from kumiki import *
 from kumiki.timber import Frame
+from kumiki.ticket import TimberTicket
 from kumiki.joints.basic_joints import cut_basic_mitered_and_keyed_lap_joint
 
 
@@ -76,22 +77,26 @@ def create_oscarshed(center: Optional[V3] = None):
     # Front mudsill (corner 0 to corner 1) - along X axis
     # Length is automatically calculated from boundary side
     mudsill_front = create_horizontal_timber_on_footprint(
-        footprint, 0, FootprintLocation.INSIDE, mudsill_size, ticket="Front Mudsill"
+        footprint, 0, FootprintLocation.INSIDE, mudsill_size,
+        ticket=TimberTicket(name="Front Mudsill", tags=("mudsill", "4x6"))
     )
 
     # Right mudsill (corner 1 to corner 2) - along Y axis
     mudsill_right = create_horizontal_timber_on_footprint(
-        footprint, 1, FootprintLocation.INSIDE, mudsill_size, ticket="Right Mudsill"
+        footprint, 1, FootprintLocation.INSIDE, mudsill_size,
+        ticket=TimberTicket(name="Right Mudsill", tags=("mudsill", "4x6"))
     )
 
     # Back mudsill (corner 2 to corner 3) - along X axis
     mudsill_back = create_horizontal_timber_on_footprint(
-        footprint, 2, FootprintLocation.INSIDE, mudsill_size, ticket="Back Mudsill"
+        footprint, 2, FootprintLocation.INSIDE, mudsill_size,
+        ticket=TimberTicket(name="Back Mudsill", tags=("mudsill", "4x6"))
     )
 
     # Left mudsill (corner 3 to corner 0) - along Y axis
     mudsill_left = create_horizontal_timber_on_footprint(
-        footprint, 3, FootprintLocation.INSIDE, mudsill_size, ticket="Left Mudsill"
+        footprint, 3, FootprintLocation.INSIDE, mudsill_size,
+        ticket=TimberTicket(name="Left Mudsill", tags=("mudsill", "4x6"))
     )
 
     # ============================================================================
@@ -160,13 +165,13 @@ def create_oscarshed(center: Optional[V3] = None):
     # Front-left post (on front boundary side, inset from left corner)
     # Side 0 goes from corner 0 (front-left) to corner 1 (front-right)
     post_front_left = create_vertical_timber_on_footprint_side(
-        footprint, 
+        footprint,
         side_index=0,
         distance_along_side=post_inset,
         length=post_front_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        ticket="Front Left Post"
+        ticket=TimberTicket(name="Front Left Post", tags=("post", "4x4"))
     )
 
     # Front-right post (on front boundary side, inset from right corner)
@@ -177,7 +182,7 @@ def create_oscarshed(center: Optional[V3] = None):
         length=post_front_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        ticket="Front Right Post"
+        ticket=TimberTicket(name="Front Right Post", tags=("post", "4x4"))
     )
 
     # Back-right post (on back boundary side, inset from right corner)
@@ -189,7 +194,7 @@ def create_oscarshed(center: Optional[V3] = None):
         length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        ticket="Back Right Post"
+        ticket=TimberTicket(name="Back Right Post", tags=("post", "4x4"))
     )
 
     # Back-left post (on back boundary side, inset from left corner)
@@ -200,7 +205,7 @@ def create_oscarshed(center: Optional[V3] = None):
         length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        ticket="Back Left Post"
+        ticket=TimberTicket(name="Back Left Post", tags=("post", "4x4"))
     )
 
     # ============================================================================
@@ -225,12 +230,12 @@ def create_oscarshed(center: Optional[V3] = None):
         length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        ticket="Back Middle-Right Post"
+        ticket=TimberTicket(name="Back Middle-Right Post", tags=("post", "4x4"))
     )
-    
+
     # Middle-left post (3rd from right)
     post_back_middle_left_position = post_inset + 2 * back_post_spacing
-    
+
     post_back_middle_left = create_vertical_timber_on_footprint_side(
         footprint,
         side_index=2,  # Back side
@@ -238,7 +243,7 @@ def create_oscarshed(center: Optional[V3] = None):
         length=post_back_height,
         location_type=FootprintLocation.INSIDE,
         size=post_size,
-        ticket="Back Middle-Left Post"
+        ticket=TimberTicket(name="Back Middle-Left Post", tags=("post", "4x4"))
     )
 
     # ============================================================================
@@ -372,9 +377,9 @@ def create_oscarshed(center: Optional[V3] = None):
         location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0,       # No lateral offset
         size=side_girt_size,
-        ticket="Left Side Girt"
+        ticket=TimberTicket(name="Left Side Girt", tags=("beam", "girt", "4x4"))
     )
-    
+
     # Right side girt (connects back-right post to front-right post)
     side_girt_right = join_timbers(
         timber1=post_back_right,       # Back post (timber1)
@@ -384,7 +389,7 @@ def create_oscarshed(center: Optional[V3] = None):
         location_on_timber2=post_back_height,    # Same height on front post
         lateral_offset=0,       # No lateral offset
         size=side_girt_size,
-        ticket="Right Side Girt"
+        ticket=TimberTicket(name="Right Side Girt", tags=("beam", "girt", "4x4"))
     )
 
     # ============================================================================
@@ -509,7 +514,7 @@ def create_oscarshed(center: Optional[V3] = None):
         location_on_timber2=front_girt_height_on_posts,   # Same height on right post
         lateral_offset=0,       # No lateral offset
         size=front_girt_size,
-        ticket="Front Girt"
+        ticket=TimberTicket(name="Front Girt", tags=("beam", "girt", "4x4"))
     )
     
     # ============================================================================
@@ -526,17 +531,17 @@ def create_oscarshed(center: Optional[V3] = None):
     
     # Split into three pieces
     front_girt_left_and_middle, front_girt_right = split_timber(
-        front_girt, 
+        front_girt,
         second_split_distance,
         ticket1="Front Girt Left+Middle (temp)",
-        ticket2="Front Girt Right"
+        ticket2=TimberTicket(name="Front Girt Right", tags=("beam", "girt", "4x4"))
     )
-    
+
     front_girt_left, front_girt_middle = split_timber(
         front_girt_left_and_middle,
         first_split_distance,
-        ticket1="Front Girt Left",
-        ticket2="Front Girt Middle"
+        ticket1=TimberTicket(name="Front Girt Left", tags=("beam", "girt", "4x4")),
+        ticket2=TimberTicket(name="Front Girt Middle", tags=("beam", "girt", "4x4"))
     )
     
     # Create gooseneck joints
@@ -693,20 +698,19 @@ def create_oscarshed(center: Optional[V3] = None):
         lateral_offset=0,       # No lateral offset
         size=top_plate_size,
         orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
-        ticket="Front Top Plate"
+        ticket=TimberTicket(name="Front Top Plate", tags=("beam", "4x6"))
     )
-    
-    
+
     top_plate_back = join_timbers(
         timber1=post_back_left,        # Left back post (timber1)
         timber2=post_back_right,       # Right back post (timber2)
         location_on_timber1=post_back_height+inches(3),    # At top of back post + 3 inches to raise the back beam 2 inches above bottom of side girts
         stickout=top_plate_stickout,   # 1 foot stickout on both sides
-        location_on_timber2=post_back_height+inches(3),   
+        location_on_timber2=post_back_height+inches(3),
         lateral_offset=0,
         size=top_plate_size,
         orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),
-        ticket="Back Top Plate"
+        ticket=TimberTicket(name="Back Top Plate", tags=("beam", "4x6"))
     )
 
     # ============================================================================
@@ -880,7 +884,7 @@ def create_oscarshed(center: Optional[V3] = None):
             lateral_offset=joist_vertical_offset,     # Offset upward to align tops
             size=joist_size,
             orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),  # Face up
-            ticket=f"Joist {i}"
+            ticket=TimberTicket(name=f"Joist {i}", tags=("joist", "4x4"))
         )
         joists.append(joist)
 
@@ -978,7 +982,7 @@ def create_oscarshed(center: Optional[V3] = None):
             lateral_offset=rafter_vertical_offset,
             size=rafter_size,
             orientation_width_vector=create_v3(Integer(0), Integer(0), Integer(1)),  # Face up
-            ticket=f"Rafter {i}"
+            ticket=TimberTicket(name=f"Rafter {i}", tags=("rafter", "4x4"))
         )
         rafters.append(rafter)
 

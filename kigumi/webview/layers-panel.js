@@ -10,6 +10,10 @@
             this.collapsed = false;
             // Default: top-level sections open, individual nodes closed
             this.expandedNodes = new Set(['section:timbers', 'section:joints']);
+            this.filterText = '';
+            this.activeTagFilters = new Set();
+            this.tagFilterMode = 'or'; // 'or' | 'and'
+            this.showTagPills = true;
             this.el = null;
             this.viewport = null;
             this._unsubSelection = null;
@@ -41,11 +45,63 @@
             this._render();
         }
 
+        setShowTagPills(show) {
+            this.showTagPills = !!show;
+            this._renderTree();
+        }
+
         destroy() {
             if (this._unsubSelection) this._unsubSelection();
             if (this._unsubLayerState) this._unsubLayerState();
             if (this.el && this.el.parentNode) this.el.parentNode.removeChild(this.el);
             this.el = null;
+        }
+
+        // ------------------------------------------------------------------
+        // Filter helpers
+        // ------------------------------------------------------------------
+
+        _getAllTags() {
+            const tags = new Set();
+            if (!this.hierarchy) return tags;
+            for (const t of this.hierarchy.timbers) for (const tag of (t.tags || [])) tags.add(tag);
+            for (const j of (this.hierarchy.joints || [])) for (const tag of (j.tags || [])) tags.add(tag);
+            return tags;
+        }
+
+        _matchesFilter(name, tags) {
+            const q = this.filterText.trim().toLowerCase();
+            const hasTagFilters = this.activeTagFilters.size > 0;
+
+            // If neither filter is active, show everything
+            if (!q && !hasTagFilters) return true;
+
+            // Text filter: substring match on name or any tag
+            const textMatch = q && (
+                (name && name.toLowerCase().includes(q)) ||
+                (tags && tags.some(t => t.toLowerCase().includes(q)))
+            );
+
+            // Active tag filter: OR = item has any active tag; AND = item has all active tags
+            const tagMatch = hasTagFilters && tags && (
+                this.tagFilterMode === 'and'
+                    ? [...this.activeTagFilters].every(af => tags.includes(af))
+                    : [...this.activeTagFilters].some(af => tags.includes(af))
+            );
+
+            // Show if either filter matches
+            return textMatch || tagMatch;
+        }
+
+        _toggleTagFilter(tag) {
+            if (this.activeTagFilters.has(tag)) {
+                this.activeTagFilters.delete(tag);
+            } else {
+                this.activeTagFilters.add(tag);
+            }
+            this._renderTree();
+            // Sync the active-filter chips row without full re-render
+            this._renderActiveFilters();
         }
 
         // ------------------------------------------------------------------
@@ -77,12 +133,122 @@
             header.textContent = 'Layers';
             this.el.appendChild(header);
 
-            const tree = document.createElement('div');
-            tree.className = 'lp-tree';
-            this.el.appendChild(tree);
+            // Search input
+            const filterBar = document.createElement('div');
+            filterBar.className = 'lp-filter-bar';
+            const filterInput = document.createElement('input');
+            filterInput.className = 'lp-filter-input';
+            filterInput.type = 'text';
+            filterInput.placeholder = 'Search…';
+            filterInput.value = this.filterText;
+            filterInput.addEventListener('input', (e) => {
+                this.filterText = e.target.value;
+                this._renderActiveFilters();
+                this._renderTree();
+            });
+            filterInput.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const q = this.filterText.trim().toLowerCase();
+                if (!q) return;
+                const allTags = this._getAllTags();
+                const match = [...allTags].find(t => t.toLowerCase() === q);
+                if (match) {
+                    e.preventDefault();
+                    this.activeTagFilters.add(match);
+                    this.filterText = '';
+                    filterInput.value = '';
+                    this._renderActiveFilters();
+                    this._renderTree();
+                }
+            });
+            filterBar.appendChild(filterInput);
+            this.el.appendChild(filterBar);
 
-            this._renderSection(tree, 'timbers', 'Timbers', () => this._buildTimberRows());
-            this._renderSection(tree, 'joints', 'Joints', () => this._buildJointRows());
+            // Active tag filter chips row
+            this._activeFiltersEl = document.createElement('div');
+            this._activeFiltersEl.className = 'lp-active-filters';
+            this.el.appendChild(this._activeFiltersEl);
+            this._renderActiveFilters();
+
+            this._treeEl = document.createElement('div');
+            this._treeEl.className = 'lp-tree';
+            this.el.appendChild(this._treeEl);
+
+            this._renderTree();
+        }
+
+        _renderActiveFilters() {
+            if (!this._activeFiltersEl) return;
+            this._activeFiltersEl.innerHTML = '';
+
+            const hasText = this.filterText.trim().length > 0;
+            const hasTagFilters = this.activeTagFilters.size > 0;
+            if (!hasText && !hasTagFilters) return;
+
+            // OR/AND toggle — only meaningful with 2+ tag filters
+            if (this.activeTagFilters.size >= 2) {
+                const modeToggle = document.createElement('button');
+                modeToggle.className = 'lp-mode-toggle lp-mode-' + this.tagFilterMode;
+                modeToggle.textContent = this.tagFilterMode.toUpperCase();
+                modeToggle.title = this.tagFilterMode === 'or'
+                    ? 'Showing items matching ANY tag — click to switch to ALL'
+                    : 'Showing items matching ALL tags — click to switch to ANY';
+                modeToggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.tagFilterMode = this.tagFilterMode === 'or' ? 'and' : 'or';
+                    this._renderActiveFilters();
+                    this._renderTree();
+                });
+                this._activeFiltersEl.appendChild(modeToggle);
+            }
+
+            if (hasText) {
+                const chip = this._makeActiveFilterChip(
+                    `"${this.filterText.trim()}"`,
+                    () => {
+                        this.filterText = '';
+                        const input = this.el && this.el.querySelector('.lp-filter-input');
+                        if (input) input.value = '';
+                        this._renderActiveFilters();
+                        this._renderTree();
+                    }
+                );
+                chip.classList.add('lp-active-chip-text');
+                this._activeFiltersEl.appendChild(chip);
+            }
+
+            for (const tag of this.activeTagFilters) {
+                const chip = this._makeActiveFilterChip(tag, () => {
+                    this._toggleTagFilter(tag);
+                });
+                this._activeFiltersEl.appendChild(chip);
+            }
+        }
+
+        _makeActiveFilterChip(label, onRemove) {
+            const chip = document.createElement('span');
+            chip.className = 'lp-active-chip';
+            const labelEl = document.createElement('span');
+            labelEl.className = 'lp-active-chip-label';
+            labelEl.textContent = label;
+            chip.appendChild(labelEl);
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'lp-active-chip-remove';
+            removeBtn.textContent = '×';
+            removeBtn.title = 'Remove filter';
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onRemove();
+            });
+            chip.appendChild(removeBtn);
+            return chip;
+        }
+
+        _renderTree() {
+            if (!this._treeEl) return;
+            this._treeEl.innerHTML = '';
+            this._renderSection(this._treeEl, 'timbers', 'Timbers', () => this._buildTimberRows());
+            this._renderSection(this._treeEl, 'joints', 'Joints', () => this._buildJointRows());
             this._syncHighlight();
         }
 
@@ -120,7 +286,7 @@
         }
 
         _makeRow(opts) {
-            const { nodeId, rowType, depth, label, hasChildren, selectNode, memberKey } = opts;
+            const { nodeId, rowType, depth, label, tags, hasChildren, selectNode, memberKey } = opts;
             const expanded = hasChildren && this.expandedNodes.has(nodeId);
 
             const row = document.createElement('div');
@@ -144,6 +310,24 @@
             labelEl.className = 'lp-label';
             labelEl.textContent = label;
             row.appendChild(labelEl);
+
+            // Tag pills (shown only when showTagPills is enabled)
+            if (this.showTagPills && tags && tags.length > 0) {
+                const chipsEl = document.createElement('span');
+                chipsEl.className = 'lp-chips';
+                for (const tag of tags) {
+                    const chip = document.createElement('span');
+                    chip.className = 'lp-chip' + (this.activeTagFilters.has(tag) ? ' lp-chip-active' : '');
+                    chip.textContent = tag;
+                    chip.title = this.activeTagFilters.has(tag) ? `Remove filter: ${tag}` : `Filter by: ${tag}`;
+                    chip.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this._toggleTagFilter(tag);
+                    });
+                    chipsEl.appendChild(chip);
+                }
+                row.appendChild(chipsEl);
+            }
 
             // Lock / hide icon buttons (only for member-level rows)
             if (memberKey) {
@@ -190,11 +374,13 @@
             if (!this.hierarchy) return rows;
 
             for (const timber of this.hierarchy.timbers) {
+                if (!this._matchesFilter(timber.name, timber.tags)) continue;
                 rows.push(this._makeRow({
                     nodeId: 'timber:' + timber.key,
                     rowType: 'timber',
                     depth: 0,
                     label: timber.name,
+                    tags: timber.tags || [],
                     hasChildren: false,
                     memberKey: timber.key,
                     selectNode: { type: 'timber', key: timber.key },
@@ -211,6 +397,8 @@
             for (const t of this.hierarchy.timbers) nameByKey[t.key] = t.name;
 
             for (const joint of (this.hierarchy.joints || [])) {
+                if (!this._matchesFilter(joint.name, joint.tags)) continue;
+
                 const jointNodeId = 'joint:' + joint.id;
                 const members = [...(joint.timberKeys || []), ...(joint.accessoryKeys || [])];
                 const hasChildren = members.length > 0;
@@ -220,6 +408,7 @@
                     rowType: 'joint',
                     depth: 0,
                     label: joint.name,
+                    tags: joint.tags || [],
                     hasChildren,
                     selectNode: { type: 'joint', jointId: joint.id, timberKeys: joint.timberKeys || [] },
                 }));
@@ -232,6 +421,7 @@
                         rowType: 'jointMember',
                         depth: 1,
                         label: nameByKey[timberKey] || timberKey,
+                        tags: [],
                         hasChildren: false,
                         selectNode: { type: 'timber', key: timberKey },
                     }));
@@ -243,6 +433,7 @@
                         rowType: 'jointMember',
                         depth: 1,
                         label: accKey.replace(/^accessory:[^:]+:/, '').replace(/^accessory:/, ''),
+                        tags: [],
                         hasChildren: false,
                         selectNode: { type: 'accessory', key: accKey },
                     }));
@@ -286,7 +477,6 @@
                 if (layerNode.type === 'timber') nodeId = 'timber:' + layerNode.key;
                 else if (layerNode.type === 'cutting') nodeId = 'cutting:' + layerNode.timberKey + ':' + layerNode.cuttingIdx;
                 else if (layerNode.type === 'csgNode' && layerNode.path && layerNode.path[0]) {
-                    // cuttingIdx is carried in the node descriptor since the row builder sets it
                     const cuttingIdx = layerNode.cuttingIdx != null ? layerNode.cuttingIdx : 0;
                     nodeId = 'csgnode:' + layerNode.timberKey + ':' + cuttingIdx + ':' + layerNode.path[0];
                 }
@@ -336,7 +526,7 @@
             } else {
                 this.expandedNodes.add(nodeId);
             }
-            this._render();
+            this._renderTree();
         }
     }
 
