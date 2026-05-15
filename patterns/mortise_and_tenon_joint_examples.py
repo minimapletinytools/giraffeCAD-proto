@@ -9,7 +9,7 @@ from kumiki.timber import (
     PegShape, timber_from_directions,
     create_v3, V2, CutTimber, Frame
 )
-from kumiki.joints.mortise_and_tenon_joint import *
+from kumiki.joints.workshop.mortise_and_tenon_joint import *
 
 from kumiki.construction import (
     ButtJointTimberArrangement,
@@ -21,7 +21,7 @@ from kumiki.example_shavings import (
     create_canonical_example_brace_joint_timbers,
     create_canonical_example_butt_joint_timbers,
 )
-from kumiki.joints.basic_joints import cut_basic_miter_joint
+from kumiki.joints.workshop.basic_joints import cut_basic_miter_joint
 from kumiki.construction import CornerJointTimberArrangement
 from kumiki.patternbook import PatternBook, PatternMetadata, make_pattern_from_joint, make_pattern_from_frame
 from kumiki.ticket import TimberTicket

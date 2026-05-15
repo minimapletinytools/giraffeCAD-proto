@@ -9,7 +9,7 @@ All dimensions use exact SymPy Rational values through helper unit functions.
 """
 
 from kumiki import *
-from kumiki.joints.basic_joints import cut_basic_miter_joint
+from kumiki.joints.workshop.basic_joints import cut_basic_miter_joint
 
 
 # -----------------------------------------------------------------------------

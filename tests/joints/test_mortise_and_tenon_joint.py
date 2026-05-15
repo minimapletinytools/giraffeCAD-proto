@@ -13,11 +13,11 @@ from kumiki.timber import (
 )
 from kumiki.construction import ButtJointTimberArrangement
 from kumiki.timber_shavings import are_timbers_plane_aligned
-from kumiki.joints.build_a_butt_joint_shavings import (
+from kumiki.joints.workshop.build_a_butt_joint_shavings import (
     SimplePegParameters,
     PegPositionSpace,
 )
-from kumiki.joints.mortise_and_tenon_joint import (
+from kumiki.joints.workshop.mortise_and_tenon_joint import (
     WedgeParameters,
     _does_shoulder_plane_need_notching,
     cut_mortise_and_tenon_joint_on_FAT,

@@ -11,7 +11,7 @@ sys.path.append('..')
 from kumiki import *
 from kumiki.timber import Frame
 from kumiki.ticket import TimberTicket
-from kumiki.joints.basic_joints import cut_basic_mitered_and_keyed_lap_joint
+from kumiki.joints.workshop.basic_joints import cut_basic_mitered_and_keyed_lap_joint
 
 
 # ============================================================================

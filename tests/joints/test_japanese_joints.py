@@ -13,7 +13,7 @@ from kumiki.example_shavings import (
     create_canonical_example_corner_joint_timbers,
     create_canonical_example_right_angle_corner_joint_timbers,
 )
-from kumiki.joints.japanese_joints import cut_mitered_and_keyed_lap_joint, cut_housed_dovetail_butt_joint
+from kumiki.joints.workshop.japanese_joints import cut_mitered_and_keyed_lap_joint, cut_housed_dovetail_butt_joint
 from tests.testing_shavings import (
     create_standard_horizontal_timber,
 )

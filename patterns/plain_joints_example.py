@@ -26,7 +26,7 @@ from kumiki.timber import (
     CutTimber,
     Frame,
 )
-from kumiki.joints.plain_joints import (
+from kumiki.joints.workshop.plain_joints import (
     cut_plain_miter_joint,
     cut_plain_miter_joint_on_face_aligned_timbers,
     cut_plain_butt_joint,

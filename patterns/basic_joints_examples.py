@@ -11,7 +11,7 @@ from kumiki.timber import (
     create_v3, V2, CutTimber, Frame
 )
 from kumiki.ticket import Ticket
-from kumiki.joints.basic_joints import (
+from kumiki.joints.workshop.basic_joints import (
     cut_basic_miter_joint,
     cut_basic_miter_joint_on_face_aligned_timbers,
     cut_basic_tongue_and_fork_corner_joint,

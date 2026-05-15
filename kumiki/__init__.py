@@ -13,12 +13,12 @@ from .cutcsg import *
 from .timber import *
 from .footprint import *
 from .construction import *
-from .joints.joint_shavings import *
-from .joints.plain_joints import *
-from .joints.basic_joints import *
-from .joints.mortise_and_tenon_joint import *
-from .joints.japanese_joints import *
-from .joints.double_butt_joints import *
+from .joints.workshop.joint_shavings import *
+from .joints.workshop.plain_joints import *
+from .joints.workshop.basic_joints import *
+from .joints.workshop.mortise_and_tenon_joint import *
+from .joints.workshop.japanese_joints import *
+from .joints.workshop.double_butt_joints import *
 from .measuring import *
 from .patternbook import *
 

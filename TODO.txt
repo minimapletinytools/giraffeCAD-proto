@@ -84,7 +84,7 @@ DONE-come up with sensible instalation strat
   DONE-do proper python env on installing extension, maybe add installation loading screen
   -do vscode extension release
 DONE-add generic miter joint
--do the layers view for timbers and joints, don't do projects/patterns since you can put that in the menu, or maybe youshould still just do it? idk
+DONE/IGNORE-do the layers view for timbers and joints, don't do projects/patterns since you can put that in the menu, or maybe youshould still just do it? idk
 -test installation
   -raw installation of kigumi, installs deps
   -create new project/design
@@ -102,6 +102,7 @@ DONE-add generic miter joint
 
 ::layers TODO
 DONE-add tags to timbers and joints, as a 1 tier overlapping folder system
+DONE-lock and hide fetaures
 -search bar, autocompletes both names and tags
 -tag selection bar
   -has option to choose how many tags to show
@@ -119,14 +120,14 @@ DONE-add tags to timbers and joints, as a 1 tier overlapping folder system
 
 :: TODO
 
--create workshop jonits folders
+DONE-create workshop jonits folders
 -outline finla joint requirements
   -you can probably at least promote the plain joints...
 -have publish package job bump the version number (check current version and bump I guess)
 -test the initialize project thing lol
   -need to pbulish kumiki first
 
--decide on layer view
+DONE/IGNORE-decide on layer view
   -is patternbook part of layer view or separate thing
   -figure out how to do show hide option
   -decide on section: timbers, joints (this is fine for now)
