@@ -174,7 +174,12 @@
             this._treeEl.className = 'lp-tree';
             this.el.appendChild(this._treeEl);
 
+            this._footerEl = document.createElement('div');
+            this._footerEl.className = 'lp-footer';
+            this.el.appendChild(this._footerEl);
+
             this._renderTree();
+            this._renderFooter();
         }
 
         _renderActiveFilters() {
@@ -498,6 +503,29 @@
             }
         }
 
+        _renderFooter() {
+            if (!this._footerEl) return;
+            this._footerEl.innerHTML = '';
+            const anyHidden = this.layerStateStore.hasAnyHidden();
+            const anyLocked = this.layerStateStore.hasAnyLocked();
+            if (!anyHidden && !anyLocked) return;
+
+            if (anyHidden) {
+                const btn = document.createElement('button');
+                btn.className = 'lp-footer-btn';
+                btn.textContent = 'show all';
+                btn.addEventListener('click', () => this.layerStateStore.showAll());
+                this._footerEl.appendChild(btn);
+            }
+            if (anyLocked) {
+                const btn = document.createElement('button');
+                btn.className = 'lp-footer-btn';
+                btn.textContent = 'unlock all';
+                btn.addEventListener('click', () => this.layerStateStore.unlockAll());
+                this._footerEl.appendChild(btn);
+            }
+        }
+
         _updateStateIcons() {
             if (!this.el) return;
             for (const row of this.el.querySelectorAll('.lp-row[data-member-key]')) {
@@ -514,6 +542,7 @@
                     hideBtn.title = state.hidden ? 'Show' : 'Hide';
                 }
             }
+            this._renderFooter();
         }
 
         // ------------------------------------------------------------------

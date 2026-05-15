@@ -468,6 +468,11 @@ class KigumiViewerApp extends LitElement {
         this.setViewPhase(ViewerPhase.WAITING_FOR_RUNNER, 'raising frame', { refreshToken: 0 });
         void this.beginPayloadApplication(INITIAL_PAYLOAD);
         
+        // Apply layer state (hide/lock) whenever it changes
+        this.layerStateStore.onStateChanged(() => {
+            this.applyLayerStates();
+        });
+
         // Setup selection listener
         this.selectionManager.onSelectionChanged((event) => {
             if (event.type === 'clear-timbers' || event.type === 'timber-selected') {
@@ -1039,6 +1044,10 @@ class KigumiViewerApp extends LitElement {
             return;
         }
 
+        if (this.layerStateStore.isLocked(memberKey)) {
+            return;
+        }
+
         if (event.shiftKey) {
             console.log('[csg-nav] action: shift-toggle');
             this.selectionManager.clearCSGSelection();
@@ -1532,6 +1541,16 @@ class KigumiViewerApp extends LitElement {
         }
     }
 
+    applyLayerStates() {
+        for (const [key, bundle] of this.meshObjectsByKey.entries()) {
+            const hidden = this.layerStateStore.isHidden(key);
+            bundle.mesh.visible = !hidden;
+            if (bundle.edges) bundle.edges.visible = !hidden && this.edgesEnabled;
+            if (bundle.reflection) bundle.reflection.visible = !hidden && this.reflectionsEnabled;
+        }
+        this.applySelectionOpacity();
+    }
+
     onGizmoPointerMove(event) {
         if (!this.gizmoDragging) {
             return;
@@ -1919,13 +1938,13 @@ class KigumiViewerApp extends LitElement {
 
     updateReflectionTransforms() {
         const reflectionOffsetZ = this.groundZ * 2 - 0.001;
-        for (const bundle of this.meshObjectsByKey.values()) {
+        for (const [key, bundle] of this.meshObjectsByKey.entries()) {
             if (!bundle.reflection) {
                 continue;
             }
             bundle.reflection.position.set(0, 0, reflectionOffsetZ);
             bundle.reflection.scale.set(1, 1, -1);
-            bundle.reflection.visible = this.reflectionsEnabled;
+            bundle.reflection.visible = this.reflectionsEnabled && !this.layerStateStore.isHidden(key);
         }
     }
 
@@ -1936,9 +1955,9 @@ class KigumiViewerApp extends LitElement {
 
     setEdgesEnabled(enabled) {
         this.edgesEnabled = enabled;
-        for (const bundle of this.meshObjectsByKey.values()) {
+        for (const [key, bundle] of this.meshObjectsByKey.entries()) {
             if (bundle.edges) {
-                bundle.edges.visible = enabled;
+                bundle.edges.visible = enabled && !this.layerStateStore.isHidden(key);
             }
         }
     }
@@ -2584,7 +2603,7 @@ class KigumiViewerApp extends LitElement {
         }
 
         this.updateReflectionTransforms();
-        this.applySelectionOpacity();
+        this.applyLayerStates();
         this._lastMeshBuildMs = meshBuildMs;
         return true;
     }

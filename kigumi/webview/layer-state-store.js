@@ -40,6 +40,24 @@
         isLocked(key) { return this.getState(key).locked; }
         isFixed(key)  { return this.getState(key).fixed; }
 
+        showAll() {
+            for (const key of this.states.keys()) this.setHidden(key, false);
+        }
+
+        unlockAll() {
+            for (const key of this.states.keys()) this.setLocked(key, false);
+        }
+
+        hasAnyHidden() {
+            for (const s of this.states.values()) if (s.hidden) return true;
+            return false;
+        }
+
+        hasAnyLocked() {
+            for (const s of this.states.values()) if (s.locked) return true;
+            return false;
+        }
+
         // Remove state for keys that are no longer in the scene.
         pruneKeys(validKeys) {
             const validSet = new Set(validKeys);
