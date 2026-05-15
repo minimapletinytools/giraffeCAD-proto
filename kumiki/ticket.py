@@ -44,6 +44,7 @@ class TimberTicket(Ticket):
 
     material: Optional[str] = None
     reference_faces: Optional[tuple[str, ...]] = None
+    tags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -83,3 +84,4 @@ class JointTicket(Ticket):
     joint_type: Optional[str] = None
     assembly_order: Optional[int] = None
     assembly_freedom: Optional[AssemblyFreedom] = None
+    tags: tuple[str, ...] = ()

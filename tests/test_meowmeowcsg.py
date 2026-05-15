@@ -2239,12 +2239,12 @@ class TestCSGNaming:
     """Tests for the hierarchical name field on CutCSG subclasses."""
 
     def test_halfspace_name_field(self):
-        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0), tag="shoulder")
-        assert hs.tag == "shoulder"
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0), label="shoulder")
+        assert hs.label == "shoulder"
 
     def test_halfspace_name_default_none(self):
         hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0))
-        assert hs.tag is None
+        assert hs.label is None
 
     def test_rectangular_prism_name_field(self):
         prism = RectangularPrism(
@@ -2252,14 +2252,14 @@ class TestCSGNaming:
             transform=Transform.identity(),
             start_distance=Integer(0),
             end_distance=Integer(10),
-            tag="tenon",
+            label="tenon",
         )
-        assert prism.tag == "tenon"
+        assert prism.label == "tenon"
 
     def test_solid_union_name_field(self):
         hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0))
-        union = SolidUnion(children=[hs], tag="my_cut")
-        assert union.tag == "my_cut"
+        union = SolidUnion(children=[hs], label="my_cut")
+        assert union.label == "my_cut"
 
     def test_difference_name_field(self):
         base = RectangularPrism(
@@ -2269,17 +2269,17 @@ class TestCSGNaming:
             end_distance=Integer(10),
         )
         cut = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(-1)]), offset=Integer(-5))
-        diff = Difference(base=base, subtract=[cut], tag="tenon_cut")
-        assert diff.tag == "tenon_cut"
+        diff = Difference(base=base, subtract=[cut], label="tenon_cut")
+        assert diff.label == "tenon_cut"
 
     def test_adopt_csg_preserves_name_on_solid_union(self):
         """adopt_csg should preserve the name field when transforming SolidUnion."""
-        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0), tag="plane_a")
-        union = SolidUnion(children=[hs], tag="my_joint")
+        hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(0), label="plane_a")
+        union = SolidUnion(children=[hs], label="my_joint")
         adopted = adopt_csg(None, Transform.identity(), union)
         assert isinstance(adopted, SolidUnion)
-        assert adopted.tag == "my_joint"
-        assert adopted.children[0].tag == "plane_a"
+        assert adopted.label == "my_joint"
+        assert adopted.children[0].label == "plane_a"
 
     def test_adopt_csg_preserves_name_on_difference(self):
         """adopt_csg should preserve the name field when transforming Difference."""
@@ -2288,15 +2288,15 @@ class TestCSGNaming:
             transform=Transform.identity(),
             start_distance=Integer(0),
             end_distance=Integer(10),
-            tag="base_prism",
+            label="base_prism",
         )
-        cut = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(-1)]), offset=Integer(-5), tag="cut_plane")
-        diff = Difference(base=base, subtract=[cut], tag="my_diff")
+        cut = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(-1)]), offset=Integer(-5), label="cut_plane")
+        diff = Difference(base=base, subtract=[cut], label="my_diff")
         adopted = adopt_csg(None, Transform.identity(), diff)
         assert isinstance(adopted, Difference)
-        assert adopted.tag == "my_diff"
-        assert adopted.base.tag == "base_prism"
-        assert adopted.subtract[0].tag == "cut_plane"
+        assert adopted.label == "my_diff"
+        assert adopted.base.label == "base_prism"
+        assert adopted.subtract[0].label == "cut_plane"
 
     def test_adopt_csg_preserves_name_on_primitives(self):
         """adopt_csg should preserve name on primitive types that use replace()."""
@@ -2305,10 +2305,10 @@ class TestCSGNaming:
             transform=Transform.identity(),
             start_distance=Integer(0),
             end_distance=Integer(10),
-            tag="my_prism",
+            label="my_prism",
         )
         adopted = adopt_csg(None, Transform.identity(), prism)
-        assert adopted.tag == "my_prism"
+        assert adopted.label == "my_prism"
 
     def test_cutting_name_wraps_in_named_solid_union(self):
         """Cutting with a name wraps get_negative_csg_local() in a named SolidUnion."""
@@ -2321,10 +2321,10 @@ class TestCSGNaming:
             ticket=TimberTicket(name="test_timber"),
         )
         hs = HalfSpace(normal=Matrix([Integer(0), Integer(0), Integer(1)]), offset=Integer(50))
-        cutting = Cutting(timber=timber, maybe_top_end_cut=hs, tag="my_joint")
+        cutting = Cutting(timber=timber, maybe_top_end_cut=hs, label="my_joint")
         result = cutting.get_negative_csg_local()
         assert isinstance(result, SolidUnion)
-        assert result.tag == "my_joint"
+        assert result.label == "my_joint"
 
     def test_cutting_no_name_returns_raw_csg(self):
         """Cutting without a name returns the raw CSG, not wrapped."""

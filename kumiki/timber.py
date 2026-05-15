@@ -1329,45 +1329,38 @@ class Cutting:
     # Does NOT include the end cuts (those are stored separately above)
     negative_csg: Optional[CutCSG] = None
 
-    # Optional tag for this cutting in the CSG hierarchy (e.g. "mortise_and_tenon").
-    # When set, get_negative_csg_local() wraps the result in a tagged SolidUnion so that
-    # the viewer can navigate the CSG tree by tag.
-    tag: Optional[str] = None
-    
+    # Optional label for this cutting in the CSG hierarchy (e.g. "mortise_and_tenon").
+    # When set, get_negative_csg_local() wraps the result in a labeled SolidUnion grouping
+    # node so that the viewer can navigate the CSG tree by label.
+    label: Optional[str] = None
+
     def get_negative_csg_local(self) -> CutCSG:
         """
         Get the complete negative CSG including end cuts.
-        
+
         Returns the union of negative_csg with any end cuts that are defined.
-        If self.tag is set, wraps the result in a tagged SolidUnion grouping node.
+        If self.label is set, wraps the result in a labeled SolidUnion grouping node.
         """
-        # Collect all CSG components
         csg_components = []
-        
-        # Add the base negative_csg if it exists
+
         if self.negative_csg is not None:
             csg_components.append(self.negative_csg)
-        
-        # Add end cuts if they exist
+
         if self.maybe_top_end_cut is not None:
             csg_components.append(self.maybe_top_end_cut)
         if self.maybe_bottom_end_cut is not None:
             csg_components.append(self.maybe_bottom_end_cut)
-        
-        # Return union of all components, or empty if none exist
+
         if len(csg_components) == 0:
-            # No cuts at all - this shouldn't happen but handle gracefully
-            # Return a HalfSpace that contains nothing (impossible condition)
             return HalfSpace(normal=create_v3(Integer(0), Integer(0), Integer(1)), offset=Rational(-999999))
         elif len(csg_components) == 1:
             result = csg_components[0]
-            if self.tag is not None:
+            if self.label is not None:
                 from .cutcsg import SolidUnion
-                # Preserve any existing tag on the component by wrapping it.
-                result = SolidUnion([result], tag=self.tag)
+                result = SolidUnion([result], label=self.label)
         else:
             from .cutcsg import SolidUnion
-            result = SolidUnion(csg_components, tag=self.tag)
+            result = SolidUnion(csg_components, label=self.label)
 
         return result
 

@@ -217,7 +217,7 @@ def cut_mortise_and_tenon_joint(
             ("tenon_back", PrismFace.BACK),
             (tenon_tip_name, PrismFace.TOP),
         ],
-        tag="tenon",
+        label="tenon",
     )
 
     tenon_prism_cropping_csgs: Optional[List[CutCSG]] = None
@@ -255,7 +255,7 @@ def cut_mortise_and_tenon_joint(
     shoulder_half_space_global = HalfSpace(
         normal=-shoulder_plane.normal,
         offset=safe_dot_product(-shoulder_plane.normal, marking_space.transform.position),
-        tag="shoulder",
+        label="shoulder",
     )
 
     tenon_prism_cropped = (
@@ -295,7 +295,7 @@ def cut_mortise_and_tenon_joint(
             transform=mortise_hole_transform,
             start_distance=-back_extension,
             end_distance=mortise_depth,
-            tag="mortise_hole",
+            label="mortise_hole",
         )
     else:
         mortise_hole_prism_global = RectangularPrism(
@@ -303,7 +303,7 @@ def cut_mortise_and_tenon_joint(
             transform=marking_space.transform,
             start_distance=-back_extension,
             end_distance=mortise_depth,
-            tag="mortise_hole",
+            label="mortise_hole",
         )
 
     # -------------------------------------------------------------------------
@@ -347,7 +347,7 @@ def cut_mortise_and_tenon_joint(
         maybe_top_end_cut=None,
         maybe_bottom_end_cut=None,
         negative_csg=mortise_negative_csg,
-        tag="mortise_and_tenon",
+        label="mortise_and_tenon",
     )
 
     # Redundant end cut at the tip of the tenon prism (in tenon timber local)
@@ -366,7 +366,7 @@ def cut_mortise_and_tenon_joint(
         maybe_top_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.TOP else None,
         maybe_bottom_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.BOTTOM else None,
         negative_csg=tenon_cut_csg,
-        tag="mortise_and_tenon",
+        label="mortise_and_tenon",
     )
 
     joint_accessories = {}
@@ -392,7 +392,7 @@ def cut_mortise_and_tenon_joint(
                 ),
                 start_distance=0,
                 end_distance=peg_result.peg_depth,
-                tag=f"peg_hole_{peg_idx}",
+                label=f"peg_hole_{peg_idx}",
             )
             peg_holes_in_tenon_local.append(adopt_csg(None, tenon_timber.transform, peg_hole_tenon_global))
 
@@ -405,7 +405,7 @@ def cut_mortise_and_tenon_joint(
                 ),
                 start_distance=Rational(0),
                 end_distance=peg_result.peg_depth,
-                tag=f"peg_hole_{peg_idx}",
+                label=f"peg_hole_{peg_idx}",
             )
             peg_holes_in_mortise_local.append(adopt_csg(None, mortise_timber.transform, peg_hole_mortise_global))
 
@@ -429,7 +429,7 @@ def cut_mortise_and_tenon_joint(
                 maybe_top_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.TOP else None,
                 maybe_bottom_end_cut=redundant_end_cut if tenon_end == TimberReferenceEnd.BOTTOM else None,
                 negative_csg=tenon_cut_with_pegs_csg,
-                tag="mortise_and_tenon",
+                label="mortise_and_tenon",
             )
         if peg_holes_in_mortise_local:
             mortise_cut_with_pegs_csg = CSGUnion(children=[mortise_negative_csg] + peg_holes_in_mortise_local)
@@ -438,7 +438,7 @@ def cut_mortise_and_tenon_joint(
                 maybe_top_end_cut=None,
                 maybe_bottom_end_cut=None,
                 negative_csg=mortise_cut_with_pegs_csg,
-                tag="mortise_and_tenon",
+                label="mortise_and_tenon",
             )
 
     tenon_cut_timber = CutTimber(timber=tenon_timber, cuts=[tenon_cut])
