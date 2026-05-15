@@ -84,7 +84,7 @@ case study: double miter 2x4 with double miter on both end
   DONE-do proper python env on installing extension, maybe add installation loading screen
   -do vscode extension release
 -do the layers view for timbers and joints, don't do projects/patterns since you can put that in the menu, or maybe youshould still just do it? idk
--add generic miter joint
+DONE-add generic miter joint
 -finish docs
   -finish README
   -finish agents doc

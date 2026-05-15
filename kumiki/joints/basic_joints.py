@@ -14,6 +14,7 @@ from kumiki.rule import *
 from .plain_joints import (
     cut_plain_miter_joint,
     cut_plain_miter_joint_on_face_aligned_timbers,
+    cut_plain_butt_joint,
     cut_plain_butt_joint_on_face_aligned_timbers,
     cut_tongue_and_fork_corner_joint,
     cut_tongue_and_fork_butt_joint,
@@ -147,6 +148,23 @@ def cut_basic_tongue_and_fork_butt_joint(
         tongue_thickness=tongue_thickness,
         tongue_position=tongue_position,
     )
+
+
+def cut_basic_butt_joint(arrangement: ButtJointTimberArrangement) -> Joint:
+    """
+    Creates a butt joint where the butt timber is cut flush with the receiving timber's face.
+
+    The butt timber's end is cut along the plane of the best-matching long face of the
+    receiving timber. Works at any non-parallel angle. The receiving timber is not cut.
+    Convenience wrapper; see `cut_plain_butt_joint` for details.
+
+    Args:
+        arrangement: Butt joint arrangement with butt_timber, receiving_timber, butt_timber_end.
+
+    Returns:
+        Joint object containing the cut butt timber and uncut receiving timber.
+    """
+    return cut_plain_butt_joint(arrangement)
 
 
 def cut_basic_butt_joint_on_face_aligned_timbers(arrangement: ButtJointTimberArrangement) -> Joint:
