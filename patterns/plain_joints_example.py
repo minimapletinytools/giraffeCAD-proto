@@ -29,6 +29,7 @@ from kumiki.timber import (
 from kumiki.joints.plain_joints import (
     cut_plain_miter_joint,
     cut_plain_miter_joint_on_face_aligned_timbers,
+    cut_plain_butt_joint,
     cut_plain_butt_joint_on_face_aligned_timbers,
     cut_tongue_and_fork_corner_joint,
     cut_tongue_and_fork_butt_joint,
@@ -258,6 +259,57 @@ def make_butt_joint_example(position: V3) -> list[CutTimber]:
     return list(joint.cut_timbers.values())
 
 
+def make_butt_joint_3d_angles_example(position: V3) -> list[CutTimber]:
+    """
+    Butt joint with the butt timber approaching at an oblique 3D angle, meeting
+    the receiving timber at mid-height.
+
+    Receiving timber: vertical post along Z.
+    Butt timber: direction (-2, 1, 1)/sqrt(6) — has significant X, Y, and Z components.
+    The TOP end is positioned to meet the receiving post's right (+X) face at mid-height.
+    """
+    from sympy import sqrt
+
+    sqrt6 = sqrt(6)
+    sqrt5 = sqrt(5)
+
+    # Receiving timber: vertical post along Z
+    receiving = timber_from_directions(
+        length=TIMBER_LENGTH,
+        size=TIMBER_SIZE_2D,
+        bottom_position=position,
+        length_direction=Matrix([Rational(0), Rational(0), Rational(1)]),
+        width_direction=Matrix([Rational(1), Rational(0), Rational(0)]),
+        ticket=TimberTicket("ButtWeird_Receiving"),
+    )
+
+    # Butt direction (-2, 1, 1)/sqrt(6): travels in -X, +Y, +Z — all three axes.
+    # The perpendicular width (1, 2, 0)/sqrt(5) satisfies: (-2)(1)+(1)(2)+(1)(0) = 0.
+    dirB = Matrix([Rational(-2), Rational(1), Rational(1)]) / sqrt6
+    widthB = Matrix([Rational(1), Rational(2), Rational(0)]) / sqrt5
+
+    # Place the butt timber so its TOP lands exactly at the receiving post's right
+    # face (+X) center at mid-height: position + (TIMBER_WIDTH/2, 0, TIMBER_LENGTH/2).
+    right_face_mid = position + Matrix([TIMBER_WIDTH / 2, Rational(0), TIMBER_LENGTH / 2])
+    butt_bottom = right_face_mid - TIMBER_LENGTH * dirB
+
+    butt = timber_from_directions(
+        length=TIMBER_LENGTH,
+        size=TIMBER_SIZE_2D,
+        bottom_position=butt_bottom,
+        length_direction=dirB,
+        width_direction=widthB,
+        ticket=TimberTicket("ButtWeird_Butt"),
+    )
+
+    joint = cut_plain_butt_joint(ButtJointTimberArrangement(
+        receiving_timber=receiving,
+        butt_timber=butt,
+        butt_timber_end=TimberReferenceEnd.TOP,
+    ))
+    return list(joint.cut_timbers.values())
+
+
 def make_splice_joint_example(position: V3) -> list[CutTimber]:
     """
     Create a splice joint where two aligned timbers are joined end-to-end.
@@ -452,6 +504,9 @@ def create_plain_joints_patternbook() -> PatternBook:
 
         (PatternMetadata("butt_joint", ["plain_joints", "butt"], "frame"),
          lambda center: Frame(cut_timbers=make_butt_joint_example(center), name="Butt Joint")),
+
+        (PatternMetadata("butt_joint_3d_angles", ["plain_joints", "butt"], "frame"),
+         lambda center: Frame(cut_timbers=make_butt_joint_3d_angles_example(center), name="Butt Joint (3D Angles)")),
 
         (PatternMetadata("tongue_and_fork_corner_joint_90", ["plain_joints", "tongue_and_fork"], "frame"),
          lambda center: Frame(cut_timbers=make_tongue_and_fork_corner_joint_90_example(center), name="Tongue and Fork Corner (90°)")),

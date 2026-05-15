@@ -208,12 +208,95 @@ def cut_plain_miter_joint_on_face_aligned_timbers(arrangement: CornerJointTimber
     return cut_plain_miter_joint(arrangement)
 
 
+def cut_plain_butt_joint(arrangement: ButtJointTimberArrangement) -> Joint:
+    """
+    Creates a butt joint where the butt timber is cut flush with the face of the receiving timber.
+
+    The butt timber's end is trimmed along the plane of the best-matching long face of the
+    receiving timber. The receiving timber is not cut.
+
+    Works for any non-parallel angle between the timbers, including oblique 3D angles.
+    The cut plane follows the actual receiving face geometry rather than being perpendicular
+    to the butt timber's axis, so the mating face is always flush.
+
+    Args:
+        arrangement: Butt joint arrangement with butt_timber, receiving_timber, butt_timber_end.
+
+    Returns:
+        Joint object containing the cut butt timber and uncut receiving timber.
+
+    Raises:
+        AssertionError: If the timbers are parallel.
+    """
+    from kumiki.rule import safe_dot_product, safe_compare, Comparison, safe_transform_vector
+
+    receiving_timber = arrangement.receiving_timber
+    butt_timber = arrangement.butt_timber
+    butt_end = arrangement.butt_timber_end
+
+    assert not are_vectors_parallel(
+        receiving_timber.get_length_direction_global(),
+        butt_timber.get_length_direction_global(),
+    ), "Timbers cannot be parallel for a butt joint"
+
+    # Get the direction of the butt end (pointing outward from the timber body)
+    if butt_end == TimberReferenceEnd.TOP:
+        butt_direction = butt_timber.get_length_direction_global()
+    else:
+        butt_direction = -butt_timber.get_length_direction_global()
+
+    # Find the long face of the receiving timber that faces the incoming butt timber.
+    # We pass -butt_direction because the face we want has its outward normal pointing
+    # toward the butt timber (i.e., opposite to the butt travel direction).
+    receiving_face = receiving_timber.get_closest_oriented_long_face_from_global_direction(-butt_direction)
+    receiving_face_dir_global = receiving_timber.get_face_direction_global(receiving_face)
+
+    # A point on the receiving face plane (use face center)
+    face_center = _get_face_center_position(receiving_timber, receiving_face)
+
+    # Orient the cut-plane normal to point in the direction material is removed
+    # (i.e., away from the butt timber body, toward the receiving timber).
+    # The receiving face normal points toward the butt, so flip it.
+    dot_check = safe_dot_product(receiving_face_dir_global, butt_direction)
+    if safe_compare(dot_check, 0, Comparison.GT):
+        cut_normal_global = receiving_face_dir_global
+    else:
+        cut_normal_global = -receiving_face_dir_global
+
+    # Convert cut plane to butt timber local coordinates
+    local_normal = safe_transform_vector(butt_timber.orientation.matrix.T, cut_normal_global)
+    local_offset = (
+        safe_dot_product(cut_normal_global, face_center)
+        - safe_dot_product(cut_normal_global, butt_timber.get_bottom_position_global())
+    )
+
+    end_cut = HalfSpace(normal=local_normal, offset=local_offset)
+
+    cut = Cutting(
+        timber=butt_timber,
+        maybe_top_end_cut=end_cut if butt_end == TimberReferenceEnd.TOP else None,
+        maybe_bottom_end_cut=end_cut if butt_end == TimberReferenceEnd.BOTTOM else None,
+        negative_csg=None,
+    )
+
+    joint = Joint(
+        cut_timbers={
+            "receiving_timber": CutTimber(receiving_timber, cuts=[]),
+            "butt_timber": CutTimber(butt_timber, cuts=[cut]),
+        },
+        ticket=JointTicket(joint_type="plain_butt"),
+        jointAccessories={},
+    )
+
+    return joint
+
+
 def cut_plain_butt_joint_on_face_aligned_timbers(arrangement: ButtJointTimberArrangement) -> Joint:
     """
     Creates a butt joint where the butt timber is cut flush with the face of the receiving timber.
 
-    The receiving timber is not cut. The butt timber's end is trimmed to sit flat against the
-    receiving timber's face. Timbers must be face-aligned and non-parallel.
+    Requires the timbers to be face-aligned. For an unrestricted version that works at any
+    angle, use `cut_plain_butt_joint` directly.
 
     Args:
         arrangement: Butt joint arrangement with butt_timber, receiving_timber, butt_timber_end.
@@ -225,62 +308,57 @@ def cut_plain_butt_joint_on_face_aligned_timbers(arrangement: ButtJointTimberArr
     Raises:
         AssertionError: If the timbers are not face-aligned or are parallel.
     """
+    assert are_timbers_face_aligned(arrangement.receiving_timber, arrangement.butt_timber), \
+        "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
+    return cut_plain_butt_joint(arrangement)
+
+
+def cut_plain_butt_joint_on_face_aligned_timbers_DEPRECATED(arrangement: ButtJointTimberArrangement) -> Joint:
+    """
+    DEPRECATED: Use `cut_plain_butt_joint_on_face_aligned_timbers` instead.
+
+    Original implementation kept for reference. The new thin wrapper delegates to
+    `cut_plain_butt_joint` which uses the receiving face plane directly, producing
+    identical results for face-aligned perpendicular timbers.
+    """
     receiving_timber = arrangement.receiving_timber
     butt_timber = arrangement.butt_timber
     butt_end = arrangement.butt_timber_end
-    
+
     assert are_timbers_face_aligned(receiving_timber, butt_timber), \
         "Timbers must be face-aligned (orientations related by 90-degree rotations) for this joint type"
-    
-    # Check that timbers are not parallel (butt joints require timbers to be at an angle)
+
     assert not are_vectors_parallel(receiving_timber.get_length_direction_global(), butt_timber.get_length_direction_global()), \
         "Timbers cannot be parallel for a butt joint"
-    
-    # Get the direction of the butt end (pointing outward from the timber)
+
     if butt_end == TimberReferenceEnd.TOP:
         butt_direction = butt_timber.get_length_direction_global()
-        butt_end_position = locate_top_center_position(butt_timber).position
-    else:  # BOTTOM
+    else:
         butt_direction = -butt_timber.get_length_direction_global()
-        butt_end_position = locate_bottom_center_position(butt_timber).position
-    
-    # Find which face of the receiving timber the butt is approaching
-    # The butt approaches opposite to its end direction
+
     receiving_face = receiving_timber.get_closest_oriented_face_from_global_direction(-butt_direction)
-    receiving_face_direction = receiving_timber.get_face_direction_global(receiving_face)
-    
-    # Compute the center position of the receiving face
+
     face_center = _get_face_center_position(receiving_timber, receiving_face)
-    
-    # Calculate distance from the specified butt end to the receiving face
+
     from kumiki.rule import safe_dot_product
     distance_from_bottom = safe_dot_product(face_center - butt_timber.get_bottom_position_global(), butt_timber.get_length_direction_global())
     distance_from_end = butt_timber.length - distance_from_bottom if butt_end == TimberReferenceEnd.TOP else distance_from_bottom
-    
-    # Create the end cut HalfSpace
+
     end_cut_half_space = Cutting.make_end_cut(butt_timber, butt_end, distance_from_end)
-    
-    # Create the Cut
+
     cut = Cutting(
         timber=butt_timber,
         maybe_top_end_cut=end_cut_half_space if butt_end == TimberReferenceEnd.TOP else None,
         maybe_bottom_end_cut=end_cut_half_space if butt_end == TimberReferenceEnd.BOTTOM else None,
         negative_csg=None
     )
-    
-    # Create CutTimber for the butt timber with cut passed at construction
-    cut_butt = CutTimber(butt_timber, cuts=[cut])
-    
-    # Create CutTimber for the receiving timber (no cuts)
-    cut_receiving = CutTimber(receiving_timber, cuts=[])
-    
-    # Create and return the Joint with all data at construction
+
     joint = Joint(
-        cut_timbers={"receiving_timber": cut_receiving, "butt_timber": cut_butt},
+        cut_timbers={"receiving_timber": CutTimber(receiving_timber, cuts=[]), "butt_timber": CutTimber(butt_timber, cuts=[cut])},
         ticket=JointTicket(joint_type="plain_butt"),
         jointAccessories={},
     )
-    
+
     return joint
 
 
