@@ -221,9 +221,21 @@ class FrameViewSession {
                 });
                 return;
             }
-            if (message.type === 'getCsgByPath') {
-                this._handleGetCsgByPath(message).catch((err) => {
-                    this.log(`[csg-nav] getCsgByPath error: ${err.message || err}`);
+            if (message.type === 'requestCSGTree') {
+                this._handleRequestCSGTree(message).catch((err) => {
+                    this.log(`[layers] requestCSGTree error: ${err.message || err}`);
+                });
+                return;
+            }
+            if (message.type === 'requestCSGByPath') {
+                this._handleRequestCSGByPath(message).catch((err) => {
+                    this.log(`[layers] requestCSGByPath error: ${err.message || err}`);
+                });
+                return;
+            }
+            if (message.type === 'requestLayersTree') {
+                this._handleRequestLayersTree(message).catch((err) => {
+                    this.log(`[layers] requestLayersTree error: ${err.message || err}`);
                 });
                 return;
             }
@@ -436,6 +448,15 @@ class FrameViewSession {
             const geometryData = await this.runnerSession.slotRequest('get_geometry', this.slotName, this.refreshOptions);
             this.profiler.markTiming(timing, 'runner.get_geometry.end');
 
+            this.profiler.markTiming(timing, 'runner.get_layers_tree.start');
+            let layersData = null;
+            try {
+                layersData = await this.runnerSession.slotRequest('get_layers_tree', this.slotName);
+            } catch (err) {
+                this.log(`[layers] get_layers_tree failed: ${err.message || err}`);
+            }
+            this.profiler.markTiming(timing, 'runner.get_layers_tree.end');
+
             const refresh_total_s = Number(process.hrtime.bigint() - refreshStartNs) / 1e9;
 
             const changedKeys = Array.isArray(geometryData && geometryData.changedKeys) ? geometryData.changedKeys : [];
@@ -500,6 +521,15 @@ class FrameViewSession {
             this._lastFrameData = frameData;
             this._lastGeometryData = geometryData;
             this._lastProfiling = profiling;
+            this._lastLayersData = layersData;
+            if (layersData && this.panel && !this.isDisposed) {
+                this.panel.webview.postMessage({
+                    type: 'layersTree',
+                    payload: layersData,
+                }).catch((err) => {
+                    this.log(`[layers] Failed to post layers tree: ${err.message || err}`);
+                });
+            }
             this.profiler.markTiming(timing, 'webview.renderFrameViewer.end');
             this.profiler.markTiming(timing, 'refresh.end', { refresh_total_ms: Math.round(refresh_total_s * 1000) });
             this.log(`[refresh] Reload complete for ${path.basename(this.filePath)}`);
@@ -558,20 +588,6 @@ class FrameViewSession {
         };
     }
 
-    async _handleGetCsgByPath(message) {
-        if (!this.runnerSession) {
-            return;
-        }
-        const payload = {
-            memberKey: message.memberKey,
-            path: message.path || [],
-        };
-        const result = await this.runnerSession.slotRequest('get_csg_by_path', this.slotName, payload);
-        if (this.panel && !this.isDisposed) {
-            this.panel.webview.postMessage({ type: 'csgSelectionResult', ...result });
-        }
-    }
-
     async _handleFindCSGAtPoint(message) {
         if (!this.runnerSession) {
             return;
@@ -585,6 +601,49 @@ class FrameViewSession {
         const result = await this.runnerSession.slotRequest('find_csg_at_point', this.slotName, payload);
         if (this.panel && !this.isDisposed) {
             this.panel.webview.postMessage({ type: 'csgSelectionResult', ...result });
+        }
+    }
+
+    async _handleRequestCSGTree(message) {
+        if (!this.runnerSession) {
+            return;
+        }
+        const payload = {
+            memberKey: message.memberKey,
+            cutIndex: Number.isFinite(message.cutIndex) ? Number(message.cutIndex) : 0,
+        };
+        const result = await this.runnerSession.slotRequest('get_csg_tree', this.slotName, payload);
+        if (this.panel && !this.isDisposed) {
+            this.panel.webview.postMessage({ type: 'csgTree', payload: result });
+        }
+    }
+
+    async _handleRequestCSGByPath(message) {
+        if (!this.runnerSession) {
+            return;
+        }
+        const payload = {
+            memberKey: message.memberKey,
+            path: Array.isArray(message.path) ? message.path : [],
+            featureLabel: message.featureLabel || null,
+        };
+        try {
+            const result = await this.runnerSession.slotRequest('find_csg_by_path', this.slotName, payload);
+            if (this.panel && !this.isDisposed) {
+                this.panel.webview.postMessage({ type: 'csgSelectionResult', ...result });
+            }
+        } catch (err) {
+            this.log(`[layers] find_csg_by_path failed: ${err.message || err}`);
+        }
+    }
+
+    async _handleRequestLayersTree(message) {
+        if (!this.runnerSession) {
+            return;
+        }
+        const result = await this.runnerSession.slotRequest('get_layers_tree', this.slotName);
+        if (this.panel && !this.isDisposed) {
+            this.panel.webview.postMessage({ type: 'layersTree', payload: result });
         }
     }
 

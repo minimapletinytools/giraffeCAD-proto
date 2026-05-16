@@ -85,6 +85,13 @@ DONE-come up with sensible instalation strat
   -do vscode extension release
 DONE-add generic miter joint
 DONE/IGNORE-do the layers view for timbers and joints, don't do projects/patterns since you can put that in the menu, or maybe youshould still just do it? idk
+-kigumi
+  DONE-make the initilaize kigumi prjoect an actually BUTTON rather than just ar egular text thing that you click on
+  DONE-add initalizing progress bar that also prevents you from double running the initialize method, in general the initilaize method should check if initailzation is already in progress
+  DONE-create a better default my_cute_frame (the current one does not work, calls non existing bulid_cube_frame function, instead make a super simple saw hores as teh example or somethnig
+  -increase contrast between background and objects
+  -or maybe reduce global lighting so faces are more pronounced
+  -make cute frame tenons more flat and add draw bores just for fun
 -test installation
   -raw installation of kigumi, installs deps
   -create new project/design
@@ -134,6 +141,7 @@ DONE/IGNORE-decide on layer view
     -how do these sections integrate with folders
   -decide on folders being string refs or actual refs when constructing...
 
+-do create_frame(paremteers) thing so that parameters can be tuned in UI
 
 -pattern viewer (improved)
   DONE-pull out pattern scanning functionality into librarian.py (workspace, dependencies, and kumiki) and it should return a patternbook and list of frames / examples
@@ -156,7 +164,7 @@ DONE/IGNORE-decide on layer view
 
 -do spiral castle design hehe
   -you need the castle joint I guess, time to try out 3 way joints
--do create_frame(paremteers) thing so that parameters can be tuned in UI
+
 
 -do tinyhouse shed
   DONE-fix joists between intermediate posts, they should mortise and tenon into the posts

@@ -34,8 +34,6 @@ const INITIAL_PAYLOAD = window.__KIGUMI_INITIAL_PAYLOAD__ || {
 const vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
 const VIEWER_APP_VERSION = '2026.03.17.4';
 const SelectionStore = window.SelectionStore;
-const LayerStateStore = window.LayerStateStore;
-const LayersPanel = window.LayersPanel;
 
 const CSG_HIGHLIGHT_COLORS = Object.freeze({
     tagged: 0x4fc3f7,
@@ -188,10 +186,6 @@ class ViewerSettingsPanel {
                     debug info
                 </label>
                 <label>
-                    <input id="tag-pills-toggle" type="checkbox" ?checked=${this.app.layersPanel && this.app.layersPanel.showTagPills}>
-                    tag pills
-                </label>
-                <label>
                     unselected visibility (${100 - this.app.unselectedTransparencyPercent}%)
                     <input
                         id="unselected-transparency-slider"
@@ -230,7 +224,6 @@ class ViewerSettingsPanel {
         const reflectionsToggle = renderRoot.querySelector('#reflections-toggle');
         const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
         const debugToggle = renderRoot.querySelector('#debug-toggle');
-        const tagPillsToggle = renderRoot.querySelector('#tag-pills-toggle');
         const timberProfileSelect = renderRoot.querySelector('#timber-profile-select');
         const accessoryProfileSelect = renderRoot.querySelector('#accessory-profile-select');
         const refreshButton = renderRoot.querySelector('#refresh-btn');
@@ -251,14 +244,6 @@ class ViewerSettingsPanel {
                 debugEl.style.display = this.app.debugEnabled ? 'block' : 'none';
             }
         });
-
-        if (tagPillsToggle) {
-            tagPillsToggle.addEventListener('change', (event) => {
-                if (this.app.layersPanel) {
-                    this.app.layersPanel.setShowTagPills(event.target.checked);
-                }
-            });
-        }
 
         shadowsToggle.addEventListener('change', (event) => {
             this.app.setShadowsEnabled(event.target.checked);
@@ -363,8 +348,6 @@ class KigumiViewerApp extends LitElement {
         this.orbitCenterGizmo = null;
 
         this.selectionManager = new SelectionStore();
-        this.layerStateStore = new LayerStateStore();
-        this.layersPanel = new LayersPanel(this.selectionManager, this.layerStateStore);
         this._csgHighlightMesh = null;
         this._csgParentHighlightMesh = null;
         this.meshKeyMap = new Map(); // mesh object -> member key
@@ -405,6 +388,7 @@ class KigumiViewerApp extends LitElement {
     render() {
         return html`
             <button id="to-v3d" title="Jump back to 3D view">to v3d view</button>
+            <kigumi-layers-view id="layers-view"></kigumi-layers-view>
             <div id="viewport">
                 <canvas id="c"></canvas>
                 <div id="loading-overlay" class=${this.isOverlayVisible() ? 'visible' : ''}>
@@ -428,6 +412,21 @@ class KigumiViewerApp extends LitElement {
             </div>
             ${this.settingsPanel.render()}
             <div id="panels">
+                <div class="panel-box">
+                    <div class="panel-title">Member List</div>
+                    <div id="timber-panel">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th><th>Type</th><th>Name</th>
+                                    <th>Length</th><th>Width</th><th>Height</th>
+                                    <th>CSG</th><th>Feat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="timber-rows"></tbody>
+                        </table>
+                    </div>
+                </div>
                 <div class="panel-box">
                     <div class="panel-title">Raw Python Output</div>
                     <pre id="raw-output"></pre>
@@ -462,27 +461,35 @@ class KigumiViewerApp extends LitElement {
     firstUpdated() {
         this.setupUiEvents();
         this.setupThreeScene();
-        this.layersPanel.mount(this.renderRoot.querySelector('#viewport'));
         window.addEventListener('message', this.onWindowMessage);
         this.setViewerOptions(INITIAL_PAYLOAD.viewerOptions);
         this.setViewPhase(ViewerPhase.WAITING_FOR_RUNNER, 'raising frame', { refreshToken: 0 });
         void this.beginPayloadApplication(INITIAL_PAYLOAD);
         
-        // Apply layer state (hide/lock) whenever it changes
-        this.layerStateStore.onStateChanged(() => {
-            this.applyLayerStates();
-        });
-
         // Setup selection listener
         this.selectionManager.onSelectionChanged((event) => {
             if (event.type === 'clear-timbers' || event.type === 'timber-selected') {
-                this.selectionManager.clearCSGSelection();
-                this.removeCSGHighlight();
+                // Only clear CSG when the timber change is a "fresh" user
+                // action (not caused by layers-view setting CSG first, which
+                // also selects the timber for opacity purposes).
+                if (!this.selectionManager.csgSelection) {
+                    this.removeCSGHighlight();
+                }
             }
             this.applySelectionOpacity();
             this.updateInfo(this.currentFrameData);
         });
-        
+
+        // Attach Layers panel to selection store + extension messaging.
+        const layersView = this.renderRoot.querySelector('#layers-view');
+        if (layersView && typeof layersView.attach === 'function') {
+            layersView.attach(this.selectionManager, vscode);
+        }
+        this._layersView = layersView;
+        if (vscode) {
+            vscode.postMessage({ type: 'requestLayersTree' });
+        }
+
         this.emitViewerLog('viewer-ready', {});
     }
 
@@ -524,7 +531,6 @@ class KigumiViewerApp extends LitElement {
             });
             this.orbitCenterGizmo = null;
         }
-        this.layersPanel.destroy();
         for (const bundle of this.meshObjectsByKey.values()) {
             this.disposeMeshBundle(bundle);
         }
@@ -871,6 +877,20 @@ class KigumiViewerApp extends LitElement {
             return;
         }
 
+        if (message.type === 'layersTree') {
+            if (this._layersView && typeof this._layersView.setLayersPayload === 'function') {
+                this._layersView.setLayersPayload(message.payload || {});
+            }
+            return;
+        }
+
+        if (message.type === 'csgTree') {
+            if (this._layersView && typeof this._layersView.mergeCSGTreePayload === 'function') {
+                this._layersView.mergeCSGTreePayload(message.payload || {});
+            }
+            return;
+        }
+
         if (message.type === 'patternLoadResult') {
             this.handlePatternLoadResult(message);
             return;
@@ -1041,10 +1061,6 @@ class KigumiViewerApp extends LitElement {
         }
 
         if (!memberKey) {
-            return;
-        }
-
-        if (this.layerStateStore.isLocked(memberKey)) {
             return;
         }
 
@@ -1541,16 +1557,6 @@ class KigumiViewerApp extends LitElement {
         }
     }
 
-    applyLayerStates() {
-        for (const [key, bundle] of this.meshObjectsByKey.entries()) {
-            const hidden = this.layerStateStore.isHidden(key);
-            bundle.mesh.visible = !hidden;
-            if (bundle.edges) bundle.edges.visible = !hidden && this.edgesEnabled;
-            if (bundle.reflection) bundle.reflection.visible = !hidden && this.reflectionsEnabled;
-        }
-        this.applySelectionOpacity();
-    }
-
     onGizmoPointerMove(event) {
         if (!this.gizmoDragging) {
             return;
@@ -1938,13 +1944,13 @@ class KigumiViewerApp extends LitElement {
 
     updateReflectionTransforms() {
         const reflectionOffsetZ = this.groundZ * 2 - 0.001;
-        for (const [key, bundle] of this.meshObjectsByKey.entries()) {
+        for (const bundle of this.meshObjectsByKey.values()) {
             if (!bundle.reflection) {
                 continue;
             }
             bundle.reflection.position.set(0, 0, reflectionOffsetZ);
             bundle.reflection.scale.set(1, 1, -1);
-            bundle.reflection.visible = this.reflectionsEnabled && !this.layerStateStore.isHidden(key);
+            bundle.reflection.visible = this.reflectionsEnabled;
         }
     }
 
@@ -1955,9 +1961,9 @@ class KigumiViewerApp extends LitElement {
 
     setEdgesEnabled(enabled) {
         this.edgesEnabled = enabled;
-        for (const [key, bundle] of this.meshObjectsByKey.entries()) {
+        for (const bundle of this.meshObjectsByKey.values()) {
             if (bundle.edges) {
-                bundle.edges.visible = enabled && !this.layerStateStore.isHidden(key);
+                bundle.edges.visible = enabled;
             }
         }
     }
@@ -2381,6 +2387,26 @@ class KigumiViewerApp extends LitElement {
         }
     }
 
+    rebuildTimberTable(meshes) {
+        const tbody = this.renderRoot.querySelector('#timber-rows');
+        tbody.textContent = '';
+        for (let index = 0; index < meshes.length; index += 1) {
+            const mesh = meshes[index];
+            const typeLabel = mesh.memberType === 'accessory' ? 'Accessory' : 'Timber';
+            const memberName = mesh.memberName || mesh.name || '?';
+            const row = document.createElement('tr');
+            row.innerHTML = '<td>' + (index + 1) + '</td>' +
+                '<td>' + typeLabel + '</td>' +
+                '<td>' + memberName + '</td>' +
+                '<td class="dim">' + (mesh.prism_length !== undefined ? this.fmt(mesh.prism_length) : '—') + '</td>' +
+                '<td class="dim">' + (mesh.prism_width  !== undefined ? this.fmt(mesh.prism_width)  : '—') + '</td>' +
+                '<td class="dim">' + (mesh.prism_height !== undefined ? this.fmt(mesh.prism_height) : '—') + '</td>' +
+                '<td class="dim">' + (mesh.csg_nodes !== undefined ? mesh.csg_nodes : '—') + '</td>' +
+                '<td class="dim">' + (mesh.csg_features !== undefined ? mesh.csg_features : '—') + '</td>';
+            tbody.appendChild(row);
+        }
+    }
+
     updateInfo(frameData) {
         this.currentFrameData = frameData || {};
         const timberCount = frameData && frameData.timber_count ? frameData.timber_count : 0;
@@ -2602,8 +2628,9 @@ class KigumiViewerApp extends LitElement {
             }
         }
 
+        this.rebuildTimberTable(meshes);
         this.updateReflectionTransforms();
-        this.applyLayerStates();
+        this.applySelectionOpacity();
         this._lastMeshBuildMs = meshBuildMs;
         return true;
     }
@@ -2779,7 +2806,6 @@ class KigumiViewerApp extends LitElement {
         if (!completed || this.isRefreshStale(refreshToken)) {
             return;
         }
-        this.layersPanel.setHierarchy(geometryData.layerHierarchy || null);
         const applyElapsedMs = performance.now() - applyStartMs;
         const enrichedProfiling = profiling
             ? { ...profiling, webview_apply_ms: applyElapsedMs, webview_mesh_ms: this._lastMeshBuildMs || 0 }

@@ -33,7 +33,8 @@
     "onCommand:kigumi.openFrameFromSidebar",
     "onCommand:kigumi.openPatternFromSidebar",
     "onCommand:kigumi.openExampleFromSidebar",
-    "onView:kigumi.explorer"
+    "onView:kigumi.explorer",
+    "onView:kigumi.projectHeader"
   ],
   "main": "./extension.js",
   "icon": "templogo.png",
@@ -49,6 +50,11 @@
     },
     "views": {
       "kigumi": [
+        {
+          "type": "webview",
+          "id": "kigumi.projectHeader",
+          "name": "Project"
+        },
         {
           "id": "kigumi.explorer",
           "name": "Kigumi Explorer"

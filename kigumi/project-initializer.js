@@ -78,14 +78,92 @@ function ensureExampleFrame(workspaceRoot) {
     }
 
     const content = [
-        '"""Starter Kigumi frame example."""',
+        '"""Starter Kigumi frame: a simple H-shaped frame made of four 4x4 timbers.',
         '',
-        'from kumiki.construction import build_cube_frame',
+        'Two side timbers run in the +Y direction. Two cross timbers join them with',
+        'mortise-and-tenon joints, inset from the ends so the mortises sit safely',
+        'away from the timber ends.',
+        '"""',
+        '',
+        'from kumiki import *',
         '',
         '',
-        'def build_frame():',
-        '    # Keep this example tiny and quick to render.',
-        '    return build_cube_frame(120, 80, 100, 12)',
+        '# --- Dimensions -------------------------------------------------------------',
+        '',
+        'timber_size = Matrix([inches(4), inches(4)])  # 4x4 cross section',
+        '',
+        'side_length = inches(24)         # length of each side timber (along Y)',
+        'side_spacing = inches(20)        # center-to-center spacing of side timbers (along X)',
+        'end_inset = inches(4)            # cross-timber inset from the side-timber ends',
+        '',
+        'tenon_size = Matrix([inches(2), inches(2)])',
+        'tenon_length = inches(3)',
+        'mortise_depth = tenon_length + inches(Rational(1, 4))',
+        '',
+        '',
+        'def build_frame() -> Frame:',
+        '    # Side timbers run in +Y, at x = +/- side_spacing/2.',
+        '    left_side = create_axis_aligned_timber(',
+        '        bottom_position=create_v3(-side_spacing / 2, -side_length / 2, Rational(0)),',
+        '        length=side_length,',
+        '        size=timber_size,',
+        '        length_direction=TimberFace.FRONT,',
+        '        width_direction=TimberFace.RIGHT,',
+        '        ticket="Left Side",',
+        '    )',
+        '    right_side = create_axis_aligned_timber(',
+        '        bottom_position=create_v3(side_spacing / 2, -side_length / 2, Rational(0)),',
+        '        length=side_length,',
+        '        size=timber_size,',
+        '        length_direction=TimberFace.FRONT,',
+        '        width_direction=TimberFace.RIGHT,',
+        '        ticket="Right Side",',
+        '    )',
+        '',
+        '    # Cross timbers run in +X, inset from the ends of the side timbers.',
+        '    # Their length spans center-to-center so the tenons land inside the sides.',
+        '    cross_length = side_spacing',
+        '    cross_y_front = side_length / 2 - end_inset',
+        '    cross_y_back = -cross_y_front',
+        '',
+        '    back_cross = create_axis_aligned_timber(',
+        '        bottom_position=create_v3(-cross_length / 2, cross_y_back, Rational(0)),',
+        '        length=cross_length,',
+        '        size=timber_size,',
+        '        length_direction=TimberFace.RIGHT,',
+        '        width_direction=TimberFace.FRONT,',
+        '        ticket="Back Cross",',
+        '    )',
+        '    front_cross = create_axis_aligned_timber(',
+        '        bottom_position=create_v3(-cross_length / 2, cross_y_front, Rational(0)),',
+        '        length=cross_length,',
+        '        size=timber_size,',
+        '        length_direction=TimberFace.RIGHT,',
+        '        width_direction=TimberFace.FRONT,',
+        '        ticket="Front Cross",',
+        '    )',
+        '',
+        '    def mortise_into_side(cross, cross_end, side):',
+        '        return cut_mortise_and_tenon_joint_on_FAT(',
+        '            arrangement=ButtJointTimberArrangement(',
+        '                receiving_timber=side,',
+        '                butt_timber=cross,',
+        '                butt_timber_end=cross_end,',
+        '                front_face_on_butt_timber=TimberLongFace.FRONT,',
+        '            ),',
+        '            tenon_size=tenon_size,',
+        '            tenon_length=tenon_length,',
+        '            mortise_depth=mortise_depth,',
+        '        )',
+        '',
+        '    joints = [',
+        '        mortise_into_side(back_cross, TimberReferenceEnd.BOTTOM, left_side),',
+        '        mortise_into_side(back_cross, TimberReferenceEnd.TOP, right_side),',
+        '        mortise_into_side(front_cross, TimberReferenceEnd.BOTTOM, left_side),',
+        '        mortise_into_side(front_cross, TimberReferenceEnd.TOP, right_side),',
+        '    ]',
+        '',
+        '    return Frame.from_joints(joints, name="My Cute Frame")',
         '',
         '',
         'example = build_frame',
@@ -197,40 +275,57 @@ function getInitializationStatus(workspaceRoot, filePath) {
     };
 }
 
+let _initializationInProgress = false;
+
+function isInitializationInProgress() {
+    return _initializationInProgress;
+}
+
 async function initializeWorkspaceProject(workspaceRoot, filePath) {
-    const env = resolveProjectEnvironment({
-        workspaceRoot,
-        filePath,
-        createMarkerIfMissing: true,
-    });
-    const resolvedRoot = env.projectRoot || workspaceRoot;
+    if (_initializationInProgress) {
+        const err = new Error('Initialization is already in progress.');
+        err.code = 'INITIALIZATION_IN_PROGRESS';
+        throw err;
+    }
+    _initializationInProgress = true;
+    try {
+        const env = resolveProjectEnvironment({
+            workspaceRoot,
+            filePath,
+            createMarkerIfMissing: true,
+        });
+        const resolvedRoot = env.projectRoot || workspaceRoot;
 
-    ensureKigumiYaml(resolvedRoot);
-    const envResult = await createVenv(resolvedRoot);
-    const installResult = await installBasePackages(resolvedRoot, envResult.pythonPath, env.isLocalDev);
+        ensureKigumiYaml(resolvedRoot);
+        const envResult = await createVenv(resolvedRoot);
+        const installResult = await installBasePackages(resolvedRoot, envResult.pythonPath, env.isLocalDev);
 
-    writeProjectYaml(resolvedRoot, envResult.pythonPath, {
-        createdVenv: envResult.createdVenv,
-        installedViewerDeps: installResult.installedViewerDeps,
-        missingBefore: installResult.missingBefore,
-        isLocalDev: env.isLocalDev,
-    });
+        writeProjectYaml(resolvedRoot, envResult.pythonPath, {
+            createdVenv: envResult.createdVenv,
+            installedViewerDeps: installResult.installedViewerDeps,
+            missingBefore: installResult.missingBefore,
+            isLocalDev: env.isLocalDev,
+        });
 
-    const exampleResult = ensureExampleFrame(resolvedRoot);
+        const exampleResult = ensureExampleFrame(resolvedRoot);
 
-    return {
-        projectRoot: resolvedRoot,
-        isLocalDev: env.isLocalDev,
-        pythonPath: envResult.pythonPath,
-        createdVenv: envResult.createdVenv,
-        installedViewerDeps: installResult.installedViewerDeps,
-        missingBefore: installResult.missingBefore,
-        exampleFilePath: exampleResult.filePath,
-        createdExampleFile: exampleResult.created,
-    };
+        return {
+            projectRoot: resolvedRoot,
+            isLocalDev: env.isLocalDev,
+            pythonPath: envResult.pythonPath,
+            createdVenv: envResult.createdVenv,
+            installedViewerDeps: installResult.installedViewerDeps,
+            missingBefore: installResult.missingBefore,
+            exampleFilePath: exampleResult.filePath,
+            createdExampleFile: exampleResult.created,
+        };
+    } finally {
+        _initializationInProgress = false;
+    }
 }
 
 module.exports = {
     getInitializationStatus,
     initializeWorkspaceProject,
+    isInitializationInProgress,
 };

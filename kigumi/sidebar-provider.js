@@ -270,14 +270,6 @@ class KigumiSidebarProvider {
     getRootNodes() {
         const nodes = [];
 
-        nodes.push(new SidebarNode({
-            key: 'project-header-root',
-            type: 'projectHeaderRoot',
-            label: 'Project',
-            collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
-            iconPath: new vscode.ThemeIcon('tools'),
-        }));
-
         const frameCount = this._state.frames.length;
         nodes.push(new SidebarNode({
             key: 'frames-root',
