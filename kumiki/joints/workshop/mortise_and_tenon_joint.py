@@ -26,7 +26,7 @@ from kumiki.construction import *
 from kumiki.timber_shavings import are_timbers_plane_aligned
 from kumiki.rule import *
 from kumiki.rule import safe_dot_product
-from kumiki.cutcsg import CutCSG, RectangularPrism, HalfSpace, Difference, adopt_csg, PrismFace
+from kumiki.cutcsg import CutCSG, RectangularPrism, HalfSpace, Difference, adopt_csg, PrismFace, Cylinder
 from .joint_shavings import chop_shoulder_notch_aligned_with_timber
 from .build_a_butt_joint_shavings import (
     PegPositionResult,
@@ -382,30 +382,45 @@ def cut_mortise_and_tenon_joint(
         peg_holes_in_tenon_local = []
         peg_holes_in_mortise_local = []
 
-        for peg_idx, peg_result in enumerate(peg_results):
-            # Create peg hole CSG in tenon local space (using offset position for draw-bore tightening)
-            peg_hole_tenon_global = RectangularPrism(
+        def _build_peg_hole_global(center_global: V3, orientation_global: Orientation, depth: Numeric, label: str) -> CutCSG:
+            if peg_parameters.shape == PegShape.ROUND:
+                # Cylinder axis is the Z column of the orientation in global space.
+                axis_direction_global = orientation_global.matrix * create_v3(Integer(0), Integer(0), Integer(1))
+                return Cylinder(
+                    axis_direction=axis_direction_global,
+                    radius=peg_size / Integer(2),
+                    position=center_global,
+                    start_distance=Rational(0),
+                    end_distance=depth,
+                    label=label,
+                )
+            return RectangularPrism(
                 size=Matrix([peg_size, peg_size]),
                 transform=Transform(
-                    position=peg_result.tenon_face_position_with_offset_global,
-                    orientation=peg_result.orientation_global,
+                    position=center_global,
+                    orientation=orientation_global,
                 ),
-                start_distance=0,
-                end_distance=peg_result.peg_depth,
-                label=f"peg_hole_{peg_idx}",
+                start_distance=Rational(0),
+                end_distance=depth,
+                label=label,
+            )
+
+        for peg_idx, peg_result in enumerate(peg_results):
+            # Create peg hole CSG in tenon local space (using offset position for draw-bore tightening)
+            peg_hole_tenon_global = _build_peg_hole_global(
+                peg_result.tenon_face_position_with_offset_global,
+                peg_result.orientation_global,
+                peg_result.peg_depth,
+                f"peg_hole_{peg_idx}",
             )
             peg_holes_in_tenon_local.append(adopt_csg(None, tenon_timber.transform, peg_hole_tenon_global))
 
             # Create peg hole CSG in mortise local space
-            peg_hole_mortise_global = RectangularPrism(
-                size=Matrix([peg_size, peg_size]),
-                transform=Transform(
-                    position=peg_result.mortise_entry_position_global,
-                    orientation=peg_result.orientation_global,
-                ),
-                start_distance=Rational(0),
-                end_distance=peg_result.peg_depth,
-                label=f"peg_hole_{peg_idx}",
+            peg_hole_mortise_global = _build_peg_hole_global(
+                peg_result.mortise_entry_position_global,
+                peg_result.orientation_global,
+                peg_result.peg_depth,
+                f"peg_hole_{peg_idx}",
             )
             peg_holes_in_mortise_local.append(adopt_csg(None, mortise_timber.transform, peg_hole_mortise_global))
 

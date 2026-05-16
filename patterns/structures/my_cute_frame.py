@@ -74,7 +74,7 @@ def build_frame() -> Frame:
     # Peg axis is perpendicular to the cross timber's FRONT face (i.e. through
     # the side timber from the front, in global +Y on the back cross and -Y on the front cross).
     peg_params = SimplePegParameters(
-        shape=PegShape.SQUARE,
+        shape=PegShape.ROUND,
         peg_positions=[(tenon_length / 2, Rational(0))],
         size=peg_diameter,
         depth=None,                                # through peg

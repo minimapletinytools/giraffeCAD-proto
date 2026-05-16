@@ -1669,6 +1669,21 @@ def adopt_csg(
     elif isinstance(csg_in_orig_space, HalfSpace):
         return transform_halfspace(csg_in_orig_space)
 
+    elif isinstance(csg_in_orig_space, Cylinder):
+        cyl = csg_in_orig_space
+        if orig_transform is not None:
+            global_position = orig_transform.numeric_local_to_global(cyl.position)
+            global_axis = numeric_transform_vector(orig_transform.orientation.matrix, cyl.axis_direction)
+        else:
+            global_position = cyl.position
+            global_axis = cyl.axis_direction
+
+        new_local_position = adopting_transform.numeric_global_to_local(global_position)
+        new_local_axis = numeric_transform_vector(
+            adopting_transform.orientation.matrix.T, global_axis
+        )
+        return replace(cyl, position=new_local_position, axis_direction=new_local_axis)
+
     elif hasattr(csg_in_orig_space, "transform"):
         new_transform = transform_transform(cast(Transform, csg_in_orig_space.transform))
         return replace(csg_in_orig_space, transform=new_transform)
