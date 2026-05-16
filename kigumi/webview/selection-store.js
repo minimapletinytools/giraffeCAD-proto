@@ -16,6 +16,7 @@
         }
 
         selectTimber(name, addToSelection = false) {
+            this.clearLayerSelection();
             if (!addToSelection) {
                 this.selectedTimbers.clear();
             }
@@ -37,6 +38,7 @@
         }
 
         clearTimberSelection() {
+            this.clearLayerSelection();
             if (this.selectedTimbers.size === 0) {
                 return;
             }
@@ -93,7 +95,33 @@
 
         // --- Layer node selection ---
 
-        selectLayerNode(node) {
+        selectLayerNode(node, addToSelection = false) {
+            if (addToSelection) {
+                this.clearCSGSelection();
+                this.clearFeatureSelection();
+                this.clearLayerSelection();
+
+                if (node.type === 'timber') {
+                    this.toggleTimber(node.key);
+                } else if (node.type === 'cutting') {
+                    this.toggleTimber(node.timberKey);
+                } else if (node.type === 'accessory') {
+                    this.toggleTimber(node.key);
+                } else if (node.type === 'joint') {
+                    for (const key of (node.timberKeys || [])) {
+                        this.selectedTimbers.add(key);
+                    }
+                    this.emit({ type: 'joint-selected', jointId: node.jointId, timberKeys: node.timberKeys || [] });
+                } else {
+                    // CSG nodes don't support additive selection; fall back to single-select.
+                    addToSelection = false;
+                }
+
+                if (addToSelection) {
+                    return;
+                }
+            }
+
             this.selectedLayerNode = node;
 
             if (node.type === 'timber') {

@@ -146,4 +146,27 @@ describe('SelectionStore', () => {
 
     expect(listener).toHaveBeenCalledWith({ type: 'clear-csg' });
   });
+
+  test('viewer timber selection clears active layer node', () => {
+    const store = new SelectionStore();
+    store.selectLayerNode({ type: 'timber', key: 'A' });
+
+    expect(store.selectedLayerNode).toEqual({ type: 'timber', key: 'A' });
+
+    store.selectTimber('B');
+    expect(store.selectedLayerNode).toBeNull();
+    expect(store.getSelectedTimbers()).toEqual(['B']);
+  });
+
+  test('shift layer selection toggles timber membership', () => {
+    const store = new SelectionStore();
+
+    store.selectLayerNode({ type: 'timber', key: 'A' });
+    store.selectLayerNode({ type: 'timber', key: 'B' }, true);
+    expect(new Set(store.getSelectedTimbers())).toEqual(new Set(['A', 'B']));
+
+    store.selectLayerNode({ type: 'timber', key: 'A' }, true);
+    expect(store.getSelectedTimbers()).toEqual(['B']);
+    expect(store.selectedLayerNode).toBeNull();
+  });
 });

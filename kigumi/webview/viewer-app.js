@@ -1116,6 +1116,7 @@ class KigumiViewerApp extends LitElement {
         const intersects = this.navigationRaycaster.intersectObjects(targetMeshes, false);
 
         if (intersects.length === 0) {
+            this.selectionManager.clearLayerSelection();
             this.selectionManager.clearCSGSelection();
             this.removeCSGHighlight();
             this.selectionManager.clearTimberSelection();
@@ -1128,25 +1129,11 @@ class KigumiViewerApp extends LitElement {
         let memberKey = this.meshKeyMap.get(hit.object);
 
         const allHitKeys = intersects.map((h) => this.meshKeyMap.get(h.object)).filter(Boolean);
-        const isTimberSelected = this.selectionManager.selectedTimbers.size === 1;
         console.log('[csg-nav] click: allHits=' + JSON.stringify(allHitKeys) +
             ', selectedTimbers=' + JSON.stringify(this.selectionManager.getSelectedTimbers()) +
             ', csgSelection=' + JSON.stringify(this.selectionManager.csgSelection));
 
-        if (this.selectionManager.selectedTimbers.size === 1 && !event.shiftKey) {
-            const selectedKey = this.selectionManager.getSelectedTimbers()[0];
-            let foundSelected = false;
-            for (const candidate of intersects) {
-                const candidateKey = this.meshKeyMap.get(candidate.object);
-                if (candidateKey === selectedKey) {
-                    hit = candidate;
-                    memberKey = candidateKey;
-                    foundSelected = true;
-                    break;
-                }
-            }
-            console.log('[csg-nav] looking for selected timber "' + selectedKey + '" in hits: found=' + foundSelected);
-        }
+        this.selectionManager.clearLayerSelection();
 
         if (!memberKey) {
             return;

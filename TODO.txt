@@ -92,7 +92,8 @@ DONE-create a better default my_cute_frame (the current one does not work, calls
 DONE-lock hide is broken
 DONE-fix my cute frame, why are accessories not rendering correctl (need to fix round drawbore)
 DONE-make cute frame tenons more flat and add draw bores just for fun
--test the networkx fallback thing or remove it
+IGNORE-test the networkx fallback thing or remove it
+
 -selecting in viewer does not deselect in layer sview
 -increase contrast between background and objects
 -or maybe reduce global lighting so faces are more pronounced

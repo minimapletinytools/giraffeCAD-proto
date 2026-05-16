@@ -366,11 +366,11 @@
 
             if (selectNode) {
                 row.classList.add('lp-selectable');
-                row.addEventListener('click', () => {
+                row.addEventListener('click', (event) => {
                     if (memberKey && this.layerStateStore.isLocked(memberKey)) {
                         return;
                     }
-                    this.selectionManager.selectLayerNode(selectNode);
+                    this.selectionManager.selectLayerNode(selectNode, !!event.shiftKey);
                 });
             }
 
