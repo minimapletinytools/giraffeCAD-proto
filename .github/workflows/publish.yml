@@ -106,6 +106,14 @@ jobs:
         run: uvx twine check dist/*
 
       - name: Resolve package version
+        if: github.event.inputs.existing_tag
+        shell: bash
+        run: |
+          TAG=${{ github.event.inputs.existing_tag }}
+          VERSION=${TAG#kumiki-v}
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve package version
         if: !github.event.inputs.existing_tag
         shell: bash
         run: |
