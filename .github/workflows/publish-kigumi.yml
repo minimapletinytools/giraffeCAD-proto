@@ -1,0 +1,139 @@
+name: Build And Publish Kigumi
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_version_and_create_tag:
+        description: Bump the kigumi minor version, commit, and create a release tag before publishing
+        required: true
+        default: false
+        type: boolean
+      prerelease:
+        description: Publish as a VS Code Marketplace pre-release
+        required: true
+        default: false
+        type: boolean
+  pull_request:
+    paths:
+      - 'kigumi/**'
+      - '.github/workflows/publish-kigumi.yml'
+
+jobs:
+  build:
+    name: Test And Package Extension
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.package_info.outputs.version }}
+      vsix_name: ${{ steps.package_info.outputs.vsix_name }}
+
+    defaults:
+      run:
+        working-directory: kigumi
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Bump version, commit, and tag
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.bump_version_and_create_tag == 'true'
+        shell: bash
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          NEW_VERSION=$(node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const packageJsonPath = path.join(process.cwd(), 'kigumi', 'package.json');
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+          const parts = packageJson.version.split('.').map((part) => Number(part));
+          if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) {
+            throw new Error(`Unsupported version format: ${packageJson.version}`);
+          }
+          const nextVersion = `${parts[0]}.${parts[1] + 1}.0`;
+          packageJson.version = nextVersion;
+          fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8');
+          process.stdout.write(nextVersion);
+          NODE
+          )
+
+          TAG="kigumi-v${NEW_VERSION}"
+          if git show-ref --verify --quiet "refs/tags/${TAG}"; then
+            echo "Tag already exists: ${TAG}" >&2
+            exit 1
+          fi
+
+          git add kigumi/package.json
+          git commit -m "Release kigumi v${NEW_VERSION}"
+          git tag -a "${TAG}" -m "Release kigumi v${NEW_VERSION}"
+          git push origin "HEAD:${{ github.ref_name }}"
+          git push origin "${TAG}"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: kigumi/package.json
+
+      - name: Install extension dependencies
+        run: npm install
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Package extension
+        run: npx @vscode/vsce package
+
+      - name: Resolve VSIX name
+        id: package_info
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          VSIX_NAME="kigumi-${VERSION}.vsix"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "vsix_name=${VSIX_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kigumi-vsix
+          path: kigumi/${{ steps.package_info.outputs.vsix_name }}
+
+  publish:
+    name: Publish To VS Code Marketplace
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download VSIX artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kigumi-vsix
+          path: .
+
+      - name: Publish extension
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        shell: bash
+        run: |
+          EXTRA_ARGS=()
+          if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
+            EXTRA_ARGS+=(--pre-release)
+          fi
+          npx @vscode/vsce publish --packagePath "${{ needs.build.outputs.vsix_name }}" --pat "$VSCE_PAT" "${EXTRA_ARGS[@]}"
