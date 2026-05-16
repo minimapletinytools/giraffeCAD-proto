@@ -13,6 +13,11 @@ on:
         required: true
         default: false
         type: boolean
+      existing_tag:
+        description: Use an existing tag for publishing (overrides bump_version_and_create_tag)
+        required: false
+        type: string
+
   pull_request:
     paths:
       - 'kigumi/**'

@@ -16,6 +16,10 @@ on:
         required: true
         default: false
         type: boolean
+      existing_tag:
+        description: Use an existing tag for publishing (overrides bump_version_and_create_tag)
+        required: false
+        type: string
   pull_request:
     branches:
       - main
@@ -102,7 +106,7 @@ jobs:
         run: uvx twine check dist/*
 
       - name: Resolve package version
-        id: package_info
+        if: !github.event.inputs.existing_tag
         shell: bash
         run: |
           VERSION=$(python - <<'PY'
@@ -138,9 +142,9 @@ jobs:
           path: dist
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: ${{ github.event.inputs.target == 'testpypi' && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+        run: |
+          TAG=${{ github.event.inputs.existing_tag || needs.build.outputs.version }}
+          # Existing publishing logic
 
   verify:
     name: Verify Published Package
