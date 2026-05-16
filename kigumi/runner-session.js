@@ -218,6 +218,25 @@ class PythonRunnerSession {
             .filter((line) => line.length > 0);
     }
 
+    async ensurePipAvailable(pythonCmd) {
+        try {
+            await this.runCommand(pythonCmd, ['-m', 'pip', '--version']);
+            return;
+        } catch (_error) {
+            this.channel.appendLine('[env] pip missing in virtual environment; repairing with ensurepip...');
+        }
+
+        try {
+            await this.runCommand(pythonCmd, ['-m', 'ensurepip', '--upgrade']);
+            await this.runCommand(pythonCmd, ['-m', 'pip', '--version']);
+        } catch (error) {
+            throw new Error(
+                `Failed to bootstrap pip for ${pythonCmd}. ` +
+                `Try recreating the virtual environment. Original error: ${error.message}`
+            );
+        }
+    }
+
     yamlQuote(value) {
         return `'${String(value).replace(/'/g, "''")}'`;
     }
@@ -303,6 +322,7 @@ class PythonRunnerSession {
         let installedViewerDeps = false;
         if (missingBefore.length > 0) {
             this.channel.appendLine(`[env] Missing viewer deps: ${missingBefore.join(', ')}; installing...`);
+            await this.ensurePipAvailable(pythonCmd);
             await this.runCommand(pythonCmd, ['-m', 'pip', 'install', '--upgrade', 'pip']);
 
             if (this.isLocalDev && fs.existsSync(path.join(this.projectRoot, 'pyproject.toml'))) {

@@ -367,6 +367,9 @@
             if (selectNode) {
                 row.classList.add('lp-selectable');
                 row.addEventListener('click', () => {
+                    if (memberKey && this.layerStateStore.isLocked(memberKey)) {
+                        return;
+                    }
                     this.selectionManager.selectLayerNode(selectNode);
                 });
             }
@@ -559,8 +562,176 @@
         }
     }
 
+    const LayersViewBase = typeof HTMLElement !== 'undefined' ? HTMLElement : class {};
+
+    class KigumiLayersView extends LayersViewBase {
+        constructor() {
+            super();
+            this._selectionManager = null;
+            this._layerStateStore = null;
+            this._panel = null;
+            this._showTagPills = true;
+            this._hierarchy = { timbers: [], joints: [] };
+            this._unsubLayerState = null;
+        }
+
+        connectedCallback() {
+            this._ensureMounted();
+        }
+
+        disconnectedCallback() {
+            this._disposePanel();
+        }
+
+        attach(selectionManager, _vscode) {
+            this._selectionManager = selectionManager;
+            this._ensureMounted();
+        }
+
+        setShowTagPills(show) {
+            this._showTagPills = Boolean(show);
+            if (this._panel && typeof this._panel.setShowTagPills === 'function') {
+                this._panel.setShowTagPills(this._showTagPills);
+            }
+        }
+
+        setLayersPayload(payload) {
+            this._hierarchy = this._convertRunnerPayload(payload || {});
+            this._ensureMounted();
+            if (this._panel) {
+                this._panel.setHierarchy(this._hierarchy);
+                this._panel.setShowTagPills(this._showTagPills);
+            }
+            this._emitLayerStateSync();
+        }
+
+        mergeCSGTreePayload(_payload) {
+            // CSG subtree expansion is not rendered in this panel yet.
+        }
+
+        _ensureMounted() {
+            if (this._panel || !this._selectionManager) {
+                return;
+            }
+
+            const LayerStateStoreCtor = globalScope.LayerStateStore;
+            if (!LayerStateStoreCtor) {
+                console.warn('LayerStateStore is not available; layers panel disabled.');
+                return;
+            }
+
+            this._layerStateStore = new LayerStateStoreCtor();
+            this._unsubLayerState = this._layerStateStore.onStateChanged((event) => {
+                this.dispatchEvent(new CustomEvent('layer-state-changed', {
+                    detail: event,
+                    bubbles: true,
+                    composed: true,
+                }));
+            });
+            this._panel = new LayersPanel(this._selectionManager, this._layerStateStore);
+            this._panel.mount(this);
+            this._panel.setShowTagPills(this._showTagPills);
+            this._panel.setHierarchy(this._hierarchy);
+            this._emitLayerStateSync();
+        }
+
+        _disposePanel() {
+            if (!this._panel) {
+                return;
+            }
+            if (this._unsubLayerState) {
+                this._unsubLayerState();
+                this._unsubLayerState = null;
+            }
+            this._panel.destroy();
+            this._panel = null;
+        }
+
+        _emitLayerStateSync() {
+            if (!this._layerStateStore) {
+                return;
+            }
+            const keys = new Set();
+            for (const timber of (this._hierarchy.timbers || [])) {
+                if (timber && typeof timber.key === 'string') {
+                    keys.add(timber.key);
+                }
+            }
+            for (const joint of (this._hierarchy.joints || [])) {
+                for (const timberKey of (joint && joint.timberKeys) || []) {
+                    if (typeof timberKey === 'string') {
+                        keys.add(timberKey);
+                    }
+                }
+                for (const accessoryKey of (joint && joint.accessoryKeys) || []) {
+                    if (typeof accessoryKey === 'string') {
+                        keys.add(accessoryKey);
+                    }
+                }
+            }
+
+            const states = {};
+            for (const key of keys) {
+                states[key] = this._layerStateStore.getState(key);
+            }
+
+            this.dispatchEvent(new CustomEvent('layer-state-sync', {
+                detail: { states },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+
+        _convertRunnerPayload(payload) {
+            const timbers = Array.isArray(payload.timbers) ? payload.timbers : [];
+            const accessories = Array.isArray(payload.accessories) ? payload.accessories : [];
+            const joints = Array.isArray(payload.joints) ? payload.joints : [];
+
+            const timberKeyByKumikiId = new Map();
+            for (const t of timbers) {
+                if (typeof t.kumikiId === 'number' && typeof t.memberKey === 'string') {
+                    timberKeyByKumikiId.set(t.kumikiId, t.memberKey);
+                }
+            }
+
+            const accessoryKeyByKumikiId = new Map();
+            for (const a of accessories) {
+                if (typeof a.kumikiId === 'number' && typeof a.memberKey === 'string') {
+                    accessoryKeyByKumikiId.set(a.kumikiId, a.memberKey);
+                }
+            }
+
+            const hierarchyTimbers = timbers.map((t) => ({
+                key: t.memberKey,
+                name: t.name || t.memberKey,
+                tags: Array.isArray(t.tags) ? t.tags : [],
+            })).filter((t) => typeof t.key === 'string' && t.key.length > 0);
+
+            const hierarchyJoints = joints.map((j) => ({
+                id: String(j.kumikiId != null ? j.kumikiId : j.name || 'joint'),
+                name: j.name || 'joint',
+                tags: Array.isArray(j.tags) ? j.tags : [],
+                timberKeys: (Array.isArray(j.members) ? j.members : [])
+                    .map((m) => timberKeyByKumikiId.get(m.timberKumikiId))
+                    .filter((key) => typeof key === 'string'),
+                accessoryKeys: (Array.isArray(j.accessoryKumikiIds) ? j.accessoryKumikiIds : [])
+                    .map((kid) => accessoryKeyByKumikiId.get(kid))
+                    .filter((key) => typeof key === 'string'),
+            }));
+
+            return {
+                timbers: hierarchyTimbers,
+                joints: hierarchyJoints,
+            };
+        }
+    }
+
     if (typeof module !== 'undefined' && module.exports) {
-        module.exports = { LayersPanel };
+        module.exports = { LayersPanel, KigumiLayersView };
     }
     globalScope.LayersPanel = LayersPanel;
+    globalScope.KigumiLayersView = KigumiLayersView;
+    if (globalScope.customElements && !globalScope.customElements.get('kigumi-layers-view')) {
+        globalScope.customElements.define('kigumi-layers-view', KigumiLayersView);
+    }
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -85,10 +85,16 @@ DONE-come up with sensible instalation strat
   -do vscode extension release
 DONE-add generic miter joint
 DONE/IGNORE-do the layers view for timbers and joints, don't do projects/patterns since you can put that in the menu, or maybe youshould still just do it? idk
+-get round drawbores working (holes not round and they drawbores get rendered at the origin)
 -kigumi
   DONE-make the initilaize kigumi prjoect an actually BUTTON rather than just ar egular text thing that you click on
   DONE-add initalizing progress bar that also prevents you from double running the initialize method, in general the initilaize method should check if initailzation is already in progress
   DONE-create a better default my_cute_frame (the current one does not work, calls non existing bulid_cube_frame function, instead make a super simple saw hores as teh example or somethnig
+  DONE-lock hide is broken
+
+  -test the networkx fallback thing or remove it
+  -selecting in viewer does not deselect in layer sview
+  -fix my cute frame, why are accessories not rendering correctl (need to fix round drawbore)
   -increase contrast between background and objects
   -or maybe reduce global lighting so faces are more pronounced
   -make cute frame tenons more flat and add draw bores just for fun

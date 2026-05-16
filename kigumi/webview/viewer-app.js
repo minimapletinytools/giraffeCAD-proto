@@ -186,6 +186,10 @@ class ViewerSettingsPanel {
                     debug info
                 </label>
                 <label>
+                    <input id="layer-tags-toggle" type="checkbox" ?checked=${this.app.showLayerTags}>
+                    show layer tags
+                </label>
+                <label>
                     unselected visibility (${100 - this.app.unselectedTransparencyPercent}%)
                     <input
                         id="unselected-transparency-slider"
@@ -224,6 +228,7 @@ class ViewerSettingsPanel {
         const reflectionsToggle = renderRoot.querySelector('#reflections-toggle');
         const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
         const debugToggle = renderRoot.querySelector('#debug-toggle');
+        const layerTagsToggle = renderRoot.querySelector('#layer-tags-toggle');
         const timberProfileSelect = renderRoot.querySelector('#timber-profile-select');
         const accessoryProfileSelect = renderRoot.querySelector('#accessory-profile-select');
         const refreshButton = renderRoot.querySelector('#refresh-btn');
@@ -243,6 +248,10 @@ class ViewerSettingsPanel {
             if (debugEl) {
                 debugEl.style.display = this.app.debugEnabled ? 'block' : 'none';
             }
+        });
+
+        layerTagsToggle.addEventListener('change', (event) => {
+            this.app.setLayerTagPillsVisible(event.target.checked);
         });
 
         shadowsToggle.addEventListener('change', (event) => {
@@ -282,8 +291,12 @@ class ViewerSettingsPanel {
 
     syncControls(renderRoot) {
         const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
+        const layerTagsToggle = renderRoot.querySelector('#layer-tags-toggle');
         if (unselectedTransparencySlider) {
             unselectedTransparencySlider.value = String(100 - this.app.unselectedTransparencyPercent);
+        }
+        if (layerTagsToggle) {
+            layerTagsToggle.checked = this.app.showLayerTags;
         }
     }
 }
@@ -316,6 +329,7 @@ class KigumiViewerApp extends LitElement {
         this.shadowsEnabled = true;
         this.reflectionsEnabled = true;
         this.debugEnabled = false;
+        this.showLayerTags = true;
         this.logFilterText = '';
 
         this.lightAzimuth = 0;
@@ -352,6 +366,7 @@ class KigumiViewerApp extends LitElement {
         this._csgParentHighlightMesh = null;
         this.meshKeyMap = new Map(); // mesh object -> member key
         this.memberMetadataByKey = new Map(); // member key -> { name, type }
+        this.layerStatesByKey = new Map(); // member key -> { locked, hidden, fixed }
         this.renderProfiles = RENDER_PROFILES;
         this.memberRenderProfileByType = {
             timber: 'timber-default',
@@ -379,6 +394,8 @@ class KigumiViewerApp extends LitElement {
         this.onLightDialPointerMove = this.onLightDialPointerMove.bind(this);
         this.onLightDialPointerUp = this.onLightDialPointerUp.bind(this);
         this.onWindowKeyDown = this.onWindowKeyDown.bind(this);
+        this.onLayerStateChanged = this.onLayerStateChanged.bind(this);
+        this.onLayerStateSync = this.onLayerStateSync.bind(this);
     }
 
     createRenderRoot() {
@@ -486,6 +503,13 @@ class KigumiViewerApp extends LitElement {
             layersView.attach(this.selectionManager, vscode);
         }
         this._layersView = layersView;
+        if (this._layersView) {
+            this._layersView.addEventListener('layer-state-changed', this.onLayerStateChanged);
+            this._layersView.addEventListener('layer-state-sync', this.onLayerStateSync);
+        }
+        if (this._layersView && typeof this._layersView.setShowTagPills === 'function') {
+            this._layersView.setShowTagPills(this.showLayerTags);
+        }
         if (vscode) {
             vscode.postMessage({ type: 'requestLayersTree' });
         }
@@ -508,6 +532,10 @@ class KigumiViewerApp extends LitElement {
         if (this.animationHandle) {
             cancelAnimationFrame(this.animationHandle);
             this.animationHandle = null;
+        }
+        if (this._layersView) {
+            this._layersView.removeEventListener('layer-state-changed', this.onLayerStateChanged);
+            this._layersView.removeEventListener('layer-state-sync', this.onLayerStateSync);
         }
         if (this.gizmoRenderer) {
             this.gizmoRenderer.dispose();
@@ -537,6 +565,48 @@ class KigumiViewerApp extends LitElement {
         this.meshObjectsByKey.clear();
         this.meshKeyMap.clear();
         this.memberMetadataByKey.clear();
+    }
+
+    onLayerStateChanged(event) {
+        const detail = event && event.detail ? event.detail : {};
+        const key = detail.key;
+        if (typeof key !== 'string' || key.length === 0) {
+            return;
+        }
+        const state = detail.state && typeof detail.state === 'object' ? detail.state : null;
+        if (state) {
+            this.layerStatesByKey.set(key, state);
+        }
+        if (detail.prop === 'locked' && detail.value === true) {
+            if (this.selectionManager.isTimberSelected(key)) {
+                this.selectionManager.clearCSGSelection();
+                this.removeCSGHighlight();
+                this.selectionManager.deselectTimber(key);
+            }
+        }
+        this.applySelectionOpacity();
+    }
+
+    onLayerStateSync(event) {
+        const detail = event && event.detail ? event.detail : {};
+        const states = detail.states && typeof detail.states === 'object' ? detail.states : {};
+        this.layerStatesByKey.clear();
+        for (const [key, state] of Object.entries(states)) {
+            if (typeof key === 'string' && key.length > 0 && state && typeof state === 'object') {
+                this.layerStatesByKey.set(key, state);
+            }
+        }
+        this.applySelectionOpacity();
+    }
+
+    isMemberHidden(memberKey) {
+        const state = this.layerStatesByKey.get(memberKey);
+        return Boolean(state && state.hidden);
+    }
+
+    isMemberLocked(memberKey) {
+        const state = this.layerStatesByKey.get(memberKey);
+        return Boolean(state && state.locked);
     }
 
     setupUiEvents() {
@@ -760,6 +830,18 @@ class KigumiViewerApp extends LitElement {
         this.unselectedTransparencyPercent = normalizedPercent;
         this.requestUpdate();
         this.applySelectionOpacity();
+    }
+
+    setLayerTagPillsVisible(enabled) {
+        const normalized = Boolean(enabled);
+        if (this.showLayerTags === normalized) {
+            return;
+        }
+        this.showLayerTags = normalized;
+        if (this._layersView && typeof this._layersView.setShowTagPills === 'function') {
+            this._layersView.setShowTagPills(normalized);
+        }
+        this.requestUpdate();
     }
 
     updateStructureScreenBounds() {
@@ -1024,7 +1106,13 @@ class KigumiViewerApp extends LitElement {
         this.navigationPointer.set(normalizedX, normalizedY);
         this.navigationRaycaster.setFromCamera(this.navigationPointer, this.camera);
 
-        const targetMeshes = Array.from(this.meshObjectsByKey.values()).map((bundle) => bundle.mesh);
+        const targetMeshes = [];
+        for (const [memberKey, bundle] of this.meshObjectsByKey.entries()) {
+            if (this.isMemberHidden(memberKey) || this.isMemberLocked(memberKey)) {
+                continue;
+            }
+            targetMeshes.push(bundle.mesh);
+        }
         const intersects = this.navigationRaycaster.intersectObjects(targetMeshes, false);
 
         if (intersects.length === 0) {
@@ -1528,6 +1616,7 @@ class KigumiViewerApp extends LitElement {
         const policy = this._getSelectionVisualPolicy(visualContext.state, baseUnselectedOpacity);
 
         for (const [name, bundle] of this.meshObjectsByKey) {
+            const isHidden = this.isMemberHidden(name);
             let opacity = 1.0;
 
             if (visualContext.state === SELECTION_VISUAL_STATES.TIMBER_SELECTED_NO_SUB) {
@@ -1538,21 +1627,24 @@ class KigumiViewerApp extends LitElement {
             }
 
             const isTransparent = opacity < 1.0;
+            bundle.mesh.visible = !isHidden;
             bundle.mesh.material.transparent = isTransparent;
             bundle.mesh.material.opacity = opacity;
             // Transparent unselected timbers should not cast shadows
-            bundle.mesh.castShadow = !isTransparent;
+            bundle.mesh.castShadow = !isHidden && !isTransparent;
             // Apply matching transparency to edges
             if (bundle.edges && bundle.edges.material) {
                 const profile = this.resolveRenderProfile(bundle.profileId);
                 const baseEdgeOpacity = profile ? profile.edgeOpacity : 1.0;
                 bundle.edges.material.opacity = baseEdgeOpacity * opacity;
+                bundle.edges.visible = !isHidden && this.edgesEnabled;
             }
             // Apply matching transparency to reflections
             if (bundle.reflection && bundle.reflection.material) {
                 const profile = this.resolveRenderProfile(bundle.profileId);
                 const baseReflectionOpacity = profile ? profile.reflectionOpacity : 0.14;
                 bundle.reflection.material.opacity = baseReflectionOpacity * opacity;
+                bundle.reflection.visible = !isHidden && this.reflectionsEnabled;
             }
         }
     }
@@ -1944,13 +2036,13 @@ class KigumiViewerApp extends LitElement {
 
     updateReflectionTransforms() {
         const reflectionOffsetZ = this.groundZ * 2 - 0.001;
-        for (const bundle of this.meshObjectsByKey.values()) {
+        for (const [memberKey, bundle] of this.meshObjectsByKey.entries()) {
             if (!bundle.reflection) {
                 continue;
             }
             bundle.reflection.position.set(0, 0, reflectionOffsetZ);
             bundle.reflection.scale.set(1, 1, -1);
-            bundle.reflection.visible = this.reflectionsEnabled;
+            bundle.reflection.visible = this.reflectionsEnabled && !this.isMemberHidden(memberKey);
         }
     }
 
@@ -1961,9 +2053,9 @@ class KigumiViewerApp extends LitElement {
 
     setEdgesEnabled(enabled) {
         this.edgesEnabled = enabled;
-        for (const bundle of this.meshObjectsByKey.values()) {
+        for (const [memberKey, bundle] of this.meshObjectsByKey.entries()) {
             if (bundle.edges) {
-                bundle.edges.visible = enabled;
+                bundle.edges.visible = enabled && !this.isMemberHidden(memberKey);
             }
         }
     }

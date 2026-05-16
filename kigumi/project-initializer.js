@@ -78,11 +78,11 @@ function ensureExampleFrame(workspaceRoot) {
     }
 
     const content = [
-        '"""Starter Kigumi frame: a simple H-shaped frame made of four 4x4 timbers.',
+        '"""Starter Kigumi frame: a simple H-shaped frame made of four 90x90mm timbers.',
         '',
         'Two side timbers run in the +Y direction. Two cross timbers join them with',
-        'mortise-and-tenon joints, inset from the ends so the mortises sit safely',
-        'away from the timber ends.',
+        'mortise-and-tenon joints (with 15mm draw-bore pegs), inset from the ends so',
+        'the mortises sit safely away from the timber ends.',
         '"""',
         '',
         'from kumiki import *',
@@ -90,15 +90,22 @@ function ensureExampleFrame(workspaceRoot) {
         '',
         '# --- Dimensions -------------------------------------------------------------',
         '',
-        'timber_size = Matrix([inches(4), inches(4)])  # 4x4 cross section',
+        'timber_size = Matrix([mm(90), mm(90)])  # 90x90mm cross section',
         '',
-        'side_length = inches(24)         # length of each side timber (along Y)',
-        'side_spacing = inches(20)        # center-to-center spacing of side timbers (along X)',
-        'end_inset = inches(4)            # cross-timber inset from the side-timber ends',
+        'side_length = mm(600)            # length of each side timber (along Y)',
+        'side_spacing = mm(500)           # center-to-center spacing of side timbers (along X)',
+        'end_inset = mm(100)              # cross-timber inset from the side-timber ends',
         '',
-        'tenon_size = Matrix([inches(2), inches(2)])',
-        'tenon_length = inches(3)',
-        'mortise_depth = tenon_length + inches(Rational(1, 4))',
+        '# Tenon cross-section is (width_axis, height_axis) in the cross-timber local frame.',
+        '# Cross timbers run in +X with width_direction=FRONT, so local height axis = global Z.',
+        '# 80mm in global Y, 40mm in global Z (the shorter dimension).',
+        'tenon_size = Matrix([mm(80), mm(40)])',
+        'tenon_length = mm(75)',
+        'mortise_depth = tenon_length + mm(6)',
+        '',
+        '# 15mm round draw-bore peg, slightly offset so the joint draws tight.',
+        'peg_diameter = mm(15)',
+        'peg_draw_bore_offset = mm(2)',
         '',
         '',
         'def build_frame() -> Frame:',
@@ -143,6 +150,17 @@ function ensureExampleFrame(workspaceRoot) {
         '        ticket="Front Cross",',
         '    )',
         '',
+        '    # Round draw-bore peg, one per joint, centered on the tenon.',
+        '    # Peg axis is perpendicular to the cross timber\'s FRONT face (i.e. through',
+        '    # the side timber from the front, in global +Y on the back cross and -Y on the front cross).',
+        '    peg_params = SimplePegParameters(',
+        '        shape=PegShape.ROUND,',
+        '        peg_positions=[(tenon_length / 2, Rational(0))],',
+        '        size=peg_diameter,',
+        '        depth=None,                                # through peg',
+        '        tenon_hole_offset=peg_draw_bore_offset,    # draw-bore offset pulls the joint tight',
+        '    )',
+        '',
         '    def mortise_into_side(cross, cross_end, side):',
         '        return cut_mortise_and_tenon_joint_on_FAT(',
         '            arrangement=ButtJointTimberArrangement(',
@@ -154,6 +172,7 @@ function ensureExampleFrame(workspaceRoot) {
         '            tenon_size=tenon_size,',
         '            tenon_length=tenon_length,',
         '            mortise_depth=mortise_depth,',
+        '            peg_parameters=peg_params,',
         '        )',
         '',
         '    joints = [',
@@ -206,7 +225,7 @@ async function createVenv(workspaceRoot) {
 async function getMissingViewerDependencies(workspaceRoot, pythonPath) {
     const snippet = [
         'import importlib.util',
-        'required = ["sympy", "numpy", "trimesh", "manifold3d"]',
+        'required = ["sympy", "numpy", "trimesh", "manifold3d", "networkx"]',
         'missing = [name for name in required if importlib.util.find_spec(name) is None]',
         'print("\\n".join(missing))',
     ].join('; ');
@@ -218,6 +237,18 @@ async function getMissingViewerDependencies(workspaceRoot, pythonPath) {
         .filter((line) => line.length > 0);
 }
 
+async function ensurePipAvailable(workspaceRoot, pythonPath) {
+    try {
+        await runCommand(pythonPath, ['-m', 'pip', '--version'], workspaceRoot);
+        return;
+    } catch (_error) {
+        // Fall through to ensurepip repair path.
+    }
+
+    await runCommand(pythonPath, ['-m', 'ensurepip', '--upgrade'], workspaceRoot);
+    await runCommand(pythonPath, ['-m', 'pip', '--version'], workspaceRoot);
+}
+
 async function installBasePackages(workspaceRoot, pythonPath, isLocalDev) {
     const missingBefore = await getMissingViewerDependencies(workspaceRoot, pythonPath);
     if (missingBefore.length === 0) {
@@ -227,6 +258,7 @@ async function installBasePackages(workspaceRoot, pythonPath, isLocalDev) {
         };
     }
 
+    await ensurePipAvailable(workspaceRoot, pythonPath);
     await runCommand(pythonPath, ['-m', 'pip', 'install', '--upgrade', 'pip'], workspaceRoot);
 
     if (isLocalDev && fs.existsSync(path.join(workspaceRoot, 'pyproject.toml'))) {
