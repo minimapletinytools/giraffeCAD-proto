@@ -1,4 +1,4 @@
-name: Build And Publish
+name: Build And Publish Kumiki
 
 on:
   workflow_dispatch:
@@ -56,7 +56,7 @@ jobs:
           pyproject_text = pyproject_path.read_text(encoding='utf-8')
           current = tomllib.loads(pyproject_text)['project']['version']
           major, minor, patch = map(int, current.split('.'))
-          new_version = f"{major}.{minor + 1}.0"
+          new_version = f"{major}.{minor}.{patch + 1}"
           pyproject_text = re.sub(r'(?m)^version = "[^"]+"$', f'version = "{new_version}"', pyproject_text, count=1)
           pyproject_path.write_text(pyproject_text, encoding='utf-8')
 

@@ -62,7 +62,7 @@ jobs:
           if (parts.length !== 3 || parts.some((part) => Number.isNaN(part))) {
             throw new Error(`Unsupported version format: ${packageJson.version}`);
           }
-          const nextVersion = `${parts[0]}.${parts[1] + 1}.0`;
+          const nextVersion = `${parts[0]}.${parts[1]}.${parts[2] + 1}`;
           packageJson.version = nextVersion;
           fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8');
           process.stdout.write(nextVersion);
