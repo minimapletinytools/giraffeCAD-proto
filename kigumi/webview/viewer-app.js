@@ -174,6 +174,16 @@ class ViewerSettingsPanel {
                     edges
                 </label>
                 <label>
+                    edge line visibility (${this.app.edgeLineVisibilityPercent}%)
+                    <input
+                        id="edge-visibility-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        .value=${String(this.app.edgeLineVisibilityPercent)}>
+                </label>
+                <label>
                     <input id="shadows-toggle" type="checkbox" ?checked=${this.app.shadowsEnabled}>
                     shadows
                 </label>
@@ -224,6 +234,7 @@ class ViewerSettingsPanel {
     bindEvents(renderRoot) {
         const centerGizmoToggle = renderRoot.querySelector('#center-gizmo-toggle');
         const edgesToggle = renderRoot.querySelector('#edges-toggle');
+        const edgeVisibilitySlider = renderRoot.querySelector('#edge-visibility-slider');
         const shadowsToggle = renderRoot.querySelector('#shadows-toggle');
         const reflectionsToggle = renderRoot.querySelector('#reflections-toggle');
         const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
@@ -240,6 +251,14 @@ class ViewerSettingsPanel {
 
         edgesToggle.addEventListener('change', (event) => {
             this.app.setEdgesEnabled(event.target.checked);
+        });
+
+        edgeVisibilitySlider.addEventListener('input', (event) => {
+            const rawPercent = Number(event.target.value);
+            const normalizedPercent = Number.isFinite(rawPercent)
+                ? Math.max(0, Math.min(100, Math.round(rawPercent / 5) * 5))
+                : 100;
+            this.app.setEdgeLineVisibilityPercent(normalizedPercent);
         });
 
         debugToggle.addEventListener('change', (event) => {
@@ -290,13 +309,21 @@ class ViewerSettingsPanel {
     }
 
     syncControls(renderRoot) {
+        const edgeVisibilitySlider = renderRoot.querySelector('#edge-visibility-slider');
         const unselectedTransparencySlider = renderRoot.querySelector('#unselected-transparency-slider');
         const layerTagsToggle = renderRoot.querySelector('#layer-tags-toggle');
+        const backgroundSelect = renderRoot.querySelector('#background-select');
+        if (edgeVisibilitySlider) {
+            edgeVisibilitySlider.value = String(this.app.edgeLineVisibilityPercent);
+        }
         if (unselectedTransparencySlider) {
             unselectedTransparencySlider.value = String(100 - this.app.unselectedTransparencyPercent);
         }
         if (layerTagsToggle) {
             layerTagsToggle.checked = this.app.showLayerTags;
+        }
+        if (backgroundSelect) {
+            backgroundSelect.value = this.app.activeBackground;
         }
     }
 }
@@ -372,8 +399,9 @@ class KigumiViewerApp extends LitElement {
             timber: 'timber-default',
             accessory: 'accessory-cute',
         };
-        this.unselectedTransparencyPercent = 40;
-        this.activeBackground = 'cream';
+        this.edgeLineVisibilityPercent = 100;
+        this.unselectedTransparencyPercent = 70;
+        this.activeBackground = 'slate';
 
         this.availablePatterns = [];  // [{name, groups, source_file, source}]
         this.patternsLoading = new Set();  // pattern names currently loading
@@ -720,19 +748,19 @@ class KigumiViewerApp extends LitElement {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         this.scene = new THREE.Scene();
-        this.scene.background = this._buildBackgroundTexture(BACKGROUND_PRESETS['cream']);
+        this.scene.background = this._buildBackgroundTexture(BACKGROUND_PRESETS[this.activeBackground]);
 
         this.camera = new THREE.PerspectiveCamera(45, viewport.offsetWidth / viewport.offsetHeight, 0.01, 10000);
         this.camera.up.set(0, 0, 1);
 
-        this.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        this.sun = new THREE.DirectionalLight(0xffffff, 0.75);
-        this.sun.position.set(3, 2, 12);
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+        this.sun = new THREE.DirectionalLight(0xffffff, 0.62);
+        this.sun.position.set(2, 1, 18);
         this.sun.castShadow = true;
         this.sun.shadow.bias = -0.00008;
         this.sun.shadow.mapSize.set(2048, 2048);
         this.scene.add(this.sun);
-        const fill = new THREE.DirectionalLight(0xecf2ff, 0.45);
+        const fill = new THREE.DirectionalLight(0xd8e3f5, 0.28);
         fill.position.set(-4, 3, -6);
         this.scene.add(fill);
 
@@ -823,11 +851,23 @@ class KigumiViewerApp extends LitElement {
     setUnselectedTransparencyPercent(nextPercent) {
         const normalizedPercent = Number.isFinite(nextPercent)
             ? Math.max(0, Math.min(95, Math.round(nextPercent / 5) * 5))
-            : 40;
+            : 70;
         if (this.unselectedTransparencyPercent === normalizedPercent) {
             return;
         }
         this.unselectedTransparencyPercent = normalizedPercent;
+        this.requestUpdate();
+        this.applySelectionOpacity();
+    }
+
+    setEdgeLineVisibilityPercent(nextPercent) {
+        const normalizedPercent = Number.isFinite(nextPercent)
+            ? Math.max(0, Math.min(100, Math.round(nextPercent / 5) * 5))
+            : 100;
+        if (this.edgeLineVisibilityPercent === normalizedPercent) {
+            return;
+        }
+        this.edgeLineVisibilityPercent = normalizedPercent;
         this.requestUpdate();
         this.applySelectionOpacity();
     }
@@ -1622,7 +1662,9 @@ class KigumiViewerApp extends LitElement {
             // Apply matching transparency to edges
             if (bundle.edges && bundle.edges.material) {
                 const profile = this.resolveRenderProfile(bundle.profileId);
-                const baseEdgeOpacity = profile ? profile.edgeOpacity : 1.0;
+                const baseEdgeOpacity = profile
+                    ? profile.edgeOpacity * (this.edgeLineVisibilityPercent / 100)
+                    : (this.edgeLineVisibilityPercent / 100);
                 bundle.edges.material.opacity = baseEdgeOpacity * opacity;
                 bundle.edges.visible = !isHidden && this.edgesEnabled;
             }
@@ -2097,7 +2139,7 @@ class KigumiViewerApp extends LitElement {
             edge: new THREE.LineBasicMaterial({
                 color: profile.edgeColor,
                 transparent: true,
-                opacity: profile.edgeOpacity,
+                opacity: profile.edgeOpacity * (this.edgeLineVisibilityPercent / 100),
                 depthTest: false,
                 depthWrite: false,
             }),
@@ -2132,7 +2174,7 @@ class KigumiViewerApp extends LitElement {
         bundle.mesh.material.needsUpdate = true;
 
         bundle.edges.material.color.setHex(profile.edgeColor);
-        bundle.edges.material.opacity = profile.edgeOpacity;
+        bundle.edges.material.opacity = profile.edgeOpacity * (this.edgeLineVisibilityPercent / 100);
         bundle.edges.material.transparent = true;
         bundle.edges.material.depthTest = false;
         bundle.edges.material.depthWrite = false;
@@ -2665,7 +2707,7 @@ class KigumiViewerApp extends LitElement {
             const edgeMesh = new THREE.LineSegments(edgeGeometry, materialSet.edge);
             const reflectionMesh = new THREE.Mesh(geometry, materialSet.reflection);
             solidMesh.renderOrder = 1;
-            edgeMesh.renderOrder = 2;
+            edgeMesh.renderOrder = 10;
             reflectionMesh.renderOrder = 0;
             solidMesh.castShadow = true;
             solidMesh.receiveShadow = true;
