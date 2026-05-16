@@ -20,9 +20,6 @@ on:
         description: Use an existing tag for publishing (overrides bump_version_and_create_tag)
         required: false
         type: string
-  pull_request:
-    branches:
-      - main
 
 jobs:
   build:
