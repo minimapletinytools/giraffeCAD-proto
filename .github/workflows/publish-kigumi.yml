@@ -114,7 +114,12 @@ jobs:
         run: npm run test:unit
 
       - name: Package extension
-        run: npx @vscode/vsce package
+        run: |
+          EXTRA_ARGS=()
+          if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
+            EXTRA_ARGS+=(--pre-release)
+          fi
+          npx @vscode/vsce package "${EXTRA_ARGS[@]}"
 
       - name: Resolve VSIX name
         id: package_info
