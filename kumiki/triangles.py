@@ -392,6 +392,9 @@ def _remove_nonmanifold_faces(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
     Coplanar CSG boolean operations can emit zero-thickness flap faces that create
     non-manifold edges. Valid solid geometry from the manifold engine is fully
     manifold, so this targets the artifact faces without affecting valid geometry.
+
+    However, if removing these faces would disconnect the mesh or leave it empty,
+    keep the original mesh to preserve geometry. (note this seems like a bug to me, why would nonmanifold faces do this, it was happening on tongue and fork rafter joints in tinyhouse120, but whatever it works for now)
     """
     n_faces = len(mesh.faces)
     if n_faces == 0:
@@ -414,6 +417,16 @@ def _remove_nonmanifold_faces(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
 
     result = trimesh.Trimesh(vertices=mesh.vertices.copy(), faces=new_faces, process=False)
     result.remove_unreferenced_vertices()
+
+    # Check if the result is disconnected or empty after removing non-manifold faces
+    # If so, return the original mesh to preserve geometry
+    try:
+        components = result.split()
+        if len(components) == 0 or len(result.vertices) == 0:
+            return mesh
+    except Exception:
+        return mesh
+
     return result
 
 

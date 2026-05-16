@@ -282,10 +282,15 @@ def _cut_timber_to_triangle_mesh_payload(
     global_csg = adopt_csg(cut_timber.timber.transform, Transform.identity(), local_csg)
     triangle_mesh = triangulate_cutcsg(global_csg).mesh
 
+    if triangle_mesh.vertices.size == 0 or triangle_mesh.faces.size == 0:
+        raise RuntimeError("triangulate_cutcsg produced empty mesh")
+
     vertices = triangle_mesh.vertices.reshape(-1).tolist()
     indices = triangle_mesh.faces.reshape(-1).tolist()
 
     bounds = triangle_mesh.bounds
+    if bounds is None:
+        raise RuntimeError("triangulate_cutcsg produced mesh without bounds")
     dims = bounds[1] - bounds[0]
 
     timber = cut_timber.timber
@@ -433,7 +438,13 @@ def build_real_geometry(state: RunnerState, slot_state: Optional['SlotState'] = 
             if not missing_networkx and "networkx" in str(exc).lower():
                 missing_networkx = True
 
-            if missing_networkx:
+            triangulation_empty_or_invalid = (
+                "triangulate_cutcsg produced empty mesh" in str(exc)
+                or "triangulate_cutcsg produced mesh without bounds" in str(exc)
+                or "'NoneType' object is not subscriptable" in str(exc)
+            )
+
+            if missing_networkx or triangulation_empty_or_invalid:
                 try:
                     mesh_payload = _cut_timber_to_bbox_mesh_payload(cut_timber, timber_key)
                     triangle_count = len(mesh_payload.get("indices", [])) // 3
@@ -452,10 +463,16 @@ def build_real_geometry(state: RunnerState, slot_state: Optional['SlotState'] = 
 
                     meshes.append(mesh_payload)
                     seen_keys.add(timber_key)
-                    log_stderr(
-                        "Warning: triangulation backend missing dependency 'networkx'; "
-                        f"rendered fallback bounding prism for {get_timber_display_name(cut_timber.timber)}"
-                    )
+                    if missing_networkx:
+                        log_stderr(
+                            "Warning: triangulation backend missing dependency 'networkx'; "
+                            f"rendered fallback bounding prism for {get_timber_display_name(cut_timber.timber)}"
+                        )
+                    else:
+                        log_stderr(
+                            "Warning: triangulation produced empty/invalid mesh; "
+                            f"rendered fallback bounding prism for {get_timber_display_name(cut_timber.timber)}"
+                        )
                     continue
                 except Exception as fallback_exc:
                     log_stderr(
