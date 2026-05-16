@@ -10,6 +10,7 @@ STL export uses trimesh (triangle mesh). STEP export uses OCP
 from __future__ import annotations
 
 import os
+import importlib
 from pathlib import Path
 from typing import Any, List, Optional, Union, cast
 
@@ -55,15 +56,15 @@ Interface_Static = cast(Any, None)
 TopLoc_Location = cast(Any, None)
 
 try:
-    import OCP.BRepPrimAPI as _BRepPrimAPI
-    import OCP.BRepAlgoAPI as _BRepAlgoAPI
-    import OCP.BRepBuilderAPI as _BRepBuilderAPI
-    import OCP.gp as _gp
-    import OCP.TopoDS as _TopoDS
-    import OCP.BRep as _BRep
-    import OCP.STEPControl as _STEPControl
-    import OCP.Interface as _Interface
-    import OCP.TopLoc as _TopLoc
+    _BRepPrimAPI = importlib.import_module("OCP.BRepPrimAPI")
+    _BRepAlgoAPI = importlib.import_module("OCP.BRepAlgoAPI")
+    _BRepBuilderAPI = importlib.import_module("OCP.BRepBuilderAPI")
+    _gp = importlib.import_module("OCP.gp")
+    _TopoDS = importlib.import_module("OCP.TopoDS")
+    _BRep = importlib.import_module("OCP.BRep")
+    _STEPControl = importlib.import_module("OCP.STEPControl")
+    _Interface = importlib.import_module("OCP.Interface")
+    _TopLoc = importlib.import_module("OCP.TopLoc")
 
     BRepPrimAPI_MakeBox = getattr(_BRepPrimAPI, "BRepPrimAPI_MakeBox")
     BRepPrimAPI_MakeCylinder = getattr(_BRepPrimAPI, "BRepPrimAPI_MakeCylinder")

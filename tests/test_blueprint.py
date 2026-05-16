@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+import importlib
 from typing import Any, cast
 
 import pytest
@@ -217,8 +218,8 @@ class TestStepOscarshed:
         from kumiki.rule import Transform
         from kumiki.rendering_utils import sympy_to_float
         from kumiki.timber import TimberCorner
-        import OCP.Bnd as _Bnd
-        import OCP.BRepBndLib as _BRepBndLib
+        _Bnd = importlib.import_module("OCP.Bnd")
+        _BRepBndLib = importlib.import_module("OCP.BRepBndLib")
 
         Bnd_Box = getattr(_Bnd, "Bnd_Box")
         BRepBndLib = getattr(_BRepBndLib, "BRepBndLib")
