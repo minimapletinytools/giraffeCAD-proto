@@ -207,7 +207,7 @@ class PythonRunnerSession {
     async getMissingViewerDependencies(pythonCmd) {
         const snippet = [
             'import importlib.util',
-            'required = ["sympy", "numpy", "trimesh", "manifold3d"]',
+            'required = ["sympy", "numpy", "trimesh", "manifold3d", "networkx"]',
             'missing = [name for name in required if importlib.util.find_spec(name) is None]',
             'print("\\n".join(missing))',
         ].join('; ');

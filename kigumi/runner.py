@@ -348,6 +348,41 @@ def _accessory_to_triangle_mesh_payload(
     }
 
 
+def _cut_timber_to_bbox_mesh_payload(
+    cut_timber: Any,
+    timber_key: str,
+) -> Dict[str, Any]:
+    """Fallback mesh payload based on a cut timber's oriented bounding prism.
+
+    This path avoids trimesh boolean triangulation and keeps rendering usable
+    when optional backend dependencies are unavailable.
+
+    haven't tried this, not sure how well it works, I guess the bbox might not be oriented correctly in this version...
+    """
+    timber = cut_timber.timber
+    prism = cut_timber.get_bounding_box_prism()
+    mesh = prism_to_mesh(prism)
+
+    csg_nodes, csg_features = _count_csg_nodes_and_features(cut_timber.render_timber_with_cuts_csg_local())
+    timber_kumiki_id = int(timber.ticket.kumiki_id)
+    return {
+        "name": get_timber_display_name(timber),
+        "memberName": get_timber_display_name(timber),
+        "memberType": "timber",
+        "memberKey": timber_key,
+        "timberKey": timber_key,
+        "kumikiId": timber_kumiki_id,
+        "vertices": mesh["vertices"],
+        "indices": mesh["indices"],
+        "prism_length": round(float(getattr(timber, "length", 0.0)), 6),
+        "prism_width": round(float(getattr(timber, "size", [0.0, 0.0])[0]), 6),
+        "prism_height": round(float(getattr(timber, "size", [0.0, 0.0])[1]), 6),
+        "csg_nodes": csg_nodes,
+        "csg_features": csg_features,
+        "meshSource": "bounding-prism-fallback",
+    }
+
+
 def build_real_geometry(state: RunnerState, slot_state: Optional['SlotState'] = None) -> Dict[str, Any]:
     """Build triangle mesh geometry for every cut timber."""
     ss = slot_state if slot_state is not None else state._active
@@ -394,6 +429,39 @@ def build_real_geometry(state: RunnerState, slot_state: Optional['SlotState'] = 
             meshes.append(mesh_payload)
             seen_keys.add(timber_key)
         except Exception as exc:
+            missing_networkx = isinstance(exc, ModuleNotFoundError) and getattr(exc, "name", None) == "networkx"
+            if not missing_networkx and "networkx" in str(exc).lower():
+                missing_networkx = True
+
+            if missing_networkx:
+                try:
+                    mesh_payload = _cut_timber_to_bbox_mesh_payload(cut_timber, timber_key)
+                    triangle_count = len(mesh_payload.get("indices", [])) // 3
+                    ss.mesh_cache[timber_key] = {
+                        "mesh": mesh_payload,
+                        "local_csg": None,
+                        "cut_timber": cut_timber,
+                    }
+                    changed_keys.append(timber_key)
+                    remesh_metrics.append({
+                        "timberKey": timber_key,
+                        "remesh_s": 0.0,
+                        "csg_depth": 1,
+                        "triangle_count": triangle_count,
+                    })
+
+                    meshes.append(mesh_payload)
+                    seen_keys.add(timber_key)
+                    log_stderr(
+                        "Warning: triangulation backend missing dependency 'networkx'; "
+                        f"rendered fallback bounding prism for {get_timber_display_name(cut_timber.timber)}"
+                    )
+                    continue
+                except Exception as fallback_exc:
+                    log_stderr(
+                        f"Warning: fallback geometry failed for {get_timber_display_name(cut_timber.timber)}: {fallback_exc}"
+                    )
+
             log_stderr(f"Warning: skipping geometry for {get_timber_display_name(cut_timber.timber)}: {exc}")
 
     accessories = list(frame.accessories) if hasattr(frame, "accessories") and frame.accessories else []
