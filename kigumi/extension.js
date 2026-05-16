@@ -36,6 +36,13 @@ function activate(context) {
             }
             return mainSession.runnerSession.getPythonCommand();
         },
+        logLine: (message) => {
+            if (!outputChannel) {
+                return;
+            }
+            const timestamp = new Date().toISOString();
+            outputChannel.appendLine(`[${timestamp}] ${message}`);
+        },
     });
 
     const explorerTreeView = vscode.window.createTreeView('kigumi.explorer', {

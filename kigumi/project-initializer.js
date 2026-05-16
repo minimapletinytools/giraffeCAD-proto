@@ -71,13 +71,13 @@ function writeProjectYaml(workspaceRoot, pythonPath, metadata) {
     fs.writeFileSync(path.join(folder, 'project.yaml'), `${lines.join('\n')}\n`, 'utf8');
 }
 
-function ensureExampleFrame(workspaceRoot) {
-    const filePath = path.join(workspaceRoot, 'my_cute_frame.py');
-    if (fs.existsSync(filePath)) {
-        return { filePath, created: false };
+function getBundledExampleFrameContent() {
+    const canonicalExamplePath = path.resolve(__dirname, '..', 'patterns', 'structures', 'my_cute_frame.py');
+    if (fs.existsSync(canonicalExamplePath)) {
+        return fs.readFileSync(canonicalExamplePath, 'utf8');
     }
 
-    const content = [
+    return [
         '"""Starter Kigumi frame: a simple H-shaped frame made of four 90x90mm timbers.',
         '',
         'Two side timbers run in the +Y direction. Two cross timbers join them with',
@@ -188,6 +188,15 @@ function ensureExampleFrame(workspaceRoot) {
         'example = build_frame',
         '',
     ].join('\n');
+}
+
+function ensureExampleFrame(workspaceRoot) {
+    const filePath = path.join(workspaceRoot, 'my_cute_frame.py');
+    if (fs.existsSync(filePath)) {
+        return { filePath, created: false };
+    }
+
+    const content = getBundledExampleFrameContent();
 
     fs.writeFileSync(filePath, content, 'utf8');
     return { filePath, created: true };

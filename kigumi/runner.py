@@ -632,11 +632,77 @@ def serialize_layers(frame: Any) -> Dict[str, Any]:
     """
     timber_entries, accessory_entries = _assign_member_keys(frame)
 
+    # Build a map of timber object to (timber_kumiki_id, frame's CutTimber)
+    timber_to_kumiki_and_cut: Dict[int, tuple[int, Any]] = {}
+    for entry in timber_entries:
+        timber_id = id(entry["timber"])
+        timber_to_kumiki_and_cut[timber_id] = (entry["kumikiId"], entry["cutTimber"])
+
+    # Extract joint records from source_joints
+    source_joints = list(getattr(frame, "source_joints", ()) or ())
     accessory_kumiki_to_joint: Dict[int, int] = {}
-    joint_records = list(getattr(frame, "joint_records", ()) or ())
-    for record in joint_records:
-        for accessory_kid in record.accessory_kumiki_ids:
-            accessory_kumiki_to_joint[int(accessory_kid)] = int(record.joint_kumiki_id)
+
+    joints_payload: List[Dict[str, Any]] = []
+    for joint in source_joints:
+        joint_ticket = getattr(joint, "ticket", None)
+        if joint_ticket is None:
+            continue
+        
+        joint_kumiki_id = int(getattr(joint_ticket, "kumiki_id", 0))
+        joint_name = getattr(joint_ticket, "name", None)
+        if joint_name and joint_name == "[no-name]":
+            joint_name = None
+        joint_type = getattr(joint_ticket, "joint_type", None)
+        joint_name = joint_name or (joint_type or "joint")
+        
+        # Extract members (timbers) from cut_timbers
+        members_list: List[Dict[str, Any]] = []
+        cut_timbers_dict = getattr(joint, "cut_timbers", {})
+        for cut_timber in cut_timbers_dict.values():
+            timber = getattr(cut_timber, "timber", None)
+            if timber is None:
+                continue
+            timber_id = id(timber)
+            if timber_id not in timber_to_kumiki_and_cut:
+                continue
+            timber_kumiki_id, frame_cut_timber = timber_to_kumiki_and_cut[timber_id]
+            
+            # Find which cuts from this timber (in the joint) appear in the frame's merged CutTimber
+            # by comparing object identity
+            joint_cuts = getattr(cut_timber, "cuts", [])
+            frame_cuts = getattr(frame_cut_timber, "cuts", [])
+            
+            cut_indices = []
+            for frame_cut_idx, frame_cut in enumerate(frame_cuts):
+                # Check if this frame cut is one of the joint's cuts (by identity)
+                for joint_cut in joint_cuts:
+                    if frame_cut is joint_cut:
+                        cut_indices.append(frame_cut_idx)
+                        break
+            
+            if cut_indices:
+                members_list.append({
+                    "timberKumikiId": timber_kumiki_id,
+                    "cutIndices": cut_indices,
+                })
+        
+        # Extract accessories
+        accessory_kumiki_ids: List[int] = []
+        joint_accessories = getattr(joint, "jointAccessories", {})
+        for accessory in joint_accessories.values():
+            accessory_ticket = getattr(accessory, "ticket", None)
+            if accessory_ticket is not None:
+                accessory_kumiki_id = int(getattr(accessory_ticket, "kumiki_id", 0))
+                accessory_kumiki_ids.append(accessory_kumiki_id)
+                accessory_kumiki_to_joint[accessory_kumiki_id] = joint_kumiki_id
+        
+        joints_payload.append({
+            "kumikiId": joint_kumiki_id,
+            "name": joint_name,
+            "jointType": joint_type,
+            "members": members_list,
+            "accessoryKumikiIds": accessory_kumiki_ids,
+        })
 
     timbers_payload: List[Dict[str, Any]] = []
     for entry in timber_entries:
@@ -656,23 +722,6 @@ def serialize_layers(frame: Any) -> Dict[str, Any]:
             "name": entry["displayName"],
             "type": entry["type"],
             "jointKumikiId": accessory_kumiki_to_joint.get(entry["kumikiId"]),
-        })
-
-    joints_payload: List[Dict[str, Any]] = []
-    for record in joint_records:
-        joint_name = record.joint_name if record.joint_name and record.joint_name != "[no-name]" else (record.joint_type or "joint")
-        joints_payload.append({
-            "kumikiId": int(record.joint_kumiki_id),
-            "name": joint_name,
-            "jointType": record.joint_type,
-            "members": [
-                {
-                    "timberKumikiId": int(timber_kid),
-                    "cutIndices": [int(i) for i in indices],
-                }
-                for timber_kid, indices in record.member_cut_indices
-            ],
-            "accessoryKumikiIds": [int(a) for a in record.accessory_kumiki_ids],
         })
 
     return {

@@ -96,6 +96,9 @@ IGNORE-test the networkx fallback thing or remove it
 DONE-selecting in viewer does not deselect in layer sview
 DONE-increase contrast between background and objects
 DONE-or maybe reduce global lighting so faces are more pronounced
+DONE-integrate layers view with regular view
+-BUG joints view in layers does not show any joints for my cute frame
+-update my cute frame to use the python example or rupdate the example..
 -fresh install not picking up patterns in kumiki library
 -test installation
   -raw installation of kigumi, installs deps

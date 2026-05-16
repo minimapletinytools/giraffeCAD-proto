@@ -132,22 +132,51 @@ function runPythonJson(pythonCommand, script, workspaceRoot, timeoutMs) {
 async function discoverDependencyContent(workspaceRoot, options = {}) {
     const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 10000;
     const candidates = options.pythonCommand ? [options.pythonCommand] : getPythonCandidates(workspaceRoot);
+    const attemptErrors = [];
 
     const script = [
         'import json',
         'import os',
+        'import re',
         'import site',
         'import sysconfig',
-        'import contextlib',
-        'from kumiki.librarian import scan_library_index',
+        '',
+        'SKIP_DIRS = {"__pycache__", "node_modules", "dist", "build", ".git", ".hg", ".svn"}',
+        '',
+        'def _might_contain_patternbook(src):',
+        '    if re.search(r"^\\s*patternbook\\s*=", src, flags=re.M):',
+        '        return True',
+        '    if re.search(r"^\\s*def\\s+create_\\w+_patternbook\\s*\\(", src, flags=re.M):',
+        '        return True',
+        '    return False',
+        '',
+        'def _might_contain_example(src):',
+        '    if re.search(r"^\\s*example\\s*=", src, flags=re.M):',
+        '        return True',
+        '    if re.search(r"^\\s*def\\s+build_frame\\s*\\(", src, flags=re.M):',
+        '        return True',
+        '    return False',
         '',
         'def index_paths(folder):',
         '    if not folder or not os.path.isdir(folder):',
         '        return [], []',
-        '    with contextlib.redirect_stdout(__import__("sys").stderr):',
-        '        idx = scan_library_index(folder)',
-        '    pattern_files = [entry.get("file_path") for entry in idx.get("patternbooks", []) if entry.get("file_path")]',
-        '    frame_example_files = [entry.get("file_path") for entry in idx.get("frame_examples", []) if entry.get("file_path")]',
+        '    pattern_files = []',
+        '    frame_example_files = []',
+        '    for root, dirs, files in os.walk(folder):',
+        '        dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]',
+        '        for file_name in files:',
+        '            if not file_name.endswith(".py") or file_name == "__init__.py":',
+        '                continue',
+        '            file_path = os.path.join(root, file_name)',
+        '            try:',
+        '                with open(file_path, "r", encoding="utf-8", errors="ignore") as fh:',
+        '                    src = fh.read()',
+        '            except Exception:',
+        '                continue',
+        '            if _might_contain_patternbook(src):',
+        '                pattern_files.append(file_path)',
+        '            if _might_contain_example(src):',
+        '                frame_example_files.append(file_path)',
         '    return pattern_files, frame_example_files',
         '',
         'site_roots = set()',
@@ -183,6 +212,8 @@ async function discoverDependencyContent(workspaceRoot, options = {}) {
         '        if not entry.is_dir():',
         '            continue',
         '        name = entry.name',
+        '        if name.endswith(".dist-info") or name.endswith(".egg-info"):',
+        '            continue',
         '        if name == "kumiki":',
         '            kp, ke = index_paths(os.path.join(entry.path, "patterns"))',
         '            kumiki_patterns.update(kp)',
@@ -229,11 +260,16 @@ async function discoverDependencyContent(workspaceRoot, options = {}) {
                 dependencyExamples: dedupeAndSortPaths(raw.dependencyExamples || []),
             };
         } catch (error) {
-            lastError = error;
+            const wrappedError = new Error(`Python candidate '${candidate}' failed: ${error.message || error}`);
+            lastError = wrappedError;
+            attemptErrors.push(wrappedError.message);
         }
     }
 
-    throw lastError || new Error('No valid Python interpreter found for dependency discovery');
+    if (lastError) {
+        throw new Error(`Dependency discovery failed after trying ${candidates.length} Python candidate(s):\n${attemptErrors.join('\n')}`);
+    }
+    throw new Error('No valid Python interpreter found for dependency discovery');
 }
 
 module.exports = {
