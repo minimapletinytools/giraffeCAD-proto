@@ -221,12 +221,14 @@ class KigumiProjectHeaderProvider {
     .header-title {
         font-weight: 600;
         margin-bottom: 2px;
+        color: var(--kigumi-title-color, var(--vscode-foreground));
     }
     .header-description {
         opacity: 0.75;
         margin-bottom: 8px;
         font-size: 0.92em;
         line-height: 1.3;
+        color: var(--kigumi-description-color, var(--vscode-descriptionForeground, var(--vscode-foreground)));
     }
     button.init-button {
         display: block;
@@ -307,6 +309,36 @@ class KigumiProjectHeaderProvider {
     const secondaryButtonEl = document.getElementById('secondaryActionButton');
     const progressEl = document.getElementById('progressTrack');
 
+    function parseRgb(cssColor) {
+        if (!cssColor || typeof cssColor !== 'string') {
+            return null;
+        }
+        const match = cssColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+        if (!match) {
+            return null;
+        }
+        return {
+            r: Number(match[1]),
+            g: Number(match[2]),
+            b: Number(match[3]),
+        };
+    }
+
+    function chooseTextColors() {
+        const bgColor = getComputedStyle(document.body).backgroundColor || '';
+        const rgb = parseRgb(bgColor);
+        if (!rgb) {
+            return;
+        }
+
+        const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+        const titleColor = brightness >= 140 ? '#1f1f1f' : '#f5f5f5';
+        const descriptionColor = brightness >= 140 ? '#3a3a3a' : '#d7d7d7';
+
+        document.body.style.setProperty('--kigumi-title-color', titleColor);
+        document.body.style.setProperty('--kigumi-description-color', descriptionColor);
+    }
+
     function handleActionClick(button) {
         if (!button || button.disabled) {
             return;
@@ -329,6 +361,7 @@ class KigumiProjectHeaderProvider {
 
     buttonEl.addEventListener('click', () => handleActionClick(buttonEl));
     secondaryButtonEl.addEventListener('click', () => handleActionClick(secondaryButtonEl));
+    chooseTextColors();
 
     window.addEventListener('message', (event) => {
         const msg = event.data;
