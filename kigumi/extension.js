@@ -2,7 +2,7 @@ const path = require('path');
 const vscode = require('vscode');
 const { FrameViewSession } = require('./frame-view-session');
 const { KigumiSidebarProvider } = require('./sidebar-provider');
-const { getInitializationStatus, initializeWorkspaceProject, isInitializationInProgress } = require('./project-initializer');
+const { getInitializationStatus, initializeWorkspaceProject, updateWorkspaceKumiki, isInitializationInProgress } = require('./project-initializer');
 const { KigumiProjectHeaderProvider } = require('./project-header-view');
 
 let outputChannel = null;
@@ -60,6 +60,9 @@ function activate(context) {
         getActivePythonFilePath,
         runInitialize: async () => {
             await runProjectHeaderAction();
+        },
+        runUpdateKumiki: async () => {
+            await runProjectHeaderUpdateAction();
         },
     });
     context.subscriptions.push(
@@ -503,9 +506,10 @@ function activate(context) {
                 title: 'Initializing Kigumi project',
                 cancellable: false,
             }, async () => {
-                await initializeWorkspaceProject(rootHint, activeFilePath);
+                const result = await initializeWorkspaceProject(rootHint, activeFilePath);
+                logKumikiInstallResult('initialize', result);
             });
-            vscode.window.showInformationMessage('Kigumi workspace initialized.');
+            vscode.window.showInformationMessage('Kigumi workspace initialized and Kumiki was updated to latest.');
         } catch (error) {
             if (error && error.code === 'INITIALIZATION_IN_PROGRESS') {
                 vscode.window.showInformationMessage('Kigumi initialization is already in progress.');
@@ -517,6 +521,62 @@ function activate(context) {
             if (projectHeaderProvider) projectHeaderProvider.setInitializing(false);
             if (sidebarProvider) {
                 await sidebarProvider.refresh(true);
+            }
+        }
+    }
+
+    async function runProjectHeaderUpdateAction() {
+        const activeFilePath = getActivePythonFilePath();
+        const workspaceRoot = getWorkspaceRoot();
+        if (!workspaceRoot && !activeFilePath) {
+            vscode.window.showErrorMessage('Open a workspace folder or open a Python file first.');
+            return;
+        }
+
+        if (isInitializationInProgress()) {
+            vscode.window.showInformationMessage('Kigumi update is already in progress.');
+            if (projectHeaderProvider) projectHeaderProvider.update();
+            return;
+        }
+
+        const rootHint = workspaceRoot || path.dirname(activeFilePath);
+        if (projectHeaderProvider) projectHeaderProvider.setInitializing(true);
+        try {
+            await vscode.window.withProgress({
+                location: vscode.ProgressLocation.Notification,
+                title: 'Updating Kumiki',
+                cancellable: false,
+            }, async () => {
+                const result = await updateWorkspaceKumiki(rootHint, activeFilePath);
+                logKumikiInstallResult('update', result);
+            });
+            vscode.window.showInformationMessage('Kumiki update complete.');
+        } catch (error) {
+            if (error && error.code === 'INITIALIZATION_IN_PROGRESS') {
+                vscode.window.showInformationMessage('Kigumi update is already in progress.');
+            } else {
+                outputChannel.show(true);
+                vscode.window.showErrorMessage(`Update Kumiki failed: ${error.message || error}`);
+            }
+        } finally {
+            if (projectHeaderProvider) projectHeaderProvider.setInitializing(false);
+            if (sidebarProvider) {
+                await sidebarProvider.refresh(true);
+            }
+        }
+    }
+
+    function logKumikiInstallResult(actionName, result) {
+        if (!outputChannel || !result) {
+            return;
+        }
+        const action = actionName === 'update' ? 'Update' : 'Install';
+        outputChannel.appendLine(`[kigumi] ${action} Kumiki complete.`);
+        outputChannel.appendLine(`[kigumi] Installed Kumiki version: ${result.kumikiVersion || 'unknown'}`);
+        if (Array.isArray(result.installSummary) && result.installSummary.length > 0) {
+            outputChannel.appendLine('[kigumi] Summary:');
+            for (const line of result.installSummary) {
+                outputChannel.appendLine(`[kigumi] - ${line}`);
             }
         }
     }

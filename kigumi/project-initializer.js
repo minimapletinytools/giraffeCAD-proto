@@ -258,27 +258,58 @@ async function ensurePipAvailable(workspaceRoot, pythonPath) {
     await runCommand(pythonPath, ['-m', 'pip', '--version'], workspaceRoot);
 }
 
-async function installBasePackages(workspaceRoot, pythonPath, isLocalDev) {
+async function getInstalledKumikiVersion(workspaceRoot, pythonPath) {
+    const snippet = [
+        'import importlib.metadata as m',
+        'try:',
+        '    print(m.version("kumiki"))',
+        'except Exception:',
+        '    print("unknown")',
+    ].join('\n');
+
+    const { stdout } = await runCommand(pythonPath, ['-c', snippet], workspaceRoot);
+    return (stdout || '').trim() || 'unknown';
+}
+
+async function installOrUpdateKumiki(workspaceRoot, pythonPath, isLocalDev) {
     const missingBefore = await getMissingViewerDependencies(workspaceRoot, pythonPath);
-    if (missingBefore.length === 0) {
-        return {
-            installedViewerDeps: false,
-            missingBefore,
-        };
-    }
+    const summary = [];
 
     await ensurePipAvailable(workspaceRoot, pythonPath);
+    summary.push('Ensured pip is available in the virtual environment.');
+
     await runCommand(pythonPath, ['-m', 'pip', 'install', '--upgrade', 'pip'], workspaceRoot);
+    summary.push('Upgraded pip to the latest available version.');
 
     if (isLocalDev && fs.existsSync(path.join(workspaceRoot, 'pyproject.toml'))) {
-        await runCommand(pythonPath, ['-m', 'pip', 'install', '-e', workspaceRoot], workspaceRoot);
+        await runCommand(pythonPath, ['-m', 'pip', 'install', '--upgrade', '-e', workspaceRoot], workspaceRoot);
+        summary.push('Installed local editable Kumiki package from workspace source.');
     } else {
-        await runCommand(pythonPath, ['-m', 'pip', 'install', 'kumiki'], workspaceRoot);
+        await runCommand(pythonPath, ['-m', 'pip', 'install', '--upgrade', 'kumiki'], workspaceRoot);
+        summary.push('Attempted to install/upgrade Kumiki from PyPI to the latest version.');
     }
 
+    const missingAfter = await getMissingViewerDependencies(workspaceRoot, pythonPath);
+    if (missingBefore.length > 0) {
+        summary.push(`Missing viewer deps before install: ${missingBefore.join(', ')}`);
+    } else {
+        summary.push('No viewer dependencies were missing before install.');
+    }
+    if (missingAfter.length > 0) {
+        summary.push(`Still missing after install: ${missingAfter.join(', ')}`);
+    } else {
+        summary.push('All required viewer dependencies are available after install.');
+    }
+
+    const kumikiVersion = await getInstalledKumikiVersion(workspaceRoot, pythonPath);
+    summary.push(`Installed Kumiki version: ${kumikiVersion}`);
+
     return {
-        installedViewerDeps: true,
+        installedViewerDeps: missingBefore.length > 0,
         missingBefore,
+        missingAfter,
+        kumikiVersion,
+        summary,
     };
 }
 
@@ -339,7 +370,7 @@ async function initializeWorkspaceProject(workspaceRoot, filePath) {
 
         ensureKigumiYaml(resolvedRoot);
         const envResult = await createVenv(resolvedRoot);
-        const installResult = await installBasePackages(resolvedRoot, envResult.pythonPath, env.isLocalDev);
+        const installResult = await installOrUpdateKumiki(resolvedRoot, envResult.pythonPath, env.isLocalDev);
 
         writeProjectYaml(resolvedRoot, envResult.pythonPath, {
             createdVenv: envResult.createdVenv,
@@ -357,8 +388,54 @@ async function initializeWorkspaceProject(workspaceRoot, filePath) {
             createdVenv: envResult.createdVenv,
             installedViewerDeps: installResult.installedViewerDeps,
             missingBefore: installResult.missingBefore,
+            missingAfter: installResult.missingAfter,
+            kumikiVersion: installResult.kumikiVersion,
+            installSummary: installResult.summary,
             exampleFilePath: exampleResult.filePath,
             createdExampleFile: exampleResult.created,
+        };
+    } finally {
+        _initializationInProgress = false;
+    }
+}
+
+async function updateWorkspaceKumiki(workspaceRoot, filePath) {
+    if (_initializationInProgress) {
+        const err = new Error('Initialization is already in progress.');
+        err.code = 'INITIALIZATION_IN_PROGRESS';
+        throw err;
+    }
+
+    _initializationInProgress = true;
+    try {
+        const env = resolveProjectEnvironment({
+            workspaceRoot,
+            filePath,
+            createMarkerIfMissing: true,
+        });
+        const resolvedRoot = env.projectRoot || workspaceRoot;
+
+        ensureKigumiYaml(resolvedRoot);
+        const envResult = await createVenv(resolvedRoot);
+        const installResult = await installOrUpdateKumiki(resolvedRoot, envResult.pythonPath, env.isLocalDev);
+
+        writeProjectYaml(resolvedRoot, envResult.pythonPath, {
+            createdVenv: envResult.createdVenv,
+            installedViewerDeps: installResult.installedViewerDeps,
+            missingBefore: installResult.missingBefore,
+            isLocalDev: env.isLocalDev,
+        });
+
+        return {
+            projectRoot: resolvedRoot,
+            isLocalDev: env.isLocalDev,
+            pythonPath: envResult.pythonPath,
+            createdVenv: envResult.createdVenv,
+            installedViewerDeps: installResult.installedViewerDeps,
+            missingBefore: installResult.missingBefore,
+            missingAfter: installResult.missingAfter,
+            kumikiVersion: installResult.kumikiVersion,
+            installSummary: installResult.summary,
         };
     } finally {
         _initializationInProgress = false;
@@ -368,5 +445,6 @@ async function initializeWorkspaceProject(workspaceRoot, filePath) {
 module.exports = {
     getInitializationStatus,
     initializeWorkspaceProject,
+    updateWorkspaceKumiki,
     isInitializationInProgress,
 };

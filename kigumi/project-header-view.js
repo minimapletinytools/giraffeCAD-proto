@@ -9,7 +9,7 @@ const { getInitializationStatus, isInitializationInProgress } = require('./proje
 class KigumiProjectHeaderProvider {
     /**
      * @param {vscode.ExtensionContext} context
-     * @param {{ getWorkspaceRoot: () => string | null, getActivePythonFilePath: () => string | null, runInitialize: () => Promise<void> }} options
+     * @param {{ getWorkspaceRoot: () => string | null, getActivePythonFilePath: () => string | null, runInitialize: () => Promise<void>, runUpdateKumiki?: () => Promise<void> }} options
      */
     constructor(context, options) {
         this.context = context;
@@ -36,6 +36,10 @@ class KigumiProjectHeaderProvider {
             }
             if (message.type === 'initialize') {
                 await this._handleInitializeRequest();
+                return;
+            }
+            if (message.type === 'update-kumiki') {
+                await this._handleUpdateRequest();
             }
         });
 
@@ -75,6 +79,9 @@ class KigumiProjectHeaderProvider {
                 buttonLabel: 'Open Folder…',
                 buttonAction: 'open-folder',
                 buttonDisabled: false,
+                secondaryButtonLabel: null,
+                secondaryButtonAction: null,
+                secondaryButtonDisabled: true,
                 initializing,
             };
         }
@@ -91,6 +98,9 @@ class KigumiProjectHeaderProvider {
                 buttonLabel: 'Retry',
                 buttonAction: 'initialize',
                 buttonDisabled: initializing,
+                secondaryButtonLabel: this.options.runUpdateKumiki ? 'Update Kumiki' : null,
+                secondaryButtonAction: this.options.runUpdateKumiki ? 'update-kumiki' : null,
+                secondaryButtonDisabled: initializing,
                 initializing,
             };
         }
@@ -103,6 +113,9 @@ class KigumiProjectHeaderProvider {
                 buttonLabel: null,
                 buttonAction: null,
                 buttonDisabled: true,
+                secondaryButtonLabel: null,
+                secondaryButtonAction: null,
+                secondaryButtonDisabled: true,
                 initializing: false,
             };
         }
@@ -112,10 +125,13 @@ class KigumiProjectHeaderProvider {
                 phase: 'initialized',
                 title: 'Project Initialized',
                 description: '.kigumi config and .venv are ready.',
-                buttonLabel: null,
-                buttonAction: null,
-                buttonDisabled: true,
-                initializing: false,
+                buttonLabel: this.options.runUpdateKumiki ? (initializing ? 'Updating…' : 'Update Kumiki') : null,
+                buttonAction: this.options.runUpdateKumiki ? 'update-kumiki' : null,
+                buttonDisabled: initializing,
+                secondaryButtonLabel: null,
+                secondaryButtonAction: null,
+                secondaryButtonDisabled: true,
+                initializing,
             };
         }
 
@@ -127,6 +143,9 @@ class KigumiProjectHeaderProvider {
                 buttonLabel: initializing ? 'Initializing…' : 'Finish Setup',
                 buttonAction: 'initialize',
                 buttonDisabled: initializing,
+                secondaryButtonLabel: this.options.runUpdateKumiki ? (initializing ? 'Updating…' : 'Update Kumiki') : null,
+                secondaryButtonAction: this.options.runUpdateKumiki ? 'update-kumiki' : null,
+                secondaryButtonDisabled: initializing,
                 initializing,
             };
         }
@@ -138,6 +157,9 @@ class KigumiProjectHeaderProvider {
             buttonLabel: initializing ? 'Initializing…' : 'Initialize Project',
             buttonAction: 'initialize',
             buttonDisabled: initializing,
+            secondaryButtonLabel: this.options.runUpdateKumiki ? (initializing ? 'Updating…' : 'Update Kumiki') : null,
+            secondaryButtonAction: this.options.runUpdateKumiki ? 'update-kumiki' : null,
+            secondaryButtonDisabled: initializing,
             initializing,
         };
     }
@@ -151,6 +173,24 @@ class KigumiProjectHeaderProvider {
         this.update();
         try {
             await this.options.runInitialize();
+        } finally {
+            this._initializing = false;
+            this.update();
+        }
+    }
+
+    async _handleUpdateRequest() {
+        if (!this.options.runUpdateKumiki) {
+            return;
+        }
+        if (this._initializing || isInitializationInProgress()) {
+            this.update();
+            return;
+        }
+        this._initializing = true;
+        this.update();
+        try {
+            await this.options.runUpdateKumiki();
         } finally {
             this._initializing = false;
             this.update();
@@ -200,6 +240,7 @@ class KigumiProjectHeaderProvider {
         cursor: pointer;
         border-radius: 2px;
         text-align: center;
+        margin-bottom: 6px;
     }
     button.init-button:hover:not(:disabled) {
         background: var(--vscode-button-hoverBackground);
@@ -243,12 +284,19 @@ class KigumiProjectHeaderProvider {
         margin-left: 6px;
         vertical-align: middle;
     }
+    .action-row {
+        display: flex;
+        flex-direction: column;
+    }
 </style>
 </head>
 <body>
     <div class="header-title" id="title">Loading…</div>
     <div class="header-description" id="description"></div>
-    <button class="init-button" id="actionButton" style="display:none;"></button>
+    <div class="action-row">
+        <button class="init-button" id="actionButton" style="display:none;"></button>
+        <button class="init-button" id="secondaryActionButton" style="display:none;"></button>
+    </div>
     <div class="progress-track" id="progressTrack"><div class="progress-bar"></div></div>
 
 <script nonce="${nonce}">
@@ -256,21 +304,31 @@ class KigumiProjectHeaderProvider {
     const titleEl = document.getElementById('title');
     const descEl = document.getElementById('description');
     const buttonEl = document.getElementById('actionButton');
+    const secondaryButtonEl = document.getElementById('secondaryActionButton');
     const progressEl = document.getElementById('progressTrack');
 
-    buttonEl.addEventListener('click', () => {
-        if (buttonEl.disabled) {
+    function handleActionClick(button) {
+        if (!button || button.disabled) {
             return;
         }
-        const action = buttonEl.dataset.action;
+        const action = button.dataset.action;
         if (action === 'initialize') {
             buttonEl.disabled = true;
+            secondaryButtonEl.disabled = true;
             progressEl.classList.add('active');
             vscode.postMessage({ type: 'initialize' });
+        } else if (action === 'update-kumiki') {
+            buttonEl.disabled = true;
+            secondaryButtonEl.disabled = true;
+            progressEl.classList.add('active');
+            vscode.postMessage({ type: 'update-kumiki' });
         } else if (action === 'open-folder') {
             vscode.postMessage({ type: 'open-folder' });
         }
-    });
+    }
+
+    buttonEl.addEventListener('click', () => handleActionClick(buttonEl));
+    secondaryButtonEl.addEventListener('click', () => handleActionClick(secondaryButtonEl));
 
     window.addEventListener('message', (event) => {
         const msg = event.data;
@@ -286,6 +344,16 @@ class KigumiProjectHeaderProvider {
         } else {
             buttonEl.style.display = 'none';
         }
+
+        if (s.secondaryButtonLabel) {
+            secondaryButtonEl.style.display = 'block';
+            secondaryButtonEl.textContent = s.secondaryButtonLabel;
+            secondaryButtonEl.disabled = !!s.secondaryButtonDisabled;
+            secondaryButtonEl.dataset.action = s.secondaryButtonAction || '';
+        } else {
+            secondaryButtonEl.style.display = 'none';
+        }
+
         if (s.initializing) {
             progressEl.classList.add('active');
         } else {
