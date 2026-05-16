@@ -433,7 +433,6 @@ class KigumiViewerApp extends LitElement {
     render() {
         return html`
             <button id="to-v3d" title="Jump back to 3D view">to v3d view</button>
-            <kigumi-layers-view id="layers-view"></kigumi-layers-view>
             <div id="viewport">
                 <canvas id="c"></canvas>
                 <div id="loading-overlay" class=${this.isOverlayVisible() ? 'visible' : ''}>
@@ -441,6 +440,7 @@ class KigumiViewerApp extends LitElement {
                     <button id="output-btn" type="button" title="Open Kigumi output channel" style="display: ${this.viewState.showOutputLink ? 'block' : 'none'}">view output</button>
                 </div>
                 <div id="info"></div>
+                <kigumi-layers-view id="layers-view"></kigumi-layers-view>
                 <div id="gizmo-panel" aria-label="Camera and light gizmos">
                     <div class="gizmo-block">
                         <div class="gizmo-title">camera</div>

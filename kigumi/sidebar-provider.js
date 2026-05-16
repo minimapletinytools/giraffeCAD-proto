@@ -227,7 +227,32 @@ class KigumiSidebarProvider {
             discoveryErrors,
             isScanning: false,
         };
+        this._logScanIssues();
         this._onDidChangeTreeData.fire();
+    }
+
+    _logScanIssues() {
+        const logLine = this.options.logLine;
+        if (typeof logLine !== 'function') {
+            return;
+        }
+
+        const discoveryErrors = this._state.discoveryErrors || [];
+        const scanErrors = this._state.scanErrors || [];
+        if (discoveryErrors.length === 0 && scanErrors.length === 0) {
+            return;
+        }
+
+        logLine('[explorer] Scan issues detected:');
+        for (const message of discoveryErrors) {
+            logLine(`[explorer] discovery error: ${message}`);
+        }
+        for (const err of scanErrors) {
+            const filePath = err && err.filePath ? err.filePath : '<unknown>';
+            const reason = err && err.reason ? err.reason : String(err);
+            logLine(`[explorer] scan error: ${reason}`);
+            logLine(`[explorer] scan error file: ${filePath}`);
+        }
     }
 
     async _scanWorkspace(workspaceRoot, timeoutMs) {
@@ -448,7 +473,7 @@ class KigumiSidebarProvider {
             nodes.push(new SidebarNode({
                 key: 'pattern-section:shipped-patterns',
                 type: 'patternSection',
-                label: `Kumiki shipped (${shippedCount})`,
+                label: `Kumiki (${shippedCount})`,
                 collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
                 iconPath: new vscode.ThemeIcon('package'),
                 data: { sectionKey: 'shipped-patterns' },
