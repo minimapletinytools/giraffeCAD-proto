@@ -476,7 +476,7 @@ def cut_cross_lap_beam_assembly_on_post_with_stepped_mortise_and_tenon(
         # depth of the mortise through both cross timbers mesaured from the face of cross_timber_1, through mortise if None
         mortise_depth: Optional[Numeric] = None,
 
-        # where the cut is in the cross timber, 0 means cross_timber_1 is entirely cut away and 1 means cross_timber_2 is entirely cut away
+        # location of the cross lap cut measured from the bottom of cross_timber_2, 0 means the cut is at the bottom of cross_timber_2 (relative to the joint)
         cross_lap_cut_ratio: Numeric = Rational(1, 2),
         ):
     raise NotImplementedError("cross lap beam assembly on post with stepped mortise and tenon not implemented yet")
@@ -490,7 +490,7 @@ def cut_castle_joint(
         # the "waist" is the section that passes over the post timber, this function only allows same waist size on both cross timbers and the waist portion is always centered on the post, you could make a version of this method that is more customizable if you want...
         cross_beam_waist_thickness: Numeric,
 
-        # where the cut is in the cross timber, 0 means cross_timber_1 is entirely cut away and 1 means cross_timber_2 is entirely cut away
+        # location of the cross lap cut measured from the bottom of cross_timber_2, 0 means the cut is at the bottom of cross_timber_2 (relative to the joint)
         cross_lap_cut_ratio: Numeric = Rational(1, 2),
 
         miter_cross_beams_if_overlapping_outside_post: bool = True,

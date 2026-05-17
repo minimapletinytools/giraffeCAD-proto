@@ -171,6 +171,8 @@ DONE/IGNORE-decide on layer view
 -do the castle joint 3 way joint thingy that should be easy?
   -may as well do the oscar hsed 3 way joint hingy as well
 
+-do compound joint example of the cross lap on post joint using both compound joinery and single 3 way jonit technique
+
 
 -do create_frame(paremteers) thing so that parameters can be tuned in UI
 
