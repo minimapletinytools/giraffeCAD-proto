@@ -259,6 +259,7 @@ class KigumiSidebarProvider {
         const result = await scanWorkspaceForFrames(workspaceRoot, {
             timeoutMs,
             pythonCommand: this.options.getPythonCommand?.(),
+            logLine: this.options.logLine,
         });
 
         return {

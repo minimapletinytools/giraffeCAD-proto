@@ -12,6 +12,7 @@ let patternSlotCounter = 0;
 let sidebarProvider = null;
 let projectHeaderProvider = null;
 let openInSplitView = true;
+const BUILD_MARKER = '🧪 KIGUMI_BUILD_2026-05-17T02:45Z';
 
 /**
  * Main activation function for the Kigumi extension.
@@ -20,6 +21,10 @@ let openInSplitView = true;
 function activate(context) {
     outputChannel = vscode.window.createOutputChannel('Kigumi');
     context.subscriptions.push(outputChannel);
+    const extensionVersion = (context.extension && context.extension.packageJSON && context.extension.packageJSON.version)
+        ? context.extension.packageJSON.version
+        : 'unknown';
+    outputChannel.appendLine(`[kigumi] ${BUILD_MARKER} (extension v${extensionVersion})`);
     openInSplitView = vscode.workspace.getConfiguration('kigumi').get('viewer.openInSplitView', true);
     context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((event) => {
         if (event.affectsConfiguration('kigumi.viewer.openInSplitView')) {

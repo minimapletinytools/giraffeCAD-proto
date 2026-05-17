@@ -102,6 +102,8 @@ DONE-update my cute frame to use the python example or rupdate the example..
 -BUG patterns from kumiki do load in sid ebar but most can't be opened and view source/duplicate is broken
 -when viewing pattern books view in sidebar, you should eb abel to open the entire pattern book 
 -opening pattern errors should go to console. Im' not sure why it's not, so hard to get errors
+-shadows off or lower by default (maybe 2 shadow transparency settings)
+-the bottom no viewer area needs to be a little bigger, at least see 1 row ofthe option clearly
 -identcation for joints layers view is broken
 -fresh install not picking up patterns in kumiki library
 -test installation
@@ -140,6 +142,11 @@ DONE-lock and hide fetaures
 :: TODO
 
 DONE-create workshop jonits folders
+-add a new integration test that  createsa. new kigumi projcet in some temp directory and initializes it and checks
+  -kumiki patterns load correctly
+  -workspace patterns load correctly
+  -workspace frames load correctly
+  -initialize button state is not init and then initi after initializing
 -outline finla joint requirements
   -you can probably at least promote the plain joints...
 -have publish package job bump the version number (check current version and bump I guess)

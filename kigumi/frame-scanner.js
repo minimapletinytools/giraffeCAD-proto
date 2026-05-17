@@ -38,8 +38,8 @@ const SKIP_SEGMENT_MATCH = [
 
 function mightContainKumiFrame(fileContent) {
     // Module-level patternbook or example assignment
-    if (/^\s*patternbook\s*=/m.test(fileContent)) return true;
-    if (/^\s*example\s*=/m.test(fileContent)) return true;
+    if (/^\s*patternbook\s*(?::[^=\n]+)?=/m.test(fileContent)) return true;
+    if (/^\s*example\s*(?::[^=\n]+)?=/m.test(fileContent)) return true;
 
     // build_frame function definition
     if (/^\s*def\s+build_frame\s*\(/m.test(fileContent)) return true;
@@ -48,6 +48,19 @@ function mightContainKumiFrame(fileContent) {
     if (/^\s*def\s+create_\w+_patternbook\s*\(/m.test(fileContent)) return true;
 
     return false;
+}
+
+function classifyKumikiFile(fileContent) {
+    const hasPatternbookAssignment = /^\s*patternbook\s*(?::[^=\n]+)?=/m.test(fileContent);
+    const hasPatternbookFactory = /^\s*def\s+create_\w+_patternbook\s*\(/m.test(fileContent);
+    const hasPatternbook = hasPatternbookAssignment || hasPatternbookFactory;
+    const hasExample = /^\s*example\s*(?::[^=\n]+)?=/m.test(fileContent);
+    const hasBuildFrame = /^\s*def\s+build_frame\s*\(/m.test(fileContent);
+    return {
+        hasPatternbook,
+        hasExample,
+        hasBuildFrame,
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -64,7 +77,14 @@ if os.path.isdir(os.path.join(ws, 'kumiki')) and ws not in sys.path:
 try:
     data = json.loads(sys.stdin.read())
     files = data.get('files', [])
-    from kumiki.librarian import scan_specific_files_index
+    try:
+        from kumiki.librarian import scan_specific_files_index
+    except Exception as exc:
+        raise RuntimeError(
+            'Outdated kumiki detected: missing kumiki.librarian.scan_specific_files_index. '
+            'Please update kumiki to the latest version in this project environment.'
+        ) from exc
+
     with contextlib.redirect_stdout(sys.stderr):
         index = scan_specific_files_index(files, ws)
     modules = []
@@ -116,6 +136,8 @@ async function confirmCandidatesWithPython(candidates, workspaceRoot, timeoutMs,
     const pythonCandidates = pythonCommand ? [pythonCommand] : getPythonCandidates(workspaceRoot);
 
     let lastError = null;
+    let lastMeaningfulError = null;
+    const attemptErrors = [];
     for (const py of pythonCandidates) {
         if (py.includes(path.sep) && !fs.existsSync(py)) {
             continue;
@@ -124,9 +146,21 @@ async function confirmCandidatesWithPython(candidates, workspaceRoot, timeoutMs,
             return await runPythonConfirmation(py, candidates, workspaceRoot, timeoutMs);
         } catch (error) {
             lastError = error;
+            const message = error && error.message ? error.message : String(error);
+            attemptErrors.push(`Python candidate '${py}' failed: ${message}`);
+            if (!(error && error.code === 'ENOENT') && !/ENOENT/.test(message)) {
+                lastMeaningfulError = error;
+            }
         }
     }
-    throw lastError || new Error('No Python interpreter found for frame confirmation');
+
+    const rootError = lastMeaningfulError || lastError || new Error('No Python interpreter found for frame confirmation');
+    if (attemptErrors.length > 0) {
+        throw new Error(
+            `Frame confirmation failed after trying ${pythonCandidates.length} Python candidate(s):\n${attemptErrors.join('\n')}`
+        );
+    }
+    throw rootError;
 }
 
 function runPythonConfirmation(pythonCommand, candidates, workspaceRoot, timeoutMs) {
@@ -227,6 +261,11 @@ async function scanWorkspaceForFrames(workspaceRoot, options = {}) {
     const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 5000;
     const extraIgnoreFolders = new Set(Array.isArray(options.ignoreFolders) ? options.ignoreFolders : []);
     const pythonCommand = options.pythonCommand || null;
+    const logLine = typeof options.logLine === 'function' ? options.logLine : null;
+
+    if (logLine) {
+        logLine(`[workspace-scan] starting scan root=${workspaceRoot} timeoutMs=${timeoutMs}`);
+    }
 
     // --- Phase 1: breadth-first static pre-filter ---
     const queue = [workspaceRoot];
@@ -269,9 +308,20 @@ async function scanWorkspaceForFrames(workspaceRoot, options = {}) {
             }
 
             if (mightContainKumiFrame(fileContent)) {
+                const hint = classifyKumikiFile(fileContent);
                 candidates.push(fullPath);
+                if (logLine) {
+                    logLine(
+                        `[workspace-scan] candidate=${path.relative(workspaceRoot, fullPath)} ` +
+                        `patternbook=${hint.hasPatternbook} example=${hint.hasExample} build_frame=${hint.hasBuildFrame}`
+                    );
+                }
             }
         }
+    }
+
+    if (logLine) {
+        logLine(`[workspace-scan] phase1 complete candidates=${candidates.length} errors=${scanErrors.length}`);
     }
 
     if (candidates.length === 0) {
@@ -282,15 +332,22 @@ async function scanWorkspaceForFrames(workspaceRoot, options = {}) {
     let confirmedModules = [];
     try {
         confirmedModules = await confirmCandidatesWithPython(candidates, workspaceRoot, timeoutMs * 4, pythonCommand);
+        if (logLine) {
+            logLine(`[workspace-scan] python confirmation succeeded modules=${confirmedModules.length}`);
+        }
     } catch (error) {
-        scanErrors.push({ filePath: workspaceRoot, reason: `Python scan failed, showing pre-filter candidates: ${error.message || error}` });
-        // Fallback: use pre-filter candidates; treat everything as a frame file (unconfirmed)
-        const fallback = candidates.map((fp) => ({
-            filePath: fp,
-            relativePath: path.relative(workspaceRoot, fp),
-        }));
-        fallback.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
-        return { frameFiles: fallback, patternbookFiles: [], scanErrors };
+        const message = error && error.message ? error.message : String(error);
+        const updateHint = /Outdated kumiki detected|scan_specific_files_index/.test(message)
+            ? ' Please update kumiki to the latest version in this project environment.'
+            : '';
+        scanErrors.push({
+            filePath: workspaceRoot,
+            reason: `Python scan failed: ${message}${updateHint}`,
+        });
+        if (logLine) {
+            logLine(`[workspace-scan] python confirmation failed: ${message}${updateHint}`);
+        }
+        return { frameFiles: [], patternbookFiles: [], scanErrors };
     }
 
     // Split into frame files (example/build_frame, no patternbook) and patternbook files.
@@ -307,17 +364,28 @@ async function scanWorkspaceForFrames(workspaceRoot, options = {}) {
                 patternNames: Array.isArray(mod.patternNames) ? mod.patternNames : [],
                 loadError: mod.loadError || null,
             });
+            if (logLine) {
+                const names = Array.isArray(mod.patternNames) ? mod.patternNames.join(',') : '';
+                logLine(`[workspace-scan] confirmed patternbook=${relPath} names=[${names}]`);
+            }
         } else if (mod.hasExample || mod.hasBuildFrame) {
             frameFiles.push({
                 filePath: mod.filePath,
                 relativePath: relPath,
                 loadError: mod.loadError || null,
             });
+            if (logLine) {
+                logLine(`[workspace-scan] confirmed frame=${relPath} example=${!!mod.hasExample} build_frame=${!!mod.hasBuildFrame}`);
+            }
         }
     }
 
     frameFiles.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
     patternbookFiles.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+
+    if (logLine) {
+        logLine(`[workspace-scan] done patternbooks=${patternbookFiles.length} frames=${frameFiles.length} errors=${scanErrors.length}`);
+    }
 
     return { frameFiles, patternbookFiles, scanErrors };
 }
