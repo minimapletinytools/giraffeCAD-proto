@@ -11,20 +11,18 @@ INSTRUCTIONS BELOW DO NOT WORK YET DO NOT TRY!!!
 
 ## setup
 
-Kumiki is best used with Kigumi. To install Kigumi, download [VSCode](https://code.visualstudio.com/) and install Kigumi (TODO link)
+Kumiki is best used with Kigumi. To install Kigumi, install [VSCode](https://code.visualstudio.com/) and install the [Kigumi](https://marketplace.visualstudio.com/items?itemName=minimaple.kigumi) extension.
 
-Kumiki also requires [python3](https://www.python.org/downloads/).  
+I think Kigumi also requires [python3](https://www.python.org/downloads/), the rest of the depepndencies get installed automagically for you.
 
 You can of course use Kumiki without Kigumi. You can still use Kigumi to setup your Kumiki projects and its dependencies.
 
-
-
-
 ## viewing the built in patterns and examples
 
-Kigumi ships with a patternbook and several examples. Open the Kumiki menu by clicking on the Kumiki horse icon in the bar on the left side and click "Open Kigumi".
+Kigumi ships with a patternbook and several examples. Open the Kumiki menu by clicking on the Kumiki extension icon in the left side bar.
 
-You may also open Kigumi by opening the command palette in VScode (cmd/ctrl+shift+p). Start typing "kigumi" and choose the "kigumi: open" command.
+You may also open Kigumi by opening the command palette in VScode (cmd/ctrl+shift+p). Start typing "kigumi" and choose the "View: Show Kigumi" command. 
+You can open a project directly by choosing TODO
 
 ## your first kumiki project
 
