@@ -99,13 +99,19 @@ DONE-or maybe reduce global lighting so faces are more pronounced
 DONE-integrate layers view with regular view
 DONE-BUG joints view in layers does not show any joints for my cute frame
 DONE-update my cute frame to use the python example or rupdate the example..
--BUG patterns from kumiki do load in sid ebar but most can't be opened and view source/duplicate is broken
--when viewing pattern books view in sidebar, you should eb abel to open the entire pattern book 
--opening pattern errors should go to console. Im' not sure why it's not, so hard to get errors
+DONE-BUG patterns from kumiki do load in sid ebar but most can't be opened and view source/duplicate is broken
+DONE-when viewing pattern books view in sidebar, you should eb abel to open the entire pattern book 
+DONE-opening pattern errors should go to console. Im' not sure why it's not, so hard to get errors
+DONE-indent for joints layers view is broken
+DONE-fresh install not picking up patterns in kumiki library
+DONE-add a command to open kigumi in the left hand side bar
+-create sensible kigumi commands, and remove or hide the rest with kigumiinternalignoreme or osmething
+  -Kigumi: Open explorer
+  -Kigumi: Open Current File in Viewer
+-make sure kigumi installs ltaest version of kumiki
+-top level frame and joints folder should be bolded
 -shadows off or lower by default (maybe 2 shadow transparency settings)
 -the bottom no viewer area needs to be a little bigger, at least see 1 row ofthe option clearly
--identcation for joints layers view is broken
--fresh install not picking up patterns in kumiki library
 -test installation
   -raw installation of kigumi, installs deps
   -create new project/design
@@ -142,23 +148,29 @@ DONE-lock and hide fetaures
 :: TODO
 
 DONE-create workshop jonits folders
--add a new integration test that  createsa. new kigumi projcet in some temp directory and initializes it and checks
-  -kumiki patterns load correctly
-  -workspace patterns load correctly
-  -workspace frames load correctly
-  -initialize button state is not init and then initi after initializing
--outline finla joint requirements
-  -you can probably at least promote the plain joints...
--have publish package job bump the version number (check current version and bump I guess)
--test the initialize project thing lol
+DONE-have publish package job bump the version number (check current version and bump I guess)
+DONE-test the initialize project thing lol
   -need to pbulish kumiki first
-
 DONE/IGNORE-decide on layer view
   -is patternbook part of layer view or separate thing
   -figure out how to do show hide option
   -decide on section: timbers, joints (this is fine for now)
     -how do these sections integrate with folders
   -decide on folders being string refs or actual refs when constructing...
+-add a new integration test that  createsa. new kigumi projcet in some temp directory and initializes it and checks
+  -kumiki patterns load correctly
+  -workspace patterns load correctly
+  -workspace frames load correctly
+  -initialize button state is not init and then initi after initializing
+-outline final joint requirements
+  -you can probably at least promote the plain joints...
+
+
+-finish build a butt joint to do the wedged dovetail morties and tenon
+-I guessy ou probably want to do tusked mortise and tenon joint too
+-do the castle joint 3 way joint thingy that should be easy?
+  -may as well do the oscar hsed 3 way joint hingy as well
+
 
 -do create_frame(paremteers) thing so that parameters can be tuned in UI
 

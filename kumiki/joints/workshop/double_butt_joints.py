@@ -1,6 +1,8 @@
 """
 Kumiki - Double butt joint construction functions
 Contains functions for creating joints where two butt timbers meet a single receiving timber.
+
+TODO rename this file to three_way_joints.py
 """
 
 from kumiki.timber import *
@@ -456,3 +458,47 @@ def cut_splined_opposing_double_butt_joint(arrangement: DoubleButtJointTimberArr
         jointAccessories=joint_accessories,
     )
 
+
+# chatGPT translates this to Japanese as:
+# 小根付き通しほぞの十字相欠き梁組
+# kone-tsuki tōshi-hozo no jūji aigaki harigumi
+def cut_cross_lap_beam_assembly_on_post_with_stepped_mortise_and_tenon(
+        # arrangement.cross_timber_1 is always assumed to be the "bottom" in the cross lap joint
+        arrangement: CrossCapJointTimberArrangement, 
+
+        # the size of the tenon as it passes through cross_timber_1 measured relative to post_timber
+        tenon_size_in_cross_timber_1: V2,
+        # the size of the tenon as it passes through cross_timber_2 measured relative to post_timber, must be smaller than tenon_size_in_cross_timber_1
+        tenon_size_in_cross_timber_2: V2,
+
+        # length of the tenon, stops exactly at the face of cross_timber_2 if None
+        tenon_length: Optional[Numeric] = None,
+        # depth of the mortise through both cross timbers mesaured from the face of cross_timber_1, through mortise if None
+        mortise_depth: Optional[Numeric] = None,
+
+        # where the cut is in the cross timber, 0 means cross_timber_1 is entirely cut away and 1 means cross_timber_2 is entirely cut away
+        cross_lap_cut_ratio: Numeric = Rational(1, 2),
+        ):
+    raise NotImplementedError("cross lap beam assembly on post with stepped mortise and tenon not implemented yet")
+
+
+
+def cut_castle_joint(
+        # arrangement.cross_timber_1 is always assumed to be the "bottom" in the cross lap joint that sits above the post
+        arrangement: CrossCapJointTimberArrangement,
+
+        # the "waist" is the section that passes over the post timber, this function only allows same waist size on both cross timbers and the waist portion is always centered on the post, you could make a version of this method that is more customizable if you want...
+        cross_beam_waist_thickness: Numeric,
+
+        # where the cut is in the cross timber, 0 means cross_timber_1 is entirely cut away and 1 means cross_timber_2 is entirely cut away
+        cross_lap_cut_ratio: Numeric = Rational(1, 2),
+
+        miter_cross_beams_if_overlapping_outside_post: bool = True,
+
+        ):
+    # note that the cross lap is always centered ON THE POST and not based on the cross beam positions
+
+    # check if the cross beams are so wide that they overlap each other outside of the post (need to check separately for each of the 4 corners) 
+    # if miter_cross_beams_if_overlapping_outside_post is true, miter the cross beams so they don't overlap
+    # if miter_cross_beams_if_overlapping_outside_post is fales, output a warning
+    raise NotImplementedError("castle joint not implemented yet")

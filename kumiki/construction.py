@@ -1347,6 +1347,43 @@ class QuadrupleButtJointTimberArrangement:
             return "awk_1 and awk_2 must be antiparallel (pointing towards each other)"
         return None
 
+@dataclass(frozen=True)
+class CrossCapJointTimberArrangement:
+    """A butting post timber "capped" by two crossed timbers.
+    """
+    post_timber: Timber
+    post_timber_end: TimberReferenceEnd
+    cross_timber_1: Timber
+    cross_timber_2: Timber
+
+    def check_types_valid(self) -> Optional[str]:
+        if not isinstance(self.post_timber, Timber):
+            return f"post_timber must be Timber, got {type(self.post_timber).__name__}"
+        if not isinstance(self.post_timber_end, TimberReferenceEnd):
+            return f"post_timber_end must be TimberReferenceEnd, got {type(self.post_timber_end).__name__}"
+        if not isinstance(self.cross_timber_1, Timber):
+            return f"cross_timber_1 must be Timber, got {type(self.cross_timber_1).__name__}"
+        if not isinstance(self.cross_timber_2, Timber):
+            return f"cross_timber_2 must be Timber, got {type(self.cross_timber_2).__name__}"
+        return None
+
+    def __post_init__(self):
+        require_check(self.check_types_valid())
+
+    def check_face_aligned_and_orthogonal(self) -> Optional[str]:
+        if not are_timbers_face_aligned(self.cross_timber_1, self.post_timber):
+            return "cross_timber_1 must be face-aligned with post_timber"
+        if not are_timbers_face_aligned(self.cross_timber_2, self.post_timber):
+            return "cross_timber_2 must be face-aligned with post_timber"
+        if not are_timbers_face_aligned(self.cross_timber_1, self.cross_timber_2):
+            return "cross_timber_1 and cross_timber_2 must be face-aligned"
+        if not are_timbers_orthogonal(self.cross_timber_1, self.cross_timber_2):
+            return "cross_timber_1 and cross_timber_2 must be orthogonal"
+        if not are_timbers_orthogonal(self.cross_timber_1, self.post_timber):
+            return "cross_timber_1 must be orthogonal to post_timber"
+        if not are_timbers_orthogonal(self.cross_timber_2, self.post_timber):
+            return "cross_timber_2 must be orthogonal to post_timber"
+        return None
 
 @dataclass(frozen=True)
 class SpliceJointTimberArrangement:
