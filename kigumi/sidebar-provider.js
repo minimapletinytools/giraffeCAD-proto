@@ -280,10 +280,50 @@ class KigumiSidebarProvider {
             groups: [],
         });
 
+        const expandPatternbookRecords = (records, fallbackPaths) => {
+            const normalizedRecords = Array.isArray(records)
+                ? records
+                : (fallbackPaths || []).map((filePath) => ({
+                    sourceFile: filePath,
+                    patternbookName: path.basename(filePath, '.py'),
+                    patternNames: [path.basename(filePath, '.py')],
+                    groupNames: [],
+                }));
+
+            const items = [];
+            for (const rec of normalizedRecords) {
+                const sourceFile = rec && rec.sourceFile;
+                if (!sourceFile) {
+                    continue;
+                }
+                const patternbookName = rec.patternbookName || path.basename(sourceFile, '.py');
+                const names = Array.isArray(rec.patternNames) && rec.patternNames.length > 0
+                    ? rec.patternNames
+                    : [patternbookName];
+                const uniqueNames = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+                for (const name of uniqueNames) {
+                    items.push({
+                        sourceFile,
+                        name,
+                        patternbookName,
+                        groups: Array.isArray(rec.groupNames) ? rec.groupNames : [],
+                        patternNames: uniqueNames,
+                    });
+                }
+            }
+
+            items.sort((a, b) => {
+                const left = `${a.patternbookName}:${a.name}`;
+                const right = `${b.patternbookName}:${b.name}`;
+                return left.localeCompare(right);
+            });
+            return items;
+        };
+
         return {
-            shippedPatterns: (dep.kumikiPatterns || []).map(toItem),
+            shippedPatterns: expandPatternbookRecords(dep.kumikiPatternbooks, dep.kumikiPatterns),
             shippedExamples: (dep.kumikiExamples || []).map(toItem),
-            dependencyPatterns: (dep.dependencyPatterns || []).map(toItem),
+            dependencyPatterns: expandPatternbookRecords(dep.dependencyPatternbooks, dep.dependencyPatterns),
             dependencyExamples: (dep.dependencyExamples || []).map(toItem),
         };
     }
@@ -531,11 +571,11 @@ class KigumiSidebarProvider {
             collapsibleState: pb.patternNames.length > 0
                 ? vscode.TreeItemCollapsibleState.Collapsed
                 : vscode.TreeItemCollapsibleState.None,
-            command: pb.patternNames.length === 0 ? {
-                title: 'Open patternbook file',
-                command: 'kigumi.openFrameFromSidebar',
-                arguments: [pb.filePath],
-            } : undefined,
+            command: {
+                title: 'Open patternbook',
+                command: 'kigumi.openPatternFromSidebar',
+                arguments: [{ sourceFile: pb.filePath, patternName: null }],
+            },
             iconPath: new vscode.ThemeIcon('book'),
             tooltip: pb.filePath,
             data: { patternbook: pb },
@@ -651,6 +691,11 @@ class KigumiSidebarProvider {
                 label: patternbookName,
                 description: `${items.length} pattern${items.length === 1 ? '' : 's'}`,
                 collapsibleState: vscode.TreeItemCollapsibleState.Collapsed,
+                command: {
+                    title: 'Open patternbook',
+                    command: 'kigumi.openPatternbookGroup',
+                    arguments: [{ sectionKey, patternbookName, patterns: items }],
+                },
                 iconPath: new vscode.ThemeIcon('folder'),
                 data: { sectionKey, patternbookName, patterns: items },
                 contextValue: 'patternItem',
@@ -666,7 +711,7 @@ class KigumiSidebarProvider {
             : this._state.dependencyPatterns;
 
         const filteredItems = patternItems.filter((item) => {
-            const pbName = path.basename(item.sourceFile, '.py');
+            const pbName = item.patternbookName || path.basename(item.sourceFile, '.py');
             return pbName === patternbookName;
         });
 

@@ -99,6 +99,9 @@ DONE-or maybe reduce global lighting so faces are more pronounced
 DONE-integrate layers view with regular view
 DONE-BUG joints view in layers does not show any joints for my cute frame
 DONE-update my cute frame to use the python example or rupdate the example..
+-BUG patterns from kumiki do load in sid ebar but most can't be opened and view source/duplicate is broken
+-when viewing pattern books view in sidebar, you should eb abel to open the entire pattern book 
+-opening pattern errors should go to console. Im' not sure why it's not, so hard to get errors
 -identcation for joints layers view is broken
 -fresh install not picking up patterns in kumiki library
 -test installation

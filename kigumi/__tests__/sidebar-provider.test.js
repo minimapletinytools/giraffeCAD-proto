@@ -67,11 +67,22 @@ jest.mock('../project-initializer', () => ({
 
 // Mock pattern-source-utils
 jest.mock('../pattern-source-utils', () => ({
-  groupPatternsByPatternbook: jest.fn((patterns) => ({})),
+  groupPatternsByPatternbook: jest.fn((patterns) => {
+    const grouped = new Map();
+    for (const pattern of patterns || []) {
+      const key = pattern.patternbookName || 'unknown';
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key).push(pattern);
+    }
+    return grouped;
+  }),
 }));
 
 const { KigumiSidebarProvider, SidebarNode } = require('../sidebar-provider');
 const vscode = require('vscode');
+const { discoverDependencyContent } = require('../discovery-adapter');
 
 describe('KigumiSidebarProvider', () => {
   let provider;
@@ -321,6 +332,68 @@ describe('KigumiSidebarProvider', () => {
       const callCountAfter = mockEventEmitter.fire.mock.calls.length;
 
       expect(callCountAfter).toBeGreaterThan(callCountBefore);
+    });
+
+    test('should expand discovered patternbook pattern names into sidebar pattern items', async () => {
+      vscode.workspace.workspaceFolders = [
+        { uri: { fsPath: '/test/workspace' } }
+      ];
+
+      discoverDependencyContent.mockResolvedValueOnce({
+        kumikiPatternbooks: [
+          {
+            sourceFile: '/deps/kumiki/patterns/basic_joint_examples.py',
+            patternbookName: 'basic_joint_examples',
+            patternNames: ['half_lap', 'bridle_joint'],
+            groupNames: [],
+          },
+        ],
+        kumikiPatterns: ['/deps/kumiki/patterns/basic_joint_examples.py'],
+        kumikiExamples: [],
+        dependencyPatternbooks: [],
+        dependencyPatterns: [],
+        dependencyExamples: [],
+      });
+
+      await provider.refresh(true);
+
+      expect(provider._state.shippedPatterns).toHaveLength(2);
+      expect(provider._state.shippedPatterns.map((p) => p.name).sort()).toEqual(['bridle_joint', 'half_lap']);
+    });
+  });
+
+  describe('patternbook click behavior', () => {
+    test('workspace patternbook parent node should open full patternbook', () => {
+      provider._state.workspacePatternbooks = [
+        {
+          filePath: '/ws/patterns/book.py',
+          patternbookName: 'book',
+          patternNames: ['a', 'b'],
+        },
+      ];
+
+      const nodes = provider.getWorkspacePatternbookNodes();
+      expect(nodes).toHaveLength(1);
+      expect(nodes[0].command).toEqual({
+        title: 'Open patternbook',
+        command: 'kigumi.openPatternFromSidebar',
+        arguments: [{ sourceFile: '/ws/patterns/book.py', patternName: null }],
+      });
+    });
+
+    test('shipped patternbook group node should invoke openPatternbookGroup command', () => {
+      const nodes = provider.getShippedPatternSectionNodes('shipped-patterns', [
+        {
+          sourceFile: '/deps/kumiki/patterns/book.py',
+          name: 'pattern_a',
+          patternbookName: 'book',
+        },
+      ], true);
+
+      expect(nodes).toHaveLength(1);
+      expect(nodes[0].type).toBe('patternbookGroup');
+      expect(nodes[0].command).toBeDefined();
+      expect(nodes[0].command.command).toBe('kigumi.openPatternbookGroup');
     });
   });
 
